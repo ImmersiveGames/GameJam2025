@@ -57,7 +57,8 @@ namespace Tools.Editor {
         public static void InstallOpenSource() {
             Packages.InstallPackages(new[] {
                 "git+https://github.com/starikcetin/Eflatun.SceneReference.git#upm",
-                "git+https://github.com/Thundernerd/Unity3D-NSubstitute.git"
+                "git+https://github.com/Thundernerd/Unity3D-NSubstitute.git",
+                "git+https://github.com/adammyhre/Unity-Improved-Timers.git"
             });
         }
 
@@ -114,7 +115,7 @@ namespace Tools.Editor {
 
                 // If there are more packages to install, start the next one
                 if (PackagesToInstall.Count <= 0) return;
-                // Add delay before next package install
+                // Add delay before next package installation
                 await Task.Delay(1000);
                 _request = Client.Add(PackagesToInstall.Dequeue());
                 EditorApplication.update += Progress;
