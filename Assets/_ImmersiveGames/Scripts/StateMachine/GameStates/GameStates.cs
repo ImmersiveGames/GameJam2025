@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.VisualScripting;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachine.GameStates
 {
     public abstract class GameStateBase : IState
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
             // Ativar UI do menu
             // Desativar elementos do jogo
             Debug.Log($"Iniciando o menu do jogo.");
+            gameManager.OnEventPauseGame(true);
         }
     }
 
@@ -35,7 +37,13 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnEnter()
         {
             Debug.Log($"Iniciando o jogo.");
-            gameManager.StartGame();
+            gameManager.OnEventPauseGame(false);
+        }
+        public override void OnExit()
+        {
+            base.OnExit();
+            Debug.Log($"Saindo do jogo.");
+            gameManager.OnEventPauseGame(true);
         }
 
         public override void Update()
@@ -51,6 +59,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnEnter()
         {
             Debug.Log($"pausando o jogo.");
+            gameManager.OnEventPauseGame(true);
             Time.timeScale = 0;
             // Ativar menu de pausa
         }
@@ -58,6 +67,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnExit()
         {
             Time.timeScale = 1;
+            gameManager.OnEventPauseGame(false);
             // Desativar menu de pausa
         }
     }
@@ -70,6 +80,8 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de game over
             // Mostrar pontuação final
+            gameManager.OnEventPauseGame(true);
+            gameManager.OnEventGameOver();
             Debug.Log($"game over! Você fez {gameManager.Score} pontos!");
         }
     }
@@ -82,6 +94,8 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de vitória
             // Mostrar estatísticas
+            gameManager.OnEventPauseGame(true);
+            gameManager.OnEventVictory();
             Debug.Log($"Terminou o jogo com {gameManager.Score} pontos!");
         }
     }

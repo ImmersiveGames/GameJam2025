@@ -22,11 +22,11 @@ namespace _ImmersiveGames.Scripts
         {
             _stateMachine.FixedUpdate();
         }
-        
+
         public void InitializeStateMachine(GameManager gameManager)
         {
             var builder = new StateMachineBuilder();
-            
+
             // Criar estados
             builder.AddState(new MenuState(gameManager), out _menuState);
             builder.AddState(new PlayingState(gameManager), out _playingState);
@@ -36,29 +36,29 @@ namespace _ImmersiveGames.Scripts
 
             // Definir transições
             // Menu -> Playing
-            builder.At(_menuState, _playingState, 
+            builder.At(_menuState, _playingState,
                 new FuncPredicate(() => Input.GetKeyDown(KeyCode.I)));
 
             // Playing -> Paused
-            builder.At(_playingState, _pausedState, 
+            builder.At(_playingState, _pausedState,
                 new FuncPredicate(() => Input.GetKeyDown(KeyCode.Escape)));
 
             // Paused -> Playing
-            builder.At(_pausedState, _playingState, 
+            builder.At(_pausedState, _playingState,
                 new FuncPredicate(() => Input.GetKeyDown(KeyCode.Escape)));
 
             // Playing -> GameOver
-            builder.At(_playingState, _gameOverState, 
+            builder.At(_playingState, _gameOverState,
                 new FuncPredicate(() => gameManager.CheckGameOver()));
 
             // Playing -> Victory
-            builder.At(_playingState, _victoryState, 
+            builder.At(_playingState, _victoryState,
                 new FuncPredicate(() => gameManager.CheckVictory()));
 
             // GameOver/Victory -> Menu
-            builder.At(_gameOverState, _menuState, 
+            builder.At(_gameOverState, _menuState,
                 new FuncPredicate(() => Input.GetKeyDown(KeyCode.R)));
-            builder.At(_victoryState, _menuState, 
+            builder.At(_victoryState, _menuState,
                 new FuncPredicate(() => Input.GetKeyDown(KeyCode.R)));
 
             // Definir estado inicial
@@ -66,5 +66,6 @@ namespace _ImmersiveGames.Scripts
 
             // Construir máquina de estados
             _stateMachine = builder.Build();
-        }    }
+        }
+    }
 }

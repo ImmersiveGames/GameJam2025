@@ -5,13 +5,12 @@
             [CreateAssetMenu(fileName = "GameConfig", menuName = "ImmersiveGames/GameConfig", order = 0)]
             public class GameConfigSo : ScriptableObject
             {
+                public int timerGame = 60;
                 [Header("Configurações de Spawn")]
                 [Tooltip("Quantidade de planetas a serem gerados")]
                 [Range(1, 20)]
                 public int numPlanets = 5;
                 
-                [Tooltip("Prefab do planeta a ser instanciado")]
-                public GameObject prefabPlaneta;
                 
                 [Header("Área de Spawn (Plano XZ)")]
                 [Tooltip("Limites X da área de spawn (min, max)")]

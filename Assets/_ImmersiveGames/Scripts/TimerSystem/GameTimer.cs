@@ -1,61 +1,82 @@
 ﻿using UnityEngine;
 using System;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
 using UnityEngine.Serialization;
+using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
     public class GameTimer : MonoBehaviour
     {
-        [SerializeField] private float gameDuration = 300f; // 5 minutos em segundos
-        
         private CountdownTimer _countdownTimer;
+        private int _gameDuration = 300; // Duração do jogo em segundos (5 minutos)
         
         // Eventos que podem ser assinados por outros scripts
-        public event Action OnGameStarted;
-        public event Action OnGameEnded;
+        private GameManager _gameManager;
         
         // Propriedade para acessar o tempo restante
         public float RemainingTime => _countdownTimer.IsRunning ? _countdownTimer.CurrentTime : 0f;
         
-        private void Awake()
+        public event Action EventTimeEnded;
+        public event Action EventTimerStarted;
+        protected void Awake()
         {
+            _gameManager = GameManager.Instance;
+            _gameDuration = _gameManager.gameConfig.timerGame;
             // Criar o CountdownTimer
-            _countdownTimer = new CountdownTimer(gameDuration);
+            _countdownTimer = new CountdownTimer(_gameDuration);
             
             // Registrar eventos internos da biblioteca de timer
             _countdownTimer.OnTimerStop += HandleTimerComplete;
             _countdownTimer.OnTimerStart += HandleTimerStart;
         }
-        
-        private void Start()
+
+        private void OnEnable()
         {
-            // Inicia o timer quando o jogo começa
-            StartGameTimer();
+            _gameManager.EventStartGame += StartGameTimer;
+            _gameManager.EventGameOver += PauseTimer;
+            _gameManager.EventVictory += PauseTimer;
+            _gameManager.EventPauseGame += PauseTimerHandler;
         }
-        
+        private void PauseTimerHandler(bool obj)
+        {
+            if(obj == true)
+                PauseTimer();
+            else
+            {
+                ResumeTimer();
+            }
+        }
+
+
         private void HandleTimerStart()
         {
             Debug.Log("Jogo iniciado! Timer de 5 minutos começou.");
-            OnGameStarted?.Invoke();
+
         }
         
-        public void StartGameTimer()
+
+        private void StartGameTimer()
         {
+            DebugUtility.LogVerbose<GameTimer>($"Começou o timer {_countdownTimer.IsRunning}, {_countdownTimer.IsFinished}");
+            _countdownTimer.Stop();
             if (_countdownTimer.IsRunning)
                 return;
             
             // Reiniciar o timer para a duração completa
-            _countdownTimer.Reset(gameDuration);
+            _countdownTimer.Reset(_gameDuration);
             
             // Iniciar o timer
             _countdownTimer.Start();
+            EventTimerStarted?.Invoke();
+            DebugUtility.LogVerbose<GameTimer>($"Começou");
         }
         
         private void HandleTimerComplete()
         {
             Debug.Log("Tempo acabou!");
-            OnGameEnded?.Invoke();
+            EventTimeEnded?.Invoke();
         }
         
         public void PauseTimer()
@@ -98,6 +119,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             // Se a biblioteca ImprovedTimers exigir atualização manual, implemente aqui
             // Por exemplo: _countdownTimer.Tick(Time.deltaTime);
+            if (_countdownTimer.IsRunning)
+            {
+                DebugUtility.Log<GameTimer>($"Progresso: {_countdownTimer.Progress}");
+            }
         }
         
         private void OnDestroy()
@@ -109,6 +134,11 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _countdownTimer.OnTimerStop -= HandleTimerComplete;
                 _countdownTimer.OnTimerStart -= HandleTimerStart;
             }
+            
+            _gameManager.EventStartGame -= StartGameTimer;
+            _gameManager.EventGameOver -= PauseTimer;
+            _gameManager.EventVictory -= PauseTimer;
+            _gameManager.EventPauseGame -= PauseTimerHandler;
         }
     }
 }
