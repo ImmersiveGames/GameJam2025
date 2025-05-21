@@ -6,8 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+    path: Assets/_ImmersiveGames/Scenes/Bootstrap.unity
+    guid: 1fa03b02dcd16e8409a034a865744376
+  - enabled: 1
+    path: Assets/_ImmersiveGames/Scenes/Game.unity
+    guid: 66c2792a7fe56d34088255197e9036aa
+  - enabled: 1
+    path: Assets/_ImmersiveGames/Scenes/UI.unity
+    guid: b7a53b31f5034e44d89a0bc27fe739bb
+  - enabled: 1
+    path: Assets/_ImmersiveGames/Scenes/Menu.unity
+    guid: 00b482c8f66b8ad40a0c60d7693a2dc8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 0a0fa5c35c41de14585395f9709ef374, type: 3}
   m_UseUCBPForAssetBundles: 0

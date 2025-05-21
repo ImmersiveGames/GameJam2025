@@ -1,0 +1,65 @@
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+namespace _ImmersiveGames.Scripts.BootstrapSystem
+{
+    public class BootManager : MonoBehaviour
+    {
+        private static bool _initialized;
+        private const string InitialSceneName = "Menu"; // Nome da sua cena aqui
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Initialize()
+        {
+            if (DependencyManager.Instance.IsInTestMode)
+            {
+                DebugUtility.Log<BootManager>("BootManager desativado para testes unitários.");
+                return;
+            }
+
+            if (_initialized) return;
+            _initialized = true;
+
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
+            DebugUtility.RegisterScriptDebugLevel(typeof(BootManager), DebugLevel.Verbose);
+
+            // Acessar DependencyManager.Instance (cria automaticamente se necessário)
+            if (!DependencyManager.HasInstance)
+            {
+                var dependencyManager = DependencyManager.Instance;
+                DebugUtility.Log<BootManager>("DependencyManager inicializado pelo BootManager.");
+            }
+            else
+            {
+                DebugUtility.Log<BootManager>("DependencyManager já inicializado.");
+            }
+
+            // Inicializar DependencyBootstrapper
+            // TODO: Confirmar implementação de DependencyBootstrapper
+            DependencyBootstrapper.Instance.BootstrapOnDemand();
+
+            DebugUtility.LogVerbose<BootManager>("Inicialização concluída.");
+            
+            LoadInitialScene();
+        }
+        private static void LoadInitialScene()
+        {
+            var loadOperation = SceneManager.LoadSceneAsync(InitialSceneName, LoadSceneMode.Additive);
+            loadOperation.completed += (asyncOperation) =>
+            {
+                DebugUtility.Log<BootManager>($"Cena {InitialSceneName} carregada com sucesso.");
+            };
+        }
+        
+
+#if UNITY_EDITOR
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _initialized = false;
+            DebugUtility.Log<BootManager>("Estado resetado para nova execução.");
+        }
+#endif
+    }
+}
