@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts
     [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Verbose)]
     public sealed class GameManager : Singleton<GameManager>
     {
-        [SerializeField] public GameConfigSo gameConfig;
+        [SerializeField] public GameConfig gameConfig;
         
         public string Score { get; private set; }
         private bool _isPlaying;

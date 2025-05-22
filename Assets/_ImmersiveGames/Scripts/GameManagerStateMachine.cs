@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts
         private void Update()
         {
             _stateMachine.Update();
-            DebugUtility.LogVerbose<GameManagerStateMachine>($"Estado: {_stateMachine.CurrentState.GetType().Name}");
+            //DebugUtility.LogVerbose<GameManagerStateMachine>($"Estado: {_stateMachine.CurrentState.GetType().Name}");
         }
 
         private void FixedUpdate()

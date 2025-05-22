@@ -6,6 +6,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class GameTimer : Singleton<GameTimer>
     {
         private CountdownTimer _countdownTimer;
@@ -113,7 +114,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             return $"{minutes:00}:{seconds:00}";
         }
         
-        // Método Update para verificar se precisamos atualizar o timer manualmente
+        /*// Método Update para verificar se precisamos atualizar o timer manualmente
         private void Update()
         {
             // Se a biblioteca ImprovedTimers exigir atualização manual, implemente aqui,
@@ -122,7 +123,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             {
                 DebugUtility.Log<GameTimer>($"Progresso: {_countdownTimer.Progress}");
             }
-        }
+        }*/
         
         private void OnDestroy()
         {

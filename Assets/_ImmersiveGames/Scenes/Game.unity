@@ -119,6 +119,37 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &99254223
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 99254224}
+  m_Layer: 0
+  m_Name: CentroDo universo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &99254224
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 99254223}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &371499866
 GameObject:
   m_ObjectHideFlags: 0
@@ -552,10 +583,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8425d96b95b4646b88c174a12696700, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
-  _initialPoolSize: 20
-  _expandable: 1
-  _moveToSceneRoot: 1
+  prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
+  initialPoolSize: 20
+  expandable: 1
+  moveToSceneRoot: 1
 --- !u!4 &1537310786
 Transform:
   m_ObjectHideFlags: 0
@@ -998,6 +1029,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1e095fae3974446bf765124eadee589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2146795698
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2146795701}
+  - component: {fileID: 2146795700}
+  - component: {fileID: 2146795699}
+  m_Layer: 0
+  m_Name: PlanetManagers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2146795699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146795698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6570fe17290945e3972d13a945dc64d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planetPrefab: {fileID: 6191943185049623452, guid: 2b868d9f38539824f95004dcf8441efe, type: 3}
+  gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
+  universeCenter: {fileID: 99254224}
+--- !u!114 &2146795700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146795698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 294c57d24ea74d629eb61cedac23b8b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planetDataPrefabs:
+  - {fileID: 11400000, guid: 9dfeab27fbc19794eba3d03b56d5d77f, type: 2}
+  - {fileID: 11400000, guid: e5186e71cbdd55241afc376946a30132, type: 2}
+  - {fileID: 11400000, guid: fc2b68072cb1d5549a9da95a3f45c82f, type: 2}
+--- !u!4 &2146795701
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2146795698}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 150.85957, y: 82.65085, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1008,3 +1103,5 @@ SceneRoots:
   - {fileID: 1537310786}
   - {fileID: 1946256017}
   - {fileID: 1849846776}
+  - {fileID: 2146795701}
+  - {fileID: 99254224}

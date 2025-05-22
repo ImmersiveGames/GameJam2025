@@ -12,9 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0549e23a1231459cbf94d79ca8a61ef5, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
-  timerGame: 5
-  numPlanets: 5
-  prefabPlaneta: {fileID: 6191943185049623452, guid: 2b868d9f38539824f95004dcf8441efe, type: 3}
-  limiteX: {x: -20, y: 20}
-  limiteZ: {x: -20, y: 20}
-  distanciaMinima: 5
+  numPlanets: 10
+  minOrbitRadius: 3
+  orbitMargin: 1
+  timerGame: 200

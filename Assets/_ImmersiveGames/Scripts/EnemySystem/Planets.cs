@@ -1,60 +1,193 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Interfaces;
+using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.ScriptableObjects;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using DG.Tweening;
+using UnityEngine;
+using ImmersiveGames;
 
-namespace _ImmersiveGames.Scripts.EnemySystem
+namespace ImmersiveGames.EnemySystem
+{
+    public abstract class DestructibleObject : MonoBehaviour, IDamageable
+    {
+        [SerializeField] protected DestructibleObjectSo destructibleObject;
+        private float _defense;
+        private bool _destroyOnDeath = true;
+        private float _destroyDelay = 2f;
+
+        public event System.Action<DestructibleObject> OnDeath;
+
+        public virtual void Initialize()
+        {
+            if (destructibleObject == null)
+            {
+                Debug.LogError($"DestructibleObjectSo não está definido em {gameObject.name}.");
+                return;
+            }
+
+            CurrentHealth = destructibleObject.planetMaxHealth;
+            _defense = destructibleObject.planetDefense;
+            _destroyOnDeath = destructibleObject.planetCanDestroy;
+            _destroyDelay = destructibleObject.planetDeathDelay;
+        }
+
+        public virtual void TakeDamage(float damageAmount)
+        {
+            if (CurrentHealth <= 0) return;
+
+            float finalDamage = Mathf.Max(0, damageAmount - _defense);
+            CurrentHealth -= finalDamage;
+
+            OnDamageTaken();
+
+            if (CurrentHealth <= 0)
+            {
+                Die();
+                DebugUtility.LogVerbose<Planets>($"O planeta foi destruído", "green");
+            }
+            DebugUtility.LogVerbose<Planets>($"recebeu {finalDamage} de dano. Vida atual: {CurrentHealth}", "green");
+        }
+
+        public bool IsAlive => CurrentHealth > 0;
+
+        protected virtual void OnDamageTaken() { }
+
+        protected virtual void Die()
+        {
+            OnDeath?.Invoke(this);
+            if (_destroyOnDeath)
+            {
+                Destroy(gameObject, _destroyDelay);
+            }
+        }
+
+        public float CurrentHealth { get; private set; } = 100f;
+        public float MaxHealth => destructibleObject.planetMaxHealth;
+    }
+}
+
+namespace ImmersiveGames.EnemySystem
 {
     public class Planets : DestructibleObject
     {
+        private PlanetData planetData;
+        private PlanetResources resource;
+        private PlanetOrbit orbitController;
+        private GameObject skinInstance;
+        private Tween rotationTween;
 
-        [SerializeField] public int resources;
+        public PlanetResources Resource => resource;
+
+        public void SetPlanetData(PlanetData data)
+        {
+            planetData = data;
+            destructibleObject = data;
+        }
+
+        public void SetResource(PlanetResources newResource)
+        {
+            resource = newResource;
+        }
+
+        public void StartOrbit(Transform orbitCenter)
+        {
+            if (orbitController == null)
+            {
+                orbitController = gameObject.AddComponent<PlanetOrbit>();
+            }
+            orbitController.Initialize(orbitCenter, planetData.minOrbitSpeed, planetData.maxOrbitSpeed, planetData.orbitClockwise);
+        }
+
         public override void Initialize()
         {
-            base.Initialize();
-        }
-
-
-        /// <summary>
-        /// Causa dano ao planeta
-        /// </summary>
-        /// <param name="dano">Quantidade de dano a ser causado</param>
-        /// <returns>Verdadeiro se o planeta foi destruído</returns>
-        public bool ReceberDano(int dano)
-        {
-            currentHealth = Mathf.Max(0, currentHealth - dano);
-
-            if (currentHealth <= 0)
+            if (planetData == null)
             {
-                OnPlanetDestroy();
-                return true;
+                Debug.LogError($"PlanetData não está definido em {gameObject.name}.");
+                return;
             }
 
-            return false;
+            base.Initialize();
+            SetSkinPlanet();
         }
 
-        /// <summary>
-        /// Retorna a quantidade de resources disponível no planeta
-        /// </summary>
-        public int ObterQuantidadeRecurso()
+        private void SetSkinPlanet()
         {
-            return resources;
+            if (planetData.enemyModel == null)
+            {
+                Debug.LogError($"EnemyModel não está definido no PlanetData para {gameObject.name}.");
+                return;
+            }
+
+            foreach (Transform child in transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            // Instancia o modelo
+            skinInstance = Instantiate(planetData.enemyModel, transform);
+            skinInstance.transform.localPosition = Vector3.zero;
+            skinInstance.transform.localRotation = Quaternion.identity;
+
+            // Configura o colisor
+            Collider modelCollider = skinInstance.GetComponent<Collider>();
+            if (modelCollider != null)
+            {
+                modelCollider.isTrigger = true;
+            }
+            else
+            {
+                Debug.LogWarning($"Nenhum Collider encontrado no enemyModel de {gameObject.name}. Adicione um Collider ao prefab do modelo.");
+            }
+
+            // Aplica escala
+            float scaleMultiplier = Random.Range(planetData.minScaleMultiplier, planetData.maxScaleMultiplier);
+            skinInstance.transform.localScale = Vector3.one * scaleMultiplier;
+
+            // Aplica inclinação
+            float tiltX = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
+            float tiltZ = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
+            skinInstance.transform.localRotation = Quaternion.Euler(tiltX, 0, tiltZ);
+
+            // Inicia translação (rotação própria)
+            StartRotation();
         }
 
-        /// <summary>
-        /// Coleta recursos do planeta
-        /// </summary>
-        /// <param name="quantidade">Quantidade a ser coletada</param>
-        /// <returns>Quantidade efetivamente coletada</returns>
-        public int ColetarRecurso(int quantidade)
+        private void StartRotation()
         {
-            int quantidadeColetada = Mathf.Min(quantidade, resources);
-            resources -= quantidadeColetada;
-            return quantidadeColetada;
+            if (skinInstance == null) return;
+
+            rotationTween?.Kill();
+            float rotationSpeed = Random.Range(planetData.minRotationSpeed, planetData.maxRotationSpeed);
+            float direction = planetData.rotateClockwise ? -1f : 1f;
+            rotationTween = skinInstance.transform.DORotate(
+                    new Vector3(0, 360 * direction, 0),
+                    360f / rotationSpeed,
+                    RotateMode.FastBeyond360
+                )
+                .SetEase(Ease.Linear)
+                .SetLoops(-1, LoopType.Incremental)
+                .SetRelative(true);
         }
 
-        private void OnPlanetDestroy()
+        public override void TakeDamage(float damage)
         {
-            // Lógica a ser executada quando o planeta for destruído
-            // Pode disparar eventos, fazer animações, etc.
-            Debug.Log($"Planets destruído! Recursos restantes: {resources}");
+            base.TakeDamage(damage);
+            Debug.Log($"Planeta {gameObject.name} recebeu {damage} de dano. Vida atual: {CurrentHealth}");
+        }
+
+        protected override void Die()
+        {
+            if (orbitController != null)
+            {
+                orbitController.StopOrbit();
+            }
+            if (rotationTween != null)
+            {
+                rotationTween.Kill();
+                rotationTween = null;
+            }
+            base.Die();
+            Debug.Log($"Planeta {gameObject.name} destruído.");
         }
     }
 }

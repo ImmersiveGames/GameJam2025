@@ -1,13 +1,23 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "NovaPlanetaConfig", menuName = "ImmersiveGames/PlanetaConfig", order = 1)]
-    public class DestructibleObjectSo : ScriptableObject
+    public abstract class DestructibleObjectSo : ScriptableObject
     {
-        [SerializeField] public float maxHealth = 100f;
-        [SerializeField] public float defense = 0f;
-        [SerializeField] public bool destroyOnDeath = true;
-        [SerializeField] public float destroyDelay = 2f;
+        public float planetDefense = 0f;
+        public bool planetCanDestroy = true;
+        public float planetMaxHealth = 100f;
+        public float planetDeathDelay = 2f;
+        [SerializeField, Tooltip("Prefab do inimigo a ser instanciado")]
+        public GameObject enemyModel;
+    }
+    public enum PlanetResources
+    {
+        Metal,
+        Gas,
+        Water,
+        Rocks,
+        Life
     }
 }

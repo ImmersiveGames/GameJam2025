@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ae494ccdb8f4aec9e14949638b5132d, type: 3}
+  m_Name: Planeta01
+  m_EditorClassIdentifier: 
+  planetDefense: 15
+  planetCanDestroy: 1
+  planetMaxHealth: 100
+  planetDeathDelay: 2
+  enemyModel: {fileID: 7907136744328637044, guid: 7f774285134210f4489a6a51f8cdbc27, type: 3}
+  size: 1
+  minOrbitSpeed: 20
+  maxOrbitSpeed: 40
+  orbitClockwise: 1
+  minScaleMultiplier: 0.8
+  maxScaleMultiplier: 1.2
+  minTiltAngle: -30
+  maxTiltAngle: 30
+  minRotationSpeed: 10
+  maxRotationSpeed: 20
+  rotateClockwise: 0
