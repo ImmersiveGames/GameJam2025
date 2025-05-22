@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.StateMachine;
 using _ImmersiveGames.Scripts.StateMachine.GameStates;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.Scripts
         private void Update()
         {
             _stateMachine.Update();
+            DebugUtility.LogVerbose<GameManagerStateMachine>($"Estado: {_stateMachine.CurrentState.GetType().Name}");
         }
 
         private void FixedUpdate()
@@ -49,17 +51,34 @@ namespace _ImmersiveGames.Scripts
 
             // Playing -> GameOver
             builder.At(_playingState, _gameOverState,
-                new FuncPredicate(() => gameManager.CheckGameOver()));
+                new FuncPredicate(gameManager.CheckGameOver));
 
             // Playing -> Victory
             builder.At(_playingState, _victoryState,
-                new FuncPredicate(() => gameManager.CheckVictory()));
+                new FuncPredicate(gameManager.CheckVictory));
 
             // GameOver/Victory -> Menu
             builder.At(_gameOverState, _menuState,
-                new FuncPredicate(() => Input.GetKeyDown(KeyCode.R)));
+                new FuncPredicate(() => 
+                {
+                    if (Input.GetKeyDown(KeyCode.R))
+                    {
+                        gameManager.ForceReset(); // Força reinicialização
+                        return true;
+                    }
+                    return false;
+                }));
+
             builder.At(_victoryState, _menuState,
-                new FuncPredicate(() => Input.GetKeyDown(KeyCode.R)));
+                new FuncPredicate(() => 
+                {
+                    if (Input.GetKeyDown(KeyCode.R))
+                    {
+                        gameManager.ForceReset(); // Força reinicialização
+                        return true;
+                    }
+                    return false;
+                }));
 
             // Definir estado inicial
             builder.StateInitial(_menuState);

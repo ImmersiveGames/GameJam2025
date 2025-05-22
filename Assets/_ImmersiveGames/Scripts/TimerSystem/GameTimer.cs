@@ -2,12 +2,11 @@
 using System;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
-using UnityEngine.Serialization;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
-    public class GameTimer : MonoBehaviour
+    public class GameTimer : Singleton<GameTimer>
     {
         private CountdownTimer _countdownTimer;
         private int _gameDuration = 300; // Duração do jogo em segundos (5 minutos)
@@ -20,8 +19,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         
         public event Action EventTimeEnded;
         public event Action EventTimerStarted;
-        protected void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             _gameManager = GameManager.Instance;
             _gameDuration = _gameManager.gameConfig.timerGame;
             // Criar o CountdownTimer
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
         private void PauseTimerHandler(bool obj)
         {
-            if(obj == true)
+            if(obj)
                 PauseTimer();
             else
             {
@@ -60,13 +60,11 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void StartGameTimer()
         {
             DebugUtility.LogVerbose<GameTimer>($"Começou o timer {_countdownTimer.IsRunning}, {_countdownTimer.IsFinished}");
+    
+            // Resetar o timer para a duração inicial
             _countdownTimer.Stop();
-            if (_countdownTimer.IsRunning)
-                return;
-            
-            // Reiniciar o timer para a duração completa
             _countdownTimer.Reset(_gameDuration);
-            
+
             // Iniciar o timer
             _countdownTimer.Start();
             EventTimerStarted?.Invoke();
@@ -76,6 +74,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleTimerComplete()
         {
             Debug.Log("Tempo acabou!");
+            _gameManager.SetGameOver(true);
             EventTimeEnded?.Invoke();
         }
         
@@ -117,7 +116,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         // Método Update para verificar se precisamos atualizar o timer manualmente
         private void Update()
         {
-            // Se a biblioteca ImprovedTimers exigir atualização manual, implemente aqui
+            // Se a biblioteca ImprovedTimers exigir atualização manual, implemente aqui,
             // Por exemplo: _countdownTimer.Tick(Time.deltaTime);
             if (_countdownTimer.IsRunning)
             {

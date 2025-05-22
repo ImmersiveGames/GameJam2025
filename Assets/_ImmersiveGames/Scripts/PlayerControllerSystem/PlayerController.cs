@@ -82,6 +82,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void Update()
         {
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
             // Verificar se deve disparar
             if (_isFiring && Time.time >= _nextFireTime)
             {
@@ -92,6 +93,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void FixedUpdate()
         {
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
             // Movimenta o personagem no plano XZ
             Vector3 moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
             _rb.linearVelocity = moveDirection * moveSpeed;
@@ -121,6 +123,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         
         private void Fire()
         {
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
             if (projectilePool == null || firePoint == null)
             {
                 Debug.LogWarning("Configuração de disparo incompleta: certifique-se de atribuir o ObjectPool e o FirePoint no Inspector.");

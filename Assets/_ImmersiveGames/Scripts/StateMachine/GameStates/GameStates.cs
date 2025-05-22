@@ -1,5 +1,4 @@
-﻿using Unity.VisualScripting;
-using UnityEngine;
+﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachine.GameStates
 {
     public abstract class GameStateBase : IState
@@ -26,7 +25,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
             // Ativar UI do menu
             // Desativar elementos do jogo
             Debug.Log($"Iniciando o menu do jogo.");
-            gameManager.OnEventPauseGame(true);
+            gameManager.SetPlayGame(false);
         }
     }
 
@@ -36,14 +35,8 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
 
         public override void OnEnter()
         {
-            Debug.Log($"Iniciando o jogo.");
-            gameManager.OnEventPauseGame(false);
-        }
-        public override void OnExit()
-        {
-            base.OnExit();
-            Debug.Log($"Saindo do jogo.");
-            gameManager.OnEventPauseGame(true);
+            base.OnEnter();
+            gameManager.SetPlayGame(true); // Agora chamamos StartGame() ao entrar no estado
         }
 
         public override void Update()
@@ -59,7 +52,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnEnter()
         {
             Debug.Log($"pausando o jogo.");
-            gameManager.OnEventPauseGame(true);
+            gameManager.SetPlayGame(false);
             Time.timeScale = 0;
             // Ativar menu de pausa
         }
@@ -67,7 +60,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnExit()
         {
             Time.timeScale = 1;
-            gameManager.OnEventPauseGame(false);
+            gameManager.SetPlayGame(true);
             // Desativar menu de pausa
         }
     }
@@ -80,8 +73,6 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de game over
             // Mostrar pontuação final
-            gameManager.OnEventPauseGame(true);
-            gameManager.OnEventGameOver();
             Debug.Log($"game over! Você fez {gameManager.Score} pontos!");
         }
     }
@@ -94,8 +85,6 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de vitória
             // Mostrar estatísticas
-            gameManager.OnEventPauseGame(true);
-            gameManager.OnEventVictory();
             Debug.Log($"Terminou o jogo com {gameManager.Score} pontos!");
         }
     }
