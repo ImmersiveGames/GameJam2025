@@ -1,6 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.ScriptableObjects;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EnemySystem
 {

@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {

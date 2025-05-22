@@ -6,14 +6,16 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     public class PlayerController3D : MonoBehaviour
     {
+        [SerializeField] private Camera mainCamera;
+        
         [Header("Movimento")]
         [SerializeField] private float moveSpeed = 5f; // Velocidade de movimento
         [SerializeField] private float rotationSpeed = 10f; // Velocidade de rotação
         
         [Header("Disparo")]
-        [SerializeField] private Transform _firePoint; // Ponto de origem do disparo
-        [SerializeField] private ObjectPool _projectilePool; // Referência para o pool de objetos
-        [SerializeField] private float _fireRate = 0.2f; // Taxa de disparo (em segundos)
+        [SerializeField] private Transform firePoint; // Ponto de origem do disparo
+        [SerializeField] private ObjectPool projectilePool; // Referência para o pool de objetos
+        [SerializeField] private float fireRate = 0.2f; // Taxa de disparo (em segundos)
         
         private Vector2 _moveInput; // Input de movimento
         private Vector2 _lookInput; // Input para mirar
@@ -21,16 +23,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private float _nextFireTime; // Controle do cooldown de disparo
         
         private Rigidbody _rb;
-        private Camera _mainCamera; // Referência em cache para a câmera principal
+        
         private PlayerInputActions _inputActions; // Classe gerada pelo Input System
 
         private void Awake()
         {
             // Inicializa o Rigidbody
             _rb = GetComponent<Rigidbody>();
-
-            // Cache da câmera principal
-            _mainCamera = Camera.main;
+            
         
             // Inicializa o Input System
             _inputActions = new PlayerInputActions();
@@ -82,16 +82,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void Update()
         {
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
             // Verificar se deve disparar
             if (_isFiring && Time.time >= _nextFireTime)
             {
                 Fire();
-                _nextFireTime = Time.time + _fireRate;
+                _nextFireTime = Time.time + fireRate;
             }
         }
 
         private void FixedUpdate()
         {
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
             // Movimenta o personagem no plano XZ
             Vector3 moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
             _rb.linearVelocity = moveDirection * moveSpeed;
@@ -100,7 +102,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (_lookInput != Vector2.zero)
             {
                 // Converte a posição do mouse para um ponto no mundo
-                Ray ray = _mainCamera.ScreenPointToRay(_lookInput);
+                Ray ray = mainCamera.ScreenPointToRay(_lookInput);
                 Plane groundPlane = new Plane(Vector3.up, Vector3.zero); // Plano no Y=0
                 float rayDistance;
 
@@ -121,22 +123,23 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         
         private void Fire()
         {
-            if (_projectilePool == null || _firePoint == null)
+            if(!GameManager.Instance.ShouldPlayingGame()) return;
+            if (projectilePool == null || firePoint == null)
             {
                 Debug.LogWarning("Configuração de disparo incompleta: certifique-se de atribuir o ObjectPool e o FirePoint no Inspector.");
                 return;
             }
             
             // Obter um projétil do pool
-            GameObject projectile = _projectilePool.GetPooledObject();
+            GameObject projectile = projectilePool.GetPooledObject();
             
             if (projectile != null)
             {
                 // Capturar a direção exata do firePoint no momento do disparo
-                Vector3 shootDirection = _firePoint.forward;
+                Vector3 shootDirection = firePoint.forward;
                 
                 // Posicionar o projétil
-                projectile.transform.position = _firePoint.position;
+                projectile.transform.position = firePoint.position;
                 
                 // Ativar o projétil
                 projectile.SetActive(true);
@@ -145,11 +148,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                 Projectile projectileComponent = projectile.GetComponent<Projectile>();
                 if (projectileComponent != null)
                 {
-                    projectileComponent.Initialize(shootDirection, _projectilePool);
+                    projectileComponent.Initialize(shootDirection, projectilePool);
                 }
                 
                 // Mostrar um debug da direção para verificação
-                Debug.DrawRay(_firePoint.position, shootDirection * 10f, Color.red, 0.5f);
+                Debug.DrawRay(firePoint.position, shootDirection * 10f, Color.red, 0.5f);
             }
         }
     }

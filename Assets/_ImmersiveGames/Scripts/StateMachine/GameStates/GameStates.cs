@@ -25,6 +25,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
             // Ativar UI do menu
             // Desativar elementos do jogo
             Debug.Log($"Iniciando o menu do jogo.");
+            gameManager.SetPlayGame(false);
         }
     }
 
@@ -34,8 +35,8 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
 
         public override void OnEnter()
         {
-            Debug.Log($"Iniciando o jogo.");
-            gameManager.StartGame();
+            base.OnEnter();
+            gameManager.SetPlayGame(true); // Agora chamamos StartGame() ao entrar no estado
         }
 
         public override void Update()
@@ -51,6 +52,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnEnter()
         {
             Debug.Log($"pausando o jogo.");
+            gameManager.SetPlayGame(false);
             Time.timeScale = 0;
             // Ativar menu de pausa
         }
@@ -58,6 +60,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         public override void OnExit()
         {
             Time.timeScale = 1;
+            gameManager.SetPlayGame(true);
             // Desativar menu de pausa
         }
     }
