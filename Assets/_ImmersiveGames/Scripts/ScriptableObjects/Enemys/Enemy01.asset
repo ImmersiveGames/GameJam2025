@@ -12,9 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 730b8c58b6a64613bb9f33a9195b028e, type: 3}
   m_Name: Enemy01
   m_EditorClassIdentifier: 
+  maxHealth: 20
   defense: 0
   canDestroy: 1
-  maxHealth: 100
-  deathDelay: 2
-  modelPrefab: {fileID: 369962388627008736, guid: 3b3d5e8e6ad2ea14da9f533826551e4e, type: 3}
+  deathDelay: 0.5
+  collisionDamage: 10
+  modelPrefab: {fileID: 369962388627008736, guid: 71757053f2d2ca64284af9e7dc5d4d55, type: 3}
   speed: 3
+  rotationSpeed: 5
+  movementType: 1
+  sinusoidalFrequency: 0.5
+  sinusoidalAmplitude: 0.5
+  homingRotationMultiplier: 2
