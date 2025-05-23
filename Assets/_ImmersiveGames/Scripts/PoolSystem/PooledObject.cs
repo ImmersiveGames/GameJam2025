@@ -1,35 +1,27 @@
 ﻿using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PoolSystem
 {
-    /// <summary>
-    /// Componente adicionado automaticamente a objetos gerenciados por ObjectPool
-    /// para rastrear a qual pool eles pertencem.
-    /// </summary>
-    public class PooledObject : MonoBehaviour
+    public abstract class PooledObject : MonoBehaviour
     {
-        private ObjectPool _parentPool;
-        
-        public void SetPool(ObjectPool pool)
+        protected ObjectPoolBase pool;
+
+        public void SetPool(ObjectPoolBase pool)
         {
-            _parentPool = pool;
+            this.pool = pool;
         }
-        
-        public ObjectPool GetPool()
-        {
-            return _parentPool;
-        }
-        
-        // Método auxiliar para facilitar o retorno ao pool
+
         public void ReturnSelfToPool()
         {
-            if (_parentPool != null)
+            if (pool != null)
             {
-                _parentPool.ReturnToPool(gameObject);
+                pool.ReturnToPool(gameObject);
             }
             else
             {
                 gameObject.SetActive(false);
+                DebugUtility.LogWarning(GetType(), $"PooledObject em {gameObject.name} não tem um pool associado.", this);
             }
         }
     }
