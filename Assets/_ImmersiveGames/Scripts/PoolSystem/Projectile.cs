@@ -1,24 +1,15 @@
-﻿using _ImmersiveGames.Scripts.Interfaces;
-using UnityEngine;
+﻿using UnityEngine;
+using _ImmersiveGames.Scripts.EnemySystem;
+using _ImmersiveGames.Scripts.PlayerControllerSystem;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+
 namespace _ImmersiveGames.Scripts.PoolSystem
 {
     public class Projectile : MonoBehaviour
     {
-        [SerializeField, Tooltip("Velocidade do projétil")]
-        private float speed = 15f;
-
-        [SerializeField, Tooltip("Tempo de vida do projétil (segundos)")]
-        private float lifetime = 3f;
-
-        [SerializeField, Tooltip("Dano causado pelo projétil")]
-        private float damage = 25f;
-
-        [SerializeField, Tooltip("Se true, o projétil é retornado ao pool ao acertar um alvo")]
-        private bool destroyOnHit = true;
-
         private Vector3 _direction;
         private float _timer;
-        private ObjectPool _originPool;
+        private ProjectileData _data;
 
         private void Awake()
         {
@@ -38,8 +29,10 @@ namespace _ImmersiveGames.Scripts.PoolSystem
 
         private void Update()
         {
+            if (_data == null) return;
+
             _timer += Time.deltaTime;
-            if (_timer >= lifetime)
+            if (_timer >= _data.lifetime)
             {
                 ReturnToPool();
                 return;
@@ -47,25 +40,28 @@ namespace _ImmersiveGames.Scripts.PoolSystem
 
             if (_direction != Vector3.zero)
             {
-                transform.position += _direction * speed * Time.deltaTime;
+                transform.position += _direction * _data.speed * Time.deltaTime;
             }
         }
 
-        public void Initialize(Vector3 direction, ObjectPool pool)
+        public void SetProjectileData(ProjectileData data)
         {
-            this._originPool = pool;
-            this._direction = direction.normalized;
-            transform.forward = this._direction;
+            _data = data;
+        }
+
+        public void Initialize(Vector3 direction)
+        {
+            _direction = direction.normalized;
+            transform.forward = _direction;
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            // Busca IDamageable no objeto colidido ou em seu pai
             IDamageable damageable = other.GetComponentInParent<IDamageable>();
             if (damageable != null && damageable.IsAlive)
             {
-                damageable.TakeDamage(damage);
-                if (destroyOnHit)
+                damageable.TakeDamage(_data.damage);
+                if (_data.destroyOnHit)
                 {
                     ReturnToPool();
                 }
@@ -78,18 +74,15 @@ namespace _ImmersiveGames.Scripts.PoolSystem
 
         private void ReturnToPool()
         {
-            PooledObject pooledObj = GetComponent<PooledObject>();
+            ProjectilePooledObject pooledObj = GetComponent<ProjectilePooledObject>();
             if (pooledObj != null)
             {
                 pooledObj.ReturnSelfToPool();
             }
-            else if (_originPool != null)
-            {
-                _originPool.ReturnToPool(gameObject);
-            }
             else
             {
                 gameObject.SetActive(false);
+                DebugUtility.LogWarning<Projectile>($"Projectile {gameObject.name} não tem ProjectilePooledObject.", this);
             }
         }
     }

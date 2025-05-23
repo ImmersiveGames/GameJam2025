@@ -162,7 +162,7 @@ GameObject:
   - component: {fileID: 371499870}
   - component: {fileID: 371499869}
   - component: {fileID: 371499868}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -270,7 +270,7 @@ GameObject:
   - component: {fileID: 736069480}
   - component: {fileID: 736069479}
   - component: {fileID: 736069478}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Capsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -308,7 +308,7 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
@@ -378,7 +378,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 949868910}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: firepoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -530,7 +530,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1519643001}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: ModelRoot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -553,54 +553,6 @@ Transform:
   - {fileID: 736069477}
   - {fileID: 949868910}
   m_Father: {fileID: 1946256017}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1537310784
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1537310786}
-  - component: {fileID: 1537310785}
-  m_Layer: 0
-  m_Name: Pool
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1537310785
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537310784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8425d96b95b4646b88c174a12696700, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
-  initialPoolSize: 20
-  expandable: 1
-  moveToSceneRoot: 1
---- !u!4 &1537310786
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1537310784}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.438, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1555126166
 GameObject:
@@ -860,7 +812,8 @@ GameObject:
   - component: {fileID: 1946256018}
   - component: {fileID: 1946256020}
   - component: {fileID: 1946256019}
-  m_Layer: 0
+  - component: {fileID: 1946256021}
+  m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -925,9 +878,6 @@ MonoBehaviour:
   mainCamera: {fileID: 1555126169}
   moveSpeed: 5
   rotationSpeed: 20
-  firePoint: {fileID: 949868910}
-  projectilePool: {fileID: 1537310785}
-  fireRate: 0.2
 --- !u!114 &1946256020
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -958,6 +908,25 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 1555126169}
+--- !u!114 &1946256021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1946256014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bfdcd01afea418485e74a05a977ab4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainCamera: {fileID: 1555126169}
+  firePoint: {fileID: 949868910}
+  projectilePrefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
+  shootingStrategies:
+  - {fileID: 11400000, guid: dd0d0fd00df63404d86988b55518dda3, type: 2}
+  - {fileID: 11400000, guid: a44dc3d2cbaf139458120882cd87106b, type: 2}
+  initialStrategyIndex: 0
 --- !u!1 &2009245414
 GameObject:
   m_ObjectHideFlags: 0
@@ -1062,6 +1031,7 @@ MonoBehaviour:
   planetPrefab: {fileID: 6191943185049623452, guid: 2b868d9f38539824f95004dcf8441efe, type: 3}
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   universeCenter: {fileID: 99254224}
+  debugMode: 1
 --- !u!114 &2146795700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1087,7 +1057,7 @@ Transform:
   m_GameObject: {fileID: 2146795698}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 150.85957, y: 82.65085, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1100,8 +1070,7 @@ SceneRoots:
   - {fileID: 1555126170}
   - {fileID: 1171078547}
   - {fileID: 2009245416}
-  - {fileID: 1537310786}
+  - {fileID: 2146795701}
   - {fileID: 1946256017}
   - {fileID: 1849846776}
-  - {fileID: 2146795701}
   - {fileID: 99254224}

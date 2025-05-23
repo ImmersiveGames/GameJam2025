@@ -1,4 +1,6 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.EnemySystem;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ScriptableObjects
 {
