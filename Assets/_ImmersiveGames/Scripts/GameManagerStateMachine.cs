@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.StateMachine.GameStates;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
+
 namespace _ImmersiveGames.Scripts
 {
     public class GameManagerStateMachine : Singleton<GameManagerStateMachine>
@@ -16,17 +17,34 @@ namespace _ImmersiveGames.Scripts
 
         private void Update()
         {
-            _stateMachine.Update();
-            //DebugUtility.LogVerbose<GameManagerStateMachine>($"Estado: {_stateMachine.CurrentState.GetType().Name}");
+            _stateMachine?.Update();
+            //DebugUtility.LogVerbose<GameManagerStateMachine>($"Estado: {_stateMachine?.CurrentState?.GetType().Name}");
         }
 
         private void FixedUpdate()
         {
-            _stateMachine.FixedUpdate();
+            _stateMachine?.FixedUpdate();
+        }
+
+        private void OnDestroy()
+        {
+            // Limpar a máquina de estados
+            _stateMachine = null;
+            _menuState = null;
+            _playingState = null;
+            _pausedState = null;
+            _gameOverState = null;
+            _victoryState = null;
         }
 
         public void InitializeStateMachine(GameManager gameManager)
         {
+            if (_stateMachine != null)
+            {
+                DebugUtility.LogWarning<GameManagerStateMachine>("Máquina de estados já inicializada.", this);
+                return;
+            }
+
             var builder = new StateMachineBuilder();
 
             // Criar estados
@@ -59,7 +77,7 @@ namespace _ImmersiveGames.Scripts
 
             // GameOver/Victory -> Menu
             builder.At(_gameOverState, _menuState,
-                new FuncPredicate(() => 
+                new FuncPredicate(() =>
                 {
                     if (Input.GetKeyDown(KeyCode.R))
                     {
@@ -70,7 +88,7 @@ namespace _ImmersiveGames.Scripts
                 }));
 
             builder.At(_victoryState, _menuState,
-                new FuncPredicate(() => 
+                new FuncPredicate(() =>
                 {
                     if (Input.GetKeyDown(KeyCode.R))
                     {

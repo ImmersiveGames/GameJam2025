@@ -18,5 +18,6 @@ EditorBuildSettings:
     path: Assets/_ImmersiveGames/Scenes/Menu.unity
     guid: 00b482c8f66b8ad40a0c60d7693a2dc8
   m_configObjects:
+    com.unity.input.settings: {fileID: 11400000, guid: 108886296fc74d142975b35c76c1d56f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 0a0fa5c35c41de14585395f9709ef374, type: 3}
   m_UseUCBPForAssetBundles: 0

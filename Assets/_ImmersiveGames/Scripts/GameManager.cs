@@ -28,14 +28,30 @@ namespace _ImmersiveGames.Scripts
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
         }
-        
-       public bool ShouldPlayingGame() => _isPlaying && !_isVictory && !_isGameOver;
-       public void ForceReset()
-       {
-           DebugUtility.LogVerbose<GameManager>($"forçou o reset do jogo, {_isInitialized}, {_isPlaying}, {_isVictory}, {_isGameOver}");
-           _isInitialized = false;
-           SetPlayGame(true);
-       }
+
+        private void OnDestroy()
+        {
+            // Limpar eventos para evitar memory leaks
+            EventStartGame = null;
+            EventGameOver = null;
+            EventVictory = null;
+            EventPauseGame = null;
+
+            // Destruir o GameManagerStateMachine
+            if (GameManagerStateMachine.Instance != null)
+            {
+                Destroy(GameManagerStateMachine.Instance.gameObject);
+            }
+        }
+
+        public bool ShouldPlayingGame() => _isPlaying && !_isVictory && !_isGameOver;
+
+        public void ForceReset()
+        {
+            DebugUtility.LogVerbose<GameManager>($"Forçou o reset do jogo, Initialized={_isInitialized}, Playing={_isPlaying}, Victory={_isVictory}, GameOver={_isGameOver}");
+            _isInitialized = false;
+            SetPlayGame(true);
+        }
        
         public void SetGameOver(bool gameOver)
         {
@@ -89,6 +105,7 @@ namespace _ImmersiveGames.Scripts
         public bool CheckGameOver() => !_isPlaying && _isGameOver && !_isVictory;
 
         public bool CheckVictory() => !_isPlaying && _isVictory && !_isGameOver;
+
         public void SetScore(string score)
         {
             Score = score;

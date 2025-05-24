@@ -1,5 +1,7 @@
 ﻿using DG.Tweening;
 using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class PlanetOrbit : MonoBehaviour
@@ -12,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (center == null)
             {
-                Debug.LogWarning($"Centro de órbita não definido para {gameObject.name}.");
+                DebugUtility.LogWarning<PlanetOrbit>($"Centro de órbita não definido para {gameObject.name}.", this);
                 return;
             }
 
@@ -27,13 +29,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             // Calcula o raio da órbita (distância ao centro)
             Vector3 relativePos = transform.position - _orbitCenter.position;
-            float orbitRadius = relativePos.magnitude;
+            float orbitRadius = new Vector3(relativePos.x, 0, relativePos.z).magnitude; // Apenas XZ para raio
 
             // Define a direção da órbita
             float direction = orbitClockwise ? -1f : 1f; // Horário = negativo, anti-horário = positivo
 
             // Cria uma sequência para a órbita
-            _orbitTween?.Kill(); // Interrompe qualquer animação anterior
+            _orbitTween?.Kill();
             _orbitTween = DOTween.Sequence()
                 .Append(transform.DORotate(new Vector3(0, 360 * direction, 0), 360f / _orbitSpeed, RotateMode.FastBeyond360)
                     .SetRelative(true)
@@ -43,7 +45,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 {
                     // Mantém o planeta na órbita circular ajustando sua posição
                     Vector3 orbitPos = _orbitCenter.position + (Quaternion.Euler(0, transform.eulerAngles.y, 0) * new Vector3(relativePos.x, 0, relativePos.z).normalized * orbitRadius);
-                    transform.position = new Vector3(orbitPos.x, transform.position.y, orbitPos.z);
+                    // Usar Y do orbitCenter
+                    transform.position = new Vector3(orbitPos.x, _orbitCenter.position.y, orbitPos.z);
                 });
         }
 
@@ -56,9 +59,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private void OnDestroy()
+        public void ResetState()
         {
             StopOrbit();
+            _orbitCenter = null;
+            _orbitSpeed = 0f;
+            transform.position = Vector3.zero; // Reposicionar no pool
+            transform.rotation = Quaternion.identity; // Resetar rotação
         }
     }
 }

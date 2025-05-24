@@ -22,6 +22,7 @@ MonoBehaviour:
   detectionRadius: 5
   enemyDatas:
   - {fileID: 11400000, guid: 195ba8a57693c2040b52822fe7c7f5ae, type: 2}
+  spawnRate: 2
   maxEnemies: 3
   minOrbitSpeed: 20
   maxOrbitSpeed: 40

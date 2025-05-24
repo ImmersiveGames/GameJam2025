@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using _ImmersiveGames.Scripts.EnemySystem;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EnemySystem
 {
@@ -10,6 +12,12 @@ namespace _ImmersiveGames.Scripts.EnemySystem
 
         public void Initialize(EnemyData data, Transform target)
         {
+            if (data == null || target == null)
+            {
+                DebugUtility.LogWarning<EnemyMovement>($"Dados ou alvo inválidos para {gameObject.name}.", this);
+                return;
+            }
+
             _data = data;
             _target = target;
             _movementTimer = 0f;
@@ -17,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EnemySystem
 
         private void Update()
         {
-            if (_target == null || _data == null) return;
+            if (_target == null || _data == null || !gameObject.activeSelf) return;
 
             _movementTimer += Time.deltaTime;
 
@@ -74,6 +82,15 @@ namespace _ImmersiveGames.Scripts.EnemySystem
             Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
                 Time.deltaTime * rotationSpeed);
+        }
+
+        public void ResetState()
+        {
+            _data = null;
+            _target = null;
+            _movementTimer = 0f;
+            transform.position = Vector3.zero; // Reposicionar no pool
+            transform.rotation = Quaternion.identity; // Resetar rotação
         }
     }
 }

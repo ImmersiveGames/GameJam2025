@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9914c0687929455b98ad48f5b084871c, type: 3}
+  m_Name: Tiro01
+  m_EditorClassIdentifier: 
+  objectName: Tiro 1
+  logicPrefab: {fileID: 1276747533966155597, guid: ac750bed90f739445bec342d2f05a97e, type: 3}
+  modelPrefab: {fileID: 8648089775525046338, guid: c157dd9ace45a774d9aafebdd8eca10c, type: 3}
+  poolableComponentType: 0
+  factoryType: 0
+  initialPoolSize: 10
+  lifetime: 3

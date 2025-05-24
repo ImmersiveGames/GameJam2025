@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4258236041565374360}
   - component: {fileID: 1482063540728370005}
   - component: {fileID: 7392072770871843208}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PlanetSkin_Azul
   m_TagString: Untagged
   m_Icon: {fileID: 0}

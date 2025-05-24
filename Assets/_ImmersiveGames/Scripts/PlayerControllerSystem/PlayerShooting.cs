@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿/*using UnityEngine;
 using UnityEngine.InputSystem;
-using _ImmersiveGames.Scripts.PoolSystem;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.PoolSystemOld;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
@@ -22,6 +23,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         [SerializeField, Tooltip("Índice da estratégia inicial (ex.: 0 para a primeira)")]
         private int initialStrategyIndex = 0;
 
+        [SerializeField, Tooltip("Ativar logs para depuração")]
+        private bool debugMode;
+
         private bool _isFiring;
         private PlayerInputActions _inputActions;
         private IShootingStrategy _currentStrategy;
@@ -32,9 +36,44 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _inputActions = new PlayerInputActions();
             _strategyPools = new Dictionary<ShootingStrategy, ProjectileObjectPool>();
 
+            if (mainCamera == null)
+            {
+                DebugUtility.LogError<PlayerShooting>("MainCamera não configurada.", this);
+                enabled = false;
+                return;
+            }
+            if (firePoint == null)
+            {
+                DebugUtility.LogError<PlayerShooting>("FirePoint não configurado.", this);
+                enabled = false;
+                return;
+            }
+            if (projectilePrefab == null)
+            {
+                DebugUtility.LogError<PlayerShooting>("ProjectilePrefab não configurado.", this);
+                enabled = false;
+                return;
+            }
+            if (shootingStrategies == null || shootingStrategies.Count == 0)
+            {
+                DebugUtility.LogError<PlayerShooting>("Nenhuma estratégia de tiro configurada.", this);
+                enabled = false;
+                return;
+            }
+
             // Criar um pool para cada estratégia
             foreach (var strategy in shootingStrategies)
             {
+                if (strategy == null || strategy.projectileData == null)
+                {
+                    DebugUtility.LogWarning<PlayerShooting>($"Estratégia {strategy?.name} ou seu ProjectileData está nulo.", this);
+                    continue;
+                }
+                if (strategy.projectileData.modelPrefab == null)
+                {
+                    DebugUtility.LogWarning<PlayerShooting>($"ProjectileData de {strategy.name} não tem modelPrefab configurado.", this);
+                }
+
                 GameObject poolObj = new GameObject($"Pool_{strategy.name}");
                 poolObj.transform.SetParent(transform);
                 ProjectileObjectPool pool = poolObj.AddComponent<ProjectileObjectPool>();
@@ -48,15 +87,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void SetInitialStrategy()
         {
-            if (shootingStrategies == null || shootingStrategies.Count == 0)
+            if (_strategyPools.Count == 0)
             {
-                Debug.LogWarning("Nenhuma estratégia de tiro configurada em PlayerShooting.", this);
+                DebugUtility.LogWarning<PlayerShooting>("Nenhum pool de projéteis válido configurado.", this);
                 return;
             }
 
             int index = Mathf.Clamp(initialStrategyIndex, 0, shootingStrategies.Count - 1);
             _currentStrategy = shootingStrategies[index];
             _currentStrategy.Initialize(firePoint, mainCamera, _strategyPools[shootingStrategies[index]]);
+            if (debugMode)
+            {
+                DebugUtility.LogVerbose<PlayerShooting>($"Estratégia inicial configurada: {shootingStrategies[index].name}", "cyan", this);
+            }
         }
 
         private void OnEnable()
@@ -76,19 +119,30 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void OnFirePerformed(InputAction.CallbackContext context)
         {
             _isFiring = true;
+            if (debugMode)
+            {
+                DebugUtility.LogVerbose<PlayerShooting>("Disparo iniciado.", "green", this);
+            }
         }
 
         private void OnFireCanceled(InputAction.CallbackContext context)
         {
             _isFiring = false;
+            if (debugMode)
+            {
+                DebugUtility.LogVerbose<PlayerShooting>("Disparo interrompido.", "red", this);
+            }
         }
-        
 
         private void Update()
         {
             if (_currentStrategy != null && GameManager.Instance.ShouldPlayingGame())
             {
                 _currentStrategy.Fire(_isFiring, Time.deltaTime);
+                if (debugMode && _isFiring)
+                {
+                    DebugUtility.LogVerbose<PlayerShooting>($"Disparando com estratégia {_currentStrategy.GetType().Name} de {firePoint.position}.", "yellow", this);
+                }
             }
         }
 
@@ -98,12 +152,15 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             {
                 _currentStrategy = shootingStrategies[strategyIndex];
                 _currentStrategy.Initialize(firePoint, mainCamera, _strategyPools[shootingStrategies[strategyIndex]]);
-                Debug.Log($"Estratégia alterada para {shootingStrategies[strategyIndex].name}");
+                if (debugMode)
+                {
+                    DebugUtility.LogVerbose<PlayerShooting>($"Estratégia alterada para {shootingStrategies[strategyIndex].name}", "cyan", this);
+                }
             }
             else
             {
-                Debug.LogWarning($"Índice de estratégia inválido: {strategyIndex}. Mantendo estratégia atual.", this);
+                DebugUtility.LogWarning<PlayerShooting>($"Índice de estratégia inválido: {strategyIndex}. Mantendo estratégia atual.", this);
             }
         }
     }
-}
+}*/

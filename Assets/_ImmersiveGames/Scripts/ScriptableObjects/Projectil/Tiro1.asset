@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0357165d72084f90bf62ecb58345aed6, type: 3}
   m_Name: Tiro1
   m_EditorClassIdentifier: 
-  modelPrefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
+  modelPrefab: {fileID: 8648089775525046338, guid: c157dd9ace45a774d9aafebdd8eca10c, type: 3}
   speed: 15
   lifetime: 3
   damage: 25

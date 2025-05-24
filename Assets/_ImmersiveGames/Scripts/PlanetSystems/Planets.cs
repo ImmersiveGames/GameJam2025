@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             destructibleObject = data;
             if (debugMode)
             {
-                DebugUtility.LogVerbose<Planets>($"PlanetData setado para {gameObject.name}: {data.name}", "cyan");
+                DebugUtility.LogVerbose<Planets>($"PlanetData setado para {gameObject.name}: {data.name}", "cyan", this);
             }
         }
 
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             OnPlanetCreated?.Invoke(planetData);
             if (debugMode)
             {
-                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} inicializado, OnPlanetCreated disparado.", "green");
+                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} inicializado, OnPlanetCreated disparado.", "green", this);
             }
         }
 
@@ -84,6 +84,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var rootObj = new GameObject("ModelRoot");
             var modelRootTr = rootObj.transform;
             modelRootTr.SetParent(transform, false);
+            rootObj.AddComponent<ModelRoot>();
+
+            // Adicionar Rigidbody (isKinematic = true)
+            var rb = rootObj.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
+            // Adicionar SphereCollider (isTrigger = true)
+            var planetData = (PlanetData)destructibleObject;
+            var collider = rootObj.AddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = planetData.size * 0.5f; // Metade do tamanho do planeta
+
             return modelRootTr;
         }
 
@@ -97,9 +110,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             var modelRoot = GetOrCreateModelRoot();
-            foreach (Transform child in modelRoot)
+            if (_skinInstance != null)
             {
-                Destroy(child.gameObject);
+                _skinInstance.SetActive(false); // Desativar em vez de destruir
             }
 
             _skinInstance = Instantiate(planetData.modelPrefab, modelRoot);
@@ -139,24 +152,41 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 .SetRelative(true);
         }
 
+        public override void ResetState()
+        {
+            base.ResetState();
+            _isActive = true;
+            if (_skinInstance != null)
+            {
+                _skinInstance.SetActive(true);
+            }
+            if (_orbitController != null)
+            {
+                _orbitController.ResetState();
+            }
+            if (_rotationTween != null)
+            {
+                _rotationTween.Kill();
+                StartRotation();
+            }
+        }
+
         public override void TakeDamage(float damage)
         {
             base.TakeDamage(damage);
             if (debugMode)
             {
-                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} recebeu {damage:F2} de dano. Vida atual: {CurrentHealth:F2}", "green");
+                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} recebeu {damage:F2} de dano. Vida atual: {CurrentHealth:F2}", "green", this);
             }
         }
 
         protected override void Die()
         {
             _isActive = false;
-        
             if (_skinInstance != null)
             {
                 _skinInstance.SetActive(false);
             }
-
             if (_orbitController != null)
             {
                 _orbitController.StopOrbit();
@@ -169,10 +199,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             var planetData = (PlanetData)destructibleObject;
             OnPlanetDestroyed?.Invoke(planetData);
+            base.Die(); // Chama ReturnToPool
 
             if (debugMode)
             {
-                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} destruído, OnPlanetDestroyed disparado.", "red");
+                DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} destruído, OnPlanetDestroyed disparado.", "red", this);
             }
         }
     }

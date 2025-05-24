@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2704056650478992883}
   - component: {fileID: 5978267711558077736}
   - component: {fileID: 2838404404281803390}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: PlanetSkin_Vermelho
   m_TagString: Untagged
   m_Icon: {fileID: 0}

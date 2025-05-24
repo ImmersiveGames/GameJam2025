@@ -1,6 +1,7 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem;
-using UnityEngine;
+﻿using UnityEngine;
+using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Tags;
 
 namespace _ImmersiveGames.Scripts.EnemySystem
 {
@@ -19,6 +20,7 @@ namespace _ImmersiveGames.Scripts.EnemySystem
                 _movement = gameObject.AddComponent<EnemyMovement>();
             }
         }
+
         private void OnCollisionEnter(Collision collision)
         {
             if (!IsAlive) return;
@@ -55,12 +57,13 @@ namespace _ImmersiveGames.Scripts.EnemySystem
                 return;
             }
 
+            var modelRoot = GetOrCreateModelRoot();
             if (_modelInstance != null)
             {
-                Destroy(_modelInstance);
+                _modelInstance.SetActive(false); // Desativar modelo anterior
             }
 
-            _modelInstance = Instantiate(_data.modelPrefab, transform);
+            _modelInstance = Instantiate(_data.modelPrefab, modelRoot);
             _modelInstance.transform.localPosition = Vector3.zero;
             _modelInstance.transform.localRotation = Quaternion.identity;
 
@@ -70,25 +73,39 @@ namespace _ImmersiveGames.Scripts.EnemySystem
             }
         }
 
-        public override void TakeDamage(float damage)
+        private Transform GetOrCreateModelRoot()
         {
-            base.TakeDamage(damage);
-            if (!IsAlive)
-            {
-                ReturnToPool();
-            }
+            var modelRoot = GetComponentInChildren<ModelRoot>()?.transform;
+            if (modelRoot != null) return modelRoot;
+
+            var rootObj = new GameObject("ModelRoot");
+            var modelRootTr = rootObj.transform;
+            modelRootTr.SetParent(transform, false);
+            rootObj.AddComponent<ModelRoot>();
+
+            // Adicionar Rigidbody (isKinematic = true)
+            var rb = rootObj.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+
+            // Adicionar SphereCollider (isTrigger = true)
+            var collider = rootObj.AddComponent<SphereCollider>();
+            collider.isTrigger = true;
+            collider.radius = 0.5f; // Tamanho padrão, já que EnemyData não fornece tamanho
+
+            return modelRootTr;
         }
 
-        private void ReturnToPool()
+        public override void ResetState()
         {
-            EnemyPooledObject pooledObj = GetComponent<EnemyPooledObject>();
-            if (pooledObj != null)
+            base.ResetState();
+            if (_movement != null)
             {
-                pooledObj.ReturnSelfToPool();
+                _movement.ResetState(); // Resetar movimento
             }
-            else
+            if (_modelInstance != null)
             {
-                gameObject.SetActive(false);
+                _modelInstance.SetActive(true); // Reativar modelo ao resetar
             }
         }
 

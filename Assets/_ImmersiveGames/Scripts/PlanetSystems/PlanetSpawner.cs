@@ -1,178 +1,123 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using _ImmersiveGames.Scripts.EnemySystem;
+using _ImmersiveGames.Scripts.PoolSystemOld;
 using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class PlanetSpawner : MonoBehaviour
     {
-        [SerializeField, Tooltip("Prefab do planeta a ser instanciado")]
-        private GameObject planetPrefab;
-
-        [SerializeField, Tooltip("Configuração geral do jogo")]
-        private GameConfig gameConfig;
-
-        [SerializeField, Tooltip("Centro do universo em torno do qual os planetas orbitam")]
-        private Transform universeCenter;
-
-        [SerializeField, Tooltip("Ativar logs e visualizações para depuração")]
+        [SerializeField] private GameConfig gameConfig;
+        [SerializeField] private Transform universeCenter;
+        [SerializeField] private PlanetResourceManager planetResourceManager;
+        [SerializeField] private PlanetObjectPool planetPool;
+        [SerializeField, Tooltip("Ativar logs para depuração")]
         private bool debugMode;
 
-        private PlanetResourceManager _resourceManager;
-        private readonly List<Planets> _activePlanets = new List<Planets>();
+        private readonly List<Planets> _spawnedPlanets = new List<Planets>();
 
         private void Awake()
         {
-            _resourceManager = GetComponent<PlanetResourceManager>();
-            if (_resourceManager == null)
+            if (!gameConfig)
             {
-                DebugUtility.LogError<PlanetSpawner>("PlanetResourceManager não encontrado.", this);
+                DebugUtility.LogError<PlanetSpawner>("GameConfig não configurado.", this);
                 enabled = false;
             }
-
-            if (universeCenter == null)
+            if (!universeCenter)
             {
-                DebugUtility.LogError<PlanetSpawner>("UniverseCenter não atribuído.", this);
+                DebugUtility.LogError<PlanetSpawner>("UniverseCenter não configurado.", this);
+                enabled = false;
             }
-
-            if (planetPrefab == null)
+            if (!planetResourceManager)
             {
-                DebugUtility.LogError<PlanetSpawner>("PlanetPrefab não atribuído.", this);
+                DebugUtility.LogError<PlanetSpawner>("PlanetResourceManager não configurado.", this);
+                enabled = false;
+            }
+            if (!planetPool)
+            {
+                DebugUtility.LogError<PlanetSpawner>("PlanetObjectPool não configurado.", this);
                 enabled = false;
             }
         }
 
         private void OnEnable()
         {
-            GameManager.Instance.EventStartGame += SpawnPlanets;
+            var gameManager = GameManager.Instance;
+            if (gameManager != null)
+            {
+                gameManager.EventStartGame += HandleGameStarted;
+            }
         }
 
         private void OnDisable()
         {
-            GameManager.Instance.EventStartGame -= SpawnPlanets;
+            var gameManager = GameManager.Instance;
+            if (gameManager != null)
+            {
+                gameManager.EventStartGame -= HandleGameStarted;
+            }
+        }
+
+        private void HandleGameStarted()
+        {
+            _spawnedPlanets.Clear();
+            SpawnPlanets();
         }
 
         private void SpawnPlanets()
         {
-            if (gameConfig == null)
-            {
-                DebugUtility.LogError<PlanetSpawner>("GameConfig não está definido.", this);
-                return;
-            }
-
-            int minPlanets = 2 * System.Enum.GetValues(typeof(PlanetResources)).Length;
-            if (gameConfig.numPlanets < minPlanets)
-            {
-                DebugUtility.LogWarning<PlanetSpawner>($"Número de planetas ({gameConfig.numPlanets}) menor que o mínimo ({minPlanets}). Ajustando.", this);
-                gameConfig.numPlanets = minPlanets;
-            }
-
-            // Destruir planetas ativos existentes
-            foreach (var planet in _activePlanets)
-            {
-                planet.OnDeath -= OnPlanetDestroyed;
-                if (planet != null)
-                {
-                    Destroy(planet.gameObject);
-                }
-            }
-            _activePlanets.Clear();
-
-            var resources = _resourceManager.GenerateResourceList(gameConfig.numPlanets);
+            var planetResources = planetResourceManager.GenerateResourceList(gameConfig.numPlanets);
             float currentRadius = gameConfig.minOrbitRadius;
-            List<(Vector3 position, PlanetData data)> planetPositions = new List<(Vector3, PlanetData)>();
-
-            for (int i = 0; i < gameConfig.numPlanets; i++)
+            for (var i = 0; i < gameConfig.numPlanets; i++)
             {
-                PlanetData planetData = _resourceManager.GetRandomPlanetData();
-                if (planetData == null)
-                {
-                    DebugUtility.LogError<PlanetSpawner>($"Nenhum PlanetData válido para o planeta {i + 1}.", this);
-                    continue;
-                }
+                var planetData = planetResourceManager.GetRandomPlanetData();
+                if (planetData == null) continue;
+
+                var planetObj = planetPool.GetObject(Vector3.zero, Quaternion.identity, gameConfig.numPlanets);
+                if (planetObj == null) continue;
+
+                planetObj.transform.SetParent(universeCenter, false);
+
+                var planet = planetObj.GetComponent<Planets>();
+                planet.SetPlanetData(planetData);
+                planet.SetResource(planetResources[i]);
 
                 float angle = Random.Range(0f, 360f);
-                Vector3 position = new Vector3(
-                    universeCenter.position.x + Mathf.Cos(angle * Mathf.Deg2Rad) * currentRadius,
-                    universeCenter.position.y,
-                    universeCenter.position.z + Mathf.Sin(angle * Mathf.Deg2Rad) * currentRadius
-                );
+                Vector3 orbitPosition = universeCenter.position + Quaternion.Euler(0, angle, 0) * new Vector3(currentRadius, 0, 0);
+                planetObj.transform.position = new Vector3(orbitPosition.x, universeCenter.position.y, orbitPosition.z);
 
-                planetPositions.Add((position, planetData));
-                float spacing = planetData.size + gameConfig.orbitMargin;
-                currentRadius += spacing;
-
-                if (debugMode)
-                {
-                    DebugUtility.LogVerbose<PlanetSpawner>($"Planeta {i + 1}: Raio={currentRadius:F2}, Tamanho={planetData.size:F2}, Margem={gameConfig.orbitMargin:F2}, Posição={position}", "cyan");
-                }
-            }
-
-            for (int i = 0; i < planetPositions.Count; i++)
-            {
-                var (position, planetData) = planetPositions[i];
-                // Instanciar planeta usando o planetPrefab
-                GameObject planetObj = Instantiate(planetPrefab, position, Quaternion.identity);
-                if (planetObj == null)
-                {
-                    DebugUtility.LogWarning<PlanetSpawner>($"Falha ao instanciar planeta {i + 1}.", this);
-                    continue;
-                }
-
-                planetObj.name = $"Planeta_{i + 1}";
-                Planets planet = planetObj.GetComponent<Planets>();
-                if (planet == null)
-                {
-                    DebugUtility.LogWarning<PlanetSpawner>($"Planeta {i + 1} não tem componente Planets.", this);
-                    Destroy(planetObj);
-                    continue;
-                }
-
-                // Configurar o planeta
-                planet.SetPlanetData(planetData);
-                planet.SetResource(resources[i]);
                 planet.StartOrbit(universeCenter);
+                currentRadius += planetData.size + gameConfig.orbitMargin;
+
                 planet.Initialize();
-                planet.OnDeath += OnPlanetDestroyed;
-                _activePlanets.Add(planet);
+                _spawnedPlanets.Add(planet);
 
                 if (debugMode)
                 {
-                    DebugUtility.LogVerbose<PlanetSpawner>($"Planeta {i + 1} spawnado: Posição={position}, Recurso={resources[i]}", "green");
+                    DebugUtility.LogVerbose<PlanetSpawner>($"Planeta {planetObj.name} spawnado em {planetObj.transform.position} (Y do universeCenter: {universeCenter.position.y}), recurso: {planetResources[i]}", "blue", this);
                 }
             }
         }
 
-        private void OnPlanetDestroyed(DestructibleObject planet)
+        private void OnDestroy()
         {
-            _activePlanets.Remove(planet as Planets);
-            if (planet != null)
-            {
-                planet.gameObject.SetActive(false);
-            }
-        }
-
-        public List<Planets> GetActivePlanets() => _activePlanets;
-
-        private void OnDrawGizmos()
-        {
-            if (!debugMode || _activePlanets.Count == 0) return;
-
-            foreach (var planet in _activePlanets)
+            foreach (var planet in _spawnedPlanets)
             {
                 if (planet != null)
                 {
-                    Gizmos.color = Color.blue;
-                    Gizmos.DrawWireSphere(planet.transform.position, 0.5f);
-#if UNITY_EDITOR
-                    UnityEditor.Handles.Label(planet.transform.position + Vector3.up * 0.5f,
-                        $"Planeta: {planet.gameObject.name}\nRecurso: {planet.Resource}");
-#endif
+                    var pooledObj = planet.GetComponent<PooledObject>();
+                    if (pooledObj != null)
+                    {
+                        pooledObj.ReturnSelfToPool();
+                    }
+                    else
+                    {
+                        planet.gameObject.SetActive(false);
+                    }
                 }
             }
+            _spawnedPlanets.Clear();
         }
     }
 }

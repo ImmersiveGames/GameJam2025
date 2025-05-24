@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8447221483378601583}
   - component: {fileID: 1228047908364587420}
   - component: {fileID: 5579998388781827301}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: EnemyPlanet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -64,7 +64,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   debugMode: 1
-  detectionFrequency: 0.1
+  minDetectionFrequency: 0.1
+  maxDetectionFrequency: 0.5
 --- !u!114 &5579998388781827301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77,6 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98d6def5b76e4a06b48e49e40228eab3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enemyPrefab: {fileID: 369962388627008736, guid: 3b3d5e8e6ad2ea14da9f533826551e4e, type: 3}
   spawnRate: 2
   debugMode: 1
+  spawnEffectPrefab: {fileID: 0}
+  spawnOnAllPlanets: 0

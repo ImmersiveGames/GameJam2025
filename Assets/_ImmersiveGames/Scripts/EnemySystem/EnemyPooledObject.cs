@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.PoolSystem;
+﻿using _ImmersiveGames.Scripts.PoolSystemOld;
 namespace _ImmersiveGames.Scripts.EnemySystem
 {
     public class EnemyPooledObject : PooledObject

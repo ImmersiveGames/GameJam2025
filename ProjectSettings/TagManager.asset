@@ -14,10 +14,10 @@ TagManager:
   - UI
   - Ground
   - Player
-  - 
-  - 
-  - 
-  - 
+  - Projectile
+  - Enemy
+  - Planet
+  - Devourer
   - 
   - 
   - 
