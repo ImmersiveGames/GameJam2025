@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 0fa908af57a0c3e43b411c85f8e3dcfe
+guid: b420eefa10c3d5b4d807d4e70b652ae3
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -136,155 +136,111 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Logo_Planet
+      name: Metal_Icon
       rect:
         serializedVersion: 2
-        x: 70
-        y: 408
-        width: 858
-        height: 584
+        x: 41
+        y: 421
+        width: 175
+        height: 175
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5250997de5bf69e4d9342d8c13b60cc1
-      internalID: -1734739097
+      spriteID: 00cdf9ef1750c7c48af99ea2ce5b72fc
+      internalID: -1069927427
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: logoo_1
+      name: Gas_Icon
       rect:
         serializedVersion: 2
-        x: 67
-        y: 254
-        width: 255
-        height: 121
+        x: 239
+        y: 421
+        width: 176
+        height: 177
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 80b35681a907493418b5dd51af0003b1
-      internalID: 232244021
+      spriteID: cefaf006c96782748a485a5b281cc0dc
+      internalID: 2078866474
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: logoo_2
+      name: Water_Icon
       rect:
         serializedVersion: 2
-        x: 323
-        y: 255
-        width: 284
-        height: 121
+        x: 439
+        y: 422
+        width: 147
+        height: 180
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a01b99e1a8b22b54593c12e62c4f6710
-      internalID: 1250199707
+      spriteID: bb55f61f4c129cf46b66fba1271b49d0
+      internalID: -840881465
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: logoo_3
+      name: Rocks_Icon
       rect:
         serializedVersion: 2
-        x: 632
-        y: 252
-        width: 337
-        height: 124
+        x: 610
+        y: 420
+        width: 181
+        height: 179
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3b14ea34e83f53a49bfaeaf18a1081e5
-      internalID: -256705052
+      spriteID: 052e3da9209816a4db7fe7f3fec5d56e
+      internalID: 1244722948
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: logoo_4
+      name: Life_Icon
       rect:
         serializedVersion: 2
-        x: 65
-        y: 40
-        width: 4
-        height: 4
+        x: 807
+        y: 421
+        width: 177
+        height: 171
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: ded226683ae43a447a3ad7c1176af9a8
-      internalID: -1118757840
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: logoo_5
-      rect:
-        serializedVersion: 2
-        x: 67
-        y: 40
-        width: 902
-        height: 213
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: c1ed64e99aede984ba1373fec6072e0d
-      internalID: 1391546958
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: logoo_6
-      rect:
-        serializedVersion: 2
-        x: 224
-        y: 40
-        width: 6
-        height: 4
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: dbb076c1449585d49972ce52bf2dd815
-      internalID: -955757349
+      spriteID: 2fa1cfe42cb9d0644924b0dfb7a4787e
+      internalID: -2062275529
       vertices: []
       indices: 
       edges: []
@@ -293,7 +249,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: fa78827b8abcbf74bb261457ea43c62b
     internalID: 0
     vertices: []
     indices: 
@@ -303,13 +259,11 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Logo_Planet: -1734739097
-      logoo_1: 232244021
-      logoo_2: 1250199707
-      logoo_3: -256705052
-      logoo_4: -1118757840
-      logoo_5: 1391546958
-      logoo_6: -955757349
+      Gas_Icon: 2078866474
+      Life_Icon: -2062275529
+      Metal_Icon: -1069927427
+      Rocks_Icon: 1244722948
+      Water_Icon: -840881465
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
