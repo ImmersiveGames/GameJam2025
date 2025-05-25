@@ -14,5 +14,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
                 EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.ObjectName, origin, data));
             }
         }
+
+        public void Reset() { } // Não precisa de reset
     }
 }

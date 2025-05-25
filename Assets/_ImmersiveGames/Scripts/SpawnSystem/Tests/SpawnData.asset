@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa74072a10914609a65b36b6dc55c085, type: 3}
   m_Name: SpawnData
   m_EditorClassIdentifier: 
-  objectName: 'TestObject  '
+  objectName: SpawnName
   spawnCount: 2
   patternType: Mock
+  poolableData: {fileID: 11400000, guid: bb613fc72a885ed4e9b1031409bace9a, type: 2}

@@ -1,17 +1,18 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SpawnSystem;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems; // Novo
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class ObjectPool : MonoBehaviour
     {
         private readonly Queue<IPoolable> _pool = new Queue<IPoolable>();
         private readonly List<IPoolable> _activeObjects = new List<IPoolable>();
-        private PoolableObjectData Data { get; set; }
+        public PoolableObjectData Data { get; set; }
         private readonly ObjectPoolFactory _factory = new ObjectPoolFactory();
 
         public void SetData(PoolableObjectData data)
@@ -38,7 +39,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 if (poolable == null) continue;
                 poolable.Deactivate();
                 _pool.Enqueue(poolable);
-                DebugUtility.LogVerbose<ObjectPool>($"Objeto {poolable.GetGameObject().name} criado. Total: {_pool.Count}.", "blue", this);
             }
             DebugUtility.Log<ObjectPool>($"Pool inicializado com {_pool.Count} objetos para '{Data.ObjectName}'.", "green", this);
         }
@@ -54,19 +54,18 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             else if (Data.CanExpand)
             {
                 poolable = _factory.CreateObject(Data, transform, position, $"{Data.ObjectName}_{_activeObjects.Count + _pool.Count}", this);
-                DebugUtility.LogVerbose<ObjectPool>($"Objeto criado dinamicamente para '{Data.ObjectName}'.", "blue", this);
             }
 
             if (poolable == null)
             {
-                DebugUtility.LogVerbose<ObjectPool>($"Nenhum objeto disponível no pool '{Data.ObjectName}'.", "yellow", this);
-                EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(Data.ObjectName)); // Novo evento
+                DebugUtility.Log<ObjectPool>($"Nenhum objeto disponível no pool '{Data.ObjectName}'.", "yellow", this);
+                EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(Data.ObjectName));
                 return null;
             }
 
             poolable.Activate(position);
             _activeObjects.Add(poolable);
-            DebugUtility.LogVerbose<ObjectPool>($"Objeto {poolable.GetGameObject().name} ativado em {position}.", "blue", this);
+            EventBus<ObjectSpawnedEvent>.Raise(new ObjectSpawnedEvent(Data.ObjectName, position, poolable.GetGameObject()));
             return poolable;
         }
 
@@ -75,9 +74,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             if (poolable == null || !_activeObjects.Remove(poolable)) return;
             poolable.Deactivate();
             _pool.Enqueue(poolable);
-            DebugUtility.LogVerbose<ObjectPool>($"Objeto retornado ao pool.", "blue", this);
+            EventBus<ObjectReturnedEvent>.Raise(new ObjectReturnedEvent(Data.ObjectName, poolable.GetGameObject()));
         }
 
         public IReadOnlyList<IPoolable> GetActiveObjects() => _activeObjects;
+
+        public int GetAvailableCount() => _pool.Count;
     }
 }

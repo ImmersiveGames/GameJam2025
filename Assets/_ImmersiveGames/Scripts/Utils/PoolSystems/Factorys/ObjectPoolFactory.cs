@@ -1,6 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public class ObjectPoolFactory
@@ -9,22 +10,22 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (!data?.Prefab)
             {
-                DebugUtility.LogError(typeof(ObjectPoolFactory),$"LogicPrefab nulo para '{data?.ObjectName}'.");
+                DebugUtility.LogError(typeof(ObjectPoolFactory), $"LogicPrefab nulo para '{data?.ObjectName}'.");
                 return null;
             }
 
-            // Criar o objeto raiz
+            // Instanciar o prefab desativado para evitar que apareça ativo no Scene View
             var obj = Object.Instantiate(data.Prefab, position, Quaternion.identity, parent);
+            obj.SetActive(false); // Força desativação imediata
             obj.name = name;
             var poolable = obj.GetComponent<IPoolable>();
             if (poolable == null)
             {
-                DebugUtility.LogError(typeof(ObjectPoolFactory),$"LogicPrefab '{data.ObjectName}' não possui IPoolable.");
+                DebugUtility.LogError(typeof(ObjectPoolFactory), $"LogicPrefab '{data.ObjectName}' não possui IPoolable.");
                 Object.Destroy(obj);
                 return null;
             }
 
-            // Construir a hierarquia visual
             var modelRoot = ModelBuilder.BuildModel(obj, data);
             if (!modelRoot)
             {
@@ -32,10 +33,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
-            // Inicializar o poolable
             poolable.Initialize(data, pool);
             var factory = FactoryRegistry.GetFactory(data.FactoryType);
-            factory?.Configure(obj, data); // Configurações específicas, se necessário
+            factory?.Configure(obj, data);
             return poolable;
         }
     }

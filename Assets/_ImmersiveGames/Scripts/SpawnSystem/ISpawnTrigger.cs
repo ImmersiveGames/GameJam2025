@@ -6,5 +6,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
     {
         IPredicate TriggerCondition { get; }
         void CheckTrigger(Vector3 origin, SpawnData data);
+        void Reset(); // Novo
     }
 }

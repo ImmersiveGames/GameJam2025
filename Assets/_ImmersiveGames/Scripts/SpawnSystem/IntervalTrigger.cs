@@ -1,11 +1,12 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.SpawnSystem
 {
     public class IntervalTrigger : ISpawnTrigger
     {
-        public IPredicate TriggerCondition { get; }
+        public IPredicate TriggerCondition { get; private set; }
 
         public IntervalTrigger(float interval, bool startImmediately)
         {
@@ -17,6 +18,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             if (TriggerCondition.Evaluate())
             {
                 EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.ObjectName, origin, data));
+            }
+        }
+
+        public void Reset()
+        {
+            if (TriggerCondition is IntervalPredicate predicate)
+            {
+                predicate.Reset();
             }
         }
     }
