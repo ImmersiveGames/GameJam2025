@@ -7,14 +7,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         public IPoolable CreateObject(PoolableObjectData data, Transform parent, Vector3 position, string name, ObjectPool pool)
         {
-            if (!data?.LogicPrefab)
+            if (!data?.Prefab)
             {
                 DebugUtility.LogError(typeof(ObjectPoolFactory),$"LogicPrefab nulo para '{data?.ObjectName}'.");
                 return null;
             }
 
             // Criar o objeto raiz
-            var obj = Object.Instantiate(data.LogicPrefab, position, Quaternion.identity, parent);
+            var obj = Object.Instantiate(data.Prefab, position, Quaternion.identity, parent);
             obj.name = name;
             var poolable = obj.GetComponent<IPoolable>();
             if (poolable == null)

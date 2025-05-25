@@ -1,12 +1,9 @@
-﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystem
 {
-    namespace _ImmersiveGames.Scripts.Utils.PoolSystems
+    public interface ISpawnStrategy
     {
-        public interface ISpawnStrategy
-        {
-            void Spawn(PoolManager poolManager, SpawnParameters parameters);
-        }
+        void Spawn(IPoolable[] objects, Vector3 origin, SpawnData data);
     }
 }

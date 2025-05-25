@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
@@ -71,7 +70,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 return pool;
             }
-            DebugUtility.LogError<PoolManager>($"Nenhum pool encontrado para '{objectName}'.", this);
+            DebugUtility.LogVerbose<PoolManager>($"Nenhum pool encontrado para '{objectName}'.", "yellow", this);
             return null;
         }
 
@@ -81,6 +80,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             var pool = GetPool(objectName);
             if (pool == null)
             {
+                DebugUtility.LogVerbose<PoolManager>($"Nenhum pool encontrado para '{objectName}'.", "yellow", this);
                 return null;
             }
             var obj = pool.GetObject(position);

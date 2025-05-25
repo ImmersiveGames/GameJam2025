@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bd40996984c49b7aeb150444a6c6462, type: 3}
   m_Name: PoolableObjectData
   m_EditorClassIdentifier: 
-  ObjectName: 
-  LogicPrefab: {fileID: 0}
-  ModelPrefab: {fileID: 0}
+  ObjectName: Tiro_01
+  LogicPrefab: {fileID: 5587376153201927199, guid: be67e164feea38647be39e8b8dbd59f8, type: 3}
+  ModelPrefab: {fileID: 8648089775525046338, guid: c157dd9ace45a774d9aafebdd8eca10c, type: 3}
   InitialPoolSize: 5
   FactoryType: 0
