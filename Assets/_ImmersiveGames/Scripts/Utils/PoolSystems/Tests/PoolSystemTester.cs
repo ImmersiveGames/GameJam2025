@@ -1,13 +1,9 @@
 ﻿using System.Linq;
-using _ImmersiveGames.Scripts.SpawnSystem;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using ObjectSpawnedEvent = _ImmersiveGames.Scripts.Utils.PoolSystems.ObjectSpawnedEvent;
 
-namespace _ImmersiveGames.Scripts.PoolSystem.Tests
+namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
 {
     public class PoolSystemTester : MonoBehaviour
     {

@@ -46,4 +46,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             Object = obj;
         }
     }
+    public class PoolExhaustedEvent : IEvent
+    {
+        public string PoolKey { get; }
+
+        public PoolExhaustedEvent(string poolKey)
+        {
+            PoolKey = poolKey;
+        }
+    }
 }
