@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
 
             DebugUtility.LogVerbose<ObjectSpawner>($"Registrando pool para '{strategy.ProjectileData.ObjectName}'.", "blue", this);
-            PoolManager.Instance.RegisterPool(strategy.ProjectileData);
+            //PoolManager.Instance.RegisterPool(strategy.ProjectileData);
 
             spawnStrategy = strategy;
             parameters = new SpawnParameters

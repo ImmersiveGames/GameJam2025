@@ -1,34 +1,31 @@
-﻿using UnityEngine;
-using _ImmersiveGames.Scripts.Tags;
-
+﻿using _ImmersiveGames.Scripts.Tags;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public static class ModelBuilder
     {
-        public static void BuildModel(GameObject target, PoolableObjectData data)
+        public static GameObject BuildModel(GameObject target, PoolableObjectData data)
         {
-            if (target == null || data == null)
+            if (!target || !data?.ModelPrefab)
             {
-                Debug.LogError("BuildModel: Target or data is null");
-                return;
+                DebugUtility.LogError(typeof(ModelBuilder),$"Target ou ModelPrefab nulo para '{data?.ObjectName}'.");
+                return null;
             }
 
             // Criar ModelRoot
-            GameObject modelRootGo = new GameObject("ModelRoot");
-            modelRootGo.transform.SetParent(target.transform);
+            var modelRootGo = new GameObject("ModelRoot");
+            modelRootGo.transform.SetParent(target.transform, false);
             modelRootGo.transform.localPosition = Vector3.zero;
             modelRootGo.AddComponent<ModelRoot>();
 
-            // Instanciar modelo 3D
-            if (data.ModelPrefab != null)
-            {
-                GameObject model = Object.Instantiate(data.ModelPrefab, modelRootGo.transform);
-                model.transform.localPosition = Vector3.zero;
-            }
-            else
-            {
-                Debug.LogWarning($"No modelPrefab assigned in PoolableObjectData '{data.ObjectName}'");
-            }
+            // Instanciar Modelo 3D
+            var model = Object.Instantiate(data.ModelPrefab, modelRootGo.transform);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+
+            DebugUtility.LogVerbose(typeof(ModelBuilder),$"Modelo 3D instanciado para '{data.ObjectName}' em {modelRootGo.name}.", "blue");
+            return modelRootGo;
         }
     }
 }

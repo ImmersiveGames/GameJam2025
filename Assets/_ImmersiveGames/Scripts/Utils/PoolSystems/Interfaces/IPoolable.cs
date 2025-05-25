@@ -9,15 +9,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
         void Deactivate();
         void OnObjectReturned();
         void OnObjectSpawned();
-    }
-
-    public interface IPoolableFactory
-    {
-        void BuildStructure(GameObject target, PoolableObjectData data);
-    }
-
-    public interface IProjectile
-    {
-        void Configure(Vector3 direction, float speed);
+        GameObject GetGameObject(); // Para acessar o GameObject associado
+        void SetModel(GameObject model); // Para configurar o modelo
     }
 }

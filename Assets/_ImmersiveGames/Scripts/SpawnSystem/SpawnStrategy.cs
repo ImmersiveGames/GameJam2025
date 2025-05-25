@@ -13,4 +13,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
 
         public abstract void Spawn(PoolManager poolManager, SpawnParameters parameters);
     }
+    public class ProjectileData
+    {
+        public string ObjectName { get; set; }
+    }
 }

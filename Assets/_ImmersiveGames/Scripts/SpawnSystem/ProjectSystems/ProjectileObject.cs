@@ -19,7 +19,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystem.ProjectSystems
         {
             this.data = data;
             this.pool = pool;
-            this.lifetime = data.Lifetime;
             isActive = false;
             DebugUtility.LogVerbose<ProjectileObject>($"Projétil inicializado para '{data.ObjectName}'.", "blue", this);
         }
@@ -56,6 +55,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystem.ProjectSystems
             var audio = modelInstance?.GetComponent<AudioSource>();
             if (audio != null) audio.Play();
             DebugUtility.LogVerbose<ProjectileObject>("Projétil spawnado.", "blue", this);
+        }
+        public GameObject GetGameObject()
+        {
+            throw new System.NotImplementedException();
+        }
+        public void SetModel(GameObject model)
+        {
+            throw new System.NotImplementedException();
         }
 
         public void OnObjectReturned()
