@@ -10,6 +10,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class Planets : DestructibleObject
     {
+        [SerializeField] GameObject[] planetParts;
+
         [SerializeField, Tooltip("Ativar logs para depuração")]
         private bool debugMode;
         private PlanetResources _resource;
@@ -173,6 +175,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         public override void TakeDamage(float damage)
         {
+            GetComponentInChildren<PartBreaker>().DestroyPlanetPiece(CurrentHealth, MaxHealth);
+
             base.TakeDamage(damage);
             if (debugMode)
             {
