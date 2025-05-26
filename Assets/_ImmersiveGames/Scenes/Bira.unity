@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 856986250}
   - component: {fileID: 856986249}
   - component: {fileID: 856986248}
+  - component: {fileID: 856986252}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -222,6 +223,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &856986252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 856986247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fc52985539943b19a2a28bc2b074c8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startGameScene: Game
 --- !u!1 &1031856382
 GameObject:
   m_ObjectHideFlags: 0
@@ -1025,6 +1039,34 @@ PrefabInstance:
     - target: {fileID: 5595064467664773921, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
       propertyPath: m_Name
       value: Menus
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 856986252}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: PlayGame
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: _ImmersiveGames.Scripts.UI.MenuInicial, _ImmersiveGames.Scripts
+      objectReference: {fileID: 0}
+    - target: {fileID: 5844429128901218375, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 6872002430297032067, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target

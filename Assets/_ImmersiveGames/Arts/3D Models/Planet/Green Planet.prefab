@@ -36,6 +36,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: 96cb15ed3fe8b714ba7be4388cf82cc5, type: 2}
+    - target: {fileID: 4805849585127476909, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
+      propertyPath: playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7790425021688631422, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: m_LocalScale.x
       value: 50
