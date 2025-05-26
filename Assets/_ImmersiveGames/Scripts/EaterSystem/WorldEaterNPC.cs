@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.EnemySystem;
 public class WorldEaterNPC : MonoBehaviour
 {
     [Header("Target Planet")]
+    [SerializeField] Transform planetsTransform;
     [SerializeField] Transform planetTarget;
 
     [Header("Movement")]
@@ -17,15 +18,34 @@ public class WorldEaterNPC : MonoBehaviour
 
     [Header("Attack")]
     [SerializeField] float biteDamage = 5f;
-    [SerializeField] Transform planetsTransform;
+
+    [Header("Hungry")]
+    [SerializeField] float maxHungry = 100f;
+    [SerializeField] float hungryRate = 5f;
+    float currentHungry;
+
+    [Header("Health")]
+    [SerializeField] float maxHealth = 100f;
+    float currentHealth;
+
     Planets planet;
 
     private bool isEating = false;
+    bool isDead = false;
+
+    void Awake()
+    {
+        ResetEater();
+    }
 
     private void Update()
     {
+        if (isDead) return;
+        
         if (Input.GetKeyDown(KeyCode.T))
             GetATarget();
+
+        depleteHungry();
 
         if (planetTarget == null || isEating)
             return;
@@ -87,20 +107,26 @@ public class WorldEaterNPC : MonoBehaviour
         if (planetTarget != null) 
         {
             planet = planetTarget.GetComponent<Planets>();
-            planet.OnDeath += RemoveTarget;
+            planet.OnDeath += PlanetEaten;
         }
 
         isEating = false;
     }
 
-    public void RemoveTarget(DestructibleObject Do) 
+    public void PlanetEaten(DestructibleObject Do)
     {
-        planet.OnDeath -= RemoveTarget;
+        planet.OnDeath -= PlanetEaten;
+        ResetEater();
+        ReleaseTarget();
+
+    }
+
+    private void ReleaseTarget()
+    {
         isEating = false;
         animator.SetBool("isEating", false);
         transform.SetParent(null);
         SetTarget(null);
-        
     }
 
     public void GetATarget() 
@@ -119,4 +145,43 @@ public class WorldEaterNPC : MonoBehaviour
             SetTarget(planetTarget);
         }
     }
+
+
+    void ResetEater() 
+    { 
+        currentHungry = maxHungry;
+        currentHealth = maxHealth;
+    }
+    void depleteHungry() 
+    {
+        currentHungry -= hungryRate * Time.deltaTime;
+        currentHungry = Mathf.Clamp(currentHungry, 0, maxHungry);
+
+        if (currentHungry <= 0) 
+        {
+            TakeDamage(hungryRate * Time.deltaTime);
+        }
+    }
+
+
+    public void TakeDamage(float damage) 
+    {
+        currentHealth -= damage;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        if (currentHealth == 0) Die();
+    }
+
+    void Die() 
+    {
+        ReleaseTarget();
+        animator.SetTrigger("isDead");
+        isDead = true;
+        
+    }
+
+
+    public float GetHungry() { return currentHungry / maxHungry; }
+    public float GetHealth() { return currentHealth / maxHealth; }
+
 }

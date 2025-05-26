@@ -149,10 +149,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578d2bfaccbb1ba43a5d8bd3dee3ceb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  planetsTransform: {fileID: 0}
   planetTarget: {fileID: 0}
-  speed: 5
+  speed: 10
   stoppingDistance: 2.5
   animator: {fileID: 7924603568117103126}
+  biteDamage: 5
+  maxHungry: 100
+  hungryRate: 2
+  maxHealth: 100
 --- !u!95 &7924603568117103126 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
