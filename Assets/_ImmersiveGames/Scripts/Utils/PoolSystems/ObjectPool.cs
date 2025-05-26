@@ -62,6 +62,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
+            poolable.Reset(); // Reseta antes de ativar
             poolable.Activate(position);
             _activeObjects.Add(poolable);
             EventBus<ObjectSpawnedEvent>.Raise(new ObjectSpawnedEvent(Data.ObjectName, position, poolable.GetGameObject()));

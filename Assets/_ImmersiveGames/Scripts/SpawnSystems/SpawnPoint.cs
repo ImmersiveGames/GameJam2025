@@ -1,8 +1,11 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
+using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class SpawnPoint : MonoBehaviour
@@ -13,13 +16,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField] private bool useIntervalTrigger;
         [SerializeField] private float interval = 3f;
         [SerializeField] private bool startImmediately = true;
-        [SerializeField] private float cooldownAfterExhausted = 5f;
+        [SerializeField]
+        public bool useManagerLocking = true;
 
         private ISpawnTrigger _trigger;
         private ISpawnStrategy _strategy;
         private string _poolKey;
         private bool _isExhausted;
-        private float _cooldownEndTime;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
 
@@ -32,8 +35,24 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
+            if (SpawnManager.Instance == null)
+            {
+                DebugUtility.LogError<SpawnPoint>("SpawnManager.Instance não encontrado.", this);
+                enabled = false;
+                return;
+            }
+            SpawnManager.Instance.RegisterSpawnPoint(this, useManagerLocking);
+
             _poolKey = spawnData.PoolableData.ObjectName;
-            _strategy = new SingleSpawnStrategy();
+            _strategy = spawnData.Pattern switch
+            {
+                SpawnPattern.Single => new SingleSpawnStrategy(),
+                SpawnPattern.Wave => new WaveSpawnStrategy(),
+                SpawnPattern.Random => new RandomSpawnStrategy(),
+                SpawnPattern.Burst => new BurstSpawnStrategy(),
+                _ => new SingleSpawnStrategy()
+            };
+
             _trigger = useInputTrigger ? new InputTrigger(inputKey) :
                        useIntervalTrigger ? new IntervalTrigger(interval, startImmediately) :
                        new InitializationTrigger();
@@ -44,9 +63,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private void Start()
         {
             if (!RegisterPoolIfNeeded())
-            {
                 enabled = false;
-            }
         }
 
         private void OnEnable()
@@ -63,19 +80,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void Update()
         {
-            if (_isExhausted || Time.time < _cooldownEndTime)
+            if (!SpawnManager.Instance.CanSpawn(this))
+                return;
+            if (!useManagerLocking && _isExhausted)
             {
                 var pool = PoolManager.Instance.GetPool(_poolKey);
                 if (pool != null && pool.GetAvailableCount() > 0)
                 {
                     _isExhausted = false;
-                    _cooldownEndTime = 0f;
-                }
-                else
-                {
-                    return;
+                    DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' restaurado para '{name}'.", "green", this);
                 }
             }
+            if (_isExhausted)
+                return;
             _trigger.CheckTrigger(transform.position, spawnData);
         }
 
@@ -88,15 +105,28 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             if (PoolManager.Instance.GetPool(_poolKey) == null)
-            {
                 PoolManager.Instance.RegisterPool(spawnData.PoolableData);
-            }
             return PoolManager.Instance.GetPool(_poolKey) != null;
         }
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
         {
-            if (evt.Data != spawnData) return;
+            if (evt.Data != spawnData)
+                return;
+
+            if (!SpawnManager.Instance.CanSpawn(this))
+            {
+                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
+                return;
+            }
+
+            if (useManagerLocking && _isExhausted)
+            {
+                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Exausto.", "yellow", this);
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
+                return;
+            }
 
             var pool = PoolManager.Instance.GetPool(_poolKey);
             if (pool == null)
@@ -108,6 +138,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             int spawnCount = Mathf.Min(spawnData.SpawnCount, pool.GetAvailableCount());
             if (spawnCount == 0)
             {
+                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Pool esgotado.", "yellow", this);
+                if (useManagerLocking)
+                    _isExhausted = true;
                 EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
                 return;
             }
@@ -118,32 +151,50 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 objects[i] = PoolManager.Instance.GetObject(_poolKey, evt.Origin);
                 if (objects[i] == null)
                 {
+                    DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
+                    if (useManagerLocking)
+                        _isExhausted = true;
                     EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
                     return;
                 }
             }
 
-            _strategy.Spawn(objects, evt.Origin, spawnData);
+            _strategy.Spawn(objects, evt.Origin, spawnData, transform.forward);
+            SpawnManager.Instance.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, evt.Origin, spawnData));
         }
 
         private void HandlePoolExhausted(PoolExhaustedEvent evt)
         {
-            if (evt.PoolKey != _poolKey) return;
-            _isExhausted = true;
-            _cooldownEndTime = Time.time + cooldownAfterExhausted;
-            DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado. Cooldown: {cooldownAfterExhausted}s.", "yellow", this);
+            if (evt.PoolKey != _poolKey)
+                return;
+            if (useManagerLocking)
+            {
+                _isExhausted = true;
+                SpawnManager.Instance.LockSpawns(this);
+                DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}' (gerenciado).", "yellow", this);
+            }
+            else
+            {
+                DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}' (independente).", "yellow", this);
+            }
         }
 
-        public void ResetSpawnPoint()
+        public void TriggerReset()
         {
             _isExhausted = false;
-            _cooldownEndTime = 0f;
-            if (_trigger is IntervalTrigger intervalTrigger)
-            {
-                intervalTrigger.Reset();
-            }
-            DebugUtility.Log<SpawnPoint>($"SpawnPoint '{_poolKey}' resetado.", "green", this);
+            _trigger.SetActive(true);
+            _trigger.Reset();
+            DebugUtility.Log<SpawnPoint>($"SpawnPoint '{name}' resetado.", "green", this);
         }
+
+        public void SetTriggerActive(bool active)
+        {
+            _trigger.SetActive(active);
+            DebugUtility.Log<SpawnPoint>($"Trigger de '{name}' {(active ? "ativado" : "desativado")}.", "yellow", this);
+        }
+
+        public string GetPoolKey() => _poolKey;
+        public SpawnData GetSpawnData() => spawnData;
     }
 }

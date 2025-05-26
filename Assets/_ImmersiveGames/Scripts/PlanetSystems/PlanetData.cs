@@ -1,61 +1,41 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.EnemySystem;
+﻿using _ImmersiveGames.Scripts.SpawnSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [CreateAssetMenu(fileName = "PlanetData", menuName = "ImmersiveGames/PlanetData")]
-    public class PlanetData : DestructibleObjectSo
+    [CreateAssetMenu(fileName = "PlanetData", menuName = "Planets/PlanetData")]
+    public class PlanetData : SpawnData
     {
-        [SerializeField, Tooltip("Prefab do inimigo usado pelo spawner")]
-        public GameObject enemyPrefab; // Novo campo
+        [SerializeField] private float size = 5f;
+        [SerializeField] private float minOrbitSpeed = 10f;
+        [SerializeField] private float maxOrbitSpeed = 20f;
+        [SerializeField] private bool orbitClockwise = true;
+        [SerializeField] private bool reconfigureOnSpawn = true;
 
-        [SerializeField, Tooltip("Prefab do modelo visual do planeta")]
-        public GameObject modelPrefab;
+        public float Size => size;
+        public float MinOrbitSpeed => minOrbitSpeed;
+        public float MaxOrbitSpeed => maxOrbitSpeed;
+        public bool OrbitClockwise => orbitClockwise;
+        public bool ReconfigureOnSpawn => reconfigureOnSpawn;
 
-        [SerializeField, Tooltip("Tamanho do planeta no plano XZ para cálculo de órbita (metros)")]
-        public float size = 5f;
-
-        [SerializeField, Tooltip("Raio de detecção do jogador para spawn de inimigos (metros)")]
-        public float detectionRadius = 10f;
-
-        [SerializeField, Tooltip("Lista de EnemyData para inimigos que podem ser spawnados pelo planeta")]
-        public List<EnemyData> enemyDatas;
-        
-        [SerializeField, Tooltip("Tempo entre spawns de inimigos (segundos)")]
-        public float spawnRate = 2f;
-        
-        [SerializeField, Tooltip("Número máximo de inimigos ativos spawnados pelo planeta")]
-        public int maxEnemies = 5;
-
-        [SerializeField, Tooltip("Velocidade mínima de órbita em torno do centro do universo (graus por segundo)")]
-        public float minOrbitSpeed = 10f;
-
-        [SerializeField, Tooltip("Velocidade máxima de órbita em torno do centro do universo (graus por segundo)")]
-        public float maxOrbitSpeed = 20f;
-
-        [SerializeField, Tooltip("Se ativado, a órbita é no sentido horário")]
-        public bool orbitClockwise = true;
-
-        [SerializeField, Tooltip("Multiplicador mínimo de escala para o modelo do planeta")]
-        public float minScaleMultiplier = 0.8f;
-
-        [SerializeField, Tooltip("Multiplicador máximo de escala para o modelo do planeta")]
-        public float maxScaleMultiplier = 1.2f;
-
-        [SerializeField, Tooltip("Ângulo mínimo de inclinação do modelo do planeta (graus)")]
-        public float minTiltAngle = -15f;
-
-        [SerializeField, Tooltip("Ângulo máximo de inclinação do modelo do planeta (graus)")]
-        public float maxTiltAngle = 15f;
-
-        [SerializeField, Tooltip("Velocidade mínima de rotação do planeta em torno de seu próprio eixo (graus por segundo)")]
-        public float minRotationSpeed = 10f;
-
-        [SerializeField, Tooltip("Velocidade máxima de rotação do planeta em torno de seu próprio eixo (graus por segundo)")]
-        public float maxRotationSpeed = 30f;
-
-        [SerializeField, Tooltip("Se ativado, a rotação é no sentido horário")]
-        public bool rotateClockwise = true;
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (size <= 0)
+            {
+                Debug.LogError($"Size deve ser maior que 0 em {name}. Definindo como 5.", this);
+                size = 5f;
+            }
+            if (minOrbitSpeed < 0)
+            {
+                Debug.LogError($"MinOrbitSpeed deve ser não-negativo em {name}. Definindo como 10.", this);
+                minOrbitSpeed = 10f;
+            }
+            if (maxOrbitSpeed < minOrbitSpeed)
+            {
+                Debug.LogError($"MaxOrbitSpeed deve ser maior ou igual a MinOrbitSpeed em {name}. Definindo como {minOrbitSpeed}.", this);
+                maxOrbitSpeed = minOrbitSpeed;
+            }
+        }
+#endif
     }
 }

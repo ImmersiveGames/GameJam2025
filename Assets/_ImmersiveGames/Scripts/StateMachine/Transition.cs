@@ -44,6 +44,10 @@ namespace _ImmersiveGames.Scripts.StateMachine
         }
 
         public bool Evaluate() => _func.Invoke();
+        public void SetActive(bool active)
+        {
+            //
+        }
     }
 
     /// <summary>
@@ -65,6 +69,10 @@ namespace _ImmersiveGames.Scripts.StateMachine
             bool result = _flag;
             _flag = false; // Reset após avaliação
             return result;
+        }
+        public void SetActive(bool active)
+        {
+//
         }
 
         // Método para definir a flag (chamado pela lógica da ação)

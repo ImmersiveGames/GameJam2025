@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5485795418958270250}
   - component: {fileID: -9054357940722028872}
+  - component: {fileID: 2465795167239926351}
   m_Layer: 0
   m_Name: TestPoolableObject
   m_TagString: Untagged
@@ -42,5 +43,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7ab499301cbb4582984fab0b82082454, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2465795167239926351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5587376153201927199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad7ebe3925af439690753abbb9777f08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

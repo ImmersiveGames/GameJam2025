@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
+﻿using _ImmersiveGames.Scripts.PlanetSystemsOLD;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PoolSystemOld

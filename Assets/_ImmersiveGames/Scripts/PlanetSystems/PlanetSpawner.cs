@@ -1,50 +1,54 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Game.Planets;
+using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-using _ImmersiveGames.Scripts.PoolSystemOld;
-using _ImmersiveGames.Scripts.ScriptableObjects;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class PlanetSpawner : MonoBehaviour
     {
-        [SerializeField] private GameConfig gameConfig;
+        [SerializeField] private PlanetConfig planetConfig;
         [SerializeField] private Transform universeCenter;
-        [SerializeField] private PlanetResourceManager planetResourceManager;
-        [SerializeField] private PlanetObjectPool planetPool;
-        [SerializeField, Tooltip("Ativar logs para depuração")]
-        private bool debugMode;
 
-        private readonly List<Planets> _spawnedPlanets = new List<Planets>();
+        private readonly List<Planet> _spawnedPlanets = new List<Planet>();
+        private ISpawnStrategy _spawnStrategy;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
 
         private void Awake()
         {
-            if (!gameConfig)
+            if (!planetConfig || planetConfig.PlanetDatas.Count == 0)
             {
-                DebugUtility.LogError<PlanetSpawner>("GameConfig não configurado.", this);
+                Debug.LogError($"PlanetConfig não configurado ou vazio em {name}.", this);
                 enabled = false;
+                return;
             }
             if (!universeCenter)
             {
-                DebugUtility.LogError<PlanetSpawner>("UniverseCenter não configurado.", this);
+                Debug.LogError($"UniverseCenter não configurado em {name}.", this);
                 enabled = false;
+                return;
             }
-            if (!planetResourceManager)
+
+            _spawnStrategy = new OrbitSpawnStrategy();
+            _planetDestroyedBinding = new EventBinding<PlanetDestroyedEvent>(HandlePlanetDestroyed);
+
+            // Registra pools sem configuração
+            foreach (var planetData in planetConfig.PlanetDatas)
             {
-                DebugUtility.LogError<PlanetSpawner>("PlanetResourceManager não configurado.", this);
-                enabled = false;
-            }
-            if (!planetPool)
-            {
-                DebugUtility.LogError<PlanetSpawner>("PlanetObjectPool não configurado.", this);
-                enabled = false;
+                if (!PoolManager.Instance.GetPool(planetData.PoolableData.ObjectName))
+                {
+                    PoolManager.Instance.RegisterPool(planetData.PoolableData);
+                }
             }
         }
 
         private void OnEnable()
         {
-            var gameManager = GameManager.Instance;
-            if (gameManager != null)
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedBinding);
+            var gameManager = FindObjectOfType<GameManager>();
+            if (gameManager)
             {
                 gameManager.EventStartGame += HandleGameStarted;
             }
@@ -52,8 +56,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnDisable()
         {
-            var gameManager = GameManager.Instance;
-            if (gameManager != null)
+            EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedBinding);
+            var gameManager = FindObjectOfType<GameManager>();
+            if (gameManager)
             {
                 gameManager.EventStartGame -= HandleGameStarted;
             }
@@ -61,63 +66,70 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void HandleGameStarted()
         {
-            _spawnedPlanets.Clear();
+            ResetPlanets();
             SpawnPlanets();
         }
 
         private void SpawnPlanets()
         {
-            var planetResources = planetResourceManager.GenerateResourceList(gameConfig.numPlanets);
-            float currentRadius = gameConfig.minOrbitRadius;
-            for (var i = 0; i < gameConfig.numPlanets; i++)
+            float currentRadius = planetConfig.MinOrbitRadius;
+            for (int i = 0; i < planetConfig.NumPlanets; i++)
             {
-                var planetData = planetResourceManager.GetRandomPlanetData();
-                if (planetData == null) continue;
+                var planetData = planetConfig.PlanetDatas[Random.Range(0, planetConfig.PlanetDatas.Count)];
+                var poolKey = planetData.PoolableData.ObjectName;
 
-                var planetObj = planetPool.GetObject(Vector3.zero, Quaternion.identity, gameConfig.numPlanets);
-                if (planetObj == null) continue;
+                var planetObj = PoolManager.Instance.GetObject(poolKey, Vector3.zero).GetGameObject();
+                if (!planetObj)
+                {
+                    Debug.LogError($"Objeto do pool '{poolKey}' não encontrado. Verifique se o pool foi registrado corretamente.", this);
+                    continue;
+                }
 
                 planetObj.transform.SetParent(universeCenter, false);
-
-                var planet = planetObj.GetComponent<Planets>();
-                planet.SetPlanetData(planetData);
-                planet.SetResource(planetResources[i]);
+                var planet = planetObj.GetComponent<Planet>();
+                if (!planet)
+                {
+                    Debug.LogError($"Componente Planet não encontrado em {planetObj.name}.", planetObj);
+                    planetObj.GetComponent<PooledObject>()?.ReturnToPool();
+                    continue;
+                }
 
                 float angle = Random.Range(0f, 360f);
                 Vector3 orbitPosition = universeCenter.position + Quaternion.Euler(0, angle, 0) * new Vector3(currentRadius, 0, 0);
-                planetObj.transform.position = new Vector3(orbitPosition.x, universeCenter.position.y, orbitPosition.z);
+                var objects = new[] { planetObj.GetComponent<IPoolable>() };
+                _spawnStrategy.Spawn(objects, orbitPosition, planetData, universeCenter.position);
 
-                planet.StartOrbit(universeCenter);
-                currentRadius += planetData.size + gameConfig.orbitMargin;
+                // Configura planeta no spawn
+                float orbitSpeed = planetData.ReconfigureOnSpawn ? Random.Range(planetData.MinOrbitSpeed, planetData.MaxOrbitSpeed) : planetData.MinOrbitSpeed;
+                bool orbitClockwise = planetData.ReconfigureOnSpawn ? (Random.value > 0.5f) : planetData.OrbitClockwise;
+                planet.Initialize(planetData, universeCenter, orbitSpeed, orbitClockwise);
 
-                planet.Initialize();
                 _spawnedPlanets.Add(planet);
-
-                if (debugMode)
-                {
-                    DebugUtility.LogVerbose<PlanetSpawner>($"Planeta {planetObj.name} spawnado em {planetObj.transform.position} (Y do universeCenter: {universeCenter.position.y}), recurso: {planetResources[i]}", "blue", this);
-                }
+                currentRadius += planetData.Size + planetConfig.OrbitMargin;
             }
         }
 
-        private void OnDestroy()
+        private void HandlePlanetDestroyed(PlanetDestroyedEvent evt)
+        {
+            _spawnedPlanets.Remove(evt.Planet);
+            if (_spawnedPlanets.Count == 0)
+            {
+                EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            }
+        }
+
+        public void ResetPlanets()
         {
             foreach (var planet in _spawnedPlanets)
             {
-                if (planet != null)
+                if (planet)
                 {
-                    var pooledObj = planet.GetComponent<PooledObject>();
-                    if (pooledObj != null)
-                    {
-                        pooledObj.ReturnSelfToPool();
-                    }
-                    else
-                    {
-                        planet.gameObject.SetActive(false);
-                    }
+                    planet.ResetState();
+                    planet.GetComponent<PooledObject>()?.ReturnToPool();
                 }
             }
             _spawnedPlanets.Clear();
+            SpawnPlanets(); // Respawn com novas configurações
         }
     }
 }

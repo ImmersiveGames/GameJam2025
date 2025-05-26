@@ -3,28 +3,31 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public class PooledObject : MonoBehaviour, IPoolable
     {
         private ObjectPool _pool;
         private GameObject _model;
-        private float _lifetime = 5f;
+        private float _lifetime;
         private bool _isActive;
         private float _timer;
         private bool _returningToPool;
 
         public bool IsActive => _isActive;
+        public float Lifetime => _lifetime; // Adicionado para acesso externo
 
         public void Initialize(PoolableObjectData data, ObjectPool pool)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-            _lifetime = Mathf.Max(_lifetime, 0.1f);
+            _lifetime = data.Lifetime; // Usa o lifetime diretamente
             _isActive = false;
             _timer = 0f;
             _returningToPool = false;
             gameObject.SetActive(false);
+            DebugUtility.Log<PooledObject>($"Objeto '{name}' inicializado com lifetime {_lifetime}.", "green", this);
         }
 
         public void SetModel(GameObject model)
@@ -38,6 +41,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 _model.transform.SetParent(transform);
                 _model.transform.localPosition = Vector3.zero;
+                _model.transform.localRotation = Quaternion.identity;
                 _model.SetActive(false);
             }
         }
@@ -45,13 +49,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public void Activate(Vector3 position)
         {
             transform.position = position;
+            transform.rotation = Quaternion.identity;
             _isActive = true;
             gameObject.SetActive(true);
             if (_model != null)
             {
                 _model.SetActive(true);
             }
-            _timer = _lifetime;
+            _timer = _lifetime > 0 ? _lifetime : float.MaxValue; // Lifetime 0 = permanente
             _returningToPool = false;
             OnObjectSpawned();
         }
@@ -73,18 +78,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             }
         }
 
-        /// <summary>
-        /// Chamado quando o objeto é spawnado do pool. Implemente para lógica personalizada de ativação.
-        /// </summary>
         public void OnObjectSpawned()
         {
+            // Pode ser sobrescrito
         }
 
-        /// <summary>
-        /// Chamado quando o objeto é retornado ao pool. Implemente para lógica personalizada de desativação.
-        /// </summary>
         public void OnObjectReturned()
         {
+            // Pode ser sobrescrito
         }
 
         public GameObject GetGameObject()
@@ -92,17 +93,34 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             return gameObject;
         }
 
+        public void Reset()
+        {
+            transform.position = Vector3.zero;
+            transform.rotation = Quaternion.identity;
+            if (TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            _timer = 0f;
+            _returningToPool = false;
+            DebugUtility.Log<PooledObject>($"Objeto '{name}' resetado.", "green", this);
+        }
+
         private void Update()
         {
             if (!_isActive || _returningToPool) return;
-            _timer -= Time.deltaTime;
-            if (_timer <= 0f)
+            if (_lifetime > 0) // Só decrementa timer se lifetime > 0
             {
-                ReturnToPool();
+                _timer -= Time.deltaTime;
+                if (_timer <= 0f)
+                {
+                    ReturnToPool();
+                }
             }
         }
 
-        private void ReturnToPool()
+        public void ReturnToPool()
         {
             if (_returningToPool) return;
             _returningToPool = true;

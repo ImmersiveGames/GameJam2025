@@ -11,5 +11,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
         void OnObjectSpawned();
         GameObject GetGameObject(); // Para acessar o GameObject associado
         void SetModel(GameObject model); // Para configurar o modelo
+        void Reset(); // Novo: Reseta estado do objeto
     }
 }

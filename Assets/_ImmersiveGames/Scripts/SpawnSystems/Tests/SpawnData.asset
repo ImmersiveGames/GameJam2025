@@ -13,5 +13,11 @@ MonoBehaviour:
   m_Name: SpawnData
   m_EditorClassIdentifier: 
   poolableData: {fileID: 11400000, guid: bb613fc72a885ed4e9b1031409bace9a, type: 2}
-  spawnCount: 1
-  pattern: 0
+  spawnCount: 3
+  pattern: 1
+  spawnDirection: {x: 0, y: 0, z: 1}
+  spawnSpeed: 5
+  waveInterval: 1
+  waveCount: 3
+  spawnArea: {x: 5, y: 5}
+  radius: 2
