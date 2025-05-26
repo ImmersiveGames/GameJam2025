@@ -1,8 +1,7 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystemOLD;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class InitializationTrigger : ISpawnTrigger
     {
@@ -12,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
         {
             if (TriggerCondition.Evaluate())
             {
-                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.ObjectName, origin, data));
+                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.PoolableData.ObjectName, origin, data));
             }
         }
 

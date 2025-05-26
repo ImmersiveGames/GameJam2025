@@ -1,7 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystemOLD
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public struct SpawnRequestEvent : IEvent
     {

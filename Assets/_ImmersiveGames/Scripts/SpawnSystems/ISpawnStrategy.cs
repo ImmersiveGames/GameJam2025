@@ -1,7 +1,6 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystemOLD;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public interface ISpawnStrategy
     {

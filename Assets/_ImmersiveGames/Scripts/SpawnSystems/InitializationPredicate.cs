@@ -1,5 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.Utils.Predicates;
-namespace _ImmersiveGames.Scripts.SpawnSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class InitializationPredicate : IPredicate
     {

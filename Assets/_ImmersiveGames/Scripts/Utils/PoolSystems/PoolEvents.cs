@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    public class PoolEvents : IEvent
+    public class PoolExhaustedEvent : IEvent
     {
         public string PoolKey { get; }
-        public PoolEvents(string poolKey) => PoolKey = poolKey;
+        public PoolExhaustedEvent(string poolKey) => PoolKey = poolKey;
     }
 
     public class ObjectSpawnedEvent : IEvent
@@ -44,15 +44,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             PoolKey = poolKey;
             Object = obj;
-        }
-    }
-    public class PoolExhaustedEvent : IEvent
-    {
-        public string PoolKey { get; }
-
-        public PoolExhaustedEvent(string poolKey)
-        {
-            PoolKey = poolKey;
         }
     }
 }
