@@ -167,7 +167,7 @@ GameObject:
   - component: {fileID: 24271470}
   m_Layer: 7
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -258,7 +258,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 15063537}
-  - {fileID: 1595538261}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &24271470
@@ -273,9 +272,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de80d129c7a047cba2630760198c7d32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  weaponConfig: {fileID: 11400000, guid: 94de7d6f7d7f24e4eb433581c39a6da9, type: 2}
-  shootingSpawnPoint: {fileID: 1595538260}
-  switchWeaponKey: 113
 --- !u!1 &99254223
 GameObject:
   m_ObjectHideFlags: 0
@@ -1015,7 +1011,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4258703349288034412, guid: aceedc71943aa524dbadf6065f985046, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 30
+      value: 57
       objectReference: {fileID: 0}
     - target: {fileID: 4258703349288034412, guid: aceedc71943aa524dbadf6065f985046, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1023,7 +1019,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4258703349288034412, guid: aceedc71943aa524dbadf6065f985046, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -36.65
+      value: -82
       objectReference: {fileID: 0}
     - target: {fileID: 4258703349288034412, guid: aceedc71943aa524dbadf6065f985046, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1477,6 +1473,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8bfdcd01afea418485e74a05a977ab4e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spawnData: {fileID: 0}
+  useManagerLocking: 1
 --- !u!1 &2009245414
 GameObject:
   m_ObjectHideFlags: 0

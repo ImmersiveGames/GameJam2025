@@ -1,6 +1,7 @@
 using _ImmersiveGames.Scripts.EnemySystem;
 using _ImmersiveGames.Scripts.PlanetSystemsOLD;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     public class WorldEaterNpc : MonoBehaviour
