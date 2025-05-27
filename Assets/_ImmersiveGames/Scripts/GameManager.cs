@@ -12,7 +12,10 @@ namespace _ImmersiveGames.Scripts
     public sealed class GameManager : Singleton<GameManager>
     {
         [SerializeField] public GameConfig gameConfig;
-        
+        [SerializeField] private Transform player;
+        [SerializeField] private Transform worldEater;
+        public Transform Player => player;
+        public Transform WorldEater => worldEater;
         public string Score { get; private set; }
         private bool _isPlaying;
         private bool _isGameOver;
@@ -29,7 +32,8 @@ namespace _ImmersiveGames.Scripts
             base.Awake();
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
-            SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
+            if(!SceneManager.GetSceneByName("UI").isLoaded)
+                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
         }
 
         private void OnDestroy()

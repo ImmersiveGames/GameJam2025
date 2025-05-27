@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 4758828599712610849}
   - component: {fileID: 7887304078750153361}
   - component: {fileID: 463446327434073539}
+  - component: {fileID: 4107158635580607550}
+  - component: {fileID: 7460332456942676272}
   m_Layer: 10
   m_Name: PlanetPrefab
   m_TagString: Untagged
@@ -57,3 +59,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae12432efdf148dcbb3d44bb78c0ee96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &4107158635580607550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7554185307657802338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60244ffd351b456d8494a571a02353a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resource: {fileID: 0}
+  planetData: {fileID: 0}
+--- !u!114 &7460332456942676272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7554185307657802338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e576246c91144d6c9aeb5ababede6360, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 2176
+  debugMode: 1
+  minDetectionFrequency: 0.1
+  maxDetectionFrequency: 0.5

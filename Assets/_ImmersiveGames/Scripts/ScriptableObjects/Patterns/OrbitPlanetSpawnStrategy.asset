@@ -14,6 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetOptions:
   - {fileID: 11400000, guid: 062cb94a336711e448246ba9ab489934, type: 2}
+  planetResources:
+  - {fileID: 11400000, guid: de24f92f1d899014b9d31ccca3a56e26, type: 2}
+  - {fileID: 11400000, guid: b24c9b50b8eb33e47840d1651a1cefd6, type: 2}
+  - {fileID: 11400000, guid: 671746db83e06ff4a9d2749e5483648e, type: 2}
+  - {fileID: 11400000, guid: a79a3f684ec064a46a2f8bccfd269094, type: 2}
+  - {fileID: 11400000, guid: c5360ef0bb73f004c976350596e6713f, type: 2}
   spaceBetweenPlanets: 2
   initialOrbitRadius: 10
   orbitCenter: {x: 0, y: 0, z: 0}

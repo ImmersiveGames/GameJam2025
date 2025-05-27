@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
     public class PlayerShooting : MonoBehaviour
     {
         [SerializeField, Tooltip("Câmera principal usada para mirar")]
-        private Camera mainCamera;
+        private Camera _mainCamera;
 
         [SerializeField, Tooltip("Ponto de origem dos projéteis")]
         private Transform firePoint;
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _inputActions = new PlayerInputActions();
             _strategyPools = new Dictionary<ShootingStrategy, ProjectileObjectPool>();
 
-            if (mainCamera == null)
+            if (_mainCamera == null)
             {
                 DebugUtility.LogError<PlayerShooting>("MainCamera não configurada.", this);
                 enabled = false;
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
             int index = Mathf.Clamp(initialStrategyIndex, 0, shootingStrategies.Count - 1);
             _currentStrategy = shootingStrategies[index];
-            _currentStrategy.Initialize(firePoint, mainCamera, _strategyPools[shootingStrategies[index]]);
+            _currentStrategy.Initialize(firePoint, _mainCamera, _strategyPools[shootingStrategies[index]]);
             if (debugMode)
             {
                 DebugUtility.LogVerbose<PlayerShooting>($"Estratégia inicial configurada: {shootingStrategies[index].name}", "cyan", this);
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (strategyIndex >= 0 && strategyIndex < shootingStrategies.Count)
             {
                 _currentStrategy = shootingStrategies[strategyIndex];
-                _currentStrategy.Initialize(firePoint, mainCamera, _strategyPools[shootingStrategies[strategyIndex]]);
+                _currentStrategy.Initialize(firePoint, _mainCamera, _strategyPools[shootingStrategies[strategyIndex]]);
                 if (debugMode)
                 {
                     DebugUtility.LogVerbose<PlayerShooting>($"Estratégia alterada para {shootingStrategies[strategyIndex].name}", "cyan", this);
