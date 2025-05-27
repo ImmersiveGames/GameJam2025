@@ -1,6 +1,8 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystemsOLD;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystemsOLD;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using PlanetData = _ImmersiveGames.Scripts.PlanetSystemsOLD.PlanetData;
 namespace _ImmersiveGames.Scripts.PoolSystemOld
 {
     public class PlanetObjectPool : ObjectPoolBase

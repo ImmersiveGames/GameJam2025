@@ -1,4 +1,4 @@
-﻿namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
+﻿namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public enum PlanetResources
     {

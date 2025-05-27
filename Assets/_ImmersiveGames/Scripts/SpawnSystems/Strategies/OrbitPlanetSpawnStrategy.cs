@@ -40,35 +40,32 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 obj.Activate(spawnPos);
 
                 lastDiameter = diameter;
-
-                // === PLANET MODEL INSTANTIATION ===
-                if (planetInfo.ModelPrefab)
-                {
-                    GameObject model = Instantiate(planetInfo.ModelPrefab, planetGO.transform);
-                    model.transform.localPosition = Vector3.zero;
-
-                    // Escala aleatória
-                    float scaleMult = Random.Range(planetInfo.minScaleMultiplier, planetInfo.maxScaleMultiplier);
-                    model.transform.localScale = Vector3.one * scaleMult;
-
-                    // Inclinação aleatória
-                    float tilt = Random.Range(planetInfo.minTiltAngle, planetInfo.maxTiltAngle);
-                    model.transform.localRotation = Quaternion.Euler(0, 0, tilt);
-                }
+                
+                //-- === CONFIGURAÇÃO DO PLANET GAMEOBJECT ===
+                planetGO.name = $"Planet_{planetInfo.name}_{objects.Length}";
+                planetGO.transform.localPosition = Vector3.zero;
+                // Escala aleatória
+                int scaleMult = Random.Range(planetInfo.minScale, planetInfo.maxScale);
+                planetGO.transform.localScale = Vector3.one * scaleMult;
+                float tilt = Random.Range(planetInfo.minTiltAngle, planetInfo.maxTiltAngle);
+                planetGO.transform.localRotation = Quaternion.Euler(0, 0, tilt);
+                
 
                 // === CONFIGURAÇÃO DO PLANET MOTION ===
                 PlanetMotion motion = planetGO.GetComponent<PlanetMotion>();
-                if (motion == null)
+                if (!motion)
                     motion = planetGO.AddComponent<PlanetMotion>();
-
+                bool randomOrbit = Random.value > 0.5f;
+                bool randomRotate = Random.value > 0.5f;
 // Injeta os valores do PlanetData no PlanetMotion
                 motion.Initialize(
                     center: orbitCenter,
                     radius: currentRadius,
                     orbitSpeedDegPerSec: Random.Range(planetInfo.minOrbitSpeed, planetInfo.maxOrbitSpeed),
-                    orbitClockwise: planetInfo.orbitClockwise,
+                    
+                    orbitClockwise: randomOrbit,
                     selfRotationSpeedDegPerSec: Random.Range(planetInfo.minRotationSpeed, planetInfo.maxRotationSpeed) *
-                    (planetInfo.rotateClockwise ? -1f : 1f)
+                    (randomRotate ? -1f : 1f)
                 );
             }
         }
