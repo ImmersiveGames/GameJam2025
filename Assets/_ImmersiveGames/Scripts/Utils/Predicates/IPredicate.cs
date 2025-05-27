@@ -5,6 +5,7 @@ namespace _ImmersiveGames.Scripts.Utils.Predicates {
     public interface IPredicate {
         bool Evaluate();
         void SetActive(bool active) { }
+        void Reset() { }
     }
     public class And : IPredicate
     {

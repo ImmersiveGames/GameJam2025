@@ -17,7 +17,7 @@ MonoBehaviour:
   canDestroy: 1
   deathDelay: 2
   enemyPrefab: {fileID: 369962388627008736, guid: 3b3d5e8e6ad2ea14da9f533826551e4e, type: 3}
-  modelPrefab: {fileID: 2677257219484125173, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
+  modelPrefab: {fileID: 6310046052524586760, guid: 5b3258a1c619b394b87631749052f6c2, type: 3}
   size: 1
   detectionRadius: 5
   enemyDatas:

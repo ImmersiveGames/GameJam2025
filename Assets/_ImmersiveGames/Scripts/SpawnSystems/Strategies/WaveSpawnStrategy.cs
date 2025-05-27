@@ -2,12 +2,15 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
-    public class WaveSpawnStrategy : ISpawnStrategy
+    [CreateAssetMenu(fileName = "WaveSpawnStrategy",menuName = "ImmersiveGames/Strategies/Wave")]
+    public class WaveSpawnStrategy : SpawnStrategySo
     {
-        public void Spawn(IPoolable[] objects, Vector3 origin, SpawnData data, Vector3 transformForward)
+        [SerializeField] private float waveInterval = 1f;
+        [SerializeField] private int waveCount = 3;
+        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
         {
-            int objectsPerWave = Mathf.CeilToInt((float)objects.Length / data.WaveCount);
-            for (int wave = 0; wave < data.WaveCount; wave++)
+            int objectsPerWave = Mathf.CeilToInt((float)objects.Length / waveCount);
+            for (int wave = 0; wave < waveCount; wave++)
             {
                 for (int i = 0; i < objectsPerWave; i++)
                 {

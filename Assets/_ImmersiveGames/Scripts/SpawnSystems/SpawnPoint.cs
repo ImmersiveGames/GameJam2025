@@ -1,32 +1,30 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
+﻿using _ImmersiveGames.Scripts.Predicates;
+using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
 using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class SpawnPoint : MonoBehaviour
     {
-        [SerializeField] private SpawnData spawnData;
-        [SerializeField] private bool useInputTrigger;
-        [SerializeField] private KeyCode inputKey = KeyCode.S;
-        [SerializeField] private bool useIntervalTrigger;
-        [SerializeField] private float interval = 3f;
-        [SerializeField] private bool startImmediately = true;
+        [SerializeField]
+        protected SpawnData spawnData;
         [SerializeField]
         public bool useManagerLocking = true;
 
-        private ISpawnTrigger _trigger;
-        private ISpawnStrategy _strategy;
+        private SpawnTriggerSo _trigger;
+        private SpawnStrategySo _strategy;
         private string _poolKey;
         private bool _isExhausted;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
 
-        private void Awake()
+        protected virtual void Awake()
         {
             if (spawnData == null || spawnData.PoolableData == null || string.IsNullOrEmpty(spawnData.PoolableData.ObjectName))
             {
@@ -44,18 +42,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             SpawnManager.Instance.RegisterSpawnPoint(this, useManagerLocking);
 
             _poolKey = spawnData.PoolableData.ObjectName;
-            _strategy = spawnData.Pattern switch
-            {
-                SpawnPattern.Single => new SingleSpawnStrategy(),
-                SpawnPattern.Wave => new WaveSpawnStrategy(),
-                SpawnPattern.Random => new RandomSpawnStrategy(),
-                SpawnPattern.Burst => new BurstSpawnStrategy(),
-                _ => new SingleSpawnStrategy()
-            };
+            _strategy = spawnData.Pattern;
 
-            _trigger = useInputTrigger ? new InputTrigger(inputKey) :
-                       useIntervalTrigger ? new IntervalTrigger(interval, startImmediately) :
-                       new InitializationTrigger();
+            _trigger = spawnData.TriggerStrategy;
+            _trigger.Initialize(this);
             _spawnBinding = new EventBinding<SpawnRequestEvent>(HandleSpawnRequest);
             _exhaustedBinding = new EventBinding<PoolExhaustedEvent>(HandlePoolExhausted);
         }
@@ -66,13 +56,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 enabled = false;
         }
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             EventBus<SpawnRequestEvent>.Register(_spawnBinding);
             EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             EventBus<SpawnRequestEvent>.Unregister(_spawnBinding);
             EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
@@ -159,7 +149,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
-            _strategy.Spawn(objects, evt.Origin, spawnData, transform.forward);
+            _strategy.Spawn(objects, evt.Origin, transform.forward);
             SpawnManager.Instance.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, evt.Origin, spawnData));
         }
@@ -191,10 +181,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void SetTriggerActive(bool active)
         {
             _trigger.SetActive(active);
+            if (this is PlayerInputSpawnPoint inputSpawnPoint && _trigger is PredicateTriggerSo predicateTrigger)
+            {
+                inputSpawnPoint.BindAllPredicates(predicateTrigger.predicate, inputSpawnPoint.PlayerInput.actions);
+            }
             DebugUtility.Log<SpawnPoint>($"Trigger de '{name}' {(active ? "ativado" : "desativado")}.", "yellow", this);
         }
 
         public string GetPoolKey() => _poolKey;
-        public SpawnData GetSpawnData() => spawnData;
     }
 }

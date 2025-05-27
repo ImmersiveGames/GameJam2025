@@ -5,10 +5,14 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
-    public class SingleSpawnStrategy : ISpawnStrategy
+    [CreateAssetMenu(fileName = "SingleSpawnStrategy",menuName = "ImmersiveGames/Strategies/SingleSpawn")]
+    public class SingleSpawnStrategy : SpawnStrategySo
     {
-        public void Spawn(IPoolable[] objects, Vector3 origin, SpawnData data, Vector3 spawnDirection)
+        [SerializeField] private float projectileSpeed;
+        
+        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
         {
+            
             foreach (var obj in objects)
             {
                 if (obj == null) continue;
@@ -16,21 +20,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 go.transform.position = origin;
                 obj.Activate(origin);
 
-                if (data is ShootingSpawnData shootingData)
+                var movement = go.GetComponent<ProjectileMovement>();
+                if (movement)
                 {
-                    var movement = go.GetComponent<ProjectileMovement>();
-                    if (movement)
-                    {
-                        movement.InitializeMovement(spawnDirection.normalized, shootingData.ProjectileSpeed);
-                    }
-                    else
-                    {
-                        DebugUtility.LogError<SingleSpawnStrategy>($"ProjectileMovement não encontrado em {go.name}.", go);
-                    }
+                    movement.InitializeMovement(forward.normalized, projectileSpeed);
                 }
                 else
                 {
-                    DebugUtility.LogError<SingleSpawnStrategy>($"SpawnData inválido para {go.name}. Esperado ShootingSpawnData.", go);
+                    DebugUtility.LogError<SingleSpawnStrategy>($"ProjectileMovement não encontrado em {go.name}.", go);
                 }
             }
         }

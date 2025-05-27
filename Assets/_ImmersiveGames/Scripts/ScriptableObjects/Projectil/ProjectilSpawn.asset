@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2bd40996984c49b7aeb150444a6c6462, type: 3}
+  m_Name: ProjectilSpawn
+  m_EditorClassIdentifier: 
+  objectName: Bullets
+  prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
+  modelPrefab:
+  - {fileID: 2856293464993286795, guid: 72cdc8c9f50786e408f1c71af176328d, type: 3}
+  - {fileID: 740186002330760438, guid: 0255c145002626240bb559415d9a76ee, type: 3}
+  noRandomModel: 1
+  lifetime: 3
+  initialPoolSize: 20
+  factoryType: 0
+  canExpand: 1

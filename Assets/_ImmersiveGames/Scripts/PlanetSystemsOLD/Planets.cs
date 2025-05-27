@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
                 DebugUtility.LogError<Planets>($"PlanetData não definido em {gameObject.name} para iniciar órbita.", this);
                 return;
             }
-            _orbitController.Initialize(orbitCenter, planetData.minOrbitSpeed, planetData.maxOrbitSpeed, planetData.orbitClockwise);
+            //_orbitController.Initialize(orbitCenter, planetData.minOrbitSpeed, planetData.maxOrbitSpeed, planetData.orbitClockwise);
         }
 
         public override void Initialize()
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
             var planetData = (PlanetData)destructibleObject;
             var collider = rootObj.AddComponent<SphereCollider>();
             collider.isTrigger = true;
-            collider.radius = planetData.size * 0.5f; // Metade do tamanho do planeta
+            //collider.radius = planetData.size * 0.5f; // Metade do tamanho do planeta
 
             return modelRootTr;
         }
@@ -119,12 +119,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
             _skinInstance.transform.localPosition = Vector3.zero;
             _skinInstance.transform.localRotation = Quaternion.identity;
 
-            float scaleMultiplier = Random.Range(planetData.minScaleMultiplier, planetData.maxScaleMultiplier);
-            _skinInstance.transform.localScale = Vector3.one * scaleMultiplier;
+            //float scaleMultiplier = Random.Range(planetData.minScaleMultiplier, planetData.maxScaleMultiplier);
+            //_skinInstance.transform.localScale = Vector3.one * scaleMultiplier;
 
-            float tiltX = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
-            float tiltZ = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
-            _skinInstance.transform.localRotation = Quaternion.Euler(tiltX, 0, tiltZ);
+            //float tiltX = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
+            //float tiltZ = Random.Range(planetData.minTiltAngle, planetData.maxTiltAngle);
+            //_skinInstance.transform.localRotation = Quaternion.Euler(tiltX, 0, tiltZ);
 
             StartRotation();
         }
@@ -140,16 +140,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
                 return;
             }
             _rotationTween?.Kill();
-            float rotationSpeed = Random.Range(planetData.minRotationSpeed, planetData.maxRotationSpeed);
-            float direction = planetData.rotateClockwise ? -1f : 1f;
-            _rotationTween = _skinInstance.transform.DORotate(
+            //float rotationSpeed = Random.Range(planetData.minRotationSpeed, planetData.maxRotationSpeed);
+            //float direction = planetData.rotateClockwise ? -1f : 1f;
+            /*_rotationTween = _skinInstance.transform.DORotate(
                     new Vector3(0, 360 * direction, 0),
                     360f / rotationSpeed,
                     RotateMode.FastBeyond360
                 )
                 .SetEase(Ease.Linear)
                 .SetLoops(-1, LoopType.Incremental)
-                .SetRelative(true);
+                .SetRelative(true);*/
         }
 
         public override void ResetState()

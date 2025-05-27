@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
 {
-    public class EnemySpawner : MonoBehaviour
+    /*public class EnemySpawner : MonoBehaviour
     {
         [Header("Configurações do Spawner")]
         [SerializeField, Tooltip("Cadência de spawn (segundos entre spawns)")]
@@ -292,4 +292,5 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
             }
         }
     }
+    */
 }

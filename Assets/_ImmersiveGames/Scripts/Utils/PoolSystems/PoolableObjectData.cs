@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
@@ -7,7 +9,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         [SerializeField] private string objectName;
         [SerializeField] private GameObject prefab;
-        [SerializeField] private GameObject modelPrefab;
+        [SerializeField] private List<GameObject> modelPrefab;
+        [SerializeField] private bool noRandomModel = false;
         [SerializeField, Min(0)] private float lifetime = 5f; // Validação no Inspector
         [SerializeField] private int initialPoolSize = 5;
         [SerializeField] private FactoryType factoryType = FactoryType.Default;
@@ -15,7 +18,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public string ObjectName => objectName;
         public GameObject Prefab => prefab;
-        public GameObject ModelPrefab => modelPrefab;
+        public GameObject ModelPrefab => noRandomModel? modelPrefab[0] : modelPrefab.Random();
         public int InitialPoolSize => initialPoolSize;
         public FactoryType FactoryType => factoryType;
         public bool CanExpand => canExpand;

@@ -167,12 +167,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1890a21204e84b9bbcf67dbdaa5b786b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnData: {fileID: 11400000, guid: 562418e4ae39d844dbf02a89cd22172c, type: 2}
-  useInputTrigger: 1
+  spawnData: {fileID: 11400000, guid: 517c16eca4962ae42ac2b11e37953585, type: 2}
+  useInputTrigger: 0
   inputKey: 115
   useIntervalTrigger: 0
   interval: 3
-  startImmediately: 0
+  startImmediately: 1
   useManagerLocking: 0
 --- !u!4 &1033905182
 Transform:

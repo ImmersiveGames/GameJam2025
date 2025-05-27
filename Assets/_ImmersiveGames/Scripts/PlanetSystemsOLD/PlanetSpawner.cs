@@ -87,7 +87,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystemsOLD
                 planetObj.transform.position = new Vector3(orbitPosition.x, universeCenter.position.y, orbitPosition.z);
 
                 planet.StartOrbit(universeCenter);
-                currentRadius += planetData.size + gameConfig.orbitMargin;
+                //currentRadius += planetData.size + gameConfig.orbitMargin;
 
                 planet.Initialize();
                 _spawnedPlanets.Add(planet);

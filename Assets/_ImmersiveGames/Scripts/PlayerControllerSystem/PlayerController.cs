@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void Awake()
         {
-            _rb = GetComponent<Rigidbody>();
+            _rb = GetComponentInChildren<Rigidbody>();
             _inputActions = new PlayerInputActions();
 
             if (mainCamera == null)
