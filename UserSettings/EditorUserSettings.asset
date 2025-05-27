@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!162 &1
+EditorUserSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 4
+  m_ConfigSettings:
+    Eflatun_SceneReference_SceneGuidToAddressMapJson:
+      value: 184c
+      flags: 0
+    Eflatun_SceneReference_SceneGuidToPathMapJson:
+      value: 1813075603000c5a58575a77127a0e431543192b7c2b24687f7c4c30e4b36660b0b574b3a51b2c2f3c16fc733b170c32f7181a02e00e2d0a1c0bee4122fc151d14d657e713da1e52de1715dad45f9da184d0d5ba8be9b78adadca4a3a2f5b6aca5a8a4abf9fcfd98fcfaa9e5fb9190928390f5e5dfd5ccd3a99deefab3ded7c1cadf93d3fe86d5decac2938ea79ea2b7dc83ab9981b68db99c8ed2a76ebabb79242b2aeceabbe4d7e4eb6cd47475d1de7624d2292fd2ddd9dcc326db91d7c1dc149b98d91cd9bb88729b598d2e70496e6c507a46634e6a4b5a64694d125e22762b2337350f7a7a2d603a3e4b50593c040713334a3b6a49066f3b4d0268500156050c05025a0008075d2675255a267b277e644f6408043b2e3d0e7f221bed3a31f1223df0e012e836e8fda331f30631f5e5b8d50f021d48050300e90a808c564892c542919519471a4fb4cd44e51ab54fd3baeabd86efbdbda8bddcbcf5dca8b1abe7d9b6e9adebefe4c6d5a3a0f8a3d0bca0b1edb9c6c2abf18c83d7dad5dd97f8d48bceb587d0a4c49ad0989bbbe5e8e3af91a1fca2adf09fb0e5b59bebb0e0edee3db0ed33ecb8b86b81688728818271c3de3454966a8e696d33ad699e82455454418c99bf976d988a025051556a6d4118525c447e6a7f597d50603a7b7f6636633b3764282228117f2b2b107d454042344d371e6e4d4a6819186b3b4905060357070f0d190d4a2f1c0327303311170c2c182e080b25261f382fec1a217807323fe9312f790d32f9160410dd13030d1e15bb1307fe1c124bb152ff45c14247c14245c090459a4fc89a98e688ba1e80d4d48abdeaedb1a3b4ebdfb1f8e2d5ebb1a2e2bae8c5d6f1f4c7bdefcde8c4d8b3c7ccd8f9f8c9cedfcbae81e4969ec6df8ccc9c98c49d858dda8c8ad98dc0f3979492f8c0a9f3cdc7cb30e5e6b5f9eab7e933ee3f69bec2302d9f627c879397ceba7b918b8f879435b094876a9680d3b19f408498559b93800244486f5f275750646a531a475c7f495b4e32087a6a3227352b726538524570766d7031354a4d7c22483023530d000b06684f501b001c00025a0f55020d5e755d0c0c765d217227137a43731c767f486b765c3c3ef236f1f5ab09fc3a25eee7eafc0644333511070eed44defd011fb5db0bccf02114111f1f8901121f0d0e88aea3e69eb1b4e7bcb380e3e8d2b0b9bddba688abf2a5a2f0a2f2f5f2f4f8affef6f980ea81cfb1b5bcb9cdc9db89d3c2c4f3c68c89c0c1cc95d38783dfcd91c9ab9fd9a8d7afda81e4bca59fbdafb9a2af91e1949bb9a7be77f756b96db1b95fbcb17e61bc65866639568b6b8284366b7149868dd2c2dac092449e1a4cc4371919c7501d363731646b563d3a346b3f5e2b23235c2a26243b2c67467824737a7e285362413f4a0a264f4d222c0b2b4e333a39404d434610030b0154594b183553501b26000325245d32221003253d631a311a22311a3422f236382fe3287508153fe33a00fd044d14fb01e113ba12
+      flags: 0
+    RecentlyUsedSceneGuid-0:
+      value: 5a08575f5207595a0f5d59741173094444164f7d7d2a23317c7a4465bbe1646d
+      flags: 0
+    RecentlyUsedSceneGuid-1:
+      value: 5b520004070c580f0b575d2345750d4412161b737d2d22362e7e1861b1e16c6d
+      flags: 0
+    RecentlyUsedSceneGuid-2:
+      value: 0657515601515e5e0f5a0a2748210c444e4f1e7e787c25312b281836bae6323a
+      flags: 0
+    RecentlyUsedSceneGuid-3:
+      value: 0106555356575a0a0b5b5c7144260b44124f412b7c2a25627a2f1864b1b9363a
+      flags: 0
+    RecentlyUsedSceneGuid-4:
+      value: 5001525300545c025b5b0e7b41705c44171648292e7074657c2a1b60b0b8666a
+      flags: 0
+    RecentlyUsedSceneGuid-5:
+      value: 530156525d070a030b585a2048225b44461648297a7822677b704e32b0e43760
+      flags: 0
+    RecentlyUsedSceneGuid-6:
+      value: 55075754520c5b5a5a08097746270c44464f4078797d77697a2c4463b1b63539
+      flags: 0
+    RecentlyUsedSceneGuid-7:
+      value: 5157550757505f0e090d0f7512755d4440154e2c7a797667297d1b67e7b9306f
+      flags: 0
+    RecentlyUsedSceneGuid-8:
+      value: 5257555656575909090d087346260744464e197a7f7c27687b7c4a67b6b3636e
+      flags: 0
+    lightmappingBakingProfile:
+      value: 51
+      flags: 0
+    vcSharedLogLevel:
+      value: 0d5e400f0650
+      flags: 0
+  m_VCAutomaticAdd: 1
+  m_VCDebugCom: 0
+  m_VCDebugCmd: 0
+  m_VCDebugOut: 0
+  m_SemanticMergeMode: 2
+  m_DesiredImportWorkerCount: 1
+  m_StandbyImportWorkerCount: 1
+  m_IdleImportWorkerShutdownDelay: 60000
+  m_VCShowFailedCheckout: 1
+  m_VCOverwriteFailedCheckoutAssets: 1
+  m_VCProjectOverlayIcons: 1
+  m_VCHierarchyOverlayIcons: 1
+  m_VCOtherOverlayIcons: 1
+  m_VCAllowAsyncUpdate: 1
+  m_VCScanLocalPackagesOnConnect: 1
+  m_ArtifactGarbageCollection: 1
+  m_CompressAssetsOnImport: 1

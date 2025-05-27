@@ -241,6 +241,8 @@ GameObject:
   - component: {fileID: 7412998811395594837}
   - component: {fileID: 6071352826711163495}
   - component: {fileID: 1923978109953774804}
+  - component: {fileID: 4753947037515409220}
+  - component: {fileID: 5833225348130278975}
   m_Layer: 5
   m_Name: Eater Health Bar
   m_TagString: Untagged
@@ -307,6 +309,34 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &4753947037515409220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2052563975925772959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03a82c6f03f89ec42b7bed08bd5b2fab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eater: {fileID: 0}
+  hungryBar: {fileID: 9089715639751401544}
+--- !u!114 &5833225348130278975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2052563975925772959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb3e01fb380d35940b20721205609ae0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eater: {fileID: 0}
+  healthBar: {fileID: 4772318235752735059}
 --- !u!1 &2387444979595858881
 GameObject:
   m_ObjectHideFlags: 0
@@ -833,7 +863,7 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 1
-  m_FillAmount: 0.7
+  m_FillAmount: 0.51
   m_FillClockwise: 0
   m_FillOrigin: 0
   m_UseSpriteMesh: 0

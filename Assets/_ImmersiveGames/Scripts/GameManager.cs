@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine.SceneManagement;
 using UnityUtils;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.Scripts
 {
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.Scripts
             base.Awake();
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
+            SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
         }
 
         private void OnDestroy()
