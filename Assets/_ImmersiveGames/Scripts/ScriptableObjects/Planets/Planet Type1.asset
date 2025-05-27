@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc88c22586694f62abfef8f446cb3648, type: 3}
   m_Name: Planet Type1
   m_EditorClassIdentifier: 
-  objectName: Planeta Tipo1
+  objectName: Planeta
   prefab: {fileID: 7554185307657802338, guid: 586f7d042eeedab49ba4b22285b6782f, type: 3}
   modelPrefab:
   - {fileID: 6310046052524586760, guid: 5b3258a1c619b394b87631749052f6c2, type: 3}
@@ -24,13 +24,11 @@ MonoBehaviour:
   factoryType: 0
   canExpand: 0
   size: 5
-  minScaleMultiplier: 0.8
-  maxScaleMultiplier: 1
+  minScale: 1
+  maxScale: 4
   minTiltAngle: -15
   maxTiltAngle: 15
   minOrbitSpeed: 10
   maxOrbitSpeed: 20
-  orbitClockwise: 1
   minRotationSpeed: 10
   maxRotationSpeed: 30
-  rotateClockwise: 1
