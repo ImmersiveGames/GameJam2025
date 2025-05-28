@@ -73,3 +73,11 @@ Assets/_ImmersiveGames/TextMesh Pro/
 Assets/Resources/DOTweenSettings.asset
 
 Assets/Plugins/Demigiant.meta
+
+Assets/DOTween/
+
+Assets/DOTween.meta
+
+Assets/Resources/DOTweenSettings.asset.meta
+
+*.meta
