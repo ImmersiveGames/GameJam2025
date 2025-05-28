@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1006197573614822276}
   - component: {fileID: 4805849585127476909}
   - component: {fileID: 1004090534365682431}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Particle System
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4843,7 +4843,9 @@ GameObject:
   m_Component:
   - component: {fileID: 7790425021688631422}
   - component: {fileID: 3630615689102425150}
-  m_Layer: 0
+  - component: {fileID: 5156101369664951364}
+  - component: {fileID: 3047792937553412849}
+  m_Layer: 10
   m_Name: Planet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4888,6 +4890,54 @@ MonoBehaviour:
   - {fileID: 3548997023841899829}
   - {fileID: 3951115941804957467}
   - {fileID: 922325336496420318}
+--- !u!54 &5156101369664951364
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 4
+  m_CollisionDetection: 0
+--- !u!135 &3047792937553412849
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.8
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7507207242276349130
 GameObject:
   m_ObjectHideFlags: 0
@@ -4897,7 +4947,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 67251456816494101}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Eater Spot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4972,6 +5022,10 @@ PrefabInstance:
       value: Part_4
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -5041,6 +5095,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_Name
       value: Part_3
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_IsActive
@@ -5114,6 +5172,10 @@ PrefabInstance:
       value: Part_2
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -5183,6 +5245,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_Name
       value: Part_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 38187bf1a2963c3419dfe1236a011449, type: 3}
       propertyPath: m_IsActive

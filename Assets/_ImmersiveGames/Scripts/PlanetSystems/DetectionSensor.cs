@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class DetectionSensor : MonoBehaviour
     {
         [SerializeField, Tooltip("Camada dos alvos a detectar")]
@@ -37,14 +38,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnEnable()
         {
             if (!_planet) return;
-            _planet.EventPlanetCreated += HandlePlanetCreated;
+            _planet.EventPlanetCreated += ConfigPlanetDetection;
             _planet.EventPlanetDestroyed += HandlePlanetDestroyed;
         }
 
         private void OnDisable()
         {
             if (!_planet) return;
-            _planet.EventPlanetCreated -= HandlePlanetCreated;
+            _planet.EventPlanetCreated -= ConfigPlanetDetection;
             _planet.EventPlanetDestroyed -= HandlePlanetDestroyed;
         }
 
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private void HandlePlanetCreated(int id, PlanetData data, PlanetResourcesSo resourcesSo)
+        private void ConfigPlanetDetection(int id, PlanetData data, PlanetResourcesSo resourcesSo)
         {
             _cachedTransform = transform;
             _detectionRadius = data.detectionRadius;

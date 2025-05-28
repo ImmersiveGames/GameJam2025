@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -14,6 +15,7 @@ namespace _ImmersiveGames.Scripts
         [SerializeField] public GameConfig gameConfig;
         [SerializeField] private Transform player;
         [SerializeField] private Transform worldEater;
+        
         public Transform Player => player;
         public Transform WorldEater => worldEater;
         public string Score { get; private set; }
@@ -112,11 +114,6 @@ namespace _ImmersiveGames.Scripts
         public bool CheckGameOver() => !_isPlaying && _isGameOver && !_isVictory;
 
         public bool CheckVictory() => !_isPlaying && _isVictory && !_isGameOver;
-
-        public void SetScore(string score)
-        {
-            Score = score;
-            DebugUtility.LogVerbose<GameManager>($"Pontuação: {score}");
-        }
+        
     }
 }

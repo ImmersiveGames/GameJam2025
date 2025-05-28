@@ -658,10 +658,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4504130921730453431, guid: aceedc71943aa524dbadf6065f985046, type: 3}
-      propertyPath: planetTarget
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4504130921730453431, guid: aceedc71943aa524dbadf6065f985046, type: 3}
       propertyPath: planetsTransform
       value: 
       objectReference: {fileID: 99254224}
@@ -1138,13 +1134,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 3761438416119342501, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: playOnAwake
-      value: 1
+    - target: {fileID: 4071415473057797655, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: detectionRadius
+      value: 40
       objectReference: {fileID: 0}
-    - target: {fileID: 4675084478555042006, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: m_Camera
-      value: 
+    - target: {fileID: 4071415473057797655, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: recognitionRadius
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 5173416820576912031, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: m_IsKinematic
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6123967762187821120, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1185,14 +1185,6 @@ PrefabInstance:
     - target: {fileID: 6123967762187821120, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6373699779755514349, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: playOnAwake
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8564449454596756444, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: mainCamera
-      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

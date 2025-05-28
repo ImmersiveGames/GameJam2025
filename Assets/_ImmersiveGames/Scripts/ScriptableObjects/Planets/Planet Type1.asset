@@ -24,11 +24,12 @@ MonoBehaviour:
   factoryType: 0
   canExpand: 0
   size: 5
-  minScale: 1
-  maxScale: 4
+  minScale: 3
+  maxScale: 10
   minTiltAngle: -15
   maxTiltAngle: 15
   minOrbitSpeed: 10
   maxOrbitSpeed: 20
   minRotationSpeed: 10
   maxRotationSpeed: 30
+  detectionRadius: 5
