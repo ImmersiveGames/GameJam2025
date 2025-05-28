@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts
         [SerializeField] public GameConfig gameConfig;
         [SerializeField] private Transform player;
         [SerializeField] private Transform worldEater;
-        
+        [SerializeField] public Planets TargetToEater;
         public Transform Player => player;
         public Transform WorldEater => worldEater;
         public string Score { get; private set; }
@@ -28,6 +28,8 @@ namespace _ImmersiveGames.Scripts
         public event Action EventGameOver;
         public event Action EventVictory;
         public event Action<bool> EventPauseGame;
+        public event Action<Planets> OnPlanetMarked;
+        public event Action<Planets> OnPlanetUnmarked;
 
         protected override void Awake()
         {
@@ -45,12 +47,8 @@ namespace _ImmersiveGames.Scripts
             EventGameOver = null;
             EventVictory = null;
             EventPauseGame = null;
-
-            // Destruir o GameManagerStateMachine
-            if (GameManagerStateMachine.Instance != null)
-            {
-                Destroy(GameManagerStateMachine.Instance.gameObject);
-            }
+            OnPlanetMarked = null;
+            OnPlanetUnmarked = null;
         }
 
         public bool ShouldPlayingGame() => _isPlaying && !_isVictory && !_isGameOver;
@@ -115,5 +113,26 @@ namespace _ImmersiveGames.Scripts
 
         public bool CheckVictory() => !_isPlaying && _isVictory && !_isGameOver;
         
+        public void MarkPlanet(Planets planet)
+        {
+            if (TargetToEater == planet) return;
+
+            if (TargetToEater != null)
+            {
+                OnPlanetUnmarked?.Invoke(TargetToEater);
+            }
+
+            TargetToEater = planet;
+            OnPlanetMarked?.Invoke(planet);
+            Debug.Log($"Planeta marcado: {planet.name}");
+        }
+        public void ClearMarkedPlanet()
+        {
+            if (TargetToEater != null)
+            {
+                OnPlanetUnmarked?.Invoke(TargetToEater);
+                TargetToEater = null;
+            }
+        }
     }
 }

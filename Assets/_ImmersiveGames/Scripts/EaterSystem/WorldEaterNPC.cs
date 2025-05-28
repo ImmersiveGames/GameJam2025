@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (planetTarget != null) 
             {
                 _planet = planetTarget.GetComponent<Planets>();
-                _planet.OnDeath += PlanetEaten;
+                _planet.OnPlanetDied += PlanetEaten;
             }
 
             _isEating = false;
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public void PlanetEaten(DestructibleObject destructible)
         {
-            _planet.OnDeath -= PlanetEaten;
+            _planet.OnPlanetDied -= PlanetEaten;
             ResetEater();
             ReleaseTarget();
 

@@ -5,32 +5,35 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    public class PlayerDetectPlanets : MonoBehaviour, IDetectable
+    [DebugLevel(DebugLevel.Verbose)]
+    public class PlayerDetectable : MonoBehaviour, IDetectable
     {
         private PlayerInput _playerInput;
 
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
+            if (_playerInput == null)
+            {
+                DebugUtility.LogError<PlayerDetectable>("PlayerInput não encontrado.", this);
+                enabled = false;
+            }
         }
 
         public void OnPlanetDetected(Planets planet)
         {
-            DebugUtility.Log<PlayerDetectPlanets>($"Player detectou planeta: {planet.name}", "green");
-            // Lógica específica do jogador ao detectar planeta
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player detectou planeta: {planet.name}", "green");
         }
 
         public void OnPlanetLost(Planets planet)
         {
-            DebugUtility.Log<PlayerDetectPlanets>($"Player perdeu planeta: {planet.name}");
-            // Lógica específica do jogador ao perder planeta
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player perdeu planeta: {planet.name}", "red");
         }
 
         public void OnRecognitionRangeEntered(Planets planet, PlanetResourcesSo resources)
         {
-            DebugUtility.Log<PlayerDetectPlanets>($"Player reconheceu planeta: {planet.name}, Recursos: {resources}");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planet.name}, Recursos: {resources}", "blue");
             // Exibir UI com informações do planeta, etc.
         }
     }
-
 }

@@ -13,8 +13,10 @@ GameObject:
   - component: {fileID: 4675084478555042006}
   - component: {fileID: 8564449454596756444}
   - component: {fileID: 1673690863950449713}
-  - component: {fileID: 4071415473057797655}
   - component: {fileID: 6165506686410970894}
+  - component: {fileID: 8105766242119733985}
+  - component: {fileID: 2919589876584544391}
+  - component: {fileID: 7323404572925675627}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -164,7 +166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 0}
-  moveSpeed: 5
+  moveSpeed: 20
   rotationSpeed: 20
 --- !u!114 &1673690863950449713
 MonoBehaviour:
@@ -181,27 +183,6 @@ MonoBehaviour:
   spawnData: {fileID: 11400000, guid: 70cf78eac4c9b6841b1fadeb477e88ce, type: 2}
   useManagerLocking: 0
   <PlayerInput>k__BackingField: {fileID: 4675084478555042006}
---- !u!114 &4071415473057797655
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3483309183724010783}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f16499f154fe42cc981e26b50114ce13, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  planetLayer:
-    serializedVersion: 2
-    m_Bits: 1024
-  detectionRadius: 50
-  recognitionRadius: 10
-  recognitionAngle: 45
-  minDetectionFrequency: 0.1
-  maxDetectionFrequency: 0.5
-  debugMode: 1
 --- !u!114 &6165506686410970894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -212,6 +193,58 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9f0f85fb35614a12abba6d3c85d141e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8105766242119733985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3483309183724010783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cb8aa1d22264f89a659b46aafb49d63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planetLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  radius: 40
+  minDetectionFrequency: 0.1
+  maxDetectionFrequency: 0.5
+  debugMode: 1
+  detectedPlanets: []
+--- !u!114 &2919589876584544391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3483309183724010783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cc7ab892828486dac109b6cb5ee1ab2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planetLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  radius: 20
+  minDetectionFrequency: 0.1
+  maxDetectionFrequency: 0.5
+  debugMode: 1
+  recognizedPlanets: []
+--- !u!114 &7323404572925675627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3483309183724010783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d398b56dd9cf46fd9b101ca3fb480cee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &4295854707748899982

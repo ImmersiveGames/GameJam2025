@@ -22,7 +22,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 57
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       propertyPath: m_LocalPosition.y
@@ -30,7 +30,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -82
+      value: -200
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -151,10 +151,13 @@ PrefabInstance:
       addedObject: {fileID: 2734881935407311101}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8181006959528211166}
+      addedObject: {fileID: 1791246014002235684}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1791246014002235684}
+      addedObject: {fileID: 2769147706784292564}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6757081968746861406}
   m_SourcePrefab: {fileID: 100100000, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
 --- !u!1 &3481885651675396822 stripped
 GameObject:
@@ -230,29 +233,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
---- !u!114 &8181006959528211166
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3481885651675396822}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f16499f154fe42cc981e26b50114ce13, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  planetLayer:
-    serializedVersion: 2
-    m_Bits: 0
-  detectionRadius: 50
-  recognitionRadius: 10
-  recognitionAngle: 45
-  minDetectionFrequency: 0.1
-  maxDetectionFrequency: 0.5
-  debugMode: 1
-  _detectedPlanets: []
-  _recognizedPlanets: []
 --- !u!114 &1791246014002235684
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -265,6 +245,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 957064ed3b3345c98a56d28a168ca079, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  moveSpeed: 5
+  eatDistance: 5
+--- !u!114 &2769147706784292564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3481885651675396822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1cb8aa1d22264f89a659b46aafb49d63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  planetLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  detectionRadius: 50
+  minDetectionFrequency: 0.1
+  maxDetectionFrequency: 0.5
+  debugMode: 1
+  _detectedPlanets: []
+--- !u!114 &6757081968746861406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3481885651675396822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cc7ab892828486dac109b6cb5ee1ab2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  recognitionRadius: 10
+  debugMode: 1
+  _recognizedPlanets: []
 --- !u!95 &7924603568117103126 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: d61e0b55ef02b644f90f0c5939c38ff2, type: 3}
