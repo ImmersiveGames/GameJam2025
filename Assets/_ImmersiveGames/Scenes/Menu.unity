@@ -1363,10 +1363,10 @@ AudioSource:
   OutputAudioMixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   m_audioClip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
   m_Resource: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -1586,12 +1586,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578d2bfaccbb1ba43a5d8bd3dee3ceb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  planetsTransform: {fileID: 0}
   planetTarget: {fileID: 0}
   speed: 5
   stoppingDistance: 2.5
   animator: {fileID: 8849805828581158812}
   biteDamage: 5
-  planetsTransform: {fileID: 0}
+  maxHungry: 100
+  hungryRate: 5
+  maxHealth: 100
 --- !u!1001 &3151817945176190250
 PrefabInstance:
   m_ObjectHideFlags: 0
