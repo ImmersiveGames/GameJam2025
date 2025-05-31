@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
     {
         [SerializeField] private float radius = 2f; // Raio do círculo
         [SerializeField] private float space = 5f; 
-        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
+        public override void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
         {
             float angleStep = 360f / objects.Length;
             for (int i = 0; i < objects.Length; i++)

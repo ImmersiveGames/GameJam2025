@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63be3773791642daa7e33d268249876d, type: 3}
   m_Name: PlayerShoot
   m_EditorClassIdentifier: 
-  poolableData: {fileID: 11400000, guid: 4458c310e0940f54baf1d05ec7f4a2b5, type: 2}
+  poolableData: {fileID: 11400000, guid: 383671e9af6b54447b3d7931211fdc77, type: 2}
   spawnCount: 1
   pattern: {fileID: 11400000, guid: b0277e36856c5714183e2a5020e90037, type: 2}
   triggerStrategy: {fileID: 11400000, guid: 2dc0af40acfa6d0459bdf576a16c491c, type: 2}

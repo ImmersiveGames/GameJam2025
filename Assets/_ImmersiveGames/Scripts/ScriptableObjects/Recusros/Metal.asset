@@ -12,6 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9da6be1e696469f9c32730737cc1740, type: 3}
   m_Name: Metal
   m_EditorClassIdentifier: 
-  resourceName: Metal
   resourceType: 0
-  resourceIcon: {fileID: -1069927427, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  resourceIcon: {fileID: 584473787, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}

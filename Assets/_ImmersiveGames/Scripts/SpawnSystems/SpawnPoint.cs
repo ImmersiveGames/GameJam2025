@@ -149,7 +149,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
-            _strategy.Spawn(objects, evt.Origin, transform.forward);
+            _strategy.Spawn(objects, spawnData, evt.Origin, transform.forward);
             SpawnManager.Instance.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, evt.Origin, spawnData));
         }

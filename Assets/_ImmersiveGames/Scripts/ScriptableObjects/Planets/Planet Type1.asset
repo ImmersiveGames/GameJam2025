@@ -19,7 +19,6 @@ MonoBehaviour:
   - {fileID: 2578670935699027607, guid: 1f94fbde15c0e4b4b9c32c36f1632a9e, type: 3}
   - {fileID: 2876965188190721788, guid: 308ad3333e0148b429753337250a2f65, type: 3}
   - {fileID: 4360315050680892159, guid: 7e5ba11702bc22b4ea2db2ca781a1cd4, type: 3}
-  - {fileID: 4102404960340168211, guid: 2b10259d441762f4ead481ca8a92548c, type: 3}
   noRandomModel: 0
   lifetime: 0
   initialPoolSize: 10
@@ -30,8 +29,7 @@ MonoBehaviour:
   maxScale: 10
   minTiltAngle: -15
   maxTiltAngle: 15
-  minOrbitSpeed: 10
-  maxOrbitSpeed: 20
+  minOrbitSpeed: 3
+  maxOrbitSpeed: 10
   minRotationSpeed: 10
   maxRotationSpeed: 30
-  detectionRadius: 5

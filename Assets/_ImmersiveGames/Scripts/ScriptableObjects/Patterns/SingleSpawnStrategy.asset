@@ -12,4 +12,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e46f76ab3a644521a770cb81b7437bf2, type: 3}
   m_Name: SingleSpawnStrategy
   m_EditorClassIdentifier: 
-  projectileSpeed: 10

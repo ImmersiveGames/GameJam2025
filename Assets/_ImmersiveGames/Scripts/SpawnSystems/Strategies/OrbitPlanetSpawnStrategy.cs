@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
         [SerializeField] private float initialOrbitRadius = 10f;
         [SerializeField] private Vector3 orbitCenter = Vector3.zero; // Centro com Y = 0
 
-        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
+        public override void Spawn(IPoolable[] objects, SpawnData data,Vector3 origin, Vector3 forward)
         {
             var resourceList = GenerateResourceList(objects.Length);
             float currentRadius = initialOrbitRadius;

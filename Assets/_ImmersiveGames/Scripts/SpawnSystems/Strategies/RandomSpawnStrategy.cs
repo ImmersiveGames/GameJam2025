@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
     public class RandomSpawnStrategy : SpawnStrategySo
     {
         [SerializeField] private Vector2 spawnArea = new Vector2(5f, 5f);
-        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
+        public override void Spawn(IPoolable[] objects,SpawnData data, Vector3 origin, Vector3 forward)
         {
             foreach (var obj in objects)
             {

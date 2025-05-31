@@ -8,9 +8,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
     [CreateAssetMenu(fileName = "SingleSpawnStrategy",menuName = "ImmersiveGames/Strategies/SingleSpawn")]
     public class SingleSpawnStrategy : SpawnStrategySo
     {
-        [SerializeField] private float projectileSpeed;
-        
-        public override void Spawn(IPoolable[] objects, Vector3 origin, Vector3 forward)
+        public override void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
         {
             
             foreach (var obj in objects)
@@ -23,7 +21,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 var movement = go.GetComponent<ProjectileMovement>();
                 if (movement)
                 {
-                    movement.InitializeMovement(forward.normalized, projectileSpeed);
+                    var projectilData = data.PoolableData as ProjectilesData;
+                    if (projectilData) movement.InitializeMovement(forward.normalized, projectilData.speed);
                 }
                 else
                 {

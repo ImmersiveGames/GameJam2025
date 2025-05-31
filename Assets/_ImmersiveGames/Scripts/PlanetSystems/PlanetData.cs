@@ -29,6 +29,5 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         [SerializeField, Tooltip("Velocidade máxima de rotação do planeta em torno de seu próprio eixo (graus por segundo)")]
         public float maxRotationSpeed = 30f;
-        public float detectionRadius = 5f;
     }
 }

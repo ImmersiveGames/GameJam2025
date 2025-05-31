@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Life
   m_EditorClassIdentifier: 
   resourceType: 4
-  resourceIcon: {fileID: -2062275529, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  resourceIcon: {fileID: -812359318, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}

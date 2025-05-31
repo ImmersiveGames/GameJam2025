@@ -10,8 +10,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
         public void InitializeMovement(Vector3 direction, float speed)
         {
             _direction = direction.normalized;
-            _speed = speed;
             _isMoving = true;
+            _speed = speed;
             if (_direction != Vector3.zero)
             {
                 transform.rotation = Quaternion.LookRotation(_direction);

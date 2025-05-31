@@ -16,12 +16,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private float _timer;
         private bool _returningToPool;
 
+        private PoolableObjectData _data;
+
         public bool IsActive => _isActive;
         public float Lifetime => _lifetime; // Adicionado para acesso externo
 
         public void Initialize(PoolableObjectData data, ObjectPool pool)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
+            _data = data;
             _pool = pool ?? throw new ArgumentNullException(nameof(pool));
             _lifetime = data.Lifetime; // Usa o lifetime diretamente
             _isActive = false;
@@ -89,9 +92,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             // Pode ser sobrescrito
         }
 
-        public GameObject GetGameObject()
+        public GameObject GetGameObject() => gameObject;
+        public T GetData<T>()  where T : PoolableObjectData
         {
-            return gameObject;
+            if (_data is T data)
+            {
+                return data;
+            }
+            throw new InvalidCastException($"Não é possível converter {_data.GetType()} para {typeof(T)}.");
         }
 
         public void Reset()
