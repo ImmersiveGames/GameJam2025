@@ -310,6 +310,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -6307245398604684175, guid: 7e3dbc797143af546bb5f5da37db52e5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
+    - target: {fileID: -5282737305565657624, guid: 7e3dbc797143af546bb5f5da37db52e5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 7e3dbc797143af546bb5f5da37db52e5, type: 3}
       propertyPath: m_Name
       value: Herald
@@ -318,6 +326,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: e7ded40eb028e2f408c5c94b5f7b21be, type: 2}
+    - target: {fileID: 7112568826418718506, guid: 7e3dbc797143af546bb5f5da37db52e5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
     - target: {fileID: 7114165217110617692, guid: 7e3dbc797143af546bb5f5da37db52e5, type: 3}
       propertyPath: m_Name
       value: GPX

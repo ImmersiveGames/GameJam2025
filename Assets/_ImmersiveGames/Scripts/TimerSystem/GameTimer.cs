@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             base.Awake();
             _gameManager = GameManager.Instance;
-            _gameDuration = _gameManager.gameConfig.timerGame;
+            _gameDuration = _gameManager.GameConfig.timerGame;
             // Criar o CountdownTimer
             _countdownTimer = new CountdownTimer(_gameDuration);
             

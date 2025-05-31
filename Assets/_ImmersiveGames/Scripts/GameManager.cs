@@ -12,12 +12,13 @@ namespace _ImmersiveGames.Scripts
     [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Verbose)]
     public sealed class GameManager : Singleton<GameManager>
     {
-        [SerializeField] public GameConfig gameConfig;
+        [SerializeField] private GameConfig gameConfig;
         [SerializeField] private Transform player;
         [SerializeField] private Transform worldEater;
-        [SerializeField] public Planets TargetToEater;
+        [SerializeField] private Planets targetToEater;
         public Transform Player => player;
         public Transform WorldEater => worldEater;
+        public GameConfig GameConfig => gameConfig;
         public string Score { get; private set; }
         private bool _isPlaying;
         private bool _isGameOver;
@@ -36,8 +37,8 @@ namespace _ImmersiveGames.Scripts
             base.Awake();
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
-            if(!SceneManager.GetSceneByName("UI").isLoaded)
-                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
+            /*if(!SceneManager.GetSceneByName("UI").isLoaded)
+                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);*/
         }
 
         private void OnDestroy()
@@ -115,23 +116,23 @@ namespace _ImmersiveGames.Scripts
         
         public void MarkPlanet(Planets planet)
         {
-            if (TargetToEater == planet) return;
+            if (targetToEater == planet) return;
 
-            if (TargetToEater != null)
+            if (targetToEater != null)
             {
-                OnPlanetUnmarked?.Invoke(TargetToEater);
+                OnPlanetUnmarked?.Invoke(targetToEater);
             }
 
-            TargetToEater = planet;
+            targetToEater = planet;
             OnPlanetMarked?.Invoke(planet);
             Debug.Log($"Planeta marcado: {planet.name}");
         }
         public void ClearMarkedPlanet()
         {
-            if (TargetToEater != null)
+            if (targetToEater != null)
             {
-                OnPlanetUnmarked?.Invoke(TargetToEater);
-                TargetToEater = null;
+                OnPlanetUnmarked?.Invoke(targetToEater);
+                targetToEater = null;
             }
         }
     }

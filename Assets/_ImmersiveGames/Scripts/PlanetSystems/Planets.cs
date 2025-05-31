@@ -1,6 +1,7 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -9,7 +10,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     [DebugLevel(DebugLevel.Verbose)]
     public class Planets : MonoBehaviour, IPlanetInteractable
     {
-        [SerializeField] private PlanetResourcesSo resourcesSo;
+        private PlanetResourcesSo _resourcesSo;
+        private TargetFlag _targetFlag;
         public bool IsActive { get; private set; }
         public event Action<int, PlanetData, PlanetResourcesSo> EventPlanetCreated;
         public event Action<int> EventPlanetDestroyed;
@@ -26,6 +28,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void Awake()
         {
             IsActive = true;
+            _targetFlag = GetComponentInChildren<TargetFlag>();
+            _targetFlag.gameObject.SetActive(false);
         }
 
         private void OnEnable()
@@ -63,6 +67,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planet == this)
             {
+                _targetFlag.gameObject.SetActive(true);
                 DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
                 // Adicionar efeito visual (ex.: outline, partículas)
             }
@@ -72,6 +77,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planet == this)
             {
+                _targetFlag.gameObject.SetActive(false);
                 DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} desmarcado.", "gray");
                 // Remover efeito visual
             }
@@ -81,7 +87,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             _planetId = id;
             _planetData = data;
-            resourcesSo = resources;
+            _resourcesSo = resources;
             EventPlanetCreated?.Invoke(id, data, resources);
         }
 
@@ -101,7 +107,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         public PlanetResourcesSo GetResources()
         {
-            return resourcesSo;
+            return _resourcesSo;
         }
 
         public void DestroyPlanet()

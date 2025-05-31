@@ -31,6 +31,7 @@ namespace _ImmersiveGames.Scripts.HealthSystems
         // Aplica dano ao objeto
         public void TakeDamage(float damage)
         {
+            Debug.Log($"TakeDamage called with damage: {damage}");
             if (damage < 0) return; // Evita dano negativo
 
             currentHealth = Mathf.Max(0, currentHealth - damage); // Reduz HP, não abaixo de 0

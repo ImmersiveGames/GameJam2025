@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
         }
         private void OnTriggerEnter(Collider other)
         {
-            var destructible = other.GetComponent<IDestructible>();
+            var destructible = other.GetComponentInParent<IDestructible>();
             var data = _pooledObject.GetData<ProjectilesData>();
             destructible?.TakeDamage(data.damage);
             _pooledObject.Deactivate();
