@@ -10,9 +10,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _orbitSpeed;
         private bool _orbitClockwise;
         private float _selfRotationSpeed;
-        private float _initialAngle; // Para manter a posição inicial no plano XZ
+        private float _initialAngle;
 
         private Tween _orbitTween;
+        private bool _isPaused;
 
         public void Initialize(
             Vector3 center,
@@ -27,9 +28,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _orbitClockwise = orbitClockwise;
             _selfRotationSpeed = selfRotationSpeedDegPerSec;
 
-            // Calcular o ângulo inicial com base na posição atual no plano XZ
             Vector3 offset = transform.position - _orbitCenter;
-            offset.y = 0; // Ignorar o eixo Y
+            offset.y = 0;
             _initialAngle = Mathf.Atan2(offset.z, offset.x) * Mathf.Rad2Deg;
 
             StartOrbit();
@@ -41,35 +41,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             _orbitTween?.Kill();
 
-            // Usar um ângulo relativo a partir da posição inicial
             _orbitTween = DOTween.To(() => 0f, angle => UpdateOrbitPosition(angle), 360f * direction, 360f / _orbitSpeed)
                 .SetRelative(true)
                 .SetEase(Ease.Linear)
                 .SetLoops(-1, LoopType.Incremental);
         }
 
+        private void UpdateOrbitPosition(float angle)
+        {
+            float rad = (angle + _initialAngle) * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Cos(rad), 0, Mathf.Sin(rad)) * _orbitRadius;
+            transform.position = _orbitCenter + offset;
+        }
+
         private void Update()
         {
-            // Autorrotação do planeta no eixo Y
             transform.Rotate(Vector3.up, _selfRotationSpeed * Time.deltaTime, Space.Self);
         }
 
-        private void UpdateOrbitPosition(float angle)
+        public void PauseOrbit()
         {
-            // Calcular a posição no plano XZ com base no ângulo
-            float rad = (angle + _initialAngle) * Mathf.Deg2Rad;
-            Vector3 offset = new Vector3(Mathf.Cos(rad), 0, Mathf.Sin(rad)) * _orbitRadius;
-            transform.position = _orbitCenter + offset; // Manter Y constante
+            if (_isPaused) return;
+            _orbitTween?.Pause();
+            _isPaused = true;
         }
 
-        private void OnDisable()
+        public void ResumeOrbit()
         {
-            _orbitTween?.Kill();
+            if (!_isPaused) return;
+            _orbitTween?.Play();
+            _isPaused = false;
         }
 
-        private void OnDestroy()
-        {
-            _orbitTween?.Kill();
-        }
+        private void OnDisable() => _orbitTween?.Kill();
+        private void OnDestroy() => _orbitTween?.Kill();
     }
 }

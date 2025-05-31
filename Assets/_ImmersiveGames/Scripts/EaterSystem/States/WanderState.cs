@@ -18,6 +18,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _changeInterval = changeInterval;
         }
 
+        public void FixedUpdate()
+        {
+            //
+        }
         public void OnEnter()
         {
             PickNewDirection();

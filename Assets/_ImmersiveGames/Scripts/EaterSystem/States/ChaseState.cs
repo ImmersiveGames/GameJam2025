@@ -1,50 +1,61 @@
-﻿using _ImmersiveGames.Scripts.StateMachine;
+﻿using System;
 using UnityEngine;
-using UnityEngine.Events;
+using _ImmersiveGames.Scripts.StateMachine;
+
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     public class ChaseState : IState
     {
         private readonly Transform _transform;
-        private readonly Transform _target;
-        private readonly float _speed;
+        private readonly Func<Transform> _getTarget;
+        private readonly Func<float> _getSpeed;
         private readonly float _reachDistance;
 
-        public UnityEvent OnTargetReached { get; }
+        public event Action OnTargetReached;
 
-        public ChaseState(Transform transform, Transform target, float speed, float reachDistance, UnityEvent onTargetReached)
+        public ChaseState(
+            Transform transform,
+            Func<Transform> getTarget,
+            Func<float> getSpeed,
+            float reachDistance)
         {
             _transform = transform;
-            _target = target;
-            _speed = speed;
+            _getTarget = getTarget;
+            _getSpeed = getSpeed;
             _reachDistance = reachDistance;
-            OnTargetReached = onTargetReached;
         }
 
         public void OnEnter() { }
 
+        public void OnExit() { }
+
         public void Update()
         {
-            if (_target == null) return;
+            Transform target = _getTarget();
+            if (target == null) return;
 
-            var direction = _target.position - _transform.position;
+            Vector3 direction = target.position - _transform.position;
             direction.y = 0;
 
-            if (direction.magnitude <= _reachDistance)
+            float distance = direction.magnitude;
+
+            if (distance <= _reachDistance)
             {
                 OnTargetReached?.Invoke();
                 return;
             }
 
-            _transform.rotation = Quaternion.Slerp(
-                _transform.rotation,
-                Quaternion.LookRotation(direction),
-                Time.deltaTime * 5f
-            );
+            // Rotaciona suavemente para o alvo
+            if (direction != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                _transform.rotation = Quaternion.Slerp(_transform.rotation, targetRotation, Time.deltaTime * 5f);
+            }
 
-            _transform.position += _transform.forward * _speed * Time.deltaTime;
+            // Move para frente
+            _transform.position += _transform.forward * (_getSpeed() * Time.deltaTime);
         }
 
-        public void OnExit() { }
+        public void FixedUpdate() { }
     }
 }

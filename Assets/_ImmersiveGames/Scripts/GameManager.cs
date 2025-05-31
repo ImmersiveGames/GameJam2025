@@ -20,6 +20,9 @@ namespace _ImmersiveGames.Scripts
         public Transform WorldEater => worldEater;
         public GameConfig GameConfig => gameConfig;
         public string Score { get; private set; }
+        public Planets TargetToEater => targetToEater;
+        public bool IsMarkedPlanet(Planets planet) =>
+            GameManager.Instance.TargetToEater == planet;
         private bool _isPlaying;
         private bool _isGameOver;
         private bool _isVictory;

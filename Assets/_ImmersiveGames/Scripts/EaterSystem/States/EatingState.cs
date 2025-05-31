@@ -20,6 +20,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _onEatComplete = onEatComplete;
         }
 
+        public void FixedUpdate()
+        {
+            //
+        }
         public void OnEnter()
         {
             _timer = 0f;
