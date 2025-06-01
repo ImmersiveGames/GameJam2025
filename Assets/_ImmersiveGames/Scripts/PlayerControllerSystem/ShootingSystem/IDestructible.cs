@@ -1,9 +1,10 @@
-﻿namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
+﻿using UnityEngine;
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     public interface IDestructible
     {
-        public void Deafeat();
-        public void Heal(float amount);
-        public void TakeDamage(float damage);
+        void Deafeat(Vector3 position);
+        void Heal(float amount);
+        void TakeDamage(float damage);
     }
 }

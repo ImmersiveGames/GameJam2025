@@ -189,5 +189,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         }
 
         public string GetPoolKey() => _poolKey;
+        public SpawnData GetSpawnData() => spawnData;
     }
 }

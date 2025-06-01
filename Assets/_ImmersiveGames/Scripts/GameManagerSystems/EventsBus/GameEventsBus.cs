@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
 {
     public class GameStartEvent : IEvent
@@ -28,6 +29,16 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
             IsPaused = isPaused;
         }
     }
+    public class DeathEvent : IEvent
+    {
+        public Vector3 Position { get; }
+        public GameObject Source { get; }
 
+        public DeathEvent(Vector3 position, GameObject source)
+        {
+            Position = position;
+            Source = source;
+        }
+    }
     
 }

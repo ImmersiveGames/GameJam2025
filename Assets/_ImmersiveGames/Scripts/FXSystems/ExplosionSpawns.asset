@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63be3773791642daa7e33d268249876d, type: 3}
+  m_Name: ExplosionSpawns
+  m_EditorClassIdentifier: 
+  poolableData: {fileID: 11400000, guid: 7debedefafb98b641823e667d87a4fe1, type: 2}
+  spawnCount: 1
+  pattern: {fileID: 11400000, guid: 932c52e918964f949ad02c5813d9914c, type: 2}
+  triggerStrategy: {fileID: 11400000, guid: a2fcd856edd03074e87bbba74bd5e773, type: 2}

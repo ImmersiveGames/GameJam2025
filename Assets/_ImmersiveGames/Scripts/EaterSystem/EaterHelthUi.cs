@@ -31,7 +31,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             // Conecta aos eventos do HealthSystem
             healthSystem.onValueChanged.AddListener(UpdateHealthBar);
             healthSystem.onThresholdReached.AddListener(UpdateThresholdColor);
-            healthSystem.EventDeath += OnDeath;
 
             // Inicializa a UI
             UpdateHealthBar(healthSystem.GetPercentage());
@@ -68,11 +67,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 backgroundImage.color = thresholdColors[3]; // Cinza ao morrer
             }
-        }
-
-        private void OnDisable()
-        {
-            healthSystem.EventDeath -= OnDeath;
         }
     }
 }

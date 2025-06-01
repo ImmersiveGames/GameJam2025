@@ -4,8 +4,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [CreateAssetMenu(fileName = "PoolableObjectData", menuName = "PoolableObjectData")]
-    public class PoolableObjectData : ScriptableObject
+    public abstract class PoolableObjectData : ScriptableObject
     {
         [SerializeField] private string objectName;
         [SerializeField] private GameObject prefab;

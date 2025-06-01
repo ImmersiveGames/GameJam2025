@@ -9,6 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e46f76ab3a644521a770cb81b7437bf2, type: 3}
-  m_Name: SingleSpawnStrategy
+  m_Script: {fileID: 11500000, guid: fe5cf71133b94ef2812117e57b19d057, type: 3}
+  m_Name: SingleStrategy
   m_EditorClassIdentifier: 
