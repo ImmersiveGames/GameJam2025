@@ -447,6 +447,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1443008763}
   - component: {fileID: 1443008764}
+  - component: {fileID: 1443008765}
   m_Layer: 10
   m_Name: Planets
   m_TagString: Untagged
@@ -483,6 +484,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnData: {fileID: 11400000, guid: ba4ed45b4d90a0644b59856b6c6b4121, type: 2}
   useManagerLocking: 0
+--- !u!114 &1443008765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1443008762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fff58d990b7343649f819628f455557d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetToEater: {fileID: 0}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -969,7 +983,6 @@ MonoBehaviour:
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   player: {fileID: 306141544}
   worldEater: {fileID: 537907806077969425}
-  targetToEater: {fileID: 0}
 --- !u!4 &2009245416
 Transform:
   m_ObjectHideFlags: 0
@@ -1215,6 +1228,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8564449454596756444, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: moveSpeed
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8564449454596756444, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 1555126169}
@@ -1228,18 +1245,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1814427060013598564, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
   m_PrefabInstance: {fileID: 4108558643873605497}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1594678529321411290 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-  m_PrefabInstance: {fileID: 4108558643873605497}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1594678529321411288}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 48c5ba3c4b004d3eb8e5c484d3d1e238, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1594678529321411295
+--- !u!114 &1594678529321411289
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1248,16 +1254,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 1594678529321411288}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b7277a788e34403a808580e05825d023, type: 3}
+  m_Script: {fileID: 11500000, guid: 77c780bf20024965ba5781914eac0f7c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minWanderSpeed: 1
-  maxWanderSpeed: 10
-  directionChangeInterval: 2
-  chaseSpeed: 3
-  reachDistance: 1.5
-  eatingDuration: 3
-  healAmount: 30
+  maxValue: 100
+  currentValue: 0
+  thresholds:
+  - 0.75
+  - 0.5
+  - 0.25
+  resourceType: 0
 --- !u!1001 &4108558643873605497
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1281,6 +1287,10 @@ PrefabInstance:
     - target: {fileID: 438787486371923955, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: m_Layer
       value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 1113890117108742213, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: debugMode
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1755308958600323195, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: m_Layer
@@ -1350,6 +1360,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 11
       objectReference: {fileID: 0}
+    - target: {fileID: 4494943875542422441, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: debugMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4596554258651251571, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: m_Layer
       value: 11
@@ -1373,7 +1387,7 @@ PrefabInstance:
     - target: {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: onDeath.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1594678529321411290}
+      objectReference: {fileID: 0}
     - target: {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: onDeath.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
@@ -1385,7 +1399,7 @@ PrefabInstance:
     - target: {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: onHealthChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1594678529321411290}
+      objectReference: {fileID: 0}
     - target: {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: onHealthChanged.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 2
@@ -1438,13 +1452,15 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 11
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8419205513249578881, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+    - {fileID: 6538697120909542854, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1814427060013598564, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1594678529321411295}
+      addedObject: {fileID: 1594678529321411289}
   m_SourcePrefab: {fileID: 100100000, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

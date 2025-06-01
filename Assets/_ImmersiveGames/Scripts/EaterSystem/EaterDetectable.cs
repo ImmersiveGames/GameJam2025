@@ -2,8 +2,10 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.ScriptableObjects;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -18,6 +20,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private Transform _self;
         private Planets _targetPlanet;
+        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
         private void Awake()
         {
@@ -26,14 +30,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnEnable()
         {
-            GameManager.Instance.OnPlanetMarked += OnPlanetMarked;
-            GameManager.Instance.OnPlanetUnmarked += OnPlanetUnmarked;
+            _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(OnPlanetMarked);
+            EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
+
+            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
         }
 
         private void OnDisable()
         {
-            GameManager.Instance.OnPlanetMarked -= OnPlanetMarked;
-            GameManager.Instance.OnPlanetUnmarked -= OnPlanetUnmarked;
+            EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
+            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
         }
 
         private void Update()
@@ -48,23 +55,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 OnEatPlanet?.Invoke(_targetPlanet);
                 DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable comeu planeta: {_targetPlanet.name}", "magenta");
-                GameManager.Instance.ClearMarkedPlanet();
             }
         }
 
-        private void OnPlanetMarked(Planets planet)
+        private void OnPlanetMarked(PlanetMarkedEvent evt)
         {
-            _targetPlanet = planet;
-            OnTargetUpdated?.Invoke(planet.transform);
-            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {planet.name}", "yellow");
+            _targetPlanet = evt.Planet;
+            OnTargetUpdated?.Invoke(_targetPlanet.transform);
+            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanet.name}", "yellow");
         }
 
-        private void OnPlanetUnmarked(Planets planet)
+        private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (_targetPlanet == planet)
+            if (_targetPlanet == evt.Planet)
             {
                 _targetPlanet = null;
-                DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {planet.name}", "red");
+                DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
             }
         }
 
@@ -73,7 +79,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado: {planet.name}", "green");
             
             //só vai parar se ele estiver marcado como alvo do Eater
-            if (!GameManager.Instance.IsMarkedPlanet(planet)) return;
+            if (!PlanetsManager.Instance.IsMarkedPlanet(planet)) return;
             var motion = planet.GetComponent<PlanetMotion>();
             motion?.PauseOrbit();
         }

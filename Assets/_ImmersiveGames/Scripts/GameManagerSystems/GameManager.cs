@@ -1,13 +1,12 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using UnityEngine;
 using _ImmersiveGames.Scripts.ScriptableObjects;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine.SceneManagement;
+using UnityEngine;
 using UnityUtils;
-using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.Scripts
+namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Verbose)]
     public sealed class GameManager : Singleton<GameManager>
@@ -15,26 +14,16 @@ namespace _ImmersiveGames.Scripts
         [SerializeField] private GameConfig gameConfig;
         [SerializeField] private Transform player;
         [SerializeField] private Transform worldEater;
-        [SerializeField] private Planets targetToEater;
         public Transform Player => player;
         public Transform WorldEater => worldEater;
         public GameConfig GameConfig => gameConfig;
-        public string Score { get; private set; }
-        public Planets TargetToEater => targetToEater;
-        public bool IsMarkedPlanet(Planets planet) =>
-            GameManager.Instance.TargetToEater == planet;
+        
+        
         private bool _isPlaying;
         private bool _isGameOver;
         private bool _isVictory;
         private bool _isInitialized;
         
-        public event Action EventStartGame;
-        public event Action EventGameOver;
-        public event Action EventVictory;
-        public event Action<bool> EventPauseGame;
-        public event Action<Planets> OnPlanetMarked;
-        public event Action<Planets> OnPlanetUnmarked;
-
         protected override void Awake()
         {
             base.Awake();
@@ -42,17 +31,6 @@ namespace _ImmersiveGames.Scripts
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
             /*if(!SceneManager.GetSceneByName("UI").isLoaded)
                 SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);*/
-        }
-
-        private void OnDestroy()
-        {
-            // Limpar eventos para evitar memory leaks
-            EventStartGame = null;
-            EventGameOver = null;
-            EventVictory = null;
-            EventPauseGame = null;
-            OnPlanetMarked = null;
-            OnPlanetUnmarked = null;
         }
 
         public bool ShouldPlayingGame() => _isPlaying && !_isVictory && !_isGameOver;
@@ -71,7 +49,7 @@ namespace _ImmersiveGames.Scripts
             _isVictory = !gameOver;
             if (!gameOver) return;
             _isInitialized = false; // Reset para próximo jogo
-            EventGameOver?.Invoke();
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
             DebugUtility.LogVerbose<GameManager>($"Setou o Fim do Jogo");
         }
 
@@ -82,7 +60,7 @@ namespace _ImmersiveGames.Scripts
             _isVictory = victory;
             if (!victory) return;
             _isInitialized = false; // Reset para próximo jogo
-            EventVictory?.Invoke();
+            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
             DebugUtility.LogVerbose<GameManager>($"Setou a vitória do jogo");
         }
         
@@ -97,18 +75,18 @@ namespace _ImmersiveGames.Scripts
                 if (!_isInitialized)
                 {
                     _isInitialized = true;
-                    EventStartGame?.Invoke();
+                    EventBus<GameStartEvent>.Raise(new GameStartEvent());
                     DebugUtility.LogVerbose<GameManager>($"Iniciou um novo jogo");
                 }
                 else
                 {
-                    EventPauseGame?.Invoke(false);
+                    EventBus<GamePauseEvent>.Raise(new GamePauseEvent(false));
                     DebugUtility.LogVerbose<GameManager>($"Despausou o jogo");
                 }
             }
             else
             {
-                EventPauseGame?.Invoke(true);
+                EventBus<GamePauseEvent>.Raise(new GamePauseEvent(true));
                 DebugUtility.LogVerbose<GameManager>($"Pausou o jogo");
             }
         }
@@ -117,26 +95,6 @@ namespace _ImmersiveGames.Scripts
 
         public bool CheckVictory() => !_isPlaying && _isVictory && !_isGameOver;
         
-        public void MarkPlanet(Planets planet)
-        {
-            if (targetToEater == planet) return;
-
-            if (targetToEater != null)
-            {
-                OnPlanetUnmarked?.Invoke(targetToEater);
-            }
-
-            targetToEater = planet;
-            OnPlanetMarked?.Invoke(planet);
-            Debug.Log($"Planeta marcado: {planet.name}");
-        }
-        public void ClearMarkedPlanet()
-        {
-            if (targetToEater != null)
-            {
-                OnPlanetUnmarked?.Invoke(targetToEater);
-                targetToEater = null;
-            }
-        }
+        
     }
 }

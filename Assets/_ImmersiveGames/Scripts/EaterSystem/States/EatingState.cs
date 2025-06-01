@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (_timer >= _eatDuration)
             {
                 _healthSystem.Heal(_healAmount);
-                Debug.Log($"Terminou de comer. Vida atual: {_healthSystem.GetCurrentHealth()}");
+                Debug.Log($"Terminou de comer. Vida atual: {_healthSystem.GetCurrentValue()}");
                 _onEatComplete?.Invoke();
             }
         }

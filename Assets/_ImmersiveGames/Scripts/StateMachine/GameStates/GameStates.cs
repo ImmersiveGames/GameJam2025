@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachine.GameStates
 {
     public abstract class GameStateBase : IState
@@ -73,7 +74,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de game over
             // Mostrar pontuação final
-            Debug.Log($"game over! Você fez {gameManager.Score} pontos!");
+            Debug.Log($"game over!");
         }
     }
 
@@ -85,7 +86,7 @@ namespace _ImmersiveGames.Scripts.StateMachine.GameStates
         {
             // Mostrar tela de vitória
             // Mostrar estatísticas
-            Debug.Log($"Terminou o jogo com {gameManager.Score} pontos!");
+            Debug.Log($"Terminou o jogo!");
         }
     }
 }

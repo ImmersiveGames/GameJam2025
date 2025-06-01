@@ -1,5 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -55,7 +57,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                     var planet = hit.collider.GetComponentInParent<Planets>();
                     if (planet != null && _recognizer.GetRecognizedPlanets().Contains(planet))
                     {
-                        GameManager.Instance.MarkPlanet(planet);
+                        EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
                         DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado para destruição: {planet.name}", "yellow");
                     }
                 }

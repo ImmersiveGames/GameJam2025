@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.HealthSystems;
+﻿using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem

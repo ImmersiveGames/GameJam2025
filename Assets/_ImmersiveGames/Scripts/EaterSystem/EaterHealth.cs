@@ -1,26 +1,28 @@
-﻿using _ImmersiveGames.Scripts.HealthSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using System;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    public class EaterHealth : HealthSystem
+    public class EaterHealth : ResourceSystem, IDestructible
     {
-
-        private void OnTriggerEnter(Collider other)
+       public event Action EventDeath;
+        protected override void OnDepleted()
         {
-            DebugUtility.Log<EaterHealth>($"Collision detected with: {other.name}");
+            Debug.Log($"{gameObject.name} died!");
+            Deafeat();
+            // gameObject.SetActive(false);
         }
-
-        public void DeathAction()
+        public void Deafeat()
         {
-            Debug.Log($"Morri!");
-            GameManager.Instance.SetGameOver(true);
             gameObject.SetActive(false);
+            //instansia Sons e efeitos de morte
+            EventDeath?.Invoke();
+            GameManager.Instance.SetGameOver(true);
         }
-        public void DamageAction(float damage)
-        {
-            DebugUtility.Log<EaterHealth>($"Recebi {damage} de dano!");
-        }
-        
+        public void Heal(float amount) => Increase(amount);
+        public void TakeDamage(float damage) => Decrease(damage);
+
     }
 }

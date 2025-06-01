@@ -1,11 +1,11 @@
-﻿using _ImmersiveGames.Scripts.HealthSystems;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    public class HealthUI : MonoBehaviour
+    public class EaterHealthUI : MonoBehaviour
     {
-        [SerializeField] private HealthSystem healthSystem; // Referência ao HealthSystem
+        [SerializeField] private EaterHealth healthSystem; // Referência ao HealthSystem
         [SerializeField] private Image healthBar; // Imagem da barra de vida (fill)
         [SerializeField] private Image backgroundImage; // Imagem que muda de cor
         [SerializeField] private Color[] thresholdColors = new Color[4] // Cores para cada faixa de HP
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (!healthSystem)
             {
-                healthSystem = GetComponentInParent<HealthSystem>();
+                healthSystem = GetComponentInParent<EaterHealth>();
                 if (!healthSystem)
                 {
                     Debug.LogWarning("HealthSystem não encontrado!", this);
@@ -29,13 +29,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             // Conecta aos eventos do HealthSystem
-            healthSystem.onHealthChanged.AddListener(UpdateHealthBar);
+            healthSystem.onValueChanged.AddListener(UpdateHealthBar);
             healthSystem.onThresholdReached.AddListener(UpdateThresholdColor);
-            healthSystem.onDeath.AddListener(OnDeath);
+            healthSystem.EventDeath += OnDeath;
 
             // Inicializa a UI
-            UpdateHealthBar(healthSystem.GetHealthPercentage());
-            UpdateThresholdColor(healthSystem.GetHealthPercentage());
+            UpdateHealthBar(healthSystem.GetPercentage());
+            UpdateThresholdColor(healthSystem.GetPercentage());
         }
 
         private void UpdateHealthBar(float healthPercentage)
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (backgroundImage == null) return;
 
             // Determina a cor com base na porcentagem de HP
-            float healthPercentage = healthSystem.GetHealthPercentage();
+            float healthPercentage = healthSystem.GetPercentage();
             if (healthPercentage > 0.75f)
                 backgroundImage.color = thresholdColors[0]; // Verde
             else if (healthPercentage > 0.5f)
@@ -68,6 +68,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 backgroundImage.color = thresholdColors[3]; // Cinza ao morrer
             }
+        }
+
+        private void OnDisable()
+        {
+            healthSystem.EventDeath -= OnDeath;
         }
     }
 }

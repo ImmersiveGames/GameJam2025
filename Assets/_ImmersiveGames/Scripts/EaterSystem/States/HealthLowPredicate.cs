@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public bool Evaluate()
         {
-            return _health.GetCurrentHealth() <= _threshold;
+            return _health.GetCurrentValue() <= _threshold;
         }
     }
 }

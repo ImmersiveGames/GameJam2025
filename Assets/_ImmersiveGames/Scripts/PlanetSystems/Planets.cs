@@ -1,7 +1,10 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Tags;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -16,6 +19,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public event Action<int, PlanetData, PlanetResourcesSo> EventPlanetCreated;
         public event Action<int> EventPlanetDestroyed;
         public event Action<DestructibleObject> OnPlanetDied;
+        
+        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
         public void TakeDamage(float damage)
         {
             DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} recebeu dano de {damage}.", "red");
@@ -34,14 +40,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnEnable()
         {
+            _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(OnMarked);
+            EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
+
+            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarked);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            
             var eater = GameManager.Instance.WorldEater;
             _eaterDetectable = eater.GetComponent<EaterDetectable>();
             if (_eaterDetectable)
             {
                 _eaterDetectable.OnEatPlanet += OnEatenByEater;
             }
-            GameManager.Instance.OnPlanetMarked += OnMarked;
-            GameManager.Instance.OnPlanetUnmarked += OnUnmarked;
         }
 
         private void OnDisable()
@@ -50,8 +60,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _eaterDetectable.OnEatPlanet -= OnEatenByEater;
             }
-            GameManager.Instance.OnPlanetMarked -= OnMarked;
-            GameManager.Instance.OnPlanetUnmarked -= OnUnmarked;
+            EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
+            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
         }
 
         private void OnEatenByEater(Planets planet)
@@ -63,9 +73,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private void OnMarked(Planets planet)
+        private void OnMarked(PlanetMarkedEvent evt)
         {
-            if (planet == this)
+            if (evt.Planet == this)
             {
                 _targetFlag.gameObject.SetActive(true);
                 DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
@@ -73,9 +83,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private void OnUnmarked(Planets planet)
+        private void OnUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (planet == this)
+            if (evt.Planet == this)
             {
                 _targetFlag.gameObject.SetActive(false);
                 DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} desmarcado.", "gray");

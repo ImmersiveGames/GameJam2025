@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private float GetChaseSpeed()
         {
-            float healthRatio = _health.GetCurrentHealth() / _health.GetMaxHealth();
+            float healthRatio = 0.25f;//_health.GetCurrentHealth() / _health.GetMaxHealth();
             return healthRatio <= 0.25f ? baseChaseSpeed * 1.5f : baseChaseSpeed;
         }
     }

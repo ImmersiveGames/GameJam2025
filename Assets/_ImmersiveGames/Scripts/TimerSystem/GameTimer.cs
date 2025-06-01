@@ -1,5 +1,9 @@
 ﻿using UnityEngine;
 using System;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+using _ImmersiveGames.Scripts.TimerSystem.EventsBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
 using UnityUtils;
@@ -18,8 +22,11 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         // Propriedade para acessar o tempo restante
         public float RemainingTime => _countdownTimer.IsRunning ? _countdownTimer.CurrentTime : 0f;
         
-        public event Action EventTimeEnded;
-        public event Action EventTimerStarted;
+        private EventBinding<GameStartEvent> _startBinding;
+        private EventBinding<GameOverEvent> _gameOverBinding;
+        private EventBinding<GameVictoryEvent> _victoryBinding;
+        private EventBinding<GamePauseEvent> _pauseBinding;
+        
         protected override void Awake()
         {
             base.Awake();
@@ -35,14 +42,29 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void OnEnable()
         {
-            _gameManager.EventStartGame += StartGameTimer;
-            _gameManager.EventGameOver += PauseTimer;
-            _gameManager.EventVictory += PauseTimer;
-            _gameManager.EventPauseGame += PauseTimerHandler;
+            _startBinding = new EventBinding<GameStartEvent>(StartGameTimer);
+            EventBus<GameStartEvent>.Register(_startBinding);
+
+            _gameOverBinding = new EventBinding<GameOverEvent>(PauseTimer);
+            EventBus<GameOverEvent>.Register(_gameOverBinding);
+
+            _victoryBinding = new EventBinding<GameVictoryEvent>(PauseTimer);
+            EventBus<GameVictoryEvent>.Register(_victoryBinding);
+
+            _pauseBinding = new EventBinding<GamePauseEvent>(PauseTimerHandler);
+            EventBus<GamePauseEvent>.Register(_pauseBinding);
+            
         }
-        private void PauseTimerHandler(bool obj)
+        private void OnDisable()
         {
-            if(obj)
+            EventBus<GameStartEvent>.Unregister(_startBinding);
+            EventBus<GameOverEvent>.Unregister(_gameOverBinding);
+            EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
+            EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+        }
+        private void PauseTimerHandler(GamePauseEvent evt)
+        {
+            if(evt.IsPaused)
                 PauseTimer();
             else
             {
@@ -68,7 +90,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             // Iniciar o timer
             _countdownTimer.Start();
-            EventTimerStarted?.Invoke();
+            EventBus<EventTimerStarted>.Raise(new EventTimerStarted());
             DebugUtility.LogVerbose<GameTimer>($"Começou");
         }
         
@@ -76,7 +98,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             Debug.Log("Tempo acabou!");
             _gameManager.SetGameOver(true);
-            EventTimeEnded?.Invoke();
+            EventBus<EventTimeEnded>.Raise(new EventTimeEnded());
         }
         
         public void PauseTimer()
@@ -114,16 +136,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             return $"{minutes:00}:{seconds:00}";
         }
         
-        /*// Método Update para verificar se precisamos atualizar o timer manualmente
-        private void Update()
-        {
-            // Se a biblioteca ImprovedTimers exigir atualização manual, implemente aqui,
-            // Por exemplo: _countdownTimer.Tick(Time.deltaTime);
-            if (_countdownTimer.IsRunning)
-            {
-                DebugUtility.Log<GameTimer>($"Progresso: {_countdownTimer.Progress}");
-            }
-        }*/
         
         private void OnDestroy()
         {
@@ -135,10 +147,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _countdownTimer.OnTimerStart -= HandleTimerStart;
             }
             
-            _gameManager.EventStartGame -= StartGameTimer;
-            _gameManager.EventGameOver -= PauseTimer;
-            _gameManager.EventVictory -= PauseTimer;
-            _gameManager.EventPauseGame -= PauseTimerHandler;
         }
     }
 }
