@@ -9,7 +9,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [RequireComponent(typeof(Collider))]
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
         [SerializeField, Tooltip("Distância para comer o planeta")]

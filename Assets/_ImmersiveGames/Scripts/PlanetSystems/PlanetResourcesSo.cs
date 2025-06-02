@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [CreateAssetMenu(fileName = "PlanetResourcesData",menuName = "ImmersiveGames/PlanetResources")]

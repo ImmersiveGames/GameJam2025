@@ -8,4 +8,9 @@
         float GetMaxValue();
         float GetPercentage();
     }
+    public interface IResettable
+    {
+        // Reinicia o recurso ao estado padrão
+        void Reset();
+    }
 }

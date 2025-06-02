@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 126411227d0b430db83a97fe90f7f428, type: 3}
   m_Name: TriggerByFireInput
   m_EditorClassIdentifier: 
-  predicate: {fileID: 11400000, guid: 55fb52f25c7e8cb4da5972a0facb50a1, type: 2}
+  predicate: {fileID: 11400000, guid: 5b8e0270dfe246146be2a644886cc85b, type: 2}

@@ -9,8 +9,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
     public class PlanetsManager : Singleton<PlanetsManager>
     {
         [SerializeField] private Planets targetToEater; // Configurado no Inspector
-
-        public Planets TargetToEater => targetToEater;
+        
         public bool IsMarkedPlanet(Planets planet) => targetToEater == planet; // Compatibilidade
 
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;

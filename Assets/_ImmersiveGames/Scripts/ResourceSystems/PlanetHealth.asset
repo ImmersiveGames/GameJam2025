@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b037e3d919f045658fa89781b5718fe3, type: 3}
+  m_Name: PlanetHealth
+  m_EditorClassIdentifier: 
+  resourceName: Life
+  resourceType: 0
+  maxValue: 100
+  initialValue: 100
+  thresholds:
+  - 0.75
+  - 0.5
+  - 0.25
+  resourceIcon: {fileID: -812359318, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  autoFillEnabled: 0
+  autoDrainEnabled: 0
+  autoFillRate: 0
+  autoDrainRate: 0
+  autoChangeDelay: 1

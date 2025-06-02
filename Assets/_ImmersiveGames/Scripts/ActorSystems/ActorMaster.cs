@@ -1,8 +1,8 @@
-﻿using System;
-using _ImmersiveGames.Scripts.Tags;
+﻿using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts
+namespace _ImmersiveGames.Scripts.ActorSystems
 {
+    [DefaultExecutionOrder(-10)]
     public abstract class ActorMaster : MonoBehaviour
     {
         [SerializeField] private ModelRoot modelRoot;
