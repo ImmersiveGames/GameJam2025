@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     {
         public static SpawnManager Instance { get; private set; }
 
-        [SerializeField] private int _maxSpawnsPerPoint = 5;
+        [SerializeField] private int maxSpawnsPerPoint = 5;
 
         private readonly List<SpawnPoint> _allSpawnPool = new();
         private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new();
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return true; // Independente
             }
             var data = _managedSpawnPoints[point];
-            return !data.IsLocked && data.SpawnCount < _maxSpawnsPerPoint;
+            return !data.isLocked && data.spawnCount < maxSpawnsPerPoint;
         }
 
         public void RegisterSpawn(SpawnPoint point)
@@ -59,8 +59,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (!_managedSpawnPoints.ContainsKey(point))
                 return;
             var data = _managedSpawnPoints[point];
-            data.SpawnCount++;
-            if (data.SpawnCount >= _maxSpawnsPerPoint)
+            data.spawnCount++;
+            if (data.spawnCount >= maxSpawnsPerPoint)
             {
                 LockSpawns(point);
             }
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (!_managedSpawnPoints.ContainsKey(point))
                 return;
             var data = _managedSpawnPoints[point];
-            data.IsLocked = true;
+            data.isLocked = true;
             DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' bloqueado.", "yellow", this);
         }
 
@@ -80,8 +80,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (!_managedSpawnPoints.ContainsKey(point))
                 return;
             var data = _managedSpawnPoints[point];
-            data.IsLocked = false;
-            data.SpawnCount = 0;
+            data.isLocked = false;
+            data.spawnCount = 0;
             DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado.", "green", this);
         }
 
@@ -92,8 +92,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (_managedSpawnPoints.ContainsKey(point))
             {
                 var data = _managedSpawnPoints[point];
-                data.SpawnCount = 0;
-                data.IsLocked = false;
+                data.spawnCount = 0;
+                data.isLocked = false;
             }
             var pool = PoolManager.Instance.GetPool(point.GetPoolKey());
             if (pool != null)
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     [System.Serializable]
     public class ManagedSpawnData
     {
-        public int SpawnCount;
-        public bool IsLocked;
+        public int spawnCount;
+        public bool isLocked;
     }
 }

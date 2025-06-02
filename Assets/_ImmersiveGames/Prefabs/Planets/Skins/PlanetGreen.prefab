@@ -23,7 +23,7 @@ PrefabInstance:
     - target: {fileID: 1714814217327580171, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 795bc2a5f7387c8408702f3ac458b969, type: 2}
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
     - target: {fileID: 2677257219484125173, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: m_Name
       value: PlanetGreen
@@ -39,7 +39,7 @@ PrefabInstance:
     - target: {fileID: 3044553801897637088, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 795bc2a5f7387c8408702f3ac458b969, type: 2}
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
     - target: {fileID: 3302778396228288206, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -47,7 +47,7 @@ PrefabInstance:
     - target: {fileID: 3302778396228288206, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 795bc2a5f7387c8408702f3ac458b969, type: 2}
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
     - target: {fileID: 3548997023841899829, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -119,7 +119,7 @@ PrefabInstance:
     - target: {fileID: 9039029975798259283, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
-      objectReference: {fileID: 2100000, guid: 795bc2a5f7387c8408702f3ac458b969, type: 2}
+      objectReference: {fileID: 2100000, guid: 7205718faacea5e4a81e2f440c3ac045, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 7126727905963842472, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}

@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 625401206744894195}
   - component: {fileID: 179320068260949091}
   - component: {fileID: 1151183417359427302}
+  - component: {fileID: 5203382645471021463}
   m_Layer: 5
   m_Name: Planet Info Circle
   m_TagString: Untagged
@@ -224,6 +225,18 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &5203382645471021463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1379203150033295969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6999bc636564ea686befe2eefd3599c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7680757051970426580
 GameObject:
   m_ObjectHideFlags: 0

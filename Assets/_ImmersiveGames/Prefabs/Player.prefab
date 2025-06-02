@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainCamera: {fileID: 0}
-  moveSpeed: 20
+  moveSpeed: 30
   rotationSpeed: 10
 --- !u!114 &1673690863950449713
 MonoBehaviour:

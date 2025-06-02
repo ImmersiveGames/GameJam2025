@@ -2,21 +2,32 @@
 using _ImmersiveGames.Scripts.Predicates;
 using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FXSystems
 {
     public class FxSpawnPoint : SpawnPoint
     {
-        [SerializeField] private bool useSourcePosition = true; // Usar posição do objeto destruído?
         private EventBinding<DeathEvent> _deathEventBinding;
+        private SpawnManager _spawnManager;
+        private PoolManager _poolManager;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            _spawnManager = SpawnManager.Instance;
+            _poolManager = PoolManager.Instance;
+        }
 
         protected override void OnEnable()
         {
             base.OnEnable();
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             EventBus<DeathEvent>.Register(_deathEventBinding);
-            Debug.Log($"FxSpawnPoint {name}: Registrado para DeathEvent.");
+            DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint {name}: Registrado para DeathEvent.", "green", this);
         }
 
         protected override void OnDisable()
@@ -25,35 +36,64 @@ namespace _ImmersiveGames.Scripts.FXSystems
             if (_deathEventBinding != null)
             {
                 EventBus<DeathEvent>.Unregister(_deathEventBinding);
-                Debug.Log($"FxSpawnPoint {name}: Desregistrado de DeathEvent.");
+                DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint {name}: Desregistrado de DeathEvent.", "green", this);
             }
         }
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            // Verificar se o evento é relevante para este SpawnPoint
-            if (evt.Source == gameObject || IsChildOrSelf(evt.Source))
+            if (spawnData == null || spawnData.TriggerStrategy == null ||
+                !(spawnData.TriggerStrategy is PredicateTriggerSo predicateTrigger) ||
+                !(predicateTrigger.predicate is DeathEventPredicateSo deathPredicate))
             {
-                if (spawnData != null && spawnData.TriggerStrategy is PredicateTriggerSo predicateTrigger &&
-                    predicateTrigger.predicate is DeathEventPredicateSo deathPredicate)
-                {
-                    Vector3 origin = useSourcePosition ? deathPredicate.TriggerPosition : transform.position;
-                    Debug.Log($"FxSpawnPoint {name}: Processando DeathEvent para {evt.Source.name} na posição {origin}.");
-                    spawnData.TriggerStrategy.CheckTrigger(origin, spawnData);
-                }
-                else
-                {
-                    Debug.LogWarning($"FxSpawnPoint {name}: TriggerStrategy ou Predicate não configurado corretamente.");
-                }
+                DebugUtility.LogWarning<FxSpawnPoint>($"TriggerStrategy ou Predicate não configurado corretamente em {name}.", this);
+                return;
             }
-        }
 
-        private bool IsChildOrSelf(GameObject source)
-        {
-            Transform sourceTransform = source.transform;
-            bool isRelevant = sourceTransform == transform || sourceTransform.IsChildOf(transform);
-            Debug.Log($"FxSpawnPoint {name}: Verificado IsChildOrSelf para {source.name}: {isRelevant}");
-            return isRelevant;
+            if (!deathPredicate.Evaluate()) return;
+
+            Vector3 spawnPosition = deathPredicate.TriggerPosition;
+            DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.Source.name} com posição {spawnPosition}.", "green", this);
+
+            if (!_spawnManager.CanSpawn(this))
+            {
+                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
+                return;
+            }
+
+            var pool = _poolManager.GetPool(spawnData.PoolableData.ObjectName);
+            if (pool == null)
+            {
+                DebugUtility.LogError<FxSpawnPoint>($"Pool '{spawnData.PoolableData.ObjectName}' não encontrado.", this);
+                return;
+            }
+
+            int spawnCount = Mathf.Min(1, pool.GetAvailableCount()); // Forçar um único objeto
+            if (spawnCount == 0)
+            {
+                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Pool esgotado.", "yellow", this);
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
+                return;
+            }
+
+            var objects = new IPoolable[spawnCount];
+            objects[0] = _poolManager.GetObject(spawnData.PoolableData.ObjectName, spawnPosition);
+            if (objects[0] == null)
+            {
+                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
+
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
+                return;
+            }
+
+            spawnData.Pattern.Spawn(objects, spawnData, spawnPosition, transform.forward);
+            _spawnManager.RegisterSpawn(this);
+            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
+
+            // Resetar o predicate para evitar spawns duplicados
+            deathPredicate.Reset();
+            DebugUtility.Log<FxSpawnPoint>($"DeathEventPredicateSo resetado após spawn em {name}.", "green", this);
         }
     }
 }

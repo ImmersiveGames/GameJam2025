@@ -3,9 +3,9 @@ using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.EaterSystem
+namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    public class EaterHealth : HealthResource
+    public class PlanetHealth : HealthResource
     {
         public override void Deafeat(Vector3 position)
         {
@@ -14,5 +14,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<DeathEvent>.Raise(new DeathEvent(position, gameObject));
             GameManager.Instance.SetGameOver(true);
         }
+
     }
 }

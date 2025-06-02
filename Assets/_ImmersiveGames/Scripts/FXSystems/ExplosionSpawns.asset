@@ -15,4 +15,4 @@ MonoBehaviour:
   poolableData: {fileID: 11400000, guid: 7debedefafb98b641823e667d87a4fe1, type: 2}
   spawnCount: 1
   pattern: {fileID: 11400000, guid: 932c52e918964f949ad02c5813d9914c, type: 2}
-  triggerStrategy: {fileID: 11400000, guid: a2fcd856edd03074e87bbba74bd5e773, type: 2}
+  triggerStrategy: {fileID: 11400000, guid: b55392398677bf341b538f0748466037, type: 2}

@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 126411227d0b430db83a97fe90f7f428, type: 3}
   m_Name: StartInitialize
   m_EditorClassIdentifier: 
-  predicate: {fileID: 11400000, guid: 6c63b58fd76786e4c8123efe93491777, type: 2}
+  predicate: {fileID: 11400000, guid: 95f08ab6ac89a3146a18e9fb41c2302c, type: 2}

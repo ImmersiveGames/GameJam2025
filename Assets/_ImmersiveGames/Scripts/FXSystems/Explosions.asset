@@ -15,7 +15,7 @@ MonoBehaviour:
   objectName: PlanetExplosions
   prefab: {fileID: 1873617295378980104, guid: 28a86f5908cbefa4f80cf5c2b35a5b05, type: 3}
   modelPrefab:
-  - {fileID: 6778736389952115015, guid: 1e3394532395b994b9a4c0ec6f53049e, type: 3}
+  - {fileID: 1471142367968716, guid: 481f99896f44194498a80282666de8c7, type: 3}
   noRandomModel: 0
   lifetime: 100
   initialPoolSize: 10

@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.Predicates
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Spawn/Trigger/Predicate Trigger")]
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.Scripts.Predicates
         {
             if (predicate != null && predicate.Evaluate())
             {
+                Debug.Log($"PredicateTriggerSo: Disparando SpawnRequestEvent com posição {origin}");
                 EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.PoolableData.ObjectName, origin, data));
             }
         }

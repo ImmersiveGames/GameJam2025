@@ -4,19 +4,19 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Predicates
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Predicates/DeathEvent Predicate")]
+    [CreateAssetMenu(fileName = "DeathEventPredicate", menuName = "ImmersiveGames/Predicates/DeathEvent Predicate")]
     public class DeathEventPredicateSo : PredicateSo
     {
-        private bool isTriggered;
-        private Vector3 triggerPosition; // Armazena a posição do evento
+        private bool _isTriggered;
+        private Vector3 _triggerPosition;
         private EventBinding<DeathEvent> _deathEventBinding;
 
-        public Vector3 TriggerPosition => triggerPosition; // Propriedade para acessar a posição
+        public Vector3 TriggerPosition => _triggerPosition;
 
         private void OnEnable()
         {
-            isTriggered = false;
-            triggerPosition = Vector3.zero;
+            _isTriggered = false;
+            _triggerPosition = Vector3.zero;
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             EventBus<DeathEvent>.Register(_deathEventBinding);
             Debug.Log("DeathEventPredicateSo: Registrado no EventBus.");
@@ -33,26 +33,26 @@ namespace _ImmersiveGames.Scripts.Predicates
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            isTriggered = true;
-            triggerPosition = evt.Position;
-            Debug.Log($"DeathEventPredicateSo: Recebeu DeathEvent na posição {evt.Position} do objeto {evt.Source.name}.");
+            if (_isTriggered) return; // Ignorar eventos adicionais até o reset
+            _isTriggered = true;
+            _triggerPosition = evt.CustomSpawnPoint ?? evt.Position; 
+            Debug.Log($"DeathEventPredicateSo: Recebeu DeathEvent com posição {_triggerPosition} do objeto {evt.Source.name}.");
         }
 
         public override bool Evaluate()
         {
-            bool result = isActive && isTriggered;
+            bool result = isActive && _isTriggered;
             if (result)
             {
-                Debug.Log("DeathEventPredicateSo: Evaluate retornou true.");
-                Reset();
+                Debug.Log($"DeathEventPredicateSo: Evaluate retornou true para posição {_triggerPosition}.");
             }
             return result;
         }
 
         public override void Reset()
         {
-            isTriggered = false;
-            triggerPosition = Vector3.zero;
+            _isTriggered = false;
+            _triggerPosition = Vector3.zero;
             Debug.Log("DeathEventPredicateSo: Estado resetado.");
         }
     }

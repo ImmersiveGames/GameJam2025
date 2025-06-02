@@ -33,11 +33,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
     {
         public Vector3 Position { get; }
         public GameObject Source { get; }
+        public Vector3? CustomSpawnPoint { get; } // Posição personalizada (opcional)
 
-        public DeathEvent(Vector3 position, GameObject source)
+        public DeathEvent(Vector3 position, GameObject source, Vector3? customSpawnPoint = null)
         {
             Position = position;
             Source = source;
+            CustomSpawnPoint = customSpawnPoint;
         }
     }
     
