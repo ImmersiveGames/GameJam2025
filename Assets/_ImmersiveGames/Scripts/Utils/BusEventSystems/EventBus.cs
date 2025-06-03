@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
     [DebugLevel(DebugLevel.Logs)]
     public static class EventBus<T> where T : IEvent {
-        private static readonly HashSet<IEventBinding<T>> _bindings = new HashSet<IEventBinding<T>>();
+        private static readonly HashSet<IEventBinding<T>> _bindings = new();
     
         public static void Register(EventBinding<T> binding) => _bindings.Add(binding);
         public static void Unregister(EventBinding<T> binding) => _bindings.Remove(binding);

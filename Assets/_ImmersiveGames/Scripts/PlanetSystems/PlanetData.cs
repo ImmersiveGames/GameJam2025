@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         [SerializeField, Tooltip("Velocidade máxima de rotação do planeta em torno de seu próprio eixo (graus por segundo)")]
         public float maxRotationSpeed = 30f;
-        [SerializeField, Tooltip("Centro da órbita (opcional, sobrescreve PlanetSpawnData.orbitCenter se definido)")]
+        [Tooltip("Centro da órbita (opcional, sobrescreve PlanetSpawnData.orbitCenter se definido)")]
         public Vector3? orbitCenter = null; // Opcional, para maior flexibilidade
     }
 }

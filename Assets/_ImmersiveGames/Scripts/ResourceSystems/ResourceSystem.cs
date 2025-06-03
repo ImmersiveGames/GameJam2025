@@ -16,30 +16,30 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] protected ResourceConfigSo config; // Configuração do recurso
         protected float maxValue; // Valor máximo do recurso
         protected float currentValue; // Valor atual do recurso
-        protected List<float> thresholds; // Limiares de porcentagem
+        private List<float> _thresholds; // Limiares de porcentagem
         [SerializeField] public UnityEvent onDepleted; // Evento disparado quando esgotado
         [SerializeField] public UnityEvent<float> onValueChanged; // Evento disparado quando valor muda
         [SerializeField] public ResourceThresholdEvent onThresholdReached; // Evento para limiares
-        protected readonly List<float> triggeredThresholds = new List<float>(); // Limiares já disparados
-        protected readonly List<ResourceModifier> _modifiers = new List<ResourceModifier>(); // Lista de modificadores
+        protected readonly List<float> triggeredThresholds = new(); // Limiares já disparados
+        protected readonly List<ResourceModifier> modifiers = new(); // Lista de modificadores
         private bool _autoFillEnabled; // Auto-preenchimento habilitado
         private bool _autoDrainEnabled; // Autodrenagem habilitada
         private float _autoFillRate; // Taxa de preenchimento automático
         private float _autoDrainRate; // Taxa de drenagem automática
         private float _autoChangeDelay; // Atraso para mudanças automáticas
-        private float _autoChangeTimer = 0f; // Temporizador para mudanças automáticas
+        private float _autoChangeTimer; // Temporizador para mudanças automáticas
 
         // Inicializa o recurso com base na configuração
         protected virtual void Awake()
         {
-            if (config == null)
+            if (!config)
             {
                 Debug.LogWarning("ResourceConfigSO não atribuído!", this);
                 return;
             }
             maxValue = config.MaxValue;
             currentValue = config.InitialValue;
-            thresholds = new List<float>(config.Thresholds);
+            _thresholds = new List<float>(config.Thresholds);
             _autoFillEnabled = config.AutoFillEnabled;
             _autoDrainEnabled = config.AutoDrainEnabled;
             _autoFillRate = config.AutoFillRate;
@@ -68,16 +68,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             // Aplica modificadores (buffs/debuffs)
-            for (int i = _modifiers.Count - 1; i >= 0; i--)
+            for (int i = modifiers.Count - 1; i >= 0; i--)
             {
-                var modifier = _modifiers[i];
-                if (modifier.AmountPerSecond > 0)
-                    Increase(modifier.AmountPerSecond * Time.deltaTime);
+                var modifier = modifiers[i];
+                if (modifier.amountPerSecond > 0)
+                    Increase(modifier.amountPerSecond * Time.deltaTime);
                 else
-                    Decrease(-modifier.AmountPerSecond * Time.deltaTime);
+                    Decrease(-modifier.amountPerSecond * Time.deltaTime);
 
                 if (modifier.Update(Time.deltaTime))
-                    _modifiers.RemoveAt(i); // Remove modificador expirado
+                    modifiers.RemoveAt(i); // Remove modificador expirado
             }
         }
 
@@ -103,19 +103,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             onValueChanged.Invoke(percentage);
             CheckThresholds();
             _autoChangeTimer = 0f; // Reseta temporizador ao mudar valor
-            if (currentValue <= 0)
-            {
-                OnDepleted();
-                onDepleted.Invoke();
-                EventBus<ResourceEvent>.Raise(new ResourceEvent(gameObject, config.ResourceType, percentage));
-            }
+            if (!(currentValue <= 0)) return;
+            OnDepleted();
+            onDepleted.Invoke();
+            EventBus<ResourceEvent>.Raise(new ResourceEvent(gameObject, config.ResourceType, percentage));
         }
 
         // Verifica se limiares foram atingidos
         protected void CheckThresholds()
         {
             float percentage = GetPercentage();
-            foreach (float threshold in thresholds.Where(t => percentage <= t && !triggeredThresholds.Contains(t)))
+            foreach (float threshold in _thresholds.Where(t => percentage <= t && !triggeredThresholds.Contains(t)))
             {
                 triggeredThresholds.Add(threshold);
                 onThresholdReached.Invoke(threshold);
@@ -138,13 +136,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // Adiciona um modificador (buff/debuff)
         public void AddModifier(float amountPerSecond, float duration, bool isPermanent = false)
         {
-            _modifiers.Add(new ResourceModifier(amountPerSecond, duration, isPermanent));
+            modifiers.Add(new ResourceModifier(amountPerSecond, duration, isPermanent));
         }
 
         // Remove todos os modificadores
         public void RemoveAllModifiers()
         {
-            _modifiers.Clear();
+            modifiers.Clear();
         }
 
         // Getters para acesso externo
@@ -153,11 +151,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public float GetPercentage() => currentValue / maxValue;
 
         // Dados para serialização
-        [System.Serializable]
+        [Serializable]
         public class ResourceSaveData
         {
-            public float CurrentValue; // Valor atual salvo
-            public List<float> TriggeredThresholds; // Limiares disparados salvos
+            public float currentValue; // Valor atual salvo
+            public List<float> triggeredThresholds; // Limiares disparados salvos
         }
 
         // Salva o estado do recurso
@@ -165,17 +163,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             return new ResourceSaveData
             {
-                CurrentValue = currentValue,
-                TriggeredThresholds = new List<float>(triggeredThresholds)
+                currentValue = currentValue,
+                triggeredThresholds = new List<float>(triggeredThresholds)
             };
         }
 
         // Carrega o estado do recurso
         public void Load(ResourceSaveData data)
         {
-            currentValue = data.CurrentValue;
+            currentValue = data.currentValue;
             triggeredThresholds.Clear();
-            triggeredThresholds.AddRange(data.TriggeredThresholds);
+            triggeredThresholds.AddRange(data.triggeredThresholds);
             onValueChanged.Invoke(GetPercentage());
             CheckThresholds();
         }

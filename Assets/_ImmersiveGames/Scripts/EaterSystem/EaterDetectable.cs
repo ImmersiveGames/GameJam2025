@@ -45,18 +45,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Update()
         {
-            if (_targetPlanet == null || !_targetPlanet.IsActive || _isEating) return;
+            if (!_targetPlanet || !_targetPlanet.IsActive || _isEating) return;
 
             float distance = Vector3.Distance(
                 new Vector3(_self.position.x, 0, _self.position.z),
                 new Vector3(_targetPlanet.transform.position.x, 0, _targetPlanet.transform.position.z));
 
-            if (distance <= eatDistance)
-            {
-                _isEating = true; // Impede disparos repetidos
-                OnEatPlanet?.Invoke(_targetPlanet);
-                DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable iniciou consumo do planeta: {_targetPlanet.name} (distância: {distance})", "magenta");
-            }
+            if (!(distance <= eatDistance)) return;
+            _isEating = true; // Impede disparos repetidos
+            OnEatPlanet?.Invoke(_targetPlanet);
+            DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable iniciou consumo do planeta: {_targetPlanet.name} (distância: {distance})", "magenta");
         }
 
         private void OnPlanetMarked(PlanetMarkedEvent evt)
@@ -69,13 +67,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (_targetPlanet == evt.Planet)
-            {
-                _targetPlanet = null;
-                _isEating = false;
-                OnTargetUpdated?.Invoke(null);
-                DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
-            }
+            if (_targetPlanet != evt.Planet) return;
+            _targetPlanet = null;
+            _isEating = false;
+            OnTargetUpdated?.Invoke(null);
+            DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
         }
 
         public void OnPlanetDetected(Planets planet)

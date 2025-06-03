@@ -40,14 +40,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         protected virtual void Update()
         {
             _detectionTimer += Time.deltaTime;
-            if (_detectionTimer >= currentDetectionFrequency)
-            {
-                ProcessPlanets(DetectPlanets());
-                _detectionTimer = 0f;
-            }
+            if (!(_detectionTimer >= currentDetectionFrequency)) return;
+            ProcessPlanets(DetectPlanets());
+            _detectionTimer = 0f;
         }
 
-        protected List<Planets> DetectPlanets()
+        private List<Planets> DetectPlanets()
         {
             var planets = new List<Planets>();
             int hitCount = Physics.OverlapSphereNonAlloc(cachedTransform.position, radius, _detectionResults, planetLayer);

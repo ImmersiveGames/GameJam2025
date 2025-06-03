@@ -1,6 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
-using _ImmersiveGames.Scripts.PlanetSystems;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;

@@ -3,9 +3,11 @@ using _ImmersiveGames.Scripts.StateMachine;
 using UnityEngine;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class EatingState : IState
     {
         private readonly float _eatDuration;
@@ -30,43 +32,41 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public void OnEnter()
         {
             _timer = 0f;
-            Debug.Log("Entrando no estado: Comendo...");
+            DebugUtility.Log<EatingState>("Entrando no estado: Comendo...");
         }
 
         public void Update()
         {
             _timer += Time.deltaTime;
-            if (_timer >= _eatDuration)
+            if (!(_timer >= _eatDuration)) return;
+            var targetTransform = PlanetsManager.Instance.GetTargetTransform();
+            if (targetTransform)
             {
-                Transform targetTransform = PlanetsManager.Instance.GetTargetTransform();
-                if (targetTransform != null)
+                var targetPlanet = targetTransform.GetComponent<Planets>();
+                if (targetPlanet)
                 {
-                    Planets targetPlanet = targetTransform.GetComponent<Planets>();
-                    if (targetPlanet != null)
-                    {
-                        PlanetResourcesSo consumedResource = targetPlanet.GetResources();
-                        _hungerSystem.ConsumePlanet(consumedResource);
-                        PlanetsManager.Instance.RemovePlanet(targetPlanet);
-                        _detectable.ResetEatingState(); // Permite novo consumo
-                        Debug.Log($"Terminou de comer o planeta: {targetPlanet.name} (Recurso: {consumedResource?.name ?? "nenhum"}). Fome atual: {_hungerSystem.GetCurrentValue()}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"Nenhum componente Planets encontrado no alvo: {targetTransform.name}!");
-                    }
+                    var consumedResource = targetPlanet.GetResources();
+                    _hungerSystem.ConsumePlanet(consumedResource);
+                    PlanetsManager.Instance.RemovePlanet(targetPlanet);
+                    _detectable.ResetEatingState(); // Permite novo consumo
+                    DebugUtility.Log<EatingState>($"Terminou de comer o planeta: {targetPlanet.name} (Recurso: {consumedResource?.name ?? "nenhum"}). Fome atual: {_hungerSystem.GetCurrentValue()}");
                 }
                 else
                 {
-                    Debug.LogWarning("Nenhum alvo definido para comer!");
+                    DebugUtility.LogWarning<EatingState>($"Nenhum componente Planets encontrado no alvo: {targetTransform.name}!");
                 }
-
-                _onEatComplete?.Invoke();
             }
+            else
+            {
+                DebugUtility.LogWarning<EatingState>("Nenhum alvo definido para comer!");
+            }
+
+            _onEatComplete?.Invoke();
         }
 
         public void OnExit()
         {
-            Debug.Log("Saindo do estado: Comendo...");
+            DebugUtility.Log<EatingState>("Saindo do estado: Comendo...");
         }
     }
 }

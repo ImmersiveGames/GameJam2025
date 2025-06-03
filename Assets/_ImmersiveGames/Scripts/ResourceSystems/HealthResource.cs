@@ -1,14 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
-using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     // Sistema de saúde que implementa IDestructible e IResettable
     public class HealthResource : ResourceSystem, IDestructible, IResettable
     {
@@ -26,32 +26,32 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void InitializeReferences()
         {
             _actorMaster = GetComponentInParent<ActorMaster>();
-            if (_actorMaster == null)
+            if (!_actorMaster)
             {
-                Debug.LogWarning($"ActorMaster não encontrado em {gameObject.name} ou seus pais!", gameObject);
+                DebugUtility.LogWarning<HealthResource>($"ActorMaster não encontrado em {gameObject.name} ou seus pais!", gameObject);
                 return;
             }
             modelRoot = _actorMaster.GetModelRoot()?.gameObject;
-            if (modelRoot == null)
+            if (!modelRoot)
             {
-                Debug.LogWarning($"ModelRoot não encontrado em ActorMaster de {gameObject.name}!", gameObject);
+                DebugUtility.LogWarning<HealthResource>($"ModelRoot não encontrado em ActorMaster de {gameObject.name}!", gameObject);
             }
         }
 
         // Comportamento quando saúde chega a zero
         protected override void OnDepleted()
         {
-            Debug.Log($"{gameObject.name} morreu!");
+            DebugUtility.Log<HealthResource>($"{gameObject.name} morreu!");
             Deafeat(transform.position);
         }
 
         // Dispara evento de morte e desativa o modelo
         public virtual void Deafeat(Vector3 position)
         {
-            Vector3 spawnPoint = modelRoot != null ? modelRoot.transform.position : transform.position;
-            Debug.Log($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
+            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
+            DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
             EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
-            if (modelRoot != null)
+            if (modelRoot)
             {
                 modelRoot.SetActive(false);
             }
@@ -68,14 +68,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             currentValue = maxValue; // Restaura ao valor máximo
             triggeredThresholds.Clear(); // Limpa limiares disparados
-            _modifiers.Clear(); // Remove todos os modificadores
-            if (modelRoot != null)
+            modifiers.Clear(); // Remove todos os modificadores
+            if (modelRoot)
             {
                 modelRoot.SetActive(true); // Reativa o modelo, se disponível
             }
             else
             {
-                Debug.LogWarning($"modelRoot é nulo ao tentar reiniciar {gameObject.name}. Verifique a inicialização!", gameObject);
+                DebugUtility.LogWarning<HealthResource>($"modelRoot é nulo ao tentar reiniciar {gameObject.name}. Verifique a inicialização!", gameObject);
                 InitializeReferences(); // Tenta reinicializar
             }
             onValueChanged.Invoke(GetPercentage()); // Notifica mudança

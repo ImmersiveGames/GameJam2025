@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void Awake()
         {
-            if (spawnData == null || spawnData.PoolableData == null || string.IsNullOrEmpty(spawnData.PoolableData.ObjectName))
+            if (!spawnData || !spawnData.PoolableData || string.IsNullOrEmpty(spawnData.PoolableData.ObjectName))
             {
                 DebugUtility.LogError<SpawnPoint>("Configuração inválida no SpawnData.", this);
                 enabled = false;
@@ -37,7 +38,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             _spawnManager = SpawnManager.Instance;
             _poolManager = PoolManager.Instance;
-            if (_spawnManager == null)
+            if (!_spawnManager)
             {
                 DebugUtility.LogError<SpawnPoint>("SpawnManager.Instance não encontrado.", this);
                 enabled = false;
@@ -84,7 +85,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (!useManagerLocking && _isExhausted)
             {
                 var pool = _poolManager.GetPool(_poolKey);
-                if (pool != null && pool.GetAvailableCount() > 0)
+                if (pool && pool.GetAvailableCount() > 0)
                 {
                     _isExhausted = false;
                     DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' restaurado para '{name}'.", "green", this);
@@ -97,15 +98,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private bool RegisterPoolIfNeeded()
         {
-            if (_poolManager == null)
+            if (!_poolManager)
             {
                 DebugUtility.LogError<SpawnPoint>("PoolManager.Instance é nulo.", this);
                 return false;
             }
 
-            if (_poolManager.GetPool(_poolKey) == null)
+            if (!_poolManager.GetPool(_poolKey))
                 _poolManager.RegisterPool(spawnData.PoolableData);
-            return _poolManager.GetPool(_poolKey) != null;
+            return _poolManager.GetPool(_poolKey);
         }
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
@@ -128,7 +129,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             var pool = _poolManager.GetPool(_poolKey);
-            if (pool == null)
+            if (!pool)
             {
                 DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não encontrado.", this);
                 return;
@@ -144,21 +145,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            Vector3 spawnPosition = evt.Origin;
+            var spawnPosition = evt.Origin;
             DebugUtility.Log<SpawnPoint>($"Usando posição do SpawnRequestEvent: {spawnPosition}", "green", this);
 
             var objects = new IPoolable[spawnCount];
             for (int i = 0; i < spawnCount; i++)
             {
                 objects[i] = _poolManager.GetObject(_poolKey, spawnPosition);
-                if (objects[i] == null)
-                {
-                    DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
-                    if (useManagerLocking)
-                        _isExhausted = true;
-                    EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, spawnPosition, spawnData));
-                    return;
-                }
+                if (objects[i] != null) continue;
+                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
+                if (useManagerLocking)
+                    _isExhausted = true;
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, spawnPosition, spawnData));
+                return;
             }
 
             _strategy.Spawn(objects, spawnData, spawnPosition, transform.forward);

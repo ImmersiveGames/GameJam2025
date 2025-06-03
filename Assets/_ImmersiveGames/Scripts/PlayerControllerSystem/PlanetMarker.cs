@@ -21,27 +21,27 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void Awake()
         {
             _recognizer = GetComponent<PlanetRecognizer>();
-            if (_recognizer == null)
+            if (!_recognizer)
             {
                 DebugUtility.LogError<PlanetMarker>("PlanetRecognizer não encontrado no GameObject.", this);
                 enabled = false;
             }
 
             _playerInput = GetComponent<PlayerInput>();
-            if (_playerInput == null)
+            if (!_playerInput)
             {
                 DebugUtility.LogError<PlanetMarker>("PlayerInput não encontrado no GameObject.", this);
                 enabled = false;
             }
 
             _mainCamera = Camera.main;
-            if (_mainCamera == null)
+            if (!_mainCamera)
             {
                 DebugUtility.LogError<PlanetMarker>("Câmera principal não encontrada.", this);
             }
 
-            _eaterHunger = FindObjectOfType<EaterHunger>();
-            if (_eaterHunger == null)
+            _eaterHunger = GetComponent<EaterHunger>();
+            if (!_eaterHunger)
             {
                 DebugUtility.LogError<PlanetMarker>("EaterHunger não encontrado na cena.", this);
             }
@@ -59,28 +59,22 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void OnInteract(InputAction.CallbackContext context)
         {
-            if (Mouse.current.rightButton.wasPressedThisFrame)
+            if (!Mouse.current.rightButton.wasPressedThisFrame) return;
+            var ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, _recognizer.PlanetLayer)) return;
+            var planet = hit.collider.GetComponentInParent<Planets>();
+            if (!planet || !_recognizer.GetRecognizedPlanets().Contains(planet)) return;
+            if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {
-                Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-                if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, _recognizer.PlanetLayer))
-                {
-                    var planet = hit.collider.GetComponentInParent<Planets>();
-                    if (planet != null && _recognizer.GetRecognizedPlanets().Contains(planet))
-                    {
-                        if (PlanetsManager.Instance.IsMarkedPlanet(planet))
-                        {
-                            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
-                            DebugUtility.LogVerbose<PlanetMarker>($"Planeta desmarcado: {planet.name}", "yellow", this);
-                        }
-                        else
-                        {
-                            EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
-                            bool isDesired = planet.GetResources() == _eaterHunger.GetDesiredResource();
-                            EventBus<PlanetMarkedCompatibilityEvent>.Raise(new PlanetMarkedCompatibilityEvent(planet, isDesired));
-                            DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado: {planet.name} (Desejado: {isDesired})", "yellow", this);
-                        }
-                    }
-                }
+                EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
+                DebugUtility.LogVerbose<PlanetMarker>($"Planeta desmarcado: {planet.name}", "yellow", this);
+            }
+            else
+            {
+                EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
+                bool isDesired = planet.GetResources() == _eaterHunger.GetDesiredResource();
+                EventBus<PlanetMarkedCompatibilityEvent>.Raise(new PlanetMarkedCompatibilityEvent(planet, isDesired));
+                DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado: {planet.name} (Desejado: {isDesired})", "yellow", this);
             }
         }
     }

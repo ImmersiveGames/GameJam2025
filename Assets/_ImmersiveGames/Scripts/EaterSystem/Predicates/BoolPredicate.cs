@@ -1,6 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.Utils.Predicates;
-namespace _ImmersiveGames.Scripts.EaterSystem.States
+namespace _ImmersiveGames.Scripts.EaterSystem.Predicates
 {
     public class BoolPredicate : IPredicate
     {

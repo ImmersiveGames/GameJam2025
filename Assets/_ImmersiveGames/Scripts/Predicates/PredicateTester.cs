@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.Predicates
         private void Start()
         {
             var input = GetComponent<PlayerInput>();
-            if (input == null)
+            if (!input)
             {
                 Debug.LogWarning("[PredicateTester] Nenhum PlayerInput encontrado no GameObject.");
                 return;

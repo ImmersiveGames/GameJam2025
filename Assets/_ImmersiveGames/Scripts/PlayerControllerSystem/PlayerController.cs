@@ -1,9 +1,11 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class PlayerController3D : MonoBehaviour
     {
         [SerializeField, Tooltip("Câmera principal usada para mirar")]
@@ -25,12 +27,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _rb = GetComponentInChildren<Rigidbody>();
             _inputActions = new PlayerInputActions();
 
-            if (mainCamera == null)
-            {
-                mainCamera = Camera.main;
-                if (mainCamera == null)
-                    Debug.LogError("Nenhuma câmera principal encontrada para PlayerController3D.");
-            }
+            if (mainCamera) return;
+            mainCamera = Camera.main;
+            if (!mainCamera)
+                DebugUtility.LogError<PlayerController3D>("Nenhuma câmera principal encontrada para PlayerController3D.");
         }
 
         private void OnEnable()
@@ -63,22 +63,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
 
-            Vector3 moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
+            var moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
             _rb.linearVelocity = moveDirection * moveSpeed;
 
-            if (_lookInput != Vector2.zero && mainCamera != null)
-            {
-                Ray ray = mainCamera.ScreenPointToRay(_lookInput);
-                Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
-                if (groundPlane.Raycast(ray, out float rayDistance))
-                {
-                    Vector3 targetPoint = ray.GetPoint(rayDistance);
-                    Vector3 direction = (targetPoint - transform.position).normalized;
-                    float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-                    Quaternion targetRotation = Quaternion.Euler(0, targetAngle, 0);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
-                }
-            }
+            if (_lookInput == Vector2.zero || !mainCamera) return;
+            var ray = mainCamera.ScreenPointToRay(_lookInput);
+            var groundPlane = new Plane(Vector3.up, Vector3.zero);
+            if (!groundPlane.Raycast(ray, out float rayDistance)) return;
+            var targetPoint = ray.GetPoint(rayDistance);
+            var direction = (targetPoint - transform.position).normalized;
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            var targetRotation = Quaternion.Euler(0, targetAngle, 0);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
         }
     }
 }

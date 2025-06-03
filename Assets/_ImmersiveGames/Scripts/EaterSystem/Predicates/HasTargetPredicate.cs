@@ -1,7 +1,7 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.EaterSystem.States
+namespace _ImmersiveGames.Scripts.EaterSystem.Predicates
 {
     public class HasTargetPredicate : IPredicate
     {
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public bool Evaluate()
         {
-            return _getTarget() != null;
+            return _getTarget();
         }
     }
 }

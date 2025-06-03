@@ -31,10 +31,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public void Update()
         {
-            Transform target = _getTarget();
-            if (target == null) return;
+            var target = _getTarget();
+            if (!target) return;
 
-            Vector3 direction = target.position - _transform.position;
+            var direction = target.position - _transform.position;
             direction.y = 0;
 
             float distance = direction.magnitude;
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             // Rotaciona suavemente para o alvo
             if (direction != Vector3.zero)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(direction);
+                var targetRotation = Quaternion.LookRotation(direction);
                 _transform.rotation = Quaternion.Slerp(_transform.rotation, targetRotation, Time.deltaTime * 5f);
             }
 

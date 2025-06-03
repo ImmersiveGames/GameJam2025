@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void Awake()
         {
-            if (Instance != null && Instance != this)
+            if (Instance && Instance != this)
             {
                 Destroy(gameObject);
                 return;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void RegisterSpawnPoint(SpawnPoint point, bool useManagerLocking)
         {
-            if (point == null || _allSpawnPool.Contains(point))
+            if (!point || _allSpawnPool.Contains(point))
                 return;
             _allSpawnPool.Add(point);
             if (useManagerLocking && !_managedSpawnPoints.ContainsKey(point))
@@ -46,19 +46,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 DebugUtility.LogError<SpawnManager>($"SpawnPoint '{point.name}' não registrado.", this);
                 return false;
             }
-            if (!_managedSpawnPoints.ContainsKey(point))
+            if (!_managedSpawnPoints.TryGetValue(point, out var data))
             {
                 return true; // Independente
             }
-            var data = _managedSpawnPoints[point];
             return !data.isLocked && data.spawnCount < maxSpawnsPerPoint;
         }
 
         public void RegisterSpawn(SpawnPoint point)
         {
-            if (!_managedSpawnPoints.ContainsKey(point))
+            if (!_managedSpawnPoints.TryGetValue(point, out var data))
                 return;
-            var data = _managedSpawnPoints[point];
             data.spawnCount++;
             if (data.spawnCount >= maxSpawnsPerPoint)
             {
@@ -68,18 +66,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void LockSpawns(SpawnPoint point)
         {
-            if (!_managedSpawnPoints.ContainsKey(point))
+            if (!_managedSpawnPoints.TryGetValue(point, out var data))
                 return;
-            var data = _managedSpawnPoints[point];
             data.isLocked = true;
             DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' bloqueado.", "yellow", this);
         }
 
         public void UnlockSpawns(SpawnPoint point)
         {
-            if (!_managedSpawnPoints.ContainsKey(point))
+            if (!_managedSpawnPoints.TryGetValue(point, out var data))
                 return;
-            var data = _managedSpawnPoints[point];
             data.isLocked = false;
             data.spawnCount = 0;
             DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado.", "green", this);
@@ -89,27 +85,23 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (!_allSpawnPool.Contains(point))
                 return;
-            if (_managedSpawnPoints.ContainsKey(point))
+            if (_managedSpawnPoints.TryGetValue(point, out var data))
             {
-                var data = _managedSpawnPoints[point];
                 data.spawnCount = 0;
                 data.isLocked = false;
             }
             var pool = PoolManager.Instance.GetPool(point.GetPoolKey());
-            if (pool != null)
+            if (pool)
             {
                 var activeObjects = pool.GetActiveObjects().ToList();
                 foreach (var obj in activeObjects)
                 {
                     var pooledObject = obj as PooledObject;
-                    if (pooledObject != null && pooledObject.Lifetime == 0)
+                    if (pooledObject && pooledObject.Lifetime == 0)
                     {
                         DebugUtility.Log<SpawnManager>($"Objeto '{obj.GetGameObject().name}' com lifetime=0 ignorado no reset.", "yellow", this);
                         continue;
                     }
-                    var mover = obj.GetGameObject().GetComponent<PooledObjectMover>();
-                    if (mover)
-                        mover.StopMovement();
                     obj.Deactivate();
                 }
             }
@@ -138,10 +130,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void StopAllSpawnPoints()
         {
-            foreach (var point in _allSpawnPool)
+            foreach (var point in _allSpawnPool.Where(point => _managedSpawnPoints.ContainsKey(point)))
             {
-                if (_managedSpawnPoints.ContainsKey(point))
-                    LockSpawns(point);
+                LockSpawns(point);
             }
             DebugUtility.Log<SpawnManager>("SpawnPoints gerenciados parados.", "yellow", this);
         }

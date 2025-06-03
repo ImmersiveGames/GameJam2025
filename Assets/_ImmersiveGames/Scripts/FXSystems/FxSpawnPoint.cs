@@ -42,9 +42,8 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (spawnData == null || spawnData.TriggerStrategy == null ||
-                !(spawnData.TriggerStrategy is PredicateTriggerSo predicateTrigger) ||
-                !(predicateTrigger.predicate is DeathEventPredicateSo deathPredicate))
+            if (!spawnData || !spawnData.TriggerStrategy ||
+                spawnData.TriggerStrategy is not PredicateTriggerSo { predicate: DeathEventPredicateSo deathPredicate })
             {
                 DebugUtility.LogWarning<FxSpawnPoint>($"TriggerStrategy ou Predicate não configurado corretamente em {name}.", this);
                 return;
@@ -52,7 +51,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
             if (!deathPredicate.Evaluate()) return;
 
-            Vector3 spawnPosition = deathPredicate.TriggerPosition;
+            var spawnPosition = deathPredicate.TriggerPosition;
             DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.Source.name} com posição {spawnPosition}.", "green", this);
 
             if (!_spawnManager.CanSpawn(this))
@@ -63,7 +62,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
 
             var pool = _poolManager.GetPool(spawnData.PoolableData.ObjectName);
-            if (pool == null)
+            if (!pool)
             {
                 DebugUtility.LogError<FxSpawnPoint>($"Pool '{spawnData.PoolableData.ObjectName}' não encontrado.", this);
                 return;

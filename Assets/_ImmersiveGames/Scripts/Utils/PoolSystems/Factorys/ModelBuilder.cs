@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             // 🔍 Verifica se já existe um ModelRoot
             var existingModelRoot = target.GetComponentInChildren<ModelRoot>();
-            if (existingModelRoot != null)
+            if (existingModelRoot)
             {
                 DebugUtility.LogVerbose(typeof(ModelBuilder),$"ModelRoot já existente em '{target.name}', reutilizando.");
                 modelRootTransform = existingModelRoot.transform;

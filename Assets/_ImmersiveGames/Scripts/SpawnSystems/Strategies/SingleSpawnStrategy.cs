@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
         public override void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
         {
             Debug.Log($"SingleSpawnStrategy: Spawnando {objects.Length} objetos na posição {origin}.");
-            if (objects == null || objects.Length == 0) return;
+            if (objects.Length == 0) return;
 
             foreach (var obj in objects)
             {

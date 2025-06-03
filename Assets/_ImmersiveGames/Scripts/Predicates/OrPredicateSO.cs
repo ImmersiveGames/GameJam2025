@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.Predicates
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Predicates/Logic/OR")]
@@ -11,13 +12,8 @@ namespace _ImmersiveGames.Scripts.Predicates
         {
             if (!isActive || conditions == null) return false;
 
-            foreach (var condition in conditions)
-            {
-                if (condition != null && condition.Evaluate())
-                    return true;
-            }
+            return conditions.Any(condition => condition && condition.Evaluate());
 
-            return false;
         }
 
         public override void Reset()

@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     public class PoolManager : MonoBehaviour
     {
         public static PoolManager Instance { get; private set; }
-        private readonly Dictionary<string, ObjectPool> _pools = new Dictionary<string, ObjectPool>();
+        private readonly Dictionary<string, ObjectPool> _pools = new();
 
         private void Awake()
         {

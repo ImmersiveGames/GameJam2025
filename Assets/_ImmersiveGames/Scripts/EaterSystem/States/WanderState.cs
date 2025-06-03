@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (_timer >= _changeInterval)
                 PickNewDirection();
 
-            _transform.Translate(_direction * _currentSpeed * Time.deltaTime, Space.World);
+            _transform.Translate(_direction * (_currentSpeed * Time.deltaTime), Space.World);
         }
 
         public void OnExit() { }

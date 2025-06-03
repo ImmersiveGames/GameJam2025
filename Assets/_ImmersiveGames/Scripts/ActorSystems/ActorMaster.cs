@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         
         public ModelRoot GetModelRoot()
         {
-            if (modelRoot == null)
+            if (!modelRoot)
             {
                 modelRoot = GetComponentInChildren<ModelRoot>();
             }
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         
         public CanvasRoot GetCanvasRoot()
         {
-            if (canvasRoot == null)
+            if (!canvasRoot)
             {
                 canvasRoot = GetComponentInChildren<CanvasRoot>();
             }
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         
         public FxRoot GetFxRoot()
         {
-            if (fxRoot == null)
+            if (!fxRoot)
             {
                 fxRoot = GetComponentInChildren<FxRoot>();
             }

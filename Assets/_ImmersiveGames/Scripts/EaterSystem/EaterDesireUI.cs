@@ -1,36 +1,35 @@
 ﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterDesireUI : MonoBehaviour
     {
         [SerializeField] private Image desireIcon;
         [SerializeField] private EaterHunger eaterHunger;
-        private EventBinding<EaterDesireChangedEvent> desireChangedBinding;
+        private EventBinding<EaterDesireChangedEvent> _desireChangedBinding;
 
         private void Awake()
         {
-            if (eaterHunger == null)
-            {
-                Debug.LogError("EaterHunger não encontrado na cena!", this);
-                enabled = false;
-            }
+            if (eaterHunger) return;
+            DebugUtility.LogError<EaterDesireUI>("EaterHunger não encontrado na cena!", this);
+            enabled = false;
         }
 
         private void OnEnable()
         {
-            desireChangedBinding = new EventBinding<EaterDesireChangedEvent>(OnDesireChanged);
-            EventBus<EaterDesireChangedEvent>.Register(desireChangedBinding);
+            _desireChangedBinding = new EventBinding<EaterDesireChangedEvent>(OnDesireChanged);
+            EventBus<EaterDesireChangedEvent>.Register(_desireChangedBinding);
             UpdateUI();
         }
 
         private void OnDisable()
         {
-            EventBus<EaterDesireChangedEvent>.Unregister(desireChangedBinding);
+            EventBus<EaterDesireChangedEvent>.Unregister(_desireChangedBinding);
         }
 
         private void OnDesireChanged(EaterDesireChangedEvent evt)
@@ -40,23 +39,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void UpdateUI()
         {
-            if (desireIcon == null)
+            if (!desireIcon)
             {
-                Debug.LogWarning("Image para ícone de desejo não configurada!", this);
+                DebugUtility.LogWarning<EaterDesireUI>("Image para ícone de desejo não configurada!", this);
                 return;
             }
 
-            PlanetResourcesSo desiredResource = eaterHunger.GetDesiredResource();
-            if (desiredResource != null && desiredResource.ResourceIcon != null)
+            var desiredResource = eaterHunger.GetDesiredResource();
+            if (desiredResource && desiredResource.ResourceIcon)
             {
                 desireIcon.sprite = desiredResource.ResourceIcon;
                 desireIcon.gameObject.SetActive(true);
-                Debug.Log($"Ícone do desejo do Eater atualizado: {desiredResource.name}.");
+                DebugUtility.Log<EaterDesireUI>($"Ícone do desejo do Eater atualizado: {desiredResource.name}.");
             }
             else
             {
                 desireIcon.gameObject.SetActive(false);
-                Debug.Log("Nenhum desejo ativo para o Eater. Ícone desativado.");
+                DebugUtility.Log<EaterDesireUI>("Nenhum desejo ativo para o Eater. Ícone desativado.");
             }
         }
     }

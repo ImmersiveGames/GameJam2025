@@ -9,11 +9,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         [SerializeField] private string objectName;
         [SerializeField] private GameObject prefab;
         [SerializeField] private List<GameObject> modelPrefab;
-        [SerializeField] private bool noRandomModel = false;
+        [SerializeField] private bool noRandomModel;
         [SerializeField, Min(0)] private float lifetime = 5f; // Validação no Inspector
         [SerializeField] private int initialPoolSize = 5;
         [SerializeField] private FactoryType factoryType = FactoryType.Default;
-        [SerializeField] private bool canExpand = false;
+        [SerializeField] private bool canExpand;
 
         public string ObjectName => objectName;
         public GameObject Prefab => prefab;

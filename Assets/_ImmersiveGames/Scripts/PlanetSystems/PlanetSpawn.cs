@@ -1,9 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.SpawnSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
-using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -12,13 +8,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     {
         protected override void Awake()
         {
-            if (!(spawnData is PlanetSpawnData planetSpawnData))
+            if (spawnData is not PlanetSpawnData planetSpawnData)
             {
-                Debug.LogError($"PlanetSpawn exige PlanetSpawnData, mas recebeu {spawnData?.GetType().Name}.");
+                DebugUtility.LogError<PlanetSpawn>($"PlanetSpawn exige PlanetSpawnData, mas recebeu {spawnData?.GetType().Name}.");
                 enabled = false;
                 return;
             }
-            Debug.Log($"PlanetSpawn inicializado com PlanetSpawnData: {planetSpawnData.name}, count: {planetSpawnData.SpawnCount}.");
+            DebugUtility.Log<PlanetSpawn>($"PlanetSpawn inicializado com PlanetSpawnData: {planetSpawnData.name}, count: {planetSpawnData.SpawnCount}.");
             base.Awake();
         }
 
@@ -26,7 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             base.OnDisable();
             SetTriggerActive(true);
-            Debug.Log($"PlanetSpawn {name} desativado, trigger reativado.");
+            DebugUtility.Log<PlanetSpawn>($"PlanetSpawn {name} desativado, trigger reativado.");
         }
     }
 }

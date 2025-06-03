@@ -16,11 +16,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 {
                     int index = wave * objectsPerWave + i;
                     if (index >= objects.Length) break;
-                    if (objects[index] != null)
-                    {
-                        Vector3 waveOffset = new Vector3(wave * 1f, 0, 0);
-                        objects[index].Activate(origin + waveOffset);
-                    }
+                    if (objects[index] == null) continue;
+                    var waveOffset = new Vector3(wave * 1f, 0, 0);
+                    objects[index].Activate(origin + waveOffset);
                 }
             }
         }

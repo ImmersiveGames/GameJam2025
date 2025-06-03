@@ -1,6 +1,7 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void Initialize(PoolableObjectData data, ObjectPool pool)
         {
-            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (!data) throw new ArgumentNullException(nameof(data));
             _data = data;
             _pool = pool ?? throw new ArgumentNullException(nameof(pool));
             _lifetime = data.Lifetime; // Usa o lifetime diretamente
@@ -36,18 +37,16 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void SetModel(GameObject model)
         {
-            if (_model != null)
+            if (_model)
             {
                 Destroy(_model);
             }
             _model = model;
-            if (_model != null)
-            {
-                _model.transform.SetParent(transform);
-                _model.transform.localPosition = Vector3.zero;
-                _model.transform.localRotation = Quaternion.identity;
-                _model.SetActive(false);
-            }
+            if (!_model) return;
+            _model.transform.SetParent(transform);
+            _model.transform.localPosition = Vector3.zero;
+            _model.transform.localRotation = Quaternion.identity;
+            _model.SetActive(false);
         }
 
         public void Activate(Vector3 position)
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             transform.rotation = Quaternion.identity;
             _isActive = true;
             gameObject.SetActive(true);
-            if (_model != null)
+            if (_model)
             {
                 _model.SetActive(true);
             }
@@ -70,7 +69,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             if (!_isActive) return;
             _isActive = false;
             gameObject.SetActive(false);
-            if (_model != null)
+            if (_model)
             {
                 _model.SetActive(false);
             }
@@ -133,7 +132,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (_returningToPool) return;
             _returningToPool = true;
-            if (_pool != null)
+            if (_pool)
             {
                 _pool.ReturnObject(this);
                 OnObjectReturned();

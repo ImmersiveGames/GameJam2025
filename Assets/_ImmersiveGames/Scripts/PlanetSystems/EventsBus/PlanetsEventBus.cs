@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus

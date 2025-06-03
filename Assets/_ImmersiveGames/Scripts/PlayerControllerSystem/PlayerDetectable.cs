@@ -13,11 +13,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
-            if (_playerInput == null)
-            {
-                DebugUtility.LogError<PlayerDetectable>("PlayerInput não encontrado.", this);
-                enabled = false;
-            }
+            if (_playerInput) return;
+            DebugUtility.LogError<PlayerDetectable>("PlayerInput não encontrado.", this);
+            enabled = false;
         }
 
         public void OnPlanetDetected(Planets planet)

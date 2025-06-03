@@ -14,11 +14,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private Image healthBar; // Barra de preenchimento
         [SerializeField] private Image backgroundImage; // Imagem de fundo
         [SerializeField] private Image resourceIcon; // Ícone do recurso
-        [SerializeField] private Color[] thresholdColors = new Color[4] // Cores por faixa de saúde
-        {
+        [SerializeField] private Color[] thresholdColors = {
             Color.green, // 100%-75%
             Color.yellow, // 75%-50%
-            new Color(1f, 0.5f, 0f), // 50%-25%
+            new(1f, 0.5f, 0f), // 50%-25%
             Color.red // 25%-0%
         };
         [SerializeField] private float smoothTransitionSpeed = 5f; // Velocidade da transição suave
@@ -48,7 +47,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 }
             }
             // Define o ícone do recurso
-            if (healthSystem.Config != null && resourceIcon != null)
+            if (healthSystem.Config && resourceIcon)
                 resourceIcon.sprite = healthSystem.Config.ResourceIcon;
 
             healthSystem.onValueChanged.AddListener(UpdateHealthBar);
@@ -68,7 +67,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // Atualiza a transição suave da barra
         private void Update()
         {
-            if (healthBar != null && healthBar.gameObject.activeSelf && Mathf.Abs(healthBar.fillAmount - _targetFillAmount) > 0.01f)
+            if (healthBar && healthBar.gameObject.activeSelf && Mathf.Abs(healthBar.fillAmount - _targetFillAmount) > 0.01f)
             {
                 healthBar.fillAmount = Mathf.Lerp(healthBar.fillAmount, _targetFillAmount, Time.deltaTime * smoothTransitionSpeed);
             }
@@ -87,15 +86,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // Atualiza o preenchimento da barra
         private void UpdateHealthBar(float healthPercentage)
         {
-            if (healthBar != null)
-            {
-                _targetFillAmount = healthPercentage;
-                // Desativa a barra se a saúde chegar a zero
-                if (healthPercentage <= 0)
-                    healthBar.gameObject.SetActive(false);
-                else
-                    healthBar.gameObject.SetActive(true);
-            }
+            if (!healthBar) return;
+            _targetFillAmount = healthPercentage;
+            // Desativa a barra se a saúde chegar a zero
+            healthBar.gameObject.SetActive(!(healthPercentage <= 0));
         }
 
         // Atualiza a cor com base na porcentagem
@@ -104,14 +98,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (!healthBar) return;
 
             float healthPercentage = healthSystem.GetPercentage();
-            if (healthPercentage > 0.75f)
-                healthBar.color = thresholdColors[0];
-            else if (healthPercentage > 0.5f)
-                healthBar.color = thresholdColors[1];
-            else if (healthPercentage > 0.25f)
-                healthBar.color = thresholdColors[2];
-            else
-                healthBar.color = thresholdColors[3];
+            healthBar.color = healthPercentage switch
+            {
+                > 0.75f => thresholdColors[0],
+                > 0.5f => thresholdColors[1],
+                > 0.25f => thresholdColors[2],
+                _ => thresholdColors[3]
+            };
         }
 
         // Reage ao evento de morte

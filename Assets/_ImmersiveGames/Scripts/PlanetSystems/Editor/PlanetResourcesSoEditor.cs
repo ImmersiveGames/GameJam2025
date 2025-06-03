@@ -7,20 +7,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Editor
     {
         public override void OnInspectorGUI()
         {
-            PlanetResourcesSo resource = (PlanetResourcesSo)target;
+            var resource = (PlanetResourcesSo)target;
 
             // Exibe os campos padrão
             DrawDefaultInspector();
             EditorGUILayout.Space(10);
 
-            Sprite sprite = resource.ResourceIcon;
+            var sprite = resource.ResourceIcon;
 
-            if (sprite != null)
+            if (sprite)
             {
                 EditorGUILayout.LabelField("Prévia do Ícone (Recorte)", EditorStyles.boldLabel);
 
                 float previewSize = 100f;
-                Rect rect = GUILayoutUtility.GetRect(previewSize, previewSize, GUILayout.ExpandWidth(false));
+                var rect = GUILayoutUtility.GetRect(previewSize, previewSize, GUILayout.ExpandWidth(false));
 
                 // Aplica o recorte correto (textureRect → UV)
                 GUI.DrawTextureWithTexCoords(
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Editor
 
         private Rect GetSpriteUVRect(Sprite sprite)
         {
-            Rect texRect = sprite.textureRect;
+            var texRect = sprite.textureRect;
             Texture tex = sprite.texture;
 
             return new Rect(

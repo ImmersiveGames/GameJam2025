@@ -26,19 +26,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             foreach (var planet in planets)
             {
-                if (!recognizedPlanets.Contains(planet))
+                if (recognizedPlanets.Contains(planet)) continue;
+                recognizedPlanets.Add(planet);
+                var planetInteractable = planet.GetComponent<IPlanetInteractable>();
+                if (planetInteractable == null) continue;
+                _detectableEntity.OnRecognitionRangeEntered(planet, planetInteractable.GetResources());
+                planetInteractable.SendRecognitionData(_detectableEntity);
+                if (debugMode)
                 {
-                    recognizedPlanets.Add(planet);
-                    var planetInteractable = planet.GetComponent<IPlanetInteractable>();
-                    if (planetInteractable != null)
-                    {
-                        _detectableEntity.OnRecognitionRangeEntered(planet, planetInteractable.GetResources());
-                        planetInteractable.SendRecognitionData(_detectableEntity);
-                        if (debugMode)
-                        {
-                            DebugUtility.LogVerbose<PlanetRecognizer>($"Reconhecimento ativado para: {planet.name}", "blue");
-                        }
-                    }
+                    DebugUtility.LogVerbose<PlanetRecognizer>($"Reconhecimento ativado para: {planet.name}", "blue");
                 }
             }
 

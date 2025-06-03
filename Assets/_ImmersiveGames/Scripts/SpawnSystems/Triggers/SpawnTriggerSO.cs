@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 
         public virtual void Initialize(SpawnPoint spawnPointRef)
         {
-            this.spawnPoint = spawnPointRef;
+            spawnPoint = spawnPointRef;
         }
 
         public abstract void CheckTrigger(Vector3 origin, SpawnData data);

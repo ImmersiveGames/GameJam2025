@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -18,7 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
         private TargetFlag _targetFlag; // Bandeira de marcação
         private EaterDetectable _eaterDetectable; // Detectável pelo devorador
-        private PlanetData _planetData; // Dados do planeta
         private int _planetId; // ID do planeta
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
@@ -30,9 +28,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             IsActive = true;
             _targetFlag = GetComponentInChildren<TargetFlag>();
-            if (_targetFlag == null)
+            if (!_targetFlag)
             {
-                Debug.LogWarning($"TargetFlag não encontrado em {gameObject.name}!");
+                DebugUtility.LogWarning<Planets>($"TargetFlag não encontrado em {gameObject.name}!");
             }
             else
             {
@@ -59,19 +57,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 }
                 else
                 {
-                    Debug.LogWarning("EaterDetectable não encontrado no WorldEater!");
+                    DebugUtility.LogWarning<Planets>("EaterDetectable não encontrado no WorldEater!");
                 }
             }
             else
             {
-                Debug.LogWarning("WorldEater não encontrado no GameManager!");
+                DebugUtility.LogWarning<Planets>("WorldEater não encontrado no GameManager!");
             }
         }
 
         // Desregistra eventos
         private void OnDisable()
         {
-            if (_eaterDetectable != null)
+            if (_eaterDetectable)
             {
                 _eaterDetectable.OnEatPlanet -= OnEatenByEater;
             }
@@ -83,7 +81,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public void Initialize(int id, PlanetData data, PlanetResourcesSo resources)
         {
             _planetId = id;
-            _planetData = data;
             _resourcesSo = resources;
             IsActive = true;
             EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(id, data, resources, gameObject));
@@ -97,13 +94,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} recebeu dano de {damage}.", "red");
             // Integração com HealthResource, se presente
             var healthResource = GetComponent<IDestructible>();
-            if (healthResource != null)
+            if (healthResource == null) return;
+            healthResource.TakeDamage(damage);
+            if (healthResource.GetCurrentValue() <= 0)
             {
-                healthResource.TakeDamage(damage);
-                if (healthResource.GetCurrentValue() <= 0)
-                {
-                    EventBus<PlanetDiedEvent>.Raise(new PlanetDiedEvent(healthResource, gameObject));
-                }
+                EventBus<PlanetDiedEvent>.Raise(new PlanetDiedEvent(healthResource, gameObject));
             }
         }
 
@@ -150,7 +145,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnMarked(PlanetMarkedEvent evt)
         {
             if (evt.Planet != this || !IsActive) return;
-            if (_targetFlag != null)
+            if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(true);
             }

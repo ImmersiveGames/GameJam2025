@@ -1,5 +1,5 @@
-﻿using System;
-using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.EaterSystem.Predicates;
 using UnityEngine;
 using _ImmersiveGames.Scripts.StateMachine;
 using _ImmersiveGames.Scripts.EaterSystem.States;
@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -77,7 +76,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var chaseState = new ChaseState(
                 transform,
                 () => _currentTarget,
-                () => GetChaseSpeed(),
+                GetChaseSpeed,
                 reachDistance
             );
             var eatingState = new EatingState(
@@ -97,10 +96,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 .AddState(wanderState, out var wanderRef)
                 .AddState(chaseState, out var chaseRef)
                 .AddState(eatingState, out var eatingRef)
-                .At(wanderRef, chaseRef, new BoolPredicate(() => _currentTarget != null))
+                .At(wanderRef, chaseRef, new BoolPredicate(() => _currentTarget))
                 .At(chaseRef, eatingRef, new BoolPredicate(() => _targetReached))
                 .At(eatingRef, wanderRef, new BoolPredicate(() => !_isEating))
-                .At(chaseRef, wanderRef, new BoolPredicate(() => _currentTarget == null))
+                .At(chaseRef, wanderRef, new BoolPredicate(() => !_currentTarget))
                 .StateInitial(wanderRef)
                 .Build();
         }
@@ -135,13 +134,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (_currentTarget != null && _currentTarget.GetComponent<Planets>() == evt.Planet)
-            {
-                _currentTarget = null;
-                _targetReached = false;
-                _isEating = false;
-                Debug.Log($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
-            }
+            if (!_currentTarget || _currentTarget.GetComponent<Planets>() != evt.Planet) return;
+            _currentTarget = null;
+            _targetReached = false;
+            _isEating = false;
+            Debug.Log($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
         }
 
         private void HandleStarved(EaterStarvedEvent evt)

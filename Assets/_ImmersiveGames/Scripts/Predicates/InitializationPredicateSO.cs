@@ -11,13 +11,10 @@ namespace _ImmersiveGames.Scripts.Predicates
             if (!isActive) return false;
 
             // Se ainda não foi chamado, disparamos e marcamos como usado
-            if (!_firstCallDone)
-            {
-                _firstCallDone = true;
-                return true;
-            }
+            if (_firstCallDone) return false;
+            _firstCallDone = true;
+            return true;
 
-            return false;
         }
 
         public override void SetActive(bool active)

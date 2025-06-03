@@ -10,7 +10,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
     {
         public override void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
         {
-            
             foreach (var obj in objects)
             {
                 if (obj == null) continue;
@@ -21,8 +20,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 var movement = go.GetComponent<ProjectileMovement>();
                 if (movement)
                 {
-                    var projectilData = data.PoolableData as ProjectilesData;
-                    if (projectilData) movement.InitializeMovement(forward.normalized, projectilData.speed);
+                    var poolableData = data.PoolableData as ProjectilesData;
+                    if (poolableData) movement.InitializeMovement(forward.normalized, poolableData.speed);
                 }
                 else
                 {

@@ -4,7 +4,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public static class FactoryRegistry
     {
-        private static readonly Dictionary<FactoryType, IPoolableFactory> _factories = new Dictionary<FactoryType, IPoolableFactory>
+        private static readonly Dictionary<FactoryType, IPoolableFactory> _factories = new()
         {
             { FactoryType.Default, new PoolableFactory() }
         };

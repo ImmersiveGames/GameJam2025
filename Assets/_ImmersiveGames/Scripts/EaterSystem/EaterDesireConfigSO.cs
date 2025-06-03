@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
-using _ImmersiveGames.Scripts.ResourceSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [CreateAssetMenu(fileName = "EaterDesireConfig", menuName = "ImmersiveGames/EaterDesireConfig")]
-    public class EaterDesireConfigSO : ScriptableObject
+    public class EaterDesireConfigSo : ScriptableObject
     {
         [SerializeField, Tooltip("Intervalo normal para mudança de vontade (segundos)")]
         private float desireChangeInterval = 10f;

@@ -2,40 +2,41 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     public class EaterHealth : HealthResource, IResettable
     {
-        private EventBinding<EaterConsumptionSatisfiedEvent> consumptionSatisfiedBinding;
+        private EventBinding<EaterConsumptionSatisfiedEvent> _consumptionSatisfiedBinding;
 
         protected override void Awake()
         {
             base.Awake();
-            consumptionSatisfiedBinding = new EventBinding<EaterConsumptionSatisfiedEvent>(OnConsumptionSatisfied);
+            _consumptionSatisfiedBinding = new EventBinding<EaterConsumptionSatisfiedEvent>(OnConsumptionSatisfied);
         }
 
         private void OnEnable()
         {
-            EventBus<EaterConsumptionSatisfiedEvent>.Register(consumptionSatisfiedBinding);
+            EventBus<EaterConsumptionSatisfiedEvent>.Register(_consumptionSatisfiedBinding);
         }
 
         private void OnDisable()
         {
-            EventBus<EaterConsumptionSatisfiedEvent>.Unregister(consumptionSatisfiedBinding);
+            EventBus<EaterConsumptionSatisfiedEvent>.Unregister(_consumptionSatisfiedBinding);
         }
 
         private void OnConsumptionSatisfied(EaterConsumptionSatisfiedEvent evt)
         {
-            EaterHunger hunger = GetComponent<EaterHunger>();
-            if (hunger != null && hunger.DesireConfig != null)
+            var hunger = GetComponent<EaterHunger>();
+            if (hunger && hunger.DesireConfig)
             {
                 Heal(hunger.DesireConfig.DesiredHealthRestored);
-                Debug.Log($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
+                DebugUtility.Log<EaterHealth>($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
             }
             else
             {
-                Debug.LogWarning("EaterHunger ou DesireConfig não encontrado para restaurar HP!", this);
+                DebugUtility.LogWarning<EaterHealth>("EaterHunger ou DesireConfig não encontrado para restaurar HP!", this);
             }
         }
 
@@ -43,13 +44,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             base.Deafeat(position);
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(position, gameObject));
-            Debug.Log($"EaterHealth: Eater derrotado na posição {position}.");
+            DebugUtility.Log<EaterHealth>($"EaterHealth: Eater derrotado na posição {position}.");
         }
 
-        public void Reset()
+        public new void Reset()
         {
             base.Reset();
-            Debug.Log("EaterHealth resetado.");
+            DebugUtility.Log<EaterHealth>("EaterHealth resetado.");
         }
 
         public float GetCurrentHealth()

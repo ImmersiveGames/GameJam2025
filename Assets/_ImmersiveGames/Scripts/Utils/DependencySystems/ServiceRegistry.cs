@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     public abstract class ServiceRegistry
     {
-        private readonly Stack<Dictionary<Type, object>> _dictionaryPool = new Stack<Dictionary<Type, object>>();
+        private readonly Stack<Dictionary<Type, object>> _dictionaryPool = new();
 
         public abstract void Register<T>(string key, T service, bool allowOverride = false) where T : class;
         public abstract bool TryGet<T>(string key, out T service) where T : class;

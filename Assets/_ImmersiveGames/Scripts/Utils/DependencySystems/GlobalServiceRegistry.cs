@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     public class GlobalServiceRegistry : ServiceRegistry
     {
-        private readonly Dictionary<Type, object> _services = new Dictionary<Type, object>();
+        private readonly Dictionary<Type, object> _services = new();
 
         public override void Register<T>(string key, T service, bool allowOverride = false)
         {

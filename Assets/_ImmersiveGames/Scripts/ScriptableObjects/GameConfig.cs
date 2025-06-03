@@ -1,6 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.PlanetSystems;
-using UnityEngine;
+﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.ScriptableObjects
 {
     [CreateAssetMenu(fileName = "GameConfig", menuName = "ImmersiveGames/GameConfig", order = 0)]

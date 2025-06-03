@@ -3,25 +3,25 @@
     // Modificador para buffs ou debuffs em recursos
     public class ResourceModifier
     {
-        public float AmountPerSecond; // Quantidade por segundo (positivo para buff, negativo para debuff)
-        public float Duration; // Duração em segundos
-        public bool IsPermanent; // Se verdadeiro, dura até ser removido manualmente
-        public float Timer { get; private set; } // Temporizador interno
+        public readonly float amountPerSecond; // Quantidade por segundo (positivo para buff, negativo para debuff)
+        private readonly float _duration; // Duração em segundos
+        private readonly bool _isPermanent; // Se verdadeiro, dura até ser removido manualmente
+        private float Timer { get; set; } // Temporizador interno
 
         public ResourceModifier(float amountPerSecond, float duration, bool isPermanent = false)
         {
-            AmountPerSecond = amountPerSecond;
-            Duration = duration;
-            IsPermanent = isPermanent;
+            this.amountPerSecond = amountPerSecond;
+            _duration = duration;
+            _isPermanent = isPermanent;
             Timer = 0f;
         }
 
         // Atualiza o temporizador e retorna true se o modificador expirou
         public bool Update(float deltaTime)
         {
-            if (IsPermanent) return false;
+            if (_isPermanent) return false;
             Timer += deltaTime;
-            return Timer >= Duration;
+            return Timer >= _duration;
         }
     }
 }

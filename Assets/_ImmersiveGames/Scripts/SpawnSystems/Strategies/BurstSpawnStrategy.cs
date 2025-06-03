@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
             {
                 if (objects[i] == null) continue;
                 float angle = i * angleStep * Mathf.Deg2Rad;
-                Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
+                var offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
                 objects[i].Activate(origin + offset);
             }
         }

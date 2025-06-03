@@ -1,12 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    // Exibe o ícone do recurso do planeta associado na UI
+    [DebugLevel(DebugLevel.Verbose)]
     public class PlanetResourceUI : MonoBehaviour
     {
         [SerializeField] private Image resourceIcon; // Imagem para exibir o ícone do recurso
@@ -19,9 +19,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             // Obtém o componente Planets na hierarquia pai
             _planet = GetComponentInParent<Planets>();
-            if (_planet == null)
+            if (!_planet)
             {
-                Debug.LogError($"Componente Planets não encontrado na hierarquia pai de {gameObject.name}!", gameObject);
+                DebugUtility.LogError<PlanetResourceUI>($"Componente Planets não encontrado na hierarquia pai de {gameObject.name}!", gameObject);
             }
         }
 
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if (_planet == null || evt.PlanetObject != _planet.gameObject)
+            if (!_planet || evt.PlanetObject != _planet.gameObject)
             {
                 return;
             }
@@ -59,59 +59,59 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Atualiza a UI com o recurso atual do planeta
         private void UpdateUI()
         {
-            if (_planet == null)
+            if (!_planet)
             {
                 ClearUI();
                 return;
             }
 
             var resources = _planet.GetResources();
-            if (resources != null)
+            if (resources)
             {
                 UpdateUIWithResources(resources, _planet.GetInstanceID()); // Usa InstanceID como fallback
             }
             else
             {
                 ClearUI();
-                Debug.Log($"Recurso ainda não definido para o planeta {_planet.gameObject.name}. Aguardando PlanetCreatedEvent.", gameObject);
+                DebugUtility.Log<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planet.gameObject.name}. Aguardando PlanetCreatedEvent.");
             }
         }
 
         // Atualiza a UI com o recurso e ID do planeta
         private void UpdateUIWithResources(PlanetResourcesSo resources, int planetId)
         {
-            if (resourceIcon == null)
+            if (!resourceIcon)
             {
-                Debug.LogWarning("Image para ícone de recurso não configurada em PlanetResourceUI!", gameObject);
+                DebugUtility.LogWarning<PlanetResourceUI>("Image para ícone de recurso não configurada em PlanetResourceUI!", gameObject);
                 ClearUI();
                 return;
             }
 
-            if (resources?.ResourceIcon != null)
+            if (resources?.ResourceIcon)
             {
                 resourceIcon.sprite = resources.ResourceIcon;
                 resourceIcon.gameObject.SetActive(true);
-                if (planetNameText != null)
+                if (planetNameText)
                 {
                     planetNameText.text = $"Planet {planetId}";
                 }
-                Debug.Log($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planet.gameObject.name} (ID: {planetId}).", gameObject);
+                DebugUtility.Log<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planet.gameObject.name} (ID: {planetId}).");
             }
             else
             {
                 ClearUI();
-                Debug.LogWarning($"Nenhum ícone de recurso encontrado para o planeta {_planet.gameObject.name} (ID: {planetId}).", gameObject);
+                DebugUtility.LogWarning<PlanetResourceUI>($"Nenhum ícone de recurso encontrado para o planeta {_planet.gameObject.name} (ID: {planetId}).", gameObject);
             }
         }
 
         // Limpa a UI (desativa ícone e texto)
         private void ClearUI()
         {
-            if (resourceIcon != null)
+            if (resourceIcon)
             {
                 resourceIcon.gameObject.SetActive(false);
             }
-            if (planetNameText != null)
+            if (planetNameText)
             {
                 planetNameText.text = "";
             }

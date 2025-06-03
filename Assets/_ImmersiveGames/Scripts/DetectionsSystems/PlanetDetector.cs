@@ -15,11 +15,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             base.Awake();
             _detectableEntity = GetComponent<IDetectable>();
-            if (_detectableEntity == null)
-            {
-                DebugUtility.LogError<PlanetDetector>("IDetectable não encontrado no GameObject.", this);
-                enabled = false;
-            }
+            if (_detectableEntity != null) return;
+            DebugUtility.LogError<PlanetDetector>("IDetectable não encontrado no GameObject.", this);
+            enabled = false;
         }
 
         protected override void ProcessPlanets(List<Planets> planets)
@@ -29,15 +27,13 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             // Adicionar novos planetas detectados
             foreach (var planet in currentPlanets)
             {
-                if (!detectedPlanets.Contains(planet))
+                if (detectedPlanets.Contains(planet)) continue;
+                detectedPlanets.Add(planet);
+                _detectableEntity.OnPlanetDetected(planet);
+                planet.GetComponent<IPlanetInteractable>()?.ActivateDefenses(_detectableEntity);
+                if (debugMode)
                 {
-                    detectedPlanets.Add(planet);
-                    _detectableEntity.OnPlanetDetected(planet);
-                    planet.GetComponent<IPlanetInteractable>()?.ActivateDefenses(_detectableEntity);
-                    if (debugMode)
-                    {
-                        DebugUtility.LogVerbose<PlanetDetector>($"Planeta detectado: {planet.name}", "green");
-                    }
+                    DebugUtility.LogVerbose<PlanetDetector>($"Planeta detectado: {planet.name}", "green");
                 }
             }
 
@@ -45,14 +41,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             for (int i = detectedPlanets.Count - 1; i >= 0; i--)
             {
                 var planet = detectedPlanets[i];
-                if (!currentPlanets.Contains(planet))
+                if (currentPlanets.Contains(planet)) continue;
+                detectedPlanets.RemoveAt(i);
+                _detectableEntity.OnPlanetLost(planet);
+                if (debugMode)
                 {
-                    detectedPlanets.RemoveAt(i);
-                    _detectableEntity.OnPlanetLost(planet);
-                    if (debugMode)
-                    {
-                        DebugUtility.LogVerbose<PlanetDetector>($"Planeta perdido: {planet.name}", "red");
-                    }
+                    DebugUtility.LogVerbose<PlanetDetector>($"Planeta perdido: {planet.name}", "red");
                 }
             }
 

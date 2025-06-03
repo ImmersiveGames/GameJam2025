@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void UpdateOrbitPosition(float angle)
         {
-            Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * _orbitRadius;
+            var offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * _orbitRadius;
             transform.position = _orbitCenter + offset;
         }
 

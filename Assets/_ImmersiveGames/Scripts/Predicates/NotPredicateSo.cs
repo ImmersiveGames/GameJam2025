@@ -1,26 +1,26 @@
-﻿using _ImmersiveGames.Scripts.Predicates;
-using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.Predicates;
-
-[CreateAssetMenu(menuName = "ImmersiveGames/Predicates/Logic/NOT")]
-public class NotPredicateSo : PredicateSo
+﻿using UnityEngine;
+namespace _ImmersiveGames.Scripts.Predicates
 {
-    [SerializeReference]
-    public PredicateSo condition;
-
-    public override bool Evaluate()
+    [CreateAssetMenu(menuName = "ImmersiveGames/Predicates/Logic/NOT")]
+    public class NotPredicateSo : PredicateSo
     {
-        return isActive && condition != null && !condition.Evaluate();
-    }
+        [SerializeReference]
+        public PredicateSo condition;
 
-    public override void Reset()
-    {
-        condition?.Reset();
-    }
+        public override bool Evaluate()
+        {
+            return isActive && condition != null && !condition.Evaluate();
+        }
 
-    public override void SetActive(bool active)
-    {
-        base.SetActive(active);
-        condition?.SetActive(active);
+        public override void Reset()
+        {
+            condition?.Reset();
+        }
+
+        public override void SetActive(bool active)
+        {
+            base.SetActive(active);
+            condition?.SetActive(active);
+        }
     }
 }

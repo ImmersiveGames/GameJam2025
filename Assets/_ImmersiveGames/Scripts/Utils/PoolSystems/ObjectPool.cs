@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
@@ -9,14 +10,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     [DebugLevel(DebugLevel.Verbose)]
     public class ObjectPool : MonoBehaviour
     {
-        private readonly Queue<IPoolable> _pool = new Queue<IPoolable>();
-        private readonly List<IPoolable> _activeObjects = new List<IPoolable>();
-        public PoolableObjectData Data { get; set; }
-        private readonly ObjectPoolFactory _factory = new ObjectPoolFactory();
+        private readonly Queue<IPoolable> _pool = new();
+        private readonly List<IPoolable> _activeObjects = new();
+        public PoolableObjectData Data { get; private set; }
+        private readonly ObjectPoolFactory _factory = new();
 
         public void SetData(PoolableObjectData data)
         {
-            if (data == null || data.Prefab == null || data.ModelPrefab == null)
+            if (!data || !data.Prefab || !data.ModelPrefab)
             {
                 DebugUtility.LogError<ObjectPool>($"PoolableObjectData, LogicPrefab ou ModelPrefab nulo.", this);
                 return;
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void Initialize()
         {
-            if (Data == null)
+            if (!Data)
             {
                 DebugUtility.LogError<ObjectPool>($"Dados não configurados para o pool.", this);
                 return;

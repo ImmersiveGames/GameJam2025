@@ -1,7 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.Utils.PoolSystems
+namespace _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus
 {
     public class PoolExhaustedEvent : IEvent
     {
