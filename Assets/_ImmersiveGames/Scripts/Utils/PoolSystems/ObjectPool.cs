@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class ObjectPool : MonoBehaviour
     {
         private readonly Queue<IPoolable> _pool = new();

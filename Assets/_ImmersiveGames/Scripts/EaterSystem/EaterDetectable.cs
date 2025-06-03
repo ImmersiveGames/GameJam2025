@@ -9,6 +9,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
         [SerializeField, Tooltip("Distância para iniciar o consumo do planeta")]

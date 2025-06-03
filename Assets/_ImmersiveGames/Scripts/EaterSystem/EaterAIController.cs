@@ -7,12 +7,15 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterHealth))]
     [RequireComponent(typeof(EaterDetectable))]
     [RequireComponent(typeof(EaterHunger))]
+    [RequireComponent(typeof(EaterDesire))]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterAIController : MonoBehaviour
     {
         [Header("Wander Settings")]
@@ -31,6 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterHealth _health;
         private EaterDetectable _detector;
         private EaterHunger _hunger;
+        private EaterDesire _desire; // Nova referência
         private Transform _currentTarget;
         private bool _isEating;
         private bool _targetReached;
@@ -43,6 +47,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _health = GetComponent<EaterHealth>();
             _detector = GetComponent<EaterDetectable>();
             _hunger = GetComponent<EaterHunger>();
+            _desire = GetComponent<EaterDesire>(); // Obtém EaterDesire
             _detector.OnTargetUpdated += HandleTargetUpdated;
             _detector.OnEatPlanet += HandleEatPlanet;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
@@ -119,7 +124,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentTarget = target;
             _targetReached = false;
             _isEating = false;
-            Debug.Log($"EaterAI: Novo alvo definido: {target?.name ?? "nenhum"}.");
+            DebugUtility.Log<EaterAIController>($"Novo alvo definido: {target?.name ?? "nenhum"}.");
         }
 
         private void HandleEatPlanet(Planets planet)
@@ -128,7 +133,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _targetReached = true;
                 _isEating = true;
-                Debug.Log($"EaterAI: Iniciando consumo do planeta: {planet.name}.");
+                DebugUtility.Log<EaterAIController>($"Iniciando consumo do planeta: {planet.name}.");
+                _desire.ConsumePlanet(planet.GetResources()); // Chama ConsumePlanet em EaterDesire
             }
         }
 
@@ -138,13 +144,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentTarget = null;
             _targetReached = false;
             _isEating = false;
-            Debug.Log($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
+            DebugUtility.Log<EaterAIController>($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
         }
 
         private void HandleStarved(EaterStarvedEvent evt)
         {
             enabled = false;
-            Debug.Log("EaterAI desativado devido à morte por fome.");
+            DebugUtility.LogVerbose<EaterAIController>("EaterAI desativado devido à morte por fome.");
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
 
@@ -153,7 +159,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (evt.Source == gameObject)
             {
                 enabled = false;
-                Debug.Log("EaterAI desativado devido à morte por dano.");
+                DebugUtility.LogVerbose<EaterAIController>("EaterAI desativado devido à morte por dano.");
                 EventBus<GameOverEvent>.Raise(new GameOverEvent());
             }
         }
@@ -162,7 +168,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _isEating = false;
             _currentTarget = null;
-            Debug.Log("EaterAI: Terminou de comer. Voltando a vagar.");
+            DebugUtility.LogVerbose<EaterAIController>("EaterAI: Terminou de comer. Voltando a vagar.");
         }
 
         private float GetChaseSpeed()
@@ -170,5 +176,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             float healthRatio = _health.GetCurrentHealth() / _health.GetMaxValue();
             return healthRatio <= 0.25f ? baseChaseSpeed * 1.5f : baseChaseSpeed;
         }
+
+        public PlanetResourcesSo GetDesiredResource() => _desire.GetDesiredResource(); // Método para acessar o recurso desejado
     }
 }

@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.BootstrapSystem
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class BootManager : MonoBehaviour
     {
         private static bool _initialized;
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
         {
             if (DependencyManager.Instance.IsInTestMode)
             {
-                DebugUtility.Log<BootManager>("BootManager desativado para testes unitários.");
+                DebugUtility.LogVerbose<BootManager>("BootManager desativado para testes unitários.");
                 return;
             }
 
@@ -28,11 +29,11 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
             if (!DependencyManager.HasInstance)
             {
                 var dependencyManager = DependencyManager.Instance;
-                DebugUtility.Log<BootManager>("DependencyManager inicializado pelo BootManager.");
+                DebugUtility.LogVerbose<BootManager>("DependencyManager inicializado pelo BootManager.");
             }
             else
             {
-                DebugUtility.Log<BootManager>("DependencyManager já inicializado.");
+                DebugUtility.LogVerbose<BootManager>("DependencyManager já inicializado.");
             }
 
             // Inicializar DependencyBootstrapper
@@ -59,7 +60,7 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
         private static void ResetStatics()
         {
             _initialized = false;
-            DebugUtility.Log<BootManager>("Estado resetado para nova execução.");
+            DebugUtility.LogVerbose<BootManager>("Estado resetado para nova execução.");
         }
 #endif
     }

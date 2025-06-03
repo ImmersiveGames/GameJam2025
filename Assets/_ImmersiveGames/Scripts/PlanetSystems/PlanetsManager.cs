@@ -1,16 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 using UnityUtils;
-
-namespace _ImmersiveGames.Scripts.GameManagerSystems
+namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Logs)]
     public class PlanetsManager : Singleton<PlanetsManager>
     {
         [SerializeField] private Planets targetToEater;
@@ -46,7 +44,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             planetGo.transform.localScale = Vector3.one * scaleMult;
             float tilt = Random.Range(planetInfo.minTiltAngle, planetInfo.maxTiltAngle);
             planetGo.transform.localRotation = Quaternion.Euler(0, 0, tilt);
-            DebugUtility.Log<PlanetsManager>($"Configurando planeta {planetGo.name}: escala {scaleMult}, inclinação {tilt} graus, diâmetro escalado {planetInfo.size * scaleMult}, ângulo inicial {initialAngleRad * Mathf.Rad2Deg} graus.");
+            DebugUtility.LogVerbose<PlanetsManager>($"Configurando planeta {planetGo.name}: escala {scaleMult}, inclinação {tilt} graus, diâmetro escalado {planetInfo.size * scaleMult}, ângulo inicial {initialAngleRad * Mathf.Rad2Deg} graus.");
 
             var motion = planetGo.GetComponent<PlanetMotion>() ?? planetGo.AddComponent<PlanetMotion>();
             bool randomOrbit = Random.value > 0.5f;
@@ -59,7 +57,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 selfRotationSpeedDegPerSec: Random.Range(planetInfo.minRotationSpeed, planetInfo.maxRotationSpeed) * (randomRotate ? -1f : 1f),
                 initialAngleRad: initialAngleRad
             );
-            DebugUtility.Log<PlanetsManager>($"Movimento configurado para {planetGo.name}: raio {orbitRadius}, velocidade orbital {motion.OrbitSpeedDegPerSec}, rotação {motion.SelfRotationSpeedDegPerSec}.");
+            DebugUtility.LogVerbose<PlanetsManager>($"Movimento configurado para {planetGo.name}: raio {orbitRadius}, velocidade orbital {motion.OrbitSpeedDegPerSec}, rotação {motion.SelfRotationSpeedDegPerSec}.");
 
             var planets = planetGo.GetComponent<Planets>();
             if (planets)
@@ -68,13 +66,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (!_activePlanets.Contains(planets))
                 {
                     _activePlanets.Add(planets);
-                    DebugUtility.Log<PlanetsManager>($"Planeta {planetGo.name} adicionado à lista de ativos com recurso {resource?.name ?? "nenhum"}.");
+                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetGo.name} adicionado à lista de ativos com recurso {resource?.name ?? "nenhum"}.");
                 }
                 var healthResource = planetGo.GetComponent<HealthResource>();
                 IResettable resettable = healthResource;
                 if (!healthResource || resettable == null) return;
                 resettable.Reset();
-                DebugUtility.Log<PlanetsManager>($"HealthResource resetado para {planetGo.name}.");
+                DebugUtility.LogVerbose<PlanetsManager>($"HealthResource resetado para {planetGo.name}.");
             }
             else
             {
@@ -102,7 +100,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         public bool IsMarkedPlanet(Planets planet)
         {
             bool isMarked = targetToEater == planet;
-            DebugUtility.Log<PlanetsManager>($"Verificando se {planet?.name ?? "nulo"} está marcado: {isMarked}.");
+            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planet?.name ?? "nulo"} está marcado: {isMarked}.");
             return isMarked;
         }
 
@@ -119,9 +117,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 if (targetToEater == planet)
                 {
                     targetToEater = null;
-                    DebugUtility.Log<PlanetsManager>($"Planeta {planet.name} era o alvo do Eater. Alvo limpo.");
+                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planet.name} era o alvo do Eater. Alvo limpo.");
                 }
-                DebugUtility.Log<PlanetsManager>($"Planeta {planet.name} removido. Planetas ativos: {_activePlanets.Count}.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planet.name} removido. Planetas ativos: {_activePlanets.Count}.");
             }
             else
             {
@@ -139,7 +137,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             if (targetToEater == evt.Planet)
             {
-                DebugUtility.Log<PlanetsManager>($"Planeta {evt.Planet.name} já está marcado.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {evt.Planet.name} já está marcado.");
                 return;
             }
 
@@ -173,7 +171,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 return targetToEater.transform;
             }
-            DebugUtility.Log<PlanetsManager>("Nenhum planeta marcado para o Eater.");
+            DebugUtility.LogVerbose<PlanetsManager>("Nenhum planeta marcado para o Eater.");
             return null;
         }
     }

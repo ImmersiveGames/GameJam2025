@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
@@ -27,8 +28,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             base.Awake();
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
-            /*if(!SceneManager.GetSceneByName("UI").isLoaded)
-                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);*/
+            if(!SceneManager.GetSceneByName("UI").isLoaded)
+                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
         }
 
         public bool ShouldPlayingGame() => _isPlaying && !_isVictory && !_isGameOver;

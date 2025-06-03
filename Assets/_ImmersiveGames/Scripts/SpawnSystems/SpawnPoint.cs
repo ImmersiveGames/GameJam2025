@@ -24,8 +24,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private bool _isExhausted;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
-        private SpawnManager _spawnManager;
-        private PoolManager _poolManager;
+        protected SpawnManager spawnManager;
+        protected PoolManager poolManager;
 
         protected virtual void Awake()
         {
@@ -36,15 +36,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            _spawnManager = SpawnManager.Instance;
-            _poolManager = PoolManager.Instance;
-            if (!_spawnManager)
+            spawnManager = SpawnManager.Instance;
+            poolManager = PoolManager.Instance;
+            if (!spawnManager)
             {
                 DebugUtility.LogError<SpawnPoint>("SpawnManager.Instance não encontrado.", this);
                 enabled = false;
                 return;
             }
-            _spawnManager.RegisterSpawnPoint(this, useManagerLocking);
+            spawnManager.RegisterSpawnPoint(this, useManagerLocking);
 
             _poolKey = spawnData.PoolableData.ObjectName;
             _strategy = spawnData.Pattern;
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnBinding = new EventBinding<SpawnRequestEvent>(HandleSpawnRequest);
             _exhaustedBinding = new EventBinding<PoolExhaustedEvent>(HandlePoolExhausted);
 
-            enabled = _spawnManager.CanSpawn(this) && !_isExhausted;
+            enabled = spawnManager.CanSpawn(this) && !_isExhausted;
         }
 
         private void Start()
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void Update()
         {
-            if (!_spawnManager.CanSpawn(this) || _isExhausted)
+            if (!spawnManager.CanSpawn(this) || _isExhausted)
             {
                 enabled = false;
                 return;
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             if (!useManagerLocking && _isExhausted)
             {
-                var pool = _poolManager.GetPool(_poolKey);
+                var pool = poolManager.GetPool(_poolKey);
                 if (pool && pool.GetAvailableCount() > 0)
                 {
                     _isExhausted = false;
@@ -98,15 +98,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private bool RegisterPoolIfNeeded()
         {
-            if (!_poolManager)
+            if (!poolManager)
             {
                 DebugUtility.LogError<SpawnPoint>("PoolManager.Instance é nulo.", this);
                 return false;
             }
 
-            if (!_poolManager.GetPool(_poolKey))
-                _poolManager.RegisterPool(spawnData.PoolableData);
-            return _poolManager.GetPool(_poolKey);
+            if (!poolManager.GetPool(_poolKey))
+                poolManager.RegisterPool(spawnData.PoolableData);
+            return poolManager.GetPool(_poolKey);
         }
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (evt.Data != spawnData)
                 return;
 
-            if (!_spawnManager.CanSpawn(this))
+            if (!spawnManager.CanSpawn(this))
             {
                 DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
                 EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            var pool = _poolManager.GetPool(_poolKey);
+            var pool = poolManager.GetPool(_poolKey);
             if (!pool)
             {
                 DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não encontrado.", this);
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var objects = new IPoolable[spawnCount];
             for (int i = 0; i < spawnCount; i++)
             {
-                objects[i] = _poolManager.GetObject(_poolKey, spawnPosition);
+                objects[i] = poolManager.GetObject(_poolKey, spawnPosition);
                 if (objects[i] != null) continue;
                 DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
                 if (useManagerLocking)
@@ -161,7 +161,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             _strategy.Spawn(objects, spawnData, spawnPosition, transform.forward);
-            _spawnManager.RegisterSpawn(this);
+            spawnManager.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, spawnPosition, spawnData));
         }
 
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (useManagerLocking)
             {
                 _isExhausted = true;
-                _spawnManager.LockSpawns(this);
+                spawnManager.LockSpawns(this);
                 enabled = false;
                 DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}' (gerenciado).", "yellow", this);
             }
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _isExhausted = false;
             _trigger.SetActive(true);
             _trigger.Reset();
-            enabled = _spawnManager.CanSpawn(this);
+            enabled = spawnManager.CanSpawn(this);
             DebugUtility.Log<SpawnPoint>($"SpawnPoint '{name}' resetado.", "green", this);
         }
 

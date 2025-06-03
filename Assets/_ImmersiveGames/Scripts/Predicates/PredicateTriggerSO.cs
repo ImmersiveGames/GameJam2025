@@ -7,7 +7,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.Predicates
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Spawn/Trigger/Predicate Trigger")]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class PredicateTriggerSo : SpawnTriggerSo
     {
         [SerializeReference] public PredicateSo predicate;

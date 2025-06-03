@@ -6,7 +6,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.Predicates
 {
     [CreateAssetMenu(fileName = "DeathEventPredicate", menuName = "ImmersiveGames/Predicates/DeathEvent Predicate")]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class DeathEventPredicateSo : PredicateSo
     {
         private bool _isTriggered;

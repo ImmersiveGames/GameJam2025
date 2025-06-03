@@ -3,24 +3,15 @@ using _ImmersiveGames.Scripts.Predicates;
 using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FXSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class FxSpawnPoint : SpawnPoint
     {
         private EventBinding<DeathEvent> _deathEventBinding;
-        private SpawnManager _spawnManager;
-        private PoolManager _poolManager;
-
-        protected override void Awake()
-        {
-            base.Awake();
-            _spawnManager = SpawnManager.Instance;
-            _poolManager = PoolManager.Instance;
-        }
 
         protected override void OnEnable()
         {
@@ -54,14 +45,14 @@ namespace _ImmersiveGames.Scripts.FXSystems
             var spawnPosition = deathPredicate.TriggerPosition;
             DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.Source.name} com posição {spawnPosition}.", "green", this);
 
-            if (!_spawnManager.CanSpawn(this))
+            if (!spawnManager.CanSpawn(this))
             {
                 DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
                 EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
                 return;
             }
 
-            var pool = _poolManager.GetPool(spawnData.PoolableData.ObjectName);
+            var pool = poolManager.GetPool(spawnData.PoolableData.ObjectName);
             if (!pool)
             {
                 DebugUtility.LogError<FxSpawnPoint>($"Pool '{spawnData.PoolableData.ObjectName}' não encontrado.", this);
@@ -77,7 +68,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
 
             var objects = new IPoolable[spawnCount];
-            objects[0] = _poolManager.GetObject(spawnData.PoolableData.ObjectName, spawnPosition);
+            objects[0] = poolManager.GetObject(spawnData.PoolableData.ObjectName, spawnPosition);
             if (objects[0] == null)
             {
                 DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
@@ -87,7 +78,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
 
             spawnData.Pattern.Spawn(objects, spawnData, spawnPosition, transform.forward);
-            _spawnManager.RegisterSpawn(this);
+            spawnManager.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
 
             // Resetar o predicate para evitar spawns duplicados

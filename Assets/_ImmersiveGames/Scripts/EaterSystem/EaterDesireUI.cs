@@ -10,29 +10,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     public class EaterDesireUI : MonoBehaviour
     {
         [SerializeField] private Image desireIcon;
-        [SerializeField] private EaterHunger eaterHunger;
-        private EventBinding<EaterDesireChangedEvent> _desireChangedBinding;
+        [SerializeField] private EaterDesire eaterDesire; // Alterado para EaterDesire
+        private EventBinding<DesireChangedEvent> _desireChangedBinding;
 
         private void Awake()
         {
-            if (eaterHunger) return;
-            DebugUtility.LogError<EaterDesireUI>("EaterHunger não encontrado na cena!", this);
+            if (eaterDesire) return;
+            DebugUtility.LogError<EaterDesireUI>("EaterDesire não encontrado na cena!", this);
             enabled = false;
         }
 
         private void OnEnable()
         {
-            _desireChangedBinding = new EventBinding<EaterDesireChangedEvent>(OnDesireChanged);
-            EventBus<EaterDesireChangedEvent>.Register(_desireChangedBinding);
+            _desireChangedBinding = new EventBinding<DesireChangedEvent>(OnDesireChanged);
+            EventBus<DesireChangedEvent>.Register(_desireChangedBinding);
             UpdateUI();
         }
 
         private void OnDisable()
         {
-            EventBus<EaterDesireChangedEvent>.Unregister(_desireChangedBinding);
+            EventBus<DesireChangedEvent>.Unregister(_desireChangedBinding);
         }
 
-        private void OnDesireChanged(EaterDesireChangedEvent evt)
+        private void OnDesireChanged(DesireChangedEvent evt)
         {
             UpdateUI();
         }
@@ -45,17 +45,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            var desiredResource = eaterHunger.GetDesiredResource();
+            var desiredResource = eaterDesire.GetDesiredResource();
             if (desiredResource && desiredResource.ResourceIcon)
             {
                 desireIcon.sprite = desiredResource.ResourceIcon;
                 desireIcon.gameObject.SetActive(true);
-                DebugUtility.Log<EaterDesireUI>($"Ícone do desejo do Eater atualizado: {desiredResource.name}.");
+                DebugUtility.LogVerbose<EaterDesireUI>($"Ícone do desejo do Eater atualizado: {desiredResource.name}.");
             }
             else
             {
                 desireIcon.gameObject.SetActive(false);
-                DebugUtility.Log<EaterDesireUI>("Nenhum desejo ativo para o Eater. Ícone desativado.");
+                DebugUtility.LogVerbose<EaterDesireUI>("Nenhum desejo ativo para o Eater. Ícone desativado.");
             }
         }
     }

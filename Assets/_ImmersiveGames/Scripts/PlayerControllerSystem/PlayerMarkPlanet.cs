@@ -2,7 +2,6 @@
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -11,7 +10,7 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class PlanetMarker : MonoBehaviour
+    public class PlayerMarkPlanet : MonoBehaviour
     {
         private PlanetRecognizer _recognizer;
         private PlayerInput _playerInput;
@@ -23,27 +22,27 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _recognizer = GetComponent<PlanetRecognizer>();
             if (!_recognizer)
             {
-                DebugUtility.LogError<PlanetMarker>("PlanetRecognizer não encontrado no GameObject.", this);
+                DebugUtility.LogError<PlayerMarkPlanet>("PlanetRecognizer não encontrado no GameObject.", this);
                 enabled = false;
             }
 
             _playerInput = GetComponent<PlayerInput>();
             if (!_playerInput)
             {
-                DebugUtility.LogError<PlanetMarker>("PlayerInput não encontrado no GameObject.", this);
+                DebugUtility.LogError<PlayerMarkPlanet>("PlayerInput não encontrado no GameObject.", this);
                 enabled = false;
             }
 
             _mainCamera = Camera.main;
             if (!_mainCamera)
             {
-                DebugUtility.LogError<PlanetMarker>("Câmera principal não encontrada.", this);
+                DebugUtility.LogError<PlayerMarkPlanet>("Câmera principal não encontrada.", this);
             }
 
             _eaterHunger = GetComponent<EaterHunger>();
             if (!_eaterHunger)
             {
-                DebugUtility.LogError<PlanetMarker>("EaterHunger não encontrado na cena.", this);
+                DebugUtility.LogError<PlayerMarkPlanet>("EaterHunger não encontrado na cena.", this);
             }
         }
 
@@ -67,15 +66,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
-                DebugUtility.LogVerbose<PlanetMarker>($"Planeta desmarcado: {planet.name}", "yellow", this);
+                DebugUtility.LogVerbose<PlayerMarkPlanet>($"Planeta desmarcado: {planet.name}", "yellow", this);
+                return;
             }
-            else
-            {
-                EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
-                bool isDesired = planet.GetResources() == _eaterHunger.GetDesiredResource();
-                EventBus<PlanetMarkedCompatibilityEvent>.Raise(new PlanetMarkedCompatibilityEvent(planet, isDesired));
-                DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado: {planet.name} (Desejado: {isDesired})", "yellow", this);
-            }
+            EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
+            //TODO: Verificar se o planeta é desejado pelo EaterHunger
+            /*bool isDesired = planet.GetResources() == _eaterHunger.GetDesiredResource();
+            EventBus<PlanetMarkedCompatibilityEvent>.Raise(new PlanetMarkedCompatibilityEvent(planet, isDesired));
+            DebugUtility.LogVerbose<PlayerMarkPlanet>($"Planeta marcado: {planet.name} (Desejado: {isDesired})", "yellow", this);*/
         }
     }
 }

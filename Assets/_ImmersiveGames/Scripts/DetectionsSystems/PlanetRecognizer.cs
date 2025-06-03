@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 planetInteractable.SendRecognitionData(_detectableEntity);
                 if (debugMode)
                 {
-                    DebugUtility.LogVerbose<PlanetRecognizer>($"Reconhecimento ativado para: {planet.name}", "blue");
+                    DebugUtility.Log<PlanetRecognizer>($"Reconhecimento ativado para: {planet.name}", "blue");
                 }
             }
 

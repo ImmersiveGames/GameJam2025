@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterHealth : HealthResource, IResettable
     {
         private EventBinding<EaterConsumptionSatisfiedEvent> _consumptionSatisfiedBinding;
@@ -28,11 +29,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnConsumptionSatisfied(EaterConsumptionSatisfiedEvent evt)
         {
-            var hunger = GetComponent<EaterHunger>();
+            var hunger = GetComponent<EaterDesire>();
             if (hunger && hunger.DesireConfig)
             {
                 Heal(hunger.DesireConfig.DesiredHealthRestored);
-                DebugUtility.Log<EaterHealth>($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
+                DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
             }
             else
             {
@@ -44,13 +45,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             base.Deafeat(position);
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(position, gameObject));
-            DebugUtility.Log<EaterHealth>($"EaterHealth: Eater derrotado na posição {position}.");
+            DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Eater derrotado na posição {position}.");
         }
 
         public new void Reset()
         {
             base.Reset();
-            DebugUtility.Log<EaterHealth>("EaterHealth resetado.");
+            DebugUtility.LogVerbose<EaterHealth>("EaterHealth resetado.");
         }
 
         public float GetCurrentHealth()

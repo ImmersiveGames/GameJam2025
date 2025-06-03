@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EatingState : IState
     {
         private readonly float _eatDuration;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public void OnEnter()
         {
             _timer = 0f;
-            DebugUtility.Log<EatingState>("Entrando no estado: Comendo...");
+            DebugUtility.LogVerbose<EatingState>("Entrando no estado: Comendo...");
         }
 
         public void Update()
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 if (targetPlanet)
                 {
                     var consumedResource = targetPlanet.GetResources();
-                    _hungerSystem.ConsumePlanet(consumedResource);
+                    _hungerSystem.ConsumePlanet(targetPlanet);
                     PlanetsManager.Instance.RemovePlanet(targetPlanet);
                     _detectable.ResetEatingState(); // Permite novo consumo
                     DebugUtility.Log<EatingState>($"Terminou de comer o planeta: {targetPlanet.name} (Recurso: {consumedResource?.name ?? "nenhum"}). Fome atual: {_hungerSystem.GetCurrentValue()}");
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public void OnExit()
         {
-            DebugUtility.Log<EatingState>("Saindo do estado: Comendo...");
+            DebugUtility.LogVerbose<EatingState>("Saindo do estado: Comendo...");
         }
     }
 }

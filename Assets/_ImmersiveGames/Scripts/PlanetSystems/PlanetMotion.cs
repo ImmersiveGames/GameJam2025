@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 using DG.Tweening;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class PlanetMotion : MonoBehaviour
     {
         private Vector3 _orbitCenter;
@@ -20,12 +22,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (radius <= 0f)
             {
-                Debug.LogWarning($"Raio de órbita inválido ({radius}) para {gameObject.name}. Usando valor padrão.", this);
+                DebugUtility.LogWarning<PlanetMotion>($"Raio de órbita inválido ({radius}) para {gameObject.name}. Usando valor padrão.", this);
                 radius = 1f;
             }
             if (orbitSpeedDegPerSec == 0f)
             {
-                Debug.LogWarning($"Velocidade orbital inválida para {gameObject.name}. Usando valor padrão.", this);
+                DebugUtility.LogWarning<PlanetMotion>($"Velocidade orbital inválida para {gameObject.name}. Usando valor padrão.", this);
                 orbitSpeedDegPerSec = 10f;
             }
 
@@ -40,7 +42,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             UpdateOrbitPosition(_currentAngle);
 
             StartOrbit();
-            Debug.Log($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
+            DebugUtility.Log<PlanetMotion>($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
         }
 
         private void StartOrbit()
@@ -74,7 +76,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (_isPaused) return;
             _orbitTween?.Pause();
             _isPaused = true;
-            Debug.Log($"Órbita pausada para {gameObject.name}.");
+            DebugUtility.Log<PlanetMotion>($"Órbita pausada para {gameObject.name}.");
         }
 
         public void ResumeOrbit()
@@ -82,19 +84,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!_isPaused) return;
             _orbitTween?.Play();
             _isPaused = false;
-            Debug.Log($"Órbita retomada para {gameObject.name}.");
+            DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
         }
 
         private void OnDisable()
         {
             _orbitTween?.Kill();
-            Debug.Log($"PlanetMotion desativado para {gameObject.name}.");
+            DebugUtility.Log<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
         }
 
         private void OnDestroy()
         {
             _orbitTween?.Kill();
-            Debug.Log($"PlanetMotion destruído para {gameObject.name}.");
+            DebugUtility.Log<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
         }
     }
 }

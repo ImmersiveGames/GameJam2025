@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b037e3d919f045658fa89781b5718fe3, type: 3}
   m_Name: EaterHunger
   m_EditorClassIdentifier: 
-  resourceName: Hunger
+  resourceName: EaterHunger
   resourceType: 4
   maxValue: 10
   initialValue: 10

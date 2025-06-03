@@ -44,6 +44,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
             Eater = eater;
         }
     }
+    public class DesireActivatedEvent : IEvent
+    {
+        // Disparado quando o sistema de desejo é ativado (fome <= 50%)
+    }
 
+    public class DesireDeactivatedEvent : IEvent
+    {
+        // Disparado quando o sistema de desejo é desativado (fome > 50%)
+    }
+
+    public class DesireChangedEvent : IEvent
+    {
+        public PlanetResourcesSo DesiredResource { get; }
+        public DesireChangedEvent(PlanetResourcesSo desiredResource)
+        {
+            DesiredResource = desiredResource;
+        }
+    }
     public class EaterStarvedEvent : IEvent { }
 }

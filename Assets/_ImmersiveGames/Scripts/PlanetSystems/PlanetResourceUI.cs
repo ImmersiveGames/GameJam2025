@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.UI;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -6,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class PlanetResourceUI : MonoBehaviour
     {
         [SerializeField] private Image resourceIcon; // Imagem para exibir o ícone do recurso
@@ -30,7 +31,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             _planetCreatedBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
+        }
 
+        private void Start()
+        {
             // Tenta atualizar a UI, caso o recurso já esteja definido
             UpdateUI();
         }
@@ -73,7 +77,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             else
             {
                 ClearUI();
-                DebugUtility.Log<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planet.gameObject.name}. Aguardando PlanetCreatedEvent.");
+                DebugUtility.LogVerbose<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planet.gameObject.name}. Aguardando PlanetCreatedEvent.");
             }
         }
 
@@ -95,7 +99,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 {
                     planetNameText.text = $"Planet {planetId}";
                 }
-                DebugUtility.Log<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planet.gameObject.name} (ID: {planetId}).");
+                DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planet.gameObject.name} (ID: {planetId}).");
             }
             else
             {

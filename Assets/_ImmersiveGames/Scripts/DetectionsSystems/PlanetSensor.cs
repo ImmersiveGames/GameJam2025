@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             for (int i = 0; i < hitCount; i++)
             {
                 var planet = _detectionResults[i].GetComponentInParent<Planets>();
-                if (planet != null && planet.IsActive)
+                if (planet && planet.IsActive)
                 {
                     planets.Add(planet);
                 }

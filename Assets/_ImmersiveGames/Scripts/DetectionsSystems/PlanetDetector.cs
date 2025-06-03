@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -25,15 +26,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             var currentPlanets = new List<Planets>(planets);
 
             // Adicionar novos planetas detectados
-            foreach (var planet in currentPlanets)
+            foreach (var planet in currentPlanets.Where(planet => !detectedPlanets.Contains(planet)))
             {
-                if (detectedPlanets.Contains(planet)) continue;
                 detectedPlanets.Add(planet);
                 _detectableEntity.OnPlanetDetected(planet);
                 planet.GetComponent<IPlanetInteractable>()?.ActivateDefenses(_detectableEntity);
                 if (debugMode)
                 {
-                    DebugUtility.LogVerbose<PlanetDetector>($"Planeta detectado: {planet.name}", "green");
+                    DebugUtility.Log<PlanetDetector>($"Planeta detectado: {planet.name}", "green");
                 }
             }
 
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 _detectableEntity.OnPlanetLost(planet);
                 if (debugMode)
                 {
-                    DebugUtility.LogVerbose<PlanetDetector>($"Planeta perdido: {planet.name}", "red");
+                    DebugUtility.Log<PlanetDetector>($"Planeta perdido: {planet.name}", "red");
                 }
             }
 
