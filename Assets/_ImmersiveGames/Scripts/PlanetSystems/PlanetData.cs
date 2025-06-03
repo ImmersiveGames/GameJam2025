@@ -7,10 +7,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     {
         [SerializeField, Tooltip("Tamanho do planeta no plano XZ para cálculo de órbita (metros)"), Range(1,10)]
         public float size = 5f;
-        [SerializeField, Tooltip("Multiplicador mínimo de escala para o modelo do planeta"), Range(1,4)]
+        [SerializeField, Tooltip("Multiplicador mínimo de escala para o modelo do planeta"), Range(1,10)]
         public int minScale = 1;
 
-        [SerializeField, Tooltip("Multiplicador máximo de escala para o modelo do planeta"), Range(4,10)]
+        [SerializeField, Tooltip("Multiplicador máximo de escala para o modelo do planeta"), Range(10,20)]
         public int maxScale = 4;
         [SerializeField, Tooltip("Ângulo mínimo de inclinação do modelo do planeta (graus)")]
         public float minTiltAngle = -15f;
@@ -29,5 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         [SerializeField, Tooltip("Velocidade máxima de rotação do planeta em torno de seu próprio eixo (graus por segundo)")]
         public float maxRotationSpeed = 30f;
+        [SerializeField, Tooltip("Centro da órbita (opcional, sobrescreve PlanetSpawnData.orbitCenter se definido)")]
+        public Vector3? orbitCenter = null; // Opcional, para maior flexibilidade
     }
 }

@@ -390,7 +390,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a09f1d00a2b4ab8a51ca9ecae73e6d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnData: {fileID: 11400000, guid: ba4ed45b4d90a0644b59856b6c6b4121, type: 2}
+  spawnData: {fileID: 11400000, guid: 9722fe5b4cecebb43a44b7b49ecc17c5, type: 2}
   useManagerLocking: 0
 --- !u!114 &1443008765
 MonoBehaviour:
@@ -1153,18 +1153,6 @@ PrefabInstance:
       value: Eater
       objectReference: {fileID: 0}
     - target: {fileID: 2534619406059484248, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2534619406059484248, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2534619406059484248, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2534619406059484248, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: m_LocalPosition.x
       value: 40
       objectReference: {fileID: 0}
@@ -1202,18 +1190,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2534619406059484248, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3588397152323905382, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: config
-      value: 
-      objectReference: {fileID: 11400000, guid: edf85fa2ddd546d47a4b3c063a6a3fc2, type: 2}
-    - target: {fileID: 3588397152323905382, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: onDepleted.m_PersistentCalls.m_Calls.Array.size
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3588397152323905382, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
-      propertyPath: onDepleted.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7187341979244978613, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}

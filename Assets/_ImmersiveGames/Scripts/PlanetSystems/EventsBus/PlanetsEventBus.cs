@@ -56,4 +56,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
             PlanetObject = planetObject;
         }
     }
+    public class PlanetMarkedCompatibilityEvent : IEvent
+    {
+        public Planets Planet { get; }
+        public bool IsDesiredResource { get; }
+        public PlanetMarkedCompatibilityEvent(Planets planet, bool isDesiredResource)
+        {
+            Planet = planet;
+            IsDesiredResource = isDesiredResource;
+        }
+    }
 }

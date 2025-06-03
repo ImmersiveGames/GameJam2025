@@ -1,10 +1,13 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -13,6 +16,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private PlanetRecognizer _recognizer;
         private PlayerInput _playerInput;
         private Camera _mainCamera;
+        private EaterHunger _eaterHunger;
 
         private void Awake()
         {
@@ -34,6 +38,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (_mainCamera == null)
             {
                 DebugUtility.LogError<PlanetMarker>("Câmera principal não encontrada.", this);
+            }
+
+            _eaterHunger = FindObjectOfType<EaterHunger>();
+            if (_eaterHunger == null)
+            {
+                DebugUtility.LogError<PlanetMarker>("EaterHunger não encontrado na cena.", this);
             }
         }
 
@@ -57,8 +67,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                     var planet = hit.collider.GetComponentInParent<Planets>();
                     if (planet != null && _recognizer.GetRecognizedPlanets().Contains(planet))
                     {
-                        EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
-                        DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado para destruição: {planet.name}", "yellow");
+                        if (PlanetsManager.Instance.IsMarkedPlanet(planet))
+                        {
+                            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
+                            DebugUtility.LogVerbose<PlanetMarker>($"Planeta desmarcado: {planet.name}", "yellow", this);
+                        }
+                        else
+                        {
+                            EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));
+                            bool isDesired = planet.GetResources() == _eaterHunger.GetDesiredResource();
+                            EventBus<PlanetMarkedCompatibilityEvent>.Raise(new PlanetMarkedCompatibilityEvent(planet, isDesired));
+                            DebugUtility.LogVerbose<PlanetMarker>($"Planeta marcado: {planet.name} (Desejado: {isDesired})", "yellow", this);
+                        }
                     }
                 }
             }

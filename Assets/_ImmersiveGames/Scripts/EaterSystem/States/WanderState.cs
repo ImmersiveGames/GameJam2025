@@ -45,4 +45,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentSpeed = Random.Range(_minSpeed, _maxSpeed);
         }
     }
+    
+    
 }

@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 {
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
-        [SerializeField, Tooltip("Distância para comer o planeta")]
+        [SerializeField, Tooltip("Distância para iniciar o consumo do planeta")]
         private float eatDistance = 5f;
 
         public event Action<Planets> OnEatPlanet;
@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private Transform _self;
         private Planets _targetPlanet;
+        private bool _isEating; // Controla se o Eater já começou a comer
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Update()
         {
-            if (_targetPlanet == null || !_targetPlanet.IsActive) return;
+            if (_targetPlanet == null || !_targetPlanet.IsActive || _isEating) return;
 
             float distance = Vector3.Distance(
                 new Vector3(_self.position.x, 0, _self.position.z),
@@ -52,16 +53,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (distance <= eatDistance)
             {
+                _isEating = true; // Impede disparos repetidos
                 OnEatPlanet?.Invoke(_targetPlanet);
-                DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable comeu planeta: {_targetPlanet.name}", "magenta");
+                DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable iniciou consumo do planeta: {_targetPlanet.name} (distância: {distance})", "magenta");
             }
         }
 
         private void OnPlanetMarked(PlanetMarkedEvent evt)
         {
             _targetPlanet = evt.Planet;
-            OnTargetUpdated?.Invoke(_targetPlanet.transform);
-            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanet.name}", "yellow");
+            _isEating = false; // Reseta ao marcar novo alvo
+            OnTargetUpdated?.Invoke(_targetPlanet?.transform);
+            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanet?.name ?? "nulo"}", "yellow");
         }
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
@@ -69,6 +72,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_targetPlanet == evt.Planet)
             {
                 _targetPlanet = null;
+                _isEating = false;
+                OnTargetUpdated?.Invoke(null);
                 DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
             }
         }
@@ -77,7 +82,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado: {planet.name}", "green");
             
-            //só vai parar se ele estiver marcado como alvo do Eater
             if (!PlanetsManager.Instance.IsMarkedPlanet(planet)) return;
             var motion = planet.GetComponent<PlanetMotion>();
             motion?.PauseOrbit();
@@ -93,7 +97,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public void OnRecognitionRangeEntered(Planets planet, PlanetResourcesSo resources)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planet.name}, Recursos: {resources}", "blue");
+            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planet.name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
+        }
+
+        // Chamado pelo EaterAIController/EatingState quando o consumo termina
+        public void ResetEatingState()
+        {
+            _isEating = false;
         }
     }
 }

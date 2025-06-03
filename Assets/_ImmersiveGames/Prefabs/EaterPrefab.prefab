@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 1113890117108742213}
   - component: {fileID: 3588397152323905382}
   - component: {fileID: 3750870619730538031}
+  - component: {fileID: 1088472449682257862}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -33,7 +34,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8443655647771693408}
@@ -148,27 +149,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48c5ba3c4b004d3eb8e5c484d3d1e238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxValue: 4
-  currentValue: 0
-  thresholds:
-  - 0.75
-  - 0.5
-  - 0.25
+  config: {fileID: 11400000, guid: edf85fa2ddd546d47a4b3c063a6a3fc2, type: 2}
   onDepleted:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 3588397152323905382}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   onValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -193,7 +177,29 @@ MonoBehaviour:
   baseChaseSpeed: 6
   reachDistance: 1.5
   eatingDuration: 3
-  healAmount: 30
+--- !u!114 &1088472449682257862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814427060013598564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e7e926359aa401294d099af246e3d91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: a87ab108d4f95844aade42acd79691f7, type: 2}
+  onDepleted:
+    m_PersistentCalls:
+      m_Calls: []
+  onValueChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  onThresholdReached:
+    m_PersistentCalls:
+      m_Calls: []
+  desireConfig: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
 --- !u!1 &2172708011221476507
 GameObject:
   m_ObjectHideFlags: 0
@@ -497,6 +503,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1379203150033295969, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7293279867571352897}
+    - targetCorrespondingSourceObject: {fileID: 1029087717711400855, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4755535900517721971}
   m_SourcePrefab: {fileID: 100100000, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
 --- !u!4 &2135939259810617748 stripped
 Transform:
@@ -525,6 +534,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6012928308990028215 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4062660378494665457, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
+  m_PrefabInstance: {fileID: 7715596789596236614}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &6447310735711439278 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3632782650892329704, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
@@ -536,6 +556,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f68e2a62530b467eadf0316a5c2eca7e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &7303505665427825873 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1029087717711400855, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
+  m_PrefabInstance: {fileID: 7715596789596236614}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4755535900517721971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7303505665427825873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cded0fb0eaa940be91367022517e196b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  desireIcon: {fileID: 6012928308990028215}
+  eaterHunger: {fileID: 1088472449682257862}
 --- !u!1 &8660606335732330791 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1379203150033295969, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
@@ -556,8 +595,10 @@ MonoBehaviour:
   healthSystem: {fileID: 3588397152323905382}
   healthBar: {fileID: 5526153637559685565}
   backgroundImage: {fileID: 5705116779016012407}
+  resourceIcon: {fileID: 0}
   thresholdColors:
   - {r: 0, g: 1, b: 0, a: 1}
   - {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   - {r: 1, g: 0.5, b: 0, a: 1}
   - {r: 1, g: 0, b: 0, a: 1}
+  smoothTransitionSpeed: 5
