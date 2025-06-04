@@ -1,6 +1,8 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -14,9 +16,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _selfRotationSpeed;
         private float _currentAngle;
         private Tween _orbitTween;
-        private bool _isPaused;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+
         public float OrbitSpeedDegPerSec => _orbitSpeed;
         public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
+
+        private void OnEnable()
+        {
+            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+        }
+
+        private void OnDisable()
+        {
+            _orbitTween?.Kill();
+            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            DebugUtility.Log<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
+        }
 
         public void Initialize(Vector3 center, float radius, float orbitSpeedDegPerSec, bool orbitClockwise, float selfRotationSpeedDegPerSec, float initialAngleRad = 0f)
         {
@@ -36,11 +52,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _orbitSpeed = orbitSpeedDegPerSec;
             _orbitClockwise = orbitClockwise;
             _selfRotationSpeed = selfRotationSpeedDegPerSec;
-            _currentAngle = initialAngleRad; // Usar ângulo inicial fornecido
+            _currentAngle = initialAngleRad;
 
-            // Definir posição inicial com base no ângulo fornecido
             UpdateOrbitPosition(_currentAngle);
-
             StartOrbit();
             DebugUtility.Log<PlanetMotion>($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
         }
@@ -73,24 +87,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         public void PauseOrbit()
         {
-            if (_isPaused) return;
             _orbitTween?.Pause();
-            _isPaused = true;
             DebugUtility.Log<PlanetMotion>($"Órbita pausada para {gameObject.name}.");
         }
 
         public void ResumeOrbit()
         {
-            if (!_isPaused) return;
             _orbitTween?.Play();
-            _isPaused = false;
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
         }
 
-        private void OnDisable()
+        private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            _orbitTween?.Kill();
-            DebugUtility.Log<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
+            if (evt.Planet.gameObject != gameObject) return;
+            ResumeOrbit();
+            DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name} devido a desmarcação.");
         }
 
         private void OnDestroy()

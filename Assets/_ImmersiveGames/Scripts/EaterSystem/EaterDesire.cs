@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -11,204 +12,196 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterHunger))]
-    [RequireComponent(typeof(EaterAIController))]
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterDesire : MonoBehaviour, IResettable
     {
         [SerializeField] private EaterDesireConfigSo desireConfig;
-        
         private PlanetResourcesSo _desiredResource;
+        private float _desireChangeTimer;
         private bool _isDesireLocked;
-        private readonly List<PlanetResourcesSo> _lastDesiredResources = new List<PlanetResourcesSo>();
-        private List<PlanetResourcesSo> _cachedAvailableResources;
-        private int _lastActivePlanetCount = -1;
-        
-        private EaterHunger _eaterHunger;
-        private EaterHealth _eaterHealth;
-        private EaterAIController _eaterAIController;
-        
+        private bool _isDesireActive;
+        private List<PlanetResourcesSo> _lastDesiredResources;
         private EventBinding<DesireActivatedEvent> _desireActivatedBinding;
         private EventBinding<DesireDeactivatedEvent> _desireDeactivatedBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EventBinding<PlanetConsumedEvent> _planetConsumedBinding;
 
         private void Awake()
         {
-            _eaterHunger = GetComponent<EaterHunger>();
-            _eaterHealth = GetComponent<EaterHealth>();
-            _eaterAIController = GetComponent<EaterAIController>();
+            _lastDesiredResources = new List<PlanetResourcesSo>();
+            _desireChangeTimer = 0f;
+            _isDesireActive = false;
+            _isDesireLocked = false;
         }
 
         private void OnEnable()
-        {
-            RegisterEventBindings();
-        }
-
-        private void OnDisable()
-        {
-            UnregisterEventBindings();
-        }
-
-        private void RegisterEventBindings()
         {
             _desireActivatedBinding = new EventBinding<DesireActivatedEvent>(OnDesireActivated);
             _desireDeactivatedBinding = new EventBinding<DesireDeactivatedEvent>(OnDesireDeactivated);
             _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(OnPlanetMarked);
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
-            
+            _planetConsumedBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetConsumed);
             EventBus<DesireActivatedEvent>.Register(_desireActivatedBinding);
             EventBus<DesireDeactivatedEvent>.Register(_desireDeactivatedBinding);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            EventBus<PlanetConsumedEvent>.Register(_planetConsumedBinding);
         }
 
-        private void UnregisterEventBindings()
+        private void OnDisable()
         {
             EventBus<DesireActivatedEvent>.Unregister(_desireActivatedBinding);
             EventBus<DesireDeactivatedEvent>.Unregister(_desireDeactivatedBinding);
             EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            EventBus<PlanetConsumedEvent>.Unregister(_planetConsumedBinding);
         }
 
-        public void ChooseNewDesire(string source = "Unknown")
+        private void Update()
         {
-            if (_isDesireLocked)
-            {
-                DebugUtility.Log<EaterDesire>($"ChooseNewDesire ({source}): Desejo travado, não pode escolher novo desejo.");
-                return;
-            }
+            if (!GameManager.Instance.ShouldPlayingGame() || !_isDesireActive || _isDesireLocked) return;
+            UpdateDesire();
+        }
 
-            var availableResources = GetAvailableResources();
+        private void UpdateDesire()
+        {
+            _desireChangeTimer += Time.deltaTime;
+            float changeInterval = GetDesireChangeInterval();
+            if (_desireChangeTimer < changeInterval) return;
+            ChooseNewDesire();
+            _desireChangeTimer = 0f;
+            DebugUtility.LogVerbose<EaterDesire>($"Nova vontade: {_desiredResource?.name ?? "nenhum"} (intervalo: {changeInterval}s).");
+        }
+
+        private float GetDesireChangeInterval()
+        {
+            List<PlanetResourcesSo> availableResources = GetAvailableResources();
+            return availableResources.Contains(_desiredResource) ?
+                desireConfig.DesireChangeInterval :
+                desireConfig.NoResourceDesireChangeInterval;
+        }
+
+        public void ChooseNewDesire()
+        {
+            List<PlanetResourcesSo> availableResources = GetAvailableResources();
             if (availableResources.Count == 0)
             {
-                ClearDesire(source);
+                _desiredResource = null;
+                EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
+                DebugUtility.LogVerbose<EaterDesire>($"Nenhum recurso disponível. Desejo definido como nulo.");
                 return;
             }
 
-            var newDesire = SelectDesireFromCandidates(availableResources);
-            SetNewDesire(newDesire, source);
-        }
+            var candidates = availableResources
+                .Where(r => !_lastDesiredResources.Contains(r))
+                .ToList();
 
-        private List<PlanetResourcesSo> GetAvailableResources()
-        {
-            var activePlanets = PlanetsManager.Instance?.GetActivePlanets()?.ToList() ?? new List<Planets>();
-            
-            if (_cachedAvailableResources == null || _lastActivePlanetCount != activePlanets.Count)
-            {
-                _cachedAvailableResources = activePlanets
-                    .Select(p => p.GetResources())
-                    .Where(r => r != null)
-                    .Distinct()
-                    .ToList();
-                _lastActivePlanetCount = activePlanets.Count;
-            }
-
-            return _cachedAvailableResources;
-        }
-
-        private PlanetResourcesSo SelectDesireFromCandidates(List<PlanetResourcesSo> availableResources)
-        {
-            var candidates = availableResources.Where(r => !_lastDesiredResources.Contains(r)).ToList();
             if (candidates.Count == 0)
             {
                 _lastDesiredResources.Clear();
                 candidates = availableResources;
             }
 
-            return candidates[Random.Range(0, candidates.Count)];
-        }
-
-        private void SetNewDesire(PlanetResourcesSo newDesire, string source)
-        {
-            _desiredResource = newDesire;
+            _desiredResource = candidates[Random.Range(0, candidates.Count)];
             _lastDesiredResources.Add(_desiredResource);
-            
             if (_lastDesiredResources.Count > desireConfig.MaxRecentDesires)
             {
                 _lastDesiredResources.RemoveAt(0);
             }
 
             EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(_desiredResource));
-            DebugUtility.Log<EaterDesire>($"Novo desejo selecionado: {_desiredResource?.name ?? "nenhum"} (Source: {source})");
+            DebugUtility.LogVerbose<EaterDesire>($"Novo desejo escolhido: {_desiredResource.name}.");
         }
 
-        private void ClearDesire(string source)
+        private List<PlanetResourcesSo> GetAvailableResources()
         {
-            _desiredResource = null;
-            _isDesireLocked = false;
-            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
-            DebugUtility.Log<EaterDesire>($"Desejo limpo: Nenhum recurso disponível (Source: {source}).");
-        }
-
-        public void ConsumePlanet(PlanetResourcesSo planetResource)
-        {
-            if (planetResource == _desiredResource)
-            {
-                _eaterHunger.Increase(desireConfig.DesiredHungerRestored);
-                _eaterHealth.Increase(desireConfig.DesiredHealthRestored);
-                DebugUtility.Log<EaterDesire>($"Consumiu recurso desejado ({planetResource.name}): +{desireConfig.DesiredHungerRestored} fome, +{desireConfig.DesiredHealthRestored} saúde.");
-            }
-            else
-            {
-                _eaterHunger.Increase(desireConfig.NonDesiredHungerRestored);
-                DebugUtility.Log<EaterDesire>($"Consumiu recurso indesejado ({planetResource?.name ?? "nenhum"}): +{desireConfig.NonDesiredHungerRestored} fome.");
-            }
+            DebugUtility.Log<EaterDesire>("Chamou");
+            var planets = PlanetsManager.Instance.GetActivePlanets();
+            return planets
+                .Select(p => p.GetResources())
+                .Where(r => r != null)
+                .Distinct()
+                .ToList();
         }
 
         private void OnDesireActivated(DesireActivatedEvent evt)
         {
-            InvalidateCache();
-            if (_desiredResource == null)
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            _isDesireActive = true;
+            if (!_isDesireLocked)
             {
-                ChooseNewDesire("DesireActivatedEvent");
-                DebugUtility.Log<EaterDesire>($"Primeiro desejo ativado por fome.");
+                ChooseNewDesire();
             }
+            DebugUtility.LogVerbose<EaterDesire>($"Sistema de desejo ativado. Desejo: {_desiredResource?.name ?? "nenhum"}.");
         }
 
         private void OnDesireDeactivated(DesireDeactivatedEvent evt)
         {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            _isDesireActive = false;
             _desiredResource = null;
             _lastDesiredResources.Clear();
-            _isDesireLocked = false;
+            _desireChangeTimer = 0f;
             EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
-            DebugUtility.Log<EaterDesire>($"Desejo desativado por fome.");
+            DebugUtility.LogVerbose<EaterDesire>($"Sistema de desejo desativado.");
         }
 
         private void OnPlanetMarked(PlanetMarkedEvent evt)
         {
-            if (_desiredResource != null)
-            {
-                _isDesireLocked = true;
-                DebugUtility.Log<EaterDesire>($"Desejo travado devido a planeta marcado: {_desiredResource?.name ?? "nenhum"}");
-            }
-            else
-            {
-                DebugUtility.Log<EaterDesire>($"Planeta marcado, mas sem desejo ativo. Trava ignorada.");
-            }
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            _isDesireLocked = true;
+            DebugUtility.LogVerbose<EaterDesire>($"Vontade travada: {_desiredResource?.name ?? "nenhum"}.");
         }
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
             _isDesireLocked = false;
-            _eaterAIController.ClearTarget(); // Limpa o alvo antes de escolher novo desejo
-            InvalidateCache();
-            if (_eaterHunger.GetPercentage() <= desireConfig.hungerDesireThreshold)
+            if (_isDesireActive)
             {
-                ChooseNewDesire("PlanetUnmarkedEvent");
-                DebugUtility.Log<EaterDesire>($"Desejo destravado e fome baixa. Novo desejo selecionado.");
-                EventBus<DesireUnlockedEvent>.Raise(new DesireUnlockedEvent());
+                ChooseNewDesire();
+            }
+            DebugUtility.LogVerbose<EaterDesire>($"Vontade destravada. Nova vontade: {_desiredResource?.name ?? "nenhum"}.");
+        }
+
+        private void OnPlanetConsumed(PlanetConsumedEvent evt)
+        {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            _isDesireLocked = false;
+            _desiredResource = null;
+            _lastDesiredResources.Clear();
+            _desireChangeTimer = 0f;
+            if (_isDesireActive)
+            {
+                ChooseNewDesire();
+            }
+            DebugUtility.LogVerbose<EaterDesire>($"Planeta consumido. Desejo resetado. Nova vontade: {_desiredResource?.name ?? "nenhum"}.");
+        }
+
+        public void ConsumePlanet(PlanetResourcesSo consumedResource)
+        {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            bool isDesired = consumedResource == _desiredResource;
+            float hungerRestored = isDesired ? desireConfig.DesiredHungerRestored : desireConfig.NonDesiredHungerRestored;
+            float healthRestored = isDesired ? desireConfig.DesiredHealthRestored : 0f;
+
+            GetComponent<EaterHunger>().ConsumePlanet(hungerRestored);
+            if (healthRestored > 0)
+            {
+                GetComponent<EaterHealth>().Increase(healthRestored);
+            }
+
+            if (isDesired)
+            {
+                EventBus<EaterConsumptionSatisfiedEvent>.Raise(new EaterConsumptionSatisfiedEvent(consumedResource, hungerRestored));
+                DebugUtility.LogVerbose<EaterDesire>($"Eater consumiu recurso desejado ({consumedResource.name}): +{hungerRestored} fome, +{healthRestored} HP.");
             }
             else
             {
-                ClearDesire("PlanetUnmarkedEvent");
-                DebugUtility.Log<EaterDesire>($"Desejo destravado, mas fome alta. Desejo limpo.");
+                EventBus<EaterConsumptionUnsatisfiedEvent>.Raise(new EaterConsumptionUnsatisfiedEvent(consumedResource, hungerRestored));
+                DebugUtility.LogVerbose<EaterDesire>($"Eater consumiu recurso indesejado ({consumedResource.name}): +{hungerRestored} fome, sem HP.");
             }
-        }
-
-        private void InvalidateCache()
-        {
-            _cachedAvailableResources = null;
-            _lastActivePlanetCount = -1;
         }
 
         public PlanetResourcesSo GetDesiredResource() => _desiredResource;
@@ -217,10 +210,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void Reset()
         {
             _desiredResource = null;
+            _isDesireActive = false;
             _isDesireLocked = false;
             _lastDesiredResources.Clear();
-            InvalidateCache();
-            DebugUtility.Log<EaterDesire>($"EaterDesire resetado.");
+            _desireChangeTimer = 0f;
+            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
+            DebugUtility.LogVerbose<EaterDesire>("EaterDesire resetado.");
         }
     }
 }

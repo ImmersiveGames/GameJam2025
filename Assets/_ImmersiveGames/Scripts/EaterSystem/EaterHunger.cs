@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+﻿using System.Linq;
+using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -10,76 +12,72 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterHunger : ResourceSystem, IResettable
     {
-        private bool _wasBelowThreshold;
+        [SerializeField] private float desireThreshold = 0.9f; // 90% (fome alta ativa desejo)
+
+        private bool _desireActivated;
+        // Indica se o eater está com fome suficiente para desejar comer.
+        public bool IsHungry => currentValue <= config.InitialValue * desireThreshold;
 
         protected override void Awake()
         {
             base.Awake();
-            if (!config)
-            {
-                DebugUtility.LogError<EaterHunger>($"ResourceConfigSo não atribuído ao EaterHunger!", this);
-                return;
-            }
-
-            DebugUtility.LogVerbose<EaterHunger>($"Config: AutoDrainEnabled={config.AutoDrainEnabled}, AutoDrainRate={config.AutoDrainRate}");
-            RegisterEvents();
-            InitializeThresholdState();
-        }
-
-        private void RegisterEvents()
-        {
-            onThresholdReached.AddListener(OnThresholdReached);
+            onValueChanged.AddListener(OnHungerChanged);
             onDepleted.AddListener(OnStarved);
+            _desireActivated = false;
         }
 
-        private void InitializeThresholdState()
+        protected void Start()
         {
-            // Pega o threshold do EaterDesireConfig
-            var eaterDesire = GetComponent<EaterDesire>();
-            float threshold = eaterDesire?.DesireConfig?.hungerDesireThreshold ?? 0.5f;
-            _wasBelowThreshold = GetPercentage() <= threshold;
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            OnHungerChanged(GetPercentage()); // Verifica estado inicial
         }
 
-        private void OnThresholdReached(float threshold)
+        protected override void Update()
         {
-            // Pega o threshold configurável do EaterDesireConfig
-            var eaterDesire = GetComponent<EaterDesire>();
-            float hungerThreshold = eaterDesire?.DesireConfig?.hungerDesireThreshold ?? 0.5f;
-            
-            bool isBelowThreshold = GetPercentage() <= hungerThreshold;
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            base.Update();
+        }
 
-            if (isBelowThreshold && !_wasBelowThreshold)
+        private void OnHungerChanged(float percentage)
+        {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+
+            bool hungryNow = IsHungry;
+
+            if (hungryNow && !_desireActivated)
             {
                 EventBus<DesireActivatedEvent>.Raise(new DesireActivatedEvent());
-                DebugUtility.LogVerbose<EaterHunger>($"Fome atingiu {hungerThreshold * 100:F0}% ou menos: desejo ativado.");
+                _desireActivated = true;
+                DebugUtility.LogVerbose<EaterHunger>($"Fome atingiu limiar ({currentValue}/{config.InitialValue * desireThreshold}): desejo ativado.");
             }
-            else if (!isBelowThreshold && _wasBelowThreshold)
+            else if (!hungryNow && _desireActivated)
             {
                 EventBus<DesireDeactivatedEvent>.Raise(new DesireDeactivatedEvent());
-                DebugUtility.LogVerbose<EaterHunger>($"Fome acima de {hungerThreshold * 100:F0}%: desejo desativado.");
+                _desireActivated = false;
+                DebugUtility.LogVerbose<EaterHunger>($"Fome acima do limiar: desejo desativado.");
             }
-
-            _wasBelowThreshold = isBelowThreshold;
         }
 
         private void OnStarved()
         {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
             EventBus<EaterStarvedEvent>.Raise(new EaterStarvedEvent());
-            DebugUtility.LogVerbose<EaterHunger>("Eater morreu de fome!");
+            DebugUtility.LogVerbose<EaterHunger>($"Eater morreu de fome! currentValue: {currentValue}");
+        }
+
+        public void ConsumePlanet(float hungerRestored)
+        {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            Increase(hungerRestored);
+            DebugUtility.LogVerbose<EaterHunger>($"Eater consumiu planeta: +{hungerRestored} fome.");
         }
 
         public void Reset()
         {
             currentValue = config.InitialValue;
             triggeredThresholds.Clear();
+            _desireActivated = false;
             onValueChanged.Invoke(GetPercentage());
-            CheckThresholds();
-            
-            // Recalcula estado do threshold após reset
-            var eaterDesire = GetComponent<EaterDesire>();
-            float threshold = eaterDesire?.DesireConfig?.hungerDesireThreshold ?? 0.5f;
-            _wasBelowThreshold = GetPercentage() <= threshold;
-            
             DebugUtility.LogVerbose<EaterHunger>("EaterHunger resetado.");
         }
     }

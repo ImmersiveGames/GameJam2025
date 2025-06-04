@@ -2,6 +2,7 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.StateMachine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
@@ -11,20 +12,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private readonly Transform _transform;
         private readonly Func<Transform> _getTarget;
         private readonly Func<float> _getSpeed;
-        private readonly float _reachDistance;
 
-        public event Action OnTargetReached;
-
-        public ChaseState(
-            Transform transform,
-            Func<Transform> getTarget,
-            Func<float> getSpeed,
-            float reachDistance)
+        public ChaseState(Transform transform, Func<Transform> getTarget, Func<float> getSpeed)
         {
             _transform = transform;
             _getTarget = getTarget;
             _getSpeed = getSpeed;
-            _reachDistance = reachDistance;
         }
 
         public void OnEnter()
@@ -39,29 +32,39 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public void Update()
         {
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+
             var target = _getTarget();
-
-            var direction = target.position - _transform.position;
-            direction.y = 0;
-
-            float distance = direction.magnitude;
-
-            if (distance <= _reachDistance)
+            if (target == null)
             {
-                OnTargetReached?.Invoke();
+                DebugUtility.LogVerbose<ChaseState>("Alvo nulo. Transitando para outro estado.");
                 return;
             }
 
+            // Direção no plano XZ
+            Vector3 direction = (target.position - _transform.position);
+            direction.y = 0f;
+            direction.Normalize();
+
+            // Rotaciona visualmente para olhar para o alvo
             if (direction != Vector3.zero)
             {
-                var targetRotation = Quaternion.LookRotation(direction);
-                _transform.rotation = Quaternion.Slerp(_transform.rotation, targetRotation, Time.deltaTime * 5f);
- 
+                Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                _transform.rotation = Quaternion.Slerp(_transform.rotation, targetRotation, Time.deltaTime * 10f);
+
+                // Bloqueia rotação X e Z (opcional, para evitar inclinação)
+                Vector3 fixedEuler = _transform.eulerAngles;
+                fixedEuler.x = 0f;
+                fixedEuler.z = 0f;
+                _transform.eulerAngles = fixedEuler;
             }
 
+            // Move diretamente em direção ao alvo
             float moveAmount = _getSpeed() * Time.deltaTime;
-            _transform.position += _transform.forward * moveAmount;
+            _transform.Translate(direction * moveAmount, Space.World);
         }
+
+
 
         public void FixedUpdate() { }
     }

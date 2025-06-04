@@ -17,10 +17,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float nonDesiredHungerRestored = 25f;
         [SerializeField, Tooltip("HP restaurado ao consumir recurso desejado")]
         private float desiredHealthRestored = 30f;
-        [Header("Configurações de Fome")]
-        [Tooltip("Porcentagem abaixo da qual o desejo de fome é ativado")]
-        [Range(0f, 1f)]
-        public float hungerDesireThreshold = 0.5f;
 
         public float DesireChangeInterval => desireChangeInterval;
         public float NoResourceDesireChangeInterval => noResourceDesireChangeInterval;

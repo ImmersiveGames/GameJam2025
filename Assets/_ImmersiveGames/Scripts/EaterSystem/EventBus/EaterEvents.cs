@@ -3,15 +3,6 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
 {
-    public class EaterDesireChangedEvent : IEvent
-    {
-        public PlanetResourcesSo DesiredResource { get; }
-        public EaterDesireChangedEvent(PlanetResourcesSo desiredResource)
-        {
-            DesiredResource = desiredResource;
-        }
-    }
-
     public class EaterConsumptionSatisfiedEvent : IEvent
     {
         public PlanetResourcesSo ConsumedResource { get; }
@@ -46,7 +37,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
     }
     public class DesireActivatedEvent : IEvent
     {
-        // Disparado quando o sistema de desejo é ativado (fome <= 50%)
+        // Disparado quando o sistema de desejo é ativado (fome ≤ 50%)
     }
 
     public class DesireDeactivatedEvent : IEvent
@@ -63,4 +54,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
         }
     }
     public class EaterStarvedEvent : IEvent { }
+    // Novos eventos para animação
+    public class EaterStartedEatingEvent : IEvent
+    {
+        // Disparado quando o Eater entra no estado de comer
+    }
+
+    public class EaterFinishedEatingEvent : IEvent
+    {
+        // Disparado quando o Eater termina de comer
+    }
 }
