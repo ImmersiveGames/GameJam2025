@@ -1,9 +1,11 @@
 ﻿using System;
 using UnityEngine;
 using _ImmersiveGames.Scripts.StateMachine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class ChaseState : IState
     {
         private readonly Transform _transform;
@@ -25,14 +27,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _reachDistance = reachDistance;
         }
 
-        public void OnEnter() { }
+        public void OnEnter()
+        {
+            DebugUtility.LogVerbose<ChaseState>("Entrou no estado de perseguição.");
+        }
 
-        public void OnExit() { }
+        public void OnExit()
+        {
+            DebugUtility.LogVerbose<ChaseState>("Saiu do estado de perseguição.");
+        }
 
         public void Update()
         {
             var target = _getTarget();
-            if (!target) return;
 
             var direction = target.position - _transform.position;
             direction.y = 0;
@@ -45,15 +52,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            // Rotaciona suavemente para o alvo
             if (direction != Vector3.zero)
             {
                 var targetRotation = Quaternion.LookRotation(direction);
                 _transform.rotation = Quaternion.Slerp(_transform.rotation, targetRotation, Time.deltaTime * 5f);
+ 
             }
 
-            // Move para frente
-            _transform.position += _transform.forward * (_getSpeed() * Time.deltaTime);
+            float moveAmount = _getSpeed() * Time.deltaTime;
+            _transform.position += _transform.forward * moveAmount;
         }
 
         public void FixedUpdate() { }

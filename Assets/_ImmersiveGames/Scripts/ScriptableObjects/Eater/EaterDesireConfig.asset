@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 091669dd5d204c71bc4b163094858419, type: 3}
   m_Name: EaterDesireConfig
   m_EditorClassIdentifier: 
-  desireChangeInterval: 10
-  noResourceDesireChangeInterval: 2
+  desireChangeInterval: 15
+  noResourceDesireChangeInterval: 5
   maxRecentDesires: 3
   desiredHungerRestored: 50
   nonDesiredHungerRestored: 25
   desiredHealthRestored: 30
+  hungerDesireThreshold: 0.1

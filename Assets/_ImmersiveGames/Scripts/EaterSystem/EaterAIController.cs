@@ -29,12 +29,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         [Header("Eating Settings")]
         [SerializeField] private float eatingDuration = 3f;
-
+        
+        private EaterDesire _eaterDesire;
+        private EaterHunger _eaterHunger;
         private StateMachine.StateMachine _stateMachine;
         private EaterHealth _health;
         private EaterDetectable _detector;
-        private EaterHunger _hunger;
-        private EaterDesire _desire; // Nova referência
         private Transform _currentTarget;
         private bool _isEating;
         private bool _targetReached;
@@ -46,8 +46,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _health = GetComponent<EaterHealth>();
             _detector = GetComponent<EaterDetectable>();
-            _hunger = GetComponent<EaterHunger>();
-            _desire = GetComponent<EaterDesire>(); // Obtém EaterDesire
+            _eaterDesire = GetComponent<EaterDesire>();
+            _eaterHunger = GetComponent<EaterHunger>();
             _detector.OnTargetUpdated += HandleTargetUpdated;
             _detector.OnEatPlanet += HandleEatPlanet;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Start()
         {
-            var wanderState = new WanderState(transform, minWanderSpeed, maxWanderSpeed, directionChangeInterval);
+            var wanderState = new WanderState(transform, _eaterDesire, minWanderSpeed, maxWanderSpeed, directionChangeInterval);
             var chaseState = new ChaseState(
                 transform,
                 () => _currentTarget,
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             );
             var eatingState = new EatingState(
                 eatingDuration,
-                _hunger,
+                _eaterHunger,
                 _detector,
                 OnFinishEating
             );
@@ -95,18 +95,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _targetReached = true;
                 _isEating = true;
+                DebugUtility.Log<EaterAIController>($"Alvo alcançado!");
             };
 
             _stateMachine = new StateMachineBuilder()
                 .AddState(wanderState, out var wanderRef)
                 .AddState(chaseState, out var chaseRef)
                 .AddState(eatingState, out var eatingRef)
-                .At(wanderRef, chaseRef, new BoolPredicate(() => _currentTarget))
+                .At(wanderRef, chaseRef, new BoolPredicate(() =>
+                {
+                    bool canChase = _currentTarget != null &&
+                                    _eaterHunger.GetPercentage() <= _eaterDesire.DesireConfig.hungerDesireThreshold &&
+                                    _eaterDesire.GetDesiredResource() != null;
+                    return canChase;
+                }))
                 .At(chaseRef, eatingRef, new BoolPredicate(() => _targetReached))
                 .At(eatingRef, wanderRef, new BoolPredicate(() => !_isEating))
-                .At(chaseRef, wanderRef, new BoolPredicate(() => !_currentTarget))
+                .At(chaseRef, wanderRef, new BoolPredicate(() => _currentTarget == null))
                 .StateInitial(wanderRef)
                 .Build();
+
+            DebugUtility.Log<EaterAIController>($"Máquina de estados inicializada.");
         }
 
         private void Update()
@@ -124,7 +133,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentTarget = target;
             _targetReached = false;
             _isEating = false;
-            DebugUtility.Log<EaterAIController>($"Novo alvo definido: {target?.name ?? "nenhum"}.");
+            DebugUtility.LogVerbose<EaterAIController>($"Novo alvo definido: {target?.name ?? "nenhum"}");
         }
 
         private void HandleEatPlanet(Planets planet)
@@ -133,24 +142,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _targetReached = true;
                 _isEating = true;
-                DebugUtility.Log<EaterAIController>($"Iniciando consumo do planeta: {planet.name}.");
-                _desire.ConsumePlanet(planet.GetResources()); // Chama ConsumePlanet em EaterDesire
+                DebugUtility.LogVerbose<EaterAIController>($"Iniciando consumo do planeta: {planet.name}.");
+                _eaterDesire.ConsumePlanet(planet.GetResources());
             }
         }
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
         {
             if (!_currentTarget || _currentTarget.GetComponent<Planets>() != evt.Planet) return;
-            _currentTarget = null;
-            _targetReached = false;
-            _isEating = false;
-            DebugUtility.Log<EaterAIController>($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
+            ClearTarget();
+            DebugUtility.LogVerbose<EaterAIController>($"Planeta {evt.Planet?.name} desmarcado. Alvo limpo.");
         }
 
         private void HandleStarved(EaterStarvedEvent evt)
         {
             enabled = false;
-            DebugUtility.LogVerbose<EaterAIController>("EaterAI desativado devido à morte por fome.");
+            DebugUtility.Log<EaterAIController>($"Desativado devido à morte por fome.");
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
 
@@ -159,7 +166,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (evt.Source == gameObject)
             {
                 enabled = false;
-                DebugUtility.LogVerbose<EaterAIController>("EaterAI desativado devido à morte por dano.");
+                DebugUtility.Log<EaterAIController>($"Desativado devido à morte por dano.");
                 EventBus<GameOverEvent>.Raise(new GameOverEvent());
             }
         }
@@ -167,8 +174,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnFinishEating()
         {
             _isEating = false;
-            _currentTarget = null;
-            DebugUtility.LogVerbose<EaterAIController>("EaterAI: Terminou de comer. Voltando a vagar.");
+            ClearTarget();
+            DebugUtility.LogVerbose<EaterAIController>($"Terminou de comer. Voltando a vagar.");
+            _eaterDesire.ChooseNewDesire("OnFinishEating");
         }
 
         private float GetChaseSpeed()
@@ -177,6 +185,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return healthRatio <= 0.25f ? baseChaseSpeed * 1.5f : baseChaseSpeed;
         }
 
-        public PlanetResourcesSo GetDesiredResource() => _desire.GetDesiredResource(); // Método para acessar o recurso desejado
+        public void ClearTarget()
+        {
+            _currentTarget = null;
+            _targetReached = false;
+            _isEating = false;
+        }
+
+        public PlanetResourcesSo GetDesiredResource() => _eaterDesire.GetDesiredResource();
+        public Transform GetCurrentTarget() => _currentTarget;
     }
 }

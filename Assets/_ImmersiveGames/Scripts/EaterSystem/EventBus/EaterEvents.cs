@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
             HungerRestored = hungerRestored;
         }
     }
-    
+    public class DesireUnlockedEvent :IEvent{ } // Novo evento para notificar destravamento
     public class EaterDeathEvent : IEvent
     {
         public Vector3 Position { get; }

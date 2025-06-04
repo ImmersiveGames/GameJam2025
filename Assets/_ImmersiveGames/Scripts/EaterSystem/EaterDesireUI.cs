@@ -10,12 +10,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     public class EaterDesireUI : MonoBehaviour
     {
         [SerializeField] private Image desireIcon;
-        [SerializeField] private EaterDesire eaterDesire; // Alterado para EaterDesire
+         private EaterDesire _eaterDesire; // Alterado para EaterDesire
         private EventBinding<DesireChangedEvent> _desireChangedBinding;
 
         private void Awake()
         {
-            if (eaterDesire) return;
+            _eaterDesire = FindFirstObjectByType<EaterDesire>();
+            if (_eaterDesire) return;
             DebugUtility.LogError<EaterDesireUI>("EaterDesire não encontrado na cena!", this);
             enabled = false;
         }
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            var desiredResource = eaterDesire.GetDesiredResource();
+            var desiredResource = _eaterDesire.GetDesiredResource();
             if (desiredResource && desiredResource.ResourceIcon)
             {
                 desireIcon.sprite = desiredResource.ResourceIcon;

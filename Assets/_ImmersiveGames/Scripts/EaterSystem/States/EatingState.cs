@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 if (targetPlanet)
                 {
                     var consumedResource = targetPlanet.GetResources();
-                    _hungerSystem.ConsumePlanet(targetPlanet);
+                    //_hungerSystem.ConsumePlanet(targetPlanet);
                     PlanetsManager.Instance.RemovePlanet(targetPlanet);
                     _detectable.ResetEatingState(); // Permite novo consumo
                     DebugUtility.Log<EatingState>($"Terminou de comer o planeta: {targetPlanet.name} (Recurso: {consumedResource?.name ?? "nenhum"}). Fome atual: {_hungerSystem.GetCurrentValue()}");

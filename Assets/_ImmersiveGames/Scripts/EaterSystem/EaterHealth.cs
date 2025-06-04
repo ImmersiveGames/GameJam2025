@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class EaterHealth : HealthResource, IResettable
+    public class EaterHealth : HealthResource
     {
         private EventBinding<EaterConsumptionSatisfiedEvent> _consumptionSatisfiedBinding;
 
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnConsumptionSatisfied(EaterConsumptionSatisfiedEvent evt)
         {
             var hunger = GetComponent<EaterDesire>();
-            if (hunger && hunger.DesireConfig)
+            /*if (hunger && hunger.DesireConfig)
             {
                 Heal(hunger.DesireConfig.DesiredHealthRestored);
                 DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             else
             {
                 DebugUtility.LogWarning<EaterHealth>("EaterHunger ou DesireConfig não encontrado para restaurar HP!", this);
-            }
+            }*/
         }
 
         public override void Deafeat(Vector3 position)
