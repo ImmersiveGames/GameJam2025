@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!162 &1
+EditorUserSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 4
+  m_ConfigSettings:
+    Eflatun_SceneReference_SceneGuidToAddressMapJson:
+      value: 184c
+      flags: 0
+    Eflatun_SceneReference_SceneGuidToPathMapJson:
+      value: 1813075603000c5a58575a77127a0e431543192b7c2b24687f7c4c30e4b36660b0b574b3a51b2c2f3c16fc733b170c32f7181a02e00e2d0a1c0bee4122fc151d14d657e713da1e52de1715dad45f9da184d0d5ba8be9b78adadca4a3a2f5b6aca5a8a4abf9fcfd98fcfaa9e5fb9190928390f5e5dfd5ccd3a99deefab3ded7c1cadf93d3fe86d5decac2938ea79ea2b7dc83ab9981b68db99c8ed2a76ebabb79242b2aeceabbe4d7e4eb6cd47475d1de7624d2292fd2ddd9dcc326db91d7c1dc149b98d91cd9bb88729b598d2e70496e6c507a46634e6a4b5a64694d125e22762b2337350f7a7a2d603a3e4b50593c040713334a3b6a49066f3b4d0268500156050c05025a0008075d2675255a267b277e644f6408043b2e3d0e7f221bed3a31f1223df0e012e836e8fda331f30631f5e5b8d50f021d48050300e90a808c564892c542919519471a4fb4cd44e51ab54fd3baeabd86efbdbda8bddcbcf5dca8b1abe7d9b6e9adebefe4c6d5a3a0f8a3d0bca0b1edb9c6c2abf18c83d7dad5dd97f8d48bceb587d0a4c49ad0989bbbe5e8e3af91a1fca2adf09fb0e5b59bebb0e0edee3db0ed33ecb8b86b81688728818271c3de3454966a8e696d33ad699e82455454418c99bf976d988a025051556a6d4118525c447e6a7f597d50603a7b7f6636633b3764282228117f2b2b107d454042344d371e6e4d4a6819186b3b4905060357070f0d190d4a2f1c0327303311170c2c182e080b25261f382fec1a217807323fe9312f790d32f9160410dd13030d1e15bb1307fe1c124bb152fb44934215c0154593c614cd4b9b9c98b589ba4bd582d1ddb2eeeeb2f1efef85b1f8e2d5ebb1a2e2bae8c5d6f1f4c7bdefcde8c4d8b3c7ccd8f9f8c9cedfcbae81e5bac3c7d496ec8cc88791c985d0c897cf91d3a1c297c1f99af8f69ecbcf33e6b1e4fabcede864eb686beed76c6ae922368085c6dbc856979f839d9435adb89e73968080908040b1984a9d88d67e63486c55742b66482a435b6c4d721f121e2b26703f247277792a7e7a7012257b79166b64141f6032116b351219191c533d0e0e0c705c115f4d48496b564e2657034d6e2d253735103a5502112a3e1a3b2f160462c536e8e9a409eb3e39eda1cdf51610052c482d08f019fbea0f18e3bf2ac4f21d5727121fc9115203171edefba3af8cb7b5e0edb384b5eb8febbfba84a7d8a6a3f6a6f4a3f5f7a3f3fbadf4aaf591e381a5f297a4abcfd8db89e3d9c8afd58b85d8dcc2b4dd9085d5c793fda782d3ebfaa4d29d99aaae98aee4bebfa789b7f3d3f2b6e137ee61ef3deab96abce43c39bb27d62c2426dc2bd8812b297e11c6c7c8dbdacfd3759a49439d674f5cd152406f29716f63437d22746c695e77633e4e7a6276757f2b736a696d75703b453f51314b0b16454d223a5776783e3b3257345642100a061c5f4f1774214e500e6d071e2d3c0b556a5b42292e297936477b6778682eb06e696ee33a3b62576cef6605b6525303ac5ca248a24d3cfa0a07fffa08d25cc6c9c954dd151edcd781c2e7eae41bfaa8f1dcfbdfd4e5fedfcca0b4d1fbe1f1e3e9a6f8b3d3fdfebecdd38c9dc0c7cdccf2b0cbd9bbc9dfccae9f8ec681d9d082c3d0c890db80cf94cc91
+      flags: 0
+    RecentlyUsedSceneGuid-0:
+      value: 5009075604535c0a5f0b0f2111265d4440151e797c7c7336292d4835b3e3613d
+      flags: 0
+    RecentlyUsedSceneGuid-1:
+      value: 060207035704500a095b5d7646735944144f4d7b7b2e7266292b1f60e4e23039
+      flags: 0
+    RecentlyUsedSceneGuid-2:
+      value: 5a050d54010c5008545b0e2142250644434e1c7d787175352c7a4963b7b7353d
+      flags: 0
+    RecentlyUsedSceneGuid-3:
+      value: 5a08555e570c5e0c0e5b5b7145210f444015402c7d7e7165747a1e66b0e46d6e
+      flags: 0
+    RecentlyUsedSceneGuid-4:
+      value: 5152040356030d580c5e087345765d444f4e4f2c7e297f61792b4b30b3e63560
+      flags: 0
+    RecentlyUsedSceneGuid-5:
+      value: 5602575e56075a0f085f5f7741700b44464e407a797922327e704f61e0e36d39
+      flags: 0
+    RecentlyUsedSceneGuid-6:
+      value: 5157550757505f0e090d0f7512755d4440154e2c7a797667297d1b67e7b9306f
+      flags: 0
+    RecentlyUsedSceneGuid-7:
+      value: 5001525300545c025b5b0e7b41705c44171648292e7074657c2a1b60b0b8666a
+      flags: 0
+    RecentlyUsedSceneGuid-8:
+      value: 5257555656575909090d087346260744464e197a7f7c27687b7c4a67b6b3636e
+      flags: 0
+    RecentlyUsedSceneGuid-9:
+      value: 55075754520c5b5a5a08097746270c44464f4078797d77697a2c4463b1b63539
+      flags: 0
+    lightmappingBakingProfile:
+      value: 51
+      flags: 0
+    vcSharedLogLevel:
+      value: 0d5e400f0650
+      flags: 0
+  m_VCAutomaticAdd: 1
+  m_VCDebugCom: 0
+  m_VCDebugCmd: 0
+  m_VCDebugOut: 0
+  m_SemanticMergeMode: 2
+  m_DesiredImportWorkerCount: 1
+  m_StandbyImportWorkerCount: 1
+  m_IdleImportWorkerShutdownDelay: 60000
+  m_VCShowFailedCheckout: 1
+  m_VCOverwriteFailedCheckoutAssets: 1
+  m_VCProjectOverlayIcons: 1
+  m_VCHierarchyOverlayIcons: 1
+  m_VCOtherOverlayIcons: 1
+  m_VCAllowAsyncUpdate: 1
+  m_VCScanLocalPackagesOnConnect: 1
+  m_ArtifactGarbageCollection: 1
+  m_CompressAssetsOnImport: 1
