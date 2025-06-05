@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -39,7 +40,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                 DebugUtility.LogError<PlayerMarkPlanet>("Câmera principal não encontrada.", this);
             }
 
-            _eaterHunger = GetComponent<EaterHunger>();
+            _eaterHunger = GameManager.Instance.WorldEater.GetComponent<EaterHunger>();
             if (!_eaterHunger)
             {
                 DebugUtility.LogError<PlayerMarkPlanet>("EaterHunger não encontrado na cena.", this);
