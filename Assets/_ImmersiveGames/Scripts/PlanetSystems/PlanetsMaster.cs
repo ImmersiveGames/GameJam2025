@@ -1,27 +1,31 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+﻿using System;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
-    [DebugLevel(DebugLevel.Verbose)]
-    public class PlanetsMaster : ActorMaster, IPlanetInteractable
+    [DebugLevel(DebugLevel.Logs)]
+    public sealed class PlanetsMaster : ActorMaster, IPlanetInteractable
     {
         private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
         private TargetFlag _targetFlag; // Bandeira de marcação
-        private EaterDetectable _eaterDetectable; // Detectável pelo devorador
         private int _planetId; // ID do planeta
+        private PlanetData _data; // Dados do planeta
+
+        public event Action<EaterMaster> EaterDetectionEvent; // Evento disparado quando um Eater detecta o planeta
+        public event Action<EaterMaster> EaterEatenEvent; // Evento disparado quando o planeta é comido pelo Eater
+        public event Action EaterLostDetectionEvent; // Evento disparado quando o Eater perde a detecção do planeta
+
+
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
-        private PlanetData _data;
 
         public bool IsActive { get; private set; } // Estado do planeta (ativo/inativo)
 
@@ -52,33 +56,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
-
-            var eater = GameManager.Instance?.WorldEater;
-            if (eater != null)
-            {
-                _eaterDetectable = eater.GetComponent<EaterDetectable>();
-                if (_eaterDetectable != null)
-                {
-                    _eaterDetectable.OnEatPlanet += OnEatenByEater;
-                }
-                else
-                {
-                    DebugUtility.LogWarning<PlanetsMaster>("EaterDetectable não encontrado no WorldEater!");
-                }
-            }
-            else
-            {
-                DebugUtility.LogWarning<PlanetsMaster>("WorldEater não encontrado no GameManager!");
-            }
         }
 
         // Desregistra eventos
         private void OnDisable()
         {
-            if (_eaterDetectable)
-            {
-                _eaterDetectable.OnEatPlanet -= OnEatenByEater;
-            }
             EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
         }
@@ -170,6 +152,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 _targetFlag.gameObject.SetActive(false);
             }
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "gray");
+        }
+        public void OnEaterDetectionEvent(EaterMaster obj)
+        {
+            EaterDetectionEvent?.Invoke(obj);
+        }
+        public void OnEaterEatenEvent(EaterMaster obj)
+        {
+            EaterEatenEvent?.Invoke(obj);
+        }
+        public void OnEaterLostDetectionEvent()
+        {
+            EaterLostDetectionEvent?.Invoke();
         }
     }
 }

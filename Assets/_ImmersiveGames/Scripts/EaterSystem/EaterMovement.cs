@@ -1,6 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.EaterSystem.States;
-using _ImmersiveGames.Scripts.GameManagerSystems;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -11,30 +9,27 @@ using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
+    [DebugLevel(DebugLevel.Logs)]
     public class EaterMovement : MonoBehaviour, IResettable
     {
         private EaterMaster _eater;
-        
+        private EaterConfigSo _config;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         private float _timer;
-        [SerializeField] private float directionChangeInterval = 1f;
         private Vector3 _direction;
         private float _currentSpeed;
-        [SerializeField] private float minSpeed;
-        [SerializeField] private float maxSpeed;
-        [SerializeField] private int multiplierChase = 2;
 
         private void Awake()
         {
             _eater = GetComponent<EaterMaster>();
-            
+            _config = _eater.GetConfig;
         }
 
         private void OnEnable()
         {
             _timer = 0f;
-            _currentSpeed = Random.Range(minSpeed, maxSpeed);
+            _currentSpeed = Random.Range(_config.MinSpeed, _config.MaxSpeed);
             _planetUnmarkedEventBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarkedPlanet);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
@@ -42,7 +37,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         public void Update()
         {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            if (!GameManager.Instance.ShouldPlayingGame() || _eater.IsEating) return;
             if (_eater.IsChasing)
             {
                 ChaseMovement();
@@ -60,7 +55,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var target = PlanetsManager.Instance.GetPlanetMarked().transform;
             if (target == null)
             {
-                DebugUtility.LogVerbose<ChaseState>("Alvo nulo. Transitando para outro estado.");
+                DebugUtility.Log<EaterMovement>("Alvo nulo. Transitando para outro estado.");
                 return;
             }
 
@@ -83,17 +78,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             // Move diretamente em direção ao alvo
-            float moveAmount = (_currentSpeed * multiplierChase) * Time.deltaTime;
+            float moveAmount = (_currentSpeed * _config.MultiplierChase) * Time.deltaTime;
             transform.Translate(direction * moveAmount, Space.World);
         }
 
         private void WanderMovement()
         {
             _timer += Time.deltaTime;
-            if (_timer >= directionChangeInterval)
+            if (_timer >= _config.DirectionChangeInterval)
             {
                 ChooseNewDirection();
-                _currentSpeed = Random.Range(minSpeed, maxSpeed);
+                _currentSpeed = Random.Range(_config.MinSpeed, _config.MaxSpeed);
                 _timer = 0f;
             }
 
@@ -121,14 +116,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 0f,
                 Random.Range(-1f, 1f)
             ).normalized;
-            DebugUtility.LogVerbose<WanderState>($"Nova direção de vagar: {_direction}, velocidade: {_currentSpeed}.");
+            DebugUtility.LogVerbose<EaterMovement>($"Nova direção de vagar: {_direction}, velocidade: {_currentSpeed}.");
         }
         
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
             var config = obj.PlanetMaster.GetPlanetData();
-            _currentSpeed = config.maxOrbitSpeed + minSpeed;
+            _currentSpeed = config.maxOrbitSpeed;
             _eater.IsChasing = true;
+            DebugUtility.LogVerbose<EaterMovement>($"Modo Perseguindo. Alvo: {PlanetsManager.Instance.GetPlanetMarked()?.name}");
         }
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
         {

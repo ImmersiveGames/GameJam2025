@@ -7,10 +7,9 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterHunger : ResourceSystem, IResettable
     {
-        public bool IsHungry = false;
 
         private float _lastPercentage = 1f; // fracionário
         private readonly HashSet<float> _crossedDown = new();

@@ -15,14 +15,10 @@ using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterDesire : MonoBehaviour, IResettable
     {
-        [SerializeField] private int maxRecentDesires = 3; // Quantidade máxima de desejos recentes
-        [SerializeField] private float desireThreshold = 0.90f; // Limiar de desejo
-        [SerializeField] private int delayTimer = 2;
-        [SerializeField] private int chooseNewDesireInSeconds = 2;
-
+        private EaterConfigSo _config;
         private EaterMaster _eater;
         private PlanetResourcesSo _desiredResource;
         private List<PlanetResourcesSo> _lastDesiredResources;
@@ -34,6 +30,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _lastDesiredResources = new List<PlanetResourcesSo>();
             _eater = GetComponent<EaterMaster>();
+            _config = _eater.GetConfig;
         }
 
 
@@ -65,11 +62,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             string dir = info.IsAscending ? "🔺 Subiu" : "🔻 Desceu";
             switch (obj.Info.IsAscending)
             {
-                case true when desireThreshold < info.CurrentValue:
+                case true when _config.DesireThreshold < info.CurrentValue:
                     _eater.InHungry = false;
                     DebugUtility.Log<EaterDesire>($"{dir} limiar {info.Threshold:P0} → {info.CurrentValue:P1}, Estou Satisfeito");
                     return;
-                case false when desireThreshold > info.CurrentValue: {
+                case false when _config.DesireThreshold > info.CurrentValue: {
                     if (_eater.InHungry) return;
                     _eater.InHungry = true;
                     DebugUtility.Log<EaterDesire>($"{dir} limiar {info.Threshold:P0} → {info.CurrentValue:P1}, Posso ter um desejo", "cyan");
@@ -109,8 +106,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 DebugUtility.Log<EaterDesire>("Não pode desejar nada agora.");
                 return;
             }
-            DebugUtility.Log<EaterDesire>($"Pode escolher um desejo, e vai escolher um a cada {chooseNewDesireInSeconds} segundos.");
-            InvokeRepeating(nameof(ChooseNewDesire), delayTimer, chooseNewDesireInSeconds);
+            DebugUtility.Log<EaterDesire>($"Pode escolher um desejo, e vai escolher um a cada {_config.DesireChangeInterval} segundos.");
+            InvokeRepeating(nameof(ChooseNewDesire), _config.DelayTimer, _config.DesireChangeInterval);
             //Se Tiver ele tem que parar de desejar e se mover para o planeta marcado
         }
         private void ChooseNewDesire()
@@ -137,7 +134,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _desiredResource = candidates[Random.Range(0, candidates.Count)];
             _lastDesiredResources.Add(_desiredResource);
-            if (_lastDesiredResources.Count > maxRecentDesires)
+            if (_lastDesiredResources.Count > _config.MaxRecentDesires)
             {
                 _lastDesiredResources.RemoveAt(0);
             }
@@ -172,7 +169,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 }
-/*[SerializeField] private EaterDesireConfigSo desireConfig;
+/*[SerializeField] private EaterConfigSo desireConfig;
         private PlanetResourcesSo _desiredResource;
         private float _desireChangeTimer;
         private bool _isDesireLocked;
@@ -362,7 +359,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         public PlanetResourcesSo GetDesiredResource() => _desiredResource;
-        public EaterDesireConfigSo DesireConfig => desireConfig;
+        public EaterConfigSo DesireConfig => desireConfig;
 
         public void Reset()
         {

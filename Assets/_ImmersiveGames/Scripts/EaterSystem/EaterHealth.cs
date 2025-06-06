@@ -17,8 +17,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _consumptionSatisfiedBinding = new EventBinding<EaterConsumptionSatisfiedEvent>(OnConsumptionSatisfied);
         }
 
-        private void OnEnable()
+        protected override void OnEnable()
         {
+            base.OnEnable();
             EventBus<EaterConsumptionSatisfiedEvent>.Register(_consumptionSatisfiedBinding);
         }
 

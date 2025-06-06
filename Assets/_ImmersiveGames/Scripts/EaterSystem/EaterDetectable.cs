@@ -11,8 +11,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
+        private EaterMaster _eater;
+        private void Awake()
+        {
+            _eater = GetComponent<EaterMaster>();
+        }
+        public void OnPlanetDetected(PlanetsMaster planetMaster)
+        {
+            _eater.OnEaterDetectionEvent(planetMaster);
+            planetMaster.OnEaterDetectionEvent(_eater);
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado pelo Eater: {planetMaster.name}", "green");
+            //o planeta deve entrar e modo defesa e atacar o Eater
+        }
+        public void OnPlanetLost(PlanetsMaster planetMaster)
+        {
+            _eater.OnEaterLostDetectionEvent(planetMaster);
+            planetMaster.OnEaterLostDetectionEvent();
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta perdido: {planetMaster.name}", "red");
+            //o planeta deve sair do modo defesa e parar de atacar o Eater e continuar se movendo
+        }
+        public void OnRecognitionRangeEntered(PlanetsMaster planetMaster, PlanetResourcesSo resources)
+        {
+            _eater.OnEatPlanetEvent(planetMaster);
+            planetMaster.OnEaterEatenEvent(_eater);
+            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planetMaster.name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
+            //Aqui o Eter esta devorando o planeta.
+        }
+    }
+}
+        /*
         public event Action<PlanetsMaster> OnEatPlanet;
-        public event Action<Transform> OnTargetUpdated;
+        //public event Action<Transform> OnTargetUpdated;
         
         private PlanetsMaster _targetPlanetMaster;
         private bool _isEating;
@@ -71,7 +100,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _targetPlanetMaster = evt.PlanetMaster;
             _isEating = false;
-            OnTargetUpdated?.Invoke(_targetPlanetMaster?.transform);
+            //OnTargetUpdated?.Invoke(_targetPlanetMaster?.transform);
             DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanetMaster?.name ?? "nulo"}", "yellow");
         }
 
@@ -80,7 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_targetPlanetMaster != evt.PlanetMaster) return;
             _targetPlanetMaster = null;
             _isEating = false;
-            OnTargetUpdated?.Invoke(null);
+            //OnTargetUpdated?.Invoke(null);
             DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.PlanetMaster.name}", "red");
         }
 
@@ -89,5 +118,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _isEating = false;
             DebugUtility.LogVerbose<EaterDetectable>("Estado de comer resetado.");
         }
-    }
-}
+        */

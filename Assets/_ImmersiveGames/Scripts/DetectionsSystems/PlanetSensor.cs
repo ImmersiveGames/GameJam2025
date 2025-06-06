@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -39,6 +40,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         protected virtual void Update()
         {
+            if (GameManager.Instance.ShouldPlayingGame() == false) return;
             _detectionTimer += Time.deltaTime;
             if (!(_detectionTimer >= currentDetectionFrequency)) return;
             ProcessPlanets(DetectPlanets());

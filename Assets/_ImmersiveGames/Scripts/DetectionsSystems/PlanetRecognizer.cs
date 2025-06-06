@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.None)]
     public class PlanetRecognizer : PlanetSensor
     {
         private IDetectable _detectableEntity;

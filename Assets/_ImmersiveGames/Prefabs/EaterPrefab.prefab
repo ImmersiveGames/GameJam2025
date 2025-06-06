@@ -13,11 +13,11 @@ GameObject:
   - component: {fileID: 7481411686174452357}
   - component: {fileID: 1563926060493768429}
   - component: {fileID: 4494943875542422441}
-  - component: {fileID: 7930348857568094374}
   - component: {fileID: 1113890117108742213}
   - component: {fileID: 3588397152323905382}
   - component: {fileID: 1088472449682257862}
   - component: {fileID: 950996837132092267}
+  - component: {fileID: 7951465963818869771}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -84,6 +84,7 @@ MonoBehaviour:
   modelRoot: {fileID: 7328850874588679067}
   canvasRoot: {fileID: 0}
   fxRoot: {fileID: 1855999354430921469}
+  config: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
 --- !u!114 &1563926060493768429
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116,21 +117,6 @@ MonoBehaviour:
   maxDetectionFrequency: 0.5
   debugMode: 1
   detectedPlanets: []
---- !u!114 &7930348857568094374
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1814427060013598564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07c96cb68d1a42ff95b9e5d9141548db, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  uniqueIdParaTestar: EaterHunger
-  testAmount: 10
-  resetToInitial: 1
 --- !u!114 &1113890117108742213
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146,7 +132,7 @@ MonoBehaviour:
   planetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  radius: 5
+  radius: 10
   minDetectionFrequency: 0.1
   maxDetectionFrequency: 0.5
   debugMode: 1
@@ -195,7 +181,6 @@ MonoBehaviour:
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
-  IsHungry: 0
 --- !u!114 &950996837132092267
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208,10 +193,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c881b2e7aa740eab48fbd1e44ae00d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxRecentDesires: 3
-  desireThreshold: 0.9
-  delayTimer: 0
-  chooseNewDesireInSeconds: 5
+--- !u!114 &7951465963818869771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814427060013598564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 438f641a39bb4bdfa4a86ecfee2f742e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2172708011221476507
 GameObject:
   m_ObjectHideFlags: 0

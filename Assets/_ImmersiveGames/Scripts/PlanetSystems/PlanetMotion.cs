@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using System;
+using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
@@ -16,19 +18,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _selfRotationSpeed;
         private float _currentAngle;
         private Tween _orbitTween;
+        
+        private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
         public float OrbitSpeedDegPerSec => _orbitSpeed;
         public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
 
+        private void Awake()
+        {
+            _planetMaster = GetComponent<PlanetsMaster>();
+        }
+
         private void OnEnable()
         {
+            _planetMaster.EaterDetectionEvent += OnEaterDetect;
+            _planetMaster.EaterEatenEvent += OnEaterEat;
+            _planetMaster.EaterLostDetectionEvent += OnEaterLostDetect;
+            
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
         }
-
+        private void Update()
+        {
+            if (_selfRotationSpeed != 0f)
+            {
+                transform.Rotate(Vector3.up, _selfRotationSpeed * Time.deltaTime, Space.Self);
+            }
+        }
         private void OnDisable()
         {
+            _planetMaster.EaterDetectionEvent -= OnEaterDetect;
+            _planetMaster.EaterEatenEvent -= OnEaterEat;
+            _planetMaster.EaterLostDetectionEvent -= OnEaterLostDetect;
             _orbitTween?.Kill();
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
             DebugUtility.Log<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
@@ -77,12 +99,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             transform.position = _orbitCenter + offset;
         }
 
-        private void Update()
+        
+        
+        private void OnEaterLostDetect()
         {
-            if (_selfRotationSpeed != 0f)
-            {
-                transform.Rotate(Vector3.up, _selfRotationSpeed * Time.deltaTime, Space.Self);
-            }
+            ResumeOrbit();
+            DebugUtility.Log<PlanetMotion>($"O perigo se afastou, Estamos seguros novamente.");
+        }
+        private void OnEaterEat(EaterMaster obj)
+        {
+            DebugUtility.Log<PlanetMotion>($"AAAAHHHHHHH!!! SOCORRROOOO.");
+        }
+        private void OnEaterDetect(EaterMaster obj)
+        {
+            PauseOrbit();
+            DebugUtility.Log<PlanetMotion>($"Perigo {obj.name} se aproximando!!! Planete {gameObject.name} Entrando em modo de defesa!.");
         }
 
         public void PauseOrbit()

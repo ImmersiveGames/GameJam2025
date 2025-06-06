@@ -15,8 +15,8 @@ MonoBehaviour:
   uniqueId: EaterHunger
   resourceName: EaterHunger
   resourceType: 4
-  maxValue: 2
-  initialValue: 2
+  maxValue: 50
+  initialValue: 50
   thresholds:
   - 0.25
   - 0.5
@@ -25,5 +25,5 @@ MonoBehaviour:
   autoFillEnabled: 0
   autoDrainEnabled: 1
   autoFillRate: 0
-  autoDrainRate: 10
+  autoDrainRate: 1
   autoChangeDelay: 1
