@@ -11,10 +11,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
-        public event Action<Planets> OnEatPlanet;
+        public event Action<PlanetsMaster> OnEatPlanet;
         public event Action<Transform> OnTargetUpdated;
         
-        private Planets _targetPlanet;
+        private PlanetsMaster _targetPlanetMaster;
         private bool _isEating;
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void Awake()
         {
             _isEating = false;
-            _targetPlanet = null;
+            _targetPlanetMaster = null;
         }
         private void OnEnable()
         {   
@@ -38,50 +38,50 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
         }
 
-        public void OnPlanetDetected(Planets planet)
+        public void OnPlanetDetected(PlanetsMaster planetMaster)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado pelo Eater: {planet.name}", "green");
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado pelo Eater: {planetMaster.name}", "green");
 
-            if (!PlanetsManager.Instance.IsMarkedPlanet(planet) || _isEating) return;
-            DebugUtility.LogVerbose<EaterDetectable>($"Planeta Elegível para comer: {planet.name}", "green");
-            var motion = planet.GetComponent<PlanetMotion>();
+            if (!PlanetsManager.Instance.IsMarkedPlanet(planetMaster) || _isEating) return;
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta Elegível para comer: {planetMaster.name}", "green");
+            var motion = planetMaster.GetComponent<PlanetMotion>();
             motion?.PauseOrbit();
 
             _isEating = true;
-            _targetPlanet = planet;
-            OnEatPlanet?.Invoke(planet);
-            EventBus<PlanetConsumedEvent>.Raise(new PlanetConsumedEvent(planet));
-            DebugUtility.LogVerbose<EaterDetectable>($"Eater iniciou consumo do planeta: {planet.name}", "magenta");
+            _targetPlanetMaster = planetMaster;
+            OnEatPlanet?.Invoke(planetMaster);
+            EventBus<PlanetConsumedEvent>.Raise(new PlanetConsumedEvent(planetMaster));
+            DebugUtility.LogVerbose<EaterDetectable>($"Eater iniciou consumo do planeta: {planetMaster.name}", "magenta");
         }
 
-        public void OnPlanetLost(Planets planet)
+        public void OnPlanetLost(PlanetsMaster planetMaster)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Planeta perdido: {planet.name}", "red");
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta perdido: {planetMaster.name}", "red");
 
-            var motion = planet.GetComponent<PlanetMotion>();
+            var motion = planetMaster.GetComponent<PlanetMotion>();
             motion?.ResumeOrbit();
         }
 
-        public void OnRecognitionRangeEntered(Planets planet, PlanetResourcesSo resources)
+        public void OnRecognitionRangeEntered(PlanetsMaster planetMaster, PlanetResourcesSo resources)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planet.name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
+            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planetMaster.name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
         }
 
         private void OnPlanetMarked(PlanetMarkedEvent evt)
         {
-            _targetPlanet = evt.Planet;
+            _targetPlanetMaster = evt.PlanetMaster;
             _isEating = false;
-            OnTargetUpdated?.Invoke(_targetPlanet?.transform);
-            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanet?.name ?? "nulo"}", "yellow");
+            OnTargetUpdated?.Invoke(_targetPlanetMaster?.transform);
+            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanetMaster?.name ?? "nulo"}", "yellow");
         }
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (_targetPlanet != evt.Planet) return;
-            _targetPlanet = null;
+            if (_targetPlanetMaster != evt.PlanetMaster) return;
+            _targetPlanetMaster = null;
             _isEating = false;
             OnTargetUpdated?.Invoke(null);
-            DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
+            DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.PlanetMaster.name}", "red");
         }
 
         public void ResetEatingState()

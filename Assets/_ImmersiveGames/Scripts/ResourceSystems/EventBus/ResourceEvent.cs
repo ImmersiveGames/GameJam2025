@@ -19,15 +19,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.EventBus
         }
     }
     
-    public class ResourceThresholdDirectionEvent : IEvent
+    public class HungryChangeThresholdDirectionEvent : IEvent
     {
         public ThresholdCrossInfo Info { get; }
-        public string UniqueId { get; }
-
-        public ResourceThresholdDirectionEvent(ThresholdCrossInfo info, string uniqueId)
+        public HungryChangeThresholdDirectionEvent(ThresholdCrossInfo info)
         {
             Info = info;
-            UniqueId = uniqueId;
         }
     }
     public class ResourceBindEvent : IEvent

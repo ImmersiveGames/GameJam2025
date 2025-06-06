@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
     [DebugLevel(DebugLevel.Verbose)]
-    public class Planets : MonoBehaviour, IPlanetInteractable
+    public class PlanetsMaster : ActorMaster, IPlanetInteractable
     {
         private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
         private TargetFlag _targetFlag; // Bandeira de marcação
@@ -20,6 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private int _planetId; // ID do planeta
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
+        private PlanetData _data;
 
         public bool IsActive { get; private set; } // Estado do planeta (ativo/inativo)
 
@@ -30,12 +32,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _targetFlag = GetComponentInChildren<TargetFlag>();
             if (!_targetFlag)
             {
-                DebugUtility.LogWarning<Planets>($"TargetFlag não encontrado em {gameObject.name}!");
+                DebugUtility.LogWarning<PlanetsMaster>($"TargetFlag não encontrado em {gameObject.name}!");
             }
             else
             {
                 _targetFlag.gameObject.SetActive(false);
             }
+        }
+        public override void Reset()
+        {
+            throw new System.NotImplementedException();
         }
 
         // Registra eventos
@@ -57,12 +63,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 }
                 else
                 {
-                    DebugUtility.LogWarning<Planets>("EaterDetectable não encontrado no WorldEater!");
+                    DebugUtility.LogWarning<PlanetsMaster>("EaterDetectable não encontrado no WorldEater!");
                 }
             }
             else
             {
-                DebugUtility.LogWarning<Planets>("WorldEater não encontrado no GameManager!");
+                DebugUtility.LogWarning<PlanetsMaster>("WorldEater não encontrado no GameManager!");
             }
         }
 
@@ -83,15 +89,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetId = id;
             _resourcesSo = resources;
             IsActive = true;
+            _data = data;
             EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(id, data, resources, gameObject));
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} criado com ID {id} e recurso {resources.ResourceType}.", "green");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} criado com ID {id} e recurso {resources.ResourceType}.", "green");
         }
 
         // Aplica dano ao planeta
         public void TakeDamage(float damage)
         {
             if (!IsActive) return;
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} recebeu dano de {damage}.", "red");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} recebeu dano de {damage}.", "red");
             // Integração com HealthResource, se presente
             var healthResource = GetComponent<IDestructible>();
             if (healthResource == null) return;
@@ -107,7 +114,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (!IsActive) return;
             string entityType = entity.GetType().Name;
-            DebugUtility.LogVerbose<Planets>($"Defesas ativadas em {gameObject.name} para {entityType}.", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Defesas ativadas em {gameObject.name} para {entityType}.", "yellow");
         }
 
         // Envia dados de reconhecimento
@@ -115,8 +122,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (!IsActive) return;
             string entityType = entity.GetType().Name;
-            DebugUtility.LogVerbose<Planets>($"Enviando dados de reconhecimento de {gameObject.name} para {entityType}.", "cyan");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Enviando dados de reconhecimento de {gameObject.name} para {entityType}.", "cyan");
         }
+        
+        public PlanetData GetPlanetData() => _data;
 
         // Retorna os recursos do planeta
         public PlanetResourcesSo GetResources()
@@ -130,37 +139,37 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!IsActive) return;
             IsActive = false;
             EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(_planetId, gameObject));
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} destruído.", "red");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} destruído.", "red");
         }
 
         // Reage ao planeta ser comido pelo devorador
-        private void OnEatenByEater(Planets planet)
+        private void OnEatenByEater(PlanetsMaster planetMaster)
         {
-            if (planet != this || !IsActive) return;
+            if (planetMaster != this || !IsActive) return;
             DestroyPlanet();
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} foi comido pelo EaterDetectable.", "magenta");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} foi comido pelo EaterDetectable.", "magenta");
         }
 
         // Reage ao planeta ser marcado
         private void OnMarked(PlanetMarkedEvent evt)
         {
-            if (evt.Planet != this || !IsActive) return;
+            if (evt.PlanetMaster != this || !IsActive) return;
             if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(true);
             }
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
         }
 
         // Reage ao planeta ser desmarcado
         private void OnUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.Planet != this || !IsActive) return;
+            if (evt.PlanetMaster != this || !IsActive) return;
             if (_targetFlag != null)
             {
                 _targetFlag.gameObject.SetActive(false);
             }
-            DebugUtility.LogVerbose<Planets>($"Planeta {gameObject.name} desmarcado.", "gray");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "gray");
         }
     }
 }

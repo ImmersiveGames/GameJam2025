@@ -11,8 +11,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Logs)]
     public class PlanetsManager : Singleton<PlanetsManager>
     {
-        [SerializeField] private Planets targetToEater;
-        private readonly List<Planets> _activePlanets = new();
+        [SerializeField] private PlanetsMaster targetToEater;
+        private readonly List<PlanetsMaster> _activePlanets = new();
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             );
             DebugUtility.LogVerbose<PlanetsManager>($"Movimento configurado para {planetGo.name}: raio {orbitRadius}, velocidade orbital {motion.OrbitSpeedDegPerSec}, rotação {motion.SelfRotationSpeedDegPerSec}.");
 
-            var planets = planetGo.GetComponent<Planets>();
+            var planets = planetGo.GetComponent<PlanetsMaster>();
             if (planets)
             {
                 planets.Initialize(index, planetInfo, resource);
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
             else
             {
-                DebugUtility.LogError<PlanetsManager>($"Componente Planets não encontrado em {planetGo.name}!");
+                DebugUtility.LogError<PlanetsManager>($"Componente PlanetsMaster não encontrado em {planetGo.name}!");
             }
         }
 
@@ -97,47 +97,52 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             return resourceList.OrderBy(_ => Random.value).ToList();
         }
 
-        public bool IsMarkedPlanet(Planets planet)
+        public bool IsMarkedPlanet(PlanetsMaster planetMaster)
         {
-            bool isMarked = targetToEater == planet;
-            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planet?.name ?? "nulo"} está marcado: {isMarked}.");
+            if(!planetMaster)
+            {
+                DebugUtility.LogWarning<PlanetsManager>("Tentativa de verificar planeta nulo!");
+                return false;
+            }
+            bool isMarked = targetToEater == planetMaster;
+            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster?.name ?? "nulo"} está marcado: {isMarked}.");
             return isMarked;
         }
 
-        public void RemovePlanet(Planets planet)
+        public void RemovePlanet(PlanetsMaster planetMaster)
         {
-            if (!planet)
+            if (!planetMaster)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Tentativa de remover planeta nulo!");
                 return;
             }
 
-            if (_activePlanets.Remove(planet))
+            if (_activePlanets.Remove(planetMaster))
             {
-                if (targetToEater == planet)
+                if (targetToEater == planetMaster)
                 {
                     targetToEater = null;
-                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planet.name} era o alvo do Eater. Alvo limpo.");
+                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.name} era o alvo do Eater. Alvo limpo.");
                 }
-                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planet.name} removido. Planetas ativos: {_activePlanets.Count}.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.name} removido. Planetas ativos: {_activePlanets.Count}.");
             }
             else
             {
-                DebugUtility.LogWarning<PlanetsManager>($"Planeta {planet.name} não encontrado na lista de ativos!");
+                DebugUtility.LogWarning<PlanetsManager>($"Planeta {planetMaster.name} não encontrado na lista de ativos!");
             }
         }
 
         private void MarkPlanet(PlanetMarkedEvent evt)
         {
-            if (!evt.Planet)
+            if (!evt.PlanetMaster)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Evento PlanetMarkedEvent com planeta nulo!");
                 return;
             }
 
-            if (targetToEater == evt.Planet)
+            if (targetToEater == evt.PlanetMaster)
             {
-                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {evt.Planet.name} já está marcado.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {evt.PlanetMaster.name} já está marcado.");
                 return;
             }
 
@@ -146,33 +151,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(targetToEater));
             }
 
-            targetToEater = evt.Planet;
-            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.Planet.name}");
+            targetToEater = evt.PlanetMaster;
+            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.PlanetMaster.name}");
         }
 
         private void ClearMarkedPlanet(PlanetUnmarkedEvent evt)
         {
-            if (!evt.Planet)
+            if (!evt.PlanetMaster)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Evento PlanetUnmarkedEvent com planeta nulo!");
                 return;
             }
 
-            if (targetToEater != evt.Planet) return;
+            if (targetToEater != evt.PlanetMaster) return;
             targetToEater = null;
-            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Planet.name}");
+            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.PlanetMaster.name}");
         }
 
-        public List<Planets> GetActivePlanets() => _activePlanets;
+        public List<PlanetsMaster> GetActivePlanets() => _activePlanets;
 
-        public Transform GetTargetTransform()
-        {
-            if (targetToEater)
-            {
-                return targetToEater.transform;
-            }
-            DebugUtility.LogVerbose<PlanetsManager>("Nenhum planeta marcado para o Eater.");
-            return null;
-        }
+        public PlanetsMaster GetPlanetMarked() => targetToEater;
     }
 }

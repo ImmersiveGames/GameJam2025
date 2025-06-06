@@ -1,9 +1,10 @@
-﻿using _ImmersiveGames.Scripts.Tags;
+﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DefaultExecutionOrder(-10)]
-    public abstract class ActorMaster : MonoBehaviour
+    public abstract class ActorMaster : MonoBehaviour, IResettable
     {
         [SerializeField] private ModelRoot modelRoot;
         [SerializeField] private CanvasRoot canvasRoot;
@@ -42,5 +43,6 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             }
             return fxRoot;
         }
+        public abstract void Reset();
     }
 }

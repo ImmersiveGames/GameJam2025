@@ -210,9 +210,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public float CurrentValue { get; }
         public float Threshold { get; }
         public bool IsAscending { get; }
+        public string UniqueId { get; }
 
-        public ThresholdCrossInfo(GameObject source, ResourceType type, float currentValue, float threshold, bool isAscending)
+        public ThresholdCrossInfo(string uniqueId,GameObject source, ResourceType type, float currentValue, float threshold, bool isAscending)
         {
+            UniqueId = uniqueId;
             Source = source;
             Type = type;
             CurrentValue = currentValue;

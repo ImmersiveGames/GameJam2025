@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _lastPercentage = 1f; // fracionário
         private readonly HashSet<float> _crossedDown = new();
         private readonly HashSet<float> _crossedUp = new();
-        
+
         private HealthResource _health;
 
         protected override void Awake()
@@ -34,7 +35,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnStarved()
         {
             DebugUtility.Log<EaterHunger>($"☠️ Morreu de fome! currentValue: {currentValue}");
-            
+
             if (_health != null)
             {
                 _health.SetExternalAutoDrain(true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
@@ -69,7 +70,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         _health.SetExternalAutoDrain(false, 0f);
                     }
                 }
-                
+
             }
 
             _lastPercentage = currentFraction;
@@ -77,15 +78,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void EmitThresholdEvent(float currentFraction, float threshold, bool isAscending)
         {
-            var info = new ThresholdCrossInfo(gameObject, config.ResourceType, currentFraction, threshold, isAscending);
+            var info = new ThresholdCrossInfo(config.UniqueId,gameObject, config.ResourceType, currentFraction, threshold, isAscending);
             string dir = isAscending ? "🔺 Subiu" : "🔻 Desceu";
             DebugUtility.Log<EaterHunger>($"{dir} limiar {threshold:P0} → {currentFraction:P1}");
-            EventBus<ResourceThresholdDirectionEvent>.Raise(new ResourceThresholdDirectionEvent(info,config.UniqueId));
+            EventBus<HungryChangeThresholdDirectionEvent>.Raise(new HungryChangeThresholdDirectionEvent(info));
         }
 
         public void ConsumePlanet(float amount)
         {
-            DebugUtility.Log<EaterHunger>($"🪐 Consuming planet with amount: {amount}");
+            DebugUtility.Log<EaterHunger>($"🪐 Consuming planetMaster with amount: {amount}");
         }
 
         public void Reset()
@@ -101,70 +102,70 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 }
 
-        /*private bool _desireActivated;
-        // Indica se o eater está com fome suficiente para desejar comer.
-        public bool IsHungry => currentValue <= config.InitialValue * desireThreshold;
+/*private bool _desireActivated;
+// Indica s eo eater está com fome suficiente para desejar comer.
+public bool IsHungry => currentValue <= config.InitialValue * desireThreshold;
 
-        protected override void Awake()
-        {
-            base.Awake();
-            onValueChanged.AddListener(OnHungerChanged);
-            onDepleted.AddListener(OnStarved);
-            _desireActivated = false;
-        }
+protected override void Awake()
+{
+    base.Awake();
+    onValueChanged.AddListener(OnHungerChanged);
+    onDepleted.AddListener(OnStarved);
+    _desireActivated = false;
+}
 
-        protected void Start()
-        {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
-            OnHungerChanged(GetPercentage()); // Verifica estado inicial
-        }
+protected void Start()
+{
+    if (!GameManager.Instance.ShouldPlayingGame()) return;
+    OnHungerChanged(GetPercentage()); // Verifica estado inicial
+}
 
-        protected override void Update()
-        {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
-            base.Update();
-        }
+protected override void Update()
+{
+    if (!GameManager.Instance.ShouldPlayingGame()) return;
+    base.Update();
+}
 
-        private void OnHungerChanged(float percentage)
-        {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
+private void OnHungerChanged(float percentage)
+{
+    if (!GameManager.Instance.ShouldPlayingGame()) return;
 
-            bool hungryNow = IsHungry;
+    bool hungryNow = IsHungry;
 
-            if (hungryNow && !_desireActivated)
-            {
-                EventBus<DesireActivatedEvent>.Raise(new DesireActivatedEvent());
-                _desireActivated = true;
-                DebugUtility.LogVerbose<EaterHunger>($"Fome atingiu limiar ({currentValue}/{config.InitialValue * desireThreshold}): desejo ativado.");
-            }
-            else if (!hungryNow && _desireActivated)
-            {
-                EventBus<DesireDeactivatedEvent>.Raise(new DesireDeactivatedEvent());
-                _desireActivated = false;
-                DebugUtility.LogVerbose<EaterHunger>($"Fome acima do limiar: desejo desativado.");
-            }
-        }
+    if (hungryNow && !_desireActivated)
+    {
+        EventBus<DesireActivatedEvent>.Raise(new DesireActivatedEvent());
+        _desireActivated = true;
+        DebugUtility.LogVerbose<EaterHunger>($"Fome atingiu limiar ({currentValue}/{config.InitialValue * desireThreshold}): desejo ativado.");
+    }
+    else if (!hungryNow && _desireActivated)
+    {
+        EventBus<DesireDeactivatedEvent>.Raise(new DesireDeactivatedEvent());
+        _desireActivated = false;
+        DebugUtility.LogVerbose<EaterHunger>($"Fome acima do limiar: desejo desativado.");
+    }
+}
 
-        private void OnStarved()
-        {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
-            EventBus<EaterStarvedEvent>.Raise(new EaterStarvedEvent());
-            DebugUtility.LogVerbose<EaterHunger>($"Eater morreu de fome! currentValue: {currentValue}");
-        }
+private void OnStarved()
+{
+    if (!GameManager.Instance.ShouldPlayingGame()) return;
+    EventBus<EaterStarvedEvent>.Raise(new EaterStarvedEvent());
+    DebugUtility.LogVerbose<EaterHunger>($"Eater morreu de fome! currentValue: {currentValue}");
+}
 
-        public void ConsumePlanet(float hungerRestored)
-        {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
-            Increase(hungerRestored);
-            DebugUtility.LogVerbose<EaterHunger>($"Eater consumiu planeta: +{hungerRestored} fome.");
-        }
+public void ConsumePlanet(float hungerRestored)
+{
+    if (!GameManager.Instance.ShouldPlayingGame()) return;
+    Increase(hungerRestored);
+    DebugUtility.LogVerbose<EaterHunger>($"Eater consumiu planeta: +{hungerRestored} fome.");
+}
 
-        public void Reset()
-        {
-            currentValue = config.InitialValue;
-            triggeredThresholds.Clear();
-            _desireActivated = false;
-            onValueChanged.Invoke(GetPercentage());
-            DebugUtility.LogVerbose<EaterHunger>("EaterHunger resetado.");
-        }
-        */
+public void Reset()
+{
+    currentValue = config.InitialValue;
+    triggeredThresholds.Clear();
+    _desireActivated = false;
+    onValueChanged.Invoke(GetPercentage());
+    DebugUtility.LogVerbose<EaterHunger>("EaterHunger resetado.");
+}
+*/

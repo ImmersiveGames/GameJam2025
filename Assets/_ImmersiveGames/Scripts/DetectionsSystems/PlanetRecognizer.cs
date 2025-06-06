@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     public class PlanetRecognizer : PlanetSensor
     {
         private IDetectable _detectableEntity;
-        [SerializeField] private List<Planets> recognizedPlanets = new();
+        [SerializeField] private List<PlanetsMaster> recognizedPlanets = new();
 
         protected override void Awake()
         {
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
-        protected override void ProcessPlanets(List<Planets> planets)
+        protected override void ProcessPlanets(List<PlanetsMaster> planets)
         {
             foreach (var planet in planets)
             {
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             currentDetectionFrequency = maxDetectionFrequency;
         }
 
-        public List<Planets> GetRecognizedPlanets()
+        public List<PlanetsMaster> GetRecognizedPlanets()
         {
             return recognizedPlanets;
         }

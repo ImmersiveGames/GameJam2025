@@ -137,30 +137,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void HandlePlanetMarked(PlanetMarkedEvent evt)
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
-            _currentTarget = evt.Planet.transform;
-            DebugUtility.Log<EaterAIController>($"Planeta marcado: {evt.Planet.name}. Iniciando perseguição.");
+            _currentTarget = evt.PlanetMaster.transform;
+            DebugUtility.Log<EaterAIController>($"Planeta marcado: {evt.PlanetMaster.name}. Iniciando perseguição.");
         }
 
-        private void HandleEatPlanet(Planets planet)
+        private void HandleEatPlanet(PlanetsMaster planetMaster)
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
-            if (_currentTarget == planet.transform)
+            if (_currentTarget == planetMaster.transform)
             {
                 _isEating = true;
                 EventBus<EaterStartedEatingEvent>.Raise(new EaterStartedEatingEvent());
-                _desire.ConsumePlanet(planet.GetResources());
-                DebugUtility.Log<EaterAIController>($"Iniciando consumo do planeta: {planet.name}.");
+                _desire.ConsumePlanet(planetMaster.GetResources());
+                DebugUtility.Log<EaterAIController>($"Iniciando consumo do planeta: {planetMaster.name}.");
             }
         }
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
-            if (_currentTarget != null && _currentTarget.GetComponent<Planets>() == evt.Planet)
+            if (_currentTarget != null && _currentTarget.GetComponent<PlanetsMaster>() == evt.PlanetMaster)
             {
                 _currentTarget = null;
                 _isEating = false;
-                DebugUtility.Log<EaterAIController>($"EaterAI: Planeta {evt.Planet?.name} desmarcado. Alvo limpo, voltando a vagar.");
+                DebugUtility.Log<EaterAIController>($"EaterAI: Planeta {evt.PlanetMaster?.name} desmarcado. Alvo limpo, voltando a vagar.");
             }
         }
 

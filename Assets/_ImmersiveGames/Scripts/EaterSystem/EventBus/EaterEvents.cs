@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
 {
+    //Todo: Esse cara também é inutil remover mais pa frente
     public class EaterConsumptionSatisfiedEvent : IEvent
     {
         public PlanetResourcesSo ConsumedResource { get; }
@@ -13,18 +14,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
             HungerRestored = hungerRestored;
         }
     }
-
-    public class EaterConsumptionUnsatisfiedEvent : IEvent
+    
+    public class EaterChesedEvent : IEvent
     {
-        public PlanetResourcesSo ConsumedResource { get; }
-        public float HungerRestored { get; }
-        public EaterConsumptionUnsatisfiedEvent(PlanetResourcesSo consumedResource, float hungerRestored)
+        public Transform PlanetTransform { get; }
+        public EaterChesedEvent(Transform planet)
         {
-            ConsumedResource = consumedResource;
-            HungerRestored = hungerRestored;
+            PlanetTransform = planet;
         }
     }
-    public class DesireUnlockedEvent :IEvent{ } // Novo evento para notificar destravamento
+    
     public class EaterDeathEvent : IEvent
     {
         public Vector3 Position { get; }
@@ -35,16 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
             Eater = eater;
         }
     }
-    public class DesireActivatedEvent : IEvent
-    {
-        // Disparado quando o sistema de desejo é ativado (fome ≤ 50%)
-    }
-
-    public class DesireDeactivatedEvent : IEvent
-    {
-        // Disparado quando o sistema de desejo é desativado (fome > 50%)
-    }
-
+    
     public class DesireChangedEvent : IEvent
     {
         public PlanetResourcesSo DesiredResource { get; }

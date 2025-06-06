@@ -59,7 +59,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _isConsuming = false;
             _onFinishEating?.Invoke();
             EventBus<EaterFinishedEatingEvent>.Raise(new EaterFinishedEatingEvent());
-            DebugUtility.LogVerbose<EatingState>($"Planeta {evt.Planet.name} consumido. Finalizando estado de comer.");
+            DebugUtility.LogVerbose<EatingState>($"Planeta {evt.PlanetMaster.name} consumido. Finalizando estado de comer.");
         }
     }
 }

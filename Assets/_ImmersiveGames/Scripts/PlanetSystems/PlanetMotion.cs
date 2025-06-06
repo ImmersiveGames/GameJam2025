@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.Planet.gameObject != gameObject) return;
+            if (evt.PlanetMaster.gameObject != gameObject) return;
             ResumeOrbit();
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name} devido a desmarcação.");
         }

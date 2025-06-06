@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     public class PlanetDetector : PlanetSensor
     {
         private IDetectable _detectableEntity;
-        [SerializeField] private List<Planets> detectedPlanets = new();
+        [SerializeField] private List<PlanetsMaster> detectedPlanets = new();
 
         protected override void Awake()
         {
@@ -21,9 +21,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             enabled = false;
         }
 
-        protected override void ProcessPlanets(List<Planets> planets)
+        protected override void ProcessPlanets(List<PlanetsMaster> planets)
         {
-            var currentPlanets = new List<Planets>(planets);
+            var currentPlanets = new List<PlanetsMaster>(planets);
 
             // Adicionar novos planetas detectados
             foreach (var planet in currentPlanets.Where(planet => !detectedPlanets.Contains(planet)))
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             AdjustDetectionFrequency(detectedPlanets.Count);
         }
 
-        public List<Planets> GetDetectedPlanets()
+        public List<PlanetsMaster> GetDetectedPlanets()
         {
             return detectedPlanets;
         }

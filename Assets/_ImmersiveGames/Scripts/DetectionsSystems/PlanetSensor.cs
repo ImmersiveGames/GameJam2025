@@ -45,14 +45,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             _detectionTimer = 0f;
         }
 
-        private List<Planets> DetectPlanets()
+        private List<PlanetsMaster> DetectPlanets()
         {
-            var planets = new List<Planets>();
+            var planets = new List<PlanetsMaster>();
             int hitCount = Physics.OverlapSphereNonAlloc(cachedTransform.position, radius, _detectionResults, planetLayer);
 
             for (int i = 0; i < hitCount; i++)
             {
-                var planet = _detectionResults[i].GetComponentInParent<Planets>();
+                var planet = _detectionResults[i].GetComponentInParent<PlanetsMaster>();
                 if (planet && planet.IsActive)
                 {
                     planets.Add(planet);
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             return planets;
         }
 
-        protected abstract void ProcessPlanets(List<Planets> planets);
+        protected abstract void ProcessPlanets(List<PlanetsMaster> planets);
 
         protected virtual void AdjustDetectionFrequency(int planetCount)
         {
