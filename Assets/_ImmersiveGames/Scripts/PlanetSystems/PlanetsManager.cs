@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -11,8 +12,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Logs)]
     public class PlanetsManager : Singleton<PlanetsManager>
     {
-        [SerializeField] private PlanetsMaster targetToEater;
-        private readonly List<PlanetsMaster> _activePlanets = new();
+        private IPlanetInteractable _targetToEater;
+        private readonly List<IPlanetInteractable> _activePlanets = new();
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
@@ -97,21 +98,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             return resourceList.OrderBy(_ => Random.value).ToList();
         }
 
-        public bool IsMarkedPlanet(PlanetsMaster planetMaster)
+        public bool IsMarkedPlanet(IPlanetInteractable planetMaster)
         {
-            if(!planetMaster)
+            if(planetMaster == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Tentativa de verificar planeta nulo!");
                 return false;
             }
-            bool isMarked = targetToEater == planetMaster;
-            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster?.name ?? "nulo"} está marcado: {isMarked}.");
+            bool isMarked = _targetToEater == planetMaster;
+            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster.Name ?? "nulo"} está marcado: {isMarked}.");
             return isMarked;
         }
 
-        public void RemovePlanet(PlanetsMaster planetMaster)
+        public void RemovePlanet(IPlanetInteractable planetMaster)
         {
-            if (!planetMaster)
+            if (planetMaster == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Tentativa de remover planeta nulo!");
                 return;
@@ -119,57 +120,57 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             if (_activePlanets.Remove(planetMaster))
             {
-                if (targetToEater == planetMaster)
+                if (_targetToEater == planetMaster)
                 {
-                    targetToEater = null;
-                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.name} era o alvo do Eater. Alvo limpo.");
+                    _targetToEater = null;
+                    DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Name} era o alvo do Eater. Alvo limpo.");
                 }
-                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.name} removido. Planetas ativos: {_activePlanets.Count}.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Name} removido. Planetas ativos: {_activePlanets.Count}.");
             }
             else
             {
-                DebugUtility.LogWarning<PlanetsManager>($"Planeta {planetMaster.name} não encontrado na lista de ativos!");
+                DebugUtility.LogWarning<PlanetsManager>($"Planeta {planetMaster.Name} não encontrado na lista de ativos!");
             }
         }
 
         private void MarkPlanet(PlanetMarkedEvent evt)
         {
-            if (!evt.PlanetMaster)
+            if (evt.PlanetMaster == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Evento PlanetMarkedEvent com planeta nulo!");
                 return;
             }
 
-            if (targetToEater == evt.PlanetMaster)
+            if (_targetToEater == evt.PlanetMaster)
             {
-                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {evt.PlanetMaster.name} já está marcado.");
+                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {evt.PlanetMaster.Name} já está marcado.");
                 return;
             }
 
-            if (targetToEater)
+            if (_targetToEater != null)
             {
-                EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(targetToEater));
+                EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(_targetToEater));
             }
 
-            targetToEater = evt.PlanetMaster;
-            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.PlanetMaster.name}");
+            _targetToEater = evt.PlanetMaster;
+            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.PlanetMaster.Name}");
         }
 
         private void ClearMarkedPlanet(PlanetUnmarkedEvent evt)
         {
-            if (!evt.PlanetMaster)
+            if (evt.PlanetMaster == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Evento PlanetUnmarkedEvent com planeta nulo!");
                 return;
             }
 
-            if (targetToEater != evt.PlanetMaster) return;
-            targetToEater = null;
-            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.PlanetMaster.name}");
+            if (_targetToEater != evt.PlanetMaster) return;
+            _targetToEater = null;
+            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.PlanetMaster.Name}");
         }
 
-        public List<PlanetsMaster> GetActivePlanets() => _activePlanets;
+        public List<IPlanetInteractable> GetActivePlanets() => _activePlanets;
 
-        public PlanetsMaster GetPlanetMarked() => targetToEater;
+        public IPlanetInteractable GetPlanetMarked() => _targetToEater;
     }
 }

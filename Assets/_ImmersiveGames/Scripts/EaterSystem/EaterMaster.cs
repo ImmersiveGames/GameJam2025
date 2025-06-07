@@ -1,6 +1,8 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -12,36 +14,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool InHungry { get; set; }
         public bool IsEating { get; set; }
         public bool IsChasing { get; set; }
-        
-        /*protected internal event Action<PlanetsMaster> StartEatPlanetEvent;
-        protected internal event Action<PlanetsMaster> StopEatPlanetEvent;
-        protected event Action<PlanetsMaster> EaterLostDetectionEvent;
-        protected event Action<PlanetsMaster> EaterDetectionEvent;*/
+
+        public event Action<IPlanetInteractable> StartEatPlanetEvent;
+        public event Action<IPlanetInteractable> StopEatPlanetEvent;
+        /*protected event Action<PlanetsMaster> EaterLostDetectionEvent;*/
+        public event Action<IPlanetInteractable> EaterDetectionEvent;
         public override void Reset()
         {
             IsEating = false;
             IsChasing = false;
             InHungry = false;
         }
-        /*public void OnEatPlanetEvent(PlanetsMaster planetMaster)
+        public void OnEatPlanetEvent(IPlanetInteractable planetMaster)
         {
             IsEating = true;
             StartEatPlanetEvent?.Invoke(planetMaster);
         }
-        public void OnStopEatPlanetEvent(PlanetsMaster planetMaster)
+        public void OnStopEatPlanetEvent(IPlanetInteractable planetMaster)
         {
             IsEating = false;
             PlanetsManager.Instance.RemovePlanet(planetMaster);
             StopEatPlanetEvent?.Invoke(planetMaster);
         }
-        public void OnEaterLostDetectionEvent(PlanetsMaster planetMaster)
+        /* public void OnEaterLostDetectionEvent(PlanetsMaster planetMaster)
+         {
+             IsEating = false;
+             EaterLostDetectionEvent?.Invoke(planetMaster);
+         }*/
+        public void OnEaterDetectionEvent(IPlanetInteractable obj)
         {
-            IsEating = false;
-            EaterLostDetectionEvent?.Invoke(planetMaster);
-        }
-        public void OnEaterDetectionEvent(PlanetsMaster obj)
-        {
+            DebugUtility.LogVerbose<EaterMaster>($"Não Me Importo Com esse planeta: {obj.Name}", "yellow");
             EaterDetectionEvent?.Invoke(obj);
-        }*/
+        }
     }
 }

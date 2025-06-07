@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -91,11 +92,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_eater.IsEating) return false;
             //Verifica se o Eater está com fome
             if (!_eater.InHungry) return false;
-            return !PlanetsManager.Instance.GetPlanetMarked();
+            return PlanetsManager.Instance.GetPlanetMarked() == null;
             //Se tudo estiver ok, retorna true
         }
         
-        private void TryChooseDesire(PlanetsMaster planetMaster = null)
+        private void TryChooseDesire(IPlanetInteractable planetMaster = null)
         {
             CancelInvoke();
             DebugUtility.Log<EaterDesire>($"Checando se o Eater pode desejar: Fome: {_eater.InHungry}, Desejo ativo: {_desiredResource}, Planeta marcado: {planetMaster != null}");

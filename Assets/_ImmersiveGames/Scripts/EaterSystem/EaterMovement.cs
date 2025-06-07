@@ -29,6 +29,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnEnable()
         {
             _timer = 0f;
+            
             _currentSpeed = Random.Range(_config.MinSpeed, _config.MaxSpeed);
             _planetUnmarkedEventBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarkedPlanet);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
@@ -37,7 +38,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         public void Update()
         {
-            if (!GameManager.Instance.ShouldPlayingGame() || _eater.IsEating) return;
+            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            if (_eater.IsEating) return;
             if (_eater.IsChasing)
             {
                 ChaseMovement();
@@ -52,7 +54,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             // Implementar lógica de perseguição aqui
             // Exemplo: mover em direção ao planeta marcado
-            var target = PlanetsManager.Instance.GetPlanetMarked().transform;
+            var target = PlanetsManager.Instance.GetPlanetMarked().Transform;
             if (target == null)
             {
                 DebugUtility.Log<EaterMovement>("Alvo nulo. Transitando para outro estado.");
@@ -123,7 +125,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var config = obj.PlanetMaster.GetPlanetData();
             _currentSpeed = config.maxOrbitSpeed;
             _eater.IsChasing = true;
-            DebugUtility.LogVerbose<EaterMovement>($"Modo Perseguindo. Alvo: {PlanetsManager.Instance.GetPlanetMarked()?.name}");
+            DebugUtility.LogVerbose<EaterMovement>($"Modo Perseguindo. Alvo: {PlanetsManager.Instance.GetPlanetMarked()?.Name}");
         }
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
         {

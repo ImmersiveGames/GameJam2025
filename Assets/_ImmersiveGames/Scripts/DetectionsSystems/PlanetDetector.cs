@@ -60,6 +60,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 if (currentPlanets.Contains(planet)) return false;
                 
                 _detectableEntity.OnPlanetLost(planet);
+                planet.DeactivateDefenses(_detectableEntity);
                 if (debugMode)
                 {
                     DebugUtility.Log<PlanetDetector>($"Planeta perdido", "red");

@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -19,13 +20,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Awake()
         {
-            _actorMaster = GetComponent<ActorMaster>();
-            _animator = _actorMaster.GetModelRoot().GetComponentInChildren<Animator>();
-            if (!_animator)
-            {
-                DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no GameObject!", this);
-                enabled = false;
-            }
+            TryGetComponent(out _actorMaster);
+            if (_actorMaster.GetModelRoot().TryGetComponentInChildren(out _animator)) return;
+            DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no GameObject!", this);
+            enabled = false;
         }
 
         private void OnEnable()

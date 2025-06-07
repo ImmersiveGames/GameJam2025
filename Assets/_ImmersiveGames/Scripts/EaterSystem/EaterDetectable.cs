@@ -18,8 +18,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         public void OnPlanetDetected(IPlanetInteractable planetMaster)
         {
-            /*_eater.OnEaterDetectionEvent(planetMaster);
-            planetMaster.OnEaterDetectionEvent(_eater)*/;
+            _eater.OnEaterDetectionEvent(planetMaster);
+            /*planetMaster.OnEaterDetectionEvent(_eater)*/;
             DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado pelo Eater: {planetMaster.Name}", "green");
             //o planeta deve entrar e modo defesa e atacar o Eater
         }
@@ -33,8 +33,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         public void OnRecognitionRangeEntered(IPlanetInteractable planetMaster, PlanetResourcesSo resources)
         {
-            /*_eater.OnEatPlanetEvent(planetMaster);
-            planetMaster.OnEaterEatenEvent(_eater);*/
+            _eater.OnEatPlanetEvent(planetMaster);
+            /*planetMaster.OnEaterEatenEvent(_eater);*/
             DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planetMaster.Name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
             //Aqui o Eter esta devorando o planeta.
         }

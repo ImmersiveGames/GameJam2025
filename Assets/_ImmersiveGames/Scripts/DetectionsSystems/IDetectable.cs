@@ -17,7 +17,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         Transform Transform { get; }
         string Name { get; } // Planet name
         void ActivateDefenses(IDetectable entity); // Called when detected by player/EaterDetectable
+        void DeactivateDefenses(IDetectable entity); // Called when detected by player/EaterDetectable
         void SendRecognitionData(IDetectable entity); // Called when recognized
         PlanetResourcesSo GetResources(); // Retrieve planetMaster resources
+        PlanetData GetPlanetData();
     }
 }

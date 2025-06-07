@@ -1,7 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Tags;
@@ -12,18 +11,16 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class PlanetsMaster : ActorMaster, IPlanetInteractable
     {
         private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
         private TargetFlag _targetFlag; // Bandeira de marcação
         private int _planetId; // ID do planeta
         private PlanetData _data; // Dados do planeta
-
-        public event Action<EaterMaster> EaterDetectionEvent; // Evento disparado quando um Eater detecta o planeta
-        public event Action<EaterMaster> EaterEatenEvent; // Evento disparado quando o planeta é comido pelo Eater
-        public event Action EaterLostDetectionEvent; // Evento disparado quando o Eater perde a detecção do planeta
-
+        
+        public event Action EventActivateDefenses; // Ação para parar movimento do planeta
+        public event Action EventDeactivateDefenses; // Ação para retomar movimento do planeta
 
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
@@ -98,8 +95,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public void ActivateDefenses(IDetectable entity)
         {
             if (!IsActive) return;
+
+            OnEventActivateDefenses();
             string entityType = entity.GetType().Name;
             DebugUtility.LogVerbose<PlanetsMaster>($"Defesas ativadas em {gameObject.name} para {entityType}.", "yellow");
+        }
+
+        public void DeactivateDefenses(IDetectable entity)
+        {
+            OnEventDeactivateDefenses();
+            DebugUtility.LogVerbose<PlanetsMaster>($"Defesas Desativadas em {gameObject.name} para {nameof(entity)}.", "blue");
         }
 
         // Envia dados de reconhecimento
@@ -119,7 +124,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         // Destrói o planeta
-        public void DestroyPlanet()
+        private void DestroyPlanet()
         {
             if (!IsActive) return;
             IsActive = false;
@@ -138,7 +143,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Reage ao planeta ser marcado
         private void OnMarked(PlanetMarkedEvent evt)
         {
-            if (evt.PlanetMaster != this || !IsActive) return;
+            if (evt.PlanetMaster.Name != gameObject.name || !IsActive) return;
             if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(true);
@@ -149,24 +154,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Reage ao planeta ser desmarcado
         private void OnUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.PlanetMaster != this || !IsActive) return;
-            if (_targetFlag != null)
+            if (evt.PlanetMaster.Name != gameObject.name || !IsActive) return;
+            if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(false);
             }
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "gray");
         }
-        public void OnEaterDetectionEvent(EaterMaster eater)
+        private void OnEventActivateDefenses()
         {
-            EaterDetectionEvent?.Invoke(eater);
+            EventActivateDefenses?.Invoke();
         }
-        public void OnEaterEatenEvent(EaterMaster eater)
+        private void OnEventDeactivateDefenses()
         {
-            EaterEatenEvent?.Invoke(eater);
-        }
-        public void OnEaterLostDetectionEvent()
-        {
-            EaterLostDetectionEvent?.Invoke();
+            EventDeactivateDefenses?.Invoke();
         }
     }
 }

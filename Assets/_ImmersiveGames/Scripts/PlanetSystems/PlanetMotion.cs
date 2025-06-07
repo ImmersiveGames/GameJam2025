@@ -1,6 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
@@ -21,21 +19,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-
+        
         public float OrbitSpeedDegPerSec => _orbitSpeed;
         public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
 
         private void Awake()
         {
-            _planetMaster = GetComponent<PlanetsMaster>();
+            TryGetComponent(out _planetMaster);
         }
 
         private void OnEnable()
         {
-            _planetMaster.EaterDetectionEvent += OnEaterDetect;
-            _planetMaster.EaterEatenEvent += OnEaterEat;
-            _planetMaster.EaterLostDetectionEvent += OnEaterLostDetect;
-            
+            _planetMaster.EventActivateDefenses += PauseOrbit;
+            _planetMaster.EventDeactivateDefenses += ResumeOrbit;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
         }
@@ -48,10 +44,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
         private void OnDisable()
         {
-            _planetMaster.EaterDetectionEvent -= OnEaterDetect;
-            _planetMaster.EaterEatenEvent -= OnEaterEat;
-            _planetMaster.EaterLostDetectionEvent -= OnEaterLostDetect;
             _orbitTween?.Kill();
+            _planetMaster.EventActivateDefenses -= PauseOrbit;
+            _planetMaster.EventDeactivateDefenses -= ResumeOrbit;
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
             DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
         }
@@ -99,30 +94,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             transform.position = _orbitCenter + offset;
         }
 
-        
-        
-        private void OnEaterLostDetect()
-        {
-            ResumeOrbit();
-            DebugUtility.Log<PlanetMotion>($"O perigo se afastou, Estamos seguros novamente.");
-        }
-        private void OnEaterEat(EaterMaster obj)
-        {
-            DebugUtility.Log<PlanetMotion>($"AAAAHHHHHHH!!! SOCORRROOOO.");
-        }
-        private void OnEaterDetect(EaterMaster obj)
-        {
-            PauseOrbit();
-            DebugUtility.Log<PlanetMotion>($"Perigo {obj.name} se aproximando!!! Planete {gameObject.name} Entrando em modo de defesa!.");
-        }
 
-        public void PauseOrbit()
+        private void PauseOrbit()
         {
             _orbitTween?.Pause();
             DebugUtility.Log<PlanetMotion>($"Órbita pausada para {gameObject.name}.");
         }
 
-        public void ResumeOrbit()
+        private void ResumeOrbit()
         {
             _orbitTween?.Play();
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
@@ -130,7 +109,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.PlanetMaster.gameObject != gameObject) return;
+            if (evt.PlanetMaster.Name != gameObject.name) return;
             ResumeOrbit();
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name} devido a desmarcação.");
         }

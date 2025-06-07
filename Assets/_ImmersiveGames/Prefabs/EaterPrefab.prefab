@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 1088472449682257862}
   - component: {fileID: 950996837132092267}
   - component: {fileID: 7951465963818869771}
+  - component: {fileID: 7688769006104112065}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -116,7 +117,6 @@ MonoBehaviour:
   minDetectionFrequency: 0.1
   maxDetectionFrequency: 0.5
   debugMode: 1
-  detectedPlanets: []
 --- !u!114 &1113890117108742213
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136,7 +136,6 @@ MonoBehaviour:
   minDetectionFrequency: 0.1
   maxDetectionFrequency: 0.5
   debugMode: 1
-  recognizedPlanets: []
 --- !u!114 &3588397152323905382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -203,6 +202,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 438f641a39bb4bdfa4a86ecfee2f742e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7688769006104112065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814427060013598564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e8ba0b5c5ca434c8dc5fec9e7a82e72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &2172708011221476507
