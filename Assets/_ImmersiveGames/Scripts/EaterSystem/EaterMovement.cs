@@ -9,7 +9,7 @@ using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterMovement : MonoBehaviour, IResettable
     {
         private EaterMaster _eater;
@@ -116,7 +116,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 0f,
                 Random.Range(-1f, 1f)
             ).normalized;
-            DebugUtility.LogVerbose<EaterMovement>($"Nova direção de vagar: {_direction}, velocidade: {_currentSpeed}.");
         }
         
         private void OnMarkedPlanet(PlanetMarkedEvent obj)

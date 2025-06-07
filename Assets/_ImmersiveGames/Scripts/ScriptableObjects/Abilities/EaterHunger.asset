@@ -15,12 +15,12 @@ MonoBehaviour:
   uniqueId: EaterHunger
   resourceName: EaterHunger
   resourceType: 4
-  maxValue: 50
-  initialValue: 50
+  maxValue: 2
+  initialValue: 2
   thresholds:
   - 0.25
   - 0.5
-  - 0.9
+  - 0.95
   resourceIcon: {fileID: 21300000, guid: 800de5d4e1395a141a825d65cb6c4527, type: 3}
   autoFillEnabled: 0
   autoDrainEnabled: 1

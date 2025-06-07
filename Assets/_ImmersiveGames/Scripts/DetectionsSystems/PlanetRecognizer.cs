@@ -5,15 +5,20 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
-    [DebugLevel(DebugLevel.None)]
+    [DebugLevel(DebugLevel.Logs)]
     public class PlanetRecognizer : PlanetSensor
     {
+        private readonly List<IPlanetInteractable> _recognizedPlanets = new();
         private IDetectable _detectableEntity;
-        [SerializeField] private List<PlanetsMaster> recognizedPlanets = new();
 
         protected override void Awake()
         {
             base.Awake();
+            InitializeDetectableEntity();
+        }
+
+        private void InitializeDetectableEntity()
+        {
             _detectableEntity = GetComponent<IDetectable>();
             if (_detectableEntity == null)
             {
@@ -22,55 +27,60 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
-        protected override void ProcessPlanets(List<PlanetsMaster> planets)
+        protected override void ProcessPlanets(List<IPlanetInteractable> planets)
         {
             foreach (var planet in planets)
             {
-                if (recognizedPlanets.Contains(planet)) continue;
-                recognizedPlanets.Add(planet);
-                var planetInteractable = planet.GetComponent<IPlanetInteractable>();
-                if (planetInteractable == null) continue;
-                _detectableEntity.OnRecognitionRangeEntered(planet, planetInteractable.GetResources());
-                planetInteractable.SendRecognitionData(_detectableEntity);
+                if (_recognizedPlanets.Contains(planet)) continue;
+
+                _recognizedPlanets.Add(planet);
+                _detectableEntity.OnRecognitionRangeEntered(planet, planet.GetResources());
+                planet.SendRecognitionData(_detectableEntity);
+
                 if (debugMode)
                 {
-                    DebugUtility.Log<PlanetRecognizer>($"Reconhecimento ativado para: {planet.name}", "blue");
+                    DebugUtility.Log<PlanetRecognizer>($"Reconhecimento ativado para: {planet.Name}", "cyan");
                 }
             }
+        }
 
-            // Não ajusta a frequência dinamicamente, usa valor fixo
-            AdjustDetectionFrequency(recognizedPlanets.Count);
+        public void RemoveRecognizedPlanet(PlanetsMaster planet)
+        {
+            if (_recognizedPlanets.Remove(planet) && debugMode)
+            {
+                DebugUtility.Log<PlanetRecognizer>($"Planeta removido do reconhecimento: {planet.name}", "cyan");
+            }
         }
 
         protected override void AdjustDetectionFrequency(int planetCount)
         {
-            // Mantém a frequência fixa (ex.: maxDetectionFrequency) para reconhecimento
-            currentDetectionFrequency = maxDetectionFrequency;
+            CurrentDetectionFrequency = maxDetectionFrequency;
         }
 
-        public List<PlanetsMaster> GetRecognizedPlanets()
-        {
-            return recognizedPlanets;
-        }
+        public IReadOnlyList<IPlanetInteractable> GetRecognizedPlanets() => _recognizedPlanets.AsReadOnly();
 
         public void ClearRecognizedPlanets()
         {
-            recognizedPlanets.Clear();
+            _recognizedPlanets.Clear();
+            if (debugMode)
+            {
+                DebugUtility.Log<PlanetRecognizer>("Lista de planetas reconhecidos limpa", "cyan");
+            }
         }
 
         protected override void OnDrawGizmos()
         {
-            if (!debugMode || !cachedTransform) return;
+            if (!debugMode || !CachedTransform) return;
 
-            Gizmos.color = recognizedPlanets.Count > 0 ? Color.blue : Color.cyan;
-            Gizmos.DrawWireSphere(cachedTransform.position, radius);
+            Gizmos.color = _recognizedPlanets.Count > 0 ? Color.blue : Color.cyan;
+            Gizmos.DrawWireSphere(CachedTransform.position, radius);
 
-            foreach (var planet in recognizedPlanets)
+            foreach (var planet in _recognizedPlanets)
             {
                 Gizmos.color = Color.blue;
-                Gizmos.DrawLine(cachedTransform.position, planet.transform.position);
+                Gizmos.DrawLine(CachedTransform.position, planet.Transform.position);
 #if UNITY_EDITOR
-                UnityEditor.Handles.Label(planet.transform.position + Vector3.up * 0.5f, $"Reconhecido: {planet.name}");
+                UnityEditor.Handles.Label(planet.Transform.position + Vector3.up * 0.5f, $"Reconhecido: {planet.Name}");
 #endif
             }
         }

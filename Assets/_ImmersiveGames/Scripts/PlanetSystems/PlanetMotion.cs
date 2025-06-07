@@ -8,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Logs)]
     public class PlanetMotion : MonoBehaviour
     {
         private Vector3 _orbitCenter;
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetMaster.EaterLostDetectionEvent -= OnEaterLostDetect;
             _orbitTween?.Kill();
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            DebugUtility.Log<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
+            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
         }
 
         public void Initialize(Vector3 center, float radius, float orbitSpeedDegPerSec, bool orbitClockwise, float selfRotationSpeedDegPerSec, float initialAngleRad = 0f)
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             UpdateOrbitPosition(_currentAngle);
             StartOrbit();
-            DebugUtility.Log<PlanetMotion>($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
+            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
         }
 
         private void StartOrbit()
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnDestroy()
         {
             _orbitTween?.Kill();
-            DebugUtility.Log<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
+            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,69 +9,78 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     [DebugLevel(DebugLevel.None)]
     public class PlanetDetector : PlanetSensor
     {
+        private readonly List<IPlanetInteractable> _detectedPlanets = new();
         private IDetectable _detectableEntity;
-        [SerializeField] private List<PlanetsMaster> detectedPlanets = new();
+        private GameManager _gameManager;
 
         protected override void Awake()
         {
             base.Awake();
+            
+            InitializeDetectableEntity();
+        }
+
+        private void InitializeDetectableEntity()
+        {
+            _gameManager = GameManager.Instance;
             _detectableEntity = GetComponent<IDetectable>();
             if (_detectableEntity != null) return;
+            
             DebugUtility.LogError<PlanetDetector>("IDetectable não encontrado no GameObject.", this);
             enabled = false;
         }
 
-        protected override void ProcessPlanets(List<PlanetsMaster> planets)
+        protected override void ProcessPlanets(List<IPlanetInteractable> planets)
         {
-            var currentPlanets = new List<PlanetsMaster>(planets);
+            if (!_gameManager.ShouldPlayingGame()) return;
+            UpdateDetectedPlanets(planets);
+            AdjustDetectionFrequency(_detectedPlanets.Count);
+        }
 
-            // Adicionar novos planetas detectados
-            foreach (var planet in currentPlanets.Where(planet => !detectedPlanets.Contains(planet)))
+        private void UpdateDetectedPlanets(List<IPlanetInteractable> currentPlanets)
+        {
+            // Adicionar novos planetas
+            foreach (var planet in currentPlanets)
             {
-                detectedPlanets.Add(planet);
+                if (_detectedPlanets.Contains(planet)) continue;
+
+                _detectedPlanets.Add(planet);
                 _detectableEntity.OnPlanetDetected(planet);
-                planet.GetComponent<IPlanetInteractable>()?.ActivateDefenses(_detectableEntity);
+                planet.ActivateDefenses(_detectableEntity);
+                
                 if (debugMode)
                 {
-                    DebugUtility.Log<PlanetDetector>($"Planeta detectado: {planet.name}", "green");
+                    DebugUtility.Log<PlanetDetector>($"Planeta detectado!", "green");
                 }
             }
 
-            // Remover planetas que saíram da detecção
-            for (int i = detectedPlanets.Count - 1; i >= 0; i--)
+            // Remover planetas fora de alcance
+            _detectedPlanets.RemoveAll(planet =>
             {
-                var planet = detectedPlanets[i];
-                if (currentPlanets.Contains(planet)) continue;
-                detectedPlanets.RemoveAt(i);
+                if (currentPlanets.Contains(planet)) return false;
+                
                 _detectableEntity.OnPlanetLost(planet);
                 if (debugMode)
                 {
-                    DebugUtility.Log<PlanetDetector>($"Planeta perdido: {planet.name}", "red");
+                    DebugUtility.Log<PlanetDetector>($"Planeta perdido", "red");
                 }
-            }
-
-            // Ajustar frequência com base no número de planetas
-            AdjustDetectionFrequency(detectedPlanets.Count);
-        }
-
-        public List<PlanetsMaster> GetDetectedPlanets()
-        {
-            return detectedPlanets;
+                return true;
+            });
         }
 
         protected override void OnDrawGizmos()
         {
-            if (!debugMode || !cachedTransform) return;
+            if (!debugMode || !CachedTransform) return;
 
-            Gizmos.color = detectedPlanets.Count > 0 ? Color.green : Color.yellow;
-            Gizmos.DrawWireSphere(cachedTransform.position, radius);
+            Gizmos.color = _detectedPlanets.Count > 0 ? Color.green : Color.yellow;
+            Gizmos.DrawWireSphere(CachedTransform.position, radius);
 
-            foreach (var planet in detectedPlanets)
+            foreach (var planet in _detectedPlanets)
             {
                 Gizmos.color = Color.red;
-                Gizmos.DrawLine(cachedTransform.position, planet.transform.position);
+                Gizmos.DrawLine(CachedTransform.position, planet.Transform.position);
 #if UNITY_EDITOR
-                UnityEditor.Handles.Label(planet.transform.position + Vector3.up * 0.5f, $"Detectado: {planet.name}");
+                UnityEditor.Handles.Label(planet.Transform.position + Vector3.up * 0.5f, $"Detectado");
 #endif
             }
         }

@@ -13,17 +13,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool IsEating { get; set; }
         public bool IsChasing { get; set; }
         
-        protected internal event Action<PlanetsMaster> StartEatPlanetEvent;
-        protected internal event Action StopEatPlanetEvent;
+        /*protected internal event Action<PlanetsMaster> StartEatPlanetEvent;
+        protected internal event Action<PlanetsMaster> StopEatPlanetEvent;
         protected event Action<PlanetsMaster> EaterLostDetectionEvent;
-        protected event Action<PlanetsMaster> EaterDetectionEvent;
+        protected event Action<PlanetsMaster> EaterDetectionEvent;*/
         public override void Reset()
         {
             IsEating = false;
             IsChasing = false;
             InHungry = false;
         }
-        public void OnEatPlanetEvent(PlanetsMaster planetMaster)
+        /*public void OnEatPlanetEvent(PlanetsMaster planetMaster)
         {
             IsEating = true;
             StartEatPlanetEvent?.Invoke(planetMaster);
@@ -31,16 +31,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void OnStopEatPlanetEvent(PlanetsMaster planetMaster)
         {
             IsEating = false;
-            StopEatPlanetEvent?.Invoke();
+            PlanetsManager.Instance.RemovePlanet(planetMaster);
+            StopEatPlanetEvent?.Invoke(planetMaster);
         }
-        public void OnEaterLostDetectionEvent(PlanetsMaster obj)
+        public void OnEaterLostDetectionEvent(PlanetsMaster planetMaster)
         {
             IsEating = false;
-            EaterLostDetectionEvent?.Invoke(obj);
+            EaterLostDetectionEvent?.Invoke(planetMaster);
         }
         public void OnEaterDetectionEvent(PlanetsMaster obj)
         {
             EaterDetectionEvent?.Invoke(obj);
-        }
+        }*/
     }
 }

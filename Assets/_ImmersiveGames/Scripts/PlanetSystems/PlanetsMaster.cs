@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -27,7 +28,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
 
-        public bool IsActive { get; private set; } // Estado do planeta (ativo/inativo)
+        public bool IsActive { get; set; } // Estado do planeta (ativo/inativo)
+        public Transform Transform => transform;
+        public string Name => gameObject.name; // Nome do planeta
 
         // Inicializa componentes
         private void Awake()
@@ -45,7 +48,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
         public override void Reset()
         {
-            throw new System.NotImplementedException();
+            IsActive = true;
         }
 
         // Registra eventos
@@ -153,13 +156,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "gray");
         }
-        public void OnEaterDetectionEvent(EaterMaster obj)
+        public void OnEaterDetectionEvent(EaterMaster eater)
         {
-            EaterDetectionEvent?.Invoke(obj);
+            EaterDetectionEvent?.Invoke(eater);
         }
-        public void OnEaterEatenEvent(EaterMaster obj)
+        public void OnEaterEatenEvent(EaterMaster eater)
         {
-            EaterEatenEvent?.Invoke(obj);
+            EaterEatenEvent?.Invoke(eater);
         }
         public void OnEaterLostDetectionEvent()
         {

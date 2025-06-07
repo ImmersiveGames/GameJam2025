@@ -18,16 +18,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnEnable()
         {
-            _eater.StartEatPlanetEvent += OnEatPlanetEvent;
-            _eater.StopEatPlanetEvent += OnStopEatPlanetEvent;
+            /*_eater.StartEatPlanetEvent += OnEatPlanetEvent;
+            _eater.StopEatPlanetEvent += OnStopEatPlanetEvent;*/
         }
 
         private void OnDisable()
         {
-            _eater.StartEatPlanetEvent -= OnEatPlanetEvent;
-            _eater.StopEatPlanetEvent -= OnStopEatPlanetEvent;
+            /*_eater.StartEatPlanetEvent -= OnEatPlanetEvent;
+            _eater.StopEatPlanetEvent -= OnStopEatPlanetEvent;*/
         }
-        private void OnStopEatPlanetEvent()
+        private void OnStopEatPlanetEvent(PlanetsMaster planetMaster)
         {
             DebugUtility.Log<EaterEat>($"Ou morri ou estou satisfeito, parei de comer o planeta", "red");
         }
@@ -35,8 +35,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             DebugUtility.Log<EaterEat>($"Yum! Começando a comer o planeta: {planetMaster.name}", "green");
             
-            //TODO: Provisorio
-            Invoke(nameof(_eater.OnStopEatPlanetEvent), 10f);
         }
         public void Reset()
         {

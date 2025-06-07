@@ -18,19 +18,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             enabled = false;
         }
 
-        public void OnPlanetDetected(PlanetsMaster planetMaster)
+        public void OnPlanetDetected(IPlanetInteractable planetMaster)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player detectou planeta: {planetMaster.name}", "green");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player detectou planeta: {planetMaster.Name}", "green");
         }
 
-        public void OnPlanetLost(PlanetsMaster planetMaster)
+        public void OnPlanetLost(IPlanetInteractable planetMaster)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player perdeu planeta: {planetMaster.name}", "red");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player perdeu planeta: {planetMaster.Name}", "red");
         }
 
-        public void OnRecognitionRangeEntered(PlanetsMaster planetMaster, PlanetResourcesSo resources)
+        public void OnRecognitionRangeEntered(IPlanetInteractable planetMaster, PlanetResourcesSo resources)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planetMaster.name}, Recursos: {resources}", "blue");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planetMaster.Name}, Recursos: {resources}", "blue");
             // Exibir UI com informações do planeta, etc.
         }
     }
