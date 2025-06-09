@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using UnityEngine;
-using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
@@ -16,7 +15,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         protected override void Awake()
         {
             base.Awake();
-            
             InitializeDetectableEntity();
         }
 
@@ -25,7 +23,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             _gameManager = GameManager.Instance;
             _detectableEntity = GetComponent<IDetectable>();
             if (_detectableEntity != null) return;
-            
+
             DebugUtility.LogError<PlanetDetector>("IDetectable não encontrado no GameObject.", this);
             enabled = false;
         }
@@ -47,10 +45,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 _detectedPlanets.Add(planet);
                 _detectableEntity.OnPlanetDetected(planet);
                 planet.ActivateDefenses(_detectableEntity);
-                
+
                 if (debugMode)
                 {
-                    DebugUtility.Log<PlanetDetector>($"Planeta detectado!", "green");
+                    DebugUtility.Log<PlanetDetector>($"Planeta detectado: {planet.Name}", "green");
                 }
             }
 
@@ -58,22 +56,36 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             _detectedPlanets.RemoveAll(planet =>
             {
                 if (currentPlanets.Contains(planet)) return false;
-                
+
                 _detectableEntity.OnPlanetLost(planet);
                 planet.DeactivateDefenses(_detectableEntity);
                 if (debugMode)
                 {
-                    DebugUtility.Log<PlanetDetector>($"Planeta perdido", "red");
+                    DebugUtility.Log<PlanetDetector>($"Planeta perdido: {planet.Name}", "red");
                 }
                 return true;
             });
+        }
+
+        public override void DisableSensor()
+        {
+            if (!IsEnabled) return;
+
+            // Desativa defesas de todos os planetas detectados
+            foreach (var planet in _detectedPlanets)
+            {
+                _detectableEntity.OnPlanetLost(planet);
+                planet.DeactivateDefenses(_detectableEntity);
+            }
+            _detectedPlanets.Clear();
+            base.DisableSensor();
         }
 
         protected override void OnDrawGizmos()
         {
             if (!debugMode || !CachedTransform) return;
 
-            Gizmos.color = _detectedPlanets.Count > 0 ? Color.green : Color.yellow;
+            Gizmos.color = IsEnabled ? (_detectedPlanets.Count > 0 ? Color.green : Color.yellow) : Color.gray;
             Gizmos.DrawWireSphere(CachedTransform.position, radius);
 
             foreach (var planet in _detectedPlanets)
@@ -81,7 +93,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 Gizmos.color = Color.red;
                 Gizmos.DrawLine(CachedTransform.position, planet.Transform.position);
 #if UNITY_EDITOR
-                UnityEditor.Handles.Label(planet.Transform.position + Vector3.up * 0.5f, $"Detectado");
+                UnityEditor.Handles.Label(planet.Transform.position + Vector3.up * 0.5f, $"Detectado: {planet.Name}");
 #endif
             }
         }

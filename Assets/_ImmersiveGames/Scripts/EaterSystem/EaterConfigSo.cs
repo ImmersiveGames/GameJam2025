@@ -21,6 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Mínimo de velocidade")]  private float minSpeed;
         [SerializeField, Tooltip("Máximo de velocidade")]  private float maxSpeed;
         [SerializeField, Tooltip("Multiplicador da velocidade para perseguição")]  private int multiplierChase = 2;
+        [SerializeField, Tooltip("Velocidade de Rotação")]  private float rotationSpeed = 5f;
         
         [SerializeField, Tooltip("Fome restaurada ao consumir recurso desejado")]
         private float desiredHungerRestored = 50f;
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float MinSpeed => minSpeed;
         public float MaxSpeed => maxSpeed;
         public int MultiplierChase => multiplierChase;
+        public float RotationSpeed => rotationSpeed;
         
         
         public float DesiredHungerRestored => desiredHungerRestored;

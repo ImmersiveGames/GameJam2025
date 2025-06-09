@@ -16,10 +16,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _selfRotationSpeed;
         private float _currentAngle;
         private Tween _orbitTween;
-        
+
         private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-        
+
         public float OrbitSpeedDegPerSec => _orbitSpeed;
         public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
 
@@ -109,9 +109,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.PlanetMaster.Name != gameObject.name) return;
+            if (!PlanetsManager.Instance.IsMarkedPlanet(evt.PlanetMaster)) return;
             ResumeOrbit();
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name} devido a desmarcação.");
+
         }
 
         private void OnDestroy()

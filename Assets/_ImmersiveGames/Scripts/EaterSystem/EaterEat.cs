@@ -1,5 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.PlanetSystems;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

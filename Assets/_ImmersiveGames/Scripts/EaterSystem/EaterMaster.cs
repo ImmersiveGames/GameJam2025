@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterMaster: ActorMaster
     {
         [SerializeField] private EaterConfigSo config;
@@ -28,12 +29,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void OnEatPlanetEvent(IPlanetInteractable planetMaster)
         {
             IsEating = true;
+            DebugUtility.LogVerbose<EaterMaster>($"Ativando modo de comer o planeta: {planetMaster.Name}", "green");
             StartEatPlanetEvent?.Invoke(planetMaster);
         }
         public void OnStopEatPlanetEvent(IPlanetInteractable planetMaster)
         {
             IsEating = false;
             PlanetsManager.Instance.RemovePlanet(planetMaster);
+            DebugUtility.LogVerbose<EaterMaster>($"Acabou de comer o planeta: {planetMaster.Name}", "red");
             StopEatPlanetEvent?.Invoke(planetMaster);
         }
         /* public void OnEaterLostDetectionEvent(PlanetsMaster planetMaster)

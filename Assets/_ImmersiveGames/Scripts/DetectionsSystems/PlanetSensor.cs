@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         protected Transform CachedTransform { get; private set; }
         protected float CurrentDetectionFrequency { get; set; }
+        protected bool IsEnabled { get; private set; } // Novo: estado do sensor
         private float _detectionTimer;
         private readonly Collider[] _detectionResults = new Collider[MaxDetectionResults];
 
@@ -39,11 +40,13 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             CachedTransform = transform;
             CurrentDetectionFrequency = maxDetectionFrequency;
+            IsEnabled = true; // Sensor começa ativado por padrão
         }
 
         protected virtual void Update()
         {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            // Só processa se o sensor estiver ativado e o jogo estiver rodando
+            if (!IsEnabled || !GameManager.Instance.ShouldPlayingGame()) return;
 
             _detectionTimer += Time.deltaTime;
             if (_detectionTimer < CurrentDetectionFrequency) return;
@@ -102,11 +105,28 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 : maxDetectionFrequency;
         }
 
+        // Ativa o sensor
+        public virtual void EnableSensor()
+        {
+            if (IsEnabled) return;
+            IsEnabled = true;
+            _detectionTimer = 0f; // Reseta o timer para nova detecção
+            DebugUtility.LogVerbose<PlanetSensor>($"Sensor ativado em {gameObject.name}.");
+        }
+
+        // Desativa o sensor
+        public virtual void DisableSensor()
+        {
+            if (!IsEnabled) return;
+            IsEnabled = false;
+            DebugUtility.LogVerbose<PlanetSensor>($"Sensor desativado em {gameObject.name}.");
+        }
+
         protected virtual void OnDrawGizmos()
         {
             if (!debugMode || !CachedTransform) return;
 
-            Gizmos.color = Color.yellow;
+            Gizmos.color = IsEnabled ? Color.yellow : Color.gray; // Cinza quando desativado
             Gizmos.DrawWireSphere(CachedTransform.position, radius);
         }
     }

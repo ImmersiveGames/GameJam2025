@@ -45,13 +45,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
     }
     public class EaterStarvedEvent : IEvent { }
     // Novos eventos para animação
-    public class EaterStartedEatingEvent : IEvent
-    {
-        // Disparado quando o Eater entra no estado de comer
-    }
-
-    public class EaterFinishedEatingEvent : IEvent
-    {
-        // Disparado quando o Eater termina de comer
-    }
 }

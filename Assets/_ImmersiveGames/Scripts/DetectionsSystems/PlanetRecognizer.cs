@@ -44,11 +44,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
+        public override void DisableSensor()
+        {
+            if (!IsEnabled) return;
+
+            // Limpa a lista de planetas reconhecidos
+            _recognizedPlanets.Clear();
+            base.DisableSensor();
+        }
+
         public void RemoveRecognizedPlanet(PlanetsMaster planet)
         {
             if (_recognizedPlanets.Remove(planet) && debugMode)
             {
-                DebugUtility.Log<PlanetRecognizer>($"Planeta removido do reconhecimento: {planet.name}", "cyan");
+                DebugUtility.Log<PlanetRecognizer>($"Planeta removido do reconhecimento: {planet.Name}", "cyan");
             }
         }
 
@@ -72,7 +81,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             if (!debugMode || !CachedTransform) return;
 
-            Gizmos.color = _recognizedPlanets.Count > 0 ? Color.blue : Color.cyan;
+            Gizmos.color = IsEnabled ? (_recognizedPlanets.Count > 0 ? Color.blue : Color.cyan) : Color.gray;
             Gizmos.DrawWireSphere(CachedTransform.position, radius);
 
             foreach (var planet in _recognizedPlanets)

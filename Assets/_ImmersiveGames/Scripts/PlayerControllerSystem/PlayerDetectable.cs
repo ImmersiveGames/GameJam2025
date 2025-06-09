@@ -33,5 +33,13 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planetMaster.Name}, Recursos: {resources}", "blue");
             // Exibir UI com informações do planeta, etc.
         }
+        public void EnableSensor()
+        {
+            throw new System.NotImplementedException();
+        }
+        public void DisableSensor()
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }

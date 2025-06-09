@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
