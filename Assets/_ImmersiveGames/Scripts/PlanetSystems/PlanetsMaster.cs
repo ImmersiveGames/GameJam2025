@@ -11,28 +11,28 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PlanetsMaster : ActorMaster, IPlanetInteractable
+    [DebugLevel(DebugLevel.Logs)]
+    public sealed class PlanetsMaster : ActorMaster, IDetectable
     {
         private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
         private TargetFlag _targetFlag; // Bandeira de marcação
         private int _planetId; // ID do planeta
         private PlanetData _data; // Dados do planeta
         
-        public event Action EventActivateDefenses; // Ação para parar movimento do planeta
-        public event Action EventDeactivateDefenses; // Ação para retomar movimento do planeta
+        public event Action<IDetector, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
+        public event Action<IDetector, SensorTypes> EventPlanetLost; // Ação para quando um planeta é perdido
+
 
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
-
-        public bool IsActive { get; set; } // Estado do planeta (ativo/inativo)
+        
         public Transform Transform => transform;
         public string Name => gameObject.name; // Nome do planeta
 
         // Inicializa componentes
-        private void Awake()
+        protected override void Awake()
         {
-            IsActive = true;
+            base.Awake();
             _targetFlag = GetComponentInChildren<TargetFlag>();
             if (!_targetFlag)
             {
@@ -92,28 +92,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         // Ativa defesas do planeta
-        public void ActivateDefenses(IDetectable entity)
+        public void OnDetectableRanged(IDetector entity, SensorTypes sensorName)
         {
             if (!IsActive) return;
-
-            OnEventActivateDefenses();
-            string entityType = entity.GetType().Name;
-            DebugUtility.LogVerbose<PlanetsMaster>($"Defesas ativadas em {gameObject.name} para {entityType}.", "yellow");
+            OnEventPlanetDetected(entity, sensorName);//evento interno
         }
 
-        public void DeactivateDefenses(IDetectable entity)
-        {
-            OnEventDeactivateDefenses();
-            DebugUtility.LogVerbose<PlanetsMaster>($"Defesas Desativadas em {gameObject.name} para {nameof(entity)}.", "blue");
-        }
-
-        // Envia dados de reconhecimento
-        public void SendRecognitionData(IDetectable entity)
+        public void OnDetectableLost(IDetector entity, SensorTypes sensorName)
         {
             if (!IsActive) return;
-            string entityType = entity.GetType().Name;
-            DebugUtility.LogVerbose<PlanetsMaster>($"Enviando dados de reconhecimento de {gameObject.name} para {entityType}.", "cyan");
+            OnEventPlanetLost(entity,sensorName); //Evento interno
         }
+
+       
         
         public PlanetData GetPlanetData() => _data;
 
@@ -148,7 +139,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(true);
             }
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
+            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
         }
 
         // Reage ao planeta ser desmarcado
@@ -159,15 +150,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(false);
             }
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "gray");
+            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.");
         }
-        private void OnEventActivateDefenses()
+        
+        private void OnEventPlanetDetected(IDetector obj, SensorTypes sensor)
         {
-            EventActivateDefenses?.Invoke();
+            EventPlanetDetected?.Invoke(obj, sensor);
+            string entityType = obj.GetType().Name;
+            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow");
         }
-        private void OnEventDeactivateDefenses()
+        private void OnEventPlanetLost(IDetector obj, SensorTypes sensor)
         {
-            EventDeactivateDefenses?.Invoke();
+            EventPlanetLost?.Invoke(obj, sensor);
+            string entityType = obj.GetType().Name;
+            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor}", "yellow");
         }
     }
 }

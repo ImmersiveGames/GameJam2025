@@ -1,12 +1,13 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    public class PlayerMaster : ActorMaster
+    public class PlayerMaster : DetectorsMaster
     {
-
+        
         public override void Reset()
         {
-            throw new System.NotImplementedException();
+            IsActive = true;
         }
+        
     }
 }

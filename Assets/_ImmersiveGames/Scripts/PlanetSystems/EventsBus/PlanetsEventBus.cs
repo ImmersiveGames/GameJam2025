@@ -6,14 +6,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
 {
     public class PlanetMarkedEvent : IEvent
     {
-        public IPlanetInteractable PlanetMaster { get; }
-        public PlanetMarkedEvent(IPlanetInteractable planetMaster) => PlanetMaster = planetMaster;
+        public IDetectable PlanetMaster { get; }
+        public PlanetMarkedEvent(IDetectable planetMaster) => PlanetMaster = planetMaster;
     }
 
     public class PlanetUnmarkedEvent : IEvent
     {
-        public IPlanetInteractable PlanetMaster { get; }
-        public PlanetUnmarkedEvent(IPlanetInteractable planetMaster) => PlanetMaster = planetMaster;
+        public IDetectable PlanetMaster { get; }
+        public PlanetUnmarkedEvent(IDetectable planetMaster) => PlanetMaster = planetMaster;
     }
     public class PlanetCreatedEvent : IEvent
     {
@@ -58,8 +58,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     }
     public class PlanetConsumedEvent : IEvent
     {
-        public IPlanetInteractable PlanetMaster { get; }
-        public PlanetConsumedEvent(IPlanetInteractable planetMaster)
+        public IDetectable PlanetMaster { get; }
+        public PlanetConsumedEvent(IDetectable planetMaster)
         {
             PlanetMaster = planetMaster;
         }

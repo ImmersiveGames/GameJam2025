@@ -11,14 +11,13 @@ GameObject:
   - component: {fileID: 2534619406059484248}
   - component: {fileID: 5919085096302457103}
   - component: {fileID: 7481411686174452357}
-  - component: {fileID: 1563926060493768429}
-  - component: {fileID: 4494943875542422441}
-  - component: {fileID: 1113890117108742213}
   - component: {fileID: 3588397152323905382}
   - component: {fileID: 1088472449682257862}
   - component: {fileID: 950996837132092267}
   - component: {fileID: 7951465963818869771}
   - component: {fileID: 7688769006104112065}
+  - component: {fileID: 8826266075279273705}
+  - component: {fileID: 8839036343368280658}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -66,7 +65,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
@@ -86,56 +85,6 @@ MonoBehaviour:
   canvasRoot: {fileID: 0}
   fxRoot: {fileID: 1855999354430921469}
   config: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
---- !u!114 &1563926060493768429
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1814427060013598564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 957064ed3b3345c98a56d28a168ca079, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &4494943875542422441
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1814427060013598564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1cb8aa1d22264f89a659b46aafb49d63, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  planetLayer:
-    serializedVersion: 2
-    m_Bits: 1024
-  radius: 20
-  minDetectionFrequency: 0.1
-  maxDetectionFrequency: 0.5
-  debugMode: 1
---- !u!114 &1113890117108742213
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1814427060013598564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2cc7ab892828486dac109b6cb5ee1ab2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  planetLayer:
-    serializedVersion: 2
-    m_Bits: 1024
-  radius: 10
-  minDetectionFrequency: 0.1
-  maxDetectionFrequency: 0.5
-  debugMode: 1
 --- !u!114 &3588397152323905382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -216,6 +165,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e8ba0b5c5ca434c8dc5fec9e7a82e72, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &8826266075279273705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814427060013598564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0fd188086f64b3aa7158814fcf40036, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8839036343368280658
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1814427060013598564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c1fef8ac4ac4d84bfd1f69b9b5cfa72, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sensorConfigs:
+  - sensorName: 2
+    planetLayer:
+      serializedVersion: 2
+      m_Bits: 1024
+    radius: 20
+    minDetectionFrequency: 0.1
+    maxDetectionFrequency: 0.5
+    debugMode: 1
+  - sensorName: 3
+    planetLayer:
+      serializedVersion: 2
+      m_Bits: 1024
+    radius: 10
+    minDetectionFrequency: 0.1
+    maxDetectionFrequency: 0.5
+    debugMode: 1
 --- !u!1 &2172708011221476507
 GameObject:
   m_ObjectHideFlags: 0
@@ -271,7 +261,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1295495076730517426, guid: ddae307e73b97cf45993791358985a03, type: 3}
       propertyPath: m_Center.y
-      value: 2
+      value: 3.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1295495076730517426, guid: ddae307e73b97cf45993791358985a03, type: 3}
+      propertyPath: m_Center.z
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 1295495076730517426, guid: ddae307e73b97cf45993791358985a03, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1872261509551632091, guid: ddae307e73b97cf45993791358985a03, type: 3}
       propertyPath: m_Layer

@@ -14,15 +14,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class PlayerMarkPlanet : MonoBehaviour
     {
-        private PlanetRecognizer _recognizer;
+        //private PlanetRecognizer _sensorController;
         private PlayerInput _playerInput;
         private Camera _mainCamera;
         private EaterHunger _eaterHunger;
+        
+        private SensorController _sensorController;
+        [SerializeField]private SensorTypes sensorName = SensorTypes.PlayerRecognizerSensor;
 
         private void Awake()
         {
-            _recognizer = GetComponent<PlanetRecognizer>();
-            if (!_recognizer)
+            _sensorController = GetComponent<SensorController>();
+            if (!_sensorController)
             {
                 DebugUtility.LogError<PlayerMarkPlanet>("PlanetRecognizer não encontrado no GameObject.", this);
                 enabled = false;
@@ -61,10 +64,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void OnInteract(InputAction.CallbackContext context)
         {
             if (!Mouse.current.rightButton.wasPressedThisFrame) return;
+            var config = _sensorController.GetSensorConfig(sensorName);
             var ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, _recognizer.PlanetLayer)) return;
+            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, config.PlanetLayer)) return;
             var planet = hit.collider.GetComponentInParent<PlanetsMaster>();
-            if (!planet || !_recognizer.GetRecognizedPlanets().Contains(planet)) return;
+            if (!planet || !_sensorController.GetDetectedPlanets(sensorName).Contains(planet)) return;
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));

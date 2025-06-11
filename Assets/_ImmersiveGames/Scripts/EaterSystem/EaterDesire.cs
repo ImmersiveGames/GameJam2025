@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             //Se tudo estiver ok, retorna true
         }
         
-        private void TryChooseDesire(IPlanetInteractable planetMaster = null)
+        private void TryChooseDesire(IDetectable planetMaster = null)
         {
             CancelInvoke();
             DebugUtility.Log<EaterDesire>($"Checando se o Eater pode desejar: Fome: {_eater.InHungry}, Desejo ativo: {_desiredResource}, Planeta marcado: {planetMaster != null}");

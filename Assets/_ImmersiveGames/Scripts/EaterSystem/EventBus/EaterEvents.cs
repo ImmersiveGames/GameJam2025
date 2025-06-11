@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
@@ -12,15 +13,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
         {
             ConsumedResource = consumedResource;
             HungerRestored = hungerRestored;
-        }
-    }
-    
-    public class EaterChesedEvent : IEvent
-    {
-        public Transform PlanetTransform { get; }
-        public EaterChesedEvent(Transform planet)
-        {
-            PlanetTransform = planet;
         }
     }
     
@@ -41,6 +33,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
         public DesireChangedEvent(PlanetResourcesSo desiredResource)
         {
             DesiredResource = desiredResource;
+        }
+    }
+    public class PlanetRecognizedByEaterEvent : IEvent
+    {
+        public IDetectable Planet { get; set; }
+        public IDetector Recognizer { get; set; }
+        public PlanetRecognizedByEaterEvent(IDetectable planet, IDetector recognizer)
+        {
+            Planet = planet;
+            Recognizer = recognizer;
         }
     }
     public class EaterStarvedEvent : IEvent { }

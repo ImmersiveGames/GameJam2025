@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DefaultExecutionOrder(-100)]
+    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Warning)]
     public class PoolManager : MonoBehaviour
     {
         public static PoolManager Instance { get; private set; }

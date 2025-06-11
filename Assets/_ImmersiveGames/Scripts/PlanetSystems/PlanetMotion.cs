@@ -1,7 +1,10 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
@@ -30,11 +33,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnEnable()
         {
-            _planetMaster.EventActivateDefenses += PauseOrbit;
-            _planetMaster.EventDeactivateDefenses += ResumeOrbit;
+            _planetMaster.EventPlanetDetected += OnPlanetDetected;
+            _planetMaster.EventPlanetLost += OnPlanetLost;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
         }
+        
         private void Update()
         {
             if (_selfRotationSpeed != 0f)
@@ -45,12 +49,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnDisable()
         {
             _orbitTween?.Kill();
-            _planetMaster.EventActivateDefenses -= PauseOrbit;
-            _planetMaster.EventDeactivateDefenses -= ResumeOrbit;
+            _planetMaster.EventPlanetDetected -= OnPlanetDetected;
+            _planetMaster.EventPlanetLost -= OnPlanetLost;
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion desativado para {gameObject.name}.");
         }
 
+        private void OnDestroy()
+        {
+            _orbitTween?.Kill();
+            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
+        }
+        
         public void Initialize(Vector3 center, float radius, float orbitSpeedDegPerSec, bool orbitClockwise, float selfRotationSpeedDegPerSec, float initialAngleRad = 0f)
         {
             if (radius <= 0f)
@@ -106,19 +115,28 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _orbitTween?.Play();
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
         }
-
-        private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
+        
+        private void OnPlanetDetected(IDetector obj, SensorTypes sensor)
         {
-            if (!PlanetsManager.Instance.IsMarkedPlanet(evt.PlanetMaster)) return;
-            ResumeOrbit();
-            DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name} devido a desmarcação.");
-
+            if (obj is EaterMaster eater)
+            {
+                DebugUtility.Log<PlanetMotion>($"{gameObject.name} Foi detectado por {eater.name}.");
+                PauseOrbit();
+            }
         }
-
-        private void OnDestroy()
+        private void OnPlanetLost(IDetector obj, SensorTypes sensor)
         {
-            _orbitTween?.Kill();
-            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
+            if (obj is EaterMaster eater && sensor == SensorTypes.EaterDetectorSensor)
+            {
+                DebugUtility.Log<PlanetMotion>($" {gameObject.name} saiu da detecção de {sensor} de {eater.name}.");
+                ResumeOrbit();
+            }
+        }
+        
+        private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
+        {
+            if(!ReferenceEquals(obj.PlanetMaster, _planetMaster)) return;
+            ResumeOrbit();
         }
     }
 }

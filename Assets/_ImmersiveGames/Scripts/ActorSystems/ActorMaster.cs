@@ -9,12 +9,13 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         [SerializeField] private ModelRoot modelRoot;
         [SerializeField] private CanvasRoot canvasRoot;
         [SerializeField] private FxRoot fxRoot;
-        
-        private void Awake()
+        public bool IsActive { get; set; } // Estado do Actor (ativo/inativo)
+        protected virtual void Awake()
         {
             modelRoot = GetComponentInChildren<ModelRoot>();
             canvasRoot = GetComponentInChildren<CanvasRoot>();
             fxRoot = GetComponentInChildren<FxRoot>();
+            IsActive = true;
         }
         
         public ModelRoot GetModelRoot()
@@ -43,6 +44,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             }
             return fxRoot;
         }
+        
         public abstract void Reset();
     }
 }

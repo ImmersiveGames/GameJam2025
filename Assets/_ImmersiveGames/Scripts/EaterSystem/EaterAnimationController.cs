@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             enabled = false;
         }
 
-        private void OnEnable()
+        /*private void OnEnable()
         {
             _eaterMaster.StartEatPlanetEvent += OnStartedEating;
             _eaterMaster.StopEatPlanetEvent += OnFinishedEating;
@@ -35,13 +35,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _eaterMaster.StartEatPlanetEvent -= OnStartedEating;
             _eaterMaster.StopEatPlanetEvent -= OnFinishedEating;
-        }
-        private void OnFinishedEating(IPlanetInteractable obj)
+        }*/
+        private void OnFinishedEating(IDetectable obj)
         {
             _animator.SetBool(IsEating, false);
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer finalizada.");
         }
-        private void OnStartedEating(IPlanetInteractable obj)
+        private void OnStartedEating(IDetectable obj)
         {
             _animator.SetBool(IsEating, true);
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer iniciada.");

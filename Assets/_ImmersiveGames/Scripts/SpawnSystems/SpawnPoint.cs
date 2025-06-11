@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class SpawnPoint : MonoBehaviour
     {
         [SerializeField]
