@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class PlayerDetectable : MonoBehaviour, IDetectable
     {
         private PlayerInput _playerInput;
@@ -18,20 +18,28 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             enabled = false;
         }
 
-        public void OnPlanetDetected(Planets planet)
+        public void OnPlanetDetected(IPlanetInteractable planetMaster)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player detectou planeta: {planet.name}", "green");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player detectou planeta: {planetMaster.Name}", "green");
         }
 
-        public void OnPlanetLost(Planets planet)
+        public void OnPlanetLost(IPlanetInteractable planetMaster)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player perdeu planeta: {planet.name}", "red");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player perdeu planeta: {planetMaster.Name}", "red");
         }
 
-        public void OnRecognitionRangeEntered(Planets planet, PlanetResourcesSo resources)
+        public void OnRecognitionRangeEntered(IPlanetInteractable planetMaster, PlanetResourcesSo resources)
         {
-            DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planet.name}, Recursos: {resources}", "blue");
+            DebugUtility.LogVerbose<PlayerDetectable>($"Player reconheceu planeta: {planetMaster.Name}, Recursos: {resources}", "blue");
             // Exibir UI com informações do planeta, etc.
+        }
+        public void EnableSensor()
+        {
+            throw new System.NotImplementedException();
+        }
+        public void DisableSensor()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

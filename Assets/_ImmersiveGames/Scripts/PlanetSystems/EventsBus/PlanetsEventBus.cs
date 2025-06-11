@@ -1,18 +1,19 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
 {
     public class PlanetMarkedEvent : IEvent
     {
-        public Planets Planet { get; }
-        public PlanetMarkedEvent(Planets planet) => Planet = planet;
+        public IPlanetInteractable PlanetMaster { get; }
+        public PlanetMarkedEvent(IPlanetInteractable planetMaster) => PlanetMaster = planetMaster;
     }
 
     public class PlanetUnmarkedEvent : IEvent
     {
-        public Planets Planet { get; }
-        public PlanetUnmarkedEvent(Planets planet) => Planet = planet;
+        public IPlanetInteractable PlanetMaster { get; }
+        public PlanetUnmarkedEvent(IPlanetInteractable planetMaster) => PlanetMaster = planetMaster;
     }
     public class PlanetCreatedEvent : IEvent
     {
@@ -55,14 +56,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
             PlanetObject = planetObject;
         }
     }
-    public class PlanetMarkedCompatibilityEvent : IEvent
+    public class PlanetConsumedEvent : IEvent
     {
-        public Planets Planet { get; }
-        public bool IsDesiredResource { get; }
-        public PlanetMarkedCompatibilityEvent(Planets planet, bool isDesiredResource)
+        public IPlanetInteractable PlanetMaster { get; }
+        public PlanetConsumedEvent(IPlanetInteractable planetMaster)
         {
-            Planet = planet;
-            IsDesiredResource = isDesiredResource;
+            PlanetMaster = planetMaster;
         }
     }
 }

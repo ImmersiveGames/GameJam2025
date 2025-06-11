@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 {
     public class TimerDisplay : MonoBehaviour
     {
-        [SerializeField] private GameTimer gameTimer;
+        private GameTimer _gameTimer;
         [SerializeField] private TextMeshProUGUI timerText;
     
         [SerializeField] private Image timerFillImage;
@@ -26,12 +26,12 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         
         private void Start()
         {
-            if (!gameTimer)
+            if (!_gameTimer)
             {
-                gameTimer = FindFirstObjectByType<GameTimer>();
+                _gameTimer = GameTimer.Instance;
             }
             
-            if (gameTimer)
+            if (_gameTimer)
             {
                 _initialDuration = 300f; // 5 minutos em segundos
                 
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         
         private void RegisterTimerEvents()
         {
-            if (gameTimer)
+            if (_gameTimer)
             {
                 // Como não temos acesso ao CountdownTimer diretamente, 
                 // vamos detectar eventos por mudanças no estado
@@ -64,18 +64,18 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         
         private void UpdateTimerDisplay()
         {
-            if (!gameTimer)
+            if (!_gameTimer)
                 return;
                 
             // Atualizar texto
             if (timerText)
             {
-                timerText.text = gameTimer.GetFormattedTime();
+                timerText.text = _gameTimer.GetFormattedTime();
             }
             
             // Atualizar barra de progresso
-            if (!timerFillImage) return;
-            float remainingTime = gameTimer.RemainingTime;
+            if (timerFillImage == null) return;
+            float remainingTime = _gameTimer.RemainingTime;
             float normalizedTime = remainingTime / _initialDuration;
             timerFillImage.fillAmount = normalizedTime;
                 

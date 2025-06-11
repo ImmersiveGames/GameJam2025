@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -16,7 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             // Dispara DeathEvent com a posição do objeto
             EventBus<DeathEvent>.Raise(new DeathEvent(position, gameObject));
             // Remove o planeta da lista de ativos e limpa targetToEater, se necessário
-            var planet = GetComponent<Planets>();
+            var planet = GetComponent<PlanetsMaster>();
             if (planet)
             {
                 PlanetsManager.Instance.RemovePlanet(planet);
@@ -24,7 +23,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
             else
             {
-                DebugUtility.LogWarning<PlanetHealth>($"Componente Planets não encontrado em {gameObject.name} ao tentar remover!", this);
+                DebugUtility.LogWarning<PlanetHealth>($"Componente PlanetsMaster não encontrado em {gameObject.name} ao tentar remover!", this);
             }
         }
     }

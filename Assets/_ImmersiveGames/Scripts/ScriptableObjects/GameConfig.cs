@@ -5,6 +5,7 @@ namespace _ImmersiveGames.Scripts.ScriptableObjects
     public class GameConfig : ScriptableObject
     {
         public int timerGame = 300;
+        public Rect gameArea = new Rect(-50f, -50f, 100f, 100f); // x, z, width, height
 
     }
 }

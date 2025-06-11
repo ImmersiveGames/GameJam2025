@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 InitializeReferences(); // Tenta reinicializar
             }
             onValueChanged.Invoke(GetPercentage()); // Notifica mudança
-            EventBus<ResourceEvent>.Raise(new ResourceEvent(gameObject, config.ResourceType, GetPercentage())); // Dispara evento
+            EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId,gameObject, config.ResourceType, GetPercentage())); // Dispara evento
         }
     }
 }

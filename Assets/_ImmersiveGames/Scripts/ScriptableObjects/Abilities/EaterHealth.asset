@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b037e3d919f045658fa89781b5718fe3, type: 3}
   m_Name: EaterHealth
   m_EditorClassIdentifier: 
+  uniqueId: EaterLife
   resourceName: EaterLife
   resourceType: 0
   maxValue: 4

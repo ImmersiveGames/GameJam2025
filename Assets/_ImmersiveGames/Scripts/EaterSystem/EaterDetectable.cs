@@ -2,105 +2,124 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using System.Collections;
+using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterDetectable : MonoBehaviour, IDetectable
     {
-        [SerializeField, Tooltip("Distância para iniciar o consumo do planeta")]
-        private float eatDistance = 5f;
-
-        public event Action<Planets> OnEatPlanet;
-        public event Action<Transform> OnTargetUpdated;
-
-        private Transform _self;
-        private Planets _targetPlanet;
-        private bool _isEating; // Controla se o Eater já começou a comer
-        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
-        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EaterMaster _eater;
+        private PlanetDetector _planetDetector;
+        private PlanetRecognizer _planetRecognizer;
+        private EaterMovement _eaterMovement; // Novo: referência ao EaterMovement
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
+        private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
 
         private void Awake()
         {
-            _self = transform;
+            _eater = GetComponent<EaterMaster>();
+            _eaterMovement = GetComponent<EaterMovement>(); // Obtém EaterMovement
+            _planetDetector = GetComponent<PlanetDetector>();
+            _planetRecognizer = GetComponent<PlanetRecognizer>();
         }
 
         private void OnEnable()
         {
-            _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(OnPlanetMarked);
-            EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
-
-            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            _eater.StopEatPlanetEvent += OnStopEatPlanetEvent;
+            _planetUnmarkedEventBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarkedPlanet);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
+            _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
+            EventBus<PlanetMarkedEvent>.Register(_planetMarkedEventBinding);
         }
 
         private void OnDisable()
         {
-            EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
-            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            _eater.StopEatPlanetEvent -= OnStopEatPlanetEvent;
+            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedEventBinding);
+            EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedEventBinding);
+            DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable desativado para {_eater.name}.");
         }
 
-        private void Update()
+        public void OnPlanetDetected(IPlanetInteractable planetMaster)
         {
-            if (!_targetPlanet || !_targetPlanet.IsActive || _isEating) return;
-
-            float distance = Vector3.Distance(
-                new Vector3(_self.position.x, 0, _self.position.z),
-                new Vector3(_targetPlanet.transform.position.x, 0, _targetPlanet.transform.position.z));
-
-            if (!(distance <= eatDistance)) return;
-            _isEating = true; // Impede disparos repetidos
-            OnEatPlanet?.Invoke(_targetPlanet);
-            DebugUtility.LogVerbose<EaterDetectable>($"EaterDetectable iniciou consumo do planeta: {_targetPlanet.name} (distância: {distance})", "magenta");
+            _eater.OnEaterDetectionEvent(planetMaster);
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado pelo Eater: {planetMaster.Name}", "green");
+            // O planeta deve entrar em modo defesa e atacar o Eater
         }
 
-        private void OnPlanetMarked(PlanetMarkedEvent evt)
+        public void OnPlanetLost(IPlanetInteractable planetMaster)
         {
-            _targetPlanet = evt.Planet;
-            _isEating = false; // Reseta ao marcar novo alvo
-            OnTargetUpdated?.Invoke(_targetPlanet?.transform);
-            DebugUtility.LogVerbose<EaterDetectable>($"Novo alvo recebido: {_targetPlanet?.name ?? "nulo"}", "yellow");
+            DebugUtility.LogVerbose<EaterDetectable>($"Planeta perdido: {planetMaster.Name}", "red");
+            // O planeta deve sair do modo defesa e parar de atacar o Eater
         }
 
-        private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
+        public void OnRecognitionRangeEntered(IPlanetInteractable planetMaster, PlanetResourcesSo resources)
         {
-            if (_targetPlanet != evt.Planet) return;
-            _targetPlanet = null;
-            _isEating = false;
-            OnTargetUpdated?.Invoke(null);
-            DebugUtility.LogVerbose<EaterDetectable>($"Alvo removido: {evt.Planet.name}", "red");
+            if (!PlanetsManager.Instance.IsMarkedPlanet(planetMaster)) return;
+
+            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta marcado: {planetMaster.Name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
+            _eater.IsChasing = false;
+            _eaterMovement.Pause(); // Pausa o movimento imediatamente
+            StartCoroutine(EatPlanetWithDelay(planetMaster)); // Inicia corrotina com delay
         }
 
-        public void OnPlanetDetected(Planets planet)
+        private IEnumerator EatPlanetWithDelay(IPlanetInteractable planetMaster)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Planeta detectado: {planet.name}", "green");
-            
-            if (!PlanetsManager.Instance.IsMarkedPlanet(planet)) return;
-            var motion = planet.GetComponent<PlanetMotion>();
-            motion?.PauseOrbit();
+            // Garante que o Eater está voltado para o planeta
+            Vector3 direction = (planetMaster.Transform.position - transform.position).normalized;
+            direction.y = 0f;
+            if (direction != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                transform.rotation = targetRotation; // Ajusta rotação imediatamente
+                transform.eulerAngles = new Vector3(0f, transform.eulerAngles.y, 0f);
+            }
+
+            // Espera um delay aleatório entre 1 e 2 segundos
+            float delay = Random.Range(1f, 2f);
+            DebugUtility.LogVerbose<EaterDetectable>($"Aguardando {delay:F2} segundos antes de comer {planetMaster.Name}.");
+            yield return new WaitForSeconds(delay);
+
+            // Dispara o evento de comer
+            _eater.OnEatPlanetEvent(planetMaster);
+            DebugUtility.LogVerbose<EaterDetectable>($"Iniciando comer planeta: {planetMaster.Name}.");
         }
 
-        public void OnPlanetLost(Planets planet)
+        private void OnMarkedPlanet(PlanetMarkedEvent evt)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Planeta perdido: {planet.name}", "red");
-
-            var motion = planet.GetComponent<PlanetMotion>();
-            motion?.ResumeOrbit();
+            DisableSensor();
+            DebugUtility.LogVerbose<EaterDetectable>($"Sensores desativados ao marcar planeta: {evt.PlanetMaster.Name}.");
         }
 
-        public void OnRecognitionRangeEntered(Planets planet, PlanetResourcesSo resources)
+        private void OnUnmarkedPlanet(PlanetUnmarkedEvent evt)
         {
-            DebugUtility.LogVerbose<EaterDetectable>($"Reconheceu planeta: {planet.name}, Recursos: {resources?.name ?? "nenhum"}", "blue");
+            EnableSensor();
+            DebugUtility.LogVerbose<EaterDetectable>($"Sensores reativados após desmarcar planeta: {evt.PlanetMaster.Name}.");
         }
 
-        // Chamado pelo EaterAIController/EatingState quando o consumo termina
-        public void ResetEatingState()
+        private void OnStopEatPlanetEvent(IPlanetInteractable obj)
         {
-            _isEating = false;
+            EnableSensor();
+            DebugUtility.LogVerbose<EaterDetectable>($"Sensores reativados após comer planeta: {obj.Name}.");
+        }
+
+        public void EnableSensor()
+        {
+            _planetDetector?.EnableSensor();
+            _planetRecognizer?.EnableSensor();
+            DebugUtility.LogVerbose<EaterDetectable>($"Sensores ativados para {_eater.name}.");
+        }
+
+        public void DisableSensor()
+        {
+            _planetDetector?.DisableSensor();
+            _planetRecognizer?.DisableSensor();
+            DebugUtility.LogVerbose<EaterDetectable>($"Sensores desativados para {_eater.name}.");
         }
     }
 }

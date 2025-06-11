@@ -9,7 +9,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DefaultExecutionOrder(-90), DebugLevel(DebugLevel.Logs)]
     public class GameTimer : Singleton<GameTimer>
     {
         private CountdownTimer _countdownTimer;
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void HandleTimerStart()
         {
-            Debug.Log("Jogo iniciado! Timer de 5 minutos começou.");
+            DebugUtility.LogVerbose<GameTimer>("Jogo iniciado! Timer de 5 minutos começou.");
 
         }
         
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         
         private void HandleTimerComplete()
         {
-            Debug.Log("Tempo acabou!");
+            DebugUtility.LogVerbose<GameTimer>("Tempo acabou!");
             _gameManager.SetGameOver(true);
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded());
         }

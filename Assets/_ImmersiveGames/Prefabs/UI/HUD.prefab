@@ -66,7 +66,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -1806804740, guid: 3c2f93d3b14272448940d305b7c454b8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 3c2f93d3b14272448940d305b7c454b8, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -220,7 +220,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -241,8 +241,9 @@ GameObject:
   - component: {fileID: 7412998811395594837}
   - component: {fileID: 6071352826711163495}
   - component: {fileID: 1923978109953774804}
-  - component: {fileID: 4753947037515409220}
-  - component: {fileID: 5833225348130278975}
+  - component: {fileID: 548667099670019269}
+  - component: {fileID: 2722305799810273138}
+  - component: {fileID: 8850426075385658452}
   m_Layer: 5
   m_Name: Eater Health Bar
   m_TagString: Untagged
@@ -309,7 +310,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &4753947037515409220
+--- !u!114 &548667099670019269
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -318,12 +319,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 2052563975925772959}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03a82c6f03f89ec42b7bed08bd5b2fab, type: 3}
+  m_Script: {fileID: 11500000, guid: dd78ad4a73b04d41a1d2c3079a5617af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  eater: {fileID: 0}
-  hungryBar: {fileID: 9089715639751401544}
---- !u!114 &5833225348130278975
+  resource: {fileID: 0}
+  targetResourceId: EaterLife
+  targetResourceType: 0
+  resourceBar: {fileID: 4772318235752735059}
+  backgroundImage: {fileID: 2457623156638718740}
+  resourceIcon: {fileID: 0}
+  resourceNameText: {fileID: 0}
+  thresholdColors:
+  - {r: 0, g: 1, b: 0, a: 1}
+  - {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  - {r: 1, g: 0.5, b: 0, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
+  smoothTransitionSpeed: 5
+--- !u!114 &2722305799810273138
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -332,11 +344,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 2052563975925772959}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb3e01fb380d35940b20721205609ae0, type: 3}
+  m_Script: {fileID: 11500000, guid: dd78ad4a73b04d41a1d2c3079a5617af, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  eater: {fileID: 0}
-  healthBar: {fileID: 4772318235752735059}
+  resource: {fileID: 0}
+  targetResourceId: EaterHunger
+  targetResourceType: 4
+  resourceBar: {fileID: 9089715639751401544}
+  backgroundImage: {fileID: 2596511850146227261}
+  resourceIcon: {fileID: 0}
+  resourceNameText: {fileID: 0}
+  thresholdColors:
+  - {r: 0, g: 0.41719317, b: 1, a: 1}
+  - {r: 0.3311592, g: 0.015686274, b: 1, a: 1}
+  - {r: 0.8378353, g: 0, b: 1, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
+  smoothTransitionSpeed: 5
+--- !u!114 &8850426075385658452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2052563975925772959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cded0fb0eaa940be91367022517e196b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  desireIcon: {fileID: 7612169731846915587}
+  eaterDesire: {fileID: 0}
 --- !u!1 &2387444979595858881
 GameObject:
   m_ObjectHideFlags: 0
@@ -402,7 +439,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -840881465, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  m_Sprite: {fileID: 1295195208, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -423,6 +460,7 @@ GameObject:
   - component: {fileID: 772196569094708719}
   - component: {fileID: 5398659009786347163}
   - component: {fileID: 3235145253971820065}
+  - component: {fileID: 2345895663060107640}
   m_Layer: 5
   m_Name: Clock Display
   m_TagString: Untagged
@@ -488,6 +526,26 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2345895663060107640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2993423261683752700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a4180f7186f450e881b3b408aff9ee1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameTimer: {fileID: 0}
+  timerText: {fileID: 1466684001188635383}
+  timerFillImage: {fileID: 0}
+  normalColor: {r: 0, g: 1, b: 0, a: 1}
+  warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  dangerColor: {r: 1, g: 0, b: 0, a: 1}
+  warningThreshold: 120
+  dangerThreshold: 30
 --- !u!1 &3442370322557709663
 GameObject:
   m_ObjectHideFlags: 0
@@ -553,7 +611,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -574,6 +632,7 @@ GameObject:
   - component: {fileID: 1333529541641154504}
   - component: {fileID: 4684118964884813344}
   - component: {fileID: 1481500210179197217}
+  - component: {fileID: 3504777783468891761}
   m_Layer: 5
   m_Name: Herald Health Bar
   m_TagString: Untagged
@@ -639,6 +698,31 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3504777783468891761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3683447390345429344}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd78ad4a73b04d41a1d2c3079a5617af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resource: {fileID: 0}
+  targetResourceId: PlayerHealth
+  targetResourceType: 0
+  resourceBar: {fileID: 9068308803919970835}
+  backgroundImage: {fileID: 5535664669123415513}
+  resourceIcon: {fileID: 0}
+  resourceNameText: {fileID: 0}
+  thresholdColors:
+  - {r: 0, g: 1, b: 0, a: 1}
+  - {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  - {r: 1, g: 0.5, b: 0, a: 1}
+  - {r: 1, g: 0, b: 0, a: 1}
+  smoothTransitionSpeed: 5
 --- !u!1 &4094159574632884023
 GameObject:
   m_ObjectHideFlags: 0
@@ -705,7 +789,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -780,7 +864,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -932,7 +1016,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1296,12 +1380,12 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: bdc0e09126389c2479ae3e550aa4c70a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8902fe60226f27148af5b62a4cfbe57e, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 1
-  m_FillAmount: 1
+  m_FillAmount: 0.6
   m_FillClockwise: 0
   m_FillOrigin: 0
   m_UseSpriteMesh: 0

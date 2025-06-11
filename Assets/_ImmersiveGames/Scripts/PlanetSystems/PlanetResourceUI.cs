@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -12,17 +11,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     {
         [SerializeField] private Image resourceIcon; // Imagem para exibir o ícone do recurso
         [SerializeField] private Text planetNameText; // (Opcional) Texto para exibir o nome do planeta
-        private Planets _planet; // Referência ao componente Planets do planeta pai
+        private PlanetsMaster _planetMaster; // Referência ao componente PlanetsMaster do planeta pai
         private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
 
         // Inicializa o componente
         private void Awake()
         {
-            // Obtém o componente Planets na hierarquia pai
-            _planet = GetComponentInParent<Planets>();
-            if (!_planet)
+            // Obtém o componente PlanetsMaster na hierarquia pai
+            _planetMaster = GetComponentInParent<PlanetsMaster>();
+            if (!_planetMaster)
             {
-                DebugUtility.LogError<PlanetResourceUI>($"Componente Planets não encontrado na hierarquia pai de {gameObject.name}!", gameObject);
+                DebugUtility.LogError<PlanetResourceUI>($"Componente PlanetsMaster não encontrado na hierarquia pai de {gameObject.name}!", gameObject);
             }
         }
 
@@ -52,7 +51,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if (!_planet || evt.PlanetObject != _planet.gameObject)
+            if (!_planetMaster || evt.PlanetObject != _planetMaster.gameObject)
             {
                 return;
             }
@@ -63,21 +62,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Atualiza a UI com o recurso atual do planeta
         private void UpdateUI()
         {
-            if (!_planet)
+            if (!_planetMaster)
             {
                 ClearUI();
                 return;
             }
 
-            var resources = _planet.GetResources();
+            var resources = _planetMaster.GetResources();
             if (resources)
             {
-                UpdateUIWithResources(resources, _planet.GetInstanceID()); // Usa InstanceID como fallback
+                UpdateUIWithResources(resources, _planetMaster.GetInstanceID()); // Usa InstanceID como fallback
             }
             else
             {
                 ClearUI();
-                DebugUtility.LogVerbose<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planet.gameObject.name}. Aguardando PlanetCreatedEvent.");
+                DebugUtility.LogVerbose<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planetMaster.gameObject.name}. Aguardando PlanetCreatedEvent.");
             }
         }
 
@@ -97,14 +96,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 resourceIcon.gameObject.SetActive(true);
                 if (planetNameText)
                 {
-                    planetNameText.text = $"Planet {planetId}";
+                    planetNameText.text = $"PlanetMaster {planetId}";
                 }
-                DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planet.gameObject.name} (ID: {planetId}).");
+                DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planetMaster.gameObject.name} (ID: {planetId}).");
             }
             else
             {
                 ClearUI();
-                DebugUtility.LogWarning<PlanetResourceUI>($"Nenhum ícone de recurso encontrado para o planeta {_planet.gameObject.name} (ID: {planetId}).", gameObject);
+                DebugUtility.LogWarning<PlanetResourceUI>($"Nenhum ícone de recurso encontrado para o planeta {_planetMaster.gameObject.name} (ID: {planetId}).", gameObject);
             }
         }
 
