@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
@@ -103,8 +103,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!IsActive) return;
             OnEventPlanetLost(entity,sensorName); //Evento interno
         }
-
-       
         
         public PlanetData GetPlanetData() => _data;
 

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     public class PlayerMaster : DetectorsMaster

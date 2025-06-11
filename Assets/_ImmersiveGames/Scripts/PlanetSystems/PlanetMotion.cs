@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using _ImmersiveGames.Scripts.GameManagerSystems;

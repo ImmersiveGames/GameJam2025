@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.GameManagerSystems;
