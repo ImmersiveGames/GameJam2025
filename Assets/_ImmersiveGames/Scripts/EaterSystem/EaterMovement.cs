@@ -1,12 +1,10 @@
 using System;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using UnityEngine;
-using Random = UnityEngine.Random;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.EaterSystem.States;
@@ -74,7 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var builder = new StateMachineBuilder();
             builder.AddState(new WanderingState(this, _config), out _wanderingState)
                 .AddState(new ChasingState(this, _config), out _chasingState)
-                .AddState(new OrbitingState(this, _config), out _orbitingState)
+                .AddState(new OrbitingState(this), out _orbitingState)
                 .Any(_chasingState, new FuncPredicate(() => _target != null && !IsOrbiting))
                 .Any(_orbitingState, new FuncPredicate(() => _target != null && IsOrbiting))
                 .Any(_wanderingState, new PredicateTargetIsNull(() => _target))

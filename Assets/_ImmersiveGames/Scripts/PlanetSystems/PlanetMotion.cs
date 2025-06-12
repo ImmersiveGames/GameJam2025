@@ -122,7 +122,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (obj is EaterMaster eater)
             {
                 DebugUtility.Log<PlanetMotion>($"{gameObject.name} Foi detectado por {eater.name}.");
-                PauseOrbit();
+                //PauseOrbit();
             }
         }
         private void OnPlanetLost(IDetector obj, SensorTypes sensor)
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (obj is EaterMaster eater && sensor == SensorTypes.EaterDetectorSensor)
             {
                 DebugUtility.Log<PlanetMotion>($" {gameObject.name} saiu da detecção de {sensor} de {eater.name}.");
-                ResumeOrbit();
+                //ResumeOrbit();
             }
         }
         
