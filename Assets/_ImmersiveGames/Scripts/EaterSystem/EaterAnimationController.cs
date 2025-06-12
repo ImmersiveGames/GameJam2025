@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterMaster _eaterMaster;
         private Animator _animator;
 
-        private static readonly int IsEating = Animator.StringToHash("IsEating");
+        private static readonly int IsEating = Animator.StringToHash("isEating");
 
         private void Awake()
         {
@@ -25,17 +25,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             enabled = false;
         }
 
-        /*private void OnEnable()
+        private void OnEnable()
         {
-            _eaterMaster.StartEatPlanetEvent += OnStartedEating;
-            _eaterMaster.StopEatPlanetEvent += OnFinishedEating;
+            _eaterMaster.EventStartEatPlanet += OnStartedEating;
+            _eaterMaster.EventEndEatPlanet += OnFinishedEating;
         }
 
         private void OnDisable()
         {
-            _eaterMaster.StartEatPlanetEvent -= OnStartedEating;
-            _eaterMaster.StopEatPlanetEvent -= OnFinishedEating;
-        }*/
+            _eaterMaster.EventStartEatPlanet -= OnStartedEating;
+            _eaterMaster.EventEndEatPlanet -= OnFinishedEating;
+        }
         private void OnFinishedEating(IDetectable obj)
         {
             _animator.SetBool(IsEating, false);

@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (!Mouse.current.rightButton.wasPressedThisFrame) return;
             var config = _sensorController.GetSensorConfig(sensorName);
             var ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, config.PlanetLayer)) return;
+            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, config.DetectLayer)) return;
             var planet = hit.collider.GetComponentInParent<PlanetsMaster>();
             if (!planet || !_sensorController.GetDetectedPlanets(sensorName).Contains(planet)) return;
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))

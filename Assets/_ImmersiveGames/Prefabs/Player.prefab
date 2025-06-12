@@ -195,6 +195,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d398b56dd9cf46fd9b101ca3fb480cee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sensorName: 1
 --- !u!114 &6406204313797927982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -229,7 +230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f279b5e098c84676a3dbe9f7a3af96fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelRoot: {fileID: 0}
+  modelRoot: {fileID: 4914690377017914604}
   canvasRoot: {fileID: 0}
   fxRoot: {fileID: 0}
 --- !u!114 &6470516389975364022

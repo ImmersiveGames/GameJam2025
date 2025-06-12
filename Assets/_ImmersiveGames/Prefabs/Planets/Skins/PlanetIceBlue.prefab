@@ -143,6 +143,14 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 5156101369664951364, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
+      propertyPath: m_Constraints
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 5156101369664951364, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
+      propertyPath: m_IsKinematic
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7381938203999059846, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
       propertyPath: m_Layer
       value: 10

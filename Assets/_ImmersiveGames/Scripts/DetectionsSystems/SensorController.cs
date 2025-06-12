@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             public float radius = 10f;
             public float minDetectionFrequency = 0.1f;
             public float maxDetectionFrequency = 0.5f;
-            public bool debugMode = false;
+            public bool debugMode;
         }
         public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
         {
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
         }
         
-        public bool IsPlanetInSensorRange(SensorTypes sensorName, IDetectable planet)
+        public bool IsPlanetInSensorRange(IDetectable planet, SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             if (sensor == null)
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 return false;
             }
 
-            bool isInRange = sensor.IsPlanetInRange(planet);
+            bool isInRange = sensor.IsObjectInRange(planet);
             if (sensor.DebugMode)
             {
                 DebugUtility.LogVerbose<SensorController>(
@@ -95,7 +95,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
             return isInRange;
         }
-
         // Métodos para ativar/desativar sensores por nome
         public void EnableSensor(SensorTypes sensorName)
         {

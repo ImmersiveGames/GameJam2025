@@ -18,7 +18,6 @@ GameObject:
   - component: {fileID: 7688769006104112065}
   - component: {fileID: 8826266075279273705}
   - component: {fileID: 8839036343368280658}
-  - component: {fileID: 8608719904986808587}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -66,9 +65,9 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 0
-  m_IsKinematic: 1
+  m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 126
   m_CollisionDetection: 0
 --- !u!114 &7481411686174452357
 MonoBehaviour:
@@ -207,18 +206,6 @@ MonoBehaviour:
     minDetectionFrequency: 0.1
     maxDetectionFrequency: 0.5
     debugMode: 1
---- !u!114 &8608719904986808587
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1814427060013598564}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0fd188086f64b3aa7158814fcf40036, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2172708011221476507
 GameObject:
   m_ObjectHideFlags: 0

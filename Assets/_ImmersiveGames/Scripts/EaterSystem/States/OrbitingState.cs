@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.StateMachine;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,9 +10,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     {
         private readonly EaterMovement _eaterMovement;
         private readonly Transform _transform;
+        private SensorController _sensorsController;
 
         private float _currentAngle; // Ângulo atual da órbita
-        private float _targetAngularSpeed; // Velocidade angular constante
+        private readonly float _targetAngularSpeed; // Velocidade angular constante
         private float _orbitRadius; // Raio da órbita
         private bool _isTransitioning; // Flag para indicar transição ativa
 
@@ -26,6 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _targetAngularSpeed = 360f / OrbitPeriod; // Velocidade angular em graus/segundo
             _currentAngle = 0f;
             _isTransitioning = false;
+            _sensorsController = eaterMovement.GetComponent<SensorController>();
         }
 
         public void OnEnter()
@@ -36,7 +39,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             var target = _eaterMovement.TargetTransform;
             if (target == null)
             {
-                Debug.LogWarning("TargetTransform is null in OrbitingState!");
+                DebugUtility.LogWarning<OrbitingState>("TargetTransform is null in OrbitingState!");
                 return;
             }
 
@@ -48,7 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 new Vector3(_transform.position.x, 0f, _transform.position.z),
                 new Vector3(target.position.x, 0f, target.position.z)
             );
-
+            _sensorsController.DisableSensor(SensorTypes.EaterEatSensor);
             // Inicia a transição suave
             _eaterMovement.StartCoroutine(TransitionToOrbit(initialRadius, _orbitRadius, TransitionDuration));
 
@@ -79,6 +82,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             _eaterMovement.IsOrbiting = false;
             _isTransitioning = false;
+            _sensorsController.EnableSensor(SensorTypes.EaterEatSensor);
             DebugUtility.Log<OrbitingState>("Exited Orbiting State");
         }
 
@@ -147,15 +151,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float CalculateOrbitRadius(Transform target)
         {
             var modelRoot = target.GetComponentInChildren<ModelRoot>();
-            if (modelRoot == null)
+            if (modelRoot == null || modelRoot.transform.childCount == 0)
             {
-                Debug.LogWarning("ModelRoot not found on target!");
-                return 3f;
-            }
-
-            if (modelRoot.transform.childCount == 0)
-            {
-                Debug.LogWarning("ModelRoot has no children!");
+                DebugUtility.LogWarning<OrbitingState>("ModelRoot not found on target!");
                 return 3f;
             }
 
@@ -163,7 +161,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             var collider = model.GetComponentInChildren<Collider>();
             if (collider == null)
             {
-                Debug.LogWarning("Collider not found on target model!");
+                DebugUtility.LogWarning<OrbitingState>("Collider not found on target model!");
                 return 3f;
             }
 

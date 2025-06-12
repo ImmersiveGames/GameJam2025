@@ -13,31 +13,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField] private EaterConfigSo config;
         public EaterConfigSo GetConfig => config;
         
-        
         public bool InHungry { get; set; }
         public bool IsEating { get; set; }
-        public bool IsChasing { get; set; }
         
         public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
+        public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
+        public event Action<IDetectable> EventEndEatPlanet; // Ação para quando o Eater começa a comer um planeta
         
-        
-        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding; // Binding para evento de marcação
-        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding; // Binding para evento de desmarcação
-
-        private void OnEnable()
-        {
-            _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(OnPlanetMarked);
-            EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
-            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
-        }
-        
-        private void OnDisable()
-        {
-            EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
-            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-        }
-
         public override void OnObjectDetected(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, this)) return;
@@ -55,16 +37,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             IsActive = true;
             IsEating = false;
-            IsChasing = false;
             InHungry = false;
         }
-        private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
+        public void OnEventStartEatPlanet(IDetectable obj)
         {
-            DebugUtility.LogVerbose<EaterMaster>($"O Eater reconheceu que um planeta foi desmarcado: {obj.Detected.Name}", "red");
+            EventStartEatPlanet?.Invoke(obj);
         }
-        private void OnPlanetMarked(PlanetMarkedEvent obj)
+        public void OnEventEndEatPlanet(IDetectable obj)
         {
-            DebugUtility.LogVerbose<EaterMaster>($"O Eater reconheceu que um planeta foi marcado: {obj.Detected.Name}", "green");
+            EventEndEatPlanet?.Invoke(obj);
         }
     }
 }

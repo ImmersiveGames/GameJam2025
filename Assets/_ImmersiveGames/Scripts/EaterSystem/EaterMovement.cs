@@ -9,9 +9,6 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachine;
-using _ImmersiveGames.Scripts.Utils.Predicates;
-
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     using FSM = StateMachine.StateMachine;
@@ -21,14 +18,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         private FSM _stateMachine;
         private EaterMaster _eater;
+        private SensorController _sensorController;
         private EaterConfigSo _config;
-        private IDetectable _target;
-        
+
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         public bool IsOrbiting {get; set;}
-        public Transform TargetTransform => _target?.Transform;
-        
+        public Transform TargetTransform => Target?.Transform;
+        public IDetectable Target { get; private set; }
+
         private IState _wanderingState;
         private IState _chasingState;
         private IState _orbitingState;
@@ -36,6 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void Awake()
         {
             _eater = GetComponent<EaterMaster>();
+            _sensorController = GetComponent<SensorController>();
             _config = _eater.GetConfig;
         }
         private void OnEnable()
@@ -73,9 +72,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.AddState(new WanderingState(this, _config), out _wanderingState)
                 .AddState(new ChasingState(this, _config), out _chasingState)
                 .AddState(new OrbitingState(this), out _orbitingState)
-                .Any(_chasingState, new FuncPredicate(() => _target != null && !IsOrbiting))
-                .Any(_orbitingState, new FuncPredicate(() => _target != null && IsOrbiting))
-                .Any(_wanderingState, new PredicateTargetIsNull(() => _target))
+                .Any(_chasingState, new FuncPredicate(() => Target != null && !IsOrbiting))
+                .Any(_orbitingState, new FuncPredicate(() => Target != null && IsOrbiting))
+                .Any(_wanderingState, new PredicateTargetIsNull(() => Target))
                 .StateInitial(_wanderingState);
             _stateMachine = builder.Build();
 
@@ -83,13 +82,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
-            _target = obj.Detected;
-            IsOrbiting = false;
+            Target = obj.Detected;
+            IsOrbiting = _sensorController.IsPlanetInSensorRange(Target, SensorTypes.EaterEatSensor);
+            if (IsOrbiting)
+            {
+                _eater.OnEventStartEatPlanet(obj.Detected);
+            }
         }
 
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
         {
-            _target = null;
+            if (IsOrbiting)
+            {
+                _eater.OnEventEndEatPlanet(obj.Detected);
+            }
+            Target = null;
             IsOrbiting = false;
         }
         
@@ -97,32 +104,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Name}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
             if (_stateMachine.CurrentState is not ChasingState || sensor != SensorTypes.EaterEatSensor || !PlanetsManager.Instance.IsMarkedPlanet(obj)) return;
-            _target = obj.GetPlanetsMaster();
+            Target = obj.GetPlanetsMaster();
             IsOrbiting = true;
-            DebugUtility.LogVerbose<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {_target}, IsOrbiting: {IsOrbiting}");
+            _eater.OnEventStartEatPlanet(obj);
+            DebugUtility.LogVerbose<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target}, IsOrbiting: {IsOrbiting}");
         }
 
         public void Reset()
         {
             IsOrbiting = false;
-            _target = null;
+            Target = null;
         }
     }
     
-    
-    public class PredicateTargetIsNull : IPredicate
-    {
-        private readonly Func<IDetectable> _getTarget;
-
-        public PredicateTargetIsNull(Func<IDetectable> getTarget)
-        {
-            _getTarget = getTarget;
-        }
-
-        public bool Evaluate()
-        {
-            return _getTarget() == null;
-        }
-    }
-
 }

@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     {
         private const int MaxDetectionResults = 10;
         private readonly Collider[] _detectionResults = new Collider[MaxDetectionResults];
-        private readonly List<IDetectable> _detectedPlanets = new();
+        private readonly List<IDetectable> _detectedObj = new();
         private float _detectionTimer;
 
         public LayerMask PlanetLayer { get; }
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
             for (int i = 0; i < hitCount; i++)
             {
-                var planet = GetPlanetsMasterInParent(_detectionResults[i]);
+                var planet = GetComponentInParent(_detectionResults[i]);
                 if (planet is { IsActive: true })
                 {
                     planets.Add(planet);
@@ -75,30 +75,30 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             return planets;
         }
 
-        private IDetectable GetPlanetsMasterInParent(Component component)
+        private IDetectable GetComponentInParent(Component component)
         {
             if (!component) return null;
 
-            if (component.TryGetComponent<IDetectable>(out var planet))
+            if (component.TryGetComponent<IDetectable>(out var obj))
             {
-                return planet;
+                return obj;
             }
 
             Transform current = component.transform.parent;
             while (current)
             {
-                if (current.TryGetComponent(out planet))
+                if (current.TryGetComponent(out obj))
                 {
-                    return planet;
+                    return obj;
                 }
                 current = current.parent;
             }
 
             return null;
         }
-        public bool IsPlanetInRange(IDetectable planet)
+        public bool IsObjectInRange(IDetectable obj)
         {
-            if (!IsEnabled || planet is not { IsActive: true })
+            if (obj is not { IsActive: true })
             {
                 return false;
             }
@@ -107,8 +107,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             int hitCount = Physics.OverlapSphereNonAlloc(Origin.position, Radius, _detectionResults, PlanetLayer);
             for (int i = 0; i < hitCount; i++)
             {
-                var detectedPlanet = GetPlanetsMasterInParent(_detectionResults[i]);
-                if (ReferenceEquals(detectedPlanet, planet))
+                var detectable = GetComponentInParent(_detectionResults[i]);
+                if (ReferenceEquals(detectable, obj))
                 {
                     return true;
                 }
@@ -117,47 +117,58 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             return false;
         }
 
-        private void ProcessPlanets(List<IDetectable> planets)
+        private void ProcessPlanets(List<IDetectable> objs)
         {
-            UpdateDetectedPlanets(planets);
-            AdjustDetectionFrequency(_detectedPlanets.Count);
+            UpdateDetectedObj(objs);
+            AdjustDetectionFrequency(_detectedObj.Count);
         }
 
-        private void UpdateDetectedPlanets(List<IDetectable> currentPlanets)
+        private void UpdateDetectedObj(List<IDetectable> currentObj)
         {
-            foreach (var planet in currentPlanets)
+            foreach (var item in currentObj)
             {
-                if (_detectedPlanets.Contains(planet)) continue;
+                if (_detectedObj.Contains(item)) continue;
 
-                _detectedPlanets.Add(planet);
-                EventBus<SensorDetectedEvent>.Raise(new SensorDetectedEvent(planet, DetectorEntity, SensorName));
-                planet.OnDetectableRanged(DetectorEntity, SensorName);
-                DetectorEntity?.OnObjectDetected(planet, DetectorEntity, SensorName); // Adiciona SensorName
+                _detectedObj.Add(item);
+                EventBus<SensorDetectedEvent>.Raise(new SensorDetectedEvent(item, DetectorEntity, SensorName));
+                item.OnDetectableRanged(DetectorEntity, SensorName);
+                DetectorEntity?.OnObjectDetected(item, DetectorEntity, SensorName); // Adiciona SensorName
                 if (DebugMode)
                 {
-                    DebugUtility.Log(typeof(DetectorSense),$"[{SensorName}] Planeta detectado: {planet.Name}", "green");
+                    DebugUtility.Log(typeof(DetectorSense),$"[{SensorName}] Planeta detectado: {item.Name}", "green");
                 }
             }
 
-            _detectedPlanets.RemoveAll(planet =>
+            _detectedObj.RemoveAll(obj =>
             {
-                if (currentPlanets.Contains(planet)) return false;
+                if (currentObj.Contains(obj)) return false;
 
-                EventBus<SensorLostEvent>.Raise(new SensorLostEvent(planet, DetectorEntity, SensorName));
-                planet.OnDetectableLost(DetectorEntity, SensorName);
-                DetectorEntity?.OnPlanetLost(planet, DetectorEntity, SensorName); // Adiciona SensorName
+                EventBus<SensorLostEvent>.Raise(new SensorLostEvent(obj, DetectorEntity, SensorName));
+                obj.OnDetectableLost(DetectorEntity, SensorName);
+                DetectorEntity?.OnPlanetLost(obj, DetectorEntity, SensorName); // Adiciona SensorName
                 if (DebugMode)
                 {
-                    DebugUtility.Log(typeof(DetectorSense),$"[{SensorName}] Planeta perdido: {planet.Name}", "red");
+                    DebugUtility.Log(typeof(DetectorSense),$"[{SensorName}] Planeta perdido: {obj.Name}", "red");
                 }
                 return true;
             });
         }
-
-        private void AdjustDetectionFrequency(int planetCount)
+        public void ForceImmediateDetection()
         {
-            CurrentDetectionFrequency = planetCount > 0
-                ? Mathf.Lerp(MaxDetectionFrequency, MinDetectionFrequency, planetCount / 5f)
+            if (!IsEnabled) return;
+
+            ProcessPlanets(DetectPlanets());
+            _detectionTimer = 0f; // Reseta o temporizador para manter consistência
+
+            if (DebugMode)
+            {
+                DebugUtility.Log(typeof(DetectorSense), $"[{SensorName}] Detecção imediata forçada.", "blue");
+            }
+        }
+        private void AdjustDetectionFrequency(int objCount)
+        {
+            CurrentDetectionFrequency = objCount > 0
+                ? Mathf.Lerp(MaxDetectionFrequency, MinDetectionFrequency, objCount / 5f)
                 : MaxDetectionFrequency;
         }
 
@@ -186,10 +197,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             if (!DebugMode || !Origin) return;
 
-            Gizmos.color = IsEnabled ? (_detectedPlanets.Count > 0 ? Color.green : Color.yellow) : Color.gray;
+            Gizmos.color = IsEnabled ? (_detectedObj.Count > 0 ? Color.green : Color.yellow) : Color.gray;
             Gizmos.DrawWireSphere(Origin.position, Radius);
 
-            foreach (var planet in _detectedPlanets)
+            foreach (var planet in _detectedObj)
             {
                 Gizmos.color = Color.red;
                 Gizmos.DrawLine(Origin.position, planet.Transform.position);
@@ -201,7 +212,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         public ReadOnlyCollection<IDetectable> GetDetectedPlanets()
         {
-            return _detectedPlanets.AsReadOnly();
+            return _detectedObj.AsReadOnly();
         }
 
         public SensorConfig GetConfig()
@@ -209,7 +220,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             return new SensorConfig
             {
                 SensorName = SensorName,
-                PlanetLayer = PlanetLayer,
+                DetectLayer = PlanetLayer,
                 Radius = Radius,
                 MinDetectionFrequency = MinDetectionFrequency,
                 MaxDetectionFrequency = MaxDetectionFrequency,
@@ -221,12 +232,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     public class SensorConfig
     {
         public SensorTypes SensorName { get; set; }
-        public LayerMask PlanetLayer { get; set; }
+        public LayerMask DetectLayer { get; set; }
         public float Radius { get; set; }
         public float MinDetectionFrequency { get; set; }
         public float MaxDetectionFrequency { get; set; }
         public bool DebugMode { get; set; }
         
-        public Color DebugColor { get; set; }
     }
 }

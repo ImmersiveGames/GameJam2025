@@ -29,7 +29,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public Transform Transform => transform;
         public string Name => gameObject.name; // Nome do planeta
         public PlanetsMaster GetPlanetsMaster() => this;
-        public bool inEatArea;
 
         // Inicializa componentes
         protected override void Awake()
@@ -48,7 +47,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public override void Reset()
         {
             IsActive = true;
-            inEatArea = false;
         }
 
         // Registra eventos
@@ -74,7 +72,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetId = id;
             _resourcesSo = resources;
             IsActive = true;
-            inEatArea = false;
             _data = data;
             EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(id, data, resources, gameObject));
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} criado com ID {id} e recurso {resources.ResourceType}.", "green");
@@ -157,17 +154,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private void OnEventPlanetDetected(IDetector obj, SensorTypes sensor)
         {
-            inEatArea = sensor == SensorTypes.EaterEatSensor || inEatArea;
             EventPlanetDetected?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor} - {inEatArea}", "yellow");
+            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow");
         }
         private void OnEventPlanetLost(IDetector obj, SensorTypes sensor)
         {
-            inEatArea = sensor != SensorTypes.EaterEatSensor && inEatArea;
             EventPlanetLost?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor} - {inEatArea}", "yellow");
+            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor} ", "yellow");
         }
     }
 }
