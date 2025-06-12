@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.DetectionsSystems;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
@@ -6,14 +6,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
 {
     public class PlanetMarkedEvent : IEvent
     {
-        public IDetectable PlanetMaster { get; }
-        public PlanetMarkedEvent(IDetectable planetMaster) => PlanetMaster = planetMaster;
+        public IDetectable Detected { get; }
+        public PlanetMarkedEvent(IDetectable detected) => Detected = detected;
     }
 
     public class PlanetUnmarkedEvent : IEvent
     {
-        public IDetectable PlanetMaster { get; }
-        public PlanetUnmarkedEvent(IDetectable planetMaster) => PlanetMaster = planetMaster;
+        public IDetectable Detected { get; }
+        public PlanetUnmarkedEvent(IDetectable detected) => Detected = detected;
     }
     public class PlanetCreatedEvent : IEvent
     {
@@ -58,10 +58,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     }
     public class PlanetConsumedEvent : IEvent
     {
-        public IDetectable PlanetMaster { get; }
-        public PlanetConsumedEvent(IDetectable planetMaster)
+        public IDetectable Detected { get; }
+        public PlanetConsumedEvent(IDetectable detected)
         {
-            PlanetMaster = planetMaster;
+            Detected = detected;
         }
     }
 }

@@ -2,7 +2,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [CreateAssetMenu(fileName = "PlanetMaster Data",menuName = "ImmersiveGames/PoolableObjectData/PlanetMaster")]
+    [CreateAssetMenu(fileName = "Detected Data",menuName = "ImmersiveGames/PoolableObjectData/Detected")]
     public class PlanetData : PoolableObjectData
     {
         [SerializeField, Tooltip("Tamanho do planeta no plano XZ para cálculo de órbita (metros)"), Range(1,10)]

@@ -103,6 +103,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             transform.position = _orbitCenter + offset;
         }
 
+        public float GetOrbitSpeed() => _orbitSpeed;
 
         private void PauseOrbit()
         {
@@ -135,8 +136,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
         {
-            if(!ReferenceEquals(obj.PlanetMaster, _planetMaster)) return;
-            ResumeOrbit();
+            if(!ReferenceEquals(obj.Detected, _planetMaster)) return;
+            //ResumeOrbit();
         }
     }
 }

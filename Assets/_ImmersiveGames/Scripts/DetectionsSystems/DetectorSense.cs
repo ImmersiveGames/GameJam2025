@@ -96,6 +96,26 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
             return null;
         }
+        public bool IsPlanetInRange(IDetectable planet)
+        {
+            if (!IsEnabled || planet is not { IsActive: true })
+            {
+                return false;
+            }
+
+            // Verifica se o planeta está dentro do raio usando Physics.OverlapSphere
+            int hitCount = Physics.OverlapSphereNonAlloc(Origin.position, Radius, _detectionResults, PlanetLayer);
+            for (int i = 0; i < hitCount; i++)
+            {
+                var detectedPlanet = GetPlanetsMasterInParent(_detectionResults[i]);
+                if (ReferenceEquals(detectedPlanet, planet))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private void ProcessPlanets(List<IDetectable> planets)
         {

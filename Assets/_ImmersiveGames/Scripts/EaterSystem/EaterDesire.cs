@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
-            TryChooseDesire(obj?.PlanetMaster);
+            TryChooseDesire(obj?.Detected);
         }
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
         {

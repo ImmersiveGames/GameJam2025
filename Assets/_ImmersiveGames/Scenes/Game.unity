@@ -1206,6 +1206,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7951465963818869771, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: cameraInfluence
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7951465963818869771, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: orbitAngularSpeed
+      value: 0.02
+      objectReference: {fileID: 0}
+    - target: {fileID: 7951465963818869771, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: orbitRadiusOffset
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7951465963818869771, guid: bf8ad32acbab1a84e9a021f50ce7dd6f, type: 3}
+      propertyPath: repositionDuration
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

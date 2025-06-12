@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         void OnDetectableLost(IDetector entity,SensorTypes sensorName); // Called when detected by player/EaterDetectable
         PlanetResourcesSo GetResources(); // Retrieve planetMaster resources
         PlanetData GetPlanetData();
+        PlanetsMaster GetPlanetsMaster(); // Get the PlanetsMaster component
     }
     
     public enum SensorTypes

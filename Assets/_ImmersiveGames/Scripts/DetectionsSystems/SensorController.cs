@@ -54,7 +54,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         private void Update()
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
-
             foreach (var sensor in _sensors)
             {
                 sensor.Update(Time.deltaTime);
@@ -75,6 +74,26 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             if (sensor != null) return sensor.GetDetectedPlanets();
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
             return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
+        }
+        
+        public bool IsPlanetInSensorRange(SensorTypes sensorName, IDetectable planet)
+        {
+            var sensor = _sensors.Find(s => s.SensorName == sensorName);
+            if (sensor == null)
+            {
+                DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
+                return false;
+            }
+
+            bool isInRange = sensor.IsPlanetInRange(planet);
+            if (sensor.DebugMode)
+            {
+                DebugUtility.LogVerbose<SensorController>(
+                    $"[{sensorName}] Verificação: Planeta {(planet != null ? planet.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
+                    isInRange ? "green" : "red"
+                );
+            }
+            return isInRange;
         }
 
         // Métodos para ativar/desativar sensores por nome

@@ -96,7 +96,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 resourceIcon.gameObject.SetActive(true);
                 if (planetNameText)
                 {
-                    planetNameText.text = $"PlanetMaster {planetId}";
+                    planetNameText.text = $"Detected {planetId}";
                 }
                 DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planetMaster.gameObject.name} (ID: {planetId}).");
             }
