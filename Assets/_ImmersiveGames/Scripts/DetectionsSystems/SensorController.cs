@@ -108,5 +108,4 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             sensor?.DisableSensor();
         }
     }
-    
 }

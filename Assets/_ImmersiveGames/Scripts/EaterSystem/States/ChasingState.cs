@@ -10,12 +10,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private readonly EaterMovement _eaterMovement;
         private readonly Transform _transform;
         private readonly EaterConfigSo _config;
+        private readonly SensorController _sensorController;
         private float _currentSpeed;
-        public ChasingState(EaterMovement eaterMovement, EaterConfigSo config)
+        public ChasingState(EaterMovement eaterMovement, EaterConfigSo config, SensorController sensorController)
         {
             _eaterMovement = eaterMovement;
             _transform = eaterMovement.transform;
             _config = config;
+            _sensorController = sensorController;
         }
         public void Update()
         {
@@ -35,8 +37,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
         public void OnEnter()
         {
-            var sensorController = _eaterMovement.GetComponent<SensorController>();
-            if (sensorController.IsPlanetInSensorRange(_eaterMovement.Target, SensorTypes.EaterEatSensor))
+            if (_sensorController.IsPlanetInSensorRange(_eaterMovement.Target, SensorTypes.EaterEatSensor))
             {
                 _eaterMovement.IsOrbiting = true;
                 return;
