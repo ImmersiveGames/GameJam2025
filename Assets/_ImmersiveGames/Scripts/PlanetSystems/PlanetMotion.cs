@@ -4,12 +4,11 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
-using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class PlanetMotion : MonoBehaviour
     {
         private Vector3 _orbitCenter;
@@ -22,6 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EventBinding<PlanetCreatedEvent> _planetCreateBinding;
 
         public float OrbitSpeedDegPerSec => _orbitSpeed;
         public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
@@ -37,8 +37,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetMaster.EventPlanetLost += OnPlanetLost;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            _planetCreateBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
+            EventBus<PlanetCreatedEvent>.Register(_planetCreateBinding);
         }
-        
+
         private void Update()
         {
             if (_selfRotationSpeed != 0f)
@@ -52,12 +54,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetMaster.EventPlanetDetected -= OnPlanetDetected;
             _planetMaster.EventPlanetLost -= OnPlanetLost;
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
         }
 
         private void OnDestroy()
         {
             _orbitTween?.Kill();
             DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
+        }
+        
+        private void OnPlanetCreated(PlanetCreatedEvent obj)
+        {
+            if(obj.PlanetsMaster != _planetMaster)
+                return;
+            var planetData = obj.PlanetsMaster.GetPlanetData();
+            var planetInfo = obj.PlanetsMaster.GetPlanetInfo();
+            _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
+            _orbitRadius = planetInfo.planetRadius;
+            DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");
+       
+            
+            _orbitSpeed = planetData.GetRandomOrbitSpeed();
+            planetInfo.SetOrbitSpeed(_orbitSpeed);
+            _selfRotationSpeed = planetData.GetRandomRotationSpeed();
+            _orbitClockwise = Random.value > 0.5f;
+            _currentAngle = planetInfo.initialAngle;
+            UpdateOrbitPosition(_currentAngle);
+            StartOrbit();
         }
         
         public void Initialize(Vector3 center, float radius, float orbitSpeedDegPerSec, bool orbitClockwise, float selfRotationSpeedDegPerSec, float initialAngleRad = 0f)

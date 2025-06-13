@@ -15,17 +15,15 @@ MonoBehaviour:
   objectName: Planeta
   prefab: {fileID: 7554185307657802338, guid: 586f7d042eeedab49ba4b22285b6782f, type: 3}
   modelPrefab:
-  - {fileID: 6310046052524586760, guid: 5b3258a1c619b394b87631749052f6c2, type: 3}
-  - {fileID: 2578670935699027607, guid: 1f94fbde15c0e4b4b9c32c36f1632a9e, type: 3}
-  - {fileID: 2876965188190721788, guid: 308ad3333e0148b429753337250a2f65, type: 3}
-  - {fileID: 4360315050680892159, guid: 7e5ba11702bc22b4ea2db2ca781a1cd4, type: 3}
+  - {fileID: 2677257219484125173, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
+  - {fileID: 3855536441175250950, guid: cc25beed710dada42bba691f050b5548, type: 3}
   noRandomModel: 0
   lifetime: 0
   initialPoolSize: 10
   factoryType: 0
   canExpand: 0
   size: 5
-  minScale: 3
+  minScale: 5
   maxScale: 20
   minTiltAngle: -15
   maxTiltAngle: 15

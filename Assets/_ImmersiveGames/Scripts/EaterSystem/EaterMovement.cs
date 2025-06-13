@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.GameManagerSystems;

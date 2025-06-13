@@ -6,17 +6,21 @@ using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class PlanetsMaster : ActorMaster, IDetectable
     {
-        private PlanetResourcesSo _resourcesSo; // Recursos associados ao planeta
+
+        private PlanetInfo _planetInfo;
+        
+  
         private TargetFlag _targetFlag; // Bandeira de marcação
-        private int _planetId; // ID do planeta
+        
         private PlanetData _data; // Dados do planeta
 
         public event Action<IDetector, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
@@ -29,6 +33,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public Transform Transform => transform;
         public string Name => gameObject.name; // Nome do planeta
         public PlanetsMaster GetPlanetsMaster() => this;
+        
+        public PlanetInfo GetPlanetInfo() => _planetInfo; // Retorna informações do planeta
 
         // Inicializa componentes
         protected override void Awake()
@@ -67,13 +73,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         // Inicializa o planeta com ID, dados e recursos
-        public void Initialize(int id, PlanetData data, PlanetResourcesSo resources)
+        public void Initialize(int id, IPoolable poolableObject, PlanetData data, PlanetResourcesSo resources)
         {
-            _planetId = id;
-            _resourcesSo = resources;
             IsActive = true;
+            gameObject.name = $"Planet_{data.name}_{id}";
             _data = data;
-            EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(id, data, resources, gameObject));
+            transform.localPosition = Vector3.zero;
+            
+            _planetInfo = new PlanetInfo(id, resources, poolableObject)
+            {
+                planetScale = data.GetRandomScale(),
+                planetAngle = data.GetRandomTiltAngle()
+            };
+
+            transform.localScale = Vector3.one * _planetInfo.planetScale;
+            transform.localRotation = _planetInfo.planetAngle;
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} criado com ID {id} e recurso {resources.ResourceType}.", "green");
         }
 
@@ -108,17 +122,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetData GetPlanetData() => _data;
 
         // Retorna os recursos do planeta
-        public PlanetResourcesSo GetResources()
-        {
-            return _resourcesSo;
-        }
+        public PlanetResourcesSo GetResources()=> _planetInfo?.Resources;
 
         // Destrói o planeta
         private void DestroyPlanet()
         {
             if (!IsActive) return;
             IsActive = false;
-            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(_planetId, gameObject));
+            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(_planetInfo.ID, gameObject));
             DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} destruído.", "red");
         }
 
@@ -164,5 +175,46 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             string entityType = obj.GetType().Name;
             DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor} ", "yellow");
         }
+        [Serializable]
+        public class PlanetInfo
+        {
+            public int ID { get; private set; }
+            public PlanetResourcesSo Resources { get; private set; }
+            public GameObject PlanetObject { get; private set; }
+            public IPoolable PoolableObject { get; private set; }
+
+            public int planetScale;
+            public Quaternion planetAngle;
+            public Vector3 orbitPosition;
+            public float planetRadius;
+            public float orbitSpeed;
+            public float initialAngle;
+
+            public PlanetInfo(int id, PlanetResourcesSo resources, IPoolable poolableObject)
+            {
+                ID = id;
+                Resources = resources;
+                PoolableObject = poolableObject;
+
+                PlanetObject = poolableObject.GetGameObject();
+                planetScale = 1;
+                planetAngle = Quaternion.identity;
+                orbitPosition = Vector3.zero;
+                planetRadius = 1f;
+                orbitSpeed = 0f;
+                initialAngle = 0f;
+            }
+
+            public void SetPlanetRadius(float radius)
+            {
+                planetRadius = radius;
+            }
+
+            public void SetOrbitSpeed(float speed)
+            {
+                orbitSpeed = speed;
+            }
+        }
+
     }
 }

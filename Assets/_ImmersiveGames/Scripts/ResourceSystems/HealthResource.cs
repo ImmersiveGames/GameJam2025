@@ -58,10 +58,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
 
         // Cura o recurso
-        public void Heal(float amount) => Increase(amount);
+        public virtual void Heal(float amount) => Increase(amount);
 
         // Causa dano ao recurso
-        public void TakeDamage(float damage) => Decrease(damage);
+        public virtual void TakeDamage(float damage) => Decrease(damage);
 
         // Reinicia o recurso ao estado padrão
         public void Reset()

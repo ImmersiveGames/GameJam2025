@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class PlanetResourceUI : MonoBehaviour
     {
         [SerializeField] private Image resourceIcon; // Imagem para exibir o ícone do recurso
@@ -51,12 +51,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if (!_planetMaster || evt.PlanetObject != _planetMaster.gameObject)
-            {
-                return;
-            }
-
-            UpdateUIWithResources(evt.Resources, evt.PlanetId);
+            if(evt.PlanetsMaster != _planetMaster)
+                return; 
+            var planetInfo = evt.PlanetsMaster.GetPlanetInfo();
+            UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
         }
 
         // Atualiza a UI com o recurso atual do planeta

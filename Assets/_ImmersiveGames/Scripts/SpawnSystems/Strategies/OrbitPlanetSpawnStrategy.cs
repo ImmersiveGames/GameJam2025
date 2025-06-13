@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
     [CreateAssetMenu(fileName = "OrbitPlanetSpawnStrategy", menuName = "ImmersiveGames/Strategies/OrbitPlanetSpawn")]
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class OrbitPlanetSpawnStrategy : SpawnStrategySo
     {
         // Constantes para evitar valores mágicos
@@ -16,7 +18,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
         private const int MaxAngleAttempts = 50;
         
         [Header("Spawn Settings")]
-        [SerializeField] private bool useRandomAngles = false;
+        [SerializeField] private bool useRandomAngles;
         [SerializeField] private bool addAngleVariation = true;
         
         // Cache do PlanetsManager para performance
@@ -36,14 +38,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
             SpawnPlanets(objects, planetSpawnData);
         }
 
+        //A Criação dos planetas acontece todas aqui
         private void SpawnPlanets(IPoolable[] objects, PlanetSpawnData planetSpawnData)
         {
-            float currentRadius = planetSpawnData.InitialOrbitRadius;
+            List<PlanetResourcesSo> resourceList = _planetsManager.GenerateResourceList(objects.Length, planetSpawnData.PlanetResources);
+            float currentOrbitRadius = planetSpawnData.InitialOrbitRadius;
             float lastScaledDiameter = 0f;
             var usedAngles = new List<float>();
-            
-            List<PlanetResourcesSo> resourceList = _planetsManager.GenerateResourceList(objects.Length, planetSpawnData.PlanetResources);
-
             for (int index = 0; index < objects.Length; index++)
             {
                 if (objects[index] == null)
@@ -52,49 +53,40 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                     continue;
                 }
 
+                // Obtém dados do planeta aleatório
                 var planetInfo = GetRandomPlanetData(planetSpawnData.PlanetOptions);
                 if (!planetInfo)
                 {
                     DebugUtility.LogWarning<OrbitPlanetSpawnStrategy>("Nenhum PlanetData válido encontrado!");
                     continue;
                 }
-
-                if (!ProcessPlanet(objects[index], planetInfo, index, planetSpawnData, resourceList[index], 
-                    ref currentRadius, ref lastScaledDiameter, usedAngles, objects.Length))
+                var planet = _planetsManager.ConfigurePlanet(objects[index], planetInfo, index, resourceList[index]);
+                if (planet == null)
                 {
+                    DebugUtility.LogWarning<OrbitPlanetSpawnStrategy>($"Falha ao criar planeta {index}!");
                     continue;
                 }
+                
+                PlantOrbitPositioning(planet.GetPlanetInfo(),planetSpawnData, ref currentOrbitRadius, ref lastScaledDiameter, usedAngles,index, objects.Length);
+                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planet));
+                //_planetsManager.ConfigurePlanet(planetGo, planetInfo, index, planetResource, currentRadius, scaleMult, initialAngle);
             }
         }
 
-        private bool ProcessPlanet(IPoolable poolableObject, PlanetData planetInfo, int index, 
-            PlanetSpawnData spawnData, PlanetResourcesSo planetResource, 
-            ref float currentRadius, ref float lastScaledDiameter, List<float> usedAngles, int totalPlanets)
+        private void PlantOrbitPositioning(PlanetsMaster.PlanetInfo planetInfo, PlanetSpawnData spawnData, ref float currentOrbitRadius, ref float lastScaledDiameter, List<float> usedAngles,int index,int totalPlanets)
         {
-            int scaleMult = Random.Range(planetInfo.minScale, planetInfo.maxScale);
-            float scaledDiameter = planetInfo.size * scaleMult;
-
-            var planetGo = poolableObject.GetGameObject();
-            if (planetGo == null)
-            {
-                DebugUtility.LogWarning<OrbitPlanetSpawnStrategy>($"GameObject do planeta {index} é nulo!");
-                return false;
-            }
-
-            currentRadius = CalculateOrbitRadius(lastScaledDiameter, scaledDiameter, currentRadius, spawnData.SpaceBetweenPlanets);
+            int scaleMult = planetInfo.planetScale;
+            float scaledDiameter = 5 * scaleMult;
+            
+            currentOrbitRadius = CalculateOrbitRadius(lastScaledDiameter, scaledDiameter, currentOrbitRadius, spawnData.SpaceBetweenPlanets);
             float initialAngle = GetPlanetAngle(index, totalPlanets, usedAngles);
-            usedAngles.Add(initialAngle);
-
-            PositionPlanet(poolableObject, planetGo, currentRadius, initialAngle, spawnData.OrbitCenter);
-            _planetsManager.ConfigurePlanet(planetGo, planetInfo, index, planetResource, currentRadius, scaleMult, initialAngle);
-
+            PositionPlanet(planetInfo, currentOrbitRadius, initialAngle, spawnData.OrbitCenter);
             lastScaledDiameter = scaledDiameter;
-            
+            planetInfo.planetRadius = currentOrbitRadius;
             DebugUtility.Log<OrbitPlanetSpawnStrategy>(
-                $"Planeta {index} spawnado - Raio: {currentRadius:F2}, Ângulo: {initialAngle * Mathf.Rad2Deg:F1}°, Diâmetro: {scaledDiameter:F2}");
-            
-            return true;
+                $"Planeta {index} spawnado - Raio: {currentOrbitRadius:F2}, Ângulo: {initialAngle * Mathf.Rad2Deg:F1}°, Diâmetro: {scaledDiameter:F2}");
         }
+        
 
         private bool ValidateInputs(IPoolable[] objects, PlanetSpawnData spawnData)
         {
@@ -135,28 +127,22 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
             return newRadius;
         }
 
-        private void PositionPlanet(IPoolable poolableObject, GameObject planetGo, float radius, float angle, Vector3 orbitCenter)
+        private void PositionPlanet(PlanetsMaster.PlanetInfo planetInfo, float radius, float angle, Vector3 orbitCenter)
         {
             var offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
-            var spawnPos = orbitCenter + offset;
-            
-            planetGo.transform.position = spawnPos;
-            poolableObject.Activate(spawnPos);
+            planetInfo.orbitPosition = orbitCenter + offset;
+            planetInfo.SetPlanetRadius(radius);
+            planetInfo.initialAngle = angle;
+            planetInfo.PlanetObject.transform.position = planetInfo.orbitPosition;
+            planetInfo.PoolableObject.Activate(planetInfo.orbitPosition);
             
             DebugUtility.Log<OrbitPlanetSpawnStrategy>(
-                $"Planeta posicionado em {spawnPos} (raio: {radius:F2}, ângulo: {angle * Mathf.Rad2Deg:F1}°)");
+                $"Planeta posicionado em {planetInfo.orbitPosition} (raio: {radius:F2}, ângulo: {angle * Mathf.Rad2Deg:F1}°)");
         }
 
         private float GetPlanetAngle(int planetIndex, int totalPlanets, List<float> usedAngles)
         {
-            if (useRandomAngles)
-            {
-                return GetRandomAngleWithValidation(usedAngles, totalPlanets);
-            }
-            else
-            {
-                return GetOptimalAngle(planetIndex, totalPlanets);
-            }
+            return useRandomAngles ? GetRandomAngleWithValidation(usedAngles, totalPlanets) : GetOptimalAngle(planetIndex, totalPlanets);
         }
 
         /// <summary>
@@ -175,7 +161,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
             }
             
             // Normaliza o ângulo para o range [0, 360)
-            baseAngle = baseAngle % 360f;
+            baseAngle %= 360f;
             if (baseAngle < 0f) baseAngle += 360f;
             
             float finalAngle = baseAngle * Mathf.Deg2Rad;
@@ -255,21 +241,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
             
             return planetOptions[Random.Range(0, planetOptions.Count)];
         }
-
-        #region Editor Utilities
-        
-        #if UNITY_EDITOR
-        [Header("Debug Info")]
-        [SerializeField, ReadOnly] private string debugInfo = "Configure as opções acima";
-        
-        private void OnValidate()
-        {
-            debugInfo = $"Modo: {(useRandomAngles ? "Aleatório" : "Equidistante")}, " +
-                       $"Variação: {(addAngleVariation ? "Sim" : "Não")}";
-        }
-        #endif
-        
-        #endregion
     }
 
     #if UNITY_EDITOR

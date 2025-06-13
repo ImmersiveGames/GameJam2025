@@ -24,6 +24,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: de24f92f1d899014b9d31ccca3a56e26, type: 2}
   - {fileID: 11400000, guid: a79a3f684ec064a46a2f8bccfd269094, type: 2}
   - {fileID: 11400000, guid: c5360ef0bb73f004c976350596e6713f, type: 2}
-  spaceBetweenPlanets: 10
-  initialOrbitRadius: 20
+  spaceBetweenPlanets: 30
+  initialOrbitRadius: 30
   orbitCenter: {x: 0, y: 0, z: 0}

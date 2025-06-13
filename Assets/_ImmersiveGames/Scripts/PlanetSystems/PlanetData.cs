@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public int minScale = 1;
 
         [SerializeField, Tooltip("Multiplicador máximo de escala para o modelo do planeta"), Range(10,20)]
-        public int maxScale = 4;
+        public int maxScale = 10;
         [SerializeField, Tooltip("Ângulo mínimo de inclinação do modelo do planeta (graus)")]
         public float minTiltAngle = -15f;
 
@@ -31,5 +31,29 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public float maxRotationSpeed = 30f;
         [Tooltip("Centro da órbita (opcional, sobrescreve PlanetSpawnData.orbitCenter se definido)")]
         public Vector3? orbitCenter = null; // Opcional, para maior flexibilidade
+        
+        
+        
+        
+        public int GetRandomScale()
+        {
+            return Random.Range(minScale, maxScale + 1);
+        }
+        
+        public Quaternion GetRandomTiltAngle()
+        {
+            float tilt = Random.Range(minTiltAngle, maxTiltAngle);
+            return Quaternion.Euler(0, 0, tilt);
+        }
+
+        public float GetRandomOrbitSpeed()
+        {
+            return Random.Range(minOrbitSpeed, maxOrbitSpeed);
+        }
+        
+        public float GetRandomRotationSpeed()
+        {
+            return Random.Range(minRotationSpeed, maxRotationSpeed);
+        }
     }
 }

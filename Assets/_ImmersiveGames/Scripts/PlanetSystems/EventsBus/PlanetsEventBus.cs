@@ -17,17 +17,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     }
     public class PlanetCreatedEvent : IEvent
     {
-        public int PlanetId { get; }
-        public PlanetData Data { get; }
-        public PlanetResourcesSo Resources { get; }
-        public GameObject PlanetObject { get; }
+        public PlanetsMaster PlanetsMaster { get; }
 
-        public PlanetCreatedEvent(int planetId, PlanetData data, PlanetResourcesSo resources, GameObject planetObject)
+        public PlanetCreatedEvent(PlanetsMaster planetsMaster)
         {
-            PlanetId = planetId;
-            Data = data;
-            Resources = resources;
-            PlanetObject = planetObject;
+            PlanetsMaster = planetsMaster;
         }
     }
 
