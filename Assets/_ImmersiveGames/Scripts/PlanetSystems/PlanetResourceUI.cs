@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [SerializeField] private Text planetNameText; // (Opcional) Texto para exibir o nome do planeta
         private PlanetsMaster _planetMaster; // Referência ao componente PlanetsMaster do planeta pai
         private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
-        private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding;
+        private EventBinding<PlanetConsumedEvent> _planetDestroyBinding;
 
         // Inicializa o componente
         private void Awake()
@@ -32,8 +32,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             _planetCreatedBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
-            _planetDestroyBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
-            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyBinding);
+            _planetDestroyBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetDestroyed);
+            EventBus<PlanetConsumedEvent>.Register(_planetDestroyBinding);
         }
 
         private void Start()
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
             if(_planetDestroyBinding != null)
             {
-                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyBinding);
+                EventBus<PlanetConsumedEvent>.Unregister(_planetDestroyBinding);
             }
         }
 
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
         }
         
-        private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
+        private void OnPlanetDestroyed(PlanetConsumedEvent evt)
         {
             if(evt.Detectable.GetPlanetsMaster() != _planetMaster) return;
             ClearUI();
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var resources = _planetMaster.GetResources();
+            var resources = _planetMaster.GetResource();
             if (resources)
             {
                 UpdateUIWithResources(resources, _planetMaster.GetInstanceID()); // Usa InstanceID como fallback

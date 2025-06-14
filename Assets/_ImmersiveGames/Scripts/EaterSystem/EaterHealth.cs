@@ -1,7 +1,5 @@
-﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
-using UnityEngine;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -9,55 +7,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterHealth : HealthResource
     {
-        private EventBinding<EaterConsumptionSatisfiedEvent> _consumptionSatisfiedBinding;
-
+        private EaterMaster _eater;
         protected override void Awake()
         {
             base.Awake();
-            _consumptionSatisfiedBinding = new EventBinding<EaterConsumptionSatisfiedEvent>(OnConsumptionSatisfied);
+            _eater = GetComponent<EaterMaster>();
         }
-
         protected override void OnEnable()
         {
             base.OnEnable();
-            EventBus<EaterConsumptionSatisfiedEvent>.Register(_consumptionSatisfiedBinding);
+            _eater.EventConsumeResource += OnConsumeResource;
         }
-
         private void OnDisable()
         {
-            EventBus<EaterConsumptionSatisfiedEvent>.Unregister(_consumptionSatisfiedBinding);
+            _eater.EventConsumeResource -= OnConsumeResource;
         }
-
-        private void OnConsumptionSatisfied(EaterConsumptionSatisfiedEvent evt)
+        private void OnConsumeResource(IDetectable detectable, bool desire)
         {
-            var hunger = GetComponent<EaterDesire>();
-            /*if (hunger && hunger.DesireConfig)
+            if (detectable == null) return;
+            float planetSize = detectable.GetPlanetsMaster().GetPlanetInfo().planetScale;
+            if (desire)
             {
-                Heal(hunger.DesireConfig.DesiredHealthRestored);
-                DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Restaurado {hunger.DesireConfig.DesiredHealthRestored} HP devido a consumo satisfatório.");
+                float recoverResource = detectable.GetPlanetData().recoveryHungerConsumeDesire * planetSize;
+                Increase(recoverResource);
+                DebugUtility.Log<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de heath.");
             }
             else
             {
-                DebugUtility.LogWarning<EaterHealth>("EaterHunger ou DesireConfig não encontrado para restaurar HP!", this);
-            }*/
-        }
-
-        /*public override void Defeat(Vector3 position)
-        {
-            base.Defeat(position);
-            EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(position, gameObject));
-            DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Eater derrotado na posição {position}.");
-        }*/
-
-        public new void Reset()
-        {
-            base.Reset();
-            DebugUtility.LogVerbose<EaterHealth>("EaterHealth resetado.");
-        }
-
-        public float GetCurrentHealth()
-        {
-            return currentValue;
+                float resourceFraction = detectable.GetPlanetData().recoveryHealthConsumeNotDesire * planetSize;
+                Increase(resourceFraction); // Consome metade se não for desejado
+                DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de heath.");
+            }
         }
     }
 }

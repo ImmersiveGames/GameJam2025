@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -17,6 +18,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
         public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
         public event Action<IDetectable> EventEndEatPlanet; // Ação para quando o Eater começa a comer um planeta
+        public event Action<IDetectable, bool> EventConsumeResource; // Ação para quando um recurso é consumido
         
         public override void OnObjectDetected(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
@@ -44,6 +46,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void OnEventEndEatPlanet(IDetectable obj)
         {
             EventEndEatPlanet?.Invoke(obj);
+        }
+        public void OnEventConsumeResource(IDetectable obj, bool desire)
+        {
+            EventConsumeResource?.Invoke(obj, desire);
         }
     }
 }

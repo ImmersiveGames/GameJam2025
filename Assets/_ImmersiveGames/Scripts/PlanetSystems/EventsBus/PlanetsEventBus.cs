@@ -24,14 +24,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
         }
     }
     
-    public class PlanetDestroyedEvent : IEvent
+    public class PlanetConsumedEvent : IEvent
     {
-        public Vector3 Position { get; }
         public IDetectable Detectable { get; }
 
-        public PlanetDestroyedEvent(Vector3 position, IDetectable detected)
+        public PlanetConsumedEvent(IDetectable detected)
         {
-            Position = position;
             Detectable = detected;
         }
     }

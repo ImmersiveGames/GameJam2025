@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetData GetPlanetData() => _data;
 
         // Retorna os recursos do planeta
-        public PlanetResourcesSo GetResources()=> _planetInfo?.Resources;
+        public PlanetResourcesSo GetResource()=> _planetInfo?.Resources;
         
 
         // Reage ao planeta ser marcado
@@ -141,6 +141,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public class PlanetInfo
         {
             public int ID { get; private set; }
+            public string Name { get; private set; }
             public PlanetResourcesSo Resources { get; private set; }
             public GameObject PlanetObject { get; private set; }
             public IPoolable PoolableObject { get; private set; }
@@ -155,6 +156,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             public PlanetInfo(int id, PlanetResourcesSo resources, IPoolable poolableObject)
             {
                 ID = id;
+                Name = poolableObject.GetGameObject().name;
                 Resources = resources;
                 PoolableObject = poolableObject;
 

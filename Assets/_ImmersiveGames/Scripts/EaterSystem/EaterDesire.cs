@@ -14,7 +14,7 @@ using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterDesire : MonoBehaviour, IResettable
     {
         private EaterConfigSo _config;
@@ -24,6 +24,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<HungryChangeThresholdDirectionEvent> _hungryChangeThresholdDirectionEventBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
+        private EventBinding<PlanetConsumedEvent> _planetConsumedEventBinding;
 
         private void Awake()
         {
@@ -31,8 +32,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _eater = GetComponent<EaterMaster>();
             _config = _eater.GetConfig;
         }
-
-
         private void OnEnable()
         {
             _hungryChangeThresholdDirectionEventBinding = new EventBinding<HungryChangeThresholdDirectionEvent>(OnResourceChangeThresholdDirection);
@@ -41,9 +40,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedEventBinding);
+            _planetConsumedEventBinding = new EventBinding<PlanetConsumedEvent>(ConsumePlanet);
+            EventBus<PlanetConsumedEvent>.Register(_planetConsumedEventBinding);
         }
-        
-
         private void OnDisable()
         {
             if (_hungryChangeThresholdDirectionEventBinding != null)
@@ -83,6 +82,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             CancelInvoke();
             TryChooseDesire();
         }
+        private void ConsumePlanet(PlanetConsumedEvent obj)
+        {
+            var resource = obj?.Detectable?.GetResource();
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj?.Detectable?.GetResource()} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            if (resource == null) return;
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.Detectable.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            _eater.OnEventConsumeResource(obj.Detectable, _desiredResource != null && _desiredResource == resource);
+            
+        }
         
         private bool ShouldBeDesiring()
         {
@@ -112,7 +120,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void ChooseNewDesire()
         {
             List<PlanetResourcesSo> availableResources = GetAvailableResources();
-            
+    
             if (availableResources.Count == 0)
             {
                 _desiredResource = null;
@@ -120,7 +128,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 DebugUtility.LogVerbose<EaterDesire>($"Nenhum recurso disponível. Desejo definido como nulo.");
                 return;
             }
-            
+    
             var candidates = availableResources
                 .Where(r => !_lastDesiredResources.Contains(r))
                 .ToList();
@@ -140,14 +148,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(_desiredResource));
             DebugUtility.Log<EaterDesire>($"Novo desejo escolhido: {_desiredResource.name}.");
-            
-            _desiredResource = availableResources[0];
         }
         private List<PlanetResourcesSo> GetAvailableResources()
         {
             var planets = PlanetsManager.Instance.GetActivePlanets();
             return planets
-                .Select(p => p.GetResources())
+                .Select(p => p.GetResource())
                 .Where(r => r)
                 .Distinct()
                 .ToList();
@@ -162,9 +168,5 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.LogVerbose<EaterDesire>("EaterDesire resetado.");
         }
         public PlanetResourcesSo GetDesiredResource() => _desiredResource;
-        public void ConsumePlanet(PlanetResourcesSo getResources)
-        {
-            DebugUtility.LogVerbose<EaterDesire>($"Eater consumiu um Planeta com o Recurso ({getResources.name}):");
-        }
     }
 }

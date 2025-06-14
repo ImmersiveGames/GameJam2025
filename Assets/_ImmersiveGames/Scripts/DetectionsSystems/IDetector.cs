@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         string Name { get; } // Planet name
         void OnDetectableRanged(IDetector entity, SensorTypes sensorName); // Called when detected by player/EaterDetectable
         void OnDetectableLost(IDetector entity,SensorTypes sensorName); // Called when detected by player/EaterDetectable
-        PlanetResourcesSo GetResources(); // Retrieve planetMaster resources
+        PlanetResourcesSo GetResource(); // Retrieve planetMaster resources
         PlanetData GetPlanetData();
         PlanetsMaster GetPlanetsMaster(); // Get the PlanetsMaster component
     }

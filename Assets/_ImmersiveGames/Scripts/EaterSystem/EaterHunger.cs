@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -6,10 +8,10 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterHunger : ResourceSystem, IResettable
     {
-
+        private EaterMaster _eater;
         private float _lastPercentage = 1f; // fracionário
         private readonly HashSet<float> _crossedDown = new();
         private readonly HashSet<float> _crossedUp = new();
@@ -19,15 +21,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         protected override void Awake()
         {
             base.Awake();
+            _eater = GetComponent<EaterMaster>();
             _health = GetComponent<HealthResource>();
             onValueChanged.AddListener(OnHungerChanged);
             onDepleted.AddListener(OnStarved);
         }
 
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            _eater.EventConsumeResource += OnConsumeResource;
+        }
+
         private void OnDisable()
         {
+            _eater.EventConsumeResource -= OnConsumeResource;
             onValueChanged.RemoveListener(OnHungerChanged);
             onDepleted.RemoveListener(OnStarved);
+        }
+        private void OnConsumeResource(IDetectable detectable, bool desire)
+        {
+            if (detectable == null) return;
+            float planetSize = detectable.GetPlanetsMaster().GetPlanetInfo().planetScale;
+            if (desire)
+            {
+                float recoverResource = detectable.GetPlanetData().recoveryHungerConsumeDesire * planetSize;
+                Increase(recoverResource);
+                DebugUtility.Log<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de fome.");
+            }
+            else
+            {
+                float resourceFraction = detectable.GetPlanetData().recoveryHungerConsumeNotDesire * planetSize;
+                Increase(resourceFraction); // Consome metade se não for desejado
+                DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de fome.");
+            }
         }
 
         private void OnStarved()
@@ -36,7 +63,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (_health != null)
             {
-                _health.SetExternalAutoChange(false,true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
+                _health.SetExternalAutoChange(false, true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
             }
             else
             {
@@ -65,7 +92,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     }
                     if (_health)
                     {
-                        _health.SetExternalAutoChange(false,false, 0f);
+                        _health.SetExternalAutoChange(false, false, 0f);
                     }
                 }
 
@@ -76,7 +103,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void EmitThresholdEvent(float currentFraction, float threshold, bool isAscending)
         {
-            var info = new ThresholdCrossInfo(config.UniqueId,gameObject, config.ResourceType, currentFraction, threshold, isAscending);
+            var info = new ThresholdCrossInfo(config.UniqueId, gameObject, config.ResourceType, currentFraction, threshold, isAscending);
             string dir = isAscending ? "🔺 Subiu" : "🔻 Desceu";
             DebugUtility.Log<EaterHunger>($"{dir} limiar {threshold:P0} → {currentFraction:P1}");
             EventBus<HungryChangeThresholdDirectionEvent>.Raise(new HungryChangeThresholdDirectionEvent(info));

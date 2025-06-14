@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
 
             if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
-            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(spawnPoint, planet));
+            EventBus<PlanetConsumedEvent>.Raise(new PlanetConsumedEvent(planet));
             PlanetsManager.Instance.RemovePlanet(planet);
             DebugUtility.Log<PlanetHealth>($"Planeta {planet.name} destruído e removido de PlanetsManager.", "yellow", this);
         }

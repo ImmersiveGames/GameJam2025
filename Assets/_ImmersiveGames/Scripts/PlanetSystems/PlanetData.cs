@@ -36,6 +36,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public float rotationRightChance = 0.5f; // Chance de rotação para a direita (0-1)
         [SerializeField,Range(0f,1f)]
         public float ringChance = 0.2f; // Chance de ter anéis (0-1)
+        [SerializeField]
+        public int recoveryHungerConsumeDesire = 10; // Quantidade de recuperação de fome por consumo do desejo
+        [SerializeField]
+        public int recoveryHungerConsumeNotDesire = 5; // Quantidade de recuperação de fome por consumo não desejado
+        [SerializeField]
+        public int recoveryHealthConsumeDesire = 5; // Quantidade de recuperação de vida por consumo do desejo
+        [SerializeField]
+        public int recoveryHealthConsumeNotDesire = 2; // Quantidade de recuperação de vida por consumo não desejado
         
         public int GetRandomScale()
         {
