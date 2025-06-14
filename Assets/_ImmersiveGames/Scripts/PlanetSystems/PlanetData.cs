@@ -32,8 +32,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [Tooltip("Centro da órbita (opcional, sobrescreve PlanetSpawnData.orbitCenter se definido)")]
         public Vector3? orbitCenter = null; // Opcional, para maior flexibilidade
         
-        
-        
+        [SerializeField, Range(0f,1f)]
+        public float rotationRightChance = 0.5f; // Chance de rotação para a direita (0-1)
+        [SerializeField,Range(0f,1f)]
+        public float ringChance = 0.2f; // Chance de ter anéis (0-1)
         
         public int GetRandomScale()
         {

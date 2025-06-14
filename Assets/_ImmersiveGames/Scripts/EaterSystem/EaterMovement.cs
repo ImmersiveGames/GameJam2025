@@ -82,7 +82,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
             Target = obj.Detected;
-            IsOrbiting = _sensorController.IsPlanetInSensorRange(Target, SensorTypes.EaterEatSensor);
+            IsOrbiting = _sensorController.IsObjectInSensorRange(Target, SensorTypes.EaterEatSensor);
             if (IsOrbiting)
             {
                 _eater.OnEventStartEatPlanet(obj.Detected);

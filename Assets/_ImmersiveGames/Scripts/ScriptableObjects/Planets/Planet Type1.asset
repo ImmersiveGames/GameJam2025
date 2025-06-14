@@ -22,12 +22,14 @@ MonoBehaviour:
   initialPoolSize: 10
   factoryType: 0
   canExpand: 0
-  size: 5
-  minScale: 5
-  maxScale: 20
+  size: 3
+  minScale: 2
+  maxScale: 15
   minTiltAngle: -15
   maxTiltAngle: 15
   minOrbitSpeed: 3
   maxOrbitSpeed: 10
   minRotationSpeed: 10
   maxRotationSpeed: 30
+  rotationRightChance: 0.5
+  ringChance: 0.2

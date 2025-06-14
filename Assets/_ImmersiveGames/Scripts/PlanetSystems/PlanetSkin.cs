@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
 using Random = UnityEngine.Random;
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private MeshRenderer[] _planetMaterials;
         private PlanetsMaster _planetMaster; // Referência ao PlanetsMaster associado
+        private PlanetHealth _planetHealth; // Referência ao PlanetHealth
         
         private EventBinding<PlanetCreatedEvent> _planetCreateBinding; // Binding para evento de desmarcação
 
@@ -34,15 +36,69 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnDisable()
         {
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
+            if (_planetHealth != null)
+            {
+                _planetHealth.onThresholdReached.RemoveListener(OnHealthThresholdReached);
+            }
         }
         
         private void OnPlanetCreated(PlanetCreatedEvent obj)
         {
             if(obj.PlanetsMaster != _planetMaster)
                 return;
-            Debug.Log($"PlanetSkin: OnPlanetCreated called for {obj.PlanetsMaster.Name}");
             ChangeMaterialColor();
-            planetRing.SetActive(Random.value > 0.8f);
+            planetRing.SetActive(Random.value < obj.PlanetsMaster.GetPlanetData().ringChance);
+            
+            _planetHealth = _planetMaster.GetComponent<PlanetHealth>();
+            if (_planetHealth == null)
+            {
+                DebugUtility.LogWarning<PlanetSkin>($"PlanetHealth não encontrado em {_planetMaster.name}!");
+                return;
+            }
+            _planetHealth.onThresholdReached.AddListener(OnHealthThresholdReached);
+            DebugUtility.Log<PlanetSkin>($"Registrado onThresholdReached para planeta {_planetMaster.name}.");
+
+            // Inicializa as partes com base na saúde atual
+            UpdatePlanetParts(_planetHealth.GetPercentage());
+        }
+        
+        private void OnHealthThresholdReached(float threshold)
+        {
+            DebugUtility.Log<PlanetSkin>($"Planeta {_planetMaster.name} atingiu limiar de saúde: {threshold * 100:F0}%");
+            UpdatePlanetParts(threshold);
+        }
+        private void UpdatePlanetParts(float healthPercentage)
+        {
+            if (planetsParts is not { Length: 4 })
+            {
+                DebugUtility.LogWarning<PlanetSkin>($"planetsParts deve conter exatamente 4 GameObjects! Atualmente: {planetsParts?.Length ?? 0}");
+                return;
+            }
+
+            // Mapeia o percentual de saúde para o número de partes ativas
+            int activeParts = healthPercentage switch
+            {
+                > 0.75f => 4,
+                > 0.5f => 3,
+                > 0.25f => 2,
+                > 0f => 1,
+                _ => 0
+            };
+
+            // Ativa/desativa as partes
+            for (int i = 0; i < planetsParts.Length; i++)
+            {
+                if (planetsParts[i] != null)
+                {
+                    planetsParts[i].SetActive(i < activeParts);
+                }
+                else
+                {
+                    DebugUtility.LogWarning<PlanetSkin>($"planetsParts[{i}] é nulo em {_planetMaster.name}!");
+                }
+            }
+
+            DebugUtility.Log<PlanetSkin>($"Planeta {_planetMaster.name}: {activeParts} de 4 partes ativas (saúde: {healthPercentage * 100:F0}%).");
         }
 
         private void ChangeMaterialColor()
@@ -79,7 +135,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 #if UNITY_EDITOR
                 else
                 {
-                    Debug.LogWarning($"[PlanetSkin] Renderer \"{meshRenderer?.name}\" skipped: material count mismatch.");
+                    DebugUtility.LogWarning<PlanetSkin>($"Renderer \"{meshRenderer?.name}\" skipped: material count mismatch.");
                 }
 #endif
             }

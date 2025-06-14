@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (_health != null)
             {
-                _health.SetExternalAutoDrain(true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
+                _health.SetExternalAutoChange(false,true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
             }
             else
             {
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     }
                     if (_health)
                     {
-                        _health.SetExternalAutoDrain(false, 0f);
+                        _health.SetExternalAutoChange(false,false, 0f);
                     }
                 }
 
@@ -80,11 +80,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             string dir = isAscending ? "🔺 Subiu" : "🔻 Desceu";
             DebugUtility.Log<EaterHunger>($"{dir} limiar {threshold:P0} → {currentFraction:P1}");
             EventBus<HungryChangeThresholdDirectionEvent>.Raise(new HungryChangeThresholdDirectionEvent(info));
-        }
-
-        public void ConsumePlanet(float amount)
-        {
-            DebugUtility.Log<EaterHunger>($"🪐 Consuming planetMaster with amount: {amount}");
         }
 
         public void Reset()

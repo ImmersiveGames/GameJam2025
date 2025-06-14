@@ -29,6 +29,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float nonDesiredHungerRestored = 25f;
         [SerializeField, Tooltip("HP restaurado ao consumir recurso desejado")]
         private float desiredHealthRestored = 30f;
+        [SerializeField, Tooltip("Dano causado ao morder um planeta")]
+        private int biteDamage = 10;
         
         [Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
         public float minimumChaseDistance = 1.5f;
@@ -43,6 +45,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public int MultiplierChase => multiplierChase;
         public float RotationSpeed => rotationSpeed;
         public float MinimumChaseDistance => minimumChaseDistance;
+        
+        public int BiteDamage => biteDamage;
         
         
         public float DesiredHungerRestored => desiredHungerRestored;

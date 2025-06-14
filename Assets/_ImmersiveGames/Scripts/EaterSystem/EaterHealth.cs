@@ -42,12 +42,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }*/
         }
 
-        public override void Deafeat(Vector3 position)
+        /*public override void Defeat(Vector3 position)
         {
-            base.Deafeat(position);
+            base.Defeat(position);
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(position, gameObject));
             DebugUtility.LogVerbose<EaterHealth>($"EaterHealth: Eater derrotado na posição {position}.");
-        }
+        }*/
 
         public new void Reset()
         {

@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
 {
@@ -33,13 +34,15 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
     {
         public Vector3 Position { get; }
         public GameObject Source { get; }
-        public Vector3? CustomSpawnPoint { get; } // Posição personalizada (opcional)
+        public ResourceType ResourceType { get; }
+        public float Percentage { get; }
 
-        public DeathEvent(Vector3 position, GameObject source, Vector3? customSpawnPoint = null)
+        public DeathEvent(Vector3 position, GameObject source, ResourceType resourceType, float percentage)
         {
             Position = position;
             Source = source;
-            CustomSpawnPoint = customSpawnPoint;
+            ResourceType = resourceType;
+            Percentage = percentage;
         }
     }
     

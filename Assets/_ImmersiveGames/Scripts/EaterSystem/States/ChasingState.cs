@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
         public void OnEnter()
         {
-            if (_sensorController.IsPlanetInSensorRange(_eaterMovement.Target, SensorTypes.EaterEatSensor))
+            if (_sensorController.IsObjectInSensorRange(_eaterMovement.Target, SensorTypes.EaterEatSensor))
             {
                 _eaterMovement.IsOrbiting = true;
                 return;

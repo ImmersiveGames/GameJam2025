@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.Predicates
         {
             if (_isTriggered) return; // Ignorar eventos adicionais até o reset
             _isTriggered = true;
-            TriggerPosition = evt.CustomSpawnPoint ?? evt.Position; 
+            TriggerPosition = evt.Position; 
             DebugUtility.Log<DeathEventPredicateSo>($"DeathEventPredicateSo: Recebeu DeathEvent com posição {TriggerPosition} do objeto {evt.Source.name}.");
         }
 

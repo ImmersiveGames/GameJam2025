@@ -76,6 +76,17 @@ namespace _ImmersiveGames.Scripts.FXSystems
                 EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
                 return;
             }
+            // Ajusta a escala do objeto da explosão para corresponder à do planeta
+            var explosionObject = objects[0].GetGameObject();
+            if (evt.Source != null)
+            {
+                explosionObject.transform.localScale = evt.Source.transform.localScale;
+                DebugUtility.Log<FxSpawnPoint>($"Explosão ajustada para escala {explosionObject.transform.localScale} do planeta {evt.Source.name}.", "green", this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<FxSpawnPoint>($"DeathEvent.Source é nulo para {spawnData.PoolableData.ObjectName}. Usando escala padrão.", this);
+            }
 
             spawnData.Pattern.Spawn(objects, spawnData, spawnPosition, transform.forward);
             spawnManager.RegisterSpawn(this);

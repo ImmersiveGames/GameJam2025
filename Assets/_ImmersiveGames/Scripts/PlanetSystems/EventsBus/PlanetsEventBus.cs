@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
@@ -24,38 +23,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
             PlanetsMaster = planetsMaster;
         }
     }
-
-    // Evento disparado quando um planeta é destruído
+    
     public class PlanetDestroyedEvent : IEvent
     {
-        public int PlanetId { get; }
-        public GameObject PlanetObject { get; }
+        public Vector3 Position { get; }
+        public GameObject Planet { get; }
 
-        public PlanetDestroyedEvent(int planetId, GameObject planetObject)
+        public PlanetDestroyedEvent(Vector3 position, GameObject planet)
         {
-            PlanetId = planetId;
-            PlanetObject = planetObject;
+            Position = position;
+            Planet = planet;
         }
     }
-
-    // Evento disparado quando um planeta morre
-    public class PlanetDiedEvent: IEvent
-    {
-        public IDestructible Destructible { get; }
-        public GameObject PlanetObject { get; }
-
-        public PlanetDiedEvent(IDestructible destructible, GameObject planetObject)
-        {
-            Destructible = destructible;
-            PlanetObject = planetObject;
-        }
-    }
-    public class PlanetConsumedEvent : IEvent
-    {
-        public IDetectable Detected { get; }
-        public PlanetConsumedEvent(IDetectable detected)
-        {
-            Detected = detected;
-        }
-    }
+    
 }

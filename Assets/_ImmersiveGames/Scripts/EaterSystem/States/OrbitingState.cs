@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     {
         private readonly EaterMovement _eaterMovement;
         private readonly Transform _transform;
-        private SensorController _sensorsController;
+        private readonly SensorController _sensorsController;
 
         private float _currentAngle; // Ângulo atual da órbita
         private readonly float _targetAngularSpeed; // Velocidade angular constante

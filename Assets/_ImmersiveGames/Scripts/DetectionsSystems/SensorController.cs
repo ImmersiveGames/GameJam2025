@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -68,15 +69,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
         
-        public ReadOnlyCollection<IDetectable> GetDetectedPlanets(SensorTypes sensorName)
+        public ReadOnlyCollection<IDetectable> GetDetectedSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
-            if (sensor != null) return sensor.GetDetectedPlanets();
+            if (sensor != null) return sensor.GetDetectedSensors();
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
             return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
         }
         
-        public bool IsPlanetInSensorRange(IDetectable planet, SensorTypes sensorName)
+        public bool IsObjectInSensorRange(IDetectable obj, SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             if (sensor == null)
@@ -85,11 +86,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 return false;
             }
 
-            bool isInRange = sensor.IsObjectInRange(planet);
+            bool isInRange = sensor.IsObjectInRange(obj);
             if (sensor.DebugMode)
             {
                 DebugUtility.LogVerbose<SensorController>(
-                    $"[{sensorName}] Verificação: Planeta {(planet != null ? planet.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
+                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
                     isInRange ? "green" : "red"
                 );
             }
@@ -106,6 +107,22 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             sensor?.DisableSensor();
+        }
+
+        public void DisableAllSensors()
+        {
+            foreach (var sensor in Enum.GetValues(typeof(SensorTypes)).Cast<SensorTypes>())
+            {
+                DisableSensor(sensor);
+            }
+        }
+
+        public void EnableAllSensors()
+        {
+            foreach (var sensor in Enum.GetValues(typeof(SensorTypes)).Cast<SensorTypes>())
+            {
+                EnableSensor(sensor);
+            }
         }
     }
 }

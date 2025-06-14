@@ -210,7 +210,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
-        public ReadOnlyCollection<IDetectable> GetDetectedPlanets()
+        public ReadOnlyCollection<IDetectable> GetDetectedSensors()
         {
             return _detectedObj.AsReadOnly();
         }

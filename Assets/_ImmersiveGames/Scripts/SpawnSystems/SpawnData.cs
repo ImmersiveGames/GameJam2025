@@ -11,6 +11,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField] private int spawnCount = 1;
         [SerializeField] private SpawnStrategySo pattern;
         [SerializeField] private SpawnTriggerSo triggerStrategy;
+        
+        
 
         // Propriedades públicas
         public PoolableObjectData PoolableData => poolableData;

@@ -22,10 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
         private EventBinding<PlanetCreatedEvent> _planetCreateBinding;
-
-        public float OrbitSpeedDegPerSec => _orbitSpeed;
-        public float SelfRotationSpeedDegPerSec => _selfRotationSpeed;
-
+        
         private void Awake()
         {
             TryGetComponent(out _planetMaster);
@@ -77,36 +74,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _orbitSpeed = planetData.GetRandomOrbitSpeed();
             planetInfo.SetOrbitSpeed(_orbitSpeed);
             _selfRotationSpeed = planetData.GetRandomRotationSpeed();
-            _orbitClockwise = Random.value > 0.5f;
+            _orbitClockwise = Random.value > planetData.rotationRightChance;
             _currentAngle = planetInfo.initialAngle;
             UpdateOrbitPosition(_currentAngle);
             StartOrbit();
         }
         
-        public void Initialize(Vector3 center, float radius, float orbitSpeedDegPerSec, bool orbitClockwise, float selfRotationSpeedDegPerSec, float initialAngleRad = 0f)
-        {
-            if (radius <= 0f)
-            {
-                DebugUtility.LogWarning<PlanetMotion>($"Raio de órbita inválido ({radius}) para {gameObject.name}. Usando valor padrão.", this);
-                radius = 1f;
-            }
-            if (orbitSpeedDegPerSec == 0f)
-            {
-                DebugUtility.LogWarning<PlanetMotion>($"Velocidade orbital inválida para {gameObject.name}. Usando valor padrão.", this);
-                orbitSpeedDegPerSec = 10f;
-            }
-
-            _orbitCenter = center;
-            _orbitRadius = radius;
-            _orbitSpeed = orbitSpeedDegPerSec;
-            _orbitClockwise = orbitClockwise;
-            _selfRotationSpeed = selfRotationSpeedDegPerSec;
-            _currentAngle = initialAngleRad;
-
-            UpdateOrbitPosition(_currentAngle);
-            StartOrbit();
-            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion inicializado para {gameObject.name}: centro {_orbitCenter}, raio {_orbitRadius}, ângulo inicial {_currentAngle * Mathf.Rad2Deg} graus, velocidade orbital {_orbitSpeed}, rotação própria {_selfRotationSpeed}.");
-        }
 
         private void StartOrbit()
         {

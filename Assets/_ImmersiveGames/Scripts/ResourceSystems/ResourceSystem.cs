@@ -11,14 +11,14 @@ using UnityEngine.Events;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [Serializable]
-    public class ResourceThresholdEvent : UnityEvent<float> { }
+    public class ResourceThresholdUnityEvent : UnityEvent<float> { }
 
     public abstract class ResourceSystem : MonoBehaviour, IResource
     {
         [SerializeField] protected ResourceConfigSo config; // Configuração do recurso
         [SerializeField] public UnityEvent onDepleted; // Evento disparado quando esgotado
         [SerializeField] public UnityEvent<float> onValueChanged; // Evento disparado quando valor muda
-        [SerializeField] public ResourceThresholdEvent onThresholdReached; // Evento para limiares
+        [SerializeField] public ResourceThresholdUnityEvent onThresholdReached; // Evento para limiares
         protected float maxValue; // Valor máximo do recurso
         protected float currentValue; // Valor atual do recurso
         protected readonly List<float> triggeredThresholds = new(); // Limiares já disparados
@@ -94,71 +94,65 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
         }
 
-        public void SetExternalAutoDrain(bool enabledAuto, float rate)
+        public void SetExternalAutoChange(bool isFill, bool auto, float rate)
         {
-            _autoDrainEnabled = enabledAuto;
-            _autoDrainRate = rate;
+            if (isFill)
+            {
+                _autoFillEnabled = auto;
+                _autoFillRate = rate;
+            }
+            else
+            {
+                _autoDrainEnabled = auto;
+                _autoDrainRate = rate;
+            }
             _autoChangeTimer = config.AutoChangeDelay;
-            DebugUtility.Log<ResourceSystem>($"🦸 AutoDrain {(enabledAuto ? "ATIVADO" : "DESATIVADO")} a {rate} por segundo no GameObject {gameObject.name} com UniqueId {config.UniqueId}");
+            DebugUtility.Log<ResourceSystem>($"🦸 {(isFill ? "AutoFill" : "AutoDrain")} {(auto ? "ATIVADO" : "DESATIVADO")} a {rate} por segundo no GameObject {gameObject.name} com UniqueId {config.UniqueId}");
         }
-
-        public void SetExternalAutoFill(bool enabledAuto, float rate)
-        {
-            _autoFillEnabled = enabledAuto;
-            _autoFillRate = rate;
-            _autoChangeTimer = config.AutoChangeDelay;
-            DebugUtility.Log<ResourceSystem>($"💧 AutoFill {(enabledAuto ? "ATIVADO" : "DESATIVADO")} a {rate} por segundo no GameObject {gameObject.name} com UniqueId {config.UniqueId}");
-        }
-
-        public void Increase(float amount)
+  
+        private void UpdateResourceValue(float amount, bool isIncrease)
         {
             if (amount < 0) return;
-            currentValue = Mathf.Min(maxValue, currentValue + amount);
+            currentValue = isIncrease
+                ? Mathf.Min(maxValue, currentValue + amount)
+                : Mathf.Max(0, currentValue - amount);
             float percentage = GetPercentage();
             onValueChanged?.Invoke(percentage);
             CheckThresholds();
             _autoChangeTimer = 0f;
-            if (currentValue >= maxValue)
+            switch (isIncrease)
             {
-                EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId, gameObject, config.ResourceType, percentage));
+                case false when currentValue <= 0:
+                    OnResourceDepleted();
+                    break;
+                case true when currentValue >= maxValue:
+                    EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId, gameObject, config.ResourceType, percentage));
+                    break;
             }
         }
 
-        public void Decrease(float amount)
+        public void Increase(float amount) => UpdateResourceValue(amount, true);
+        public void Decrease(float amount) => UpdateResourceValue(amount, false);
+        protected virtual void OnResourceDepleted()
         {
-            if (amount < 0) return;
-            currentValue = Mathf.Max(0, currentValue - amount);
-            float percentage = GetPercentage();
-            onValueChanged?.Invoke((percentage));
-            CheckThresholds();
-            _autoChangeTimer = 0f;
-            if (currentValue <= 0)
-            {
-                OnDepleted();
-                onDepleted?.Invoke();
-                EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId, gameObject, config.ResourceType, percentage));
-            }
+            onDepleted?.Invoke();
         }
 
-        protected void CheckThresholds()
+        private void CheckThresholds()
         {
             float percentage = GetPercentage();
-            foreach (float threshold in config.Thresholds.Where(t => percentage <= t && !triggeredThresholds.Contains(t)))
+            foreach (float threshold in config.Thresholds)
             {
-                triggeredThresholds.Add(threshold);
-                onThresholdReached?.Invoke(threshold);
-            }
-            for (int i = triggeredThresholds.Count - 1; i >= 0; i--)
-            {
-                if (percentage > triggeredThresholds[i])
+                if (percentage <= threshold && !triggeredThresholds.Contains(threshold))
                 {
-                    triggeredThresholds.RemoveAt(i);
+                    triggeredThresholds.Add(threshold);
+                    onThresholdReached?.Invoke(threshold);
+                }
+                else if (percentage > threshold && triggeredThresholds.Contains(threshold))
+                {
+                    triggeredThresholds.Remove(threshold);
                 }
             }
-        }
-
-        protected virtual void OnDepleted()
-        {
         }
 
         public void AddModifier(float amountPerSecond, float duration, bool isPermanent = false)

@@ -7,9 +7,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     public class PlayerHealth : HealthResource
     {
-        public override void Deafeat(Vector3 position)
+        public void Defeat(Vector3 position)
         {
-            base.Deafeat(position);
             EventBus<PlayerDiedEvent>.Raise(new PlayerDiedEvent(position, gameObject));
             DebugUtility.LogVerbose<PlayerHealth>($"Jogador derrotado na posição {position}.");
         }
