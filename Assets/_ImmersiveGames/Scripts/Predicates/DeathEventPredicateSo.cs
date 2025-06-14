@@ -20,14 +20,14 @@ namespace _ImmersiveGames.Scripts.Predicates
             TriggerPosition = Vector3.zero;
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             EventBus<DeathEvent>.Register(_deathEventBinding);
-            DebugUtility.Log<DeathEventPredicateSo>("DeathEventPredicateSo: Registrado no EventBus.");
+            DebugUtility.LogVerbose<DeathEventPredicateSo>("Registrado no EventBus.");
         }
 
         private void OnDisable()
         {
             if (_deathEventBinding == null) return;
             EventBus<DeathEvent>.Unregister(_deathEventBinding);
-            DebugUtility.Log<DeathEventPredicateSo>("DeathEventPredicateSo: Desregistrado do EventBus.");
+            DebugUtility.LogVerbose<DeathEventPredicateSo>("Desregistrado do EventBus.");
         }
 
         private void OnDeathEvent(DeathEvent evt)
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.Predicates
             if (_isTriggered) return; // Ignorar eventos adicionais até o reset
             _isTriggered = true;
             TriggerPosition = evt.Position; 
-            DebugUtility.Log<DeathEventPredicateSo>($"DeathEventPredicateSo: Recebeu DeathEvent com posição {TriggerPosition} do objeto {evt.Source.name}.");
+            DebugUtility.LogVerbose<DeathEventPredicateSo>($"Recebeu DeathEvent com posição {TriggerPosition} do objeto {evt.GameObject.name}.");
         }
 
         public override bool Evaluate()
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.Predicates
             bool result = isActive && _isTriggered;
             if (result)
             {
-                DebugUtility.Log<DeathEventPredicateSo>($"DeathEventPredicateSo: Evaluate retornou true para posição {TriggerPosition}.");
+                DebugUtility.LogVerbose<DeathEventPredicateSo>($"Evaluate retornou true para posição {TriggerPosition}.");
             }
             return result;
         }
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.Predicates
         {
             _isTriggered = false;
             TriggerPosition = Vector3.zero;
-            DebugUtility.Log<DeathEventPredicateSo>("DeathEventPredicateSo: Estado resetado.");
+            DebugUtility.LogVerbose<DeathEventPredicateSo>("Estado resetado.");
         }
     }
 }

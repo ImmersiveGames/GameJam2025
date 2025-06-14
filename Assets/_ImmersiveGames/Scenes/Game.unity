@@ -355,7 +355,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnData: {fileID: 11400000, guid: 5d7a5c8ddded6c04b8b009ccd7696a42, type: 2}
-  useManagerLocking: 1
+  useManagerLocking: 0
 --- !u!4 &1442239395
 Transform:
   m_ObjectHideFlags: 0
@@ -1181,6 +1181,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2793666448605492182, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: damageInterval
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_Name
       value: Eater

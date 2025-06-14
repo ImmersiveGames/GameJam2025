@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using System.Collections;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -77,10 +78,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnPlanetDeath(DeathEvent evt)
         {
-            if (_planetHealth == null || evt.Source != _planetHealth.gameObject) return;
+            if (_planetHealth == null) return;
+            var planetMaster = _planetHealth.GetComponent<PlanetsMaster>();
             StopDamageCoroutine();
             _planetHealth = null;
-            DebugUtility.Log<EaterEat>($"Planeta {evt.Source.name} destruído. Dano automático interrompido.");
+            
+            //TODO: Provavelmente vou precisar de um atraso aqui (ou mudar de estado) para o Eater Avaliar o planeta como destruído
+            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planetMaster));
+            DebugUtility.Log<EaterEat>($"Planeta {evt.GameObject.name} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()

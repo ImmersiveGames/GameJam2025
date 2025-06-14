@@ -9,10 +9,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     [DebugLevel(DebugLevel.Warning)]
     public class PlanetResourceUI : MonoBehaviour
     {
+        [SerializeField] private Transform resourceCanvas; // Imagem para exibir o ícone do recurso
         [SerializeField] private Image resourceIcon; // Imagem para exibir o ícone do recurso
         [SerializeField] private Text planetNameText; // (Opcional) Texto para exibir o nome do planeta
         private PlanetsMaster _planetMaster; // Referência ao componente PlanetsMaster do planeta pai
         private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding;
 
         // Inicializa o componente
         private void Awake()
@@ -30,6 +32,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             _planetCreatedBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
+            _planetDestroyBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyBinding);
         }
 
         private void Start()
@@ -45,16 +49,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 EventBus<PlanetCreatedEvent>.Unregister(_planetCreatedBinding);
             }
+            if(_planetDestroyBinding != null)
+            {
+                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyBinding);
+            }
         }
 
         // Atualiza a UI quando o planeta correspondente é criado
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if(evt.PlanetsMaster != _planetMaster)
+            if(evt.Detectable.GetPlanetsMaster() != _planetMaster)
                 return; 
-            var planetInfo = evt.PlanetsMaster.GetPlanetInfo();
+            var planetInfo = evt.Detectable.GetPlanetsMaster().GetPlanetInfo();
             UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
+        }
+        
+        private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
+        {
+            if(evt.Detectable.GetPlanetsMaster() != _planetMaster) return;
+            ClearUI();
+            resourceCanvas.gameObject.SetActive(false);
         }
 
         // Atualiza a UI com o recurso atual do planeta
@@ -108,6 +123,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Limpa a UI (desativa ícone e texto)
         private void ClearUI()
         {
+            if (resourceCanvas)
+            {
+                resourceCanvas.gameObject.SetActive(true);
+            }
             if (resourceIcon)
             {
                 resourceIcon.gameObject.SetActive(false);

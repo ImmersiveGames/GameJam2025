@@ -20,6 +20,9 @@ MonoBehaviour:
   minSpeed: 5
   maxSpeed: 10
   multiplierChase: 2
+  rotationSpeed: 5
   desiredHungerRestored: 50
   nonDesiredHungerRestored: 25
   desiredHealthRestored: 30
+  biteDamage: 20
+  minimumChaseDistance: 1.5

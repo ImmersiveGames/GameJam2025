@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     // Sistema de saúde que implementa IDestructible e IResettable
     public class HealthResource : ResourceSystem, IDestructible, IResettable
     {
-        protected GameObject _modelRoot; // Raiz do modelo do ator
+        protected GameObject modelRoot; // Raiz do modelo do ator
         private ActorMaster _actorMaster; // Referência ao ActorMaster
 
         // Inicializa referências no Awake para garantir disponibilidade
@@ -26,8 +27,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void InitializeReferences()
         {
             _actorMaster = GetComponentInParent<ActorMaster>();
-            _modelRoot = _actorMaster?.GetModelRoot()?.gameObject;
-            if (!_actorMaster || !_modelRoot)
+            modelRoot = _actorMaster?.GetModelRoot()?.gameObject;
+            if (!_actorMaster || !modelRoot)
             {
                 DebugUtility.LogError<HealthResource>($"Falha na inicialização: {( !_actorMaster ? "ActorMaster" : "ModelRoot")} não encontrado em {gameObject.name}!", gameObject);
             }
@@ -41,12 +42,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             base.OnResourceDepleted();
             DebugUtility.Log<HealthResource>($"{gameObject.name} morreu!");
-            var spawnPoint = _modelRoot ? _modelRoot.transform.position : transform.position;
+            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
             DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
-            EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject, config.ResourceType, GetPercentage()));
-            if (_modelRoot)
+            EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
+            if (modelRoot)
             {
-                _modelRoot.SetActive(false);
+                modelRoot.SetActive(false);
             }
             OnDeath(); // Chama o método de extensão
         }
@@ -76,14 +77,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             currentValue = maxValue; // Restaura ao valor máximo
             triggeredThresholds.Clear(); // Limpa limiares disparados
             modifiers.Clear(); // Remove todos os modificadores
-            if (!_modelRoot)
+            if (!modelRoot)
             {
                 DebugUtility.LogWarning<HealthResource>($"modelRoot é nulo ao tentar reiniciar {gameObject.name}. Tentando reinicializar...", gameObject);
                 InitializeReferences();
             }
-            if (_modelRoot)
+            if (modelRoot)
             {
-                _modelRoot.SetActive(true); // Reativa o modelo, se disponível
+                modelRoot.SetActive(true); // Reativa o modelo, se disponível
             }
             else
             {

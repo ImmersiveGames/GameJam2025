@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             if (!deathPredicate.Evaluate()) return;
 
             var spawnPosition = deathPredicate.TriggerPosition;
-            DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.Source.name} com posição {spawnPosition}.", "green", this);
+            DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.GameObject.name} com posição {spawnPosition}.", "green", this);
 
             if (!spawnManager.CanSpawn(this))
             {
@@ -78,10 +78,10 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
             // Ajusta a escala do objeto da explosão para corresponder à do planeta
             var explosionObject = objects[0].GetGameObject();
-            if (evt.Source != null)
+            if (evt.GameObject != null)
             {
-                explosionObject.transform.localScale = evt.Source.transform.localScale;
-                DebugUtility.Log<FxSpawnPoint>($"Explosão ajustada para escala {explosionObject.transform.localScale} do planeta {evt.Source.name}.", "green", this);
+                explosionObject.transform.localScale = evt.GameObject.transform.localScale;
+                DebugUtility.Log<FxSpawnPoint>($"Explosão ajustada para escala {explosionObject.transform.localScale} do planeta {evt.GameObject.name}.", "green", this);
             }
             else
             {

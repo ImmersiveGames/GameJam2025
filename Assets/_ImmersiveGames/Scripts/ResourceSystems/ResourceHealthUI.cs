@@ -11,8 +11,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class ResourceHealthUI : MonoBehaviour
     {
         [SerializeField] private HealthResource healthSystem; // Referência ao sistema de saúde
-        [SerializeField] private Image healthBar; // Barra de preenchimento
-        [SerializeField] private Image backgroundImage; // Imagem de fundo
+        [SerializeField]
+        protected Image healthBar; // Barra de preenchimento
+        [SerializeField]
+        protected Image backgroundImage; // Imagem de fundo
         [SerializeField] private Image resourceIcon; // Ícone do recurso
         [SerializeField] private Color[] thresholdColors = {
             Color.green, // 100%-75%
@@ -26,7 +28,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private EventBinding<ResourceEvent> _resourceEventBinding; // Binding para eventos de recurso
 
         // Desregistra eventos ao desativar
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             if (_deathEventBinding != null)
                 EventBus<DeathEvent>.Unregister(_deathEventBinding);
@@ -35,7 +37,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
 
         // Inicializa a UI
-        private void Initialization()
+        protected virtual void Initialization()
         {
             if (!healthSystem)
             {
@@ -110,7 +112,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // Reage ao evento de morte
         private void OnDeath(DeathEvent evt)
         {
-            if (evt.Source != gameObject && !transform.IsChildOrSelf(evt.Source)) return;
+            if (!transform.IsChildOrSelf(evt.GameObject.transform)) return;
             if (backgroundImage)
             {
                 backgroundImage.color = thresholdColors[3]; // Vermelho ao morrer

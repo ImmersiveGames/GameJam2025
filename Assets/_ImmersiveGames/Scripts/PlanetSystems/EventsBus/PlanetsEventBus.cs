@@ -16,23 +16,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     }
     public class PlanetCreatedEvent : IEvent
     {
-        public PlanetsMaster PlanetsMaster { get; }
+        public IDetectable Detectable { get; }
 
-        public PlanetCreatedEvent(PlanetsMaster planetsMaster)
+        public PlanetCreatedEvent(IDetectable detected)
         {
-            PlanetsMaster = planetsMaster;
+            Detectable = detected;
         }
     }
     
     public class PlanetDestroyedEvent : IEvent
     {
         public Vector3 Position { get; }
-        public GameObject Planet { get; }
+        public IDetectable Detectable { get; }
 
-        public PlanetDestroyedEvent(Vector3 position, GameObject planet)
+        public PlanetDestroyedEvent(Vector3 position, IDetectable detected)
         {
             Position = position;
-            Planet = planet;
+            Detectable = detected;
         }
     }
     

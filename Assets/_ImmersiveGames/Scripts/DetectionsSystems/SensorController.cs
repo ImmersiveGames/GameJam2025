@@ -7,14 +7,15 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class SensorController : MonoBehaviour
     {
         [SerializeField, Tooltip("Configurações para os sensores")]
         private List<SensorConfig> sensorConfigs = new();
 
         private readonly List<DetectorSense> _sensors = new();
-        
-        [System.Serializable]
+
+        [Serializable]
         public class SensorConfig
         {
             public SensorTypes sensorName = SensorTypes.OtherSensor;
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             public float minDetectionFrequency = 0.1f;
             public float maxDetectionFrequency = 0.5f;
             public bool debugMode;
+
         }
         public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
         {
@@ -31,7 +33,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
             return null;
         }
-         private void Awake()
+        private void Awake()
         {
             InitializeSensors();
         }
@@ -68,7 +70,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 sensor.DrawGizmos();
             }
         }
-        
+
         public ReadOnlyCollection<IDetectable> GetDetectedSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
@@ -76,7 +78,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
             return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
         }
-        
+
         public bool IsObjectInSensorRange(IDetectable obj, SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);

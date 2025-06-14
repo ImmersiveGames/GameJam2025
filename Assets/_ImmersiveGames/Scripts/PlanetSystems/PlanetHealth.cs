@@ -24,13 +24,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         protected override void OnDeath()
         {
-            var spawnPoint = _modelRoot ? _modelRoot.transform.position : transform.position;
-            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(spawnPoint, gameObject));
-            if (TryGetComponent<PlanetsMaster>(out var planet))
-            {
-                PlanetsManager.Instance.RemovePlanet(planet);
-                DebugUtility.Log<PlanetHealth>($"Planeta {planet.name} destruído e removido de PlanetsManager.", "yellow", this);
-            }
+            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
+
+            if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
+            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(spawnPoint, planet));
+            PlanetsManager.Instance.RemovePlanet(planet);
+            DebugUtility.Log<PlanetHealth>($"Planeta {planet.name} destruído e removido de PlanetsManager.", "yellow", this);
         }
 
         private void OnPlanetCreated(PlanetCreatedEvent obj)

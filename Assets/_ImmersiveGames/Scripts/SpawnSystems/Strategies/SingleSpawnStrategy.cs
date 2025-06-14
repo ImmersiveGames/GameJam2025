@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
@@ -8,7 +9,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
     {
         public override void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
         {
-            Debug.Log($"SingleSpawnStrategy: Spawnando {objects.Length} objetos na posição {origin}.");
+            DebugUtility.LogVerbose<SingleSpawnStrategy>($"Spawnando {objects.Length} objetos na posição {origin}.");
             if (objects.Length == 0) return;
 
             foreach (var obj in objects)
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
                 if (obj == null) continue;
                 var go = obj.GetGameObject();
                 go.transform.position = origin; // Garante a posição correta
-                Debug.Log($"SingleSpawnStrategy: Objeto {go.name} spawnado na posição {go.transform.position}.");
+                DebugUtility.LogVerbose<SingleSpawnStrategy>($"Objeto {go.name} spawnado na posição {go.transform.position}.");
             }
         }
     }

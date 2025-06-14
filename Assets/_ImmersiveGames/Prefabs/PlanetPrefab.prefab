@@ -145,7 +145,6 @@ MonoBehaviour:
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
-  planetsParts: []
 --- !u!1001 &2103012548603454898
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -224,7 +223,7 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 1379203150033295969, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6447427756509937623}
+      addedObject: {fileID: 5077603225399522310}
     - targetCorrespondingSourceObject: {fileID: 1379203150033295969, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4227301742398476722}
@@ -234,7 +233,7 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 1379203150033295969, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
   m_PrefabInstance: {fileID: 2103012548603454898}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6447427756509937623
+--- !u!114 &5077603225399522310
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -243,7 +242,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1012341454374649811}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c27f34dfd81a40e091a384a7c850c40c, type: 3}
+  m_Script: {fileID: 11500000, guid: 2577743f58374c1892d837bbef4c244b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   healthSystem: {fileID: 0}
@@ -268,8 +267,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65bc328307c64c36ba5fae372ad6a7b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  resourceCanvas: {fileID: 1592265826552682269}
   resourceIcon: {fileID: 2688119921632094019}
   planetNameText: {fileID: 0}
+--- !u!224 &1592265826552682269 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 808320885522444975, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
+  m_PrefabInstance: {fileID: 2103012548603454898}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &2688119921632094019 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4062660378494665457, guid: 7a316a3517068f941aa9f5023f7c2037, type: 3}
