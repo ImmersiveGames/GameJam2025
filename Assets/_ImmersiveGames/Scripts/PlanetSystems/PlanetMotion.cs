@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
+using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
@@ -8,7 +9,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class PlanetMotion : MonoBehaviour
     {
         private Vector3 _orbitCenter;
@@ -22,6 +23,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetsMaster _planetMaster;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
         private EventBinding<PlanetCreatedEvent> _planetCreateBinding;
+        private EventBinding<EaterDeathEvent> _planetDeathBinding;
+        
         
         private void Awake()
         {
@@ -36,6 +39,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
             _planetCreateBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreateBinding);
+     
         }
 
         private void Update()

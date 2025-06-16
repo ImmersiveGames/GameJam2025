@@ -24,6 +24,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<HungryChangeThresholdDirectionEvent> _hungryChangeThresholdDirectionEventBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
+        
+        
         private EventBinding<PlanetConsumedEvent> _planetConsumedEventBinding;
 
         private void Awake()
@@ -40,6 +42,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedEventBinding);
+            
+            
             _planetConsumedEventBinding = new EventBinding<PlanetConsumedEvent>(ConsumePlanet);
             EventBus<PlanetConsumedEvent>.Register(_planetConsumedEventBinding);
         }

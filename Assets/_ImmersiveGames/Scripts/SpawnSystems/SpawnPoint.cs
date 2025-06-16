@@ -18,10 +18,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField]
         public bool useManagerLocking = true;
 
-        private SpawnTriggerSo _trigger;
+        protected SpawnTriggerSo _trigger;
         private SpawnStrategySo _strategy;
         private string _poolKey;
-        private bool _isExhausted;
+        protected bool _isExhausted;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
         protected SpawnManager spawnManager;
@@ -114,55 +114,52 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (evt.Data != spawnData)
                 return;
 
+            // Verificação essencial: garantir que o spawn é permitido
             if (!spawnManager.CanSpawn(this))
             {
-                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
+                DebugUtility.Log<SpawnPoint>($"Spawn bloqueado para '{name}'.", "yellow", this);
                 return;
             }
 
-            if (useManagerLocking && _isExhausted)
-            {
-                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Exausto.", "yellow", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
-                return;
-            }
-
+            // Obter o pool
             var pool = poolManager.GetPool(_poolKey);
-            if (!pool)
+            if (pool == null)
             {
                 DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não encontrado.", this);
                 return;
             }
 
+            // Calcular quantidade de objetos a spawnar
             int spawnCount = Mathf.Min(spawnData.SpawnCount, pool.GetAvailableCount());
             if (spawnCount == 0)
             {
-                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Pool esgotado.", "yellow", this);
+                DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}'.", "yellow", this);
                 if (useManagerLocking)
                     _isExhausted = true;
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, evt.Origin, spawnData));
+                EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(_poolKey));
                 return;
             }
 
-            var spawnPosition = evt.Origin;
-            DebugUtility.Log<SpawnPoint>($"Usando posição do SpawnRequestEvent: {spawnPosition}", "green", this);
-
+            // Obter objetos do pool
             var objects = new IPoolable[spawnCount];
             for (int i = 0; i < spawnCount; i++)
             {
-                objects[i] = poolManager.GetObject(_poolKey, spawnPosition);
-                if (objects[i] != null) continue;
-                DebugUtility.Log<SpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
-                if (useManagerLocking)
-                    _isExhausted = true;
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, spawnPosition, spawnData));
-                return;
+                objects[i] = poolManager.GetObject(_poolKey, evt.Origin);
+                if (objects[i] == null)
+                {
+                    DebugUtility.LogError<SpawnPoint>($"Falha ao obter objeto do pool '{_poolKey}'.", this);
+                    if (useManagerLocking)
+                        _isExhausted = true;
+                    EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(_poolKey));
+                    return;
+                }
             }
 
-            _strategy.Spawn(objects, spawnData, spawnPosition, transform.forward);
+            // Executar o spawn
+            _strategy.Spawn(objects, spawnData, evt.Origin, transform.forward);
             spawnManager.RegisterSpawn(this);
-            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, spawnPosition, spawnData));
+            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, evt.Origin, spawnData));
+            DebugUtility.Log<SpawnPoint>($"Spawn de {spawnCount} objetos em '{name}' na posição {evt.Origin}.", "green", this);
         }
 
         private void HandlePoolExhausted(PoolExhaustedEvent evt)

@@ -11,7 +11,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     // Gerencia comportamento de planetas e interações
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public sealed class PlanetsMaster : ActorMaster, IDetectable
     {
         private PlanetInfo _planetInfo;

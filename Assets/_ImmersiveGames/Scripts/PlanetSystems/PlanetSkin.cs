@@ -6,6 +6,7 @@ using UnityUtils;
 using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class PlanetSkin : MonoBehaviour
     {
         [SerializeField]

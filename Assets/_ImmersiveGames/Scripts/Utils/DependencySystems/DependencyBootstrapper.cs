@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     /// Inicializa o sistema de dependências, registrando serviços iniciais no DependencyManager.
     /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public sealed class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private const string DebugColor = "yellow";

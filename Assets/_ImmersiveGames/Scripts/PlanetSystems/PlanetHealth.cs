@@ -24,8 +24,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         protected override void OnDeath()
         {
-            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
-
+            base.OnDeath();
             if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
             EventBus<PlanetConsumedEvent>.Raise(new PlanetConsumedEvent(planet));
             PlanetsManager.Instance.RemovePlanet(planet);

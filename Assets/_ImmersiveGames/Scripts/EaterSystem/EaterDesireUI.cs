@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class EaterDesireUI : MonoBehaviour
     {
         [SerializeField] private Image desireIcon;

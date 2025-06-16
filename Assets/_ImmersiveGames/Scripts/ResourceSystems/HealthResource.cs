@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     // Sistema de saúde que implementa IDestructible e IResettable
     public class HealthResource : ResourceSystem, IDestructible, IResettable
     {
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             else
             {
-                DebugUtility.Log<HealthResource>($"HealthResource inicializado com sucesso para {gameObject.name}.", "green", this);
+                DebugUtility.LogVerbose<HealthResource>($"HealthResource inicializado com sucesso para {gameObject.name}.", "green", this);
             }
         }
 
@@ -42,17 +42,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             base.OnResourceDepleted();
             DebugUtility.Log<HealthResource>($"{gameObject.name} morreu!");
-            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
-            DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
-            //EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
-            //if (modelRoot)
-            //{
-            //    modelRoot.SetActive(false);
-            //}
             OnDeath(); // Chama o método de extensão
         }
 
-        protected virtual void OnDeath() { } // Ponto de extensão para classes derivadas
+        protected virtual void OnDeath()
+        {
+            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
+            DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
+            EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
+            if (modelRoot)
+            {
+                modelRoot.SetActive(false);
+            }
+        }
         
 
         // Cura o recurso

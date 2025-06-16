@@ -11,7 +11,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
     [CreateAssetMenu(fileName = "OrbitPlanetSpawnStrategy", menuName = "ImmersiveGames/Strategies/OrbitPlanetSpawn")]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class OrbitPlanetSpawnStrategy : SpawnStrategySo
     {
         // Constantes para evitar valores mágicos

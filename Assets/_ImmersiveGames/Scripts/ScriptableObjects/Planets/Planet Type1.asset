@@ -33,3 +33,7 @@ MonoBehaviour:
   maxRotationSpeed: 30
   rotationRightChance: 0.5
   ringChance: 0.2
+  recoveryHungerConsumeDesire: 5
+  recoveryHungerConsumeNotDesire: 2
+  recoveryHealthConsumeDesire: 5
+  recoveryHealthConsumeNotDesire: 2

@@ -6,6 +6,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
+    [DebugLevel(DebugLevel.Warning)]
     internal class WanderingState : IState
     {
         private float _timer;
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _timer = 0;
             _eaterMovement.IsOrbiting = false;
             ChooseNewDirection();
-            DebugUtility.Log<WanderingState>($"Entering Wandering State for EaterMovement: {nameof(EaterMovement)}");
+            DebugUtility.LogVerbose<WanderingState>($"Entering Wandering State for EaterMovement: {nameof(EaterMovement)}");
         }
         public void OnExit() { }
         private void ChooseNewDirection()

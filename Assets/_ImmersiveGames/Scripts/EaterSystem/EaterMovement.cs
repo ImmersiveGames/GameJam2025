@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 {
     using FSM = StateMachine.StateMachine;
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class EaterMovement : MonoBehaviour, IResettable
     {
         private FSM _stateMachine;

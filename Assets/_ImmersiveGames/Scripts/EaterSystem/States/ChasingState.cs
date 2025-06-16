@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
+    [DebugLevel(DebugLevel.Warning)]
     internal class ChasingState : IState
     {
         private readonly EaterMovement _eaterMovement;
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             var targetMotion = _eaterMovement.TargetTransform.GetComponent<PlanetMotion>();
             _currentSpeed = targetMotion.GetOrbitSpeed() + _config.MinSpeed * 5f;
-            DebugUtility.Log<ChasingState>($"Entering Chasing State for EaterMovement: {nameof(EaterMovement)}");
+            DebugUtility.LogVerbose<ChasingState>($"Entering Chasing State for EaterMovement: {nameof(EaterMovement)}");
         }
     }
 }

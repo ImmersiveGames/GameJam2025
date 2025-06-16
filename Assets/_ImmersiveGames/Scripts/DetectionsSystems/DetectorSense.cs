@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public sealed class DetectorSense
     {
         private const int MaxDetectionResults = 10;

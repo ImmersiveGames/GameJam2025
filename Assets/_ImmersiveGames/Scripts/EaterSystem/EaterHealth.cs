@@ -45,6 +45,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         protected override void OnDeath()
         {
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(transform.position, gameObject));
+            _eater.IsActive = false;
         }
     }
 }

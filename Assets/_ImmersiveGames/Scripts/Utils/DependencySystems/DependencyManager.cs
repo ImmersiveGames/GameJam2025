@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     /// Gerencia serviços e injeções de dependência no escopo global, de cena e de objeto.
     /// </summary>
     [DisallowMultipleComponent]
+    [DebugLevel(DebugLevel.Warning)]
     public class DependencyManager : PersistentSingleton<DependencyManager>
     {
         [SerializeField] private int maxSceneServices = 2;

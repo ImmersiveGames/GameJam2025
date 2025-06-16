@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
+    [DebugLevel(DebugLevel.Warning)]
     internal class OrbitingState : IState
     {
         private readonly EaterMovement _eaterMovement;
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _eaterMovement.IsOrbiting = false;
             _isTransitioning = false;
             _sensorsController.EnableSensor(SensorTypes.EaterEatSensor);
-            DebugUtility.Log<OrbitingState>("Exited Orbiting State");
+            DebugUtility.LogVerbose<OrbitingState>("Exited Orbiting State");
         }
 
         private IEnumerator TransitionToOrbit(float initialRadius, float targetRadius, float duration)
@@ -131,7 +132,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             _isTransitioning = false;
 
-            DebugUtility.Log<OrbitingState>("Transition to orbit completed");
+            DebugUtility.LogVerbose<OrbitingState>("Transition to orbit completed");
         }
 
         private Vector3 CalculateOrbitPosition(Vector3 center, float angle, float radius)
@@ -168,7 +169,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             float maxRadius = collider.bounds.extents.magnitude;
             float finalRadius = maxRadius + OrbitOffset;
 
-            DebugUtility.Log<OrbitingState>($"Calculated radius: {finalRadius} (collider: {collider.GetType().Name}, extents: {collider.bounds.extents})");
+            DebugUtility.LogVerbose<OrbitingState>($"Calculated radius: {finalRadius} (collider: {collider.GetType().Name}, extents: {collider.bounds.extents})");
 
             return finalRadius;
         }
