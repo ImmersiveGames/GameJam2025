@@ -44,11 +44,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.Log<HealthResource>($"{gameObject.name} morreu!");
             var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
             DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
-            EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
-            if (modelRoot)
-            {
-                modelRoot.SetActive(false);
-            }
+            //EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
+            //if (modelRoot)
+            //{
+            //    modelRoot.SetActive(false);
+            //}
             OnDeath(); // Chama o método de extensão
         }
 
