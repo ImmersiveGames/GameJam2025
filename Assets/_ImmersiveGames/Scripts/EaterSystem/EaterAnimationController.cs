@@ -1,6 +1,9 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
+using System;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -12,6 +15,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private Animator _animator;
 
         private static readonly int IsEating = Animator.StringToHash("isEating");
+        private readonly int IsHappy = Animator.StringToHash("Happy");
+        private readonly int IsMad = Animator.StringToHash("Mad");
+        private readonly int IsDead = Animator.StringToHash("Dead");
+
+        private const float TransitionDuration = 0.1f;
+
+        private EventBinding<EaterDeathEvent> _eaterDeathBinding;
 
         private void Awake()
         {
@@ -25,6 +35,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _eaterMaster.EventStartEatPlanet += OnStartedEating;
             _eaterMaster.EventEndEatPlanet += OnFinishedEating;
+            _eaterMaster.EventConsumeResource += OnConsumeResource;
+
+            _eaterDeathBinding = new EventBinding<EaterDeathEvent>(OnDeath);
+            EventBus<EaterDeathEvent>.Register(_eaterDeathBinding);
         }
 
         private void OnDisable()
@@ -41,6 +55,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _animator.SetBool(IsEating, true);
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer iniciada.");
+        }
+
+        private void OnConsumeResource(IDetectable obj, bool isHappy) 
+        {
+            if (isHappy)
+                _animator.CrossFadeInFixedTime(IsHappy, TransitionDuration);
+            else if (!isHappy)
+                _animator.CrossFadeInFixedTime(IsMad, TransitionDuration);
+        }
+
+        private void OnDeath(EaterDeathEvent obj)
+        {
+            _animator.CrossFadeInFixedTime(IsDead, TransitionDuration);
         }
     }
 }

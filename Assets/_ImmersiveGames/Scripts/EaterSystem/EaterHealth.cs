@@ -1,5 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -38,6 +40,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 Increase(resourceFraction); // Consome metade se não for desejado
                 DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de heath.");
             }
+        }
+
+        protected override void OnDeath()
+        {
+            EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(transform.position, gameObject));
         }
     }
 }
