@@ -13,7 +13,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         
         public bool InHungry { get; set; }
         public bool IsEating { get; set; }
-        
+
+        public event Action EventEaterTakeDamage;
         public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
         public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
         public event Action<IDetectable> EventEndEatPlanet; // Ação para quando o Eater começa a comer um planeta
@@ -37,6 +38,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IsActive = true;
             IsEating = false;
             InHungry = false;
+        }
+        public void OnEventEaterTakeDamage()
+        {
+            EventEaterTakeDamage?.Invoke();
         }
         public void OnEventStartEatPlanet(IDetectable obj)
         {
