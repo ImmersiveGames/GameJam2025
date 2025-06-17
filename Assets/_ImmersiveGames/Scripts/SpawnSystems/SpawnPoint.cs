@@ -18,8 +18,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField] private StrategyData strategyData;
 
         protected ISpawnTrigger _trigger;
-        private ISpawnStrategy _strategy;
-        private string _poolKey;
+        protected ISpawnStrategy _strategy;
+        protected string _poolKey;
         protected bool _isExhausted;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             return poolManager.GetPool(_poolKey) != null;
         }
 
-        private void HandleSpawnRequest(SpawnRequestEvent evt)
+        protected virtual void HandleSpawnRequest(SpawnRequestEvent evt)
         {
             if (evt.Data != spawnData)
                 return;
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.Log<SpawnPoint>($"Estratégia de '{name}' atualizada para '{strategyData.strategyType}'.", "green", this);
         }
 
-        public void TriggerReset()
+        public virtual void TriggerReset()
         {
             _isExhausted = false;
             _trigger?.SetActive(true);

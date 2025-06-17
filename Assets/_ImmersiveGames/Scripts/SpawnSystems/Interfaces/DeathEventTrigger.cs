@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
     [DebugLevel(DebugLevel.Warning)]
@@ -9,6 +10,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
     {
         private bool _isTriggered;
         private Vector3 _triggerPosition;
+        private GameObject _sourceGameObject; // Novo campo para armazenar o GameObject
         private SpawnPoint _spawnPoint;
         private EventBinding<DeathEvent> _deathEventBinding;
         private bool _isActive = true;
@@ -29,7 +31,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         {
             if (!_isActive || !_isTriggered) return false;
             DebugUtility.Log<DeathEventTrigger>($"Disparando SpawnRequestEvent com posição {_triggerPosition}");
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.PoolableData.ObjectName, _triggerPosition, data));
+            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(data.PoolableData.ObjectName, _triggerPosition, data, _sourceGameObject));
             return true;
         }
 
@@ -42,6 +44,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         {
             _isTriggered = false;
             _triggerPosition = Vector3.zero;
+            _sourceGameObject = null; // Resetar o GameObject
             DebugUtility.LogVerbose<DeathEventTrigger>("Estado resetado.");
         }
 
@@ -50,7 +53,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
             if (_isTriggered) return;
             _isTriggered = true;
             _triggerPosition = evt.Position;
-            DebugUtility.LogVerbose<DeathEventTrigger>($"Recebeu DeathEvent com posição {_triggerPosition} do objeto {evt.GameObject.name}." );
+            _sourceGameObject = evt.GameObject; // Armazenar o GameObject
+            DebugUtility.LogVerbose<DeathEventTrigger>($"Recebeu DeathEvent com posição {_triggerPosition} do objeto {evt.GameObject?.name}.");
         }
 
         public void Dispose()

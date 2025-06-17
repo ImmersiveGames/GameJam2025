@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
     public class SpawnFactory
@@ -88,6 +89,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
                 StrategyType.RandomSpawnStrategy => new RandomSpawnStrategy(properties.spawnArea),
                 StrategyType.WaveSpawnStrategy => new WaveSpawnStrategy(properties.waveInterval, properties.waveCount),
                 StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(properties.useRandomAngles, properties.addAngleVariation),
+                StrategyType.ContinuousTargetedShootStrategy => new ContinuousTargetedShootStrategy(), // Nova estratégia
                 _ => new SingleSpawnStrategy()
             };
         }

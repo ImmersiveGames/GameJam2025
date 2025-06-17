@@ -54,7 +54,6 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
                 };
         }
         
-
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()

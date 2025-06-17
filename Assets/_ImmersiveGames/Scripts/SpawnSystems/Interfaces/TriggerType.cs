@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
@@ -20,7 +21,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         BurstStrategy,
         RandomSpawnStrategy,
         WaveSpawnStrategy,
-        OrbitPlanetStrategy
+        OrbitPlanetStrategy,
+        ContinuousTargetedShootStrategy
     }
     
     [System.Serializable]
@@ -39,6 +41,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         public PredicateData predicate;
         public List<TriggerData> compositeTriggers = new List<TriggerData>();
         public CombinationMode combinationMode = CombinationMode.AND;
+        public SensorTypes sensorType = SensorTypes.OtherSensor;
     }
     
     [System.Serializable]
@@ -51,5 +54,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         public int waveCount = 3;
         public bool useRandomAngles;
         public bool addAngleVariation = true;
+        public float interval = 1f; // Intervalo para ContinuousTargetedShootStrategy
     }
 }

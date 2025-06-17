@@ -1,6 +1,4 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
 {

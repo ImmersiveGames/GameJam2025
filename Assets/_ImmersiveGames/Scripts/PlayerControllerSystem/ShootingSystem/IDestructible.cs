@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
+﻿namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     public interface IDestructible
     {

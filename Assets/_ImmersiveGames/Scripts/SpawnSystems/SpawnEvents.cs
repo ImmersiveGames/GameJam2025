@@ -8,12 +8,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public string ObjectName { get; }
         public Vector3 Origin { get; }
         public SpawnData Data { get; }
+        public GameObject SourceGameObject { get; } // Novo campo
 
-        public SpawnRequestEvent(string objectName, Vector3 origin, SpawnData data)
+        public SpawnRequestEvent(string objectName, Vector3 origin, SpawnData data, GameObject sourceGameObject = null)
         {
             ObjectName = objectName;
             Origin = origin;
             Data = data;
+            SourceGameObject = sourceGameObject;
         }
     }
 

@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
 {
     public class PlanetMarkedEvent : IEvent
@@ -27,10 +26,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     public class PlanetConsumedEvent : IEvent
     {
         public IDetectable Detectable { get; }
-
+        //Todo: implementar quem consumiu para diferenciar o evento de consumo de planeta
         public PlanetConsumedEvent(IDetectable detected)
         {
             Detectable = detected;
+        }
+    }
+    
+    public class PlanetDetectedEvent
+    {
+        public IDetector Detector { get; }
+        public SensorTypes Sensor { get; }
+
+        public PlanetDetectedEvent(IDetector detector, SensorTypes sensor)
+        {
+            Detector = detector;
+            Sensor = sensor;
         }
     }
     

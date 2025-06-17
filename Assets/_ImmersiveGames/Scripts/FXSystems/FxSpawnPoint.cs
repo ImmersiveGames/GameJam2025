@@ -1,10 +1,10 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
-using _ImmersiveGames.Scripts.Predicates;
 using _ImmersiveGames.Scripts.SpawnSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+using System.Linq;
 
 namespace _ImmersiveGames.Scripts.FXSystems
 {
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             base.OnEnable();
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             EventBus<DeathEvent>.Register(_deathEventBinding);
-            DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint {name}: Registrado para DeathEvent.", "green", this);
+            DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint '{name}': Registrado para DeathEvent.", "green", this);
         }
 
         protected override void OnDisable()
@@ -27,75 +27,80 @@ namespace _ImmersiveGames.Scripts.FXSystems
             if (_deathEventBinding != null)
             {
                 EventBus<DeathEvent>.Unregister(_deathEventBinding);
-                DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint {name}: Desregistrado de DeathEvent.", "green", this);
+                DebugUtility.Log<FxSpawnPoint>($"FxSpawnPoint '{name}': Desregistrado de DeathEvent.", "green", this);
+            }
+        }
+
+        protected override void InitializeTrigger()
+        {
+            // Forçar o uso de DeathEventTrigger
+            if (triggerData == null)
+            {
+                triggerData = ScriptableObject.CreateInstance<TriggerData>();
+                triggerData.triggerType = TriggerType.DeathEventTrigger;
+            }
+            else if (triggerData.triggerType != TriggerType.DeathEventTrigger)
+            {
+                DebugUtility.LogWarning<FxSpawnPoint>($"TriggerData especificado não é DeathEventTrigger. Forçando DeathEventTrigger para '{name}'.", this);
+                triggerData.triggerType = TriggerType.DeathEventTrigger;
+            }
+
+            base.InitializeTrigger();
+            if (_trigger is not DeathEventTrigger)
+            {
+                DebugUtility.LogError<FxSpawnPoint>($"Trigger deve ser DeathEventTrigger para '{name}'.", this);
+                enabled = false;
             }
         }
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            /*if (!spawnData || !spawnData.TriggerStrategy ||
-                spawnData.TriggerStrategy is not PredicateTriggerSo { predicate: DeathEventPredicateSo deathPredicate })
+            if (!spawnData || _trigger == null)
             {
-                DebugUtility.LogWarning<FxSpawnPoint>($"TriggerStrategy ou Predicate não configurado corretamente em {name}.", this);
+                DebugUtility.LogWarning<FxSpawnPoint>($"SpawnData ou Trigger não configurado em '{name}'.", this);
                 return;
             }
 
-            if (!deathPredicate.Evaluate()) return;
+            // Passa a posição do DeathEvent para o trigger
+            _trigger.CheckTrigger(evt.Position, spawnData);
+        }
 
-            DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.GameObject.name} com posição {spawnPosition}.", "green", this);
-
-            if (!spawnManager.CanSpawn(this))
-            {
-                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Bloqueado.", "yellow", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
+        protected override void HandleSpawnRequest(SpawnRequestEvent evt)
+        {
+            if (evt.Data != spawnData)
                 return;
-            }
 
-            var pool = poolManager.GetPool(spawnData.PoolableData.ObjectName);
-            if (!pool)
-            {
-                DebugUtility.LogError<FxSpawnPoint>($"Pool '{spawnData.PoolableData.ObjectName}' não encontrado.", this);
-                return;
-            }
+            // Chama a lógica base do SpawnPoint
+            base.HandleSpawnRequest(evt);
 
-            int spawnCount = Mathf.Min(1, pool.GetAvailableCount()); // Forçar um único objeto
-            if (spawnCount == 0)
+            // Ajustar a escala do objeto spawnado
+            if (evt.SourceGameObject != null)
             {
-                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Pool esgotado.", "yellow", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
-                return;
-            }
-
-            var objects = new IPoolable[spawnCount];
-            objects[0] = poolManager.GetObject(spawnData.PoolableData.ObjectName, spawnPosition);
-            if (objects[0] == null)
-            {
-                DebugUtility.Log<FxSpawnPoint>($"Spawn falhou para '{name}': Objeto nulo.", "yellow", this);
-
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
-                return;
-            }
-            // Ajusta a escala do objeto da explosão para corresponder à do planeta
-            var explosionObject = objects[0].GetGameObject();
-            if (evt.GameObject != null)
-            {
-                explosionObject.transform.localScale = evt.GameObject.transform.localScale;
-                DebugUtility.Log<FxSpawnPoint>($"Explosão ajustada para escala {explosionObject.transform.localScale} do planeta {evt.GameObject.name}.", "green", this);
+                var pool = poolManager.GetPool(spawnData.PoolableData.ObjectName);
+                if (pool != null)
+                {
+                    var activeObjects = pool.GetActiveObjects();
+                    var lastObject = activeObjects.LastOrDefault();
+                    if (lastObject != null)
+                    {
+                        var explosionObject = lastObject.GetGameObject();
+                        explosionObject.transform.localScale = evt.SourceGameObject.transform.localScale;
+                        DebugUtility.Log<FxSpawnPoint>($"Explosão ajustada para escala {explosionObject.transform.localScale} do objeto {evt.SourceGameObject.name}.", "green", this);
+                    }
+                    else
+                    {
+                        DebugUtility.LogWarning<FxSpawnPoint>($"Nenhum objeto ativo encontrado para '{spawnData.PoolableData.ObjectName}' após spawn.", this);
+                    }
+                }
             }
             else
             {
-                DebugUtility.LogWarning<FxSpawnPoint>($"DeathEvent.Source é nulo para {spawnData.PoolableData.ObjectName}. Usando escala padrão.", this);
+                DebugUtility.LogWarning<FxSpawnPoint>($"SourceGameObject é nulo para '{spawnData.PoolableData.ObjectName}'. Usando escala padrão.", this);
             }
 
-            spawnData.Pattern.Spawn(objects, spawnData, spawnPosition, transform.forward);
-            spawnManager.RegisterSpawn(this);
-            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(spawnData.PoolableData.ObjectName, spawnPosition, spawnData));
-
-            // Resetar o predicate para evitar spawns duplicados
-            deathPredicate.Reset();
-            DebugUtility.Log<FxSpawnPoint>($"DeathEventPredicateSo resetado após spawn em {name}.", "green", this);
-            var spawnPosition = deathPredicate.TriggerPosition;*/
-            
+            // Resetar o trigger para evitar spawns duplicados
+            _trigger?.Reset();
+            DebugUtility.Log<FxSpawnPoint>($"Trigger resetado após spawn em '{name}'.", "green", this);
         }
     }
 }

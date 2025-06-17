@@ -58,6 +58,7 @@ GameObject:
   - component: {fileID: 4107158635580607550}
   - component: {fileID: 463446327434073539}
   - component: {fileID: -7189450029745384701}
+  - component: {fileID: 5383814469375287863}
   m_Layer: 10
   m_Name: PlanetPrefab
   m_TagString: Untagged
@@ -145,6 +146,23 @@ MonoBehaviour:
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &5383814469375287863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7554185307657802338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3691b117a1e045c3a8481cac0dee594b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  spawnData: {fileID: 11400000, guid: 68977a02d81204241aa57818832bb117, type: 2}
+  useManagerLocking: 0
+  triggerData: {fileID: 11400000, guid: 965cbf261449c8d4e99d360aa4ff93ae, type: 2}
+  strategyData: {fileID: 11400000, guid: fe58e34cb62d1244cae01a781d912b6f, type: 2}
+  targetSensor: 0
 --- !u!1001 &2103012548603454898
 PrefabInstance:
   m_ObjectHideFlags: 0
