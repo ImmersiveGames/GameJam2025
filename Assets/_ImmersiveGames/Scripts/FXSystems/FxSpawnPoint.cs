@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (!spawnData || !spawnData.TriggerStrategy ||
+            /*if (!spawnData || !spawnData.TriggerStrategy ||
                 spawnData.TriggerStrategy is not PredicateTriggerSo { predicate: DeathEventPredicateSo deathPredicate })
             {
                 DebugUtility.LogWarning<FxSpawnPoint>($"TriggerStrategy ou Predicate não configurado corretamente em {name}.", this);
@@ -42,7 +42,6 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
             if (!deathPredicate.Evaluate()) return;
 
-            var spawnPosition = deathPredicate.TriggerPosition;
             DebugUtility.Log<FxSpawnPoint>($"Processando DeathEvent para {evt.GameObject.name} com posição {spawnPosition}.", "green", this);
 
             if (!spawnManager.CanSpawn(this))
@@ -95,6 +94,8 @@ namespace _ImmersiveGames.Scripts.FXSystems
             // Resetar o predicate para evitar spawns duplicados
             deathPredicate.Reset();
             DebugUtility.Log<FxSpawnPoint>($"DeathEventPredicateSo resetado após spawn em {name}.", "green", this);
+            var spawnPosition = deathPredicate.TriggerPosition;*/
+            
         }
     }
 }

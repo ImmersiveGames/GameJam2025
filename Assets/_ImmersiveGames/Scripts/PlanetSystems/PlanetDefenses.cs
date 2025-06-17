@@ -23,11 +23,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             // Inicializar o predicado com o PlanetsMaster, se aplicável
-            if (spawnData?.TriggerStrategy is PredicateTriggerSo predicateTrigger && 
+            /*if (spawnData?.TriggerStrategy is PredicateTriggerSo predicateTrigger && 
                 predicateTrigger.predicate is PlanetDetectedPredicateSo planetPredicate)
             {
                 planetPredicate.Initialize(_planetsMaster);
-            }
+            }*/
         }
 
         protected override void OnEnable()

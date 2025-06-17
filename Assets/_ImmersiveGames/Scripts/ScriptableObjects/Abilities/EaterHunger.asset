@@ -25,5 +25,5 @@ MonoBehaviour:
   autoFillEnabled: 0
   autoDrainEnabled: 1
   autoFillRate: 0
-  autoDrainRate: 100
+  autoDrainRate: 1
   autoChangeDelay: 1

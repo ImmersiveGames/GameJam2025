@@ -1,47 +1,43 @@
-﻿using _ImmersiveGames.Scripts.Predicates;
+﻿using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class PlayerInputSpawnPoint : SpawnPoint
     {
-        [field: SerializeField] public PlayerInput PlayerInput { get; private set; }
+        [SerializeField] private PlayerInput playerInput;
 
         protected override void Awake()
         {
+            if (playerInput == null)
+            {
+                DebugUtility.LogError<PlayerInputSpawnPoint>("PlayerInput não configurado.", this);
+                enabled = false;
+                return;
+            }
+
+            if (triggerData == null)
+            {
+                DebugUtility.LogError<PlayerInputSpawnPoint>("TriggerData não configurado.", this);
+                enabled = false;
+                return;
+            }
+
             base.Awake();
-
-            if (PlayerInput && spawnData?.TriggerStrategy is PredicateTriggerSo predicateTrigger)
-            {
-                BindAllPredicates(predicateTrigger.predicate, PlayerInput.actions);
-            }
         }
-        public void BindAllPredicates(PredicateSo predicate, InputActionAsset inputAsset)
+
+        protected override void InitializeTrigger()
         {
-            while (true)
+            _trigger = SpawnFactory.Instance.CreateTrigger(triggerData, playerInput.actions);
+            if (_trigger == null)
             {
-                switch (predicate)
-                {
-                    case IBindableInputPredicate bindable:
-                        bindable.Bind(inputAsset);
-                        break;
-                    case AndPredicateSo and: {
-                        foreach (var inner in and.conditions) BindAllPredicates(inner, inputAsset);
-                        break;
-                    }
-                    case OrPredicateSo or: {
-                        foreach (var inner in or.conditions) BindAllPredicates(inner, inputAsset);
-                        break;
-                    }
-                    case NotPredicateSo not when not.condition:
-                        predicate = not.condition;
-                        continue;
-                }
-
-                break;
+                DebugUtility.LogError<PlayerInputSpawnPoint>($"Falha ao criar trigger para {triggerData.triggerType}.", this);
+                enabled = false;
+                return;
             }
+            _trigger.Initialize(this);
         }
-
     }
 }

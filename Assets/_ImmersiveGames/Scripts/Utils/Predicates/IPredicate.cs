@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.Utils.Predicates {
             _rules = rules.ToList().AsReadOnly();
         }
         public bool Evaluate() => _rules.All(r => r.Evaluate());
-        
+        public IReadOnlyList<IPredicate> GetRules() => _rules; // Método adicionado
         public And AndWith(IPredicate predicate)
         {
             var newRules = _rules.ToList();
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.Utils.Predicates {
                 throw new ArgumentException("At least one predicate is required.", nameof(rules));
             _rules = rules.ToList().AsReadOnly();
         }
-        
+        public IReadOnlyList<IPredicate> GetRules() => _rules; // Método adicionado
         public bool Evaluate() => _rules.Any(r => r.Evaluate());
         public Or OrWith(IPredicate predicate)
         {
@@ -51,6 +51,7 @@ namespace _ImmersiveGames.Scripts.Utils.Predicates {
         {
             _rule = Preconditions.CheckNotNull(rule, "Rule cannot be null.");
         }
+        public IPredicate GetRule() => _rule; // Método adicionado
         public bool Evaluate() => !_rule.Evaluate();
     }
 }

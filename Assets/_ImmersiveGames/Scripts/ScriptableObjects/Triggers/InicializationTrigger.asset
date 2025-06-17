@@ -9,7 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 126411227d0b430db83a97fe90f7f428, type: 3}
-  m_Name: TriggerByDetectPlanet
+  m_Script: {fileID: 11500000, guid: ebbf991d20f74a99b91f4b0951179dab, type: 3}
+  m_Name: InicializationTrigger
   m_EditorClassIdentifier: 
-  predicate: {fileID: 11400000, guid: 2494f9ac3d8a40142996e498e8108cc3, type: 2}
+  triggerType: 4
+  properties:
+    interval: 2
+    startImmediately: 1
+    actionName: Fire
+    predicate: {fileID: 0}

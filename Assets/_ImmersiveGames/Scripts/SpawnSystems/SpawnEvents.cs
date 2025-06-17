@@ -1,5 +1,6 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using UnityEngine;
+﻿using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public struct SpawnRequestEvent : IEvent
@@ -15,15 +16,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             Data = data;
         }
     }
+
     public struct SpawnTriggeredEvent : IEvent
     {
-        public string PoolKey { get; }
+        public string PoolName { get; }
         public Vector3 Position { get; }
         public SpawnData Data { get; }
 
-        public SpawnTriggeredEvent(string poolKey, Vector3 position, SpawnData data)
+        public SpawnTriggeredEvent(string poolName, Vector3 position, SpawnData data)
         {
-            PoolKey = poolKey;
+            PoolName = poolName;
             Position = position;
             Data = data;
         }
@@ -31,13 +33,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
     public struct SpawnFailedEvent : IEvent
     {
-        public string PoolKey { get; }
+        public string PoolName { get; }
         public Vector3 Position { get; }
         public SpawnData Data { get; }
 
-        public SpawnFailedEvent(string poolKey, Vector3 position, SpawnData data)
+        public SpawnFailedEvent(string poolName, Vector3 position, SpawnData data)
         {
-            PoolKey = poolKey;
+            PoolName = poolName;
             Position = position;
             Data = data;
         }

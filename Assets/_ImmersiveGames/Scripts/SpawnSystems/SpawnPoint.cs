@@ -1,25 +1,24 @@
-﻿using _ImmersiveGames.Scripts.Predicates;
-using _ImmersiveGames.Scripts.SpawnSystems.Strategies;
-using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
+﻿using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
+using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [DebugLevel(DebugLevel.Warning)]
     public class SpawnPoint : MonoBehaviour
     {
+        [SerializeField] protected SpawnData spawnData;
+        [SerializeField] public bool useManagerLocking = true;
         [SerializeField]
-        protected SpawnData spawnData;
-        [SerializeField]
-        public bool useManagerLocking = true;
+        protected TriggerData triggerData;
+        [SerializeField] private StrategyData strategyData;
 
-        protected SpawnTriggerSo _trigger;
-        private SpawnStrategySo _strategy;
+        protected ISpawnTrigger _trigger;
+        private ISpawnStrategy _strategy;
         private string _poolKey;
         protected bool _isExhausted;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
@@ -47,13 +46,42 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             spawnManager.RegisterSpawnPoint(this, useManagerLocking);
 
             _poolKey = spawnData.PoolableData.ObjectName;
-            _strategy = spawnData.Pattern;
-            _trigger = spawnData.TriggerStrategy;
-            _trigger.Initialize(this);
+            InitializeStrategy();
+            InitializeTrigger();
             _spawnBinding = new EventBinding<SpawnRequestEvent>(HandleSpawnRequest);
             _exhaustedBinding = new EventBinding<PoolExhaustedEvent>(HandlePoolExhausted);
 
-            enabled = spawnManager.CanSpawn(this) && !_isExhausted;
+            enabled = spawnManager.CanSpawn(this) && !_isExhausted && _trigger != null;
+            if (enabled)
+                DebugUtility.Log<SpawnPoint>($"SpawnPoint '{name}' inicializado com trigger '{triggerData?.triggerType}' e estratégia '{strategyData?.strategyType}'.", "green", this);
+        }
+
+        private void InitializeStrategy()
+        {
+            _strategy = SpawnFactory.Instance.CreateStrategy(strategyData);
+            if (_strategy == null)
+            {
+                DebugUtility.LogError<SpawnPoint>($"Falha ao criar estratégia para {strategyData?.strategyType}.", this);
+                enabled = false;
+            }
+        }
+
+        protected virtual void InitializeTrigger()
+        {
+            if (triggerData?.triggerType is TriggerType.InputSystemTrigger or TriggerType.InputSystemHoldTrigger)
+            {
+                DebugUtility.LogError<SpawnPoint>($"Trigger '{triggerData.triggerType}' requer PlayerInputSpawnPoint.", this);
+                enabled = false;
+                return;
+            }
+            _trigger = SpawnFactory.Instance.CreateTrigger(triggerData);
+            if (_trigger == null)
+            {
+                DebugUtility.LogError<SpawnPoint>($"Falha ao criar trigger para {triggerData?.triggerType}.", this);
+                enabled = false;
+                return;
+            }
+            _trigger.Initialize(this);
         }
 
         private void Start()
@@ -64,14 +92,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void OnEnable()
         {
-            EventBus<SpawnRequestEvent>.Register(_spawnBinding);
-            EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
+            if (_spawnBinding != null)
+                EventBus<SpawnRequestEvent>.Register(_spawnBinding);
+            if (_exhaustedBinding != null)
+                EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
         }
 
         protected virtual void OnDisable()
         {
-            EventBus<SpawnRequestEvent>.Unregister(_spawnBinding);
-            EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
+            if (_spawnBinding != null)
+                EventBus<SpawnRequestEvent>.Unregister(_spawnBinding);
+            if (_exhaustedBinding != null)
+                EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
         }
 
         private void Update()
@@ -93,6 +125,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
+            if (_trigger == null)
+            {
+                DebugUtility.LogError<SpawnPoint>($"Trigger é nulo em '{name}'. Desativando SpawnPoint.", this);
+                enabled = false;
+                return;
+            }
             _trigger.CheckTrigger(transform.position, spawnData);
         }
 
@@ -106,7 +144,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             if (!poolManager.GetPool(_poolKey))
                 poolManager.RegisterPool(spawnData.PoolableData);
-            return poolManager.GetPool(_poolKey);
+            return poolManager.GetPool(_poolKey) != null;
         }
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
@@ -114,14 +152,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (evt.Data != spawnData)
                 return;
 
-            // Verificação essencial: garantir que o spawn é permitido
             if (!spawnManager.CanSpawn(this))
             {
                 DebugUtility.Log<SpawnPoint>($"Spawn bloqueado para '{name}'.", "yellow", this);
                 return;
             }
 
-            // Obter o pool
             var pool = poolManager.GetPool(_poolKey);
             if (pool == null)
             {
@@ -129,7 +165,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            // Calcular quantidade de objetos a spawnar
             int spawnCount = Mathf.Min(spawnData.SpawnCount, pool.GetAvailableCount());
             if (spawnCount == 0)
             {
@@ -140,7 +175,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            // Obter objetos do pool
             var objects = new IPoolable[spawnCount];
             for (int i = 0; i < spawnCount; i++)
             {
@@ -155,7 +189,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
-            // Executar o spawn
             _strategy.Spawn(objects, spawnData, evt.Origin, transform.forward);
             spawnManager.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, evt.Origin, spawnData));
@@ -179,22 +212,30 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
         }
 
+        public void SetStrategyData(StrategyData newData)
+        {
+            if (newData == null)
+            {
+                DebugUtility.LogError<SpawnPoint>($"Novo StrategyData é nulo para '{name}'.", this);
+                return;
+            }
+            strategyData = newData;
+            InitializeStrategy();
+            DebugUtility.Log<SpawnPoint>($"Estratégia de '{name}' atualizada para '{strategyData.strategyType}'.", "green", this);
+        }
+
         public void TriggerReset()
         {
             _isExhausted = false;
-            _trigger.SetActive(true);
-            _trigger.Reset();
+            _trigger?.SetActive(true);
+            _trigger?.Reset();
             enabled = spawnManager.CanSpawn(this);
             DebugUtility.Log<SpawnPoint>($"SpawnPoint '{name}' resetado.", "green", this);
         }
 
         public void SetTriggerActive(bool active)
         {
-            _trigger.SetActive(active);
-            if (this is PlayerInputSpawnPoint inputSpawnPoint && _trigger is PredicateTriggerSo predicateTrigger)
-            {
-                inputSpawnPoint.BindAllPredicates(predicateTrigger.predicate, inputSpawnPoint.PlayerInput.actions);
-            }
+            _trigger?.SetActive(active);
             DebugUtility.Log<SpawnPoint>($"Trigger de '{name}' {(active ? "ativado" : "desativado")}.", "yellow", this);
         }
 

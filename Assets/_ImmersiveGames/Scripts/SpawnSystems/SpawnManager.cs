@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         [SerializeField] private int maxSpawnsPerPoint = 5;
 
-        private readonly List<SpawnPoint> _allSpawnPool = new();
+        private readonly List<SpawnPoint> _allSpawnPointsPool = new();
         private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new();
         private bool _isResetting;
 
@@ -30,9 +30,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void RegisterSpawnPoint(SpawnPoint point, bool useManagerLocking)
         {
-            if (!point || _allSpawnPool.Contains(point))
+            if (!point || _allSpawnPointsPool.Contains(point))
                 return;
-            _allSpawnPool.Add(point);
+            _allSpawnPointsPool.Add(point);
             if (useManagerLocking && !_managedSpawnPoints.ContainsKey(point))
             {
                 _managedSpawnPoints.Add(point, new ManagedSpawnData());
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public bool CanSpawn(SpawnPoint point)
         {
-            if (!_allSpawnPool.Contains(point))
+            if (!_allSpawnPointsPool.Contains(point))
             {
                 DebugUtility.LogError<SpawnManager>($"SpawnPoint '{point.name}' não registrado.", this);
                 return false;
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ResetSpawnPoint(SpawnPoint point)
         {
-            if (!_allSpawnPool.Contains(point))
+            if (!_allSpawnPointsPool.Contains(point))
                 return;
             if (_managedSpawnPoints.TryGetValue(point, out var data))
             {
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _isResetting = true;
             try
             {
-                foreach (var point in _allSpawnPool)
+                foreach (var point in _allSpawnPointsPool)
                 {
                     ResetSpawnPoint(point);
                 }
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void StopAllSpawnPoints()
         {
-            foreach (var point in _allSpawnPool.Where(point => _managedSpawnPoints.ContainsKey(point)))
+            foreach (var point in _allSpawnPointsPool.Where(point => _managedSpawnPoints.ContainsKey(point)))
             {
                 LockSpawns(point);
             }
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void StopAllSpawnPointsIncludingIndependent()
         {
-            foreach (var point in _allSpawnPool)
+            foreach (var point in _allSpawnPointsPool)
             {
                 if (_managedSpawnPoints.ContainsKey(point))
                     LockSpawns(point);
