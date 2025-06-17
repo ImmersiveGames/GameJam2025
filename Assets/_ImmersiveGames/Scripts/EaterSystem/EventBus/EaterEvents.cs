@@ -25,4 +25,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.EventBus
     }
     public class EaterStarvedEvent : IEvent { }
     // Novos eventos para animação
+
+    public class EaterSatisfactionEvent : IEvent 
+    {
+        public bool IsSatisfected { get; }
+
+        public EaterSatisfactionEvent(bool isSatisfected) 
+        {
+            IsSatisfected = isSatisfected;
+        }
+    }
 }

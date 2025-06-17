@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
@@ -93,6 +93,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (resource == null) return;
             DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.Detectable.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
             _eater.OnEventConsumeResource(obj.Detectable, _desiredResource != null && _desiredResource == resource);
+            EventBus<EaterSatisfactionEvent>.Raise(new EaterSatisfactionEvent(_desiredResource != null && _desiredResource == resource));
         }
         
         private bool ShouldBeDesiring()

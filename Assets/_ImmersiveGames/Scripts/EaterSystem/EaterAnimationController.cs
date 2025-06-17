@@ -16,6 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private static readonly int IsEating = Animator.StringToHash("isEating");
         private readonly int IsHappy = Animator.StringToHash("Happy");
         private readonly int IsMad = Animator.StringToHash("Mad");
+        private readonly int GetHit = Animator.StringToHash("GetHit");
         private readonly int IsDead = Animator.StringToHash("Dead");
 
         private const float TransitionDuration = 0.1f;
@@ -44,6 +45,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _eaterMaster.EventStartEatPlanet -= OnStartedEating;
             _eaterMaster.EventEndEatPlanet -= OnFinishedEating;
+
+            EventBus<EaterDeathEvent>.Unregister(_eaterDeathBinding);
         }
         private void OnFinishedEating(IDetectable obj)
         {
@@ -62,6 +65,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _animator.CrossFadeInFixedTime(IsHappy, TransitionDuration);
             else if (!isHappy)
                 _animator.CrossFadeInFixedTime(IsMad, TransitionDuration);
+        }
+
+        private void OnGetHit() 
+        {
+            _animator.CrossFadeInFixedTime(GetHit, TransitionDuration);
         }
 
         private void OnDeath(EaterDeathEvent obj)

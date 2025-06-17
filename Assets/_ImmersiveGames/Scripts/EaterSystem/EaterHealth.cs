@@ -41,6 +41,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de heath.");
             }
         }
+        public override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            _eater.OnEventEaterTakeDamage();
+        }
 
         protected override void OnDeath()
         {
