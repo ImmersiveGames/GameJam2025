@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using System.Linq;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
@@ -10,150 +11,115 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     public class SpawnManager : MonoBehaviour
     {
         public static SpawnManager Instance { get; private set; }
-
-        [SerializeField] private int maxSpawnsPerPoint = 5;
-
-        private readonly List<SpawnPoint> _allSpawnPointsPool = new();
-        private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new();
-        private bool _isResetting;
+        private readonly List<SpawnPoint> _allSpawnPoints = new List<SpawnPoint>();
+        private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new Dictionary<SpawnPoint, ManagedSpawnData>();
+        private readonly Dictionary<SpawnPoint, int> _spawnCounts = new Dictionary<SpawnPoint, int>();
+        private int _maxSpawnsPerPoint = 100;
 
         private void Awake()
         {
-            if (Instance && Instance != this)
+            if (Instance == null)
+            {
+                Instance = this;
+                DontDestroyOnLoad(gameObject);
+            }
+            else
             {
                 Destroy(gameObject);
-                return;
             }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
 
         public void RegisterSpawnPoint(SpawnPoint point, bool useManagerLocking)
         {
-            if (!point || _allSpawnPointsPool.Contains(point))
+            if (point == null || _allSpawnPoints.Contains(point))
                 return;
-            _allSpawnPointsPool.Add(point);
-            if (useManagerLocking && !_managedSpawnPoints.ContainsKey(point))
+
+            _allSpawnPoints.Add(point);
+            if (useManagerLocking)
+                _managedSpawnPoints[point] = new ManagedSpawnData();
+
+            var poolManager = PoolManager.Instance;
+            if (poolManager && point.GetSpawnData()?.PoolableData != null)
             {
-                _managedSpawnPoints.Add(point, new ManagedSpawnData());
+                poolManager.RegisterPool(point.GetSpawnData().PoolableData);
+            }
+            DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' registrado.", "green", this);
+        }
+
+        public void RegisterSpawn(SpawnPoint point)
+        {
+            if (!_managedSpawnPoints.ContainsKey(point)) return;
+
+            if (!_spawnCounts.ContainsKey(point))
+                _spawnCounts[point] = 0;
+
+            _spawnCounts[point]++;
+            if (_spawnCounts[point] >= _maxSpawnsPerPoint)
+            {
+                _managedSpawnPoints[point].IsLocked = true;
+                EventBus<SpawnPointLockedEvent>.Raise(new SpawnPointLockedEvent(point));
             }
         }
 
         public bool CanSpawn(SpawnPoint point)
         {
-            if (!_allSpawnPointsPool.Contains(point))
-            {
-                DebugUtility.LogError<SpawnManager>($"SpawnPoint '{point.name}' não registrado.", this);
+            if (!_allSpawnPoints.Contains(point))
                 return false;
-            }
-            if (!_managedSpawnPoints.TryGetValue(point, out var data))
-            {
-                return true; // Independente
-            }
-            return !data.isLocked && data.spawnCount < maxSpawnsPerPoint;
+
+            if (!_managedSpawnPoints.ContainsKey(point))
+                return true;
+
+            return !_managedSpawnPoints[point].IsLocked;
         }
 
-        public void RegisterSpawn(SpawnPoint point)
+        public bool IsLocked(SpawnPoint point)
         {
-            if (!_managedSpawnPoints.TryGetValue(point, out var data))
-                return;
-            data.spawnCount++;
-            if (data.spawnCount >= maxSpawnsPerPoint)
-            {
-                LockSpawns(point);
-            }
+            return _managedSpawnPoints.ContainsKey(point) && _managedSpawnPoints[point].IsLocked;
         }
 
-        public void LockSpawns(SpawnPoint point)
+        public int GetSpawnCount(SpawnPoint point)
         {
-            if (!_managedSpawnPoints.TryGetValue(point, out var data))
-                return;
-            data.isLocked = true;
-            DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' bloqueado.", "yellow", this);
-        }
-
-        public void UnlockSpawns(SpawnPoint point)
-        {
-            if (!_managedSpawnPoints.TryGetValue(point, out var data))
-                return;
-            data.isLocked = false;
-            data.spawnCount = 0;
-            DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado.", "green", this);
+            return _spawnCounts.ContainsKey(point) ? _spawnCounts[point] : 0;
         }
 
         public void ResetSpawnPoint(SpawnPoint point)
         {
-            if (!_allSpawnPointsPool.Contains(point))
-                return;
-            if (_managedSpawnPoints.TryGetValue(point, out var data))
-            {
-                data.spawnCount = 0;
-                data.isLocked = false;
-            }
-            var pool = PoolManager.Instance.GetPool(point.GetPoolKey());
-            if (pool)
-            {
-                var activeObjects = pool.GetActiveObjects().ToList();
-                foreach (var obj in activeObjects)
-                {
-                    var pooledObject = obj as PooledObject;
-                    if (pooledObject && pooledObject.Lifetime == 0)
-                    {
-                        DebugUtility.Log<SpawnManager>($"Objeto '{obj.GetGameObject().name}' com lifetime=0 ignorado no reset.", "yellow", this);
-                        continue;
-                    }
-                    obj.Deactivate();
-                }
-            }
-            point.TriggerReset();
-            DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' resetado.", "green", this);
+            if (!_allSpawnPoints.Contains(point)) return;
+            DebugUtility.Log<SpawnManager>($"Resetando SpawnPoint '{point.name}'.", "blue", this);
+            EventBus<SpawnPointResetEvent>.Raise(new SpawnPointResetEvent(point));
         }
 
         public void ResetAllSpawnPoints()
         {
-            if (_isResetting)
-                return;
-            _isResetting = true;
-            try
+            // Criar cópia para evitar modificação durante iteração
+            var points = _allSpawnPoints.ToList();
+            foreach (var point in points)
             {
-                foreach (var point in _allSpawnPointsPool)
-                {
-                    ResetSpawnPoint(point);
-                }
-                DebugUtility.Log<SpawnManager>("Todos os SpawnPoints resetados.", "green", this);
-            }
-            finally
-            {
-                _isResetting = false;
+                ResetSpawnPoint(point);
             }
         }
 
-        public void StopAllSpawnPoints()
+        private void Update()
         {
-            foreach (var point in _allSpawnPointsPool.Where(point => _managedSpawnPoints.ContainsKey(point)))
+            // Exemplo: evitar modificações em Update
+            var points = _allSpawnPoints.ToList();
+            foreach (var point in points)
             {
-                LockSpawns(point);
+                if (point == null) continue;
+                // Lógica de Update, se houver
             }
-            DebugUtility.Log<SpawnManager>("SpawnPoints gerenciados parados.", "yellow", this);
         }
 
-        public void StopAllSpawnPointsIncludingIndependent()
+        private void OnDestroy()
         {
-            foreach (var point in _allSpawnPointsPool)
-            {
-                if (_managedSpawnPoints.ContainsKey(point))
-                    LockSpawns(point);
-                point.SetTriggerActive(false);
-                DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' parado (global).", "yellow", this);
-            }
-            DebugUtility.Log<SpawnManager>("Todos os SpawnPoints parados.", "yellow", this);
+            _allSpawnPoints.Clear();
+            _managedSpawnPoints.Clear();
+            _spawnCounts.Clear();
         }
     }
 
-    [System.Serializable]
     public class ManagedSpawnData
     {
-        public int spawnCount;
-        public bool isLocked;
+        public bool IsLocked { get; set; }
     }
 }

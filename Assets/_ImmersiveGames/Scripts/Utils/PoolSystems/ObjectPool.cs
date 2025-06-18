@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private readonly Queue<IPoolable> _pool = new();
         private readonly List<IPoolable> _activeObjects = new();
         public PoolableObjectData Data { get; private set; }
+        public bool IsInitialized { get; private set; }
         private readonly ObjectPoolFactory _factory = new();
 
         public void SetData(PoolableObjectData data)
@@ -40,13 +41,19 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 poolable.Deactivate();
                 _pool.Enqueue(poolable);
             }
+            IsInitialized = true;
             DebugUtility.Log<ObjectPool>($"Pool inicializado com {_pool.Count} objetos para '{Data.ObjectName}'.", "green", this);
         }
 
         public IPoolable GetObject(Vector3 position)
         {
-            IPoolable poolable = null;
+            if (!IsInitialized || !Data)
+            {
+                DebugUtility.LogError<ObjectPool>($"Pool '{Data?.ObjectName}' não inicializado ou dados inválidos.", this);
+                return null;
+            }
 
+            IPoolable poolable = null;
             if (_pool.Count > 0)
             {
                 poolable = _pool.Dequeue();
@@ -63,23 +70,39 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
-            poolable.Reset(); // Reseta antes de ativar
+            poolable.Reset();
             poolable.Activate(position);
             _activeObjects.Add(poolable);
-            EventBus<ObjectSpawnedEvent>.Raise(new ObjectSpawnedEvent(Data.ObjectName, position, poolable.GetGameObject()));
+            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position, null));
             return poolable;
         }
 
         public void ReturnObject(IPoolable poolable)
         {
             if (poolable == null || !_activeObjects.Remove(poolable)) return;
+
+            var wasEmpty = _pool.Count == 0;
             poolable.Deactivate();
             _pool.Enqueue(poolable);
-            EventBus<ObjectReturnedEvent>.Raise(new ObjectReturnedEvent(Data.ObjectName, poolable.GetGameObject()));
+            if (wasEmpty && _pool.Count > 0)
+            {
+                EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(Data.ObjectName));
+            }
+        }
+
+        public void ClearPool()
+        {
+            foreach (var obj in _activeObjects)
+            {
+                if (obj != null && obj.GetGameObject() != null)
+                    obj.Deactivate();
+            }
+            _activeObjects.Clear();
+            _pool.Clear();
+            IsInitialized = false;
         }
 
         public IReadOnlyList<IPoolable> GetActiveObjects() => _activeObjects;
-
         public int GetAvailableCount() => _pool.Count;
     }
 }

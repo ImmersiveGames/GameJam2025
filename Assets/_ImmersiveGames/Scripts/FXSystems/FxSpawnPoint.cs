@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.SpawnSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         protected override void InitializeTrigger()
         {
-            // Forçar o uso de DeathEventTrigger
+            /*// Forçar o uso de DeathEventTrigger
             if (triggerData == null)
             {
                 triggerData = ScriptableObject.CreateInstance<TriggerData>();
@@ -46,29 +45,29 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
 
             base.InitializeTrigger();
-            if (_trigger is not DeathEventTrigger)
+            if (SpawnTrigger is not DeathEventTrigger)
             {
                 DebugUtility.LogError<FxSpawnPoint>($"Trigger deve ser DeathEventTrigger para '{name}'.", this);
                 enabled = false;
-            }
+            }*/
         }
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (!spawnData || _trigger == null)
+            if (!spawnData || SpawnTrigger == null)
             {
                 DebugUtility.LogWarning<FxSpawnPoint>($"SpawnData ou Trigger não configurado em '{name}'.", this);
                 return;
             }
 
             // Passa a posição do DeathEvent para o trigger
-            _trigger.CheckTrigger(evt.Position, spawnData);
+            SpawnTrigger.CheckTrigger(evt.Position, spawnData);
         }
 
         protected override void HandleSpawnRequest(SpawnRequestEvent evt)
         {
-            if (evt.Data != spawnData)
-                return;
+            /*if (evt.Data != spawnData)
+                return;*/
 
             // Chama a lógica base do SpawnPoint
             base.HandleSpawnRequest(evt);
@@ -99,7 +98,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
             }
 
             // Resetar o trigger para evitar spawns duplicados
-            _trigger?.Reset();
+            SpawnTrigger?.Reset();
             DebugUtility.Log<FxSpawnPoint>($"Trigger resetado após spawn em '{name}'.", "green", this);
         }
     }

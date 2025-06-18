@@ -1,7 +1,5 @@
 ﻿using System;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 
@@ -16,18 +14,17 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private bool _isActive;
         private float _timer;
         private bool _returningToPool;
-
         private PoolableObjectData _data;
 
         public bool IsActive => _isActive;
-        public float Lifetime => _lifetime; // Adicionado para acesso externo
+        public float Lifetime => _lifetime;
 
         public void Initialize(PoolableObjectData data, ObjectPool pool)
         {
             if (!data) throw new ArgumentNullException(nameof(data));
             _data = data;
             _pool = pool ?? throw new ArgumentNullException(nameof(pool));
-            _lifetime = data.Lifetime; // Usa o lifetime diretamente
+            _lifetime = data.Lifetime;
             _isActive = false;
             _timer = 0f;
             _returningToPool = false;
@@ -38,15 +35,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public void SetModel(GameObject model)
         {
             if (_model)
-            {
                 Destroy(_model);
-            }
             _model = model;
-            if (!_model) return;
-            _model.transform.SetParent(transform);
-            _model.transform.localPosition = Vector3.zero;
-            _model.transform.localRotation = Quaternion.identity;
-            _model.SetActive(false);
+            if (_model)
+            {
+                _model.transform.SetParent(transform);
+                _model.transform.localPosition = Vector3.zero;
+                _model.transform.localRotation = Quaternion.identity;
+                _model.SetActive(false);
+            }
         }
 
         public void Activate(Vector3 position)
@@ -56,10 +53,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _isActive = true;
             gameObject.SetActive(true);
             if (_model)
-            {
                 _model.SetActive(true);
-            }
-            _timer = _lifetime > 0 ? _lifetime : float.MaxValue; // Lifetime 0 = permanente
+            _timer = _lifetime > 0 ? _lifetime : float.MaxValue;
             _returningToPool = false;
             OnObjectSpawned();
         }
@@ -70,34 +65,20 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _isActive = false;
             gameObject.SetActive(false);
             if (_model)
-            {
                 _model.SetActive(false);
-            }
             _timer = 0f;
-            EventBus<ObjectDeactivatedEvent>.Raise(new ObjectDeactivatedEvent(_pool.Data.ObjectName, gameObject));
             if (!_returningToPool)
-            {
                 ReturnToPool();
-            }
         }
 
-        public void OnObjectSpawned()
-        {
-            // Pode ser sobrescrito
-        }
-
-        public void OnObjectReturned()
-        {
-            // Pode ser sobrescrito
-        }
+        public void OnObjectSpawned() { }
+        public void OnObjectReturned() { }
 
         public GameObject GetGameObject() => gameObject;
-        public T GetData<T>()  where T : PoolableObjectData
+        public T GetData<T>() where T : PoolableObjectData
         {
             if (_data is T data)
-            {
                 return data;
-            }
             throw new InvalidCastException($"Não é possível converter {_data.GetType()} para {typeof(T)}.");
         }
 
@@ -117,15 +98,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private void Update()
         {
-            if (!_isActive || _returningToPool) return;
-            if (_lifetime > 0) // Só decrementa timer se lifetime > 0
-            {
-                _timer -= Time.deltaTime;
-                if (_timer <= 0f)
-                {
-                    ReturnToPool();
-                }
-            }
+            if (!_isActive || _returningToPool || _lifetime <= 0) return;
+            _timer -= Time.deltaTime;
+            if (_timer <= 0f)
+                ReturnToPool();
         }
 
         public void ReturnToPool()
@@ -136,7 +112,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 _pool.ReturnObject(this);
                 OnObjectReturned();
-                DebugUtility.Log<PooledObject>($"Objeto {gameObject.name} retornado ao pool.", "blue", this);
+                DebugUtility.Log<PooledObject>($"Objeto '{name}' retornado ao pool.", "blue", this);
             }
             else
             {
@@ -147,10 +123,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         private void OnDisable()
         {
-            if (_isActive && !_returningToPool)
-            {
+            if (_isActive && !_returningToPool && _pool)
                 ReturnToPool();
-            }
         }
     }
 }

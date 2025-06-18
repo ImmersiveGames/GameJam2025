@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Warning)]
@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         public static PoolManager Instance { get; private set; }
         private readonly Dictionary<string, ObjectPool> _pools = new();
+        private Transform _poolsParent;
 
         private void Awake()
         {
@@ -17,6 +18,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                _poolsParent = new GameObject("Pools").transform;
+                _poolsParent.SetParent(transform);
             }
             else
             {
@@ -30,49 +33,47 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (pool != null)
                 {
-                    // Acessa _pool diretamente (assumindo Queue<IPoolable> _pool no ObjectPool)
-                    var poolField = typeof(ObjectPool).GetField("_pool", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (poolField != null)
-                    {
-                        var poolQueue = poolField.GetValue(pool) as Queue<IPoolable>;
-                        if (poolQueue != null)
-                        {
-                            foreach (var obj in poolQueue)
-                            {
-                                if (obj != null && obj.GetGameObject() != null)
-                                {
-                                    obj.Deactivate();
-                                }
-                            }
-                        }
-                    }
+                    pool.ClearPool();
                     if (pool.gameObject != null)
-                    {
                         Destroy(pool.gameObject);
-                    }
                 }
             }
             _pools.Clear();
+            if (_poolsParent != null)
+                Destroy(_poolsParent.gameObject);
         }
 
         public void RegisterPool(PoolableObjectData data)
         {
             if (data == null || string.IsNullOrEmpty(data.ObjectName))
             {
-                DebugUtility.LogError<PoolManager>("PoolableObjectData ou ObjectName nulo.", this);
+                DebugUtility.LogError<PoolManager>("PoolableObjectData ou ObjectName nulo. Verifique a configuração do SpawnData.PoolableData.", this);
+                return;
+            }
+
+            if (!data.Prefab || !data.ModelPrefab)
+            {
+                DebugUtility.LogError<PoolManager>($"Prefab ou ModelPrefab nulo para pool '{data.ObjectName}'. Configure corretamente o PoolableObjectData.", this);
                 return;
             }
 
             if (_pools.ContainsKey(data.ObjectName))
             {
+                DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' já registrado.", "yellow", this);
                 return;
             }
 
             var poolObject = new GameObject($"Pool_{data.ObjectName}");
-            poolObject.transform.SetParent(transform);
+            poolObject.transform.SetParent(_poolsParent);
             var pool = poolObject.AddComponent<ObjectPool>();
             pool.SetData(data);
             pool.Initialize();
+            if (!pool.IsInitialized)
+            {
+                DebugUtility.LogError<PoolManager>($"Falha ao inicializar pool '{data.ObjectName}'. Verifique o PoolableObjectData.", this);
+                Destroy(poolObject);
+                return;
+            }
             _pools[data.ObjectName] = pool;
 
             DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registrado com sucesso.", "green", this);
@@ -80,13 +81,25 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public ObjectPool GetPool(string key)
         {
-            return _pools.GetValueOrDefault(key);
+            if (_pools.TryGetValue(key, out var pool) && pool.IsInitialized)
+                return pool;
+            DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado. Verifique se o pool foi registrado pelo SpawnManager.", this);
+            return null;
         }
 
         public IPoolable GetObject(string key, Vector3 position)
         {
             var pool = GetPool(key);
-            return pool?.GetObject(position);
+            if (pool == null)
+                return null;
+
+            var wasEmpty = pool.GetAvailableCount() == 0;
+            var obj = pool.GetObject(position);
+            if (obj != null && wasEmpty && pool.GetAvailableCount() > 0)
+            {
+                EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(key));
+            }
+            return obj;
         }
     }
 }

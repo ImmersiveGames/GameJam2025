@@ -3,18 +3,14 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    public struct SpawnRequestEvent : IEvent
+    public class SpawnRequestEvent : IEvent
     {
-        public string ObjectName { get; }
-        public Vector3 Origin { get; }
-        public SpawnData Data { get; }
-        public GameObject SourceGameObject { get; } // Novo campo
+        public string PoolKey { get; }
+        public GameObject SourceGameObject { get; }
 
-        public SpawnRequestEvent(string objectName, Vector3 origin, SpawnData data, GameObject sourceGameObject = null)
+        public SpawnRequestEvent(string poolKey, GameObject sourceGameObject)
         {
-            ObjectName = objectName;
-            Origin = origin;
-            Data = data;
+            PoolKey = poolKey;
             SourceGameObject = sourceGameObject;
         }
     }
@@ -45,5 +41,33 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             Position = position;
             Data = data;
         }
+    }
+    public class SpawnPointLockedEvent : IEvent
+    {
+        public SpawnPoint Point { get; }
+        public SpawnPointLockedEvent(SpawnPoint point) => Point = point;
+    }
+
+    public class SpawnPointUnlockedEvent : IEvent
+    {
+        public SpawnPoint Point { get; }
+        public SpawnPointUnlockedEvent(SpawnPoint point) => Point = point;
+    }
+
+    public class SpawnPointResetEvent : IEvent
+    {
+        public SpawnPoint Point { get; }
+        public SpawnPointResetEvent(SpawnPoint point) => Point = point;
+    }
+    
+    public class GlobalSpawnEvent : IEvent
+    {
+        public string EventName { get; }
+        public GlobalSpawnEvent(string eventName) => EventName = eventName;
+    }
+    
+    public interface IGlobalEvent : IEvent
+    {
+        string EventName { get; }
     }
 }

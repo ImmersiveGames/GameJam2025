@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -28,7 +27,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             base.Awake();
         }
 
-        protected override void InitializeTrigger()
+        /*protected override void InitializeTrigger()
         {
             _trigger = SpawnFactory.Instance.CreateTrigger(triggerData, playerInput.actions);
             if (_trigger == null)
@@ -38,6 +37,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
             _trigger.Initialize(this);
-        }
+        }*/
     }
 }
