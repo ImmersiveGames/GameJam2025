@@ -15,7 +15,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     {
         SimpleSpawnStrategy,
         DirectionalSpawnStrategy,
-        FullPoolSpawnStrategy
+        FullPoolSpawnStrategy,
+        OrbitPlanetStrategy
     }
     
     [System.Serializable]
@@ -23,18 +24,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     {
         AND,
         OR
-    }
-
-    [System.Serializable]
-    public class TriggerProperties
-    {
-        public float interval = 2f;
-        public bool startImmediately = true;
-        public string actionName = "Fire";
-        public PredicateData predicate;
-        public List<TriggerData> compositeTriggers = new List<TriggerData>();
-        public CombinationMode combinationMode = CombinationMode.AND;
-        public SensorTypes sensorType = SensorTypes.OtherSensor;
     }
     
     [System.Serializable]

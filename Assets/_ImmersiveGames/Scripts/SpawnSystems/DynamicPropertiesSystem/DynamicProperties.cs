@@ -146,12 +146,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
             strategyTemplates[StrategyType.FullPoolSpawnStrategy] = new PropertyTemplate("FullPoolSpawnStrategy")
                 .AddProperty("spacing", 1f, true, "Espaçamento entre objetos spawnados");
-
-            // Exemplo de nova estratégia - super fácil!
-            // strategyTemplates[StrategyType.SpiralStrategy] = new PropertyTemplate("SpiralStrategy")
-            //     .AddProperty("spiralRadius", 5f, true, "Raio da espiral")
-            //     .AddProperty("spiralSpeed", 2f, false, "Velocidade da rotação")
-            //     .AddProperty("spiralSteps", 8, false, "Passos na espiral");
+            strategyTemplates[StrategyType.OrbitPlanetStrategy] = new PropertyTemplate("OrbitPlanetStrategy")
+                .AddProperty("minAngleSeparationDegrees", 10f, true, "Separação mínima entre ângulos dos planetas (graus)")
+                .AddProperty("angleVariationDegrees", 10f, true, "Variação máxima de ângulo para ângulos otimizados (graus)")
+                .AddProperty("maxAngleAttempts", 50, true, "Máximo de tentativas para encontrar ângulo aleatório válido")
+                .AddProperty("useRandomAngles", false, false, "Usar ângulos aleatórios em vez de otimizados")
+                .AddProperty("addAngleVariation", false, false, "Adicionar variação aos ângulos otimizados")
+                .AddProperty("initialOffset", 10f, true, "Offset inicial do centro da órbita")
+                .AddProperty("orbitCenter", Vector3.zero, false, "Centro da órbita")
+                .AddProperty("spaceBetweenPlanets", 2f, true, "Espaço mínimo entre planetas")
+                .AddProperty("maxPlanets", 10, true, "Número máximo de planetas")
+                .AddProperty("orbitSpeed", 10f, true, "Velocidade de rotação dos planetas (graus/segundo)");
         }
 
         public static PropertyTemplate GetTriggerTemplate(TriggerType type)

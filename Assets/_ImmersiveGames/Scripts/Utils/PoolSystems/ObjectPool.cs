@@ -73,7 +73,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             poolable.Reset();
             poolable.Activate(position);
             _activeObjects.Add(poolable);
-            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position, null));
+            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position));
             return poolable;
         }
 

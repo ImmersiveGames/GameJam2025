@@ -15,31 +15,27 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         }
     }
 
-    public struct SpawnTriggeredEvent : IEvent
+    public class SpawnTriggeredEvent : IEvent
     {
-        public string PoolName { get; }
+        public string PoolKey { get; }
         public Vector3 Position { get; }
-        public SpawnData Data { get; }
 
-        public SpawnTriggeredEvent(string poolName, Vector3 position, SpawnData data)
+        public SpawnTriggeredEvent(string poolKey, Vector3 position)
         {
-            PoolName = poolName;
+            PoolKey = poolKey;
             Position = position;
-            Data = data;
         }
     }
 
-    public struct SpawnFailedEvent : IEvent
+    public class SpawnFailedEvent : IEvent
     {
-        public string PoolName { get; }
+        public string PoolKey { get; }
         public Vector3 Position { get; }
-        public SpawnData Data { get; }
 
-        public SpawnFailedEvent(string poolName, Vector3 position, SpawnData data)
+        public SpawnFailedEvent(string poolKey, Vector3 position)
         {
-            PoolName = poolName;
+            PoolKey = poolKey;
             Position = position;
-            Data = data;
         }
     }
     public class SpawnPointLockedEvent : IEvent

@@ -8,17 +8,17 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 {
-    [CustomEditor(typeof(SpawnPoint))]
+    [CustomEditor(typeof(SpawnPoint), true)]
     [CanEditMultipleObjects]
     public class SpawnPointEditor : UnityEditor.Editor
     {
-        private SerializedProperty _spawnDataProp;
+        private SerializedProperty _poolableDataProp;
         private SerializedProperty _triggerDataProp;
         private SerializedProperty _strategyDataProp;
         private SerializedProperty _useManagerLockingProp;
-        private SerializedProperty _inputActionAssetProp;
+        private SerializedProperty _playerInputProp;
 
-        private bool _showSpawnData = true;
+        private bool _showPoolableData = true;
         private bool _showTrigger = true;
         private bool _showStrategy = true;
         private bool _showRuntimeInfo = true;
@@ -28,11 +28,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 
         private void OnEnable()
         {
-            _spawnDataProp = serializedObject.FindProperty("spawnData");
+            _poolableDataProp = serializedObject.FindProperty("poolableData");
             _triggerDataProp = serializedObject.FindProperty("triggerData");
             _strategyDataProp = serializedObject.FindProperty("strategyData");
             _useManagerLockingProp = serializedObject.FindProperty("useManagerLocking");
-            _inputActionAssetProp = serializedObject.FindProperty("inputActionAsset");
+            _playerInputProp = serializedObject.FindProperty("playerInput");
         }
 
         public override void OnInspectorGUI()
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 
             DrawHeader();
             DrawGeneralSetup();
-            DrawSpawnData();
+            DrawPoolableData();
             DrawTrigger();
             DrawStrategy();
             DrawRuntimeInfo();
@@ -59,16 +59,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
         private void DrawGeneralSetup()
         {
             EditorGUILayout.PropertyField(_useManagerLockingProp, new GUIContent("Use Manager Locking", "Se verdadeiro, o SpawnManager controla os limites de spawn."));
-            EditorGUILayout.PropertyField(_inputActionAssetProp, new GUIContent("Input Action Asset", "Asset de ações para InputSystemTrigger."));
-            ValidateRequiredField(_spawnDataProp, "Spawn Data é obrigatório!");
+            if (_playerInputProp != null)
+            {
+                EditorGUILayout.PropertyField(_playerInputProp, new GUIContent("Player Input", "Componente PlayerInput para InputSystemTrigger."));
+            }
+            ValidateRequiredField(_poolableDataProp, "Poolable Object Data é obrigatório!");
         }
 
-        private void DrawSpawnData()
+        private void DrawPoolableData()
         {
-            _showSpawnData = EditorGUILayout.BeginFoldoutHeaderGroup(_showSpawnData, "📦 Spawn Data");
-            if (_showSpawnData)
+            _showPoolableData = EditorGUILayout.BeginFoldoutHeaderGroup(_showPoolableData, "📦 Poolable Object Data");
+            if (_showPoolableData)
             {
-                EditorGUILayout.PropertyField(_spawnDataProp);
+                EditorGUILayout.PropertyField(_poolableDataProp);
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
@@ -115,21 +118,21 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                     }
                 }
 
-                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData enhancedTriggerData &&
-                    enhancedTriggerData.triggerType == TriggerType.GlobalEventTrigger && 
+                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData triggerData &&
+                    triggerData.triggerType == TriggerType.GlobalEventTrigger && 
                     GUILayout.Button("Test Global Spawn Event"))
                 {
                     var spawnPoints = targets.Cast<SpawnPoint>().ToList();
                     foreach (var spawnPoint in spawnPoints)
                     {
-                        string eventName = enhancedTriggerData.GetProperty("eventName", "GlobalSpawnEvent");
+                        string eventName = triggerData.GetProperty("eventName", "GlobalSpawnEvent");
                         EventBus<GlobalSpawnEvent>.Raise(new GlobalSpawnEvent(eventName));
                         Debug.Log($"Disparado GlobalSpawnEvent '{eventName}' para '{spawnPoint.name}'.");
                     }
                 }
 
-                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData triggerData &&
-                    triggerData.triggerType == TriggerType.PredicateTrigger)
+                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData enhancedTriggerData &&
+                    enhancedTriggerData.triggerType == TriggerType.PredicateTrigger)
                 {
                     _testPredicateType = (TestPredicateType)EditorGUILayout.EnumPopup("Test Predicate", _testPredicateType);
                     if (GUILayout.Button("Test Predicate Trigger"))
@@ -146,7 +149,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                                     TestPredicateType.NoEnemies => () => GameObject.FindGameObjectsWithTag("Enemy").Length == 0,
                                     _ => () => false
                                 });
-                                predicateTrigger.CheckTrigger(Vector3.zero, null); // Parâmetros ignorados
+                                predicateTrigger.CheckTrigger(Vector3.zero);
                                 Debug.Log($"Testado PredicateTrigger para '{spawnPoint.name}' com predicado '{_testPredicateType}'.");
                             }
                         }
@@ -207,10 +210,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
         private void ValidateInputTrigger()
         {
             if (_triggerDataProp.objectReferenceValue is EnhancedTriggerData triggerData &&
-                triggerData.triggerType == TriggerType.InputSystemTrigger &&
-                _inputActionAssetProp.objectReferenceValue == null)
+                triggerData.triggerType == TriggerType.InputSystemTrigger)
             {
-                EditorGUILayout.HelpBox($"Trigger '{triggerData.triggerType}' requer um Input Action Asset configurado.", MessageType.Warning);
+                bool isInputSpawnPoint = targets.All(t => t is InputSpawnPoint);
+                if (!isInputSpawnPoint)
+                {
+                    EditorGUILayout.HelpBox($"InputSystemTrigger só pode ser usado com InputSpawnPoint.", MessageType.Error);
+                }
+                else if (_playerInputProp != null && _playerInputProp.objectReferenceValue == null)
+                {
+                    EditorGUILayout.HelpBox($"InputSystemTrigger requer um PlayerInput configurado.", MessageType.Warning);
+                }
             }
         }
 

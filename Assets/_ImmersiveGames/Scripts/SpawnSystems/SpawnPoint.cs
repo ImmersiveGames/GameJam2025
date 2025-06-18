@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -11,11 +10,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     [DebugLevel(DebugLevel.Verbose)]
     public class SpawnPoint : MonoBehaviour
     {
-        [SerializeField] protected SpawnData spawnData;
+        [SerializeField] private PoolableObjectData poolableData;
         [SerializeField] public bool useManagerLocking = true;
         [SerializeField] protected EnhancedTriggerData triggerData;
         [SerializeField] private EnhancedStrategyData strategyData;
-        [SerializeField] private InputActionAsset inputActionAsset;
 
         private string _poolKey;
         private bool _isExhausted;
@@ -33,13 +31,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         protected SpawnManager spawnManager;
         protected PoolManager poolManager;
         protected ISpawnStrategy SpawnStrategy { get; private set; }
-        public ISpawnTrigger SpawnTrigger { get; private set; }
+        public ISpawnTrigger SpawnTrigger { get; protected set; }
 
         protected virtual void Awake()
         {
-            if (!spawnData || !spawnData.PoolableData || string.IsNullOrEmpty(spawnData.PoolableData.ObjectName))
+            if (!poolableData || string.IsNullOrEmpty(poolableData.ObjectName))
             {
-                DebugUtility.LogError<SpawnPoint>("SpawnData ou PoolableData inválido. Verifique a configuração no Inspector.", this);
+                DebugUtility.LogError<SpawnPoint>("PoolableObjectData inválido. Verifique a configuração no Inspector.", this);
                 return;
             }
 
@@ -56,7 +54,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            _poolKey = spawnData.PoolableData.ObjectName;
+            _poolKey = poolableData.ObjectName;
             _cachedPosition = transform.position;
             _cachedForward = transform.forward;
 
@@ -81,7 +79,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _cachedPool = poolManager.GetPool(_poolKey);
             if (!_cachedPool)
             {
-                DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não foi registrado ou inicializado. Verifique o PoolableObjectData em SpawnData.", this);
+                DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não foi registrado ou inicializado. Verifique o PoolableObjectData.", this);
             }
             UpdateSpawnState();
         }
@@ -97,7 +95,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void InitializeTrigger()
         {
-            SpawnTrigger = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData, inputActionAsset);
+            SpawnTrigger = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData);
             if (SpawnTrigger == null)
             {
                 DebugUtility.LogError<SpawnPoint>($"Falha ao criar trigger para {triggerData?.triggerType}.", this);
@@ -132,7 +130,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
 
             UpdateTransformCache();
-            SpawnTrigger.CheckTrigger(_cachedPosition, spawnData);
+            SpawnTrigger.CheckTrigger(_cachedPosition);
         }
 
         private void UpdateTransformCache()
@@ -144,20 +142,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         protected virtual void HandleSpawnRequest(SpawnRequestEvent evt)
         {
             DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
-            if (evt.PoolKey != _poolKey || !_isSpawnValid)
+            if (evt.PoolKey != _poolKey || !_isSpawnValid || evt.SourceGameObject != gameObject)
             {
-                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: PoolKey mismatch ou _isSpawnValid={_isSpawnValid}", "yellow", this);
+                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: PoolKey mismatch, _isSpawnValid={_isSpawnValid}, ou SourceGameObject não é '{name}'", "yellow", this);
                 return;
             }
 
             if (!_cachedPool)
             {
                 DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não encontrado.", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, _cachedPosition, spawnData));
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, _cachedPosition));
                 return;
             }
 
-            // Delega à estratégia sem definir spawnCount
             var availableCount = _cachedPool.GetAvailableCount();
             if (availableCount <= 0)
             {
@@ -165,16 +162,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     _isExhausted = true;
                 UpdateSpawnState();
                 EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(_poolKey));
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, _cachedPosition, spawnData));
+                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, _cachedPosition));
                 DebugUtility.Log<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}'.", "yellow", this);
                 return;
             }
 
-            // Estratégia decide quantos e como spawnar
-            SpawnStrategy?.Spawn(_cachedPool, spawnData, _cachedPosition, _cachedForward);
+            SpawnStrategy?.Spawn(_cachedPool, _cachedPosition, _cachedForward);
             if (useManagerLocking)
                 spawnManager?.RegisterSpawn(this);
-            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, _cachedPosition, spawnData));
+            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, _cachedPosition));
             DebugUtility.Log<SpawnPoint>($"Spawn executado em '{name}' na posição {_cachedPosition}.", "green", this);
         }
 
@@ -264,7 +260,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         }
 
         public string GetPoolKey() => _poolKey;
-        public SpawnData GetSpawnData() => spawnData;
+        public PoolableObjectData GetPoolableData() => poolableData;
         public EnhancedTriggerData GetTriggerData() => triggerData;
         public bool IsSpawnValid() => _isSpawnValid;
         public bool GetTriggerActive() => SpawnTrigger?.IsActive ?? false;

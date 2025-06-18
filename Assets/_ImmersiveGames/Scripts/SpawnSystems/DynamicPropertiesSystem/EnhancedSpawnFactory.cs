@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
             if (data.triggerType == TriggerType.InputSystemTrigger && inputAsset == null)
             {
-                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para {data.triggerType}.", null);
+                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para InputSystemTrigger.", null);
                 return null;
             }
 
@@ -48,6 +48,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                 StrategyType.SimpleSpawnStrategy => new SimpleSpawnStrategy(data),
                 StrategyType.DirectionalSpawnStrategy => new DirectionalSpawnStrategy(data),
                 StrategyType.FullPoolSpawnStrategy => new FullPoolSpawnStrategy(data),
+                StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
                 _ => null
             };
         }

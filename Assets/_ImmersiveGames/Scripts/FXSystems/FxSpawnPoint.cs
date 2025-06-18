@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+﻿/*using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         protected override void InitializeTrigger()
         {
-            /*// Forçar o uso de DeathEventTrigger
+            //Forçar o uso de DeathEventTrigger
             if (triggerData == null)
             {
                 triggerData = ScriptableObject.CreateInstance<TriggerData>();
@@ -49,25 +49,25 @@ namespace _ImmersiveGames.Scripts.FXSystems
             {
                 DebugUtility.LogError<FxSpawnPoint>($"Trigger deve ser DeathEventTrigger para '{name}'.", this);
                 enabled = false;
-            }*/
+            }
         }
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (!spawnData || SpawnTrigger == null)
+            if (SpawnTrigger == null)
             {
                 DebugUtility.LogWarning<FxSpawnPoint>($"SpawnData ou Trigger não configurado em '{name}'.", this);
                 return;
             }
 
             // Passa a posição do DeathEvent para o trigger
-            SpawnTrigger.CheckTrigger(evt.Position, spawnData);
+            SpawnTrigger.CheckTrigger(evt.Position);
         }
 
         protected override void HandleSpawnRequest(SpawnRequestEvent evt)
         {
-            /*if (evt.Data != spawnData)
-                return;*/
+            if (evt.Data != spawnData)
+                return;
 
             // Chama a lógica base do SpawnPoint
             base.HandleSpawnRequest(evt);
@@ -102,4 +102,4 @@ namespace _ImmersiveGames.Scripts.FXSystems
             DebugUtility.Log<FxSpawnPoint>($"Trigger resetado após spawn em '{name}'.", "green", this);
         }
     }
-}
+}*/

@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnCount = data.GetProperty("spawnCount", 1); // Novo: define quantidade
         }
 
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
         {
             if (pool == null) return;
 
@@ -46,7 +47,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnCount = data.GetProperty("spawnCount", 1);
         }
 
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
         {
             if (pool == null) return;
 
@@ -81,7 +82,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spacing = data.GetProperty("spacing", 1f);
         }
 
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
         {
             if (pool == null) return;
 

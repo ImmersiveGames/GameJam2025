@@ -2,156 +2,288 @@
 using System.Linq;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
-using _ImmersiveGames.Scripts.Utils;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class OrbitPlanetStrategy : ISpawnStrategy
     {
-        private const float MinAngleSeparationDegrees = 10f;
-        private const float AngleVariationDegrees = 10f;
-        private const int MaxAngleAttempts = 50;
-        private const float BaseDiameter = 5f;
+        // Constantes
+        private const float FullCircleDegrees = 360f;
+        private const float AngleSeparationFactor = 1.5f;
+        private const int MaxCollisionAttempts = 10;
+        private const float DefaultDiameter = 5.2f;
 
+        // Configurações
+        private readonly float _minAngleSeparationDegrees;
+        private readonly float _angleVariationDegrees;
+        private readonly int _maxAngleAttempts;
         private readonly bool _useRandomAngles;
         private readonly bool _addAngleVariation;
+        private readonly float _initialOffset;
+        private readonly Vector3 _orbitCenter;
+        private readonly float _spaceBetweenPlanets;
+        private readonly int _maxPlanets;
+        private readonly float _orbitSpeed;
         private readonly PlanetsManager _planetsManager;
 
-        public OrbitPlanetStrategy(bool useRandomAngles, bool addAngleVariation)
+        private readonly List<float> _orbitalRadii = new();
+        private readonly OrbitGizmoDrawer _gizmoDrawer;
+
+        public OrbitPlanetStrategy(EnhancedStrategyData data)
         {
-            _useRandomAngles = useRandomAngles;
-            _addAngleVariation = addAngleVariation;
+            _minAngleSeparationDegrees = data.GetProperty("minAngleSeparationDegrees", 10f);
+            _angleVariationDegrees = data.GetProperty("angleVariationDegrees", 10f);
+            _maxAngleAttempts = data.GetProperty("maxAngleAttempts", 50);
+            _useRandomAngles = data.GetProperty("useRandomAngles", false);
+            _addAngleVariation = data.GetProperty("addAngleVariation", false);
+            _initialOffset = data.GetProperty("initialOffset", 10f);
+            _orbitCenter = data.GetProperty("orbitCenter", Vector3.zero);
+            _spaceBetweenPlanets = data.GetProperty("spaceBetweenPlanets", 10f);
+            _maxPlanets = data.GetProperty("maxPlanets", 10);
+            _orbitSpeed = data.GetProperty("orbitSpeed", 10f);
             _planetsManager = PlanetsManager.Instance;
-        }
-
-        public void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
-        {
-            if (data is not PlanetSpawnData planetSpawnData)
-            {
-                DebugUtility.LogError<OrbitPlanetStrategy>("SpawnData não é do tipo PlanetSpawnData!");
-                return;
-            }
-
-            if (!ValidateInputs(objects, planetSpawnData)) return;
-
-            SpawnPlanets(objects, planetSpawnData);
-        }
-
-        private void SpawnPlanets(IPoolable[] objects, PlanetSpawnData planetSpawnData)
-        {
-            List<PlanetResourcesSo> resourceList = _planetsManager.GenerateResourceList(objects.Length, planetSpawnData.PlanetResources);
-            float currentOrbitRadius = planetSpawnData.InitialOrbitRadius;
-            float lastScaledDiameter = 0f;
-            var usedAngles = new List<float>();
-            for (int index = 0; index < objects.Length; index++)
-            {
-                if (objects[index] == null)
-                {
-                    DebugUtility.LogWarning<OrbitPlanetStrategy>($"Objeto {index} é nulo!");
-                    continue;
-                }
-
-                var planetData = GetRandomPlanetData(planetSpawnData.PlanetOptions);
-                if (planetData == null)
-                {
-                    DebugUtility.LogWarning<OrbitPlanetStrategy>("Nenhum PlanetData válido encontrado!");
-                    continue;
-                }
-                var planet = _planetsManager.ConfigurePlanet(objects[index], planetData, index, resourceList[index]);
-                if (planet == null)
-                {
-                    DebugUtility.LogWarning<OrbitPlanetStrategy>($"Falha ao criar planeta {index}!");
-                    continue;
-                }
-
-                PlantOrbitPositioning(planet.GetPlanetInfo(), planetSpawnData, ref currentOrbitRadius, ref lastScaledDiameter, usedAngles, index, objects.Length);
-                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planet));
-            }
-        }
-
-        private void PlantOrbitPositioning(PlanetsMaster.PlanetInfo planetInfo, PlanetSpawnData spawnData, ref float currentOrbitRadius, ref float lastScaledDiameter, List<float> usedAngles, int index, int totalPlanets)
-        {
-            Bounds bounds = CalculateRealLength.GetBounds(planetInfo.PlanetObject);
-            float realDiameter = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
-            float normalizedDiameter = realDiameter > 0 ? realDiameter : 1f;
-            float scaleFactor = BaseDiameter / normalizedDiameter;
-            float scaledDiameter = realDiameter * scaleFactor * planetInfo.planetScale;
-
-            currentOrbitRadius = CalculateOrbitRadius(lastScaledDiameter, scaledDiameter, currentOrbitRadius, spawnData.SpaceBetweenPlanets);
-
-            float initialAngle = GetPlanetAngle(index, totalPlanets, usedAngles);
-            PositionPlanet(planetInfo, currentOrbitRadius, initialAngle, spawnData.OrbitCenter);
-
-            lastScaledDiameter = scaledDiameter;
-            planetInfo.planetRadius = currentOrbitRadius;
-
-            DebugUtility.Log<OrbitPlanetStrategy>(
-                $"Planeta {index} spawnado - Raio: {currentOrbitRadius:F2}, Ângulo: {initialAngle * Mathf.Rad2Deg:F1}°, Diâmetro real: {realDiameter:F2}, Diâmetro escalado: {scaledDiameter:F2}, Bounds: {bounds.size}");
-        }
-
-        private bool ValidateInputs(IPoolable[] objects, PlanetSpawnData spawnData)
-        {
-            if (objects == null || objects.Length == 0)
-            {
-                DebugUtility.LogWarning<OrbitPlanetStrategy>("Lista de objetos vazia ou nula!");
-                return false;
-            }
-
-            if (spawnData.PlanetOptions == null || spawnData.PlanetOptions.Count == 0)
-            {
-                DebugUtility.LogWarning<OrbitPlanetStrategy>("Nenhuma opção de planeta configurada!");
-                return false;
-            }
-
-            if (spawnData.PlanetResources == null || spawnData.PlanetResources.Count == 0)
-            {
-                DebugUtility.LogWarning<OrbitPlanetStrategy>("Nenhum recurso configurado!");
-                return false;
-            }
 
             if (_planetsManager == null)
             {
                 DebugUtility.LogError<OrbitPlanetStrategy>("PlanetsManager.Instance é nulo!");
-                return false;
             }
 
+            _gizmoDrawer = Object.FindFirstObjectByType<OrbitGizmoDrawer>();
+            if (_gizmoDrawer == null)
+            {
+                _gizmoDrawer = new GameObject("OrbitGizmoDrawer").AddComponent<OrbitGizmoDrawer>();
+                DebugUtility.Log<OrbitPlanetStrategy>("OrbitGizmoDrawer criado automaticamente.", "yellow");
+            }
+        }
+
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
+        {
+            if (!ValidateInputs(pool)) return;
+            SetupSolarSystem(pool);
+        }
+
+        // Configuração do Sistema Solar
+        private void SetupSolarSystem(ObjectPool pool)
+        {
+            int planetCount = Mathf.Min(pool.GetAvailableCount(), _maxPlanets);
+            if (planetCount == 0)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>("Nenhum objeto disponível no pool!");
+                return;
+            }
+
+            _orbitalRadii.Clear();
+            var planetInfos = CreateAndActivatePlanets(pool, planetCount);
+
+            if (planetInfos.Count == 0)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>("Nenhum planeta criado com sucesso!");
+                return;
+            }
+
+            var orbitInfos = CalculateOrbits(planetInfos);
+            PositionPlanets(planetInfos, orbitInfos);
+
+            _gizmoDrawer.UpdateOrbitRadii(_orbitalRadii);
+            DebugUtility.Log<OrbitPlanetStrategy>($"Atualizado {orbitInfos.Count} órbitas com {_orbitalRadii.Count} raios", "yellow");
+        }
+
+        // Criação e Ativação de Planetas
+        private List<(PlanetsMaster planetMaster, IPoolable poolable)> CreateAndActivatePlanets(ObjectPool pool, int planetCount)
+        {
+            var planetInfos = new List<(PlanetsMaster planetMaster, IPoolable poolable)>();
+            var resourceList = _planetsManager.GenerateResourceList(planetCount);
+
+            for (int index = 0; index < planetCount; index++)
+            {
+                if (!TryGetPoolable(pool, index, out var poolable) ||
+                    !TryGetPlanetData(index, resourceList, out var planetData) ||
+                    !TryConfigurePlanet(poolable, planetData, index, resourceList, out var planetMaster))
+                {
+                    poolable?.Deactivate();
+                    continue;
+                }
+
+                poolable.Activate(Vector3.zero);
+                Physics.SyncTransforms();
+
+                var planetGo = planetMaster.gameObject;
+                var planetInfo = planetMaster.GetPlanetInfo();
+                DebugUtility.Log<OrbitPlanetStrategy>(
+                    $"Planeta {index} criado: diâmetro {planetInfo.planetDiameter:F2}, escala {planetInfo.planetScale:F2}",
+                    "blue", planetGo);
+
+                planetInfos.Add((planetMaster, poolable));
+            }
+
+            return planetInfos;
+        }
+
+        private bool TryGetPoolable(ObjectPool pool, int index, out IPoolable poolable)
+        {
+            poolable = pool.GetObject(Vector3.zero);
+            if (poolable == null)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>($"Falha ao obter objeto do pool para planeta {index}!");
+                return false;
+            }
             return true;
         }
 
-        private float CalculateOrbitRadius(float lastScaledDiameter, float currentScaledDiameter, float currentRadius, float spaceBetweenPlanets)
+        private bool TryGetPlanetData(int index, List<PlanetResourcesSo> resourceList, out PlanetData planetData)
         {
-            float newRadius = currentRadius + (lastScaledDiameter * 0.5f) + (currentScaledDiameter * 0.5f) + spaceBetweenPlanets;
-            DebugUtility.Log<OrbitPlanetStrategy>(
-                $"Novo raio calculado: {newRadius:F2} (anterior: {lastScaledDiameter:F2}, atual: {currentScaledDiameter:F2}, espaço: {spaceBetweenPlanets:F2})");
-            return newRadius;
+            planetData = _planetsManager.GetRandomPlanetData();
+            if (planetData == null || index >= resourceList.Count)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>(
+                    planetData == null ? "Nenhum PlanetData válido encontrado!" : $"Recurso insuficiente para planeta {index}!");
+                return false;
+            }
+            return true;
         }
 
-        private void PositionPlanet(PlanetsMaster.PlanetInfo planetInfo, float radius, float angle, Vector3 orbitCenter)
+        private bool TryConfigurePlanet(IPoolable poolable, PlanetData planetData, int index, List<PlanetResourcesSo> resourceList, out PlanetsMaster planetMaster)
         {
-            var offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
-            planetInfo.orbitPosition = orbitCenter + offset;
-            planetInfo.SetPlanetRadius(radius);
-            planetInfo.initialAngle = angle;
-
-            if (planetInfo.PlanetObject != null)
+            planetMaster = _planetsManager.ConfigurePlanet(poolable, planetData, index, resourceList[index]);
+            if (planetMaster == null)
             {
-                planetInfo.PlanetObject.transform.position = planetInfo.orbitPosition;
-                planetInfo.PoolableObject.Activate(planetInfo.orbitPosition);
+                DebugUtility.LogWarning<OrbitPlanetStrategy>($"Falha ao configurar planeta {index}!");
+                return false;
             }
-            else
-            {
-                DebugUtility.LogError<OrbitPlanetStrategy>("PlanetObject é nulo!");
-            }
-
-            DebugUtility.Log<OrbitPlanetStrategy>(
-                $"Planeta posicionado em {planetInfo.orbitPosition} (raio: {radius:F2}, ângulo: {angle * Mathf.Rad2Deg:F1}°)");
+            return true;
         }
 
+        // Cálculo das Órbitas
+        private List<OrbitPlanetInfo> CalculateOrbits(List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos)
+        {
+            var orbitInfos = new List<OrbitPlanetInfo>();
+            var usedAngles = new List<float>();
+
+            for (int index = 0; index < planetInfos.Count; index++)
+            {
+                var (planetMaster, _) = planetInfos[index];
+                var planetInfo = planetMaster.GetPlanetInfo();
+                float planetRadius = planetInfo.planetDiameter * 0.5f;
+                float prevRadius = index > 0 ? planetInfos[index - 1].planetMaster.GetPlanetInfo().planetDiameter * 0.5f : 0f;
+                float prevOrbitRadius = index > 0 ? orbitInfos[index - 1].planetRadius : 0f;
+
+                float currentRadius = index == 0
+                    ? _initialOffset + planetRadius
+                    : prevOrbitRadius + prevRadius + _spaceBetweenPlanets + planetRadius;
+
+                float initialAngle = GetPlanetAngle(index, planetInfos.Count, usedAngles);
+                var orbitPosition = _orbitCenter + new Vector3(Mathf.Cos(initialAngle), 0, Mathf.Sin(initialAngle)) * currentRadius;
+
+                var orbitInfo = new OrbitPlanetInfo(
+                    orbitPosition,
+                    currentRadius,
+                    initialAngle,
+                    _orbitSpeed,
+                    new Bounds(orbitPosition, Vector3.one * planetInfo.planetDiameter)
+                );
+
+                orbitInfos.Add(orbitInfo);
+                _orbitalRadii.Add(currentRadius);
+
+                if (index > 0)
+                {
+                    DebugUtility.Log<OrbitPlanetStrategy>($"Espaçamento órbitas {index-1}-{index}: {currentRadius - prevOrbitRadius:F2}", "cyan");
+                }
+
+                DebugUtility.Log<OrbitPlanetStrategy>(
+                    $"Planeta {index} - Raio orbital: {currentRadius:F2}, Ângulo: {initialAngle * Mathf.Rad2Deg:F1}°, Raio planeta: {planetRadius:F2}, Escala: {planetInfo.planetScale:F2}",
+                    "green");
+                DebugUtility.Log<OrbitPlanetStrategy>(
+                    $"Cálculo orbital: prevOrbitRadius={prevOrbitRadius:F2}, prevRadius={prevRadius:F2}, space={_spaceBetweenPlanets:F2}, planetRadius={planetRadius:F2}, total={currentRadius:F2}",
+                    "yellow");
+            }
+
+            return orbitInfos;
+        }
+
+        // Posicionamento dos Planetas
+        private void PositionPlanets(List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos, List<OrbitPlanetInfo> orbitInfos)
+        {
+            for (int index = 0; index < planetInfos.Count; index++)
+            {
+                var (planetMaster, poolable) = planetInfos[index];
+                var orbitInfo = orbitInfos[index];
+                var planetInfo = planetMaster.GetPlanetInfo();
+
+                var (adjustedPosition, adjustedRadius) = ResolveCollisions(index, planetInfos, orbitInfos, orbitInfo);
+
+                planetInfo.orbitPosition = adjustedPosition;
+                planetInfo.planetRadius = adjustedRadius;
+                planetInfo.initialAngle = orbitInfo.initialAngle;
+                planetInfo.orbitSpeed = orbitInfo.orbitSpeed;
+
+                poolable.Activate(adjustedPosition);
+                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planetMaster));
+
+                DebugUtility.Log<OrbitPlanetStrategy>(
+                    $"Planeta {index} reposicionado em {adjustedPosition} com raio orbital {adjustedRadius:F2}",
+                    "green", planetMaster.gameObject);
+            }
+        }
+
+        private (Vector3 position, float radius) ResolveCollisions(int index, List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos,
+            List<OrbitPlanetInfo> orbitInfos, OrbitPlanetInfo orbitInfo)
+        {
+            Vector3 adjustedPosition = orbitInfo.orbitPosition;
+            float adjustedRadius = orbitInfo.planetRadius;
+            var planetInfo = planetInfos[index].planetMaster.GetPlanetInfo();
+            int attempts = 0;
+
+            while (attempts < MaxCollisionAttempts)
+            {
+                bool hasCollision = false;
+                for (int prevIndex = 0; prevIndex < index; prevIndex++)
+                {
+                    var prevOrbitInfo = orbitInfos[prevIndex];
+                    var prevPlanetInfo = planetInfos[prevIndex].planetMaster.GetPlanetInfo();
+                    float distance = Vector3.Distance(adjustedPosition, prevOrbitInfo.orbitPosition);
+                    float minDistance = (planetInfo.planetDiameter * 0.5f) + (prevPlanetInfo.planetDiameter * 0.5f) + _spaceBetweenPlanets;
+
+                    if (distance < minDistance)
+                    {
+                        hasCollision = true;
+                        adjustedRadius += _spaceBetweenPlanets;
+                        adjustedPosition = _orbitCenter + new Vector3(Mathf.Cos(orbitInfo.initialAngle), 0, Mathf.Sin(orbitInfo.initialAngle)) * adjustedRadius;
+                        attempts++;
+                        break;
+                    }
+                }
+
+                if (!hasCollision) break;
+            }
+
+            if (attempts >= MaxCollisionAttempts)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>($"Não foi possível evitar colisão para planeta {index} após {attempts} tentativas!");
+            }
+
+            return (adjustedPosition, adjustedRadius);
+        }
+
+        // Validação de Entrada
+        private bool ValidateInputs(ObjectPool pool)
+        {
+            if (pool == null || _planetsManager == null)
+            {
+                DebugUtility.LogError<OrbitPlanetStrategy>(pool == null ? "Pool é nulo!" : "PlanetsManager.Instance é nulo!");
+                return false;
+            }
+            return true;
+        }
+
+        // Cálculo de Ângulos
         private float GetPlanetAngle(int planetIndex, int totalPlanets, List<float> usedAngles)
         {
             return _useRandomAngles ? GetRandomAngleWithValidation(usedAngles, totalPlanets) : GetOptimalAngle(planetIndex, totalPlanets);
@@ -159,17 +291,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private float GetOptimalAngle(int planetIndex, int totalPlanets)
         {
-            float baseAngle = (360f / totalPlanets) * planetIndex;
+            float baseAngle = (FullCircleDegrees / totalPlanets) * planetIndex;
             if (_addAngleVariation)
             {
-                float variation = Random.Range(-AngleVariationDegrees, AngleVariationDegrees);
-                baseAngle += variation;
+                baseAngle += Random.Range(-_angleVariationDegrees, _angleVariationDegrees);
             }
-            baseAngle %= 360f;
-            if (baseAngle < 0f) baseAngle += 360f;
+            baseAngle = NormalizeAngle(baseAngle);
             float finalAngle = baseAngle * Mathf.Deg2Rad;
-            DebugUtility.Log<OrbitPlanetStrategy>(
-                $"Ângulo ótimo calculado: {baseAngle:F1}° para planeta {planetIndex}/{totalPlanets}");
+            DebugUtility.Log<OrbitPlanetStrategy>($"Ângulo ótimo: {baseAngle:F1}° para planeta {planetIndex}/{totalPlanets}", "blue");
             return finalAngle;
         }
 
@@ -177,20 +306,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (usedAngles.Count == 0)
             {
-                float firstAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                DebugUtility.Log<OrbitPlanetStrategy>($"Primeiro ângulo aleatório: {firstAngle * Mathf.Rad2Deg:F1}°");
+                float firstAngle = Random.Range(0f, FullCircleDegrees) * Mathf.Deg2Rad;
+                DebugUtility.Log<OrbitPlanetStrategy>($"Primeiro ângulo aleatório: {firstAngle * Mathf.Rad2Deg:F1}°", "blue");
                 usedAngles.Add(firstAngle);
                 return firstAngle;
             }
 
-            float minAngleSeparation = Mathf.Max(360f / (totalPlanets * 1.5f), MinAngleSeparationDegrees);
-            for (int attempts = 0; attempts < MaxAngleAttempts; attempts++)
+            float minAngleSeparation = Mathf.Max(FullCircleDegrees / (totalPlanets * AngleSeparationFactor), _minAngleSeparationDegrees);
+            for (int attempts = 0; attempts < _maxAngleAttempts; attempts++)
             {
-                float candidateAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                float candidateAngle = Random.Range(0f, FullCircleDegrees) * Mathf.Deg2Rad;
                 if (IsAngleValid(candidateAngle, usedAngles, minAngleSeparation))
                 {
-                    DebugUtility.Log<OrbitPlanetStrategy>(
-                        $"Ângulo aleatório válido encontrado: {candidateAngle * Mathf.Rad2Deg:F1}° (tentativa {attempts + 1})");
+                    DebugUtility.Log<OrbitPlanetStrategy>($"Ângulo aleatório válido: {candidateAngle * Mathf.Rad2Deg:F1}° (tentativa {attempts + 1})", "blue");
                     usedAngles.Add(candidateAngle);
                     return candidateAngle;
                 }
@@ -198,33 +326,25 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             float fallbackAngle = GetEquidistantFallbackAngle(usedAngles.Count, totalPlanets);
             usedAngles.Add(fallbackAngle);
-            DebugUtility.LogWarning<OrbitPlanetStrategy>(
-                $"Usando ângulo fallback equidistante: {fallbackAngle * Mathf.Rad2Deg:F1}° após {MaxAngleAttempts} tentativas");
+            DebugUtility.LogWarning<OrbitPlanetStrategy>($"Ângulo fallback: {fallbackAngle * Mathf.Rad2Deg:F1}° após {_maxAngleAttempts} tentativas");
             return fallbackAngle;
         }
 
         private bool IsAngleValid(float candidateAngle, List<float> usedAngles, float minSeparation)
         {
             float candidateAngleDegrees = candidateAngle * Mathf.Rad2Deg;
-            return usedAngles.Select(usedAngle => usedAngle * Mathf.Rad2Deg)
-                .All(usedAngleDegrees => Mathf.Abs(Mathf.DeltaAngle(candidateAngleDegrees, usedAngleDegrees)) >= minSeparation);
+            return usedAngles.All(usedAngle => Mathf.Abs(Mathf.DeltaAngle(candidateAngleDegrees, usedAngle * Mathf.Rad2Deg)) >= minSeparation);
         }
 
         private float GetEquidistantFallbackAngle(int planetIndex, int totalPlanets)
         {
-            return (360f / totalPlanets) * planetIndex * Mathf.Deg2Rad;
+            return (FullCircleDegrees / totalPlanets) * planetIndex * Mathf.Deg2Rad;
         }
 
-        private PlanetData GetRandomPlanetData(List<PlanetData> planetOptions)
+        private float NormalizeAngle(float angle)
         {
-            if (planetOptions != null && planetOptions.Count != 0)
-                return planetOptions[Random.Range(0, planetOptions.Count)];
-            DebugUtility.LogError<OrbitPlanetStrategy>("Lista de opções de planetas é nula ou vazia!");
-            return null;
-        }
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
-        {
-            throw new System.NotImplementedException();
+            angle %= FullCircleDegrees;
+            return angle < 0f ? angle + FullCircleDegrees : angle;
         }
     }
 }

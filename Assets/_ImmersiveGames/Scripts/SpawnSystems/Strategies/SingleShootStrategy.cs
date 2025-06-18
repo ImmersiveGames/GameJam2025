@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class SingleShootStrategy : ISpawnStrategy
     {
-        public void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(IPoolable[] objects, PlanetConfigData configData, Vector3 origin, Vector3 forward)
         {
             foreach (var obj in objects)
             {
@@ -19,10 +20,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 var movement = go.GetComponent<ProjectileMovement>();
                 if (movement)
                 {
-                    var poolableData = data.PoolableData as ProjectilesData;
+                    var poolableData = configData;
                     if (poolableData)
                     {
-                        movement.InitializeMovement(forward.normalized, poolableData.speed);
+                        movement.InitializeMovement(forward.normalized, 20);
                     }
                     else
                     {
@@ -35,7 +36,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
         }
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
         {
             throw new System.NotImplementedException();
         }

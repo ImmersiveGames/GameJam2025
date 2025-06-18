@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnPoint = spawnPoint;
         }
 
-        public bool CheckTrigger(Vector3 origin, SpawnData data)
+        public bool CheckTrigger(Vector3 origin)
         {
             if (!_isActive || _hasSpawned) return false;
 
@@ -80,7 +81,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnPoint = spawnPoint;
         }
 
-        public bool CheckTrigger(Vector3 origin, SpawnData data)
+        public bool CheckTrigger(Vector3 origin)
         {
             if (!_isActive) return false;
 
@@ -112,9 +113,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private readonly string _actionName;
         private readonly InputAction _action;
         private bool _isActive;
-        private SpawnPoint _spawnPoint;
+        private InputSpawnPoint _spawnPoint; // Alterado para InputSpawnPoint
 
-        public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset) // Mantido inputAsset
+        public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset)
         {
             _actionName = data.GetProperty("actionName", "Fire");
             _action = inputAsset?.FindAction(_actionName);
@@ -129,12 +130,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Initialize(SpawnPoint spawnPoint)
         {
-            _spawnPoint = spawnPoint;
+            if (!(spawnPoint is InputSpawnPoint inputSpawnPoint))
+            {
+                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger só pode ser usado com InputSpawnPoint, não com {spawnPoint.GetType().Name}.", spawnPoint);
+                _isActive = false;
+                return;
+            }
+            _spawnPoint = inputSpawnPoint;
             _action?.Enable();
             _action!.performed += OnActionPerformed;
         }
 
-        public bool CheckTrigger(Vector3 origin, SpawnData data)
+        public bool CheckTrigger(Vector3 origin)
         {
             return false; // Lógica movida para OnActionPerformed
         }
@@ -143,7 +150,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (!_isActive || _spawnPoint == null) return;
             EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-            DebugUtility.Log<InputSystemTrigger>($"Spawn disparado por input '{_actionName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
+            DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
         }
 
         public void Reset()
@@ -185,7 +192,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             EventBus<GlobalSpawnEvent>.Register(_eventBinding);
         }
 
-        public bool CheckTrigger(Vector3 origin, SpawnData data)
+        public bool CheckTrigger(Vector3 origin)
         {
             return false; // Lógica movida para evento
         }
@@ -237,7 +244,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnPoint = spawnPoint;
         }
 
-        public bool CheckTrigger(Vector3 origin, SpawnData data)
+        public bool CheckTrigger(Vector3 origin)
         {
             if (!_isActive) return false;
 

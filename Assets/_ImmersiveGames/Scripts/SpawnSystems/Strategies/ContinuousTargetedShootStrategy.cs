@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private float _lastShotTime;
         private readonly float _shotInterval = 1f; // Intervalo configurável
 
-        public void Spawn(IPoolable[] objects, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(IPoolable[] objects, PlanetConfigData data, Vector3 origin, Vector3 forward)
         {
             if (Time.time < _lastShotTime + _shotInterval) return;
 
@@ -32,16 +33,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var movement = go.GetComponent<ProjectileMovement>();
             if (movement != null)
             {
-                var poolableData = data.PoolableData as ProjectilesData;
+                var poolableData = data.PlanetOptions;
                 if (poolableData != null)
                 {
-                    movement.InitializeMovement(forward.normalized, poolableData.speed);
+                    movement.InitializeMovement(forward.normalized, 20);
                     _lastShotTime = Time.time;
-                    DebugUtility.Log<ContinuousTargetedShootStrategy>($"[{go.name}] Disparou na direção {forward.normalized}, Velocidade: {poolableData.speed}, Posição: {go.transform.position}", "green", go);
+                    DebugUtility.Log<ContinuousTargetedShootStrategy>($"[{go.name}] Disparou na direção {forward.normalized}, Velocidade: {20}, Posição: {go.transform.position}", "green", go);
                 }
             }
         }
-        public void Spawn(ObjectPool pool, SpawnData data, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
         {
             throw new System.NotImplementedException();
         }
