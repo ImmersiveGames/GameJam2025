@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df251372d2034718b4656f87b9fc80f6, type: 3}
+  m_Name: PlanetsStrategyData
+  m_EditorClassIdentifier: 
+  strategyType: 3
+  dynamicProperties:
+    properties:
+    - rid: 8761739247831220238
+    - rid: 8761739247831220239
+    - rid: 8761739247831220240
+    - rid: 8761739247831220241
+    - rid: 8761739247831220242
+    - rid: 8761739247831220243
+    - rid: 8761739247831220244
+    - rid: 8761739247831220245
+    - rid: 8761739247831220246
+    - rid: 8761739247831220247
+  references:
+    version: 2
+    RefIds:
+    - rid: 8761739247831220238
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: minAngleSeparationDegrees
+        value: 10
+        isRequired: 1
+        description: "Separa\xE7\xE3o m\xEDnima entre \xE2ngulos dos planetas (graus)"
+    - rid: 8761739247831220239
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: angleVariationDegrees
+        value: 10
+        isRequired: 1
+        description: "Varia\xE7\xE3o m\xE1xima de \xE2ngulo para \xE2ngulos otimizados
+          (graus)"
+    - rid: 8761739247831220240
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: maxAngleAttempts
+        value: 50
+        isRequired: 1
+        description: "M\xE1ximo de tentativas para encontrar \xE2ngulo aleat\xF3rio
+          v\xE1lido"
+    - rid: 8761739247831220241
+      type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: useRandomAngles
+        value: 0
+        isRequired: 0
+        description: "Usar \xE2ngulos aleat\xF3rios em vez de otimizados"
+    - rid: 8761739247831220242
+      type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: addAngleVariation
+        value: 0
+        isRequired: 0
+        description: "Adicionar varia\xE7\xE3o aos \xE2ngulos otimizados"
+    - rid: 8761739247831220243
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: initialOffset
+        value: 50
+        isRequired: 1
+        description: "Offset inicial do centro da \xF3rbita"
+    - rid: 8761739247831220244
+      type: {class: Vector3Property, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: orbitCenter
+        value: {x: 0, y: 0, z: 0}
+        isRequired: 0
+        description: "Centro da \xF3rbita"
+    - rid: 8761739247831220245
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: spaceBetweenPlanets
+        value: 80
+        isRequired: 1
+        description: "Espa\xE7o m\xEDnimo entre planetas"
+    - rid: 8761739247831220246
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: maxPlanets
+        value: 10
+        isRequired: 1
+        description: "N\xFAmero m\xE1ximo de planetas"
+    - rid: 8761739247831220247
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: orbitSpeed
+        value: 10
+        isRequired: 1
+        description: "Velocidade de rota\xE7\xE3o dos planetas (graus/segundo)"

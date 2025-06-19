@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -12,7 +14,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         private readonly Queue<IPoolable> _pool = new();
         private readonly List<IPoolable> _activeObjects = new();
-        public PoolableObjectData Data { get; private set; }
+        private PoolableObjectData Data { get; set; }
         public bool IsInitialized { get; private set; }
         private readonly ObjectPoolFactory _factory = new();
 
@@ -37,9 +39,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             for (int i = 0; i < Data.InitialPoolSize; i++)
             {
                 var poolable = _factory.CreateObject(Data, transform, Vector3.zero, $"{Data.ObjectName}_{i}", this);
-                if (poolable == null) continue;
+                if (poolable == null)
+                {
+                    DebugUtility.LogError<ObjectPool>($"Falha ao criar objeto {i} para pool '{Data.ObjectName}'.", this);
+                    continue;
+                }
                 poolable.Deactivate();
                 _pool.Enqueue(poolable);
+                DebugUtility.LogVerbose<ObjectPool>($"Objeto {i} criado e enfileirado para '{Data.ObjectName}'.", "cyan", this);
             }
             IsInitialized = true;
             DebugUtility.Log<ObjectPool>($"Pool inicializado com {_pool.Count} objetos para '{Data.ObjectName}'.", "green", this);
@@ -70,8 +77,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
-            poolable.Reset();
-            poolable.Activate(position);
+            poolable.PoolableReset();
+            poolable.Activate(position, null);
             _activeObjects.Add(poolable);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position));
             return poolable;
@@ -81,7 +88,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (poolable == null || !_activeObjects.Remove(poolable)) return;
 
-            var wasEmpty = _pool.Count == 0;
+            bool wasEmpty = _pool.Count == 0;
             poolable.Deactivate();
             _pool.Enqueue(poolable);
             if (wasEmpty && _pool.Count > 0)
@@ -92,10 +99,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void ClearPool()
         {
-            foreach (var obj in _activeObjects)
+            foreach (var obj in _activeObjects.Where(obj => obj != null && obj.GetGameObject() != null))
             {
-                if (obj != null && obj.GetGameObject() != null)
-                    obj.Deactivate();
+                obj.Deactivate();
             }
             _activeObjects.Clear();
             _pool.Clear();

@@ -245,55 +245,6 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
---- !u!1 &1442239393
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1442239395}
-  - component: {fileID: 1442239394}
-  m_Layer: 0
-  m_Name: ExplosionsPool
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1442239394
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1442239393}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 376efa3844b44038b4c1f99f23f89a10, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  spawnData: {fileID: 11400000, guid: 5d7a5c8ddded6c04b8b009ccd7696a42, type: 2}
-  useManagerLocking: 0
-  triggerData: {fileID: 0}
-  strategyData: {fileID: 0}
-  inputActionAsset: {fileID: 0}
---- !u!4 &1442239395
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1442239393}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1443008762
 GameObject:
   m_ObjectHideFlags: 0
@@ -303,8 +254,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1443008763}
-  - component: {fileID: 1443008764}
   - component: {fileID: 1443008765}
+  - component: {fileID: 1443008764}
   m_Layer: 10
   m_Name: PlanetsManager
   m_TagString: Untagged
@@ -339,11 +290,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a09f1d00a2b4ab8a51ca9ecae73e6d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnData: {fileID: 11400000, guid: 9722fe5b4cecebb43a44b7b49ecc17c5, type: 2}
+  poolableData: {fileID: 11400000, guid: 062cb94a336711e448246ba9ab489934, type: 2}
   useManagerLocking: 0
-  triggerData: {fileID: 0}
-  strategyData: {fileID: 0}
-  inputActionAsset: {fileID: 0}
+  triggerData: {fileID: 11400000, guid: bb131214e211ed3458642eaf069b17ca, type: 2}
+  strategyData: {fileID: 11400000, guid: 48bf8593b86ae7b4da970c50f5aa4b61, type: 2}
 --- !u!114 &1443008765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -356,6 +306,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fff58d990b7343649f819628f455557d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  planetOptions:
+  - {fileID: 11400000, guid: 062cb94a336711e448246ba9ab489934, type: 2}
+  planetResources:
+  - {fileID: 11400000, guid: b24c9b50b8eb33e47840d1651a1cefd6, type: 2}
+  - {fileID: 11400000, guid: 671746db83e06ff4a9d2749e5483648e, type: 2}
+  - {fileID: 11400000, guid: de24f92f1d899014b9d31ccca3a56e26, type: 2}
+  - {fileID: 11400000, guid: a79a3f684ec064a46a2f8bccfd269094, type: 2}
+  - {fileID: 11400000, guid: c5360ef0bb73f004c976350596e6713f, type: 2}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,7 +539,6 @@ GameObject:
   - component: {fileID: 1849846776}
   - component: {fileID: 1849846775}
   - component: {fileID: 1849846774}
-  - component: {fileID: 1849846773}
   m_Layer: 6
   m_Name: Plane
   m_TagString: Untagged
@@ -589,28 +546,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!64 &1849846773
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1849846772}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!23 &1849846774
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -842,6 +777,7 @@ MonoBehaviour:
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   player: {fileID: 306141544}
   worldEater: {fileID: 1884843005631714081}
+  startGameScene: Game
 --- !u!4 &2009245416
 Transform:
   m_ObjectHideFlags: 0
@@ -1005,6 +941,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03af138946d243e6b16e23dc15b18add, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxSpawnsPerPoint: 100
 --- !u!4 &2092905647
 Transform:
   m_ObjectHideFlags: 0
@@ -1028,14 +965,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 651313951716516642, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: InitialModule.startSize.scalar
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 651313951716516642, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
-      propertyPath: InitialModule.startSize.minScalar
-      value: 0.8
-      objectReference: {fileID: 0}
     - target: {fileID: 3483309183724010783, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: m_Name
       value: Player
@@ -1084,6 +1013,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6470516389975364022, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: sensorConfigs.Array.data[0].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
+    - target: {fileID: 6470516389975364022, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: sensorConfigs.Array.data[1].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
+    - target: {fileID: 8039497567803939213, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: useManagerLocking
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8564449454596756444, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: mainCamera
       value: 
@@ -1117,6 +1058,14 @@ PrefabInstance:
     - target: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6093211774009013911, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: sensorConfigs.Array.data[0].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
+    - target: {fileID: 6093211774009013911, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: sensorConfigs.Array.data[1].detectLayer.m_Bits
+      value: 1024
       objectReference: {fileID: 0}
     - target: {fileID: 8300726475238203345, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1178,4 +1127,3 @@ SceneRoots:
   - {fileID: 2092905647}
   - {fileID: 1467168392}
   - {fileID: 6773533554893788347}
-  - {fileID: 1442239395}

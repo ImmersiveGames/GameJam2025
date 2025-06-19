@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
@@ -9,17 +10,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     public class PooledObject : MonoBehaviour, IPoolable
     {
         private ObjectPool _pool;
-        private GameObject _model;
         private float _lifetime;
         private bool _isActive;
         private float _timer;
         private bool _returningToPool;
         private PoolableObjectData _data;
+        private IActor _spawner;
 
-        public bool IsActive => _isActive;
-        public float Lifetime => _lifetime;
-
-        public void Initialize(PoolableObjectData data, ObjectPool pool)
+        public void Initialize(PoolableObjectData data, ObjectPool pool, IActor actor = null)
         {
             if (!data) throw new ArgumentNullException(nameof(data));
             _data = data;
@@ -27,33 +25,19 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _lifetime = data.Lifetime;
             _isActive = false;
             _timer = 0f;
+            _spawner = actor;
             _returningToPool = false;
             gameObject.SetActive(false);
-            DebugUtility.Log<PooledObject>($"Objeto '{name}' inicializado com lifetime {_lifetime}.", "green", this);
+            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' inicializado com lifetime {_lifetime}.", "green", this);
         }
 
-        public void SetModel(GameObject model)
-        {
-            if (_model)
-                Destroy(_model);
-            _model = model;
-            if (_model)
-            {
-                _model.transform.SetParent(transform);
-                _model.transform.localPosition = Vector3.zero;
-                _model.transform.localRotation = Quaternion.identity;
-                _model.SetActive(false);
-            }
-        }
-
-        public void Activate(Vector3 position)
+        public void Activate(Vector3 position, IActor actor)
         {
             transform.position = position;
             transform.rotation = Quaternion.identity;
             _isActive = true;
+            _spawner = actor ?? _spawner;
             gameObject.SetActive(true);
-            if (_model)
-                _model.SetActive(true);
             _timer = _lifetime > 0 ? _lifetime : float.MaxValue;
             _returningToPool = false;
             OnObjectSpawned();
@@ -64,15 +48,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             if (!_isActive) return;
             _isActive = false;
             gameObject.SetActive(false);
-            if (_model)
-                _model.SetActive(false);
             _timer = 0f;
             if (!_returningToPool)
                 ReturnToPool();
         }
 
-        public void OnObjectSpawned() { }
-        public void OnObjectReturned() { }
+        private void OnObjectSpawned() { }
+        private void OnObjectReturned() { }
+        public IActor Spawner => _spawner;
+        public PoolableObjectData Data => _data;
 
         public GameObject GetGameObject() => gameObject;
         public T GetData<T>() where T : PoolableObjectData
@@ -82,7 +66,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             throw new InvalidCastException($"Não é possível converter {_data.GetType()} para {typeof(T)}.");
         }
 
-        public void Reset()
+        public void PoolableReset()
         {
             transform.position = Vector3.zero;
             transform.rotation = Quaternion.identity;
@@ -93,7 +77,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             }
             _timer = 0f;
             _returningToPool = false;
-            DebugUtility.Log<PooledObject>($"Objeto '{name}' resetado.", "green", this);
+            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' resetado.", "green", this);
         }
 
         private void Update()
@@ -112,7 +96,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 _pool.ReturnObject(this);
                 OnObjectReturned();
-                DebugUtility.Log<PooledObject>($"Objeto '{name}' retornado ao pool.", "blue", this);
+                DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' retornado ao pool.", "blue", this);
             }
             else
             {

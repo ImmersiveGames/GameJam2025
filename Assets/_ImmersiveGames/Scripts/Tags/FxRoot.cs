@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.Tags
 {
-    public class FxRoot: MonoBehaviour{ }
+    public class FxRoot : MonoBehaviour
+    {
+        
+    }
 }

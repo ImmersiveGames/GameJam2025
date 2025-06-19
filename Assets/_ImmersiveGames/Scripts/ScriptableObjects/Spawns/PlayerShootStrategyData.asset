@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df251372d2034718b4656f87b9fc80f6, type: 3}
+  m_Name: PlayerShootStrategyData
+  m_EditorClassIdentifier: 
+  strategyType: 1
+  dynamicProperties:
+    properties:
+    - rid: 8761739247831220333
+    - rid: 8761739247831220334
+    - rid: 8761739247831220335
+    - rid: 8761739247831220336
+    - rid: 8761739247831220337
+  references:
+    version: 2
+    RefIds:
+    - rid: 8761739247831220333
+      type: {class: Vector3Property, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: offset
+        value: {x: 0, y: 0, z: 0}
+        isRequired: 0
+        description: "Deslocamento relativo \xE0 posi\xE7\xE3o do SpawnPoint"
+    - rid: 8761739247831220334
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: spawnCount
+        value: 1
+        isRequired: 1
+        description: "N\xFAmero de objetos a spawnar"
+    - rid: 8761739247831220335
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: speed
+        value: 30
+        isRequired: 1
+        description: Velocidade do projetil (unidades/segundo)
+    - rid: 8761739247831220336
+      type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: randomizeDirection
+        value: 0
+        isRequired: 0
+        description: "Randomizar dire\xE7\xE3o dos objetos"
+    - rid: 8761739247831220337
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: directionVariation
+        value: 0
+        isRequired: 0
+        description: "Varia\xE7\xE3o m\xE1xima da dire\xE7\xE3o (graus)"

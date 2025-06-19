@@ -5,15 +5,19 @@ using System.Linq;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class SensorController : MonoBehaviour
     {
-        [SerializeField, Tooltip("Configurações para os sensores")]
+        [SerializeField] [Tooltip("Configurações para os sensores")]
         private List<SensorConfig> sensorConfigs = new();
 
         private readonly List<DetectorSense> _sensors = new();
+        
+        private readonly Dictionary<(SensorTypes, IDetectable), bool> _rangeCheckCache = new();
+        private int _lastFrameChecked = -1;
 
         [Serializable]
         public class SensorConfig
@@ -24,15 +28,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             public float minDetectionFrequency = 0.1f;
             public float maxDetectionFrequency = 0.5f;
             public bool debugMode;
+        }
 
-        }
-        public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
-        {
-            var sensor = _sensors.Find(s => s.SensorName == sensorName);
-            if (sensor != null) return sensor.GetConfig();
-            DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
-            return null;
-        }
         private void Awake()
         {
             InitializeSensors();
@@ -40,14 +37,23 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         private void InitializeSensors()
         {
+            // Obter o IDetector (DetectorController) do Actor
+            var detector = GetComponent<IDetector>();
+            if (detector == null)
+            {
+                DebugUtility.LogError<SensorController>($"IDetector não encontrado em '{gameObject.name}'. SensorController desativado.", this);
+                enabled = false;
+                return;
+            }
+
             foreach (var sensor in sensorConfigs.Select(config => new DetectorSense(
                     transform,
                     config.planetLayer,
                     config.radius,
                     config.minDetectionFrequency,
                     config.maxDetectionFrequency,
-                    debugMode: config.debugMode,
-                    sensorName: config.sensorName
+                    config.debugMode,
+                    config.sensorName
                 )))
             {
                 _sensors.Add(sensor);
@@ -57,6 +63,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         private void Update()
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
+            // Limpa o cache se for um novo frame
+            if (Time.frameCount != _lastFrameChecked)
+            {
+                _rangeCheckCache.Clear();
+                _lastFrameChecked = Time.frameCount;
+            }
             foreach (var sensor in _sensors)
             {
                 sensor.Update(Time.deltaTime);
@@ -71,16 +83,38 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
+        public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
+        {
+            var sensor = _sensors.Find(s => s.SensorName == sensorName);
+            if (sensor != null) return sensor.GetConfig();
+            DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
+            return null;
+        }
+
         public ReadOnlyCollection<IDetectable> GetDetectedSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             if (sensor != null) return sensor.GetDetectedSensors();
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
-            return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
+            return new List<IDetectable>().AsReadOnly();
         }
 
         public bool IsObjectInSensorRange(IDetectable obj, SensorTypes sensorName)
         {
+            var cacheKey = (sensorName, obj);
+            // Verifica se já temos um resultado em cache para este frame
+            if (_rangeCheckCache.TryGetValue(cacheKey, out bool cachedResult))
+            {
+                if (sensorName == SensorTypes.EaterEatSensor && obj != null)
+                {
+                    DebugUtility.LogVerbose<SensorController>(
+                        $"[{sensorName}] Usando cache: Planeta {obj.Detectable.Name} {(cachedResult ? "está" : "não está")} no alcance.",
+                        cachedResult ? "green" : "red"
+                    );
+                }
+                return cachedResult;
+            }
+
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             if (sensor == null)
             {
@@ -88,17 +122,32 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 return false;
             }
 
+            if (!sensor.IsEnabled)
+            {
+                if (sensor.DebugMode)
+                {
+                    DebugUtility.LogVerbose<SensorController>(
+                        $"[{sensorName}] Sensor desativado, ignorando verificação de alcance para {(obj != null ? obj.Detectable.Name : "null")}.",
+                        "gray"
+                    );
+                }
+                return false;
+            }
+
             bool isInRange = sensor.IsObjectInRange(obj);
+            // Armazena o resultado no cache
+            _rangeCheckCache[cacheKey] = isInRange;
+
             if (sensor.DebugMode)
             {
                 DebugUtility.LogVerbose<SensorController>(
-                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
+                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Detectable.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
                     isInRange ? "green" : "red"
                 );
             }
             return isInRange;
         }
-        // Métodos para ativar/desativar sensores por nome
+
         public void EnableSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);

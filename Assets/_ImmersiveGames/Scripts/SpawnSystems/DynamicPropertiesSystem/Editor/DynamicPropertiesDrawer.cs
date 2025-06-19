@@ -3,10 +3,13 @@ using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using _ImmersiveGames.Scripts.DetectionsSystems;
+using DG.Tweening;
+using _ImmersiveGames.Scripts.Utils.DebugSystems; // Adicionado para DebugUtility
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
 {
-    // ========== ENHANCED TRIGGER DATA EDITOR ==========
-    [CustomEditor(typeof(EnhancedTriggerData))]
+    [CustomEditor(typeof(EnhancedTriggerData)), DebugLevel(DebugLevel.Warning)]
     public class EnhancedTriggerDataEditor : UnityEditor.Editor
     {
         private EnhancedTriggerData _triggerData;
@@ -25,14 +28,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             EditorGUILayout.LabelField("Enhanced Trigger Configuration", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
-            // Trigger Type
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(_triggerTypeProperty);
             bool triggerTypeChanged = EditorGUI.EndChangeCheck();
 
             EditorGUILayout.Space();
 
-            // Template
             if (GUILayout.Button("Apply Template for Current Type"))
                 ApplyTemplate();
 
@@ -54,7 +55,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
         private void ApplyTemplate()
         {
             _triggerData.ApplyTemplate();
+            ValidateProperties(_triggerData);
             EditorUtility.SetDirty(_triggerData);
+            DebugUtility.LogVerbose<EnhancedTriggerDataEditor>($"Template aplicado para triggerType={_triggerData.triggerType}");
             Repaint();
         }
 
@@ -84,7 +87,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             if (newValue != null && !Equals(newValue, prop.GetValue()))
             {
                 prop.SetValue(newValue);
+                ValidateProperty(prop);
                 EditorUtility.SetDirty(data);
+                DebugUtility.LogVerbose<EnhancedTriggerDataEditor>($"Propriedade '{prop.Name}' alterada para {newValue}");
             }
 
             GUI.enabled = !prop.IsRequired;
@@ -92,6 +97,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             {
                 data.RemoveProperty(prop.Name);
                 EditorUtility.SetDirty(data);
+                DebugUtility.LogVerbose<EnhancedTriggerDataEditor>($"Propriedade '{prop.Name}' removida");
                 Repaint();
             }
             GUI.enabled = true;
@@ -107,7 +113,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
         private object DrawValueField(IConfigurableProperty prop)
         {
             var value = prop.GetValue();
-            return prop.PropertyType.Name switch
+            var typeName = prop.PropertyType.Name;
+
+            if (prop.Name == "sensorType" && prop.PropertyType == typeof(SensorTypes))
+            {
+                SensorTypes sensorType = (SensorTypes)(value ?? SensorTypes.OtherSensor);
+                sensorType = (SensorTypes)EditorGUILayout.EnumPopup(sensorType);
+                return sensorType;
+            }
+
+            return typeName switch
             {
                 nameof(Single) => EditorGUILayout.FloatField((float)value),
                 nameof(Int32) => EditorGUILayout.IntField((int)value),
@@ -129,6 +144,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             if (GUILayout.Button("String")) AddProperty(data, "newString", "");
             if (GUILayout.Button("Vector2")) AddProperty(data, "newVector2", Vector2.zero);
             if (GUILayout.Button("Vector3")) AddProperty(data, "newVector3", Vector3.zero);
+            if (data.triggerType == TriggerType.SensorTrigger && !data.HasProperty("sensorType"))
+                if (GUILayout.Button("SensorType")) AddProperty(data, "sensorType", SensorTypes.OtherSensor);
+            if (!data.HasProperty("continuous"))
+                if (GUILayout.Button("Continuous")) AddProperty(data, "continuous", false);
+            if (!data.HasProperty("spawnInterval"))
+                if (GUILayout.Button("SpawnInterval")) AddProperty(data, "spawnInterval", 1.0f);
+            if (!data.HasProperty("rearmDelay"))
+                if (GUILayout.Button("RearmDelay")) AddProperty(data, "rearmDelay", 0.5f);
+            if (!data.HasProperty("maxSpawns"))
+                if (GUILayout.Button("MaxSpawns")) AddProperty(data, "maxSpawns", -1);
             EditorGUILayout.EndHorizontal();
         }
 
@@ -140,7 +165,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
                 s = $"{baseName}_{count++}";
 
             data.SetProperty(s, defaultValue);
+            ValidateProperty(new ConfigurableProperty<T>(s, defaultValue));
             EditorUtility.SetDirty(data);
+            DebugUtility.LogVerbose<EnhancedTriggerDataEditor>($"Propriedade '{s}' adicionada com valor {defaultValue}");
         }
 
         private void DrawTemplateInfo(TriggerType type)
@@ -169,10 +196,43 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
                 ApplyTemplate();
             }
         }
+
+        private void ValidateProperties(EnhancedTriggerData data)
+        {
+            foreach (var prop in data.GetAllProperties())
+                ValidateProperty(prop);
+        }
+
+        private void ValidateProperty(IConfigurableProperty prop)
+        {
+            switch (prop)
+            {
+                case FloatProperty floatProp when floatProp.Name == "spawnInterval":
+                    if (floatProp.Value <= 0f)
+                    {
+                        floatProp.Value = 1.0f;
+                        DebugUtility.LogWarning<EnhancedTriggerDataEditor>($"spawnInterval deve ser maior que 0. Ajustado para 1.0.");
+                    }
+                    break;
+                case FloatProperty floatProp when floatProp.Name == "rearmDelay":
+                    if (floatProp.Value < 0f)
+                    {
+                        floatProp.Value = 0.5f;
+                        DebugUtility.LogWarning<EnhancedTriggerDataEditor>($"rearmDelay não pode ser negativo. Ajustado para 0.5.");
+                    }
+                    break;
+                case IntProperty intProp when intProp.Name == "maxSpawns":
+                    if (intProp.Value < -1)
+                    {
+                        intProp.Value = -1;
+                        DebugUtility.LogWarning<EnhancedTriggerDataEditor>($"maxSpawns não pode ser menor que -1. Ajustado para -1.");
+                    }
+                    break;
+            }
+        }
     }
 
-    // ========== ENHANCED STRATEGY DATA EDITOR ==========
-    [CustomEditor(typeof(EnhancedStrategyData))]
+    [CustomEditor(typeof(EnhancedStrategyData)),DebugLevel(DebugLevel.Warning)]
     public class EnhancedStrategyDataEditor : UnityEditor.Editor
     {
         private EnhancedStrategyData _strategyData;
@@ -219,6 +279,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
         {
             _strategyData.ApplyTemplate();
             EditorUtility.SetDirty(_strategyData);
+            DebugUtility.Log<EnhancedStrategyDataEditor>($"Template aplicado para strategyType={_strategyData.strategyType}");
+            // Logar todas as propriedades carregadas
+            foreach (var prop in _strategyData.GetAllProperties())
+            {
+                DebugUtility.Log<EnhancedStrategyDataEditor>($"Propriedade carregada: {prop.Name} (Tipo: {prop.PropertyType.Name}, Valor: {prop.GetValue()})");
+            }
             Repaint();
         }
 
@@ -231,9 +297,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
                 EditorGUILayout.HelpBox("No properties configured. Click 'Apply Template' to add default ones.", MessageType.Info);
                 return;
             }
-
+            
             foreach (var prop in props)
+            {
+                DebugUtility.Log<EnhancedStrategyDataEditor>($"Propriedade: {prop.Name}, Tipo: {prop.PropertyType.Name}, Valor: {prop.GetValue()}");
                 DrawPropertyField(prop, data);
+            }
         }
 
         private void DrawPropertyField(IConfigurableProperty prop, EnhancedStrategyData data)
@@ -249,6 +318,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             {
                 prop.SetValue(newValue);
                 EditorUtility.SetDirty(data);
+                DebugUtility.Log<EnhancedStrategyDataEditor>($"Propriedade '{prop.Name}' alterada para {newValue}");
             }
 
             GUI.enabled = !prop.IsRequired;
@@ -256,6 +326,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             {
                 data.RemoveProperty(prop.Name);
                 EditorUtility.SetDirty(data);
+                DebugUtility.Log<EnhancedStrategyDataEditor>($"Propriedade '{prop.Name}' removida");
                 Repaint();
             }
             GUI.enabled = true;
@@ -271,7 +342,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
         private object DrawValueField(IConfigurableProperty prop)
         {
             var value = prop.GetValue();
-            return prop.PropertyType.Name switch
+            var typeName = prop.PropertyType.Name;
+
+            if (prop.Name == "easeType" && prop.PropertyType == typeof(Ease))
+            {
+                DebugUtility.Log<EnhancedStrategyDataEditor>("Detectado easeType, renderizando EnumPopup");
+                Ease easeType = (Ease)(value ?? Ease.OutQuad);
+                easeType = (Ease)EditorGUILayout.EnumPopup(easeType);
+                return easeType;
+            }
+
+            return typeName switch
             {
                 nameof(Single) => EditorGUILayout.FloatField((float)value),
                 nameof(Int32) => EditorGUILayout.IntField((int)value),
@@ -293,6 +374,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
             if (GUILayout.Button("String")) AddProperty(data, "newString", "");
             if (GUILayout.Button("Vector2")) AddProperty(data, "newVector2", Vector2.zero);
             if (GUILayout.Button("Vector3")) AddProperty(data, "newVector3", Vector3.zero);
+            if (data.strategyType == StrategyType.CircularZoomOutStrategy)
+                if (GUILayout.Button("EaseType")) AddProperty(data, "easeType", Ease.OutQuad);
             EditorGUILayout.EndHorizontal();
         }
 

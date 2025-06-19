@@ -1,10 +1,12 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class InputSpawnPoint : SpawnPoint
     {
         [SerializeField] private PlayerInput playerInput;
@@ -28,6 +30,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
             SpawnTrigger.Initialize(this);
+        }
+
+        protected override void ExecuteSpawn(Vector3 position, GameObject sourceObject)
+        {
+            if(!GameManager.Instance.ShouldPlayingGame())return;
+            base.ExecuteSpawn(position, sourceObject);
         }
     }
 }

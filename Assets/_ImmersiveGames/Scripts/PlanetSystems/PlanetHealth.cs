@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -24,11 +25,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         protected override void OnDeath()
         {
-            base.OnDeath();
             if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
-            EventBus<PlanetConsumedEvent>.Raise(new PlanetConsumedEvent(planet));
+            base.OnDeath();
+            EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(planet,lastChanger));
             PlanetsManager.Instance.RemovePlanet(planet);
-            DebugUtility.Log<PlanetHealth>($"Planeta {planet.name} destruído e removido de PlanetsManager.", "yellow", this);
+            DebugUtility.LogVerbose<PlanetHealth>($"Planeta {planet.name} destruído por {lastChanger?.Name ?? "desconhecido"} e removido de PlanetsManager.", "yellow", this);
         }
 
         private void OnPlanetCreated(PlanetCreatedEvent obj)

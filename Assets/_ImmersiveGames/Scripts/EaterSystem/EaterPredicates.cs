@@ -15,7 +15,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool Evaluate()
         {
             return _getTarget() == null;
-        }
-    }
+        } }
     
 }

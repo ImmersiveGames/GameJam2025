@@ -36,13 +36,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             float moveAmount = _currentSpeed * Time.deltaTime;
             _transform.Translate(direction * moveAmount, Space.World);
         }
+        
         public void OnEnter()
         {
-            if (_sensorController.IsObjectInSensorRange(_eaterMovement.Target, SensorTypes.EaterEatSensor))
-            {
-                _eaterMovement.IsOrbiting = true;
-                return;
-            }
             var targetMotion = _eaterMovement.TargetTransform.GetComponent<PlanetMotion>();
             _currentSpeed = targetMotion.GetOrbitSpeed() + _config.MinSpeed * 5f;
             DebugUtility.LogVerbose<ChasingState>($"Entering Chasing State for EaterMovement: {nameof(EaterMovement)}");

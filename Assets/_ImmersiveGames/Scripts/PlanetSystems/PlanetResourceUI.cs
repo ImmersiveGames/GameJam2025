@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [SerializeField] private Text planetNameText; // (Opcional) Texto para exibir o nome do planeta
         private PlanetsMaster _planetMaster; // Referência ao componente PlanetsMaster do planeta pai
         private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
-        private EventBinding<PlanetConsumedEvent> _planetDestroyBinding;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding;
 
         // Inicializa o componente
         private void Awake()
@@ -32,8 +32,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             _planetCreatedBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
-            _planetDestroyBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetDestroyed);
-            EventBus<PlanetConsumedEvent>.Register(_planetDestroyBinding);
+            _planetDestroyBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyBinding);
         }
 
         private void Start()
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
             if(_planetDestroyBinding != null)
             {
-                EventBus<PlanetConsumedEvent>.Unregister(_planetDestroyBinding);
+                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyBinding);
             }
         }
 
@@ -59,15 +59,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if(evt.Detectable.GetPlanetsMaster() != _planetMaster)
+            if(evt.Detected.GetPlanetsMaster() != _planetMaster)
                 return; 
-            var planetInfo = evt.Detectable.GetPlanetsMaster().GetPlanetInfo();
+            var planetInfo = evt.Detected.GetPlanetsMaster().GetPlanetInfo();
             UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
         }
         
-        private void OnPlanetDestroyed(PlanetConsumedEvent evt)
+        private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
         {
-            if(evt.Detectable.GetPlanetsMaster() != _planetMaster) return;
+            if(evt.Detected.GetPlanetsMaster() != _planetMaster) return;
             ClearUI();
             resourceCanvas.gameObject.SetActive(false);
         }

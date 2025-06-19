@@ -1,9 +1,10 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 {
     [Serializable]
-    public abstract class ConfigurableProperty<T> : IConfigurableProperty
+    public class ConfigurableProperty<T> : IConfigurableProperty
     {
         [SerializeField] private string name;
         [SerializeField] private T value;
@@ -22,9 +23,29 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
         }
 
         public object GetValue() => value;
-        public void SetValue(object val) => value = (T)Convert.ChangeType(val, typeof(T));
+        public void SetValue(object val)
+        {
+            try
+            {
+                if (typeof(T).IsEnum && val is string stringValue)
+                {
+                    if (Enum.TryParse(typeof(T), stringValue, true, out var enumValue))
+                        value = (T)enumValue;
+                    else
+                        DebugUtility.LogError<ConfigurableProperty<T>>($"Falha ao converter '{stringValue}' para {typeof(T).Name}.");
+                }
+                else
+                {
+                    value = (T)Convert.ChangeType(val, typeof(T));
+                }
+            }
+            catch (Exception e)
+            {
+                DebugUtility.LogError<ConfigurableProperty<T>>($"Erro ao definir valor para propriedade '{name}': {e.Message}");
+            }
+        }
 
-        protected ConfigurableProperty(string name, T defaultValue, bool isRequired = false, string description = "")
+        public ConfigurableProperty(string name, T defaultValue, bool isRequired = false, string description = "")
         {
             this.name = name;
             this.value = defaultValue;
@@ -32,39 +53,53 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
             this.description = description;
         }
     }
-    [Serializable] public class FloatProperty : ConfigurableProperty<float>
+
+    [Serializable]
+    public class FloatProperty : ConfigurableProperty<float>
     {
-        public FloatProperty(string name, float defaultValue, bool isRequired = false, string description = "") 
+        public FloatProperty(string name, float defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 
-    [Serializable] public class IntProperty : ConfigurableProperty<int>
+    [Serializable]
+    public class IntProperty : ConfigurableProperty<int>
     {
-        public IntProperty(string name, int defaultValue, bool isRequired = false, string description = "") 
+        public IntProperty(string name, int defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 
-    [Serializable] public class BoolProperty : ConfigurableProperty<bool>
+    [Serializable]
+    public class BoolProperty : ConfigurableProperty<bool>
     {
-        public BoolProperty(string name, bool defaultValue, bool isRequired = false, string description = "") 
+        public BoolProperty(string name, bool defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 
-    [Serializable] public class StringProperty : ConfigurableProperty<string>
+    [Serializable]
+    public class StringProperty : ConfigurableProperty<string>
     {
-        public StringProperty(string name, string defaultValue, bool isRequired = false, string description = "") 
+        public StringProperty(string name, string defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 
-    [Serializable] public class Vector2Property : ConfigurableProperty<Vector2>
+    [Serializable]
+    public class Vector2Property : ConfigurableProperty<Vector2>
     {
-        public Vector2Property(string name, Vector2 defaultValue, bool isRequired = false, string description = "") 
+        public Vector2Property(string name, Vector2 defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 
-    [Serializable] public class Vector3Property : ConfigurableProperty<Vector3>
+    [Serializable]
+    public class Vector3Property : ConfigurableProperty<Vector3>
     {
-        public Vector3Property(string name, Vector3 defaultValue, bool isRequired = false, string description = "") 
+        public Vector3Property(string name, Vector3 defaultValue, bool isRequired = false, string description = "")
+            : base(name, defaultValue, isRequired, description) { }
+    }
+
+    [Serializable]
+    public class EnumProperty<TEnum> : ConfigurableProperty<TEnum> where TEnum : Enum
+    {
+        public EnumProperty(string name, TEnum defaultValue, bool isRequired = false, string description = "")
             : base(name, defaultValue, isRequired, description) { }
     }
 }

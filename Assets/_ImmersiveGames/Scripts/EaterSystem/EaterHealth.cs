@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -24,32 +25,33 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _eater.EventConsumeResource -= OnConsumeResource;
         }
-        private void OnConsumeResource(IDetectable detectable, bool desire)
+        private void OnConsumeResource(IDetectable detectable, bool desire, IActor byActor)
         {
-            if (detectable == null) return;
+            if (detectable == null || byActor is not EaterMaster eater) return;
             float planetSize = detectable.GetPlanetsMaster().GetPlanetInfo().planetScale;
             if (desire)
             {
                 float recoverResource = detectable.GetPlanetData().recoveryHungerConsumeDesire * planetSize;
-                Increase(recoverResource);
+                Heal(recoverResource, eater);
                 DebugUtility.Log<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de heath.");
             }
             else
             {
                 float resourceFraction = detectable.GetPlanetData().recoveryHealthConsumeNotDesire * planetSize;
-                Increase(resourceFraction); // Consome metade se não for desejado
+                Heal(resourceFraction, eater); // Consome metade se não for desejado
                 DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de heath.");
             }
         }
-        public override void TakeDamage(float damage)
+        public override void TakeDamage(float damage, IActor byActor)
         {
-            base.TakeDamage(damage);
-            _eater.OnEventEaterTakeDamage();
+            base.TakeDamage(damage, byActor);
+            lastChanger = byActor;
+            _eater.OnEventEaterTakeDamage(byActor);
         }
 
         protected override void OnDeath()
         {
-            EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent(transform.position, gameObject));
+            EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent());
             _eater.IsActive = false;
         }
     }

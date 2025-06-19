@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Spawn/Enhanced/TriggerData")]
     public class EnhancedTriggerData : ScriptableObject
@@ -39,6 +39,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
         public void RemoveProperty(string nameProperties)
         {
             dynamicProperties.RemoveProperty(nameProperties);
+        }
+        public bool HasProperty(string nameProperties)
+        {
+            return dynamicProperties.HasProperty(nameProperties);
         }
     }
 }

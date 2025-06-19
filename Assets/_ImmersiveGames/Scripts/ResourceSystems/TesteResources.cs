@@ -71,13 +71,13 @@ namespace _ImmersiveGames.Scripts.Testing
             if (_resource is IResettable resettable)
             {
                 resettable.Reset();
-                DebugUtility.LogVerbose<ResourceSystemTester>($"🔄 Reset via IResettable em '{uniqueIdParaTestar}'");
+                DebugUtility.LogVerbose<ResourceSystemTester>($"🔄 PoolableReset via IResettable em '{uniqueIdParaTestar}'");
             }
             else
             {
                 float valor = resetToInitial ? _resource.Config.InitialValue : _resource.Config.MaxValue;
                 _resource.Load(new ResourceSystem.ResourceSaveData { currentValue = valor });
-                DebugUtility.LogVerbose<ResourceSystemTester>($"🔄 Reset manual ({valor}) em '{uniqueIdParaTestar}'");
+                DebugUtility.LogVerbose<ResourceSystemTester>($"🔄 PoolableReset manual ({valor}) em '{uniqueIdParaTestar}'");
             }
         }
     }

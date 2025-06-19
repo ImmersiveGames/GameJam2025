@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1e5d9229c1f4b91b3d3bdf299422117, type: 3}
+  m_Name: DefensesShoot
+  m_EditorClassIdentifier: 
+  triggerType: 1
+  dynamicProperties:
+    properties:
+    - rid: 10780750082474060
+    - rid: 10780750082474061
+    - rid: 10780750082474062
+    - rid: 10780750082474063
+    - rid: 10780750082474064
+  references:
+    version: 2
+    RefIds:
+    - rid: 10780750082474060
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: spawnInterval
+        value: 2
+        isRequired: 1
+        description: Intervalo entre spawns em segundos
+    - rid: 10780750082474061
+      type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: startImmediately
+        value: 1
+        isRequired: 0
+        description: Iniciar imediatamente ao ativar
+    - rid: 10780750082474062
+      type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: continuous
+        value: 1
+        isRequired: 0
+        description: "Se verdadeiro, spawns s\xE3o cont\xEDnuos (padr\xE3o para IntervalTrigger)"
+    - rid: 10780750082474063
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: rearmDelay
+        value: 0.5
+        isRequired: 0
+        description: Tempo antes de rearmar o trigger em segundos
+    - rid: 10780750082474064
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: maxSpawns
+        value: -1
+        isRequired: 0
+        description: "N\xFAmero m\xE1ximo de spawns por ativa\xE7\xE3o (-1 para sem
+          limite)"

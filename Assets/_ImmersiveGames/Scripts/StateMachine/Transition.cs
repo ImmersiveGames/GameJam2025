@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.StateMachine
         {
             _action?.Invoke();
             bool result = _flag;
-            _flag = false; // Reset após avaliação
+            _flag = false; // PoolableReset após avaliação
             return result;
         }
 

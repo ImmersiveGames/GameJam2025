@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
@@ -7,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterHunger : ResourceSystem, IResettable
     {
         private EaterMaster _eater;
@@ -22,8 +23,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             base.Awake();
             _eater = GetComponent<EaterMaster>();
             _health = GetComponent<HealthResource>();
-            onValueChanged.AddListener(OnHungerChanged);
-            onDepleted.AddListener(OnStarved);
+            _health.EventValueChanged += OnHungerChanged;
+            _health.EventDepleted += OnStarved;
         }
 
         protected override void OnEnable()
@@ -35,24 +36,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDisable()
         {
             _eater.EventConsumeResource -= OnConsumeResource;
-            onValueChanged.RemoveListener(OnHungerChanged);
-            onDepleted.RemoveListener(OnStarved);
+            _health.EventValueChanged += OnHungerChanged;
+            _health.EventDepleted -= OnStarved;
         }
-        private void OnConsumeResource(IDetectable detectable, bool desire)
+        private void OnConsumeResource(IDetectable detectable, bool desire, IActor byActor)
         {
-            if (detectable == null) return;
+            if (detectable == null || byActor is not EaterMaster eater) return;
             float planetSize = detectable.GetPlanetsMaster().GetPlanetInfo().planetScale;
             if (desire)
             {
                 float recoverResource = detectable.GetPlanetData().recoveryHungerConsumeDesire * planetSize;
                 Increase(recoverResource);
-                DebugUtility.Log<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de fome.");
+                DebugUtility.LogVerbose<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de fome.");
             }
             else
             {
                 float resourceFraction = detectable.GetPlanetData().recoveryHungerConsumeNotDesire * planetSize;
                 Increase(resourceFraction); // Consome metade se não for desejado
-                DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de fome.");
+                DebugUtility.LogVerbose<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de fome.");
             }
         }
 
@@ -102,9 +103,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void EmitThresholdEvent(float currentFraction, float threshold, bool isAscending)
         {
-            var info = new ThresholdCrossInfo(config.UniqueId, gameObject, config.ResourceType, currentFraction, threshold, isAscending);
+            var info = new ThresholdCrossInfo(currentFraction, threshold, isAscending);
             string dir = isAscending ? "🔺 Subiu" : "🔻 Desceu";
-            DebugUtility.Log<EaterHunger>($"{dir} limiar {threshold:P0} → {currentFraction:P1}");
+            DebugUtility.LogVerbose<EaterHunger>($"{dir} limiar {threshold:P0} → {currentFraction:P1}");
             EventBus<HungryChangeThresholdDirectionEvent>.Raise(new HungryChangeThresholdDirectionEvent(info));
         }
 
@@ -116,7 +117,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _crossedUp.Clear();
             _lastPercentage = GetPercentage(); // Garante consistência após reset
             DebugUtility.LogVerbose<EaterHunger>("♻️ EaterHunger resetado.");
-            onValueChanged.Invoke(_lastPercentage); // revalida estado visual, se necessário
+            _health.OnEventValueChanged(_lastPercentage); // revalida estado visual, se necessário
         }
     }
 }

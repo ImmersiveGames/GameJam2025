@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
-            poolable.Initialize(data, pool);
+            poolable.Initialize(data, pool, null);
             var factory = FactoryRegistry.GetFactory(data.FactoryType);
             factory?.Configure(obj, data);
             return poolable;

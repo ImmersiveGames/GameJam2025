@@ -16,7 +16,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         public Transform Player => player;
         public Transform WorldEater => worldEater;
         public GameConfig GameConfig => gameConfig;
-        
+        [SerializeField]
+        private string startGameScene = "Game";
+        public string StartGameScene => startGameScene;
         
         private bool _isPlaying;
         private bool _isGameOver;
@@ -39,6 +41,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             DebugUtility.LogVerbose<GameManager>($"Forçou o reset do jogo, Initialized={_isInitialized}, Playing={_isPlaying}, Victory={_isVictory}, GameOver={_isGameOver}");
             _isInitialized = false;
             SetPlayGame(true);
+            SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().name, LoadSceneMode.Single);
         }
        
         public void SetGameOver(bool gameOver)
@@ -47,7 +50,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _isPlaying = !gameOver;
             _isVictory = !gameOver;
             if (!gameOver) return;
-            _isInitialized = false; // Reset para próximo jogo
+            _isInitialized = false; // PoolableReset para próximo jogo
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
             DebugUtility.LogVerbose<GameManager>($"Setou o Fim do Jogo");
         }
@@ -58,7 +61,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _isPlaying = !victory;
             _isVictory = victory;
             if (!victory) return;
-            _isInitialized = false; // Reset para próximo jogo
+            _isInitialized = false; // PoolableReset para próximo jogo
             EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
             DebugUtility.LogVerbose<GameManager>($"Setou a vitória do jogo");
         }

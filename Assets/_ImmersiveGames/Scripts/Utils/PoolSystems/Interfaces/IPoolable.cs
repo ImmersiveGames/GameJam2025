@@ -1,16 +1,14 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
 {
     public interface IPoolable
     {
-        bool IsActive { get; }
-        void Initialize(PoolableObjectData data, ObjectPool pool);
-        void Activate(Vector3 position);
+        void Initialize(PoolableObjectData data, ObjectPool pool, IActor actor);
+        void Activate(Vector3 position, IActor actor);
         void Deactivate();
-        void OnObjectReturned();
-        void OnObjectSpawned();
-        GameObject GetGameObject(); // Para acessar o GameObject associado
-        void SetModel(GameObject model); // Para configurar o modelo
-        void Reset(); // Novo: Reseta estado do objeto
+        GameObject GetGameObject(); // Para acessar o Actor associado
+        void PoolableReset(); // Novo: Reseta estado do objeto
+        //void Tick(float deltaTime); // Novo: Atualiza o objeto a cada frame
     }
 }

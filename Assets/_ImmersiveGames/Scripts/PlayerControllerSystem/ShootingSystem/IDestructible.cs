@@ -1,9 +1,10 @@
-﻿namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     public interface IDestructible
     {
-        void Heal(float amount);
-        void TakeDamage(float damage);
+        void Heal(float amount, IActor byActor = null);
+        void TakeDamage(float damage, IActor byActor = null);
         float GetCurrentValue();
     }
 }

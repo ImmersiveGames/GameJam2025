@@ -22,5 +22,11 @@ MonoBehaviour:
   initialPoolSize: 30
   factoryType: 0
   canExpand: 1
-  speed: 50
-  damage: 1
+  moveSpeed: 10
+  rotationSpeed: 10
+  damage: 10
+  movementType: 0
+  moveEase: 1
+  rotationEase: 6
+  errorRadius: 1
+  faceTarget: 1

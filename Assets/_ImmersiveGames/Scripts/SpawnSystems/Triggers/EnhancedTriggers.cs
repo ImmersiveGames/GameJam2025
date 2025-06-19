@@ -1,280 +1,262 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     // Spawna na inicialização
-    public class InitializationTrigger : ISpawnTrigger
+    [DebugLevel(DebugLevel.Logs)]
+    public class InitializationTrigger : BaseTrigger
     {
         private readonly float _delay;
-        private bool _isActive;
         private bool _hasSpawned;
         private float _timer;
-        private SpawnPoint _spawnPoint;
 
-        public InitializationTrigger(EnhancedTriggerData data) // Corrigido para aceitar data
+        public InitializationTrigger(EnhancedTriggerData data) : base(data)
         {
             _delay = data.GetProperty("delay", 0f);
-            _isActive = true;
+            if (_delay < 0f)
+            {
+                DebugUtility.LogError<InitializationTrigger>("Delay não pode ser negativo. Usando 0.");
+                _delay = 0f;
+            }
             _hasSpawned = false;
             _timer = _delay;
         }
 
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
+        public override void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint;
+            base.Initialize(spawnPointRef);
+            DebugUtility.LogVerbose<InitializationTrigger>($"Inicializado com delay={_delay}s para '{spawnPoint.name}'.", "blue", spawnPoint);
         }
 
-        public bool CheckTrigger(Vector3 origin)
+        public override bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            if (!_isActive || _hasSpawned) return false;
+            triggerPosition = spawnPoint.transform.position;
+            sourceObject = spawnPoint.gameObject;
+            if (!isActive || _hasSpawned)
+                return false;
 
             _timer -= Time.deltaTime;
             if (_timer <= 0f)
             {
                 _hasSpawned = true;
-                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                DebugUtility.Log<InitializationTrigger>($"Spawn inicial disparado para '{_spawnPoint.name}'.", "green", _spawnPoint);
+                DebugUtility.Log<InitializationTrigger>($"Spawn inicial disparado para '{spawnPoint.name}' na posição {triggerPosition}.", "green", spawnPoint);
                 return true;
             }
             return false;
         }
 
-        public void Reset()
+        public override void Reset()
         {
+            base.Reset();
             _hasSpawned = false;
             _timer = _delay;
-        }
-
-        public void SetActive(bool active)
-        {
-            _isActive = active;
+            DebugUtility.LogVerbose<InitializationTrigger>($"Resetado para '{spawnPoint?.name}' com delay={_delay}s.", "yellow", spawnPoint);
         }
     }
 
     // Spawna em intervalos regulares
-    public class IntervalTrigger : ISpawnTrigger
+    [DebugLevel(DebugLevel.Logs)]
+    public class IntervalTrigger : TimedTrigger
     {
         private readonly float _interval;
         private readonly bool _startImmediately;
-        private float _timer;
-        private bool _isActive;
-        private SpawnPoint _spawnPoint;
 
-        public IntervalTrigger(EnhancedTriggerData data)
+        public IntervalTrigger(EnhancedTriggerData data) : base(data)
         {
             _interval = data.GetProperty("interval", 2f);
-            _startImmediately = data.GetProperty("startImmediately", true);
-            _timer = _startImmediately ? 0f : _interval;
-            _isActive = true;
-        }
-
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
-        {
-            _spawnPoint = spawnPoint;
-        }
-
-        public bool CheckTrigger(Vector3 origin)
-        {
-            if (!_isActive) return false;
-
-            _timer -= Time.deltaTime;
-            if (_timer <= 0f)
+            if (_interval <= 0f)
             {
-                _timer = _interval;
-                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                DebugUtility.Log<IntervalTrigger>($"Trigger disparado para '{_spawnPoint.name}' a cada {_interval}s.", "green", _spawnPoint);
+                DebugUtility.LogError<IntervalTrigger>("Interval deve ser maior que 0. Usando 2s.");
+                _interval = 2f;
+            }
+            _startImmediately = data.GetProperty("startImmediately", true);
+            timer = _startImmediately ? 0f : _interval;
+        }
+
+        public override void Initialize(SpawnPoint spawnPointRef)
+        {
+            base.Initialize(spawnPointRef);
+            DebugUtility.LogVerbose<IntervalTrigger>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{spawnPoint.name}'.", "blue", spawnPoint);
+        }
+
+        protected override bool OnCheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
+        {
+            triggerPosition = spawnPoint.transform.position;
+            sourceObject = spawnPoint.gameObject;
+
+            timer -= Time.deltaTime;
+            if (timer <= 0f)
+            {
+                timer = _interval;
+                DebugUtility.Log<IntervalTrigger>($"Trigger disparado para '{spawnPoint.name}' na posição {triggerPosition} a cada {_interval}s.", "green", spawnPoint);
                 return true;
             }
             return false;
         }
-
-        public void Reset()
-        {
-            _timer = _startImmediately ? 0f : _interval;
-        }
-
-        public void SetActive(bool active)
-        {
-            _isActive = active;
-        }
     }
 
     // Spawna com input
+    [DebugLevel(DebugLevel.Logs)]
     public class InputSystemTrigger : ISpawnTrigger
+{
+    private readonly string _actionName;
+    private readonly InputAction _action;
+    private bool _isActive;
+    private InputSpawnPoint _spawnPoint;
+    private bool _wasPressedThisFrame;
+
+    public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset)
     {
-        private readonly string _actionName;
-        private readonly InputAction _action;
-        private bool _isActive;
-        private InputSpawnPoint _spawnPoint; // Alterado para InputSpawnPoint
-
-        public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset)
+        _actionName = data.GetProperty("actionName", "Fire");
+        if (string.IsNullOrEmpty(_actionName))
         {
-            _actionName = data.GetProperty("actionName", "Fire");
-            _action = inputAsset?.FindAction(_actionName);
-            if (_action == null)
-            {
-                DebugUtility.LogError<InputSystemTrigger>($"Ação '{_actionName}' não encontrada no InputActionAsset.", null);
-            }
-            _isActive = true;
+            DebugUtility.LogError<InputSystemTrigger>("actionName não pode ser vazio.");
+            _actionName = "Fire";
         }
-
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
+        _action = inputAsset?.FindAction(_actionName);
+        if (_action == null)
         {
-            if (!(spawnPoint is InputSpawnPoint inputSpawnPoint))
-            {
-                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger só pode ser usado com InputSpawnPoint, não com {spawnPoint.GetType().Name}.", spawnPoint);
-                _isActive = false;
-                return;
-            }
-            _spawnPoint = inputSpawnPoint;
-            _action?.Enable();
-            _action!.performed += OnActionPerformed;
+            DebugUtility.LogError<InputSystemTrigger>($"Ação '{_actionName}' não encontrada no InputActionAsset.");
         }
-
-        public bool CheckTrigger(Vector3 origin)
-        {
-            return false; // Lógica movida para OnActionPerformed
-        }
-
-        private void OnActionPerformed(InputAction.CallbackContext context)
-        {
-            if (!_isActive || _spawnPoint == null) return;
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-            DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
-        }
-
-        public void Reset()
-        {
-            // Não precisa de reset
-        }
-
-        public void SetActive(bool active)
-        {
-            _isActive = active;
-            if (_action != null)
-            {
-                if (active) _action.Enable();
-                else _action.Disable();
-            }
-        }
+        _isActive = true;
+        _wasPressedThisFrame = false;
     }
 
-    // Spawna com evento global
-    public class GlobalEventTrigger : ISpawnTrigger
+    public void Initialize(SpawnPoint spawnPointRef)
     {
-        private readonly string _eventName;
-        private bool _isActive;
-        private SpawnPoint _spawnPoint;
-        private EventBinding<GlobalSpawnEvent> _eventBinding;
-
-        public GlobalEventTrigger(EnhancedTriggerData data) // Corrigido para aceitar data
+        if (spawnPointRef is not InputSpawnPoint inputSpawnPoint)
         {
-            _eventName = data.GetProperty("eventName", "GlobalSpawnEvent");
-            _isActive = true;
+            DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger requer InputSpawnPoint, não {spawnPointRef?.GetType().Name}.", spawnPointRef);
+            _isActive = false;
+            return;
         }
-
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
+        _spawnPoint = inputSpawnPoint;
+        if (_action != null)
         {
-            _spawnPoint = spawnPoint;
-            _eventBinding = new EventBinding<GlobalSpawnEvent>(OnGlobalEvent);
-            EventBus<GlobalSpawnEvent>.Register(_eventBinding);
+            _action.Enable();
+            _action.performed += OnActionPerformed;
+            _action.canceled += OnActionCanceled;
         }
+        DebugUtility.LogVerbose<InputSystemTrigger>($"Inicializado com actionName='{_actionName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
+    }
 
-        public bool CheckTrigger(Vector3 origin)
-        {
-            return false; // Lógica movida para evento
-        }
+    public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
+    {
+        triggerPosition = null;
+        sourceObject = null;
+        return false; // Lógica movida para OnActionPerformed
+    }
 
-        private void OnGlobalEvent(GlobalSpawnEvent evt)
-        {
-            if (!_isActive || evt.EventName != _eventName) return;
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-            DebugUtility.Log<GlobalEventTrigger>($"Spawn disparado por evento '{_eventName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
-        }
+    private void OnActionPerformed(InputAction.CallbackContext context)
+    {
+        if (!_isActive || _spawnPoint == null || _wasPressedThisFrame) return;
+        _wasPressedThisFrame = true;
+        FilteredEventBus.RaiseFiltered(
+            new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position)
+        );
+        DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}' na posição {_spawnPoint.transform.position}.", "green", _spawnPoint);
+    }
 
-        public void Reset()
-        {
-            // Não precisa de reset
-        }
+    private void OnActionCanceled(InputAction.CallbackContext context)
+    {
+        _wasPressedThisFrame = false;
+    }
 
-        public void SetActive(bool active)
+    public void Reset()
+    {
+        SetActive(true);
+        DebugUtility.LogVerbose<InputSystemTrigger>($"Resetado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+    }
+
+    public void SetActive(bool active)
+    {
+        if (_isActive == active) return;
+        _isActive = active;
+        if (_action != null)
         {
-            _isActive = active;
-            if (_eventBinding != null)
+            if (active)
             {
-                if (active) EventBus<GlobalSpawnEvent>.Register(_eventBinding);
-                else EventBus<GlobalSpawnEvent>.Unregister(_eventBinding);
+                _action.Enable();
+                _action.performed += OnActionPerformed;
+                _action.canceled += OnActionCanceled;
+            }
+            else
+            {
+                _action.Disable();
+                _action.performed -= OnActionPerformed;
+                _action.canceled -= OnActionCanceled;
             }
         }
+        DebugUtility.LogVerbose<InputSystemTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
     }
+
+    public void OnDisable()
+    {
+        if (_action != null)
+        {
+            _action.Disable();
+            _action.performed -= OnActionPerformed;
+            _action.canceled -= OnActionCanceled;
+        }
+        DebugUtility.LogVerbose<InputSystemTrigger>($"OnDisable chamado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+    }
+
+    public bool IsActive => _isActive;
+}
 
     // Spawna com predicado
-    public class PredicateTrigger : ISpawnTrigger
+    [DebugLevel(DebugLevel.Logs)]
+    public class PredicateTrigger : TimedTrigger
     {
         private readonly float _checkInterval;
-        private float _timer;
-        private bool _isActive;
-        private SpawnPoint _spawnPoint;
-        private System.Func<bool> _predicate;
+        private System.Func<SpawnPoint, bool> _predicate;
 
-        public PredicateTrigger(EnhancedTriggerData data) // Removido Func<bool> do construtor
+        public PredicateTrigger(EnhancedTriggerData data) : base(data)
         {
             _checkInterval = data.GetProperty("checkInterval", 0.5f);
-            _timer = _checkInterval;
-            _isActive = true;
-            _predicate = () => false; // Padrão: falso até configurado
-        }
-
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
-        {
-            _spawnPoint = spawnPoint;
-        }
-
-        public bool CheckTrigger(Vector3 origin)
-        {
-            if (!_isActive) return false;
-
-            _timer -= Time.deltaTime;
-            if (_timer <= 0f)
+            if (_checkInterval <= 0f)
             {
-                _timer = _checkInterval;
-                if (_predicate())
+                DebugUtility.LogError<PredicateTrigger>("checkInterval deve ser maior que 0. Usando 0.5s.");
+                _checkInterval = 0.5f;
+            }
+            timer = _checkInterval;
+            _predicate = (_) => false;
+        }
+
+        public override void Initialize(SpawnPoint spawnPointRef)
+        {
+            base.Initialize(spawnPointRef);
+            if (_predicate == null || !_predicate(spawnPoint))
+            {
+                DebugUtility.LogWarning<PredicateTrigger>("Predicado não configurado. Trigger não disparará até SetPredicate ser chamado.", spawnPoint);
+            }
+            DebugUtility.LogVerbose<PredicateTrigger>($"Inicializado com checkInterval={_checkInterval}s para '{spawnPoint.name}'.", "blue", spawnPoint);
+        }
+
+        protected override bool OnCheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
+        {
+            triggerPosition = spawnPoint.transform.position;
+            sourceObject = spawnPoint.gameObject;
+
+            timer -= Time.deltaTime;
+            if (timer <= 0f)
+            {
+                timer = _checkInterval;
+                if (_predicate(spawnPoint))
                 {
-                    EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                    DebugUtility.Log<PredicateTrigger>($"Spawn disparado por predicado em '{_spawnPoint.name}'.", "green", _spawnPoint);
+                    DebugUtility.LogVerbose<PredicateTrigger>($"Spawn disparado por predicado em '{spawnPoint.name}' na posição {triggerPosition}.", "green", spawnPoint);
                     return true;
                 }
             }
             return false;
         }
 
-        public void Reset()
+        public void SetPredicate(System.Func<SpawnPoint, bool> predicate)
         {
-            _timer = _checkInterval;
-        }
-
-        public void SetActive(bool active)
-        {
-            _isActive = active;
-        }
-
-        public void SetPredicate(System.Func<bool> predicate)
-        {
-            _predicate = predicate ?? (() => false);
+            _predicate = predicate ?? (_ => false);
+            DebugUtility.LogVerbose<PredicateTrigger>($"Predicado configurado para '{spawnPoint?.name}'.", "blue", spawnPoint);
         }
     }
 }
