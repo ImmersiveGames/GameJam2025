@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             if (forward.magnitude < 0.1f)
             {
-                DebugUtility.Log<ContinuousTargetedShootStrategy>($"Direção inválida: {forward}", "red", null);
+                DebugUtility.Log<ContinuousTargetedShootStrategy>($"Direção inválida: {forward}", "red");
                 return;
             }
 
@@ -36,13 +36,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 var poolableData = data.PlanetOptions;
                 if (poolableData != null)
                 {
-                    movement.InitializeMovement(forward.normalized, 20);
+                    movement.Initialize(forward.normalized, 20);
                     _lastShotTime = Time.time;
                     DebugUtility.Log<ContinuousTargetedShootStrategy>($"[{go.name}] Disparou na direção {forward.normalized}, Velocidade: {20}, Posição: {go.transform.position}", "green", go);
                 }
             }
         }
-        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
         {
             throw new System.NotImplementedException();
         }

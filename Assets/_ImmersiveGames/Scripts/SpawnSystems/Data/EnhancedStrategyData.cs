@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Spawn/Enhanced/StrategyData")]
     public class EnhancedStrategyData : ScriptableObject
@@ -34,23 +35,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
         {
             return dynamicProperties.GetAllProperties();
         }
-
-        // Compatibilidade com o sistema antigo
-        public StrategyProperties GetLegacyProperties()
-        {
-            var props = new StrategyProperties
-            {
-                radius = GetProperty("radius", 2f),
-                space = GetProperty("space", 5f),
-                spawnArea = GetProperty("spawnArea", new Vector2(5f, 5f)),
-                waveInterval = GetProperty("waveInterval", 1f),
-                waveCount = GetProperty("waveCount", 3),
-                useRandomAngles = GetProperty("useRandomAngles", false),
-                addAngleVariation = GetProperty("addAngleVariation", true),
-                interval = GetProperty("interval", 1f)
-            };
-            return props;
-        }
+        
         public void RemoveProperty(string nameProperties)
         {
             dynamicProperties.RemoveProperty(nameProperties);

@@ -105,8 +105,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
     // ===== REGISTRY DE TEMPLATES =====
     public static class PropertyTemplateRegistry
     {
-        private static readonly Dictionary<TriggerType, PropertyTemplate> triggerTemplates = new();
-        private static readonly Dictionary<StrategyType, PropertyTemplate> strategyTemplates = new();
+        private static readonly Dictionary<TriggerType, PropertyTemplate> _triggerTemplates = new();
+        private static readonly Dictionary<StrategyType, PropertyTemplate> _strategyTemplates = new();
 
         static PropertyTemplateRegistry()
         {
@@ -116,37 +116,40 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
         private static void InitializeTriggerTemplates()
         {
-            triggerTemplates[TriggerType.InitializationTrigger] = new PropertyTemplate("InitializationTrigger")
+            _triggerTemplates[TriggerType.InitializationTrigger] = new PropertyTemplate("InitializationTrigger")
                 .AddProperty("delay", 0f, false, "Atraso inicial em segundos antes do spawn");
 
-            triggerTemplates[TriggerType.IntervalTrigger] = new PropertyTemplate("IntervalTrigger")
+            _triggerTemplates[TriggerType.IntervalTrigger] = new PropertyTemplate("IntervalTrigger")
                 .AddProperty("interval", 2f, true, "Intervalo entre spawns em segundos")
                 .AddProperty("startImmediately", true, false, "Iniciar imediatamente ao ativar");
 
-            triggerTemplates[TriggerType.InputSystemTrigger] = new PropertyTemplate("InputSystemTrigger")
+            _triggerTemplates[TriggerType.InputSystemTrigger] = new PropertyTemplate("InputSystemTrigger")
                 .AddProperty("actionName", "Fire", true, "Nome da ação no Input System");
 
-            triggerTemplates[TriggerType.GlobalEventTrigger] = new PropertyTemplate("GlobalEventTrigger")
+            _triggerTemplates[TriggerType.GlobalEventTrigger] = new PropertyTemplate("GlobalEventTrigger")
                 .AddProperty("eventName", "GlobalSpawnEvent", true, "Nome do evento global a escutar");
-
-            triggerTemplates[TriggerType.PredicateTrigger] = new PropertyTemplate("PredicateTrigger")
+            _triggerTemplates[TriggerType.GenericGlobalEventTrigger] = new PropertyTemplate("GenericGlobalEventTrigger")
+                .AddProperty("eventName", "GlobalGenericSpawnEvent", true, "Nome do evento global generic a escutar")
+                .AddProperty("useGenericTrigger", false, false, "Usar GenericGlobalEventTrigger para eventos sem Position/GameObject");
+            _triggerTemplates[TriggerType.PredicateTrigger] = new PropertyTemplate("PredicateTrigger")
                 .AddProperty("checkInterval", 0.5f, true, "Intervalo de verificação do predicado em segundos");
         }
 
         private static void InitializeStrategyTemplates()
         {
-            strategyTemplates[StrategyType.SimpleSpawnStrategy] = new PropertyTemplate("SimpleSpawnStrategy")
+            _strategyTemplates[StrategyType.SimpleSpawnStrategy] = new PropertyTemplate("SimpleSpawnStrategy")
                 .AddProperty("offset", Vector3.zero, false, "Deslocamento relativo à posição do SpawnPoint")
                 .AddProperty("spawnCount", 1, true, "Número de objetos a spawnar");
 
-            strategyTemplates[StrategyType.DirectionalSpawnStrategy] = new PropertyTemplate("DirectionalSpawnStrategy")
-                .AddProperty("speed", 5f, true, "Velocidade inicial do objeto")
+            _strategyTemplates[StrategyType.DirectionalSpawnStrategy] = new PropertyTemplate("DirectionalSpawnStrategy")
                 .AddProperty("offset", Vector3.zero, false, "Deslocamento relativo à posição do SpawnPoint")
-                .AddProperty("spawnCount", 1, true, "Número de objetos a spawnar");
-
-            strategyTemplates[StrategyType.FullPoolSpawnStrategy] = new PropertyTemplate("FullPoolSpawnStrategy")
+                .AddProperty("spawnCount", 1, true, "Número de objetos a spawnar")
+                .AddProperty("randomizeDirection", false, false, "Randomizar direção dos objetos")
+                .AddProperty("directionVariation", 0f, false, "Variação máxima da direção (graus)");
+            
+            _strategyTemplates[StrategyType.FullPoolSpawnStrategy] = new PropertyTemplate("FullPoolSpawnStrategy")
                 .AddProperty("spacing", 1f, true, "Espaçamento entre objetos spawnados");
-            strategyTemplates[StrategyType.OrbitPlanetStrategy] = new PropertyTemplate("OrbitPlanetStrategy")
+            _strategyTemplates[StrategyType.OrbitPlanetStrategy] = new PropertyTemplate("OrbitPlanetStrategy")
                 .AddProperty("minAngleSeparationDegrees", 10f, true, "Separação mínima entre ângulos dos planetas (graus)")
                 .AddProperty("angleVariationDegrees", 10f, true, "Variação máxima de ângulo para ângulos otimizados (graus)")
                 .AddProperty("maxAngleAttempts", 50, true, "Máximo de tentativas para encontrar ângulo aleatório válido")
@@ -161,22 +164,22 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
         public static PropertyTemplate GetTriggerTemplate(TriggerType type)
         {
-            return triggerTemplates.GetValueOrDefault(type);
+            return _triggerTemplates.GetValueOrDefault(type);
         }
 
         public static PropertyTemplate GetStrategyTemplate(StrategyType type)
         {
-            return strategyTemplates.GetValueOrDefault(type);
+            return _strategyTemplates.GetValueOrDefault(type);
         }
 
         public static void RegisterTriggerTemplate(TriggerType type, PropertyTemplate template)
         {
-            triggerTemplates[type] = template;
+            _triggerTemplates[type] = template;
         }
 
         public static void RegisterStrategyTemplate(StrategyType type, PropertyTemplate template)
         {
-            strategyTemplates[type] = template;
+            _strategyTemplates[type] = template;
         }
     }
     

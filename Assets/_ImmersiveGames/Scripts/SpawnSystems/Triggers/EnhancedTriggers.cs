@@ -1,12 +1,11 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     // Spawna na inicialização
+    [DebugLevel(DebugLevel.Verbose)]
     public class InitializationTrigger : ISpawnTrigger
     {
         private readonly float _delay;
@@ -18,6 +17,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public InitializationTrigger(EnhancedTriggerData data) // Corrigido para aceitar data
         {
             _delay = data.GetProperty("delay", 0f);
+            if (_delay < 0f)
+            {
+                DebugUtility.LogError<InitializationTrigger>("Delay não pode ser negativo. Usando 0.");
+                _delay = 0f;
+            }
             _isActive = true;
             _hasSpawned = false;
             _timer = _delay;
@@ -27,19 +31,24 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Initialize(SpawnPoint spawnPoint)
         {
-            _spawnPoint = spawnPoint;
+            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            DebugUtility.LogVerbose<InitializationTrigger>($"Inicializado com delay={_delay}s para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
-        public bool CheckTrigger(Vector3 origin)
+        public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            if (!_isActive || _hasSpawned) return false;
+            triggerPosition = _spawnPoint.transform.position;
+            sourceObject = _spawnPoint.gameObject;
+            if (!_isActive || _hasSpawned)
+            {
+                return false;
+            }
 
             _timer -= Time.deltaTime;
             if (_timer <= 0f)
             {
                 _hasSpawned = true;
-                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                DebugUtility.Log<InitializationTrigger>($"Spawn inicial disparado para '{_spawnPoint.name}'.", "green", _spawnPoint);
+                DebugUtility.Log<InitializationTrigger>($"Spawn inicial disparado para '{_spawnPoint.name}' na posição {triggerPosition}.", "green", _spawnPoint);
                 return true;
             }
             return false;
@@ -49,15 +58,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             _hasSpawned = false;
             _timer = _delay;
+            DebugUtility.Log<InitializationTrigger>($"Resetado para '{_spawnPoint?.name}' com delay={_delay}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
+            DebugUtility.Log<InitializationTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
     // Spawna em intervalos regulares
+    [DebugLevel(DebugLevel.Verbose)]
     public class IntervalTrigger : ISpawnTrigger
     {
         private readonly float _interval;
@@ -69,6 +81,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public IntervalTrigger(EnhancedTriggerData data)
         {
             _interval = data.GetProperty("interval", 2f);
+            if (_interval <= 0f)
+            {
+                DebugUtility.LogError<IntervalTrigger>("Interval deve ser maior que 0. Usando 2s.");
+                _interval = 2f;
+            }
             _startImmediately = data.GetProperty("startImmediately", true);
             _timer = _startImmediately ? 0f : _interval;
             _isActive = true;
@@ -78,19 +95,24 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Initialize(SpawnPoint spawnPoint)
         {
-            _spawnPoint = spawnPoint;
+            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            DebugUtility.Log<IntervalTrigger>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
-        public bool CheckTrigger(Vector3 origin)
+        public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            if (!_isActive) return false;
+            triggerPosition = _spawnPoint.transform.position;
+            sourceObject = _spawnPoint.gameObject;
+            if (!_isActive)
+            {
+                return false;
+            }
 
             _timer -= Time.deltaTime;
             if (_timer <= 0f)
             {
                 _timer = _interval;
-                EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                DebugUtility.Log<IntervalTrigger>($"Trigger disparado para '{_spawnPoint.name}' a cada {_interval}s.", "green", _spawnPoint);
+                DebugUtility.Log<IntervalTrigger>($"Trigger disparado para '{_spawnPoint.name}' na posição {triggerPosition} a cada {_interval}s.", "green", _spawnPoint);
                 return true;
             }
             return false;
@@ -99,15 +121,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void Reset()
         {
             _timer = _startImmediately ? 0f : _interval;
+            DebugUtility.Log<IntervalTrigger>($"Resetado para '{_spawnPoint?.name}' com timer={_timer}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
+            DebugUtility.Log<IntervalTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
     // Spawna com input
+    [DebugLevel(DebugLevel.Verbose)]
     public class InputSystemTrigger : ISpawnTrigger
     {
         private readonly string _actionName;
@@ -118,10 +143,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset)
         {
             _actionName = data.GetProperty("actionName", "Fire");
+            if (string.IsNullOrEmpty(_actionName))
+            {
+                DebugUtility.LogError<InputSystemTrigger>("actionName não pode ser vazio.");
+                _actionName = "Fire";
+            }
             _action = inputAsset?.FindAction(_actionName);
             if (_action == null)
             {
-                DebugUtility.LogError<InputSystemTrigger>($"Ação '{_actionName}' não encontrada no InputActionAsset.", null);
+                DebugUtility.LogError<InputSystemTrigger>($"Ação '{_actionName}' não encontrada no InputActionAsset.");
             }
             _isActive = true;
         }
@@ -130,19 +160,25 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Initialize(SpawnPoint spawnPoint)
         {
-            if (!(spawnPoint is InputSpawnPoint inputSpawnPoint))
+            if (spawnPoint is not InputSpawnPoint inputSpawnPoint)
             {
-                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger só pode ser usado com InputSpawnPoint, não com {spawnPoint.GetType().Name}.", spawnPoint);
+                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger requer InputSpawnPoint, não {spawnPoint?.GetType().Name}.", spawnPoint);
                 _isActive = false;
                 return;
             }
             _spawnPoint = inputSpawnPoint;
-            _action?.Enable();
-            _action!.performed += OnActionPerformed;
+            if (_action != null)
+            {
+                _action.Enable();
+                _action.performed += OnActionPerformed;
+            }
+            DebugUtility.Log<InputSystemTrigger>($"Inicializado com actionName='{_actionName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
-        public bool CheckTrigger(Vector3 origin)
+        public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
+            triggerPosition = null;
+            sourceObject = null;
             return false; // Lógica movida para OnActionPerformed
         }
 
@@ -150,12 +186,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (!_isActive || _spawnPoint == null) return;
             EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-            DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
+            DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}' na posição {_spawnPoint.transform.position}.", "green", _spawnPoint);
         }
 
         public void Reset()
         {
-            // Não precisa de reset
+            DebugUtility.Log<InputSystemTrigger>($"Reset não necessário para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
@@ -163,99 +199,73 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _isActive = active;
             if (_action != null)
             {
-                if (active) _action.Enable();
-                else _action.Disable();
+                if (active)
+                {
+                    _action.Enable();
+                    _action.performed += OnActionPerformed;
+                }
+                else
+                {
+                    _action.Disable();
+                    _action.performed -= OnActionPerformed; // Limpeza de eventos
+                }
             }
+            DebugUtility.Log<InputSystemTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
-    // Spawna com evento global
-    public class GlobalEventTrigger : ISpawnTrigger
-    {
-        private readonly string _eventName;
-        private bool _isActive;
-        private SpawnPoint _spawnPoint;
-        private EventBinding<GlobalSpawnEvent> _eventBinding;
-
-        public GlobalEventTrigger(EnhancedTriggerData data) // Corrigido para aceitar data
-        {
-            _eventName = data.GetProperty("eventName", "GlobalSpawnEvent");
-            _isActive = true;
-        }
-
-        public bool IsActive => _isActive;
-
-        public void Initialize(SpawnPoint spawnPoint)
-        {
-            _spawnPoint = spawnPoint;
-            _eventBinding = new EventBinding<GlobalSpawnEvent>(OnGlobalEvent);
-            EventBus<GlobalSpawnEvent>.Register(_eventBinding);
-        }
-
-        public bool CheckTrigger(Vector3 origin)
-        {
-            return false; // Lógica movida para evento
-        }
-
-        private void OnGlobalEvent(GlobalSpawnEvent evt)
-        {
-            if (!_isActive || evt.EventName != _eventName) return;
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-            DebugUtility.Log<GlobalEventTrigger>($"Spawn disparado por evento '{_eventName}' em '{_spawnPoint.name}'.", "green", _spawnPoint);
-        }
-
-        public void Reset()
-        {
-            // Não precisa de reset
-        }
-
-        public void SetActive(bool active)
-        {
-            _isActive = active;
-            if (_eventBinding != null)
-            {
-                if (active) EventBus<GlobalSpawnEvent>.Register(_eventBinding);
-                else EventBus<GlobalSpawnEvent>.Unregister(_eventBinding);
-            }
-        }
-    }
 
     // Spawna com predicado
+    [DebugLevel(DebugLevel.Verbose)]
     public class PredicateTrigger : ISpawnTrigger
     {
         private readonly float _checkInterval;
         private float _timer;
         private bool _isActive;
         private SpawnPoint _spawnPoint;
-        private System.Func<bool> _predicate;
+        private System.Func<SpawnPoint, bool> _predicate;
 
         public PredicateTrigger(EnhancedTriggerData data) // Removido Func<bool> do construtor
         {
             _checkInterval = data.GetProperty("checkInterval", 0.5f);
+            if (_checkInterval <= 0f)
+            {
+                DebugUtility.LogError<PredicateTrigger>("checkInterval deve ser maior que 0. Usando 0.5s.");
+                _checkInterval = 0.5f;
+            }
             _timer = _checkInterval;
             _isActive = true;
-            _predicate = () => false; // Padrão: falso até configurado
+            _predicate = (_) => false; // Padrão: falso até configurado
         }
 
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)
         {
-            _spawnPoint = spawnPoint;
+            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            if (_predicate == null || _predicate(_spawnPoint) == false)
+            {
+                DebugUtility.LogWarning<PredicateTrigger>("Predicado não configurado. Trigger não disparará até SetPredicate ser chamado.", _spawnPoint);
+            }
+            DebugUtility.Log<PredicateTrigger>($"Inicializado com checkInterval={_checkInterval}s para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
-        public bool CheckTrigger(Vector3 origin)
+        public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            if (!_isActive) return false;
+            triggerPosition = _spawnPoint.transform.position;
+            sourceObject = _spawnPoint.gameObject;
+            if (!_isActive)
+            {
+                return false;
+            }
 
             _timer -= Time.deltaTime;
             if (_timer <= 0f)
             {
                 _timer = _checkInterval;
-                if (_predicate())
+                if (_predicate(_spawnPoint))
                 {
-                    EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
-                    DebugUtility.Log<PredicateTrigger>($"Spawn disparado por predicado em '{_spawnPoint.name}'.", "green", _spawnPoint);
+                    DebugUtility.Log<PredicateTrigger>($"Spawn disparado por predicado em '{_spawnPoint.name}' na posição {triggerPosition}.", "green", _spawnPoint);
                     return true;
                 }
             }
@@ -265,16 +275,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void Reset()
         {
             _timer = _checkInterval;
+            DebugUtility.Log<PredicateTrigger>($"Resetado para '{_spawnPoint?.name}' com checkInterval={_checkInterval}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
+            DebugUtility.Log<PredicateTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
-        public void SetPredicate(System.Func<bool> predicate)
+        public void SetPredicate(System.Func<SpawnPoint, bool> predicate)
         {
-            _predicate = predicate ?? (() => false);
+            _predicate = predicate ?? ((_) => false);
+            DebugUtility.Log<PredicateTrigger>($"Predicado configurado para '{_spawnPoint?.name}'.", "blue", _spawnPoint);
         }
     }
 }

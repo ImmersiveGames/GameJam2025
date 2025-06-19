@@ -3,15 +3,17 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    public class SpawnRequestEvent : IEvent
+    public struct SpawnRequestEvent : IEvent
     {
         public string PoolKey { get; }
         public GameObject SourceGameObject { get; }
+        public Vector3? SpawnPosition { get; }
 
-        public SpawnRequestEvent(string poolKey, GameObject sourceGameObject)
+        public SpawnRequestEvent(string poolKey, GameObject sourceGameObject, Vector3? spawnPosition = null)
         {
             PoolKey = poolKey;
             SourceGameObject = sourceGameObject;
+            SpawnPosition = spawnPosition;
         }
     }
 
@@ -55,15 +57,27 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public SpawnPoint Point { get; }
         public SpawnPointResetEvent(SpawnPoint point) => Point = point;
     }
-    
-    public class GlobalSpawnEvent : IEvent
+
+    public class GlobalSpawnEvent : ISpawnEvent
     {
         public string EventName { get; }
-        public GlobalSpawnEvent(string eventName) => EventName = eventName;
+        public Vector3 Position { get; }
+        public GameObject GameObject { get; }
+
+        public GlobalSpawnEvent(string eventName, Vector3 position, GameObject sourceObject = null)
+        {
+            EventName = eventName;
+            Position = position;
+            GameObject = sourceObject;
+        }
     }
-    
-    public interface IGlobalEvent : IEvent
+    public class GlobalGenericSpawnEvent : IEvent
     {
-        string EventName { get; }
+        public string EventName { get; }
+
+        public GlobalGenericSpawnEvent(string eventName)
+        {
+            EventName = eventName;
+        }
     }
 }

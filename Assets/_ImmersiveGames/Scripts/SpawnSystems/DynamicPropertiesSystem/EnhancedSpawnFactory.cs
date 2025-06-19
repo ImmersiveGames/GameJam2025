@@ -14,13 +14,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
         {
             if (data == null)
             {
-                DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedTriggerData é nulo.", null);
+                DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedTriggerData é nulo.");
                 return null;
             }
 
             if (data.triggerType == TriggerType.InputSystemTrigger && inputAsset == null)
             {
-                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para InputSystemTrigger.", null);
+                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para InputSystemTrigger.");
                 return null;
             }
 
@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                 TriggerType.IntervalTrigger => new IntervalTrigger(data),
                 TriggerType.InputSystemTrigger => new InputSystemTrigger(data, inputAsset),
                 TriggerType.GlobalEventTrigger => new GlobalEventTrigger(data),
+                TriggerType.GenericGlobalEventTrigger => new GenericGlobalEventTrigger(data),
                 TriggerType.PredicateTrigger => new PredicateTrigger(data),
                 _ => null
             };
@@ -39,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
         {
             if (data == null)
             {
-                DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedStrategyData é nulo.", null);
+                DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedStrategyData é nulo.");
                 return null;
             }
 

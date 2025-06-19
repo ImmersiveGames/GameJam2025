@@ -3,7 +3,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
 {
     public interface IPoolable
     {
-        bool IsActive { get; }
+
         void Initialize(PoolableObjectData data, ObjectPool pool);
         void Activate(Vector3 position);
         void Deactivate();

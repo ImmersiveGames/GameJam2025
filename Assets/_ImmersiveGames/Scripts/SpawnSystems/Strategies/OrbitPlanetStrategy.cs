@@ -2,7 +2,6 @@
 using System.Linq;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -17,8 +16,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         // Constantes
         private const float FullCircleDegrees = 360f;
         private const float AngleSeparationFactor = 1.5f;
-        private const int MaxCollisionAttempts = 10;
-        private const float DefaultDiameter = 5.2f;
+        private const int MaxCollisionAttempts = 3; // Reduzido para evitar iterações desnecessárias
 
         // Configurações
         private readonly float _minAngleSeparationDegrees;
@@ -63,7 +61,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
         }
 
-        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
         {
             if (!ValidateInputs(pool)) return;
             SetupSolarSystem(pool);
@@ -217,7 +215,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 var orbitInfo = orbitInfos[index];
                 var planetInfo = planetMaster.GetPlanetInfo();
 
-                var (adjustedPosition, adjustedRadius) = ResolveCollisions(index, planetInfos, orbitInfos, orbitInfo);
+                // Verifica colisões apenas como segurança
+                var (adjustedPosition, adjustedRadius) = ValidatePosition(index, planetInfos, orbitInfos, orbitInfo);
 
                 planetInfo.orbitPosition = adjustedPosition;
                 planetInfo.planetRadius = adjustedRadius;
@@ -228,12 +227,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planetMaster));
 
                 DebugUtility.Log<OrbitPlanetStrategy>(
-                    $"Planeta {index} reposicionado em {adjustedPosition} com raio orbital {adjustedRadius:F2}",
+                    $"Planeta {index} posicionado em {adjustedPosition} com raio orbital {adjustedRadius:F2}",
                     "green", planetMaster.gameObject);
             }
         }
 
-        private (Vector3 position, float radius) ResolveCollisions(int index, List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos,
+        private (Vector3 position, float radius) ValidatePosition(int index, List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos,
             List<OrbitPlanetInfo> orbitInfos, OrbitPlanetInfo orbitInfo)
         {
             Vector3 adjustedPosition = orbitInfo.orbitPosition;
@@ -254,9 +253,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     if (distance < minDistance)
                     {
                         hasCollision = true;
-                        adjustedRadius += _spaceBetweenPlanets;
+                        adjustedRadius += _spaceBetweenPlanets * 0.5f; // Ajuste menor para minimizar deslocamentos
                         adjustedPosition = _orbitCenter + new Vector3(Mathf.Cos(orbitInfo.initialAngle), 0, Mathf.Sin(orbitInfo.initialAngle)) * adjustedRadius;
                         attempts++;
+                        DebugUtility.Log<OrbitPlanetStrategy>(
+                            $"Colisão detectada para planeta {index} com planeta {prevIndex}. Novo raio: {adjustedRadius:F2}",
+                            "yellow");
                         break;
                     }
                 }

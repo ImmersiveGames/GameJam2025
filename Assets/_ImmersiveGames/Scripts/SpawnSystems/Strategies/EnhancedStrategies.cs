@@ -1,6 +1,4 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
@@ -10,25 +8,57 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     {
         private readonly Vector3 _offset;
         private readonly int _spawnCount;
+        private readonly bool _randomizePosition;
+        private readonly float _positionRadius;
 
         public SimpleSpawnStrategy(EnhancedStrategyData data)
         {
             _offset = data.GetProperty("offset", Vector3.zero);
-            _spawnCount = data.GetProperty("spawnCount", 1); // Novo: define quantidade
+            _spawnCount = data.GetProperty("spawnCount", 1);
+            if (_spawnCount <= 0)
+            {
+                DebugUtility.LogError<SimpleSpawnStrategy>("spawnCount deve ser maior que 0. Usando 1.");
+                _spawnCount = 1;
+            }
+            _randomizePosition = data.GetProperty("randomizePosition", false);
+            _positionRadius = data.GetProperty("positionRadius", 0f);
+            if (_randomizePosition && _positionRadius <= 0f)
+            {
+                DebugUtility.LogWarning<SimpleSpawnStrategy>("positionRadius deve ser maior que 0 quando randomizePosition é true. Desativando randomização.");
+                _randomizePosition = false;
+            }
         }
 
-        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
         {
-            if (pool == null) return;
+            if (pool == null)
+            {
+                DebugUtility.LogError<SimpleSpawnStrategy>("ObjectPool é nulo.");
+                return;
+            }
 
             int count = Mathf.Min(_spawnCount, pool.GetAvailableCount());
+            if (count == 0)
+            {
+                DebugUtility.LogWarning<SimpleSpawnStrategy>("Nenhum objeto disponível no pool.");
+                return;
+            }
+
             for (int i = 0; i < count; i++)
             {
-                var obj = pool.GetObject(origin + _offset);
+                Vector3 spawnPos = origin + _offset;
+                if (_randomizePosition)
+                    spawnPos += Random.insideUnitSphere * _positionRadius;
+
+                var obj = pool.GetObject(spawnPos);
                 if (obj != null)
                 {
-                    obj.Activate(origin + _offset);
-                    DebugUtility.Log<SimpleSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {origin + _offset}.", "green", obj.GetGameObject());
+                    obj.Activate(spawnPos);
+                    DebugUtility.Log<SimpleSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos}.", "green", obj.GetGameObject());
+                }
+                else
+                {
+                    DebugUtility.LogWarning<SimpleSpawnStrategy>($"Falha ao obter objeto do pool na iteração {i}.");
                 }
             }
         }
@@ -36,66 +66,170 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
     public class DirectionalSpawnStrategy : ISpawnStrategy
     {
-        private readonly float _speed;
         private readonly Vector3 _offset;
         private readonly int _spawnCount;
+        private readonly bool _randomizeDirection;
+        private readonly float _directionVariation;
 
         public DirectionalSpawnStrategy(EnhancedStrategyData data)
         {
-            _speed = data.GetProperty("speed", 5f);
             _offset = data.GetProperty("offset", Vector3.zero);
             _spawnCount = data.GetProperty("spawnCount", 1);
+            if (_spawnCount <= 0)
+            {
+                DebugUtility.LogError<DirectionalSpawnStrategy>("spawnCount deve ser maior que 0. Usando 1.");
+                _spawnCount = 1;
+            }
+            _randomizeDirection = data.GetProperty("randomizeDirection", false);
+            _directionVariation = data.GetProperty("directionVariation", 0f);
+            if (_randomizeDirection && _directionVariation <= 0f)
+            {
+                DebugUtility.LogWarning<DirectionalSpawnStrategy>("directionVariation deve ser maior que 0 quando randomizeDirection é true. Desativando randomização.");
+                _randomizeDirection = false;
+            }
         }
 
-        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
+        public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
         {
-            if (pool == null) return;
+            if (!ValidatePool(pool))
+                return;
 
-            int count = Mathf.Min(_spawnCount, pool.GetAvailableCount());
+            int count = DetermineSpawnCount(pool);
+            if (count == 0)
+                return;
+
+            Vector3 baseDirection = GetBaseDirection(sourceObject);
+            Vector3 spawnPos = origin + _offset;
+
             for (int i = 0; i < count; i++)
             {
-                var obj = pool.GetObject(origin + _offset);
-                if (obj != null)
-                {
-                    obj.Activate(origin + _offset);
-                    var movement = obj.GetGameObject().GetComponent<IObjectMovement>();
-                    if (movement != null)
-                    {
-                        movement.Initialize(forward.normalized, _speed);
-                        DebugUtility.Log<DirectionalSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {origin + _offset} com direção {forward}.", "green", obj.GetGameObject());
-                    }
-                    else
-                    {
-                        DebugUtility.LogError<DirectionalSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' não tem IObjectMovement.", obj.GetGameObject());
-                    }
-                }
+                SpawnSingleObject(pool, spawnPos, baseDirection, i);
             }
+        }
+
+        private bool ValidatePool(ObjectPool pool)
+        {
+            if (pool == null)
+            {
+                DebugUtility.LogError<DirectionalSpawnStrategy>("ObjectPool é nulo.");
+                return false;
+            }
+            return true;
+        }
+
+        private int DetermineSpawnCount(ObjectPool pool)
+        {
+            int count = Mathf.Min(_spawnCount, pool.GetAvailableCount());
+            if (count == 0)
+            {
+                DebugUtility.LogWarning<DirectionalSpawnStrategy>("Nenhum objeto disponível no pool.");
+            }
+            return count;
+        }
+
+        private Vector3 GetBaseDirection(GameObject sourceObject)
+        {
+            if (sourceObject == null)
+            {
+                DebugUtility.LogWarning<DirectionalSpawnStrategy>("sourceObject é nulo. Objetos não terão direção definida.");
+                return Vector3.zero;
+            }
+
+            return sourceObject.transform.forward.normalized;
+        }
+
+        private Vector3 CalculateDirection(Vector3 baseDirection)
+        {
+            if (baseDirection == Vector3.zero || !_randomizeDirection)
+                return baseDirection;
+
+            return Quaternion.Euler(Random.insideUnitSphere * _directionVariation) * baseDirection;
+        }
+
+        private void SpawnSingleObject(ObjectPool pool, Vector3 spawnPos, Vector3 baseDirection, int iteration)
+        {
+            var obj = pool.GetObject(spawnPos);
+            if (obj == null)
+            {
+                DebugUtility.LogWarning<DirectionalSpawnStrategy>($"Falha ao obter objeto do pool na iteração {iteration}.");
+                return;
+            }
+
+            obj.Activate(spawnPos);
+            SetupObjectMovement(obj, baseDirection, spawnPos);
+        }
+
+        private void SetupObjectMovement(IPoolable obj, Vector3 baseDirection, Vector3 spawnPos)
+        {
+            var movement = obj.GetGameObject().GetComponent<IObjectMovement>();
+            if (movement == null)
+            {
+                DebugUtility.LogWarning<DirectionalSpawnStrategy>(
+                    $"Objeto '{obj.GetGameObject().name}' não tem IObjectMovement. Spawnado sem direção.",
+                    obj.GetGameObject());
+                return;
+            }
+
+            Vector3 finalDirection = CalculateDirection(baseDirection);
+            movement.Initialize(finalDirection, 0f); // Velocidade gerenciada externamente
+
+            DebugUtility.Log<DirectionalSpawnStrategy>(
+                $"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos} com direção {finalDirection}.",
+                "green",
+                obj.GetGameObject());
         }
     }
 
     public class FullPoolSpawnStrategy : ISpawnStrategy
-    {
-        private readonly float _spacing;
-
-        public FullPoolSpawnStrategy(EnhancedStrategyData data)
         {
-            _spacing = data.GetProperty("spacing", 1f);
-        }
+            private readonly Vector3 _spacingVector;
+            private readonly int _maxSpawnCount;
 
-        public void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward)
-        {
-            if (pool == null) return;
-
-            int count = pool.GetAvailableCount();
-            for (int i = 0; i < count; i++)
+            public FullPoolSpawnStrategy(EnhancedStrategyData data)
             {
-                var obj = pool.GetObject(origin + new Vector3(i * _spacing, 0, 0));
-                if (obj != null)
+                _spacingVector = data.GetProperty("spacingVector", new Vector3(data.GetProperty("spacing", 1f), 0, 0));
+                if (_spacingVector == Vector3.zero)
                 {
-                    obj.Activate(origin + new Vector3(i * _spacing, 0, 0));
-                    DebugUtility.Log<FullPoolSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {origin + new Vector3(i * _spacing, 0, 0)}.", "green", obj.GetGameObject());
+                    DebugUtility.LogError<FullPoolSpawnStrategy>("spacingVector não pode ser zero. Usando (1, 0, 0).");
+                    _spacingVector = new Vector3(1f, 0, 0);
+                }
+                _maxSpawnCount = data.GetProperty("maxSpawnCount", int.MaxValue);
+                if (_maxSpawnCount <= 0)
+                {
+                    DebugUtility.LogError<FullPoolSpawnStrategy>("maxSpawnCount deve ser maior que 0. Usando int.MaxValue.");
+                    _maxSpawnCount = int.MaxValue;
+                }
+            }
+
+            public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
+            {
+                if (pool == null)
+                {
+                    DebugUtility.LogError<FullPoolSpawnStrategy>("ObjectPool é nulo.");
+                    return;
+                }
+
+                int count = Mathf.Min(pool.GetAvailableCount(), _maxSpawnCount);
+                if (count == 0)
+                {
+                    DebugUtility.LogWarning<FullPoolSpawnStrategy>("Nenhum objeto disponível no pool ou maxSpawnCount atingido.");
+                    return;
+                }
+
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 spawnPos = origin + _spacingVector * i;
+                    var obj = pool.GetObject(spawnPos);
+                    if (obj != null)
+                    {
+                        obj.Activate(spawnPos);
+                        DebugUtility.Log<FullPoolSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos}.", "green", obj.GetGameObject());
+                    }
+                    else
+                    {
+                        DebugUtility.LogWarning<FullPoolSpawnStrategy>($"Falha ao obter objeto do pool na iteração {i}.");
+                    }
                 }
             }
         }
-    }
 }

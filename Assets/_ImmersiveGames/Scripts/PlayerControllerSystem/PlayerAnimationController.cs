@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
-using System;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
@@ -31,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         {
             TryGetComponent(out _playerMaster);
             if (_playerMaster.GetModelRoot().TryGetComponentInChildren(out _animator)) return;
-            DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no GameObject!", this);
+            DebugUtility.LogError<EaterAnimationController>("Animator nï¿½o encontrado no GameObject!", this);
             enabled = false;
         }
 

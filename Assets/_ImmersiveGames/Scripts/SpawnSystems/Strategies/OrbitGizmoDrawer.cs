@@ -8,8 +8,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class OrbitGizmoDrawer : MonoBehaviour
     {
-        [SerializeField] private bool _drawOrbitGizmos = true;
-        [SerializeField] private Vector3 _orbitCenter = Vector3.zero;
+        [SerializeField] private bool drawOrbitGizmos = true;
+        [SerializeField] private Vector3 orbitCenter = Vector3.zero;
         private readonly List<float> _orbitRadii = new List<float>();
 
         public void UpdateOrbitRadii(List<float> radii)
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void OnDrawGizmos()
         {
-            if (!_drawOrbitGizmos || _orbitRadii.Count == 0) return;
+            if (!drawOrbitGizmos || _orbitRadii.Count == 0) return;
 
             #if UNITY_EDITOR
             Handles.color = Color.white;
@@ -31,11 +31,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 float t = i / (float)Mathf.Max(1, _orbitRadii.Count - 1);
                 Gizmos.color = Color.Lerp(Color.cyan, Color.magenta, t);
                 float radius = _orbitRadii[i];
-                DrawCircle(_orbitCenter, radius, 50);
+                DrawCircle(orbitCenter, radius, 50);
 
                 // Adicionar rótulo com o raio
                 #if UNITY_EDITOR
-                Vector3 labelPos = _orbitCenter + new Vector3(radius, 0, 0);
+                Vector3 labelPos = orbitCenter + new Vector3(radius, 0, 0);
                 Handles.Label(labelPos, $"Orbit {i}: {radius:F2}", new GUIStyle { normal = { textColor = Color.white } });
                 #endif
             }

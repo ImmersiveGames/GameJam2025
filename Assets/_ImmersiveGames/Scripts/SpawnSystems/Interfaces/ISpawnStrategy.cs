@@ -1,26 +1,22 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public interface ISpawnStrategy
     {
-        void Spawn(ObjectPool pool, Vector3 origin, Vector3 forward);
+        void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null);
     }
-    
-
     public interface ISpawnTrigger
     {
         void Initialize(SpawnPoint spawnPoint);
-        bool CheckTrigger(Vector3 origin);
+        bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject);
         void SetActive(bool active);
         void Reset();
         bool IsActive { get; }
     }
     public interface IObjectMovement
     {
-        void Initialize(Vector3 direction, float speed);
+        void Initialize(Vector3? direction, float speed);
     }
     
 }

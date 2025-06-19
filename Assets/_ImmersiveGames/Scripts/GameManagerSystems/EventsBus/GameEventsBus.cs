@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
             IsPaused = isPaused;
         }
     }
-    public class DeathEvent : IEvent
+    public class DeathEvent : ISpawnEvent
     {
         public Vector3 Position { get; }
         public GameObject GameObject{ get; }

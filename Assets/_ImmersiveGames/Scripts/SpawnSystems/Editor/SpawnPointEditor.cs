@@ -1,10 +1,12 @@
 ﻿#if UNITY_EDITOR
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using UnityEditor;
 using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using System;
 using System.Linq;
+using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 {
@@ -17,7 +19,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
         private SerializedProperty _strategyDataProp;
         private SerializedProperty _useManagerLockingProp;
         private SerializedProperty _playerInputProp;
-
         private bool _showPoolableData = true;
         private bool _showTrigger = true;
         private bool _showStrategy = true;
@@ -25,6 +26,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 
         private enum TestPredicateType { AlwaysTrue, TimeGreaterThan10, NoEnemies }
         private TestPredicateType _testPredicateType = TestPredicateType.AlwaysTrue;
+
+        // Campos para teste de GlobalEventTrigger
+        private Vector3 _testEventPosition = Vector3.zero;
+        private GameObject _testEventSourceObject = null;
 
         private void OnEnable()
         {
@@ -40,11 +45,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
             serializedObject.Update();
 
             DrawHeader();
-            DrawGeneralSetup();
-            DrawPoolableData();
-            DrawTrigger();
-            DrawStrategy();
-            DrawRuntimeInfo();
+            DrawGeneralSettings();
+            DrawPoolableSection();
+            DrawTriggerSection();
+            DrawStrategySection();
+            DrawRuntimeSection();
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -56,110 +61,129 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
             EditorGUILayout.Space();
         }
 
-        private void DrawGeneralSetup()
+        private void DrawGeneralSettings()
         {
             EditorGUILayout.PropertyField(_useManagerLockingProp, new GUIContent("Use Manager Locking", "Se verdadeiro, o SpawnManager controla os limites de spawn."));
+
             if (_playerInputProp != null)
-            {
-                EditorGUILayout.PropertyField(_playerInputProp, new GUIContent("Player Input", "Componente PlayerInput para InputSystemTrigger."));
-            }
+                EditorGUILayout.PropertyField(_playerInputProp, new GUIContent("Player Input", "Componente PlayerInput necessário para triggers do tipo InputSystem."));
+
             ValidateRequiredField(_poolableDataProp, "Poolable Object Data é obrigatório!");
         }
 
-        private void DrawPoolableData()
+        private void DrawPoolableSection()
         {
             _showPoolableData = EditorGUILayout.BeginFoldoutHeaderGroup(_showPoolableData, "📦 Poolable Object Data");
             if (_showPoolableData)
-            {
                 EditorGUILayout.PropertyField(_poolableDataProp);
-            }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private void DrawTrigger()
+        private void DrawTriggerSection()
         {
             _showTrigger = EditorGUILayout.BeginFoldoutHeaderGroup(_showTrigger, "🎯 Trigger Data");
             if (_showTrigger)
             {
                 EditorGUILayout.PropertyField(_triggerDataProp);
                 ValidateRequiredField(_triggerDataProp, "Trigger Data é obrigatório!");
-                ValidateInputTrigger();
+                ValidateTriggerType();
 
-                if (GUILayout.Button("Apply Trigger Template"))
-                    ApplyTemplate(_triggerDataProp, "Trigger", typeof(EnhancedTriggerData));
+                DrawTriggerButtons();
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
 
-                if (GUILayout.Button("Reset Trigger"))
+        private void DrawTriggerButtons()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Trigger Test Controls", EditorStyles.boldLabel);
+
+            if (GUILayout.Button("Apply Trigger Template"))
+                ApplyTemplate(_triggerDataProp, "Trigger", typeof(EnhancedTriggerData));
+
+            if (GUILayout.Button("Reset Trigger"))
+                ForEachSpawnPoint(sp => {
+                    sp.TriggerReset();
+                    Debug.Log($"Trigger resetado para '{sp.name}' com tipo '{sp.GetTriggerData()?.triggerType}'.");
+                });
+
+            if (GUILayout.Button("Toggle Trigger"))
+                ForEachSpawnPoint(sp => {
+                    sp.SetTriggerActive(!sp.GetTriggerActive());
+                    Debug.Log($"Trigger de '{sp.name}' {(sp.GetTriggerActive() ? "ativado" : "desativado")}.");
+                });
+
+            if (Application.isPlaying)
+            {
+                if (GUILayout.Button("Test Spawn"))
+                    ForEachSpawnPoint(sp => {
+                        EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(sp.GetPoolKey(), sp.gameObject));
+                        Debug.Log($"Teste de spawn disparado para '{sp.name}'.");
+                    });
+
+                // Itera sobre cada SpawnPoint para exibir botões específicos
+                foreach (var obj in targets)
                 {
-                    var spawnPoints = targets.Cast<SpawnPoint>().ToList();
-                    foreach (var spawnPoint in spawnPoints)
+                    if (obj is SpawnPoint sp)
                     {
-                        spawnPoint.TriggerReset();
-                        Debug.Log($"Trigger resetado para '{spawnPoint.name}' com tipo '{spawnPoint.GetTriggerData()?.triggerType}'.");
-                    }
-                }
+                        var triggerData = sp.GetTriggerData();
+                        if (triggerData == null) continue;
 
-                if (GUILayout.Button("Toggle Trigger"))
-                {
-                    var spawnPoints = targets.Cast<SpawnPoint>().ToList();
-                    foreach (var spawnPoint in spawnPoints)
-                    {
-                        spawnPoint.SetTriggerActive(!spawnPoint.GetTriggerActive());
-                        Debug.Log($"Trigger de '{spawnPoint.name}' {(spawnPoint.GetTriggerActive() ? "ativado" : "desativado")}.");
-                    }
-                }
+                        EditorGUILayout.Space();
+                        EditorGUILayout.LabelField($"Trigger Controls for '{sp.name}' ({triggerData.triggerType})", EditorStyles.boldLabel);
 
-                if (Application.isPlaying && GUILayout.Button("Test Spawn"))
-                {
-                    var spawnPoints = targets.Cast<SpawnPoint>().ToList();
-                    foreach (var spawnPoint in spawnPoints)
-                    {
-                        EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(spawnPoint.GetPoolKey(), spawnPoint.gameObject));
-                        Debug.Log($"Teste de spawn disparado para '{spawnPoint.name}'.");
-                    }
-                }
-
-                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData triggerData &&
-                    triggerData.triggerType == TriggerType.GlobalEventTrigger && 
-                    GUILayout.Button("Test Global Spawn Event"))
-                {
-                    var spawnPoints = targets.Cast<SpawnPoint>().ToList();
-                    foreach (var spawnPoint in spawnPoints)
-                    {
-                        string eventName = triggerData.GetProperty("eventName", "GlobalSpawnEvent");
-                        EventBus<GlobalSpawnEvent>.Raise(new GlobalSpawnEvent(eventName));
-                        Debug.Log($"Disparado GlobalSpawnEvent '{eventName}' para '{spawnPoint.name}'.");
-                    }
-                }
-
-                if (Application.isPlaying && _triggerDataProp.objectReferenceValue is EnhancedTriggerData enhancedTriggerData &&
-                    enhancedTriggerData.triggerType == TriggerType.PredicateTrigger)
-                {
-                    _testPredicateType = (TestPredicateType)EditorGUILayout.EnumPopup("Test Predicate", _testPredicateType);
-                    if (GUILayout.Button("Test Predicate Trigger"))
-                    {
-                        var spawnPoints = targets.Cast<SpawnPoint>().ToList();
-                        foreach (var spawnPoint in spawnPoints)
+                        if (triggerData.triggerType == TriggerType.GlobalEventTrigger)
                         {
-                            if (spawnPoint.SpawnTrigger is PredicateTrigger predicateTrigger)
+                            _testEventPosition = EditorGUILayout.Vector3Field("Event Position", _testEventPosition);
+                            _testEventSourceObject = (GameObject)EditorGUILayout.ObjectField("Event Source Object", _testEventSourceObject, typeof(GameObject), true);
+
+                            if (GUILayout.Button($"Test Global Event for '{sp.name}'"))
                             {
-                                predicateTrigger.SetPredicate(_testPredicateType switch
+                                string eventName = triggerData.GetProperty("eventName", "GlobalSpawnEvent");
+                                EventBus<ISpawnEvent>.Raise(new GlobalSpawnEvent(eventName, _testEventPosition, _testEventSourceObject));
+                                Debug.Log($"Disparado GlobalSpawnEvent '{eventName}' para '{sp.name}' na posição {_testEventPosition} com sourceObject {(_testEventSourceObject != null ? _testEventSourceObject.name : "null")}.");
+                            }
+                        }
+                        else if (triggerData.triggerType == TriggerType.GenericGlobalEventTrigger)
+                        {
+                            if (GUILayout.Button($"Test Generic Global Event for '{sp.name}'"))
+                            {
+                                string eventName = triggerData.GetProperty("eventName", "GlobalGenericSpawnEvent");
+                                EventBus<GlobalGenericSpawnEvent>.Raise(new GlobalGenericSpawnEvent(eventName));
+                                Debug.Log($"Disparado GlobalGenericSpawnEvent '{eventName}' para '{sp.name}'.");
+                            }
+                        }
+                        else if (triggerData.triggerType == TriggerType.PredicateTrigger)
+                        {
+                            _testPredicateType = (TestPredicateType)EditorGUILayout.EnumPopup("Test Predicate", _testPredicateType);
+                            if (GUILayout.Button($"Test Predicate Trigger for '{sp.name}'"))
+                            {
+                                Func<SpawnPoint, bool> predicate = _testPredicateType switch
                                 {
-                                    TestPredicateType.AlwaysTrue => () => true,
-                                    TestPredicateType.TimeGreaterThan10 => () => Time.time > 10f,
-                                    TestPredicateType.NoEnemies => () => GameObject.FindGameObjectsWithTag("Enemy").Length == 0,
-                                    _ => () => false
-                                });
-                                predicateTrigger.CheckTrigger(Vector3.zero);
-                                Debug.Log($"Testado PredicateTrigger para '{spawnPoint.name}' com predicado '{_testPredicateType}'.");
+                                    TestPredicateType.AlwaysTrue => (_) => true,
+                                    TestPredicateType.TimeGreaterThan10 => (_) => Time.time > 10f,
+                                    TestPredicateType.NoEnemies => (_) => GameObject.FindGameObjectsWithTag("Enemy").Length == 0,
+                                    _ => (_) => false
+                                };
+
+                                if (sp.SpawnTrigger is PredicateTrigger concreteTrigger)
+                                {
+                                    concreteTrigger.SetPredicate(predicate);
+                                    concreteTrigger.CheckTrigger(out _, out _);
+                                    Debug.Log($"Testado PredicateTrigger para '{sp.name}' com predicado '{_testPredicateType}'.");
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"'{sp.name}' não possui PredicateTrigger concreto.");
+                                }
                             }
                         }
                     }
                 }
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private void DrawStrategy()
+        private void DrawStrategySection()
         {
             _showStrategy = EditorGUILayout.BeginFoldoutHeaderGroup(_showStrategy, "🧠 Strategy Data");
             if (_showStrategy)
@@ -173,76 +197,94 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private void DrawRuntimeInfo()
+        private void DrawRuntimeSection()
         {
             _showRuntimeInfo = EditorGUILayout.BeginFoldoutHeaderGroup(_showRuntimeInfo, "🧪 Runtime Info (Read-only)");
             if (_showRuntimeInfo && Application.isPlaying)
             {
-                foreach (SpawnPoint spawnPoint in targets)
+                foreach (var o in targets)
                 {
-                    EditorGUILayout.LabelField("Pool Key", spawnPoint.GetPoolKey() ?? "N/A");
-                    EditorGUILayout.LabelField("Can Spawn", spawnPoint.IsSpawnValid() ? "Yes" : "No");
-                    EditorGUILayout.LabelField("Trigger Active", spawnPoint.GetTriggerActive() ? "Yes" : "No");
-                    var pool = PoolManager.Instance?.GetPool(spawnPoint.GetPoolKey());
-                    EditorGUILayout.LabelField("Pool Available Objects", pool != null ? pool.GetAvailableCount().ToString() : "N/A");
-                    if (spawnPoint.useManagerLocking)
+                    var sp = (SpawnPoint)o;
+                    EditorGUILayout.Space();
+                    EditorGUILayout.LabelField($"🔍 {sp.name}", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("Pool Key", sp.GetPoolKey() ?? "N/A");
+                    EditorGUILayout.LabelField("Can Spawn", sp.IsSpawnValid ? "✔️ Yes" : "❌ No");
+                    EditorGUILayout.LabelField("Trigger Active", sp.GetTriggerActive() ? "✔️ Yes" : "❌ No");
+
+                    ObjectPool pool = PoolManager.Instance?.GetPool(sp.GetPoolKey());
+                    EditorGUILayout.LabelField("Pool Available", pool?.GetAvailableCount().ToString() ?? "N/A");
+
+                    if (sp.useManagerLocking && SpawnManager.Instance != null)
                     {
-                        var spawnManager = SpawnManager.Instance;
-                        if (spawnManager != null)
-                        {
-                            EditorGUILayout.LabelField("Spawn Count", spawnManager.GetSpawnCount(spawnPoint).ToString());
-                            EditorGUILayout.LabelField("Is Locked", spawnManager.IsLocked(spawnPoint) ? "Yes" : "No");
-                        }
+                        var sm = SpawnManager.Instance;
+                        EditorGUILayout.LabelField("Spawn Count", sm.GetSpawnCount(sp).ToString());
+                        EditorGUILayout.LabelField("Is Locked", sm.IsLocked(sp) ? "🔒 Yes" : "🔓 No");
                     }
                 }
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private void ValidateRequiredField(SerializedProperty property, string errorMessage)
+        private void ValidateRequiredField(SerializedProperty property, string message)
         {
             if (property.objectReferenceValue == null)
+                EditorGUILayout.HelpBox(message, MessageType.Error);
+        }
+
+        private void ValidateTriggerType()
+        {
+            foreach (var obj in targets)
             {
-                EditorGUILayout.HelpBox(errorMessage, MessageType.Error);
+                if (obj is SpawnPoint sp)
+                {
+                    var triggerData = sp.GetTriggerData();
+                    if (triggerData == null) continue;
+
+                    if (triggerData.triggerType == TriggerType.InputSystemTrigger)
+                    {
+                        if (!(sp is InputSpawnPoint))
+                            EditorGUILayout.HelpBox($"⚠️ InputSystemTrigger só pode ser usado com InputSpawnPoint, não {sp.GetType().Name}.", MessageType.Error);
+                        else if (_playerInputProp != null && _playerInputProp.objectReferenceValue == null)
+                            EditorGUILayout.HelpBox("⚠️ InputSystemTrigger requer um componente PlayerInput atribuído.", MessageType.Warning);
+                    }
+                    else if (triggerData.triggerType == TriggerType.GlobalEventTrigger || 
+                             triggerData.triggerType == TriggerType.GenericGlobalEventTrigger)
+                    {
+                        string eventName = triggerData.GetProperty("eventName", "");
+                        if (string.IsNullOrEmpty(eventName))
+                            EditorGUILayout.HelpBox($"⚠️ {triggerData.triggerType} requer um eventName não vazio.", MessageType.Error);
+                    }
+                }
             }
         }
 
-        private void ValidateInputTrigger()
+        private void ApplyTemplate(SerializedProperty property, string label, Type expectedType)
         {
-            if (_triggerDataProp.objectReferenceValue is EnhancedTriggerData triggerData &&
-                triggerData.triggerType == TriggerType.InputSystemTrigger)
-            {
-                bool isInputSpawnPoint = targets.All(t => t is InputSpawnPoint);
-                if (!isInputSpawnPoint)
-                {
-                    EditorGUILayout.HelpBox($"InputSystemTrigger só pode ser usado com InputSpawnPoint.", MessageType.Error);
-                }
-                else if (_playerInputProp != null && _playerInputProp.objectReferenceValue == null)
-                {
-                    EditorGUILayout.HelpBox($"InputSystemTrigger requer um PlayerInput configurado.", MessageType.Warning);
-                }
-            }
-        }
-
-        private void ApplyTemplate(SerializedProperty property, string typeName, System.Type expectedType)
-        {
-            foreach (var targetObj in targets)
+            foreach (UnityEngine.Object targetObj in targets)
             {
                 var so = new SerializedObject(targetObj);
                 var dataProp = so.FindProperty(property.name);
                 var data = dataProp.objectReferenceValue;
-                if (data != null && data.GetType() == expectedType)
+
+                if (data == null || data.GetType() != expectedType)
                 {
-                    if (data is EnhancedTriggerData triggerData)
-                        triggerData.ApplyTemplate();
-                    else if (data is EnhancedStrategyData strategyData)
-                        strategyData.ApplyTemplate();
-                    EditorUtility.SetDirty(data);
+                    Debug.LogWarning($"⚠️ Nenhum {label} Data válido encontrado para aplicar template.");
+                    continue;
                 }
-                else
-                {
-                    Debug.LogWarning($"Nenhum {typeName} Data válido encontrado para aplicar template.");
-                }
+
+                if (data is EnhancedTriggerData td) td.ApplyTemplate();
+                else if (data is EnhancedStrategyData sd) sd.ApplyTemplate();
+
+                EditorUtility.SetDirty(data);
+            }
+        }
+
+        private void ForEachSpawnPoint(Action<SpawnPoint> action)
+        {
+            foreach (var obj in targets)
+            {
+                if (obj is SpawnPoint sp)
+                    action.Invoke(sp);
             }
         }
     }
