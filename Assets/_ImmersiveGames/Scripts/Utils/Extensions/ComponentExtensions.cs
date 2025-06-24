@@ -49,20 +49,14 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             if (component == null) return false;
 
             // Tenta no GameObject atual
-            if (component.TryGetComponent<T>(out result))
-            {
-                return true;
-            }
+            if (component.TryGetComponent<T>(out result))return true;
 
             // Busca nos filhos
             foreach (Transform child in component.transform)
             {
                 if (!includeInactive && !child.gameObject.activeInHierarchy) continue;
 
-                if (child.TryGetComponent<T>(out result))
-                {
-                    return true;
-                }
+                if (child.TryGetComponent<T>(out result))return true;
 
                 // Busca recursivamente nos filhos dos filhos
                 if (child.TryGetComponentInChildren<T>(out result, includeInactive))
@@ -72,6 +66,75 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             }
 
             return false;
+        }
+        /// <summary>
+        /// Tenta obter um componente no filho de um objeto. Se não encontrar, cria um objeto filho e adiciona o componente nesse filho.
+        /// </summary>
+        /// <typeparam name="T">Tipo do componente</typeparam>
+        /// <param name="parent">O objeto pai</param>
+        /// <param name="childName">Nome do objeto filho (se precisar criar)</param>
+        /// <returns>O componente encontrado ou criado</returns>
+        public static T GetOrCreateComponentInChild<T>(this Component parent, string childName = null) where T : Component
+        {
+            // Tenta encontrar o componente nos filhos
+            T component = parent.GetComponentInChildren<T>();
+
+            // Se o componente existir, retorna ele
+            if (component != null)
+            {
+                return component;
+            }
+
+            // Se o nome do filho não foi fornecido, usa o nome do tipo
+            if (string.IsNullOrEmpty(childName))
+            {
+                childName = typeof(T).Name;
+            }
+
+            // Cria um novo GameObject como filho
+            GameObject childObject = new GameObject(childName);
+            childObject.transform.SetParent(parent.transform);
+            childObject.transform.localPosition = Vector3.zero;
+            childObject.transform.localRotation = Quaternion.identity;
+            childObject.transform.localScale = Vector3.one;
+
+            // Adiciona o componente ao objeto filho e retorna
+            return childObject.AddComponent<T>();
+        }
+
+        /// <summary>
+        /// Tenta obter um componente no filho de um objeto. Se não encontrar, cria um objeto filho e adiciona o componente nesse filho.
+        /// </summary>
+        /// <typeparam name="T">Tipo do componente</typeparam>
+        /// <param name="parentGameObject">O objeto pai</param>
+        /// <param name="childName">Nome do objeto filho (se precisar criar)</param>
+        /// <returns>O componente encontrado ou criado</returns>
+        public static T GetOrCreateComponentInChild<T>(this GameObject parentGameObject, string childName = null) where T : Component
+        {
+            // Tenta encontrar o componente nos filhos
+            T component = parentGameObject.GetComponentInChildren<T>();
+
+            // Se o componente existir, retorna ele
+            if (component != null)
+            {
+                return component;
+            }
+
+            // Se o nome do filho não foi fornecido, usa o nome do tipo
+            if (string.IsNullOrEmpty(childName))
+            {
+                childName = typeof(T).Name;
+            }
+
+            // Cria um novo GameObject como filho
+            GameObject childObject = new GameObject(childName);
+            childObject.transform.SetParent(parentGameObject.transform);
+            childObject.transform.localPosition = Vector3.zero;
+            childObject.transform.localRotation = Quaternion.identity;
+            childObject.transform.localScale = Vector3.one;
+
+            // Adiciona o componente ao objeto filho e retorna
+            return childObject.AddComponent<T>();
         }
     }
 }

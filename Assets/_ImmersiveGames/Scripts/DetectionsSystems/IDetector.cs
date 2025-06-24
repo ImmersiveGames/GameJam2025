@@ -5,6 +5,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
     // Interface for entities that can detect planets (Player, EaterDetectable)
     public interface IDetector
     {
+        GameObject GameObject { get; }
         void OnObjectDetected(IDetectable planetMaster, IDetector detectorContext, SensorTypes sensorName); // When planetMaster enters detection range
         void OnPlanetLost(IDetectable planetMaster, IDetector detectorContext, SensorTypes sensorName);    // When planetMaster exits detection range
     }

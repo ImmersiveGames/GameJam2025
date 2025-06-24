@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
+    [RequireComponent(typeof(DetectorsMaster))] // Garante PlayerMaster ou EaterMaster
     [DebugLevel(DebugLevel.Logs)]
     public class SensorController : MonoBehaviour
     {
@@ -24,15 +27,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             public float minDetectionFrequency = 0.1f;
             public float maxDetectionFrequency = 0.5f;
             public bool debugMode;
+        }
 
-        }
-        public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
-        {
-            var sensor = _sensors.Find(s => s.SensorName == sensorName);
-            if (sensor != null) return sensor.GetConfig();
-            DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
-            return null;
-        }
         private void Awake()
         {
             InitializeSensors();
@@ -40,6 +36,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         private void InitializeSensors()
         {
+            // Obter o IDetector (DetectorsMaster) do GameObject
+            var detector = GetComponent<IDetector>();
+            if (detector == null)
+            {
+                DebugUtility.LogError<SensorController>($"IDetector não encontrado em '{gameObject.name}'. SensorController desativado.", this);
+                enabled = false;
+                return;
+            }
+
             foreach (var sensor in sensorConfigs.Select(config => new DetectorSense(
                     transform,
                     config.planetLayer,
@@ -71,12 +76,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
         }
 
+        public DetectionsSystems.SensorConfig GetSensorConfig(SensorTypes sensorName)
+        {
+            var sensor = _sensors.Find(s => s.SensorName == sensorName);
+            if (sensor != null) return sensor.GetConfig();
+            DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
+            return null;
+        }
+
         public ReadOnlyCollection<IDetectable> GetDetectedSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);
             if (sensor != null) return sensor.GetDetectedSensors();
             DebugUtility.LogWarning<SensorController>($"Sensor com nome '{sensorName}' não encontrado.");
-            return new List<IDetectable>().AsReadOnly(); // Retorna lista vazia
+            return new List<IDetectable>().AsReadOnly();
         }
 
         public bool IsObjectInSensorRange(IDetectable obj, SensorTypes sensorName)
@@ -98,7 +111,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             }
             return isInRange;
         }
-        // Métodos para ativar/desativar sensores por nome
+
         public void EnableSensor(SensorTypes sensorName)
         {
             var sensor = _sensors.Find(s => s.SensorName == sensorName);

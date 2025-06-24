@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 var poolableData = data.PlanetOptions;
                 if (poolableData != null)
                 {
-                    movement.Initialize(forward.normalized, 20);
+                    movement.Initialize(forward.normalized,20f);
                     _lastShotTime = Time.time;
                     DebugUtility.Log<ContinuousTargetedShootStrategy>($"[{go.name}] Disparou na direção {forward.normalized}, Velocidade: {20}, Posição: {go.transform.position}", "green", go);
                 }

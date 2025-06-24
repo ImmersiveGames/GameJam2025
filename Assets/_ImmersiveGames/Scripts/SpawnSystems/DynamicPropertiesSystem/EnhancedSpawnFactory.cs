@@ -1,4 +1,5 @@
-﻿using UnityEngine.InputSystem;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
@@ -31,6 +32,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                 TriggerType.InputSystemTrigger => new InputSystemTrigger(data, inputAsset),
                 TriggerType.GlobalEventTrigger => new GlobalEventTrigger(data),
                 TriggerType.GenericGlobalEventTrigger => new GenericGlobalEventTrigger(data),
+                TriggerType.SensorTrigger => new SensorTrigger(data),
                 TriggerType.PredicateTrigger => new PredicateTrigger(data),
                 _ => null
             };
@@ -50,6 +52,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                 StrategyType.DirectionalSpawnStrategy => new DirectionalSpawnStrategy(data),
                 StrategyType.FullPoolSpawnStrategy => new FullPoolSpawnStrategy(data),
                 StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
+                StrategyType.CircularZoomOutStrategy => new CircularZoomOutStrategy(data),
                 _ => null
             };
         }

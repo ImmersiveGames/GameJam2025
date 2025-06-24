@@ -27,6 +27,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _timer = _delay;
         }
 
+        public void ReArm()
+        {
+            throw new System.NotImplementedException();
+        }
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)
@@ -91,6 +95,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _isActive = true;
         }
 
+        public void ReArm()
+        {
+            throw new System.NotImplementedException();
+        }
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)
@@ -156,6 +164,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _isActive = true;
         }
 
+        public void ReArm()
+        {
+            throw new System.NotImplementedException();
+        }
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)
@@ -238,6 +250,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _predicate = (_) => false; // Padrão: falso até configurado
         }
 
+        public void ReArm()
+        {
+            throw new System.NotImplementedException();
+        }
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)

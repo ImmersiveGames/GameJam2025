@@ -15,8 +15,8 @@ MonoBehaviour:
   uniqueId: Life
   resourceName: Life
   resourceType: 0
-  maxValue: 100
-  initialValue: 100
+  maxValue: 10
+  initialValue: 10
   thresholds:
   - 0.75
   - 0.5

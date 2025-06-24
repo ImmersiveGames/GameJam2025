@@ -23,19 +23,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void Awake()
         {
-            _sensorController = GetComponent<SensorController>();
-            if (!_sensorController)
-            {
-                DebugUtility.LogError<PlayerMarkPlanet>("PlanetRecognizer não encontrado no GameObject.", this);
-                enabled = false;
-            }
-
-            _playerInput = GetComponent<PlayerInput>();
-            if (!_playerInput)
-            {
-                DebugUtility.LogError<PlayerMarkPlanet>("PlayerInput não encontrado no GameObject.", this);
-                enabled = false;
-            }
+            TryGetComponent(out _sensorController);
+            
+            TryGetComponent(out _playerInput);
 
             _mainCamera = Camera.main;
             if (!_mainCamera)
@@ -43,11 +33,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                 DebugUtility.LogError<PlayerMarkPlanet>("Câmera principal não encontrada.", this);
             }
 
-            _eaterHunger = GameManager.Instance.WorldEater.GetComponent<EaterHunger>();
-            if (!_eaterHunger)
-            {
-                DebugUtility.LogError<PlayerMarkPlanet>("EaterHunger não encontrado na cena.", this);
-            }
+            GameManager.Instance.WorldEater.TryGetComponent(out _eaterHunger);
         }
 
         private void OnEnable()

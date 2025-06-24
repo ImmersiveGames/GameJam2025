@@ -40,5 +40,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             dynamicProperties.RemoveProperty(nameProperties);
         }
+        public bool HasProperty(string nameProperties)
+        {
+            return dynamicProperties.HasProperty(nameProperties);
+        }
     }
 }

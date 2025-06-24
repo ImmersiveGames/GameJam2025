@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Tags;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
@@ -12,39 +13,19 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         public bool IsActive { get; set; } // Estado do Actor (ativo/inativo)
         protected virtual void Awake()
         {
-            modelRoot = GetComponentInChildren<ModelRoot>();
-            canvasRoot = GetComponentInChildren<CanvasRoot>();
-            fxRoot = GetComponentInChildren<FxRoot>();
+            modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
+            canvasRoot = this.GetOrCreateComponentInChild<CanvasRoot>("CanvasRoot");
+            fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
             IsActive = true;
         }
-        
-        public ModelRoot GetModelRoot()
-        {
-            if (!modelRoot)
-            {
-                modelRoot = GetComponentInChildren<ModelRoot>();
-            }
-            return modelRoot;
-        }
-        
-        public CanvasRoot GetCanvasRoot()
-        {
-            if (!canvasRoot)
-            {
-                canvasRoot = GetComponentInChildren<CanvasRoot>();
-            }
-            return canvasRoot;
-        }
-        
-        public FxRoot GetFxRoot()
-        {
-            if (!fxRoot)
-            {
-                fxRoot = GetComponentInChildren<FxRoot>();
-            }
-            return fxRoot;
-        }
+        public ModelRoot GetModelRoot() => modelRoot;
+
+
+        public CanvasRoot GetCanvasRoot() => canvasRoot;
+
+        public FxRoot GetFxRoot() => fxRoot;
         
         public abstract void Reset();
+        
     }
 }

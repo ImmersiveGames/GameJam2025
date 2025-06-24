@@ -23,8 +23,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
-        [SerializeField] private bool _drawBoundsGizmos = true;
-        [SerializeField] private Color _boundsGizmoColor = Color.blue;
+        [SerializeField] private bool drawBoundsGizmos = true;
+        [SerializeField] private Color boundsGizmoColor = Color.blue;
         
         public Transform Transform => transform;
         public string Name => gameObject.name;
@@ -84,12 +84,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             float diameter = 5.2f; // Valor padrão se o colisor não for encontrado
             if (modelRoot != null)
             {
-                var collider = modelRoot.GetComponentInChildren<SphereCollider>();
-                if (collider != null)
+                var sphereCollider = modelRoot.GetComponentInChildren<SphereCollider>();
+                if (sphereCollider != null)
                 {
-                    diameter = 2f * collider.radius * _planetInfo.planetScale;
+                    diameter = 2f * sphereCollider.radius * _planetInfo.planetScale;
                     DebugUtility.Log<PlanetsMaster>(
-                        $"Planeta {gameObject.name} diâmetro calculado: {diameter:F2}, raio colisor: {collider.radius:F2}, escala: {_planetInfo.planetScale:F2}",
+                        $"Planeta {gameObject.name} diâmetro calculado: {diameter:F2}, raio colisor: {sphereCollider.radius:F2}, escala: {_planetInfo.planetScale:F2}",
                         "cyan");
                 }
                 else
@@ -157,6 +157,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             string entityType = obj.GetType().Name;
             DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor} ", "yellow");
         }
+        
 
         [Serializable]
         public class PlanetInfo
@@ -210,17 +211,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnDrawGizmos()
         {
-            if (!_drawBoundsGizmos) return;
+            if (!drawBoundsGizmos) return;
 
             var modelRoot = GetComponentInChildren<ModelRoot>(true);
             if (modelRoot != null)
             {
-                var collider = modelRoot.GetComponentInChildren<SphereCollider>();
-                if (collider != null)
+                var componentInChildren = modelRoot.GetComponentInChildren<SphereCollider>();
+                if (componentInChildren != null)
                 {
-                    Gizmos.color = _boundsGizmoColor;
-                    Vector3 center = collider.transform.TransformPoint(collider.center);
-                    float radius = collider.radius * transform.localScale.x;
+                    Gizmos.color = boundsGizmoColor;
+                    var center = componentInChildren.transform.TransformPoint(componentInChildren.center);
+                    float radius = componentInChildren.radius * transform.localScale.x;
                     Gizmos.DrawWireSphere(center, radius);
                 }
             }

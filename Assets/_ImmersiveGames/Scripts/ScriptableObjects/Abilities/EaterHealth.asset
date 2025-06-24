@@ -15,8 +15,8 @@ MonoBehaviour:
   uniqueId: EaterLife
   resourceName: EaterLife
   resourceType: 0
-  maxValue: 4
-  initialValue: 4
+  maxValue: 100
+  initialValue: 100
   thresholds:
   - 0.75
   - 0.5

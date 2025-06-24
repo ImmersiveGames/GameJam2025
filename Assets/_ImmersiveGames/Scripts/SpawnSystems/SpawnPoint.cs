@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             EventBus<SpawnPointResetEvent>.Unregister(_resetBinding);
         }
 
-        protected virtual void Update()
+        protected virtual void LateUpdate()
         {
             if (!IsSpawnValid || SpawnTrigger == null)
                 return;
@@ -166,9 +166,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         protected virtual void HandleSpawnRequest(SpawnRequestEvent evt)
         {
             DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
-            if (evt.PoolKey != _poolKey || !IsSpawnValid)
+            if (evt.PoolKey != _poolKey || !IsSpawnValid || evt.SourceGameObject != gameObject)
             {
                 DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: PoolKey mismatch ou IsSpawnValid={IsSpawnValid}", "yellow", this);
+                return;
+            }
+            if (!IsSpawnValid)
+            {
+                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: IsSpawnValid={IsSpawnValid}", "yellow", this);
+                return;
+            }
+            if (evt.SourceGameObject != gameObject)
+            {
+                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: SourceGameObject mismatch (Received: {evt.SourceGameObject?.name}, Expected: {gameObject.name})", "yellow", this);
                 return;
             }
 

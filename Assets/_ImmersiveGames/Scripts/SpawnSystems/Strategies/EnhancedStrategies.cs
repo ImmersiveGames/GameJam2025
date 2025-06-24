@@ -70,11 +70,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private readonly int _spawnCount;
         private readonly bool _randomizeDirection;
         private readonly float _directionVariation;
+        private readonly int _speed;
 
         public DirectionalSpawnStrategy(EnhancedStrategyData data)
         {
             _offset = data.GetProperty("offset", Vector3.zero);
             _spawnCount = data.GetProperty("spawnCount", 1);
+            _speed = data.GetProperty("speed", 10);
             if (_spawnCount <= 0)
             {
                 DebugUtility.LogError<DirectionalSpawnStrategy>("spawnCount deve ser maior que 0. Usando 1.");
@@ -171,7 +173,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             Vector3 finalDirection = CalculateDirection(baseDirection);
-            movement.Initialize(finalDirection, 0f); // Velocidade gerenciada externamente
+            movement.Initialize(finalDirection, _speed); // Velocidade gerenciada externamente
 
             DebugUtility.Log<DirectionalSpawnStrategy>(
                 $"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos} com direção {finalDirection}.",

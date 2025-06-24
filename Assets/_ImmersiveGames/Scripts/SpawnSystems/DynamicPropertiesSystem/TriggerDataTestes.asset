@@ -12,25 +12,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1e5d9229c1f4b91b3d3bdf299422117, type: 3}
   m_Name: TriggerDataTestes
   m_EditorClassIdentifier: 
-  triggerType: 4
+  triggerType: 5
   dynamicProperties:
     properties:
-    - rid: 8761739225770492082
-    - rid: 8761739225770492083
+    - rid: 8761739272020033641
+    - rid: 8761739272020033642
+    - rid: 8761739272020033643
+    - rid: 8761739272020033644
+    - rid: 8761739272020033645
   references:
     version: 2
     RefIds:
-    - rid: 8761739225770492082
-      type: {class: StringProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+    - rid: 8761739272020033641
+      type: {class: 'EnumProperty`1[[_ImmersiveGames.Scripts.DetectionsSystems.SensorTypes, _ImmersiveGames.Scripts]]', ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
-        name: eventName
-        value: GlobalGenericSpawnEvent
+        name: sensorType
+        value: 0
         isRequired: 1
-        description: Nome do evento global generico a escutar
-    - rid: 8761739225770492083
+        description: Nome do sensor a ser usado
+    - rid: 8761739272020033642
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
-        name: useGenericTrigger
-        value: 1
+        name: continuous
+        value: 0
         isRequired: 0
-        description: Usar GenericGlobalEventTrigger para eventos sem Position/GameObject
+        description: "Se verdadeiro, spawns s\xE3o cont\xEDnuos enquanto o sensor
+          detectar"
+    - rid: 8761739272020033643
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: spawnInterval
+        value: 3
+        isRequired: 0
+        description: "Intervalo entre spawns cont\xEDnuos em segundos"
+    - rid: 8761739272020033644
+      type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: rearmDelay
+        value: 0.5
+        isRequired: 0
+        description: Tempo antes de rearmar o trigger em segundos
+    - rid: 8761739272020033645
+      type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
+      data:
+        name: maxSpawns
+        value: -1
+        isRequired: 0
+        description: "N\xFAmero m\xE1ximo de spawns por ativa\xE7\xE3o (-1 para sem
+          limite)"

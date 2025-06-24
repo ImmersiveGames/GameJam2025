@@ -24,6 +24,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _eventBinding = new EventBinding<GlobalGenericSpawnEvent>(HandleGlobalEvent);
         }
 
+        public void ReArm()
+        {
+            throw new System.NotImplementedException();
+        }
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPoint)

@@ -13,11 +13,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterMaster _eaterMaster;
         private Animator _animator;
 
-        private static readonly int IsEating = Animator.StringToHash("isEating");
-        private readonly int IsHappy = Animator.StringToHash("Happy");
-        private readonly int IsMad = Animator.StringToHash("Mad");
-        private readonly int GetHit = Animator.StringToHash("GetHit");
-        private readonly int IsDead = Animator.StringToHash("Dead");
+        private readonly int _isEating = Animator.StringToHash("isEating");
+        private readonly int _isHappy = Animator.StringToHash("Happy");
+        private readonly int _isMad = Animator.StringToHash("Mad");
+        private readonly int _getHit = Animator.StringToHash("GetHit");
+        private readonly int _isDead = Animator.StringToHash("Dead");
 
         private const float TransitionDuration = 0.1f;
 
@@ -50,31 +50,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void OnFinishedEating(IDetectable obj)
         {
-            _animator.SetBool(IsEating, false);
+            _animator.SetBool(_isEating, false);
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer finalizada.");
         }
         private void OnStartedEating(IDetectable obj)
         {
-            _animator.SetBool(IsEating, true);
+            _animator.SetBool(_isEating, true);
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer iniciada.");
         }
 
-        private void OnConsumeResource(IDetectable obj, bool isHappy) 
+        private void OnConsumeResource(IDetectable obj, bool isHappy)
         {
-            if (isHappy)
-                _animator.CrossFadeInFixedTime(IsHappy, TransitionDuration);
-            else if (!isHappy)
-                _animator.CrossFadeInFixedTime(IsMad, TransitionDuration);
+            _animator.CrossFadeInFixedTime(isHappy ? _isHappy : _isMad, TransitionDuration);
         }
 
         private void OnGetHit() 
         {
-            _animator.CrossFadeInFixedTime(GetHit, TransitionDuration);
+            _animator.CrossFadeInFixedTime(_getHit, TransitionDuration);
         }
 
         private void OnDeath(EaterDeathEvent obj)
         {
-            _animator.CrossFadeInFixedTime(IsDead, TransitionDuration);
+            _animator.CrossFadeInFixedTime(_isDead, TransitionDuration);
         }
     }
 }

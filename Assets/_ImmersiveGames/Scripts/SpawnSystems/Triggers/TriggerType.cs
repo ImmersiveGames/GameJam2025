@@ -8,6 +8,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         InputSystemTrigger,
         GlobalEventTrigger,
         GenericGlobalEventTrigger,
+        SensorTrigger,
         PredicateTrigger
     }
     public enum StrategyType
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         SimpleSpawnStrategy,
         DirectionalSpawnStrategy,
         FullPoolSpawnStrategy,
-        OrbitPlanetStrategy
+        OrbitPlanetStrategy,
+        CircularZoomOutStrategy
     }
 }

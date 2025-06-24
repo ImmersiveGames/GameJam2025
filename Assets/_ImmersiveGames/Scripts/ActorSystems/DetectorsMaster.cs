@@ -3,6 +3,7 @@ using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     public class DetectorsMaster : ActorMaster, IDetector
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         {
             _detectedPlanets.Clear();
         }
+        public GameObject GameObject => gameObject;
         public virtual void OnObjectDetected(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, this)) return;
