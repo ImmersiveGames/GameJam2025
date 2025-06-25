@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+﻿namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public enum TriggerType
     {

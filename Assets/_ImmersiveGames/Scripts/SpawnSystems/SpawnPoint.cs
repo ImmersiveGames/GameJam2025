@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.Log<SpawnPoint>($"Spawn executado em '{name}' na posição {position} com sourceObject {(sourceObject != null ? sourceObject.name : "null")}.", "green", this);
         }
 
-        protected virtual void HandleSpawnRequest(SpawnRequestEvent evt)
+        private void HandleSpawnRequest(SpawnRequestEvent evt)
         {
             DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
             if (evt.PoolKey != _poolKey || !IsSpawnValid || evt.SourceGameObject != gameObject)

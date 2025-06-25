@@ -103,6 +103,7 @@ GameObject:
   - component: {fileID: 463446327434073539}
   - component: {fileID: -7189450029745384701}
   - component: {fileID: 5388927873805818191}
+  - component: {fileID: 8216411154872446355}
   m_Layer: 10
   m_Name: PlanetPrefab
   m_TagString: Untagged
@@ -205,7 +206,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   explosionPrefab: {fileID: 1377395519739628775, guid: eafb3facd3156e6419ae72974903aa2f, type: 3}
-  lifetime: 2
+--- !u!114 &8216411154872446355
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7554185307657802338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1890a21204e84b9bbcf67dbdaa5b786b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  poolableData: {fileID: 11400000, guid: c48688367f863d8439ac93bf66d120a4, type: 2}
+  useManagerLocking: 0
+  triggerData: {fileID: 11400000, guid: 92cba25bc4e5d45469a21b86c310a3f5, type: 2}
+  strategyData: {fileID: 11400000, guid: bc2eb500dc73cde449a7446fc7323490, type: 2}
 --- !u!1001 &2103012548603454898
 PrefabInstance:
   m_ObjectHideFlags: 0

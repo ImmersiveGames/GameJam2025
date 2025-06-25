@@ -1,12 +1,11 @@
-﻿// ===== SISTEMA DE PROPRIEDADES DINÂMICAS =====
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using DG.Tweening;
 using UnityEngine;
+using DG.Tweening;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 {
     [Serializable]
@@ -200,8 +199,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                 .AddProperty("spaceBetweenPlanets", 2f, true, "Espaço mínimo entre planetas")
                 .AddProperty("maxPlanets", 10, true, "Número máximo de planetas")
                 .AddProperty("orbitSpeed", 10f, true, "Velocidade de rotação dos planetas (graus/segundo)");
+
             _strategyTemplates[StrategyType.CircularZoomOutStrategy] = new PropertyTemplate("CircularZoomOutStrategy")
-                .AddProperty("circleRadius", 5f, true, "Raio base do círculo na borda do planeta")
+                .AddProperty("spawnCount", 5, true, "Número de objetos a spawnar ao redor do planeta")
                 .AddProperty("initialScale", 0.1f, true, "Escala inicial dos objetos ao spawnar")
                 .AddProperty("animationDuration", 1f, true, "Duração da animação de movimento e escala (em segundos)")
                 .AddProperty("spiralRotations", 360f, false, "Número de rotações completas em graus durante o movimento espiral")

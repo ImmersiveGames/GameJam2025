@@ -10,27 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d1e5d9229c1f4b91b3d3bdf299422117, type: 3}
-  m_Name: TriggerDataTestes
+  m_Name: PlanetDefensesTrigger
   m_EditorClassIdentifier: 
   triggerType: 5
   dynamicProperties:
     properties:
-    - rid: 8761739272020033641
-    - rid: 8761739272020033642
-    - rid: 8761739272020033643
-    - rid: 8761739272020033644
-    - rid: 8761739272020033645
+    - rid: 8761739360183255118
+    - rid: 8761739360183255119
+    - rid: 8761739360183255120
+    - rid: 8761739360183255121
+    - rid: 8761739360183255122
   references:
     version: 2
     RefIds:
-    - rid: 8761739272020033641
+    - rid: 8761739360183255118
       type: {class: 'EnumProperty`1[[_ImmersiveGames.Scripts.DetectionsSystems.SensorTypes, _ImmersiveGames.Scripts]]', ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: sensorType
         value: 0
         isRequired: 1
         description: Nome do sensor a ser usado
-    - rid: 8761739272020033642
+    - rid: 8761739360183255119
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: continuous
@@ -38,25 +38,25 @@ MonoBehaviour:
         isRequired: 0
         description: "Se verdadeiro, spawns s\xE3o cont\xEDnuos enquanto o sensor
           detectar"
-    - rid: 8761739272020033643
+    - rid: 8761739360183255120
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnInterval
-        value: 3
+        value: 1
         isRequired: 0
         description: "Intervalo entre spawns cont\xEDnuos em segundos"
-    - rid: 8761739272020033644
+    - rid: 8761739360183255121
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: rearmDelay
-        value: 0.5
+        value: 1
         isRequired: 0
         description: Tempo antes de rearmar o trigger em segundos
-    - rid: 8761739272020033645
+    - rid: 8761739360183255122
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: maxSpawns
-        value: -1
+        value: 1
         isRequired: 0
         description: "N\xFAmero m\xE1ximo de spawns por ativa\xE7\xE3o (-1 para sem
           limite)"

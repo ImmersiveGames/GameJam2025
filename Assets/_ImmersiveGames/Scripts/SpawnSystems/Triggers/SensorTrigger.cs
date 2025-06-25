@@ -48,8 +48,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private void HandleSensorDetected(SensorDetectedEvent evt)
         {
             if (evt.SensorName != _sensorType || !_isRearmed || !evt.Planet.IsActive || 
-                (_detectedPlanet != null && _detectedPlanet.Name == evt.Planet.Name) || _isActive) // Adiciona verificação de _isActive
+                (_detectedPlanet != null && _detectedPlanet.Name == evt.Planet.Name) || _isActive)
                 return;
+
+            // Verificar se o planeta detectado está associado a este SpawnPoint
+            if (evt.Planet.Transform.gameObject != _spawnPoint.gameObject &&
+                evt.Planet.Transform.gameObject.GetComponentInParent<SpawnPoint>() != _spawnPoint)
+            {
+                return;
+            }
 
             _detectedPlanet = evt.Planet;
             _targetPosition = evt.Planet.Transform.position;

@@ -1,6 +1,6 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
-using UnityEngine.InputSystem;
+﻿using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 {
@@ -40,21 +40,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
         public ISpawnStrategy CreateStrategy(EnhancedStrategyData data)
         {
-            if (data == null)
-            {
-                DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedStrategyData é nulo.");
-                return null;
-            }
+            if (data != null)
+                return data.strategyType switch
+                {
+                    StrategyType.SimpleSpawnStrategy => new SimpleSpawnStrategy(data),
+                    StrategyType.DirectionalSpawnStrategy => new DirectionalSpawnStrategy(data),
+                    StrategyType.FullPoolSpawnStrategy => new FullPoolSpawnStrategy(data),
+                    StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
+                    StrategyType.CircularZoomOutStrategy => new CircularZoomOutStrategy(data),
+                    _ => null
+                };
+            DebugUtility.LogError<EnhancedSpawnFactory>("EnhancedStrategyData é nulo.");
+            return null;
 
-            return data.strategyType switch
-            {
-                StrategyType.SimpleSpawnStrategy => new SimpleSpawnStrategy(data),
-                StrategyType.DirectionalSpawnStrategy => new DirectionalSpawnStrategy(data),
-                StrategyType.FullPoolSpawnStrategy => new FullPoolSpawnStrategy(data),
-                StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
-                StrategyType.CircularZoomOutStrategy => new CircularZoomOutStrategy(data),
-                _ => null
-            };
         }
     }
 }
