@@ -26,13 +26,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ReArm()
         {
-            throw new System.NotImplementedException();
+            //nope
         }
         public bool IsActive => _isActive;
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
             EventBus<ISpawnEvent>.Register(_eventBinding);
             DebugUtility.Log<GlobalEventTrigger>($"Inicializado com eventName='{_eventName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }

@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     // Spawna na inicialização
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class InitializationTrigger : ISpawnTrigger
     {
         private readonly float _delay;
@@ -29,13 +29,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ReArm()
         {
-            throw new System.NotImplementedException();
+            //nope
         }
         public bool IsActive => _isActive;
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
             DebugUtility.LogVerbose<InitializationTrigger>($"Inicializado com delay={_delay}s para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
@@ -62,18 +62,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             _hasSpawned = false;
             _timer = _delay;
-            DebugUtility.Log<InitializationTrigger>($"Resetado para '{_spawnPoint?.name}' com delay={_delay}s.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<InitializationTrigger>($"Resetado para '{_spawnPoint?.name}' com delay={_delay}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
-            DebugUtility.Log<InitializationTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<InitializationTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
     // Spawna em intervalos regulares
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class IntervalTrigger : ISpawnTrigger
     {
         private readonly float _interval;
@@ -97,14 +97,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ReArm()
         {
-            throw new System.NotImplementedException();
+            //nope
         }
         public bool IsActive => _isActive;
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
-            DebugUtility.Log<IntervalTrigger>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{_spawnPoint.name}'.", "blue", _spawnPoint);
+            _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
+            DebugUtility.LogVerbose<IntervalTrigger>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
         public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -129,18 +129,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void Reset()
         {
             _timer = _startImmediately ? 0f : _interval;
-            DebugUtility.Log<IntervalTrigger>($"Resetado para '{_spawnPoint?.name}' com timer={_timer}s.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<IntervalTrigger>($"Resetado para '{_spawnPoint?.name}' com timer={_timer}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
-            DebugUtility.Log<IntervalTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<IntervalTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
     // Spawna com input
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class InputSystemTrigger : ISpawnTrigger
     {
         private readonly string _actionName;
@@ -166,15 +166,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ReArm()
         {
-            throw new System.NotImplementedException();
+            //nope
         }
         public bool IsActive => _isActive;
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            if (spawnPoint is not InputSpawnPoint inputSpawnPoint)
+            if (spawnPointRef is not InputSpawnPoint inputSpawnPoint)
             {
-                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger requer InputSpawnPoint, não {spawnPoint?.GetType().Name}.", spawnPoint);
+                DebugUtility.LogError<InputSystemTrigger>($"InputSystemTrigger requer InputSpawnPoint, não {spawnPointRef?.GetType().Name}.", spawnPointRef);
                 _isActive = false;
                 return;
             }
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _action.Enable();
                 _action.performed += OnActionPerformed;
             }
-            DebugUtility.Log<InputSystemTrigger>($"Inicializado com actionName='{_actionName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
+            DebugUtility.LogVerbose<InputSystemTrigger>($"Inicializado com actionName='{_actionName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
         public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Reset()
         {
-            DebugUtility.Log<InputSystemTrigger>($"Reset não necessário para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<InputSystemTrigger>($"Reset não necessário para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
@@ -222,13 +222,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     _action.performed -= OnActionPerformed; // Limpeza de eventos
                 }
             }
-            DebugUtility.Log<InputSystemTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<InputSystemTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
 
 
     // Spawna com predicado
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class PredicateTrigger : ISpawnTrigger
     {
         private readonly float _checkInterval;
@@ -252,18 +252,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void ReArm()
         {
-            throw new System.NotImplementedException();
+            //nope
         }
         public bool IsActive => _isActive;
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
             if (_predicate == null || _predicate(_spawnPoint) == false)
             {
                 DebugUtility.LogWarning<PredicateTrigger>("Predicado não configurado. Trigger não disparará até SetPredicate ser chamado.", _spawnPoint);
             }
-            DebugUtility.Log<PredicateTrigger>($"Inicializado com checkInterval={_checkInterval}s para '{_spawnPoint.name}'.", "blue", _spawnPoint);
+            DebugUtility.LogVerbose<PredicateTrigger>($"Inicializado com checkInterval={_checkInterval}s para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
         public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _timer = _checkInterval;
                 if (_predicate(_spawnPoint))
                 {
-                    DebugUtility.Log<PredicateTrigger>($"Spawn disparado por predicado em '{_spawnPoint.name}' na posição {triggerPosition}.", "green", _spawnPoint);
+                    DebugUtility.LogVerbose<PredicateTrigger>($"Spawn disparado por predicado em '{_spawnPoint.name}' na posição {triggerPosition}.", "green", _spawnPoint);
                     return true;
                 }
             }
@@ -291,19 +291,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void Reset()
         {
             _timer = _checkInterval;
-            DebugUtility.Log<PredicateTrigger>($"Resetado para '{_spawnPoint?.name}' com checkInterval={_checkInterval}s.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<PredicateTrigger>($"Resetado para '{_spawnPoint?.name}' com checkInterval={_checkInterval}s.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
             _isActive = active;
-            DebugUtility.Log<PredicateTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.LogVerbose<PredicateTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void SetPredicate(System.Func<SpawnPoint, bool> predicate)
         {
-            _predicate = predicate ?? ((_) => false);
-            DebugUtility.Log<PredicateTrigger>($"Predicado configurado para '{_spawnPoint?.name}'.", "blue", _spawnPoint);
+            _predicate = predicate ?? (_ => false);
+            DebugUtility.LogVerbose<PredicateTrigger>($"Predicado configurado para '{_spawnPoint?.name}'.", "blue", _spawnPoint);
         }
     }
 }

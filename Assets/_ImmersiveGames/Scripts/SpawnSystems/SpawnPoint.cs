@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class SpawnPoint : MonoBehaviour
     {
         [SerializeField] private PoolableObjectData poolableData;
@@ -29,6 +29,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private PoolManager _poolManager;
         private ISpawnStrategy SpawnStrategy { get; set; }
         public ISpawnTrigger SpawnTrigger { get; protected set; }
+        private Vector3? _pendingTriggerPosition;
+        private GameObject _pendingSourceObject;
 
         protected virtual void Awake()
         {
@@ -118,7 +120,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             EventBus<SpawnPointResetEvent>.Unregister(_resetBinding);
         }
 
-        protected virtual void LateUpdate()
+        private void Update()
         {
             if (!IsSpawnValid || SpawnTrigger == null)
                 return;
@@ -126,9 +128,24 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             UpdateTransformCache();
             if (SpawnTrigger.CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject))
             {
-                Vector3 spawnPosition = triggerPosition ?? _cachedPosition;
-                ExecuteSpawn(spawnPosition, sourceObject ?? gameObject);
+                _pendingTriggerPosition = triggerPosition;
+                _pendingSourceObject = sourceObject ?? gameObject;
+                DebugUtility.Log<SpawnPoint>($"Trigger detectado em Update para '{name}'. Posição: {triggerPosition}, SourceObject: {_pendingSourceObject?.name ?? "null"}", "cyan");
             }
+            else
+            {
+                _pendingTriggerPosition = null;
+                _pendingSourceObject = null;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            if (!IsSpawnValid || _pendingTriggerPosition == null || _pendingSourceObject == null)
+                return;
+
+            Vector3 spawnPosition = _pendingTriggerPosition ?? _cachedPosition;
+            ExecuteSpawn(spawnPosition, _pendingSourceObject);
         }
 
         private void UpdateTransformCache()
@@ -156,33 +173,22 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
+            DebugUtility.Log<SpawnPoint>($"Executando Spawn para '{name}' com sourceObject '{sourceObject?.name ?? "null"}'.", "blue");
             SpawnStrategy?.Spawn(_cachedPool, position, sourceObject);
+
             if (useManagerLocking)
                 _spawnManager?.RegisterSpawn(this);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(_poolKey, position));
-            DebugUtility.Log<SpawnPoint>($"Spawn executado em '{name}' na posição {position} com sourceObject {(sourceObject != null ? sourceObject.name : "null")}.", "green", this);
+            DebugUtility.Log<SpawnPoint>($"Spawn executado em '{name}' na posição {position} com sourceObject {sourceObject?.name ?? "null"}.", "green", this);
         }
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
         {
             DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
             if (evt.PoolKey != _poolKey || !IsSpawnValid || evt.SourceGameObject != gameObject)
-            {
-                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: PoolKey mismatch ou IsSpawnValid={IsSpawnValid}", "yellow", this);
                 return;
-            }
-            if (!IsSpawnValid)
-            {
-                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: IsSpawnValid={IsSpawnValid}", "yellow", this);
-                return;
-            }
-            if (evt.SourceGameObject != gameObject)
-            {
-                DebugUtility.Log<SpawnPoint>($"SpawnRequest ignorado: SourceGameObject mismatch (Received: {evt.SourceGameObject?.name}, Expected: {gameObject.name})", "yellow", this);
-                return;
-            }
 
-            Vector3 spawnPosition = evt.SpawnPosition ?? _cachedPosition; // Usa a posição do evento, se disponível
+            Vector3 spawnPosition = evt.SpawnPosition ?? _cachedPosition;
             ExecuteSpawn(spawnPosition, evt.SourceGameObject ?? gameObject);
         }
 

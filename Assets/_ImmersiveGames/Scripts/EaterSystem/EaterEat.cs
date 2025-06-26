@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterEat : MonoBehaviour
     {
         [SerializeField]

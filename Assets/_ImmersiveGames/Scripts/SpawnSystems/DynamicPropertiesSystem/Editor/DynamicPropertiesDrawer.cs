@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems; // Adicionado para DebugUtilit
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
 {
-    [CustomEditor(typeof(EnhancedTriggerData))]
+    [CustomEditor(typeof(EnhancedTriggerData)), DebugLevel(DebugLevel.Warning)]
     public class EnhancedTriggerDataEditor : UnityEditor.Editor
     {
         private EnhancedTriggerData _triggerData;
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem.Editor
         }
     }
 
-    [CustomEditor(typeof(EnhancedStrategyData))]
+    [CustomEditor(typeof(EnhancedStrategyData)),DebugLevel(DebugLevel.Warning)]
     public class EnhancedStrategyDataEditor : UnityEditor.Editor
     {
         private EnhancedStrategyData _strategyData;

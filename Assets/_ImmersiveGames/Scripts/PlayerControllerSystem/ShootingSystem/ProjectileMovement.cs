@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
             if (!_isMoving) return;
             transform.position += _direction * (_speed * Time.deltaTime);
         }
-        public void Initialize(Vector3? direction, float speed)
+        public void Initialize(Vector3? direction, float speed, Transform target = null)
         {
             DebugUtility.Log<ProjectileMovement>($"Velocidade inicializada: {speed}, Direção: {direction}", "cyan", this);
             _direction = direction?.normalized ?? Vector3.zero;

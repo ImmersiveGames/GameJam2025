@@ -2,7 +2,7 @@ using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    public class PlayerMaster : DetectorsMaster
+    public sealed class PlayerMaster : DetectorsMaster
     {
         public event Action EventPlayerTakeDamage;
         public override void Reset()
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             IsActive = true;
         }
 
-        public virtual void OnEventPlayerTakeDamage()
+        public void OnEventPlayerTakeDamage()
         {
             EventPlayerTakeDamage?.Invoke();
         }

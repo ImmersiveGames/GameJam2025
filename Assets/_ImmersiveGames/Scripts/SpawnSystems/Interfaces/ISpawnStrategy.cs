@@ -1,4 +1,7 @@
-﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using DG.Tweening;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
@@ -8,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     }
     public interface ISpawnTrigger
     {
-        void Initialize(SpawnPoint spawnPoint);
+        void Initialize(SpawnPoint spawnPointRef);
         bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject);
         void SetActive(bool active);
         void Reset();
@@ -17,7 +20,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     }
     public interface IObjectMovement
     {
-        void Initialize(Vector3? direction, float speed);
+        void Initialize(Vector3? direction, float speed, Transform target = null);
+        void StopMovement();
     }
-    
 }

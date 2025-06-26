@@ -3,15 +3,17 @@ using UnityEditor;
 using UnityEngine;
 using System;
 using System.Linq;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 {
     [CustomEditor(typeof(SpawnPoint), true)]
-    [CanEditMultipleObjects]
+    [CanEditMultipleObjects, DebugLevel(DebugLevel.Error)]
     public class SpawnPointEditor : UnityEditor.Editor
     {
         private SerializedProperty _poolableDataProp;
@@ -104,13 +106,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
             if (GUILayout.Button("Reset Trigger"))
                 ForEachSpawnPoint(sp => {
                     sp.TriggerReset();
-                    Debug.Log($"Trigger resetado para '{sp.name}' com tipo '{sp.GetTriggerData()?.triggerType}'.");
+                    DebugUtility.LogVerbose<SpawnPointEditor>($"Trigger resetado para '{sp.name}' com tipo '{sp.GetTriggerData()?.triggerType}'.");
                 });
 
             if (GUILayout.Button("Toggle Trigger"))
                 ForEachSpawnPoint(sp => {
                     sp.SetTriggerActive(!sp.GetTriggerActive());
-                    Debug.Log($"Trigger de '{sp.name}' {(sp.GetTriggerActive() ? "ativado" : "desativado")}.");
+                    DebugUtility.LogVerbose<SpawnPointEditor>($"Trigger de '{sp.name}' {(sp.GetTriggerActive() ? "ativado" : "desativado")}.");
                 });
 
             if (Application.isPlaying)
@@ -118,7 +120,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                 if (GUILayout.Button("Test Spawn"))
                     ForEachSpawnPoint(sp => {
                         EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(sp.GetPoolKey(), sp.gameObject));
-                        Debug.Log($"Teste de spawn disparado para '{sp.name}'.");
+                        DebugUtility.LogVerbose<SpawnPointEditor>($"Teste de spawn disparado para '{sp.name}'.");
                     });
 
                 // Itera sobre cada SpawnPoint para exibir botões específicos
@@ -141,7 +143,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                             {
                                 string eventName = triggerData.GetProperty("eventName", "GlobalSpawnEvent");
                                 EventBus<ISpawnEvent>.Raise(new GlobalSpawnEvent(eventName, _testEventPosition, _testEventSourceObject));
-                                Debug.Log($"Disparado GlobalSpawnEvent '{eventName}' para '{sp.name}' na posição {_testEventPosition} com sourceObject {(_testEventSourceObject != null ? _testEventSourceObject.name : "null")}.");
+                                DebugUtility.LogVerbose<SpawnPointEditor>($"Disparado GlobalSpawnEvent '{eventName}' para '{sp.name}' na posição {_testEventPosition} com sourceObject {(_testEventSourceObject != null ? _testEventSourceObject.name : "null")}.");
                             }
                         }
                         else if (triggerData.triggerType == TriggerType.GenericGlobalEventTrigger)
@@ -150,7 +152,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                             {
                                 string eventName = triggerData.GetProperty("eventName", "GlobalGenericSpawnEvent");
                                 EventBus<GlobalGenericSpawnEvent>.Raise(new GlobalGenericSpawnEvent(eventName));
-                                Debug.Log($"Disparado GlobalGenericSpawnEvent '{eventName}' para '{sp.name}'.");
+                                DebugUtility.LogVerbose<SpawnPointEditor>($"Disparado GlobalGenericSpawnEvent '{eventName}' para '{sp.name}'.");
                             }
                         }
                         else if (triggerData.triggerType == TriggerType.PredicateTrigger)
@@ -170,7 +172,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                                 {
                                     concreteTrigger.SetPredicate(predicate);
                                     concreteTrigger.CheckTrigger(out _, out _);
-                                    Debug.Log($"Testado PredicateTrigger para '{sp.name}' com predicado '{_testPredicateType}'.");
+                                    DebugUtility.LogVerbose<SpawnPointEditor>($"Testado PredicateTrigger para '{sp.name}' com predicado '{_testPredicateType}'.");
                                 }
                                 else
                                 {
@@ -268,7 +270,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
 
                 if (data == null || data.GetType() != expectedType)
                 {
-                    Debug.LogWarning($"⚠️ Nenhum {label} Data válido encontrado para aplicar template.");
+                    DebugUtility.LogWarning<SpawnPointEditor>($"⚠️ Nenhum {label} Data válido encontrado para aplicar template.");
                     continue;
                 }
 

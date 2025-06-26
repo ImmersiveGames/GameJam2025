@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DefaultExecutionOrder(-1)]
+    [DefaultExecutionOrder(-1), DebugLevel(DebugLevel.Logs)]
     public class SpawnManager : MonoBehaviour
     {
         public static SpawnManager Instance { get; private set; }
@@ -61,14 +61,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (poolManager && point.GetPoolableData() != null)
             {
                 poolManager.RegisterPool(point.GetPoolableData());
-                DebugUtility.Log<SpawnManager>($"Pool '{point.GetPoolKey()}' registrado para SpawnPoint '{point.name}'.", "blue", this);
+                DebugUtility.LogVerbose<SpawnManager>($"Pool '{point.GetPoolKey()}' registrado para SpawnPoint '{point.name}'.", "blue", this);
             }
             else
             {
                 DebugUtility.LogWarning<SpawnManager>($"PoolManager ou PoolableData não encontrado para SpawnPoint '{point.name}'.");
             }
 
-            DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' registrado com locking={(useManagerLocking ? "ativado" : "desativado")}.", "green", this);
+            DebugUtility.LogVerbose<SpawnManager>($"SpawnPoint '{point.name}' registrado com locking={(useManagerLocking ? "ativado" : "desativado")}.", "green", this);
         }
 
         public void RegisterSpawn(SpawnPoint point)
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 _managedSpawnPoints[point].IsLocked = true;
                 EventBus<SpawnPointLockedEvent>.Raise(new SpawnPointLockedEvent(point));
-                DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' bloqueado após atingir {maxSpawnsPerPoint} spawns.", "yellow", this);
+                DebugUtility.LogVerbose<SpawnManager>($"SpawnPoint '{point.name}' bloqueado após atingir {maxSpawnsPerPoint} spawns.", "yellow", this);
             }
         }
 
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _spawnCounts[point] = 0;
             }
 
-            DebugUtility.Log<SpawnManager>($"Resetando SpawnPoint '{point.name}'.", "blue", this);
+            DebugUtility.LogVerbose<SpawnManager>($"Resetando SpawnPoint '{point.name}'.", "blue", this);
             EventBus<SpawnPointResetEvent>.Raise(new SpawnPointResetEvent(point));
         }
 
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 ResetSpawnPoint(point);
             }
-            DebugUtility.Log<SpawnManager>("Todos os SpawnPoints foram resetados.", "blue", this);
+            DebugUtility.LogVerbose<SpawnManager>("Todos os SpawnPoints foram resetados.", "blue", this);
         }
 
         private void HandlePoolRestored(PoolRestoredEvent evt)
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     _managedSpawnPoints[point].IsLocked = false;
                     _spawnCounts[point] = 0;
                     EventBus<SpawnPointUnlockedEvent>.Raise(new SpawnPointUnlockedEvent(point));
-                    DebugUtility.Log<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado devido à restauração do pool '{evt.PoolKey}'.", "green", this);
+                    DebugUtility.LogVerbose<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado devido à restauração do pool '{evt.PoolKey}'.", "green", this);
                 }
             }
         }
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
-            DebugUtility.Log<SpawnManager>("SpawnManager destruído e limpo.", "yellow", this);
+            DebugUtility.LogVerbose<SpawnManager>("SpawnManager destruído e limpo.", "yellow", this);
         }
     }
 

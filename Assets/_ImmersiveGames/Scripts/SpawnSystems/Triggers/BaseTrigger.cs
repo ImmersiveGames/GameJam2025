@@ -5,17 +5,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public abstract class BaseTrigger : ISpawnTrigger
     {
-        protected bool _continuous;
-        protected float _spawnInterval;
-        protected float _rearmDelay;
-        protected int _maxSpawns;
-        protected bool _isActive;
-        protected SpawnPoint _spawnPoint;
-        protected float _timer;
-        protected float _rearmTimer;
-        protected bool _isRearmed;
-        protected int _spawnCount;
-        protected bool _isFirstSpawn; // Nova variável para controlar o primeiro spawn
+        private readonly bool _continuous;
+        private readonly float _spawnInterval;
+        private readonly float _rearmDelay;
+        private readonly int _maxSpawns;
+        protected bool isActive;
+        protected SpawnPoint spawnPoint;
+        private float _timer;
+        private float _rearmTimer;
+        protected bool isRearmed;
+        private int _spawnCount;
+        private bool _isFirstSpawn;
 
         protected BaseTrigger(EnhancedTriggerData data)
         {
@@ -23,17 +23,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _spawnInterval = Mathf.Max(data.GetProperty("spawnInterval", 1.0f), 0.01f);
             _rearmDelay = Mathf.Max(data.GetProperty("rearmDelay", 0.5f), 0f);
             _maxSpawns = Mathf.Max(data.GetProperty("maxSpawns", -1), -1);
-            _isActive = false;
-            _isRearmed = true;
-            _timer = 0f; // Inicializa em 0 para permitir primeiro spawn imediato
+            isActive = false;
+            isRearmed = true;
+            _timer = 0f;
             _rearmTimer = 0f;
             _spawnCount = 0;
-            _isFirstSpawn = true; // Primeiro spawn será imediato
+            _isFirstSpawn = true;
         }
 
-        public void Initialize(SpawnPoint spawnPoint)
+        public void Initialize(SpawnPoint spawnPointRef)
         {
-            _spawnPoint = spawnPoint ?? throw new System.ArgumentNullException(nameof(spawnPoint));
+            spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
             OnInitialize();
         }
 
@@ -43,17 +43,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            triggerPosition = _spawnPoint.transform.position;
-            sourceObject = _spawnPoint.gameObject;
+            triggerPosition = spawnPoint.transform.position;
+            sourceObject = spawnPoint.gameObject;
 
             if (_rearmTimer > 0f)
             {
                 _rearmTimer -= Time.deltaTime;
                 if (_rearmTimer <= 0f)
-                    _isRearmed = true;
+                    isRearmed = true;
             }
 
-            if (!_isActive || !_isRearmed)
+            if (!isActive || !isRearmed)
                 return false;
 
             bool canTrigger = CheckTriggerBase(out bool isComplete);
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 if (_isFirstSpawn)
                 {
                     _isFirstSpawn = false;
-                    _timer = _spawnInterval; // Inicializa o timer após o primeiro spawn
+                    _timer = _spawnInterval;
                 }
                 if (!_continuous || (_maxSpawns >= 0 && _spawnCount >= _maxSpawns))
                     SetActive(false);
@@ -79,12 +79,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual bool OnCheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
         {
-            triggerPosition = _spawnPoint.transform.position;
-            sourceObject = _spawnPoint.gameObject;
+            triggerPosition = spawnPoint.transform.position;
+            sourceObject = spawnPoint.gameObject;
             return false;
         }
 
-        protected bool CheckTriggerBase(out bool isComplete)
+        private bool CheckTriggerBase(out bool isComplete)
         {
             isComplete = false;
             if (!_continuous)
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return true;
             }
 
-            if (_isFirstSpawn) // Primeiro spawn imediato
+            if (_isFirstSpawn)
                 return true;
 
             _timer -= Time.deltaTime;
@@ -108,31 +108,31 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public virtual void ReArm()
         {
-            _isRearmed = true;
+            isRearmed = true;
             _rearmTimer = 0f;
             _timer = _spawnInterval;
             _spawnCount = 0;
-            _isFirstSpawn = true; // Reseta para permitir primeiro spawn imediato
+            _isFirstSpawn = true;
         }
 
         public void SetActive(bool active)
         {
-            if (_isActive == active)
+            if (isActive == active)
                 return;
 
-            _isActive = active;
-            if (!_isActive)
+            isActive = active;
+            if (!isActive)
             {
                 OnDeactivate();
-                _isRearmed = false;
+                isRearmed = false;
                 _rearmTimer = _rearmDelay;
                 _timer = _spawnInterval;
                 _spawnCount = 0;
-                _isFirstSpawn = true; // Reseta para próximo spawn imediato
+                _isFirstSpawn = true;
             }
             else
             {
-                _isFirstSpawn = true; // Ativação permite primeiro spawn imediato
+                _isFirstSpawn = true;
             }
         }
 
@@ -142,14 +142,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Reset()
         {
-            _isActive = false;
-            _isRearmed = true;
-            _timer = 0f; // Reseta para permitir primeiro spawn imediato
+            isActive = false;
+            isRearmed = true;
+            _timer = 0f;
             _rearmTimer = 0f;
             _spawnCount = 0;
             _isFirstSpawn = true;
         }
 
-        public bool IsActive => _isActive;
+        public bool IsActive => isActive;
     }
 }

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2516300590174309872}
   - component: {fileID: 3374298685938042948}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: ModelRoot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -55,8 +55,9 @@ GameObject:
   m_Component:
   - component: {fileID: 8458586900490045754}
   - component: {fileID: 535006293948675013}
-  - component: {fileID: -3220944578402284369}
-  m_Layer: 0
+  - component: {fileID: 1974622249990070507}
+  - component: {fileID: 1041885682616248627}
+  m_Layer: 8
   m_Name: PlanetBullets
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -91,7 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ab499301cbb4582984fab0b82082454, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &-3220944578402284369
+--- !u!114 &1974622249990070507
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -100,7 +101,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 3015346662811978556}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 180acb50eb3d4c7bb5371a6880fa136f, type: 3}
+  m_Script: {fileID: 11500000, guid: a306407aa2924c24aeca99f6c22f63bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: c48688367f863d8439ac93bf66d120a4, type: 2}
+--- !u!114 &1041885682616248627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3015346662811978556}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44708ff333a342c6958699be22b48fdf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1001 &8147630571272474929
@@ -111,9 +125,61 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2516300590174309872}
     m_Modifications:
+    - target: {fileID: 817166974157600247, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 886085792456639431, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1038333241367788409, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3631860134388297569, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4873429306484995982, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5043139112942134415, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6228942845950113984, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6716992444243997191, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7082725630795768962, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 7652988491447358196, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
       propertyPath: m_Name
       value: SpaceShip_Model_05
+      objectReference: {fileID: 0}
+    - target: {fileID: 7652988491447358196, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7928807289856320616, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8000033032330145903, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8157560765442255994, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8180444838791963829, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
       propertyPath: m_LocalPosition.x
@@ -154,6 +220,14 @@ PrefabInstance:
     - target: {fileID: 8180444838791963829, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8846884778374682072, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 9063464131008698568, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+      propertyPath: m_Layer
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

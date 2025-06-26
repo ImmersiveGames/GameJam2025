@@ -1,6 +1,9 @@
 ﻿using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using DG.Tweening;
 using UnityEngine;
 
@@ -8,16 +11,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public class CircularZoomOutStrategy : ISpawnStrategy
     {
-        private float _circleRadius; // Raio base do círculo na borda do planeta
-        private readonly float _initialScale; // Escala inicial dos objetos
-        private readonly float _animationDuration; // Duração da animação
-        private readonly Ease _easeType; // Tipo de easing para a animação
-        private readonly float _spiralRotations; // Número de rotações completas (em graus)
-        private readonly float _spiralRadiusGrowth; // Taxa de crescimento do raio da espiral
-        private readonly float _radiusVariation; // Variação aleatória no raio
-        private readonly int _spawnCount; // Quantidade de objetos a spawnar
-
-        private IObjectMovement _movement;
+        private float _circleRadius;
+        private readonly float _initialScale;
+        private readonly float _animationDuration;
+        private readonly Ease _easeType;
+        private readonly float _spiralRotations;
+        private readonly float _spiralRadiusGrowth;
+        private readonly float _radiusVariation;
+        private readonly int _spawnCount;
         private PlanetsMaster _planetsMaster;
 
         public CircularZoomOutStrategy(EnhancedStrategyData data)
@@ -63,8 +64,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 DebugUtility.LogError<CircularZoomOutStrategy>("spawnCount deve ser maior que 0. Usando 5.");
                 _spawnCount = 5;
             }
-
-            _easeType = data.GetProperty("easeType", Ease.OutQuad);
         }
 
         public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
@@ -78,59 +77,140 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (sourceObject != null && sourceObject.TryGetComponent(out _planetsMaster))
             {
                 _circleRadius = _planetsMaster.GetPlanetInfo().planetDiameter * 1.2f;
+                DebugUtility.Log<CircularZoomOutStrategy>(
+                    $"Raio do planeta definido como {_circleRadius} para '{sourceObject.name}'.",
+                    "blue",
+                    sourceObject);
             }
             else
             {
-                DebugUtility.LogWarning<CircularZoomOutStrategy>("PlanetsMaster não encontrado. Usando circleRadius padrão (5f).");
+                DebugUtility.LogWarning<CircularZoomOutStrategy>("PlanetsMaster não encontrado. Usando circleRadius padrão (5f).", sourceObject);
                 _circleRadius = 5f;
             }
 
             int availableCount = pool.GetAvailableCount();
             DebugUtility.Log<CircularZoomOutStrategy>($"Pool tem {availableCount} objetos disponíveis, spawnCount configurado para {_spawnCount}.");
 
+            Transform target = GetDetectorFromSource(sourceObject);
+
             for (int i = 0; i < _spawnCount; i++)
             {
-                var obj = pool.GetObject(origin);
-                if (obj == null)
-                {
-                    DebugUtility.LogWarning<CircularZoomOutStrategy>($"Falha ao obter objeto do pool na iteração {i}. Pool esgotado e expansão não permitida.");
-                    break;
-                }
-
-                var go = obj.GetGameObject();
-                go.transform.position = origin;
-                go.transform.localScale = Vector3.one * _initialScale;
-
-                float finalAngle = i * (360f / _spawnCount);
-                float finalRadius = _circleRadius * _spiralRadiusGrowth * (1f + Random.Range(-_radiusVariation, _radiusVariation));
-                var finalOffset = new Vector3(
-                    Mathf.Cos(finalAngle * Mathf.Deg2Rad),
-                    0,
-                    Mathf.Sin(finalAngle * Mathf.Deg2Rad)
-                ) * finalRadius;
-                var targetPosition = origin + finalOffset;
-
-                AnimateSpiral(go.transform, origin, finalAngle, finalRadius);
-
-                obj.Activate(origin);
-                if (sourceObject != null && sourceObject.TryGetComponent(out _movement))
-                {
-                    // Inicializar movimento se necessário
-                }
-                DebugUtility.Log<CircularZoomOutStrategy>(
-                    $"Objeto '{go.name}' spawnado em {origin} movendo-se em espiral para {targetPosition}.",
-                    "green",
-                    go
-                );
+                SpawnSingleObject(pool, origin, target, i);
             }
         }
 
-        private void AnimateSpiral(Transform target, Vector3 origin, float finalAngle, float finalRadius)
+        private Transform GetDetectorFromSource(GameObject sourceObject)
+        {
+            if (sourceObject == null || !sourceObject.TryGetComponent(out PlanetsMaster planetsMaster))
+            {
+                DebugUtility.LogWarning<CircularZoomOutStrategy>("sourceObject é nulo ou não possui PlanetsMaster. Nenhum alvo (IDetector) disponível.", sourceObject);
+                return null;
+            }
+
+            var detectors = planetsMaster.GetDetectors();
+            if (detectors == null || detectors.Count == 0)
+            {
+                DebugUtility.LogWarning<CircularZoomOutStrategy>(
+                    $"Nenhum detector disponível para o planeta '{sourceObject.name}'.",
+                    sourceObject);
+                return null;
+            }
+
+            // Selecionar o detector mais próximo do planeta
+            IDetector closestDetector = null;
+            float minDistance = float.MaxValue;
+            Vector3 planetPosition = sourceObject.transform.position;
+
+            foreach (var detector in detectors)
+            {
+                if (detector?.GameObject == null) continue;
+                float distance = Vector3.Distance(planetPosition, detector.GameObject.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestDetector = detector;
+                }
+            }
+
+            if (closestDetector != null)
+            {
+                DebugUtility.Log<CircularZoomOutStrategy>(
+                    $"Alvo definido como '{closestDetector.GameObject.name}' (IDetector) via PlanetsMaster do planeta '{sourceObject.name}' (distância: {minDistance:F2}).",
+                    "blue",
+                    closestDetector.GameObject);
+                return closestDetector.GameObject.transform;
+            }
+
+            DebugUtility.LogWarning<CircularZoomOutStrategy>(
+                $"Nenhum detector válido encontrado para o planeta '{sourceObject.name}'.",
+                sourceObject);
+            return null;
+        }
+
+        private void SpawnSingleObject(ObjectPool pool, Vector3 origin, Transform target, int iteration)
+        {
+            var obj = pool.GetObject(origin);
+            if (obj == null)
+            {
+                DebugUtility.LogWarning<CircularZoomOutStrategy>($"Falha ao obter objeto do pool na iteração {iteration}. Pool esgotado e expansão não permitida.");
+                return;
+            }
+
+            var go = obj.GetGameObject();
+            go.transform.position = origin;
+            go.transform.localScale = Vector3.one * _initialScale;
+
+            float finalAngle = iteration * (360f / _spawnCount);
+            float finalRadius = _circleRadius * _spiralRadiusGrowth * (1f + Random.Range(-_radiusVariation, _radiusVariation));
+            var finalOffset = new Vector3(
+                Mathf.Cos(finalAngle * Mathf.Deg2Rad),
+                0,
+                Mathf.Sin(finalAngle * Mathf.Deg2Rad)
+            ) * finalRadius;
+            var targetPosition = origin + finalOffset;
+
+            SetupObjectMovement(obj, target, targetPosition);
+            obj.Activate(targetPosition);
+            DebugUtility.Log<CircularZoomOutStrategy>(
+                $"Objeto '{go.name}' spawnado em {origin} movendo-se em espiral para {targetPosition}.",
+                "green",
+                go);
+        }
+
+        private void SetupObjectMovement(IPoolable obj, Transform target, Vector3 targetPosition)
+        {
+            var go = obj.GetGameObject();
+            if (!go.TryGetComponent(out IObjectMovement movement))
+            {
+                DebugUtility.LogWarning<CircularZoomOutStrategy>(
+                    $"Objeto '{go.name}' não possui IObjectMovement. Movimento não inicializado.",
+                    go);
+                AnimateSpiral(go.transform, go.transform.position, targetPosition);
+                return;
+            }
+
+            Vector3 initialDirection = (targetPosition - go.transform.position).normalized;
+            AnimateSpiral(go.transform, go.transform.position, targetPosition, () =>
+            {
+                if (movement != null && go != null && go.activeInHierarchy)
+                {
+                    movement.Initialize(initialDirection, 0f, target);
+                    DebugUtility.Log<CircularZoomOutStrategy>(
+                        $"Movimento inicializado para '{go.name}' com alvo '{target?.name ?? "nenhum"}' após espiral.",
+                        "blue",
+                        go);
+                }
+            });
+        }
+
+        private void AnimateSpiral(Transform targetTransform, Vector3 origin, Vector3 targetPosition, System.Action onComplete = null)
         {
             var sequence = DOTween.Sequence();
-
             float currentRadius = 0f;
-            target.position = origin;
+            float finalRadius = Vector3.Distance(origin, targetPosition);
+            float finalAngle = Mathf.Atan2(targetPosition.z - origin.z, targetPosition.x - origin.x) * Mathf.Rad2Deg;
+
+            targetTransform.position = origin;
 
             sequence.Append(DOTween.To(
                 () => currentRadius,
@@ -144,13 +224,23 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                         0,
                         Mathf.Sin((finalAngle + currentAngle) * Mathf.Deg2Rad)
                     ) * (currentRadius * _spiralRadiusGrowth);
-                    target.position = origin + offset;
+                    targetTransform.position = origin + offset;
                 },
                 finalRadius,
                 _animationDuration
             ).SetEase(_easeType));
 
-            sequence.Insert(0, target.DOScale(Vector3.one, _animationDuration).SetEase(_easeType));
+            sequence.Insert(0, targetTransform.DOScale(Vector3.one, _animationDuration).SetEase(_easeType));
+
+            if (onComplete != null)
+            {
+                sequence.OnComplete(() => onComplete.Invoke());
+            }
+        }
+
+        public void Dispose()
+        {
+            // Não precisa desregistrar eventos, pois não usa EventBus
         }
     }
 }

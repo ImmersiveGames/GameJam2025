@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetInfo _planetInfo;
         private TargetFlag _targetFlag;
         private PlanetData _data;
+        private readonly List<IDetector> _detectors = new List<IDetector>();
 
         public event Action<IDetector, SensorTypes> EventPlanetDetected;
         public event Action<IDetector, SensorTypes> EventPlanetLost;
@@ -47,6 +49,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public override void Reset()
         {
             IsActive = true;
+            _detectors.Clear();
         }
 
         private void OnEnable()
@@ -88,7 +91,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 if (sphereCollider != null)
                 {
                     diameter = 2f * sphereCollider.radius * _planetInfo.planetScale;
-                    DebugUtility.Log<PlanetsMaster>(
+                    DebugUtility.LogVerbose<PlanetsMaster>(
                         $"Planeta {gameObject.name} diâmetro calculado: {diameter:F2}, raio colisor: {sphereCollider.radius:F2}, escala: {_planetInfo.planetScale:F2}",
                         "cyan");
                 }
@@ -124,6 +127,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         public PlanetResourcesSo GetResource() => _planetInfo?.Resources;
 
+        public IReadOnlyList<IDetector> GetDetectors() => _detectors.AsReadOnly();
+
+        public void AddDetector(IDetector detector)
+        {
+            if (detector != null && !_detectors.Contains(detector))
+            {
+                _detectors.Add(detector);
+                DebugUtility.LogVerbose<PlanetsMaster>($"Detector '{detector.GameObject.name}' adicionado à lista de detectores do planeta '{gameObject.name}'.", "blue");
+            }
+        }
+
+        public void RemoveDetector(IDetector detector)
+        {
+            if (detector != null && _detectors.Remove(detector))
+            {
+                DebugUtility.LogVerbose<PlanetsMaster>($"Detector '{detector.GameObject.name}' removido da lista de detectores do planeta '{gameObject.name}'.", "yellow");
+            }
+        }
+
         private void OnMarked(PlanetMarkedEvent evt)
         {
             if (evt.Detected.Name != gameObject.name || !IsActive) return;
@@ -131,7 +153,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(true);
             }
-            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
         }
 
         private void OnUnmarked(PlanetUnmarkedEvent evt)
@@ -141,23 +163,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(false);
             }
-            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.");
         }
         
         private void OnEventPlanetDetected(IDetector obj, SensorTypes sensor)
         {
             EventPlanetDetected?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow");
         }
 
         private void OnEventPlanetLost(IDetector obj, SensorTypes sensor)
         {
             EventPlanetLost?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.Log<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor} ", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor}", "yellow");
         }
-        
 
         [Serializable]
         public class PlanetInfo
@@ -214,17 +235,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!drawBoundsGizmos) return;
 
             var modelRoot = GetComponentInChildren<ModelRoot>(true);
-            if (modelRoot != null)
-            {
-                var componentInChildren = modelRoot.GetComponentInChildren<SphereCollider>();
-                if (componentInChildren != null)
-                {
-                    Gizmos.color = boundsGizmoColor;
-                    var center = componentInChildren.transform.TransformPoint(componentInChildren.center);
-                    float radius = componentInChildren.radius * transform.localScale.x;
-                    Gizmos.DrawWireSphere(center, radius);
-                }
-            }
+            if (modelRoot == null) return;
+            var componentInChildren = modelRoot.GetComponentInChildren<SphereCollider>();
+            if (componentInChildren == null) return;
+            Gizmos.color = boundsGizmoColor;
+            var center = componentInChildren.transform.TransformPoint(componentInChildren.center);
+            float radius = componentInChildren.radius * transform.localScale.x;
+            Gizmos.DrawWireSphere(center, radius);
         }
     }
 }
