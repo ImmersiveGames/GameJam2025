@@ -25,10 +25,16 @@ MonoBehaviour:
   factoryType: 0
   canExpand: 1
   moveSpeed: 30
-  rotationSpeed: 10
+  rotationSpeed: 15
   damage: 10
-  movementType: 1
-  moveEase: 14
-  rotationEase: 2
-  errorRadius: 15
+  movementType: 5
+  moveEase: 19
+  rotationEase: 11
+  errorRadius: 2
   faceTarget: 1
+  spiralRadius: 2
+  zigzagAmplitude: 1
+  zigzagFrequency: 2
+  sinuousAmplitude: 0.8
+  sinuousFrequency: 1.2
+  inertiaMaxAngle: 8

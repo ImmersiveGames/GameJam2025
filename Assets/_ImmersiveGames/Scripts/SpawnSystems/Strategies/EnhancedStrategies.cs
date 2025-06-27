@@ -163,11 +163,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void SetupObjectMovement(IPoolable obj, Vector3 baseDirection, Vector3 spawnPos)
         {
-            var movement = obj.GetGameObject().GetComponent<IObjectMovement>();
+            var movement = obj.GetGameObject().GetComponent<IMoveObject>();
             if (movement == null)
             {
                 DebugUtility.LogWarning<DirectionalSpawnStrategy>(
-                    $"Objeto '{obj.GetGameObject().name}' não tem IObjectMovement. Spawnado sem direção.",
+                    $"Objeto '{obj.GetGameObject().name}' não tem IMoveObject. Spawnado sem direção.",
                     obj.GetGameObject());
                 return;
             }

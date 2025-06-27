@@ -2,10 +2,6 @@
 using UnityEditor;
 using UnityEngine;
 using System;
-using System.Linq;
-using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;

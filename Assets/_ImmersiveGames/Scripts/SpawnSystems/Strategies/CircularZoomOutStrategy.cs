@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
@@ -180,21 +180,20 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private void SetupObjectMovement(IPoolable obj, Transform target, Vector3 targetPosition)
         {
             var go = obj.GetGameObject();
-            if (!go.TryGetComponent(out IObjectMovement movement))
+            if (!go.TryGetComponent(out IMoveObject movement))
             {
                 DebugUtility.LogWarning<CircularZoomOutStrategy>(
-                    $"Objeto '{go.name}' não possui IObjectMovement. Movimento não inicializado.",
+                    $"Objeto '{go.name}' não possui IMoveObject. Movimento não inicializado.",
                     go);
                 AnimateSpiral(go.transform, go.transform.position, targetPosition);
                 return;
             }
-
-            Vector3 initialDirection = (targetPosition - go.transform.position).normalized;
+            
             AnimateSpiral(go.transform, go.transform.position, targetPosition, () =>
             {
                 if (movement != null && go != null && go.activeInHierarchy)
                 {
-                    movement.Initialize(initialDirection, 0f, target);
+                    movement.Initialize(go.transform.position, 0f, target);
                     DebugUtility.Log<CircularZoomOutStrategy>(
                         $"Movimento inicializado para '{go.name}' com alvo '{target?.name ?? "nenhum"}' após espiral.",
                         "blue",

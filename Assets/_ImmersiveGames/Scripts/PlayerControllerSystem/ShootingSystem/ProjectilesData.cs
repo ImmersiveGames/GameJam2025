@@ -1,29 +1,34 @@
 ﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using DG.Tweening;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     [CreateAssetMenu(fileName = "BulletData", menuName = "ImmersiveGames/PoolableObjectData/Bullets")]
     public class ProjectilesData : PoolableObjectData
     {
         [Header("Projectile Settings")]
+        [SerializeField]
+        public MovementType movementType;
         [SerializeField] public float moveSpeed = 10f; // Velocidade de movimento para frente
-        [SerializeField] public float rotationSpeed = 10f; // Velocidade de rotação
         [SerializeField] public int damage = 10;
-        [SerializeField] public MovementType movementType = MovementType.Curve;
-        [SerializeField] public Ease moveEase = Ease.Linear; // Ease para movimento
-        [SerializeField] public Ease rotationEase = Ease.OutQuad; // Ease para rotação
+        [Header("Curva de velocidade")]
+        [SerializeField] public CurveMode curveMode = CurveMode.OneShot;
+        [SerializeField] public float curveDuration = 2f;
+        [SerializeField] public AnimationCurve movementCurve = AnimationCurve.Linear(0, 0, 1, 1);
+
+        [Header("Movement Configurations")]
         [SerializeField] public float errorRadius = 1f; // Variação de erro no alvo
-        [SerializeField] public bool faceTarget = true;
-        
-        
+        [SerializeField] public float spiralRadius = 3f; // Raio da espiral
+        [SerializeField] public int spiralRotationPerSecond = 3; //Numero de rotações por segundo na espiral
+        [SerializeField] public float zigzagAmplitude = 2f; // Amplitude do ziguezague
+        [SerializeField] public float zigzagFrequency = 2f; // Frequência do ziguezague
+        [SerializeField] public float missileRotationSpeed = 90f;
     }
-    public enum MovementType
+    public enum CurveMode
     {
-        None,
-        Curve,
-        Spiral,
-        ZigZag,
-        Combined
+        OneShot, // ex: 0 → 1 ao longo da duração
+        Loop     // curva reinicia constantemente
     }
+    
 }

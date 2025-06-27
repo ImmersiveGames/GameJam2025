@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {

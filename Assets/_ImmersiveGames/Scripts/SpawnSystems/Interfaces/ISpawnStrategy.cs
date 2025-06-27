@@ -1,7 +1,4 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using DG.Tweening;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
@@ -18,9 +15,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         void ReArm();
         bool IsActive { get; }
     }
-    public interface IObjectMovement
-    {
-        void Initialize(Vector3? direction, float speed, Transform target = null);
-        void StopMovement();
+    public interface IMoveObject
+    { void Initialize(Vector3? direction, float speed, Transform target = null);
     }
+    
 }

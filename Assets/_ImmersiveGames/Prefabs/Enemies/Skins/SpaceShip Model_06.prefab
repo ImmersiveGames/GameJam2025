@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9032766661832012176}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: FirePoints
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46,7 +46,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4816955664231917089}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Front_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77,7 +77,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4673253983468047238}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Wing_Bot_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -110,7 +110,8 @@ GameObject:
   - component: {fileID: 2355007980860117214}
   - component: {fileID: 8175071284929250352}
   - component: {fileID: 5503128877393486569}
-  m_Layer: 8
+  - component: {fileID: -6791103877081124977}
+  m_Layer: 0
   m_Name: SpaceShip Model_06
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -178,6 +179,33 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!54 &-6791103877081124977
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3888492592174658699}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &5170256060202324705
 GameObject:
   m_ObjectHideFlags: 0
@@ -189,7 +217,7 @@ GameObject:
   - component: {fileID: 2437018805484238501}
   - component: {fileID: 6353697971944050662}
   - component: {fileID: 6735285140138283918}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Purple Main EngineVFX Variant (1) Variant
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5020,7 +5048,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3315442157448400720}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Wing_Bot_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5051,7 +5079,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6729560951798404568}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Front_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5082,7 +5110,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6223033493498798727}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Wing_Top_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5115,7 +5143,7 @@ GameObject:
   - component: {fileID: 5897586751606528020}
   - component: {fileID: 5174104907818186262}
   - component: {fileID: 1752163588891813530}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: GPX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5199,7 +5227,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 18555751322762514}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Wing_Top_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5230,7 +5258,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6581418033590085469}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: VFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
