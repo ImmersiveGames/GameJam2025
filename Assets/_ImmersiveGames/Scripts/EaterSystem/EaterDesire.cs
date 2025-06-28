@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         
         
-        private EventBinding<PlanetConsumedEvent> _planetConsumedEventBinding;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
 
         private void Awake()
         {
@@ -43,8 +43,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedEventBinding);
             
-            _planetConsumedEventBinding = new EventBinding<PlanetConsumedEvent>(ConsumePlanet);
-            EventBus<PlanetConsumedEvent>.Register(_planetConsumedEventBinding);
+            _planetDestroyedBinding = new EventBinding<PlanetDestroyedEvent>(ConsumePlanet);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedBinding);
         }
         private void OnDisable()
         {
@@ -85,13 +85,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             CancelInvoke();
             TryChooseDesire();
         }
-        private void ConsumePlanet(PlanetConsumedEvent obj)
+        private void ConsumePlanet(PlanetDestroyedEvent obj)
         {
-            var resource = obj?.Detected?.GetResource();
-            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj?.Detected?.GetResource()} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            var resource = obj.Detected?.GetResource();
             if (resource == null) return;
-            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.Detected.Detectable.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
-            _eater.OnEventConsumeResource(obj.Detected, _desiredResource != null && _desiredResource == resource);
+            
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.ByActor?.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            _eater.OnEventConsumeResource(obj.Detected, _desiredResource != null && _desiredResource == resource, obj.ByActor);
             EventBus<EaterSatisfactionEvent>.Raise(new EaterSatisfactionEvent(_desiredResource != null && _desiredResource == resource));
         }
         
@@ -108,15 +108,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void TryChooseDesire(IDetectable planetMaster = null)
         {
             CancelInvoke();
-            DebugUtility.Log<EaterDesire>($"Checando se o Eater pode desejar: Fome: {_eater.InHungry}, Desejo ativo: {_desiredResource}, Planeta marcado: {planetMaster != null}");
+            DebugUtility.LogVerbose<EaterDesire>($"Checando se o Eater pode desejar: Fome: {_eater.InHungry}, Desejo ativo: {_desiredResource}, Planeta marcado: {planetMaster != null}");
             //Verifica se o Eater está com fome
             if (!ShouldBeDesiring() && _desiredResource)
             {
                 //Se não estiver com fome ou não tiver um desejo ativo, não faz nada
-                DebugUtility.Log<EaterDesire>("Não pode desejar nada agora.");
+                DebugUtility.LogVerbose<EaterDesire>("Não pode desejar nada agora.");
                 return;
             }
-            DebugUtility.Log<EaterDesire>($"Pode escolher um desejo, e vai escolher um a cada {_config.DesireChangeInterval} segundos.");
+            DebugUtility.LogVerbose<EaterDesire>($"Pode escolher um desejo, e vai escolher um a cada {_config.DesireChangeInterval} segundos.");
             InvokeRepeating(nameof(ChooseNewDesire), _config.DelayTimer, _config.DesireChangeInterval);
             //Se Tiver ele tem que parar de desejar e se mover para o planeta marcado
         }

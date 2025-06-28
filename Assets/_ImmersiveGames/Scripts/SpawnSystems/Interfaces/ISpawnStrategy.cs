@@ -12,7 +12,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject);
         void SetActive(bool active);
         void Reset();
-        void ReArm();
         bool IsActive { get; }
     }
     public interface IMoveObject

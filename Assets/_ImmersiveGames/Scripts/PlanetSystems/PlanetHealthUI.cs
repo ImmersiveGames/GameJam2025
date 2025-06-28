@@ -5,15 +5,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class PlanetHealthUI : ResourceHealthUI
     {
-        private EventBinding<PlanetConsumedEvent> _planetDestroyBinding; // Binding para eventos de recurso
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding; // Binding para eventos de recurso
         private PlanetsMaster _planetMaster;
 
         protected override void Initialization()
         {
             base.Initialization();
             _planetMaster = GetComponentInParent<PlanetsMaster>();
-            _planetDestroyBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetDestroyed);
-            EventBus<PlanetConsumedEvent>.Register(_planetDestroyBinding);
+            _planetDestroyBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyBinding);
         }
 
         protected override void OnDisable()
@@ -21,10 +21,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             base.OnDisable();
             if (_planetDestroyBinding != null)
             {
-                EventBus<PlanetConsumedEvent>.Unregister(_planetDestroyBinding);
+                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyBinding);
             }
         }
-        private void OnPlanetDestroyed(PlanetConsumedEvent evt)
+        private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
         {
             if(evt.Detected.GetPlanetsMaster() != _planetMaster) return;
             if (healthBar) healthBar.gameObject.SetActive(false);

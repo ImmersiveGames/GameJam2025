@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             Target = obj;
             IsOrbiting = true;
             _eater.OnEventStartEatPlanet(obj);
-            DebugUtility.LogVerbose<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
         }
 
         public void Reset()

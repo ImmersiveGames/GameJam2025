@@ -128,6 +128,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.LogVerbose<SpawnManager>($"Resetando SpawnPoint '{point.name}'.", "blue", this);
             EventBus<SpawnPointResetEvent>.Raise(new SpawnPointResetEvent(point));
         }
+        public void DeactivateAllTriggers()
+        {
+            foreach (var point in _allSpawnPoints)
+            {
+                point.SetTriggerActive(false);
+            }
+            DebugUtility.LogVerbose<SpawnManager>("Todos os triggers foram desativados.", "yellow", this);
+        }
 
         public void ResetAllSpawnPoints()
         {

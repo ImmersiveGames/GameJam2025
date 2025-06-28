@@ -25,30 +25,31 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _eater.EventConsumeResource -= OnConsumeResource;
         }
-        private void OnConsumeResource(IDetectable detectable, bool desire)
+        private void OnConsumeResource(IDetectable detectable, bool desire, IActor byActor)
         {
-            if (detectable == null) return;
+            if (detectable == null || byActor is not EaterMaster eater) return;
             float planetSize = detectable.GetPlanetsMaster().GetPlanetInfo().planetScale;
             if (desire)
             {
                 float recoverResource = detectable.GetPlanetData().recoveryHungerConsumeDesire * planetSize;
-                Heal(recoverResource, _eater);
+                Heal(recoverResource, eater);
                 DebugUtility.Log<EaterHunger>($"Consumiu o recurso desejado: {detectable.GetResource().name} e recuperou: {recoverResource} de heath.");
             }
             else
             {
                 float resourceFraction = detectable.GetPlanetData().recoveryHealthConsumeNotDesire * planetSize;
-                Heal(resourceFraction, _eater); // Consome metade se não for desejado
+                Heal(resourceFraction, eater); // Consome metade se não for desejado
                 DebugUtility.Log<EaterHunger>($"Recurso {detectable.GetResource().name} não desejado.e recuperou: {resourceFraction} de heath.");
             }
         }
         public override void TakeDamage(float damage, IActor byActor)
         {
             base.TakeDamage(damage, byActor);
+            lastChanger = byActor;
             _eater.OnEventEaterTakeDamage(byActor);
         }
 
-        protected override void OnDeath(IActor byActor = null)
+        protected override void OnDeath()
         {
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent());
             _eater.IsActive = false;

@@ -132,10 +132,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void Increase(float amount) => UpdateResourceValue(amount, true);
         public void Decrease(float amount) => UpdateResourceValue(amount, false);
-        protected virtual void OnResourceDepleted()
-        {
-            EventDepleted?.Invoke();
-        }
+        protected virtual void OnResourceDepleted() => EventDepleted?.Invoke();
 
         private void CheckThresholds()
         {
@@ -203,18 +200,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
     public struct ThresholdCrossInfo
     {
-        public GameObject Source { get; }
-        public ResourceType Type { get; }
         public float CurrentValue { get; }
         public float Threshold { get; }
         public bool IsAscending { get; }
-        public string UniqueId { get; }
 
-        public ThresholdCrossInfo(string uniqueId, GameObject source, ResourceType type, float currentValue, float threshold, bool isAscending)
+        public ThresholdCrossInfo(float currentValue, float threshold, bool isAscending)
         {
-            UniqueId = uniqueId;
-            Source = source;
-            Type = type;
             CurrentValue = currentValue;
             Threshold = threshold;
             IsAscending = isAscending;

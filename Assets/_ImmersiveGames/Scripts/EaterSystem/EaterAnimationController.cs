@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -59,8 +60,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer iniciada.");
         }
 
-        private void OnConsumeResource(IDetectable obj, bool isHappy)
+        private void OnConsumeResource(IDetectable obj, bool isHappy, IActor byActor)
         {
+            if (byActor is not EaterMaster) return;
             _animator.CrossFadeInFixedTime(isHappy ? _isHappy : _isMad, TransitionDuration);
         }
 

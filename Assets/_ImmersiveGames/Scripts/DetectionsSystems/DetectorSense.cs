@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.SpawnSystems;
@@ -15,15 +16,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         private readonly List<IDetectable> _detectedObj = new();
         private float _detectionTimer;
 
-        public LayerMask PlanetLayer { get; }
-        public float Radius { get; }
-        public float MinDetectionFrequency { get; }
-        public float MaxDetectionFrequency { get; }
+        private LayerMask PlanetLayer { get; }
+        private float Radius { get; }
+        private float MinDetectionFrequency { get; }
+        private float MaxDetectionFrequency { get; }
         public bool DebugMode { get; }
-        public Transform Origin { get; }
-        public float CurrentDetectionFrequency { get; private set; }
-        public bool IsEnabled { get; private set; }
-        public IDetector DetectorEntity { get; }
+        private Transform Origin { get; }
+        private float CurrentDetectionFrequency { get; set; }
+        private bool IsEnabled { get; set; }
+        private IDetector DetectorEntity { get; }
         public SensorTypes SensorName { get; }
 
         public DetectorSense(Transform origin, LayerMask planetLayer, float radius = 10f,
@@ -41,11 +42,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             IsEnabled = true;
 
             DetectorEntity = Origin.GetComponent<IDetector>();
-            if (DetectorEntity == null)
-            {
-                Debug.LogError($"IDetector não encontrado no Actor {Origin.name}.");
-                IsEnabled = false;
-            }
+            if (DetectorEntity != null) return;
+            DebugUtility.LogError<DetectorSense>($"IDetector não encontrado no Actor {Origin.name}.");
+            IsEnabled = false;
         }
 
         public void Update(float deltaTime)
@@ -124,18 +123,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         private void UpdateDetectedObj(List<IDetectable> currentObj)
         {
-            foreach (var item in currentObj)
+            foreach (var item in currentObj.Where(item => !_detectedObj.Contains(item)))
             {
-                if (_detectedObj.Contains(item)) continue;
-
                 _detectedObj.Add(item);
                 SensorFilteredEventBus.RaiseFiltered(new SensorDetectedEvent(item, DetectorEntity, SensorName));
                 item.OnDetectableRanged(DetectorEntity, SensorName);
                 DetectorEntity?.OnObjectDetected(item, DetectorEntity, SensorName);
-                if (DebugMode)
-                {
-                    DebugUtility.Log(typeof(DetectorSense), $"[{SensorName}] Planeta detectado: {item.Detectable.Name}", "green");
-                }
             }
 
             _detectedObj.RemoveAll(obj => {
@@ -144,10 +137,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 SensorFilteredEventBus.RaiseFiltered(new SensorLostEvent(obj, DetectorEntity, SensorName));
                 obj.OnDetectableLost(DetectorEntity, SensorName);
                 DetectorEntity?.OnPlanetLost(obj, DetectorEntity, SensorName);
-                if (DebugMode)
-                {
-                    DebugUtility.Log(typeof(DetectorSense), $"[{SensorName}] Planeta perdido: {obj.Detectable.Name}", "red");
-                }
                 return true;
             });
         }
@@ -158,11 +147,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
             ProcessPlanets(DetectPlanets());
             _detectionTimer = 0f;
-
-            if (DebugMode)
-            {
-                DebugUtility.Log(typeof(DetectorSense), $"[{SensorName}] Detecção imediata forçada.", "blue");
-            }
         }
 
         private void AdjustDetectionFrequency(int objCount)
@@ -177,20 +161,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             if (IsEnabled) return;
             IsEnabled = true;
             _detectionTimer = 0f;
-            if (DebugMode)
-            {
-                Debug.Log($"[{SensorName}] Sensor ativado.");
-            }
+            DebugUtility.LogVerbose<DetectorSense>($"[{SensorName}] Sensor ativado.");
         }
 
         public void DisableSensor()
         {
             if (!IsEnabled) return;
             IsEnabled = false;
-            if (DebugMode)
-            {
-                Debug.Log($"[{SensorName}] Sensor desativado.");
-            }
+            DebugUtility.LogVerbose<DetectorSense>($"[{SensorName}] Sensor desativado.");
         }
 
         public void DrawGizmos()

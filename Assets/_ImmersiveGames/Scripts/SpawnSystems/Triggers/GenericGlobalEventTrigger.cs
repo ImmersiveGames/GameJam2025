@@ -1,16 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
     public class GenericGlobalEventTrigger : ISpawnTrigger
     {
         private readonly string _eventName;
         private bool _isActive;
         private SpawnPoint _spawnPoint;
-        private readonly EventBinding<GlobalGenericSpawnEvent> _eventBinding; // Corrigido para GlobalGenericSpawnEvent
+        private readonly EventBinding<GlobalGenericSpawnEvent> _eventBinding;
 
         public GenericGlobalEventTrigger(EnhancedTriggerData data)
         {
@@ -24,16 +22,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _eventBinding = new EventBinding<GlobalGenericSpawnEvent>(HandleGlobalEvent);
         }
 
-        public void ReArm()
-        {
-            //nope
-        }
-        public bool IsActive => _isActive;
-
         public void Initialize(SpawnPoint spawnPointRef)
         {
             _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
-            EventBus<GlobalGenericSpawnEvent>.Register(_eventBinding); // Corrigido para GlobalGenericSpawnEvent
+            EventBus<GlobalGenericSpawnEvent>.Register(_eventBinding);
             DebugUtility.Log<GenericGlobalEventTrigger>($"Inicializado com eventName='{_eventName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
@@ -44,7 +36,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             return false;
         }
 
-        private void HandleGlobalEvent(GlobalGenericSpawnEvent evt) // Corrigido para GlobalGenericSpawnEvent
+        private void HandleGlobalEvent(GlobalGenericSpawnEvent evt)
         {
             if (!_isActive || evt.EventName != _eventName) return;
             EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position));
@@ -53,17 +45,27 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void Reset()
         {
-            DebugUtility.Log<GenericGlobalEventTrigger>($"Reset não necessário para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            SetActive(true);
+            DebugUtility.Log<GenericGlobalEventTrigger>($"Resetado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
         {
+            if (_isActive == active) return;
             _isActive = active;
             if (active)
-                EventBus<GlobalGenericSpawnEvent>.Register(_eventBinding); // Corrigido
+                EventBus<GlobalGenericSpawnEvent>.Register(_eventBinding);
             else
-                EventBus<GlobalGenericSpawnEvent>.Unregister(_eventBinding); // Corrigido
+                EventBus<GlobalGenericSpawnEvent>.Unregister(_eventBinding);
             DebugUtility.Log<GenericGlobalEventTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
+
+        public void OnDisable()
+        {
+            EventBus<GlobalGenericSpawnEvent>.Unregister(_eventBinding);
+            DebugUtility.Log<GenericGlobalEventTrigger>($"OnDisable chamado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+        }
+
+        public bool IsActive => _isActive;
     }
 }

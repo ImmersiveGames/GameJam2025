@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
         public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
         public event Action<IDetectable> EventEndEatPlanet; // Ação para quando o Eater começa a comer um planeta
-        public event Action<IDetectable, bool> EventConsumeResource; // Ação para quando um recurso é consumido
+        public event Action<IDetectable, bool, IActor> EventConsumeResource; // Ação para quando um recurso é consumido
 
         public void SetFxActive(bool active)
         {
@@ -70,9 +70,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             EventEndEatPlanet?.Invoke(obj);
         }
-        public void OnEventConsumeResource(IDetectable obj, bool desire)
+        public void OnEventConsumeResource(IDetectable obj, bool desire, IActor byActor)
         {
-            EventConsumeResource?.Invoke(obj, desire);
+            EventConsumeResource?.Invoke(obj, desire, byActor);
         }
     }
 }

@@ -2,12 +2,11 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     public class PlanetExplosionController : DeathExplosionEffect
     {
-        private EventBinding<PlanetConsumedEvent> _eventBinding;
+        private EventBinding<PlanetDestroyedEvent> _eventBinding;
 
         private IDetectable _detectable;
 
@@ -19,19 +18,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnEnable()
         {
-            _eventBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetConsumed);
-            EventBus<PlanetConsumedEvent>.Register(_eventBinding);
+            _eventBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetConsumed);
+            EventBus<PlanetDestroyedEvent>.Register(_eventBinding);
         }
         private void OnDisable()
         {
             DisableParticles();
-            _eventBinding = new EventBinding<PlanetConsumedEvent>(OnPlanetConsumed);
-            EventBus<PlanetConsumedEvent>.Register(_eventBinding);
+            _eventBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetConsumed);
+            EventBus<PlanetDestroyedEvent>.Register(_eventBinding);
         }
-        private void OnPlanetConsumed(PlanetConsumedEvent evt)
+        private void OnPlanetConsumed(PlanetDestroyedEvent evt)
         {
             if (evt.Detected.Detectable != _detectable) return;
-            DebugUtility.Log<PlanetExplosionController>("Explodindo planeta: " + evt.Detected.Detectable.Name, "yellow", this);
             EnableParticles();
         }
     }

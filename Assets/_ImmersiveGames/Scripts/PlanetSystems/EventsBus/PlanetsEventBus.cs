@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
 {
@@ -22,13 +23,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
             Detected = detected;
         }
     }
-    
-    public class PlanetConsumedEvent : IEvent
+
+    public class PlanetDestroyedEvent : IEvent
     {
         public IDetectable Detected { get; }
-        public PlanetConsumedEvent(IDetectable detected)
+        public IActor ByActor { get; }
+        public PlanetDestroyedEvent(IDetectable detected, IActor byActor)
         {
             Detected = detected;
+            ByActor = byActor;
         }
     }
     

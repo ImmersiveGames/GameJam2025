@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class CircularZoomOutStrategy : ISpawnStrategy
     {
         private float _circleRadius;
@@ -76,10 +77,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (sourceObject != null && sourceObject.TryGetComponent(out _planetsMaster))
             {
                 _circleRadius = _planetsMaster.GetPlanetInfo().planetDiameter * 1.2f;
-                DebugUtility.Log<CircularZoomOutStrategy>(
-                    $"Raio do planeta definido como {_circleRadius} para '{sourceObject.name}'.",
-                    "blue",
-                    sourceObject);
             }
             else
             {
@@ -87,35 +84,28 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _circleRadius = 5f;
             }
 
-            int availableCount = pool.GetAvailableCount();
-            DebugUtility.Log<CircularZoomOutStrategy>($"Pool tem {availableCount} objetos disponíveis, spawnCount configurado para {_spawnCount}.");
-
             Transform target = GetDetectorFromSource(sourceObject);
 
             for (int i = 0; i < _spawnCount; i++)
             {
                 SpawnSingleObject(pool, origin, target, i);
             }
+
+            DebugUtility.Log<CircularZoomOutStrategy>($"Spawn concluído: {_spawnCount} objetos instanciados em volta de {(sourceObject != null ? sourceObject.name : "origem desconhecida")}.", "green");
         }
+
 
         private Transform GetDetectorFromSource(GameObject sourceObject)
         {
             if (sourceObject == null || !sourceObject.TryGetComponent(out PlanetsMaster planetsMaster))
             {
-                DebugUtility.LogWarning<CircularZoomOutStrategy>("sourceObject é nulo ou não possui PlanetsMaster. Nenhum alvo (IDetector) disponível.", sourceObject);
+                DebugUtility.LogWarning<CircularZoomOutStrategy>("sourceObject é nulo ou não possui PlanetsMaster.");
                 return null;
             }
 
             var detectors = planetsMaster.GetDetectors();
-            if (detectors == null || detectors.Count == 0)
-            {
-                DebugUtility.LogWarning<CircularZoomOutStrategy>(
-                    $"Nenhum detector disponível para o planeta '{sourceObject.name}'.",
-                    sourceObject);
-                return null;
-            }
+            if (detectors == null || detectors.Count == 0) return null;
 
-            // Selecionar o detector mais próximo do planeta
             IDetector closestDetector = null;
             float minDistance = float.MaxValue;
             Vector3 planetPosition = sourceObject.transform.position;
@@ -131,18 +121,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 }
             }
 
-            if (closestDetector != null)
-            {
-                DebugUtility.Log<CircularZoomOutStrategy>(
-                    $"Alvo definido como '{closestDetector.Owner.Name}' (IDetector) via PlanetsMaster do planeta '{sourceObject.name}' (distância: {minDistance:F2}).",
-                    "blue");
-                return closestDetector.Owner.Transform;
-            }
-
-            DebugUtility.LogWarning<CircularZoomOutStrategy>(
-                $"Nenhum detector válido encontrado para o planeta '{sourceObject.name}'.",
-                sourceObject);
-            return null;
+            return closestDetector?.Owner?.Transform;
         }
 
         private void SpawnSingleObject(ObjectPool pool, Vector3 origin, Transform target, int iteration)
@@ -150,7 +129,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var obj = pool.GetObject(origin);
             if (obj == null)
             {
-                DebugUtility.LogWarning<CircularZoomOutStrategy>($"Falha ao obter objeto do pool na iteração {iteration}. Pool esgotado e expansão não permitida.");
+                DebugUtility.LogWarning<CircularZoomOutStrategy>($"Falha ao obter objeto do pool na iteração {iteration}. Pool esgotado.");
                 return;
             }
 
@@ -169,36 +148,27 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             SetupObjectMovement(obj, target, targetPosition);
             obj.Activate(targetPosition);
-            DebugUtility.Log<CircularZoomOutStrategy>(
-                $"Objeto '{go.name}' spawnado em {origin} movendo-se em espiral para {targetPosition}.",
-                "green",
-                go);
         }
+
 
         private void SetupObjectMovement(IPoolable obj, Transform target, Vector3 targetPosition)
         {
             var go = obj.GetGameObject();
             if (!go.TryGetComponent(out IMoveObject movement))
             {
-                DebugUtility.LogWarning<CircularZoomOutStrategy>(
-                    $"Objeto '{go.name}' não possui IMoveObject. Movimento não inicializado.",
-                    go);
                 AnimateSpiral(go.transform, go.transform.position, targetPosition);
                 return;
             }
-            
+
             AnimateSpiral(go.transform, go.transform.position, targetPosition, () =>
             {
                 if (movement != null && go != null && go.activeInHierarchy)
                 {
                     movement.Initialize(go.transform.position, 0f, target);
-                    DebugUtility.Log<CircularZoomOutStrategy>(
-                        $"Movimento inicializado para '{go.name}' com alvo '{target?.name ?? "nenhum"}' após espiral.",
-                        "blue",
-                        go);
                 }
             });
         }
+
 
         private void AnimateSpiral(Transform targetTransform, Vector3 origin, Vector3 targetPosition, System.Action onComplete = null)
         {

@@ -4,7 +4,8 @@ using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    public class DetectorController
+    [DebugLevel(DebugLevel.Logs)]
+    public sealed class DetectorController
     {
         private readonly Dictionary<SensorTypes, List<IDetectable>> _detectedPlanets = new();
 
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         {
             Owner = owner;
         }
-        public virtual void OnObjectDetected(IDetectable interactable, IDetector detector, SensorTypes sensorName)
+        public void OnObjectDetected(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, Owner)) return;
 
@@ -27,7 +28,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             _detectedPlanets[sensorName].Add(interactable);
             DebugUtility.LogVerbose<DetectorController>($"Planeta detectado por {sensorName}: {interactable.Detectable.Name}", "green");
         }
-        public virtual void OnPlanetLost(IDetectable interactable, IDetector detector, SensorTypes sensorName)
+        public void OnPlanetLost(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, Owner)) return;
 
