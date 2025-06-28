@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (poolableObject == null || !planetInfo)
             {
-                DebugUtility.LogError<PlanetsManager>($"Erro: GameObject ({nameof(poolableObject)}) ou PlanetData ({planetInfo}) é nulo!");
+                DebugUtility.LogError<PlanetsManager>($"Erro: Actor ({nameof(poolableObject)}) ou PlanetData ({planetInfo}) é nulo!");
                 return null;
             }
             var planetGo = poolableObject.GetGameObject();
@@ -91,7 +91,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            // A criação agora é feita pela estratégia, então apenas ajustamos posições
             for (int index = 0; index < orbitInfos.Count; index++)
             {
                 var orbitInfo = orbitInfos[index];
@@ -101,6 +100,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                     DebugUtility.LogWarning<PlanetsManager>($"Falha ao obter objeto do pool para planeta {index}!");
                     continue;
                 }
+
+                DebugUtility.Log<PlanetsManager>($"Objeto obtido do pool para planeta {index} na posição {orbitInfo.orbitPosition}.", "cyan");
 
                 var planetData = GetRandomPlanetData();
                 if (planetData == null)
@@ -134,12 +135,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
                 poolable.Activate(orbitInfo.orbitPosition);
                 planetMaster.transform.position = orbitInfo.orbitPosition;
+                DebugUtility.Log<PlanetsManager>($"Planeta {index} ativado na posição {orbitInfo.orbitPosition}.", "green");
 
                 EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planetMaster));
-
-                DebugUtility.Log<PlanetsManager>(
-                    $"Planeta {index} criado em {orbitInfo.orbitPosition} com raio {orbitInfo.planetRadius:F2}",
-                    "green", planetMaster.gameObject);
             }
         }
 
@@ -155,7 +153,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planetMaster == null) return false;
             if (!_activePlanets.Contains(planetMaster)) return false;
-            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster.Name ?? "nulo"} está marcado: {_targetToEater == planetMaster}.");
+            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster.Detectable.Name ?? "nulo"} está marcado: {_targetToEater == planetMaster}.");
             return _targetToEater == planetMaster;
         }
 
@@ -163,7 +161,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planetMaster == null) return;
             if (!_activePlanets.Remove(planetMaster)) return;
-            DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Name} removido. Planetas ativos: {_activePlanets.Count}.");
+            DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Detectable.Name} removido. Planetas ativos: {_activePlanets.Count}.");
         }
 
         private void MarkPlanet(PlanetMarkedEvent evt)
@@ -175,14 +173,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(_targetToEater));
             }
             _targetToEater = evt.Detected;
-            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.Detected.Name}");
+            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.Detected.Detectable.Name}");
         }
 
         private void ClearMarkedPlanet(PlanetUnmarkedEvent evt)
         {
             if (evt.Detected == null) return;
             _targetToEater = null;
-            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Detected.Name}");
+            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Detected.Detectable.Name}");
         }
 
         public List<IDetectable> GetActivePlanets() => _activePlanets;

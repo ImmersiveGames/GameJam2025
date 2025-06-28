@@ -15,8 +15,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public abstract class ResourceSystem : MonoBehaviour, IResource
     {
         [SerializeField] protected ResourceConfigSo config; // Configuração do recurso
-        [SerializeField] public UnityEvent onDepleted; // Evento disparado quando esgotado
-        [SerializeField] public UnityEvent<float> onValueChanged; // Evento disparado quando valor muda
+        public event Action EventDepleted; // Evento disparado quando esgotado
+        public event Action<float> EventValueChanged; // Evento disparado quando valor muda
         [SerializeField] public ResourceThresholdUnityEvent onThresholdReached; // Evento para limiares
         protected float maxValue; // Valor máximo do recurso
         protected float currentValue; // Valor atual do recurso
@@ -106,9 +106,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _autoDrainRate = rate;
             }
             _autoChangeTimer = config.AutoChangeDelay;
-            DebugUtility.Log<ResourceSystem>($"🦸 {(isFill ? "AutoFill" : "AutoDrain")} {(auto ? "ATIVADO" : "DESATIVADO")} a {rate} por segundo no GameObject {gameObject.name} com UniqueId {config.UniqueId}");
+            DebugUtility.Log<ResourceSystem>($"🦸 {(isFill ? "AutoFill" : "AutoDrain")} {(auto ? "ATIVADO" : "DESATIVADO")} a {rate} por segundo no Actor {gameObject.name} com UniqueId {config.UniqueId}");
         }
-  
+
         private void UpdateResourceValue(float amount, bool isIncrease)
         {
             if (amount < 0) return;
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 ? Mathf.Min(maxValue, currentValue + amount)
                 : Mathf.Max(0, currentValue - amount);
             float percentage = GetPercentage();
-            onValueChanged?.Invoke(percentage);
+            EventValueChanged?.Invoke(percentage);
             CheckThresholds();
             _autoChangeTimer = 0f;
             switch (isIncrease)
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void Decrease(float amount) => UpdateResourceValue(amount, false);
         protected virtual void OnResourceDepleted()
         {
-            onDepleted?.Invoke();
+            EventDepleted?.Invoke();
         }
 
         private void CheckThresholds()
@@ -152,6 +152,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     triggeredThresholds.Remove(threshold);
                 }
             }
+        }
+
+        public void OnEventValueChanged(float checkValue)
+        {
+            EventValueChanged?.Invoke(checkValue);
         }
 
         public void AddModifier(float amountPerSecond, float duration, bool isPermanent = false)
@@ -189,7 +194,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             currentValue = data.currentValue;
             triggeredThresholds.Clear();
             triggeredThresholds.AddRange(data.triggeredThresholds);
-            onValueChanged?.Invoke(GetPercentage());
+            EventValueChanged?.Invoke(GetPercentage());
             CheckThresholds();
         }
 
@@ -205,7 +210,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public bool IsAscending { get; }
         public string UniqueId { get; }
 
-        public ThresholdCrossInfo(string uniqueId,GameObject source, ResourceType type, float currentValue, float threshold, bool isAscending)
+        public ThresholdCrossInfo(string uniqueId, GameObject source, ResourceType type, float currentValue, float threshold, bool isAscending)
         {
             UniqueId = uniqueId;
             Source = source;

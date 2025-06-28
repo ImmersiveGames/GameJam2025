@@ -59,15 +59,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetCreated(PlanetCreatedEvent evt)
         {
             // Processa apenas o evento do planeta associado
-            if(evt.Detectable.GetPlanetsMaster() != _planetMaster)
+            if(evt.Detected.GetPlanetsMaster() != _planetMaster)
                 return; 
-            var planetInfo = evt.Detectable.GetPlanetsMaster().GetPlanetInfo();
+            var planetInfo = evt.Detected.GetPlanetsMaster().GetPlanetInfo();
             UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
         }
         
         private void OnPlanetDestroyed(PlanetConsumedEvent evt)
         {
-            if(evt.Detectable.GetPlanetsMaster() != _planetMaster) return;
+            if(evt.Detected.GetPlanetsMaster() != _planetMaster) return;
             ClearUI();
             resourceCanvas.gameObject.SetActive(false);
         }

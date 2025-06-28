@@ -15,9 +15,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField, Tooltip("Número máximo de spawns por SpawnPoint antes de ser bloqueado.")]
         private int maxSpawnsPerPoint = 100;
 
-        private readonly List<SpawnPoint> _allSpawnPoints = new List<SpawnPoint>();
-        private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new Dictionary<SpawnPoint, ManagedSpawnData>();
-        private readonly Dictionary<SpawnPoint, int> _spawnCounts = new Dictionary<SpawnPoint, int>();
+        private readonly List<SpawnPoint> _allSpawnPoints = new();
+        private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new();
+        private readonly Dictionary<SpawnPoint, int> _spawnCounts = new();
         private EventBinding<PoolRestoredEvent> _poolRestoredBinding;
 
         private void Awake()
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (point == null || _allSpawnPoints.Contains(point))
             {
-                DebugUtility.LogWarning<SpawnManager>($"Tentativa de registrar SpawnPoint nulo ou duplicado '{point?.name}'.");
+                DebugUtility.LogVerbose<SpawnManager>($"Tentativa de registrar SpawnPoint nulo ou duplicado '{point?.name}'.");
                 return;
             }
 

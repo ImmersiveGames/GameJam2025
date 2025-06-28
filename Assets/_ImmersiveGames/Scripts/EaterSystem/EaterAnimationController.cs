@@ -26,8 +26,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void Awake()
         {
             TryGetComponent(out _eaterMaster);
-            if (_eaterMaster.GetModelRoot().TryGetComponentInChildren(out _animator)) return;
-            DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no GameObject!", this);
+            if (_eaterMaster.ModelTransform.TryGetComponentInChildren(out _animator)) return;
+            DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no Actor!", this);
             enabled = false;
         }
 

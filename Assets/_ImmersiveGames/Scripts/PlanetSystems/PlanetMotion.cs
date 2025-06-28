@@ -66,10 +66,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private void OnPlanetCreated(PlanetCreatedEvent obj)
         {
-            if(obj.Detectable.GetPlanetsMaster() != _planetMaster)
+            if(obj.Detected.GetPlanetsMaster() != _planetMaster)
                 return;
-            var planetData = obj.Detectable.GetPlanetData();
-            var planetInfo = obj.Detectable.GetPlanetsMaster().GetPlanetInfo();
+            var planetData = obj.Detected.GetPlanetData();
+            var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
             _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
             _orbitRadius = planetInfo.planetRadius;
             DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");

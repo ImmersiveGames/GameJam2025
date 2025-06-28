@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public StrategyType strategyType;
         
         [Header("Dynamic Properties")]
-        [SerializeField] private DynamicProperties dynamicProperties = new DynamicProperties();
+        [SerializeField] private DynamicProperties dynamicProperties = new();
 
         public T GetProperty<T>(string nameProperties, T defaultValue = default)
         {

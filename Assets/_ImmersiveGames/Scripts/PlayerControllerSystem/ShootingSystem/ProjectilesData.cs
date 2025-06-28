@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using DG.Tweening;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem

@@ -5,27 +5,33 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DefaultExecutionOrder(-10)]
-    public abstract class ActorMaster : MonoBehaviour, IResettable
+    public abstract class ActorMaster : MonoBehaviour, IHasSkin, IResettable
     {
-        [SerializeField] private ModelRoot modelRoot;
-        [SerializeField] private CanvasRoot canvasRoot;
-        [SerializeField] private FxRoot fxRoot;
-        public bool IsActive { get; set; } // Estado do Actor (ativo/inativo)
+        public Transform Transform => transform;
+        private ModelRoot _modelRoot;
+        public string Name => gameObject.name;
+        public bool IsActive { get; set; }
+        public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
+        public Transform ModelTransform => ModelRoot.transform;
+        
         protected virtual void Awake()
         {
-            modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
-            canvasRoot = this.GetOrCreateComponentInChild<CanvasRoot>("CanvasRoot");
-            fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
-            IsActive = true;
+            Reset();
         }
-        public ModelRoot GetModelRoot() => modelRoot;
-
-
-        public CanvasRoot GetCanvasRoot() => canvasRoot;
-
-        public FxRoot GetFxRoot() => fxRoot;
         
-        public abstract void Reset();
-        
+        public void SetSkinActive(bool active)
+        {
+            if (_modelRoot != null)
+            {
+                _modelRoot.gameObject.SetActive(active);
+            }
+        }
+
+        public virtual void Reset()
+        {
+            IsActive = true;
+            _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
+            SetSkinActive(true);
+        }
     }
 }

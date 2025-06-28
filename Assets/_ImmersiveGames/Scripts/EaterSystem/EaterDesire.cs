@@ -43,7 +43,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedEventBinding);
             
-            
             _planetConsumedEventBinding = new EventBinding<PlanetConsumedEvent>(ConsumePlanet);
             EventBus<PlanetConsumedEvent>.Register(_planetConsumedEventBinding);
         }
@@ -88,11 +87,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void ConsumePlanet(PlanetConsumedEvent obj)
         {
-            var resource = obj?.Detectable?.GetResource();
-            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj?.Detectable?.GetResource()} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            var resource = obj?.Detected?.GetResource();
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj?.Detected?.GetResource()} O desejado é: {_desiredResource?.name ?? "nenhum"}");
             if (resource == null) return;
-            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.Detectable.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
-            _eater.OnEventConsumeResource(obj.Detectable, _desiredResource != null && _desiredResource == resource);
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.Detected.Detectable.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            _eater.OnEventConsumeResource(obj.Detected, _desiredResource != null && _desiredResource == resource);
             EventBus<EaterSatisfactionEvent>.Raise(new EaterSatisfactionEvent(_desiredResource != null && _desiredResource == resource));
         }
         
@@ -128,7 +127,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (availableResources.Count == 0)
             {
                 _desiredResource = null;
-                EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
+                EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent());
                 DebugUtility.LogVerbose<EaterDesire>($"Nenhum recurso disponível. Desejo definido como nulo.");
                 return;
             }
@@ -149,13 +148,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _lastDesiredResources.RemoveAt(0);
             }
-
-            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(_desiredResource));
+            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent());
             DebugUtility.Log<EaterDesire>($"Novo desejo escolhido: {_desiredResource.name}.");
         }
         private List<PlanetResourcesSo> GetAvailableResources()
         {
-            var planets = PlanetsManager.Instance.GetActivePlanets();
+            List<IDetectable> planets = PlanetsManager.Instance.GetActivePlanets();
             return planets
                 .Select(p => p.GetResource())
                 .Where(r => r)
@@ -168,7 +166,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _desiredResource = null;
             _lastDesiredResources.Clear();
             
-            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent(null));
+            EventBus<DesireChangedEvent>.Raise(new DesireChangedEvent());
             DebugUtility.LogVerbose<EaterDesire>("EaterDesire resetado.");
         }
         public PlanetResourcesSo GetDesiredResource() => _desiredResource;

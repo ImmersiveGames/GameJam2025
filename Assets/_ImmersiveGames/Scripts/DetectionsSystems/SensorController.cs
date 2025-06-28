@@ -2,18 +2,16 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
-    [RequireComponent(typeof(DetectorsMaster))] // Garante PlayerMaster ou EaterMaster
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class SensorController : MonoBehaviour
     {
-        [SerializeField, Tooltip("Configurações para os sensores")]
+        [SerializeField] [Tooltip("Configurações para os sensores")]
         private List<SensorConfig> sensorConfigs = new();
 
         private readonly List<DetectorSense> _sensors = new();
@@ -36,7 +34,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         private void InitializeSensors()
         {
-            // Obter o IDetector (DetectorsMaster) do GameObject
+            // Obter o IDetector (DetectorController) do Actor
             var detector = GetComponent<IDetector>();
             if (detector == null)
             {
@@ -51,8 +49,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                     config.radius,
                     config.minDetectionFrequency,
                     config.maxDetectionFrequency,
-                    debugMode: config.debugMode,
-                    sensorName: config.sensorName
+                    config.debugMode,
+                    config.sensorName
                 )))
             {
                 _sensors.Add(sensor);
@@ -105,7 +103,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             if (sensor.DebugMode)
             {
                 DebugUtility.LogVerbose<SensorController>(
-                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
+                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Detectable.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
                     isInRange ? "green" : "red"
                 );
             }

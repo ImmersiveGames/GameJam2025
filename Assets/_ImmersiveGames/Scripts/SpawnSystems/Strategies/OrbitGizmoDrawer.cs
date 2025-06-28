@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     {
         [SerializeField] private bool drawOrbitGizmos = true;
         [SerializeField] private Vector3 orbitCenter = Vector3.zero;
-        private readonly List<float> _orbitRadii = new List<float>();
+        private readonly List<float> _orbitRadii = new();
 
         public void UpdateOrbitRadii(List<float> radii)
         {

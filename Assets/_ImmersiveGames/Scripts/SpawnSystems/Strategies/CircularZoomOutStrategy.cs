@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
@@ -123,8 +122,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             foreach (var detector in detectors)
             {
-                if (detector?.GameObject == null) continue;
-                float distance = Vector3.Distance(planetPosition, detector.GameObject.transform.position);
+                if (detector?.Owner == null) continue;
+                float distance = Vector3.Distance(planetPosition, detector.Owner.Transform.position);
                 if (distance < minDistance)
                 {
                     minDistance = distance;
@@ -135,10 +134,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (closestDetector != null)
             {
                 DebugUtility.Log<CircularZoomOutStrategy>(
-                    $"Alvo definido como '{closestDetector.GameObject.name}' (IDetector) via PlanetsMaster do planeta '{sourceObject.name}' (distância: {minDistance:F2}).",
-                    "blue",
-                    closestDetector.GameObject);
-                return closestDetector.GameObject.transform;
+                    $"Alvo definido como '{closestDetector.Owner.Name}' (IDetector) via PlanetsMaster do planeta '{sourceObject.name}' (distância: {minDistance:F2}).",
+                    "blue");
+                return closestDetector.Owner.Transform;
             }
 
             DebugUtility.LogWarning<CircularZoomOutStrategy>(
@@ -233,13 +231,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             if (onComplete != null)
             {
-                sequence.OnComplete(() => onComplete.Invoke());
+                sequence.OnComplete(onComplete.Invoke);
             }
-        }
-
-        public void Dispose()
-        {
-            // Não precisa desregistrar eventos, pois não usa EventBus
         }
     }
 }

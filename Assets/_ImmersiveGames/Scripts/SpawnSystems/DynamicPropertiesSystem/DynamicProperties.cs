@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
     [Serializable]
     public class DynamicProperties
     {
-        [SerializeReference] private List<IConfigurableProperty> properties = new List<IConfigurableProperty>();
+        [SerializeReference] private List<IConfigurableProperty> properties = new();
 
         public T GetProperty<T>(string name, T defaultValue = default)
         {
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
     public class PropertyTemplate
     {
         [SerializeField] private string templateName;
-        [SerializeReference] private List<IConfigurableProperty> properties = new List<IConfigurableProperty>();
+        [SerializeReference] private List<IConfigurableProperty> properties = new();
 
         public string TemplateName => templateName;
         public IEnumerable<IConfigurableProperty> Properties => properties;
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
             _triggerTemplates[TriggerType.GenericGlobalEventTrigger] = new PropertyTemplate("GenericGlobalEventTrigger")
                 .AddProperty("eventName", "GlobalGenericSpawnEvent", true, "Nome do evento global genérico a escutar")
-                .AddProperty("useGenericTrigger", false, false, "Usar GenericGlobalEventTrigger para eventos sem Position/GameObject")
+                .AddProperty("useGenericTrigger", false, false, "Usar GenericGlobalEventTrigger para eventos sem Position/Actor")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos após o evento")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")

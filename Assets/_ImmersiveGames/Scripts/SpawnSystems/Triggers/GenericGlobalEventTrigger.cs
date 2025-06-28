@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private void HandleGlobalEvent(GlobalGenericSpawnEvent evt) // Corrigido para GlobalGenericSpawnEvent
         {
             if (!_isActive || evt.EventName != _eventName) return;
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
+            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position));
             DebugUtility.Log<GenericGlobalEventTrigger>($"Trigger disparado por evento '{_eventName}' em '{_spawnPoint.name}' na posição {_spawnPoint.transform.position}.", "green", _spawnPoint);
         }
 

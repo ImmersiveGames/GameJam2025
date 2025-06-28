@@ -1,18 +1,49 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.Tags;
+using _ImmersiveGames.Scripts.Utils.Extensions;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    public sealed class PlayerMaster : DetectorsMaster
+    [DefaultExecutionOrder(-10)]
+    public sealed class PlayerMaster : ActorMaster, IHasFx, IDetector
     {
-        public event Action EventPlayerTakeDamage;
-        public override void Reset()
+        private FxRoot _fxRoot;
+        private DetectorController _detectorController;
+        public FxRoot FxRoot => _fxRoot ??= this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
+        public Transform FxTransform => FxRoot.transform;
+        private DetectorController DetectorController => _detectorController ??= new DetectorController(this);
+        public IActor Owner => this;
+        public event Action<IActor> EventPlayerTakeDamage;
+
+        public void SetFxActive(bool active)
         {
-            IsActive = true;
+            if (_fxRoot != null)
+            {
+                _fxRoot.gameObject.SetActive(active);
+            }
         }
 
-        public void OnEventPlayerTakeDamage()
+        public override void Reset()
         {
-            EventPlayerTakeDamage?.Invoke();
+            base.Reset();
+            DetectorController.Reset();
+            _fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
+            SetFxActive(false);
+        }
+
+        public void OnEventPlayerTakeDamage(IActor byActor = null)
+        {
+            EventPlayerTakeDamage?.Invoke(byActor);
+        }
+        public void OnObjectDetected(IDetectable detectable, IDetector detectorContext, SensorTypes sensorName)
+        {
+            _detectorController.OnObjectDetected(detectable, detectorContext, sensorName);
+        }
+        public void OnPlanetLost(IDetectable planetMaster, IDetector detectorContext, SensorTypes sensorName)
+        {
+            _detectorController.OnPlanetLost(planetMaster, detectorContext, sensorName);
         }
     }
 }

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class SpawnPoint : MonoBehaviour
     {
         [SerializeField] private PoolableObjectData poolableData;
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void OnEnable()
         {
-            EventBus<SpawnRequestEvent>.Register(_spawnBinding);
+            FilteredEventBus.Register(_spawnBinding, this);
             EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
             EventBus<PoolRestoredEvent>.Register(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Register(_lockedBinding);
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void OnDisable()
         {
-            EventBus<SpawnRequestEvent>.Unregister(_spawnBinding);
+            FilteredEventBus.Unregister(this);
             EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
             EventBus<PoolRestoredEvent>.Unregister(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Unregister(_lockedBinding);
@@ -184,11 +184,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void HandleSpawnRequest(SpawnRequestEvent evt)
         {
-            DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
             if (evt.PoolKey != _poolKey || !IsSpawnValid || evt.SourceGameObject != gameObject)
                 return;
+            DebugUtility.Log<SpawnPoint>($"Recebido SpawnRequestEvent para pool '{evt.PoolKey}' de origem {(evt.SourceGameObject != null ? evt.SourceGameObject.name : "desconhecida")}", "blue", this);
 
-            Vector3 spawnPosition = evt.SpawnPosition ?? _cachedPosition;
+            Vector3 spawnPosition = evt.Position ?? _cachedPosition;
             ExecuteSpawn(spawnPosition, evt.SourceGameObject ?? gameObject);
         }
 

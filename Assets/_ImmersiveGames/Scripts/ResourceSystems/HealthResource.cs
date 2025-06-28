@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
@@ -12,65 +11,46 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     // Sistema de saúde que implementa IDestructible e IResettable
     public class HealthResource : ResourceSystem, IDestructible, IResettable
     {
-        protected GameObject modelRoot; // Raiz do modelo do ator
-        private ActorMaster _actorMaster; // Referência ao ActorMaster
+        private IHasSkin _skinRoot; // Raiz do modelo do ator
 
         // Inicializa referências no Awake para garantir disponibilidade
         protected override void Awake()
         {
             base.Awake();
-            InitializeReferences();
+            _skinRoot = GetComponentInParent<IHasSkin>();
         }
 
-        // Inicializa _actorMaster e modelRoot
-        private void InitializeReferences()
+        protected void OnResourceDepleted(IActor byActor = null)
         {
-            _actorMaster = GetComponentInParent<ActorMaster>();
-            modelRoot = _actorMaster?.GetModelRoot()?.gameObject;
-            if (!_actorMaster || !modelRoot)
-            {
-                DebugUtility.LogError<HealthResource>($"Falha na inicialização: {( !_actorMaster ? "ActorMaster" : "ModelRoot")} não encontrado em {gameObject.name}!", gameObject);
-            }
-            else
-            {
-                DebugUtility.LogVerbose<HealthResource>($"HealthResource inicializado com sucesso para {gameObject.name}.", "green", this);
-            }
-        }
-
-        protected override void OnResourceDepleted()
-        {
-            base.OnResourceDepleted();
+            OnResourceDepleted();
             DebugUtility.Log<HealthResource>($"{gameObject.name} morreu!");
-            OnDeath(); // Chama o método de extensão
+            OnDeath(byActor); // Chama o método de extensão
         }
 
-        protected virtual void OnDeath()
+        protected virtual void OnDeath(IActor byActor = null)
         {
-            var spawnPoint = modelRoot ? modelRoot.transform.position : transform.position;
+            var spawnPoint = _skinRoot is not null ? _skinRoot.ModelTransform.position : transform.position;
             DebugUtility.Log<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
             EventBus<DeathEvent>.Raise(new DeathEvent(spawnPoint, gameObject));
-            if (modelRoot)
-            {
-                modelRoot.SetActive(false);
-            }
+            _skinRoot?.SetSkinActive(false);
         }
         
 
         // Cura o recurso
-        public virtual void Heal(float amount)
+        public virtual void Heal(float amount,  IActor byActor)
         {
             Increase(amount);
-            OnHeal(amount);
+            OnHeal(amount, byActor);
         }
 
-        public virtual void TakeDamage(float damage)
+        public virtual void TakeDamage(float damage, IActor byActor)
         {
             Decrease(damage);
-            OnTakeDamage(damage);
+            OnTakeDamage(damage, byActor);
         }
 
-        protected virtual void OnHeal(float amount) { }
-        protected virtual void OnTakeDamage(float damage) { }
+        protected virtual void OnHeal(float amount, IActor byActor) { }
+        protected virtual void OnTakeDamage(float damage, IActor byActor) { }
 
         // Reinicia o recurso ao estado padrão
         public virtual void Reset()
@@ -78,21 +58,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             currentValue = maxValue; // Restaura ao valor máximo
             triggeredThresholds.Clear(); // Limpa limiares disparados
             modifiers.Clear(); // Remove todos os modificadores
-            if (!modelRoot)
-            {
-                DebugUtility.LogWarning<HealthResource>($"modelRoot é nulo ao tentar reiniciar {gameObject.name}. Tentando reinicializar...", gameObject);
-                InitializeReferences();
-            }
-            if (modelRoot)
-            {
-                modelRoot.SetActive(true); // Reativa o modelo, se disponível
-            }
-            else
-            {
-                DebugUtility.LogError<HealthResource>($"modelRoot não encontrado após reinicialização em {gameObject.name}. Verifique a configuração!", gameObject);
-            }
+            //TODO: isso não deveria ser feito no skin?
+            _skinRoot = GetComponentInParent<IHasSkin>();
+            _skinRoot?.SetSkinActive(true); // Reativa o modelo, se disponível
             float percentage = GetPercentage();
-            onValueChanged?.Invoke(percentage); // Notifica mudança
+            OnEventValueChanged(percentage); // Notifica mudança
             EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId, gameObject, config.ResourceType, percentage)); // Dispara evento
             OnReset(); // Permite que classes derivadas adicionem comportamento
         }

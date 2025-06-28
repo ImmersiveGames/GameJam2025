@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.EventBus;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
@@ -14,11 +15,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private PlayerMaster _playerMaster;
         private Animator _animator;
 
-        private readonly int IsHappy = Animator.StringToHash("Happy");
-        private readonly int IsSad = Animator.StringToHash("Sad");
-        private readonly int IsGameOver = Animator.StringToHash("Sad");
-        private readonly int GetHit = Animator.StringToHash("GetHit");
-        private readonly int Die = Animator.StringToHash("Die");
+        private readonly int _isHappy = Animator.StringToHash("Happy");
+        private readonly int _isSad = Animator.StringToHash("Sad");
+        private readonly int _isGameOver = Animator.StringToHash("Sad");
+        private readonly int _getHit = Animator.StringToHash("GetHit");
+        private readonly int _die = Animator.StringToHash("Die");
 
         private const float TransitionDuration = 0.1f;
 
@@ -29,8 +30,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void Awake()
         {
             TryGetComponent(out _playerMaster);
-            if (_playerMaster.GetModelRoot().TryGetComponentInChildren(out _animator)) return;
-            DebugUtility.LogError<EaterAnimationController>("Animator n�o encontrado no GameObject!", this);
+            if (_playerMaster.ModelTransform.TryGetComponentInChildren(out _animator)) return;
+            DebugUtility.LogError<EaterAnimationController>("Animator n�o encontrado no Actor!", this);
             enabled = false;
         }
 
@@ -59,25 +60,30 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void OnPlayerDeath() 
         {
-            _animator.CrossFadeInFixedTime(Die, TransitionDuration);
+            _animator.CrossFadeInFixedTime(_die, TransitionDuration);
         }
 
-        private void OnGetHit() 
+        private void OnGetHit(IActor byActor) 
         {
-            _animator.CrossFadeInFixedTime(GetHit, TransitionDuration);
+            _animator.CrossFadeInFixedTime(_getHit, TransitionDuration);
         }
 
         private void OnEaterDeath(EaterDeathEvent obj)
         {
-            _animator.CrossFadeInFixedTime(IsGameOver, TransitionDuration);
+            _animator.CrossFadeInFixedTime(_isGameOver, TransitionDuration);
         }
 
         private void OnEaterConsumePlanet(EaterSatisfactionEvent obj)
-        {            
-            if (obj.IsSatisfected)
-                _animator.CrossFadeInFixedTime(IsHappy, TransitionDuration);
-            else if(!obj.IsSatisfected)
-                _animator.CrossFadeInFixedTime(IsSad, TransitionDuration);
+        {
+            switch (obj.IsSatisfied)
+            {
+                case true:
+                    _animator.CrossFadeInFixedTime(_isHappy, TransitionDuration);
+                    break;
+                case false:
+                    _animator.CrossFadeInFixedTime(_isSad, TransitionDuration);
+                    break;
+            }
         }
     }
 }

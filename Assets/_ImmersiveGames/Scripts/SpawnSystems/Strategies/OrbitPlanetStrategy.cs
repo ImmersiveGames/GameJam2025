@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Logs)]
     public class OrbitPlanetStrategy : ISpawnStrategy
     {
         // Constantes
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (_gizmoDrawer == null)
             {
                 _gizmoDrawer = new GameObject("OrbitGizmoDrawer").AddComponent<OrbitGizmoDrawer>();
-                DebugUtility.Log<OrbitPlanetStrategy>("OrbitGizmoDrawer criado automaticamente.", "yellow");
+                DebugUtility.LogVerbose<OrbitPlanetStrategy>("OrbitGizmoDrawer criado automaticamente.", "yellow");
             }
         }
 
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
                 var planetGo = planetMaster.gameObject;
                 var planetInfo = planetMaster.GetPlanetInfo();
-                DebugUtility.Log<OrbitPlanetStrategy>(
+                DebugUtility.LogVerbose<OrbitPlanetStrategy>(
                     $"Planeta {index} criado: diâmetro {planetInfo.planetDiameter:F2}, escala {planetInfo.planetScale:F2}",
                     "blue", planetGo);
 
@@ -192,13 +192,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
                 if (index > 0)
                 {
-                    DebugUtility.Log<OrbitPlanetStrategy>($"Espaçamento órbitas {index-1}-{index}: {currentRadius - prevOrbitRadius:F2}", "cyan");
+                    DebugUtility.LogVerbose<OrbitPlanetStrategy>($"Espaçamento órbitas {index-1}-{index}: {currentRadius - prevOrbitRadius:F2}", "cyan");
                 }
 
-                DebugUtility.Log<OrbitPlanetStrategy>(
+                DebugUtility.LogVerbose<OrbitPlanetStrategy>(
                     $"Planeta {index} - Raio orbital: {currentRadius:F2}, Ângulo: {initialAngle * Mathf.Rad2Deg:F1}°, Raio planeta: {planetRadius:F2}, Escala: {planetInfo.planetScale:F2}",
                     "green");
-                DebugUtility.Log<OrbitPlanetStrategy>(
+                DebugUtility.LogVerbose<OrbitPlanetStrategy>(
                     $"Cálculo orbital: prevOrbitRadius={prevOrbitRadius:F2}, prevRadius={prevRadius:F2}, space={_spaceBetweenPlanets:F2}, planetRadius={planetRadius:F2}, total={currentRadius:F2}",
                     "yellow");
             }
@@ -256,7 +256,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                         adjustedRadius += _spaceBetweenPlanets * 0.5f; // Ajuste menor para minimizar deslocamentos
                         adjustedPosition = _orbitCenter + new Vector3(Mathf.Cos(orbitInfo.initialAngle), 0, Mathf.Sin(orbitInfo.initialAngle)) * adjustedRadius;
                         attempts++;
-                        DebugUtility.Log<OrbitPlanetStrategy>(
+                        DebugUtility.LogVerbose<OrbitPlanetStrategy>(
                             $"Colisão detectada para planeta {index} com planeta {prevIndex}. Novo raio: {adjustedRadius:F2}",
                             "yellow");
                         break;
@@ -300,7 +300,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
             baseAngle = NormalizeAngle(baseAngle);
             float finalAngle = baseAngle * Mathf.Deg2Rad;
-            DebugUtility.Log<OrbitPlanetStrategy>($"Ângulo ótimo: {baseAngle:F1}° para planeta {planetIndex}/{totalPlanets}", "blue");
+            DebugUtility.LogVerbose<OrbitPlanetStrategy>($"Ângulo ótimo: {baseAngle:F1}° para planeta {planetIndex}/{totalPlanets}", "blue");
             return finalAngle;
         }
 
@@ -309,7 +309,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (usedAngles.Count == 0)
             {
                 float firstAngle = Random.Range(0f, FullCircleDegrees) * Mathf.Deg2Rad;
-                DebugUtility.Log<OrbitPlanetStrategy>($"Primeiro ângulo aleatório: {firstAngle * Mathf.Rad2Deg:F1}°", "blue");
+                DebugUtility.LogVerbose<OrbitPlanetStrategy>($"Primeiro ângulo aleatório: {firstAngle * Mathf.Rad2Deg:F1}°", "blue");
                 usedAngles.Add(firstAngle);
                 return firstAngle;
             }
@@ -320,7 +320,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 float candidateAngle = Random.Range(0f, FullCircleDegrees) * Mathf.Deg2Rad;
                 if (IsAngleValid(candidateAngle, usedAngles, minAngleSeparation))
                 {
-                    DebugUtility.Log<OrbitPlanetStrategy>($"Ângulo aleatório válido: {candidateAngle * Mathf.Rad2Deg:F1}° (tentativa {attempts + 1})", "blue");
+                    DebugUtility.LogVerbose<OrbitPlanetStrategy>($"Ângulo aleatório válido: {candidateAngle * Mathf.Rad2Deg:F1}° (tentativa {attempts + 1})", "blue");
                     usedAngles.Add(candidateAngle);
                     return candidateAngle;
                 }

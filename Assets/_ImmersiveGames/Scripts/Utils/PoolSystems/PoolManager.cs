@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Warning)]
+    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Logs)]
     public class PoolManager : MonoBehaviour
     {
         public static PoolManager Instance { get; private set; }
@@ -59,7 +57,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             if (_pools.ContainsKey(data.ObjectName))
             {
-                DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' já registrado.", "yellow", this);
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' já registrado.", "yellow", this);
                 return;
             }
 
@@ -85,21 +83,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return pool;
             DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado. Verifique se o pool foi registrado pelo SpawnManager.", this);
             return null;
-        }
-
-        public IPoolable GetObject(string key, Vector3 position)
-        {
-            var pool = GetPool(key);
-            if (pool == null)
-                return null;
-
-            var wasEmpty = pool.GetAvailableCount() == 0;
-            var obj = pool.GetObject(position);
-            if (obj != null && wasEmpty && pool.GetAvailableCount() > 0)
-            {
-                EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(key));
-            }
-            return obj;
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.SpawnSystems;
+﻿using _ImmersiveGames.Scripts.SpawnSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {

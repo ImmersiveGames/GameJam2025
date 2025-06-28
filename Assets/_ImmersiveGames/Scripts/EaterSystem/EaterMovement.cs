@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         public bool IsOrbiting {get; set;}
-        public Transform TargetTransform => Target?.Transform;
+        public Transform TargetTransform => Target?.Detectable.Transform;
         public IDetectable Target { get; private set; }
 
         private IState _wanderingState;
@@ -86,11 +86,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (IsOrbiting)
             {
                 _eater.OnEventStartEatPlanet(obj.Detected);
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Name} está na área do EaterEatSensor, ativando órbita.", "green");
+                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Detectable.Transform} está na área do EaterEatSensor, ativando órbita.", "green");
             }
             else
             {
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Name}, fora da área do EaterEatSensor.", "yellow");
+                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Detectable.Transform}, fora da área do EaterEatSensor.", "yellow");
             }
         }
 
@@ -106,12 +106,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         
         private void OnPlanetDetected(IDetectable obj, SensorTypes sensor)
         {
-            DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Name}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Detectable.Name}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
             if (sensor != SensorTypes.EaterEatSensor || !PlanetsManager.Instance.IsMarkedPlanet(obj)) return;
             Target = obj;
             IsOrbiting = true;
             _eater.OnEventStartEatPlanet(obj);
-            DebugUtility.LogVerbose<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target.Name}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.LogVerbose<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
         }
 
         public void Reset()

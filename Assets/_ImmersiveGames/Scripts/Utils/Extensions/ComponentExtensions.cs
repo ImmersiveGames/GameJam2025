@@ -4,7 +4,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
     public static class ComponentExtensions
     {
         /// <summary>
-        /// Tenta obter um componente do tipo T no GameObject atual ou em seus pais.
+        /// Tenta obter um componente do tipo T no Actor atual ou em seus pais.
         /// </summary>
         /// <typeparam name="T">Tipo do componente a buscar.</typeparam>
         /// <param name="component">Componente inicial para a busca.</param>
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             result = null;
             if (component == null) return false;
 
-            // Tenta no GameObject atual
+            // Tenta no Actor atual
             if (component.TryGetComponent<T>(out result))
             {
                 return true;
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         }
 
         /// <summary>
-        /// Tenta obter um componente do tipo T no GameObject atual ou em seus filhos.
+        /// Tenta obter um componente do tipo T no Actor atual ou em seus filhos.
         /// </summary>
         /// <typeparam name="T">Tipo do componente a buscar.</typeparam>
         /// <param name="component">Componente inicial para a busca.</param>
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             result = null;
             if (component == null) return false;
 
-            // Tenta no GameObject atual
+            // Tenta no Actor atual
             if (component.TryGetComponent<T>(out result))return true;
 
             // Busca nos filhos
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
                 childName = typeof(T).Name;
             }
 
-            // Cria um novo GameObject como filho
+            // Cria um novo Actor como filho
             GameObject childObject = new GameObject(childName);
             childObject.transform.SetParent(parent.transform);
             childObject.transform.localPosition = Vector3.zero;
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
                 childName = typeof(T).Name;
             }
 
-            // Cria um novo GameObject como filho
+            // Cria um novo Actor como filho
             GameObject childObject = new GameObject(childName);
             childObject.transform.SetParent(parentGameObject.transform);
             childObject.transform.localPosition = Vector3.zero;

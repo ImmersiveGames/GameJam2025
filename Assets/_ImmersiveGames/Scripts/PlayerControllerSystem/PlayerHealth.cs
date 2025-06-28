@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -14,14 +15,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _playerMaster = GetComponent<PlayerMaster>();
             if (_playerMaster == null)
             {
-                DebugUtility.LogError<PlayerHealth>("PlayerMaster não encontrado no GameObject.");
+                DebugUtility.LogError<PlayerHealth>("PlayerMaster não encontrado no Actor.");
             }
         }
 
-        public override void TakeDamage(float damage)
+        public override void TakeDamage(float damage,IActor byActor = null)
         {
-            base.TakeDamage(damage);
-            _playerMaster.OnEventPlayerTakeDamage();
+            base.TakeDamage(damage,byActor);
+            _playerMaster.OnEventPlayerTakeDamage(byActor);
         }
         public void Defeat(Vector3 position)
         {

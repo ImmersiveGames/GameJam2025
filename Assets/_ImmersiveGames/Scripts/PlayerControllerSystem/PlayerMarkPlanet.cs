@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
     [DebugLevel(DebugLevel.Verbose)]
     public class PlayerMarkPlanet : MonoBehaviour
     {
-        //private PlanetRecognizer _sensorController;
         private PlayerInput _playerInput;
         private Camera _mainCamera;
         private EaterHunger _eaterHunger;
@@ -57,7 +56,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
-                DebugUtility.LogVerbose<PlayerMarkPlanet>($"Planeta desmarcado: {planet.name}", "yellow", this);
+                DebugUtility.LogVerbose<PlayerMarkPlanet>($"Planeta desmarcado: {planet.Name}", "yellow", this);
                 return;
             }
             EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet));

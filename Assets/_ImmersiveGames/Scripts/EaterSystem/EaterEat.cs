@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             
             //TODO: Provavelmente vou precisar de um atraso aqui (ou mudar de estado) para o Eater Avaliar o planeta como destruído
             EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planetMaster));
-            DebugUtility.Log<EaterEat>($"Planeta {evt.GameObject.name} destruído. Dano automático interrompido.");
+            DebugUtility.Log<EaterEat>($"Planeta {evt.SourceGameObject.name} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     break;
                 }
 
-                _planetHealth.TakeDamage(_config.BiteDamage);
+                _planetHealth.TakeDamage(_config.BiteDamage, _eater);
                 if (_planetHealth != null)
                 {
                     DebugUtility.Log<EaterEat>($"Aplicado dano de {_config.BiteDamage} ao planeta {_planetHealth.gameObject.name}. Saúde atual: {_planetHealth.GetCurrentValue()}.");

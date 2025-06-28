@@ -2072,7 +2072,7 @@ namespace MEC
         /// </summary>
         /// <param name="delay">The number of seconds to wait before calling the action.</param>
         /// <param name="action">The action to call.</param>
-        /// <param name="cancelWith">A GameObject that will be checked to make sure it hasn't been destroyed before calling the action.</param>
+        /// <param name="cancelWith">A Actor that will be checked to make sure it hasn't been destroyed before calling the action.</param>
         /// <returns>The handle to the coroutine that is started by this function.</returns>
         public static CoroutineHandle CallDelayed(float delay, System.Action action, GameObject cancelWith)
         {
@@ -2084,7 +2084,7 @@ namespace MEC
         /// </summary>
         /// <param name="delay">The number of seconds to wait before calling the action.</param>
         /// <param name="action">The action to call.</param>
-        /// <param name="cancelWith">A GameObject that will be checked to make sure it hasn't been destroyed before calling the action.</param>
+        /// <param name="cancelWith">A Actor that will be checked to make sure it hasn't been destroyed before calling the action.</param>
         /// <returns>The handle to the coroutine that is started by this function.</returns>
         public CoroutineHandle CallDelayedOnInstance(float delay, System.Action action, GameObject cancelWith)
         {
@@ -2120,7 +2120,7 @@ namespace MEC
         /// </summary>
         /// <param name="delay">The number of seconds to wait before calling the action.</param>
         /// <param name="action">The action to call.</param>
-        /// <param name="gameObject">A GameObject that will be checked to make sure it hasn't been destroyed 
+        /// <param name="gameObject">A Actor that will be checked to make sure it hasn't been destroyed 
         /// before calling the action.</param>
         /// <param name="segment">The timing segment that the call should be made in.</param>
         /// <returns>The handle to the coroutine that is started by this function.</returns>
@@ -2134,7 +2134,7 @@ namespace MEC
         /// </summary>
         /// <param name="delay">The number of seconds to wait before calling the action.</param>
         /// <param name="action">The action to call.</param>
-        /// <param name="gameObject">A GameObject that will be tagged onto the coroutine and checked to make sure it hasn't been destroyed 
+        /// <param name="gameObject">A Actor that will be tagged onto the coroutine and checked to make sure it hasn't been destroyed 
         /// before calling the action.</param>
         /// <param name="segment">The timing segment that the call should be made in.</param>
         /// <returns>The handle to the coroutine that is started by this function.</returns>
@@ -2467,31 +2467,31 @@ namespace MEC
         [System.Obsolete("Unity coroutine function, use KillCoroutines instead.", true)]
         public new void StopAllCoroutines() { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void Destroy(Object obj) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void Destroy(Object obj, float f) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void DestroyObject(Object obj) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void DestroyObject(Object obj, float f) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void DestroyImmediate(Object obj) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void DestroyImmediate(Object obj, bool b) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void Instantiate(Object obj) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void Instantiate(Object original, Vector3 position, Quaternion rotation) { }
 
-        [System.Obsolete("Use your own GameObject for this.", true)]
+        [System.Obsolete("Use your own Actor for this.", true)]
         public new static void Instantiate<T>(T original) where T : Object { }
 
         [System.Obsolete("Just.. no.", true)]
@@ -2667,7 +2667,7 @@ public static class MECExtensionMethods2
     /// Cancels this coroutine when the supplied game object is destroyed or made inactive.
     /// </summary>
     /// <param name="coroutine">The coroutine handle to act upon.</param>
-    /// <param name="gameObject">The GameObject to test.</param>
+    /// <param name="gameObject">The Actor to test.</param>
     /// <returns>The modified coroutine handle.</returns>
     public static IEnumerator<float> CancelWith(this IEnumerator<float> coroutine, GameObject gameObject)
     {
@@ -2679,8 +2679,8 @@ public static class MECExtensionMethods2
     /// Cancels this coroutine when the supplied game objects are destroyed or made inactive.
     /// </summary>
     /// <param name="coroutine">The coroutine handle to act upon.</param>
-    /// <param name="gameObject1">The first GameObject to test.</param>
-    /// <param name="gameObject2">The second GameObject to test</param>
+    /// <param name="gameObject1">The first Actor to test.</param>
+    /// <param name="gameObject2">The second Actor to test</param>
     /// <returns>The modified coroutine handle.</returns>
     public static IEnumerator<float> CancelWith(this IEnumerator<float> coroutine, GameObject gameObject1, GameObject gameObject2)
     {
@@ -2693,9 +2693,9 @@ public static class MECExtensionMethods2
     /// Cancels this coroutine when the supplied game objects are destroyed or made inactive.
     /// </summary>
     /// <param name="coroutine">The coroutine handle to act upon.</param>
-    /// <param name="gameObject1">The first GameObject to test.</param>
-    /// <param name="gameObject2">The second GameObject to test</param>
-    /// <param name="gameObject3">The third GameObject to test.</param>
+    /// <param name="gameObject1">The first Actor to test.</param>
+    /// <param name="gameObject2">The second Actor to test</param>
+    /// <param name="gameObject3">The third Actor to test.</param>
     /// <returns>The modified coroutine handle.</returns>
     public static IEnumerator<float> CancelWith(this IEnumerator<float> coroutine,
         GameObject gameObject1, GameObject gameObject2, GameObject gameObject3)

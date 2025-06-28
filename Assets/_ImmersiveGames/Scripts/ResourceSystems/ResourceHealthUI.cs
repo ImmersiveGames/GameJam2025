@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (healthSystem.Config && resourceIcon)
                 resourceIcon.sprite = healthSystem.Config.ResourceIcon;
 
-            healthSystem.onValueChanged.AddListener(UpdateHealthBar);
+            healthSystem.EventValueChanged += UpdateHealthBar;
             healthSystem.onThresholdReached.AddListener(UpdateThresholdColor);
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeath);
             EventBus<DeathEvent>.Register(_deathEventBinding);
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // Reage ao evento de morte
         private void OnDeath(DeathEvent evt)
         {
-            if (!transform.IsChildOrSelf(evt.GameObject.transform)) return;
+            if (!transform.IsChildOrSelf(evt.SourceGameObject.transform)) return;
             if (backgroundImage)
             {
                 backgroundImage.color = thresholdColors[3]; // Vermelho ao morrer

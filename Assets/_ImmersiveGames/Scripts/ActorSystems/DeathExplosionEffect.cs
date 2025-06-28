@@ -1,30 +1,36 @@
 ﻿using _ImmersiveGames.Scripts.Tags;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    public abstract class DeathExplosionEffect : MonoBehaviour
+    public abstract class DeathExplosionEffect : MonoBehaviour, IHasFx
     {
         [SerializeField]
         private GameObject explosionPrefab;
         private ParticleSystem[] _particleSystem;
-        private ActorMaster _actorMaster;
+
         private FxRoot _fxRoot;
-        
-        private GameObject _explosionInstance;
+        public FxRoot FxRoot => _fxRoot ??= this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
+        public Transform FxTransform => FxRoot.transform;
+        public void SetFxActive(bool active)
+        {
+            if (_fxRoot != null)
+            {
+                _fxRoot.gameObject.SetActive(active);
+            }
+        }
 
         protected virtual void Awake()
         {
-            _actorMaster = GetComponent<ActorMaster>();
-            _fxRoot = _actorMaster.GetFxRoot();
-            _explosionInstance = Instantiate(explosionPrefab, _fxRoot.transform.position, Quaternion.identity);
-            _explosionInstance.SetActive(false);
-            _explosionInstance.transform.SetParent(_fxRoot.transform);
-            _particleSystem = _explosionInstance.GetComponentsInChildren<ParticleSystem>(true);
+            explosionPrefab = Instantiate(explosionPrefab, FxTransform.position, Quaternion.identity);
+            explosionPrefab.SetActive(false);
+            explosionPrefab.transform.SetParent(FxTransform);
+            _particleSystem = explosionPrefab.GetComponentsInChildren<ParticleSystem>(true);
         }
         
         protected virtual void EnableParticles()
         {
-            _explosionInstance.SetActive(true);
+            explosionPrefab.SetActive(true);
             foreach (var ps in _particleSystem)
             {
                 ps?.gameObject.SetActive(true);
@@ -35,7 +41,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         protected virtual void DisableParticles()
         {
             if (_particleSystem == null) return;
-            _explosionInstance.SetActive(false);
+            explosionPrefab.SetActive(false);
             foreach (var ps in _particleSystem)
             {
                 if (!ps || !ps.isPlaying) return;

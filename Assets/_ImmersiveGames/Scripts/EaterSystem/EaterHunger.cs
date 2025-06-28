@@ -22,8 +22,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             base.Awake();
             _eater = GetComponent<EaterMaster>();
             _health = GetComponent<HealthResource>();
-            onValueChanged.AddListener(OnHungerChanged);
-            onDepleted.AddListener(OnStarved);
+            _health.EventValueChanged += OnHungerChanged;
+            _health.EventDepleted += OnStarved;
         }
 
         protected override void OnEnable()
@@ -35,8 +35,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDisable()
         {
             _eater.EventConsumeResource -= OnConsumeResource;
-            onValueChanged.RemoveListener(OnHungerChanged);
-            onDepleted.RemoveListener(OnStarved);
+            _health.EventValueChanged += OnHungerChanged;
+            _health.EventDepleted -= OnStarved;
         }
         private void OnConsumeResource(IDetectable detectable, bool desire)
         {
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _crossedUp.Clear();
             _lastPercentage = GetPercentage(); // Garante consistência após reset
             DebugUtility.LogVerbose<EaterHunger>("♻️ EaterHunger resetado.");
-            onValueChanged.Invoke(_lastPercentage); // revalida estado visual, se necessário
+            _health.OnEventValueChanged(_lastPercentage); // revalida estado visual, se necessário
         }
     }
 }

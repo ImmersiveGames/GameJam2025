@@ -31,14 +31,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
     }
     public class DeathEvent : ISpawnEvent
     {
-        public Vector3 Position { get; }
-        public GameObject GameObject{ get; }
+        public Vector3? Position { get; }
+        public GameObject SourceGameObject{ get; }
 
 
         public DeathEvent(Vector3 position, GameObject source)
         {
             Position = position;
-            GameObject = source;
+            SourceGameObject = source;
         }
     }
     

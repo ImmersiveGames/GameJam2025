@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
         private void OnPlanetDestroyed(PlanetConsumedEvent evt)
         {
-            if(evt.Detectable.GetPlanetsMaster() != _planetMaster) return;
+            if(evt.Detected.GetPlanetsMaster() != _planetMaster) return;
             if (healthBar) healthBar.gameObject.SetActive(false);
             if (backgroundImage) backgroundImage.gameObject.SetActive(false);
         }

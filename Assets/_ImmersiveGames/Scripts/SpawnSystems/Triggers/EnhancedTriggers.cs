@@ -146,7 +146,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private readonly string _actionName;
         private readonly InputAction _action;
         private bool _isActive;
-        private InputSpawnPoint _spawnPoint; // Alterado para InputSpawnPoint
+        private InputSpawnPoint _spawnPoint;
+        private bool _wasPressedThisFrame; // Controle de debounce
 
         public InputSystemTrigger(EnhancedTriggerData data, InputActionAsset inputAsset)
         {
@@ -162,12 +163,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 DebugUtility.LogError<InputSystemTrigger>($"Ação '{_actionName}' não encontrada no InputActionAsset.");
             }
             _isActive = true;
+            _wasPressedThisFrame = false;
         }
 
         public void ReArm()
         {
-            //nope
+            // Não necessário
         }
+
         public bool IsActive => _isActive;
 
         public void Initialize(SpawnPoint spawnPointRef)
@@ -183,6 +186,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 _action.Enable();
                 _action.performed += OnActionPerformed;
+                _action.canceled += OnActionCanceled; // Adiciona verificação de liberação
             }
             DebugUtility.LogVerbose<InputSystemTrigger>($"Inicializado com actionName='{_actionName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
@@ -196,9 +200,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void OnActionPerformed(InputAction.CallbackContext context)
         {
-            if (!_isActive || _spawnPoint == null) return;
-            EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject));
+            if (!_isActive || _spawnPoint == null || _wasPressedThisFrame) return;
+            _wasPressedThisFrame = true;
+            FilteredEventBus.RaiseFiltered(
+                new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position)
+            );
             DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}' na posição {_spawnPoint.transform.position}.", "green", _spawnPoint);
+        }
+
+        private void OnActionCanceled(InputAction.CallbackContext context)
+        {
+            _wasPressedThisFrame = false; // Reseta o estado quando o botão é liberado
         }
 
         public void Reset()
@@ -215,17 +227,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 {
                     _action.Enable();
                     _action.performed += OnActionPerformed;
+                    _action.canceled += OnActionCanceled;
                 }
                 else
                 {
                     _action.Disable();
-                    _action.performed -= OnActionPerformed; // Limpeza de eventos
+                    _action.performed -= OnActionPerformed;
+                    _action.canceled -= OnActionCanceled;
                 }
             }
             DebugUtility.LogVerbose<InputSystemTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
     }
-
 
     // Spawna com predicado
     [DebugLevel(DebugLevel.Logs)]

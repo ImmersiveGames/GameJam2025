@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [SerializeField] private SensorTypes targetSensor; // Sensor a monitorar (e.g., PlayerDetectorSensor)
         private PlanetsMaster _planetsMaster;
         private bool _isDefenseActive;
-        private DetectorsMaster _currentDetector;
+        private DetectorController _currentDetector;
         private EventBinding<SensorDetectedEvent> _sensorDetectedBinding;
         private EventBinding<SensorLostEvent> _sensorLostBinding;
 
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!_isDefenseActive || _currentDetector == null || evt.Data != spawnData || evt.ObjectName != _poolKey || evt.SourceGameObject != gameObject) return;
 
             Vector3 direction = (_currentDetector.transform.position - transform.position).normalized;
-            DebugUtility.Log<PlanetDefenses>($"[{gameObject.name}:{targetSensor}] Direção calculada: {direction}, Planeta: {transform.position}, Detector: {_currentDetector.transform.position}", "cyan", this);
+            DebugUtility.Log<PlanetDefenses>($"[{gameObject.name}:{targetSensor}] Direção calculada: {direction}, Planeta: {transform.position}, DetectorController: {_currentDetector.transform.position}", "cyan", this);
 
             var pool = poolManager.GetPool(_poolKey);
             if (pool == null)
@@ -100,14 +100,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (_isDefenseActive || evt.SensorName != targetSensor || evt.Planet != _planetsMaster) return;
 
             _isDefenseActive = true;
-            _currentDetector = evt.Detector as DetectorsMaster;
+            _currentDetector = evt.DetectorController as DetectorController;
             if (_currentDetector != null)
                 DebugUtility.LogVerbose<PlanetDefenses>($"[{gameObject.name}:{targetSensor}] Defesas ativadas.", "green", this);
         }
 
         private void OnSensorLost(SensorLostEvent evt)
         {
-            if (!_isDefenseActive || evt.SensorName != targetSensor || evt.Planet != _planetsMaster || evt.Detector != _currentDetector) return;
+            if (!_isDefenseActive || evt.SensorName != targetSensor || evt.Planet != _planetsMaster || evt.DetectorController != _currentDetector) return;
 
             _isDefenseActive = false;
             _currentDetector = null;

@@ -48,8 +48,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (!_isActive || evt.GetType().Name != _eventName) return;
 
-            Vector3 spawnPosition = evt.Position;
-            GameObject sourceObject = evt.GameObject ?? _spawnPoint.gameObject;
+            Vector3? spawnPosition = evt.Position;
+            GameObject sourceObject = evt.SourceGameObject ?? _spawnPoint.gameObject;
             if (sourceObject == null)
             {
                 DebugUtility.LogWarning<GlobalEventTrigger>("sourceObject do evento é nulo. Usando SpawnPoint como source.", _spawnPoint);

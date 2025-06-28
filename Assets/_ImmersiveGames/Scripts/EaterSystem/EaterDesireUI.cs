@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<DesireChangedEvent>.Unregister(_desireChangedBinding);
         }
 
-        private void OnDesireChanged(DesireChangedEvent evt)
+        private void OnDesireChanged()
         {
             UpdateUI();
         }

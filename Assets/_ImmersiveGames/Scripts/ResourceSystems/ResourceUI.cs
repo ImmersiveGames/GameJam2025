@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (_resource is ResourceSystem resourceSystem)
             {
-                resourceSystem.onValueChanged.RemoveListener(UpdateResourceBar);
+                resourceSystem.EventValueChanged -= UpdateResourceBar;
                 resourceSystem.onThresholdReached.RemoveListener(UpdateThresholdColor);
             }
         }
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (_resource is ResourceSystem resourceSystem)
             {
-                resourceSystem.onValueChanged.AddListener(UpdateResourceBar);
+                resourceSystem.EventValueChanged += UpdateResourceBar;
                 resourceSystem.onThresholdReached.AddListener(UpdateThresholdColor);
             }
 
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             else
             {
-                DebugUtility.LogWarning<ResourceUI>($"Recurso nulo para ID {targetResourceId} no GameObject {evt.Source.name}!", this);
+                DebugUtility.LogWarning<ResourceUI>($"Recurso nulo para ID {targetResourceId} no Actor {evt.Source.name}!", this);
             }
         }
 
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (_resource is ResourceSystem oldResourceSystem)
             {
-                oldResourceSystem.onValueChanged.RemoveListener(UpdateResourceBar);
+                oldResourceSystem.EventValueChanged -= UpdateResourceBar;
                 oldResourceSystem.onThresholdReached.RemoveListener(UpdateThresholdColor);
             }
 

@@ -7,12 +7,12 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Logs)]
     public class ObjectPool : MonoBehaviour
     {
         private readonly Queue<IPoolable> _pool = new();
         private readonly List<IPoolable> _activeObjects = new();
-        public PoolableObjectData Data { get; private set; }
+        private PoolableObjectData Data { get; set; }
         public bool IsInitialized { get; private set; }
         private readonly ObjectPoolFactory _factory = new();
 
@@ -37,9 +37,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             for (int i = 0; i < Data.InitialPoolSize; i++)
             {
                 var poolable = _factory.CreateObject(Data, transform, Vector3.zero, $"{Data.ObjectName}_{i}", this);
-                if (poolable == null) continue;
+                if (poolable == null)
+                {
+                    DebugUtility.LogError<ObjectPool>($"Falha ao criar objeto {i} para pool '{Data.ObjectName}'.", this);
+                    continue;
+                }
                 poolable.Deactivate();
                 _pool.Enqueue(poolable);
+                DebugUtility.LogVerbose<ObjectPool>($"Objeto {i} criado e enfileirado para '{Data.ObjectName}'.", "cyan", this);
             }
             IsInitialized = true;
             DebugUtility.Log<ObjectPool>($"Pool inicializado com {_pool.Count} objetos para '{Data.ObjectName}'.", "green", this);

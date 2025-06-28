@@ -15,33 +15,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.EventsBus
     }
     public class PlanetCreatedEvent : IEvent
     {
-        public IDetectable Detectable { get; }
+        public IDetectable Detected { get; }
 
         public PlanetCreatedEvent(IDetectable detected)
         {
-            Detectable = detected;
+            Detected = detected;
         }
     }
     
     public class PlanetConsumedEvent : IEvent
     {
-        public IDetectable Detectable { get; }
-        //Todo: implementar quem consumiu para diferenciar o evento de consumo de planeta
+        public IDetectable Detected { get; }
         public PlanetConsumedEvent(IDetectable detected)
         {
-            Detectable = detected;
-        }
-    }
-    
-    public class PlanetDetectedEvent
-    {
-        public IDetector Detector { get; }
-        public SensorTypes Sensor { get; }
-
-        public PlanetDetectedEvent(IDetector detector, SensorTypes sensor)
-        {
-            Detector = detector;
-            Sensor = sensor;
+            Detected = detected;
         }
     }
     
