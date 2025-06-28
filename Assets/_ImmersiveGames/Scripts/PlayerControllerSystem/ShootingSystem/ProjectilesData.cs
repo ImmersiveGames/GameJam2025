@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
     [CreateAssetMenu(fileName = "BulletData", menuName = "ImmersiveGames/PoolableObjectData/Bullets")]
     public class ProjectilesData : PoolableObjectData
     {
-        [Header("Projectile Settings")]
+        [Header("ProjectileMovement Settings")]
         [SerializeField]
         public MovementType movementType;
         [SerializeField] public float moveSpeed = 10f; // Velocidade de movimento para frente

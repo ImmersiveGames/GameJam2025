@@ -4,7 +4,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class Projectile : MonoBehaviour,IMoveObject
+    public class ProjectileMovement : MonoBehaviour,IMoveObject
     {
         private Vector3 _direction;
         private float _speed;
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
         }
         public void Initialize(Vector3? direction, float speed, Transform target = null)
         {
-            DebugUtility.Log<Projectile>($"Velocidade inicializada: {speed}, Direção: {direction}", "cyan", this);
+            DebugUtility.Log<ProjectileMovement>($"Velocidade inicializada: {speed}, Direção: {direction}", "cyan", this);
             _direction = direction?.normalized ?? Vector3.zero;
             _isMoving = true;
             _speed = speed > 0f ? speed : 10f; // Valor padrão se speed for 0

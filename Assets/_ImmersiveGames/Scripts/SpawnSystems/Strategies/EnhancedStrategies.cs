@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
@@ -51,9 +52,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     spawnPos += Random.insideUnitSphere * _positionRadius;
 
                 var obj = pool.GetObject(spawnPos);
+                var owner = sourceObject ? sourceObject.GetComponent<IActor>() : null;
                 if (obj != null)
                 {
-                    obj.Activate(spawnPos);
+                    obj.Activate(spawnPos, owner);
                     DebugUtility.Log<SimpleSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos}.", "green", obj.GetGameObject());
                 }
                 else
@@ -101,11 +103,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
 
             Vector3 baseDirection = GetBaseDirection(sourceObject);
+            var owner = sourceObject ? sourceObject.GetComponent<IActor>() : null;
             Vector3 spawnPos = origin + _offset;
 
             for (int i = 0; i < count; i++)
             {
-                SpawnSingleObject(pool, spawnPos, baseDirection, i);
+                SpawnSingleObject(pool, spawnPos, baseDirection, i, owner);
             }
         }
 
@@ -148,7 +151,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             return Quaternion.Euler(Random.insideUnitSphere * _directionVariation) * baseDirection;
         }
 
-        private void SpawnSingleObject(ObjectPool pool, Vector3 spawnPos, Vector3 baseDirection, int iteration)
+        private void SpawnSingleObject(ObjectPool pool, Vector3 spawnPos, Vector3 baseDirection, int iteration, IActor owner)
         {
             var obj = pool.GetObject(spawnPos);
             if (obj == null)
@@ -156,8 +159,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 DebugUtility.LogWarning<DirectionalSpawnStrategy>($"Falha ao obter objeto do pool na iteração {iteration}.");
                 return;
             }
-
-            obj.Activate(spawnPos);
+            obj.Activate(spawnPos, owner);
             SetupObjectMovement(obj, baseDirection, spawnPos);
         }
 
@@ -221,10 +223,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 for (int i = 0; i < count; i++)
                 {
                     Vector3 spawnPos = origin + _spacingVector * i;
+                    var owner = sourceObject ? sourceObject.GetComponent<IActor>() : null;
                     var obj = pool.GetObject(spawnPos);
                     if (obj != null)
                     {
-                        obj.Activate(spawnPos);
+                        obj.Activate(spawnPos,owner);
                         DebugUtility.Log<FullPoolSpawnStrategy>($"Objeto '{obj.GetGameObject().name}' spawnado em {spawnPos}.", "green", obj.GetGameObject());
                     }
                     else

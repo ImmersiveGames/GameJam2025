@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -13,10 +14,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     [DebugLevel(DebugLevel.Logs)]
     public class OrbitPlanetStrategy : ISpawnStrategy
     {
+        #region Fields and Constructor
         // Constantes
         private const float FullCircleDegrees = 360f;
         private const float AngleSeparationFactor = 1.5f;
-        private const int MaxCollisionAttempts = 3; // Reduzido para evitar iterações desnecessárias
+        private const int MaxCollisionAttempts = 3;
 
         // Configurações
         private readonly float _minAngleSeparationDegrees;
@@ -60,14 +62,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 DebugUtility.LogVerbose<OrbitPlanetStrategy>("OrbitGizmoDrawer criado automaticamente.", "yellow");
             }
         }
+        #endregion
 
+        #region Main Spawn Logic
         public void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null)
         {
             if (!ValidateInputs(pool)) return;
             SetupSolarSystem(pool);
         }
 
-        // Configuração do Sistema Solar
         private void SetupSolarSystem(ObjectPool pool)
         {
             int planetCount = Mathf.Min(pool.GetAvailableCount(), _maxPlanets);
@@ -93,7 +96,18 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.Log<OrbitPlanetStrategy>($"Atualizado {orbitInfos.Count} órbitas com {_orbitalRadii.Count} raios", "yellow");
         }
 
-        // Criação e Ativação de Planetas
+        private bool ValidateInputs(ObjectPool pool)
+        {
+            if (pool == null || _planetsManager == null)
+            {
+                DebugUtility.LogError<OrbitPlanetStrategy>(pool == null ? "Pool é nulo!" : "PlanetsManager.Instance é nulo!");
+                return false;
+            }
+            return true;
+        }
+        #endregion
+
+        #region Planet Creation and Initialization
         private List<(PlanetsMaster planetMaster, IPoolable poolable)> CreateAndActivatePlanets(ObjectPool pool, int planetCount)
         {
             var planetInfos = new List<(PlanetsMaster planetMaster, IPoolable poolable)>();
@@ -109,7 +123,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     continue;
                 }
 
-                poolable.Activate(Vector3.zero);
+                poolable.Activate(Vector3.zero, null);
                 Physics.SyncTransforms();
 
                 var planetGo = planetMaster.gameObject;
@@ -157,8 +171,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
             return true;
         }
+        #endregion
 
-        // Cálculo das Órbitas
+        #region Orbit Calculation
         private List<OrbitPlanetInfo> CalculateOrbits(List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos)
         {
             var orbitInfos = new List<OrbitPlanetInfo>();
@@ -206,86 +221,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             return orbitInfos;
         }
 
-        // Posicionamento dos Planetas
-        private void PositionPlanets(List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos, List<OrbitPlanetInfo> orbitInfos)
-        {
-            for (int index = 0; index < planetInfos.Count; index++)
-            {
-                var (planetMaster, poolable) = planetInfos[index];
-                var orbitInfo = orbitInfos[index];
-                var planetInfo = planetMaster.GetPlanetInfo();
-
-                // Verifica colisões apenas como segurança
-                var (adjustedPosition, adjustedRadius) = ValidatePosition(index, planetInfos, orbitInfos, orbitInfo);
-
-                planetInfo.orbitPosition = adjustedPosition;
-                planetInfo.planetRadius = adjustedRadius;
-                planetInfo.initialAngle = orbitInfo.initialAngle;
-                planetInfo.orbitSpeed = orbitInfo.orbitSpeed;
-
-                poolable.Activate(adjustedPosition);
-                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planetMaster));
-
-                DebugUtility.Log<OrbitPlanetStrategy>(
-                    $"Planeta {index} posicionado em {adjustedPosition} com raio orbital {adjustedRadius:F2}",
-                    "green", planetMaster.gameObject);
-            }
-        }
-
-        private (Vector3 position, float radius) ValidatePosition(int index, List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos,
-            List<OrbitPlanetInfo> orbitInfos, OrbitPlanetInfo orbitInfo)
-        {
-            Vector3 adjustedPosition = orbitInfo.orbitPosition;
-            float adjustedRadius = orbitInfo.planetRadius;
-            var planetInfo = planetInfos[index].planetMaster.GetPlanetInfo();
-            int attempts = 0;
-
-            while (attempts < MaxCollisionAttempts)
-            {
-                bool hasCollision = false;
-                for (int prevIndex = 0; prevIndex < index; prevIndex++)
-                {
-                    var prevOrbitInfo = orbitInfos[prevIndex];
-                    var prevPlanetInfo = planetInfos[prevIndex].planetMaster.GetPlanetInfo();
-                    float distance = Vector3.Distance(adjustedPosition, prevOrbitInfo.orbitPosition);
-                    float minDistance = (planetInfo.planetDiameter * 0.5f) + (prevPlanetInfo.planetDiameter * 0.5f) + _spaceBetweenPlanets;
-
-                    if (distance < minDistance)
-                    {
-                        hasCollision = true;
-                        adjustedRadius += _spaceBetweenPlanets * 0.5f; // Ajuste menor para minimizar deslocamentos
-                        adjustedPosition = _orbitCenter + new Vector3(Mathf.Cos(orbitInfo.initialAngle), 0, Mathf.Sin(orbitInfo.initialAngle)) * adjustedRadius;
-                        attempts++;
-                        DebugUtility.LogVerbose<OrbitPlanetStrategy>(
-                            $"Colisão detectada para planeta {index} com planeta {prevIndex}. Novo raio: {adjustedRadius:F2}",
-                            "yellow");
-                        break;
-                    }
-                }
-
-                if (!hasCollision) break;
-            }
-
-            if (attempts >= MaxCollisionAttempts)
-            {
-                DebugUtility.LogWarning<OrbitPlanetStrategy>($"Não foi possível evitar colisão para planeta {index} após {attempts} tentativas!");
-            }
-
-            return (adjustedPosition, adjustedRadius);
-        }
-
-        // Validação de Entrada
-        private bool ValidateInputs(ObjectPool pool)
-        {
-            if (pool == null || _planetsManager == null)
-            {
-                DebugUtility.LogError<OrbitPlanetStrategy>(pool == null ? "Pool é nulo!" : "PlanetsManager.Instance é nulo!");
-                return false;
-            }
-            return true;
-        }
-
-        // Cálculo de Ângulos
         private float GetPlanetAngle(int planetIndex, int totalPlanets, List<float> usedAngles)
         {
             return _useRandomAngles ? GetRandomAngleWithValidation(usedAngles, totalPlanets) : GetOptimalAngle(planetIndex, totalPlanets);
@@ -348,5 +283,74 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             angle %= FullCircleDegrees;
             return angle < 0f ? angle + FullCircleDegrees : angle;
         }
+        #endregion
+
+        #region Planet Positioning
+        private void PositionPlanets(List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos, List<OrbitPlanetInfo> orbitInfos)
+        {
+            for (int index = 0; index < planetInfos.Count; index++)
+            {
+                var (planetMaster, poolable) = planetInfos[index];
+                var orbitInfo = orbitInfos[index];
+                var planetInfo = planetMaster.GetPlanetInfo();
+
+                var (adjustedPosition, adjustedRadius) = ValidatePosition(index, planetInfos, orbitInfos, orbitInfo);
+
+                planetInfo.orbitPosition = adjustedPosition;
+                planetInfo.planetRadius = adjustedRadius;
+                planetInfo.initialAngle = orbitInfo.initialAngle;
+                planetInfo.orbitSpeed = orbitInfo.orbitSpeed;
+
+                poolable.Activate(adjustedPosition, null);
+                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(planetMaster));
+
+                DebugUtility.Log<OrbitPlanetStrategy>(
+                    $"Planeta {index} posicionado em {adjustedPosition} com raio orbital {adjustedRadius:F2}",
+                    "green", planetMaster.gameObject);
+            }
+        }
+
+        private (Vector3 position, float radius) ValidatePosition(int index, List<(PlanetsMaster planetMaster, IPoolable poolable)> planetInfos,
+            List<OrbitPlanetInfo> orbitInfos, OrbitPlanetInfo orbitInfo)
+        {
+            Vector3 adjustedPosition = orbitInfo.orbitPosition;
+            float adjustedRadius = orbitInfo.planetRadius;
+            var planetInfo = planetInfos[index].planetMaster.GetPlanetInfo();
+
+            int attempts = 0;
+            while (attempts < MaxCollisionAttempts)
+            {
+                bool hasCollision = false;
+                for (int prevIndex = 0; prevIndex < index; prevIndex++)
+                {
+                    var prevOrbitInfo = orbitInfos[prevIndex];
+                    var prevPlanetInfo = planetInfos[prevIndex].planetMaster.GetPlanetInfo();
+                    float distance = Vector3.Distance(adjustedPosition, prevOrbitInfo.orbitPosition);
+                    float minDistance = (planetInfo.planetDiameter * 0.5f) + (prevPlanetInfo.planetDiameter * 0.5f) + _spaceBetweenPlanets;
+
+                    if (distance < minDistance)
+                    {
+                        hasCollision = true;
+                        adjustedRadius += _spaceBetweenPlanets * 0.5f;
+                        adjustedPosition = _orbitCenter + new Vector3(Mathf.Cos(orbitInfo.initialAngle), 0, Mathf.Sin(orbitInfo.initialAngle)) * adjustedRadius;
+                        attempts++;
+                        DebugUtility.LogVerbose<OrbitPlanetStrategy>(
+                            $"Colisão detectada para planeta {index} com planeta {prevIndex}. Novo raio: {adjustedRadius:F2}",
+                            "yellow");
+                        break;
+                    }
+                }
+
+                if (!hasCollision) break;
+            }
+
+            if (attempts >= MaxCollisionAttempts)
+            {
+                DebugUtility.LogWarning<OrbitPlanetStrategy>($"Não foi possível evitar colisão para planeta {index} após {attempts} tentativas!");
+            }
+
+            return (adjustedPosition, adjustedRadius);
+        }
+        #endregion
     }
 }

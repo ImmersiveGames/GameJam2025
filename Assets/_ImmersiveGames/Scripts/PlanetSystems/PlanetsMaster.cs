@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetInfo _planetInfo;
         private TargetFlag _targetFlag;
         private PlanetData _data;
-        private readonly List<IDetector> _detectors = new List<IDetector>();
+        private readonly List<IDetector> _detectors = new ();
         public event Action<IDetector, SensorTypes> EventPlanetDetected;
         public event Action<IDetector, SensorTypes> EventPlanetLost;
         
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
         }
 
-        public void Initialize(int id, IPoolable poolableObject, PlanetData data, PlanetResourcesSo resources)
+        public void Initialize(int id, IPoolable poolableObject, PlanetData data, PlanetResourcesSo resources, IActor owner = null)
         {
             IsActive = true;
             gameObject.name = $"Planet_{data.name}_{id}";

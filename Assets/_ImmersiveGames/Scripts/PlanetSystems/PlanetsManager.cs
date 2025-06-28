@@ -133,7 +133,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 planetInfo.initialAngle = orbitInfo.initialAngle;
                 planetInfo.orbitSpeed = orbitInfo.orbitSpeed;
 
-                poolable.Activate(orbitInfo.orbitPosition);
+                poolable.Activate(orbitInfo.orbitPosition, null);
                 planetMaster.transform.position = orbitInfo.orbitPosition;
                 DebugUtility.Log<PlanetsManager>($"Planeta {index} ativado na posição {orbitInfo.orbitPosition}.", "green");
 

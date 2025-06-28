@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -76,7 +77,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             }
 
             poolable.Reset();
-            poolable.Activate(position);
+            poolable.Activate(position, null);
             _activeObjects.Add(poolable);
             EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position));
             return poolable;

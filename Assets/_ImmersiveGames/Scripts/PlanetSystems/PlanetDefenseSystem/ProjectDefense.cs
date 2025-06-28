@@ -1,12 +1,11 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
+namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
-    public class Projectiles : MonoBehaviour
+    public class ProjectDefense : MonoBehaviour
     {
         private PooledObject _pooledObject;
-        private IActor _ownerActor;
         private void Awake()
         {
             _pooledObject = GetComponent<PooledObject>();
@@ -14,9 +13,11 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
         private void OnTriggerEnter(Collider other)
         {
             var destructible = other.GetComponentInParent<IDestructible>();
-            if (destructible is null) return;
+            
+            Debug.Log("Trigger Entered with: " + destructible);
+            if (destructible is null or PlanetHealth) return;
             var data = _pooledObject.GetData<ProjectilesData>();
-            destructible.TakeDamage(data.damage, _pooledObject.GetComponentInParent<IActor>());
+            destructible?.TakeDamage(data.damage);
             _pooledObject.Deactivate();
         }
     }

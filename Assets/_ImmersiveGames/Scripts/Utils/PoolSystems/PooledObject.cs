@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
@@ -14,8 +15,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private float _timer;
         private bool _returningToPool;
         private PoolableObjectData _data;
+        private IActor _spawner;
 
-        public void Initialize(PoolableObjectData data, ObjectPool pool)
+        public void Initialize(PoolableObjectData data, ObjectPool pool, IActor actor = null)
         {
             if (!data) throw new ArgumentNullException(nameof(data));
             _data = data;
@@ -23,16 +25,18 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _lifetime = data.Lifetime;
             _isActive = false;
             _timer = 0f;
+            _spawner = actor;
             _returningToPool = false;
             gameObject.SetActive(false);
             DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' inicializado com lifetime {_lifetime}.", "green", this);
         }
 
-        public void Activate(Vector3 position)
+        public void Activate(Vector3 position, IActor actor)
         {
             transform.position = position;
             transform.rotation = Quaternion.identity;
             _isActive = true;
+            _spawner = actor ?? _spawner;
             gameObject.SetActive(true);
             _timer = _lifetime > 0 ? _lifetime : float.MaxValue;
             _returningToPool = false;
@@ -51,6 +55,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void OnObjectSpawned() { }
         public void OnObjectReturned() { }
+        public IActor Spawner => _spawner;
 
         public GameObject GetGameObject() => gameObject;
         public T GetData<T>() where T : PoolableObjectData

@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -85,10 +86,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             Transform target = GetDetectorFromSource(sourceObject);
-
+            var owner = sourceObject ? sourceObject.GetComponent<IActor>() : null;
             for (int i = 0; i < _spawnCount; i++)
             {
-                SpawnSingleObject(pool, origin, target, i);
+                SpawnSingleObject(pool, origin, target, i, owner);
             }
 
             DebugUtility.Log<CircularZoomOutStrategy>($"Spawn concluído: {_spawnCount} objetos instanciados em volta de {(sourceObject != null ? sourceObject.name : "origem desconhecida")}.", "green");
@@ -124,7 +125,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             return closestDetector?.Owner?.Transform;
         }
 
-        private void SpawnSingleObject(ObjectPool pool, Vector3 origin, Transform target, int iteration)
+        private void SpawnSingleObject(ObjectPool pool, Vector3 origin, Transform target, int iteration, IActor owner)
         {
             var obj = pool.GetObject(origin);
             if (obj == null)
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var targetPosition = origin + finalOffset;
 
             SetupObjectMovement(obj, target, targetPosition);
-            obj.Activate(targetPosition);
+            obj.Activate(targetPosition, owner);
         }
 
 
