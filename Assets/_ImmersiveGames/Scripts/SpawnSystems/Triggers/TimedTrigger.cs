@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public abstract class TimedTrigger : BaseTrigger

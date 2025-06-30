@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
     public class SimpleSpawnStrategy : ISpawnStrategy
     {

@@ -14,7 +14,7 @@ using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterDesire : MonoBehaviour, IResettable
     {
         private EaterConfigSo _config;

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Warning)]
     public class PooledObject : MonoBehaviour, IPoolable
     {
         private ObjectPool _pool;

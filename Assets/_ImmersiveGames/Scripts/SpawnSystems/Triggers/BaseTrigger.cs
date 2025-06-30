@@ -1,21 +1,21 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     public abstract class BaseTrigger : ISpawnTrigger
     {
         protected bool isActive;
         protected SpawnPoint spawnPoint;
-        protected float spawnInterval;
-        protected int maxSpawns;
+        private readonly float _spawnInterval;
+        protected readonly int maxSpawns;
         protected float timer;
         protected int spawnCount;
 
         protected BaseTrigger(EnhancedTriggerData data)
         {
-            spawnInterval = Mathf.Max(data.GetProperty("spawnInterval", 1.0f), 0.01f);
+            _spawnInterval = Mathf.Max(data.GetProperty("spawnInterval", 1.0f), 0.01f);
             maxSpawns = Mathf.Max(data.GetProperty("maxSpawns", -1), -1);
             isActive = true;
-            timer = spawnInterval;
+            timer = _spawnInterval;
             spawnCount = 0;
         }
 
@@ -32,14 +32,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             isActive = active;
             if (!active)
             {
-                timer = spawnInterval;
+                timer = _spawnInterval;
                 spawnCount = 0;
             }
         }
 
         public virtual void Reset()
         {
-            timer = spawnInterval;
+            timer = _spawnInterval;
             spawnCount = 0;
             isActive = true;
         }

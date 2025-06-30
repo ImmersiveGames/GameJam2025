@@ -3,8 +3,9 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class SensorTrigger : TimedTrigger
     {
         private readonly SensorTypes _sensorType;

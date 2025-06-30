@@ -27,8 +27,8 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             explosionPrefab.transform.SetParent(FxTransform);
             _particleSystem = explosionPrefab.GetComponentsInChildren<ParticleSystem>(true);
         }
-        
-        protected virtual void EnableParticles()
+
+        public virtual void EnableParticles()
         {
             explosionPrefab.SetActive(true);
             foreach (var ps in _particleSystem)

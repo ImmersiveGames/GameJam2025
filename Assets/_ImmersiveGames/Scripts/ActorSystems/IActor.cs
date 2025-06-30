@@ -2,13 +2,16 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    public interface IActor
+    public interface IEntity
     {
-        bool IsActive { get; set; }
-        string Name { get; }
         Transform Transform { get; }
+        bool IsActive { get; set; }
     }
-    public interface IHasSkin : IActor
+    public interface IActor : IEntity
+    {
+        string Name { get; }
+    }
+    public interface IHasSkin
     {
         ModelRoot ModelRoot { get; }
         Transform ModelTransform { get; }

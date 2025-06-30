@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DefaultExecutionOrder(-10)]
-    public abstract class ActorMaster : MonoBehaviour, IHasSkin, IResettable
+    public abstract class ActorMaster : MonoBehaviour, IActor, IHasSkin, IResettable
     {
         public Transform Transform => transform;
         private ModelRoot _modelRoot;

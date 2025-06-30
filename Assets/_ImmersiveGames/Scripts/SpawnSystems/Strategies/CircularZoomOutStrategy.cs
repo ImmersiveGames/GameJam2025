@@ -1,15 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Warning)]
     public class CircularZoomOutStrategy : ISpawnStrategy
     {
         private float _circleRadius;

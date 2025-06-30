@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Logs)]
+    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Warning)]
     public class PoolManager : MonoBehaviour
     {
         public static PoolManager Instance { get; private set; }

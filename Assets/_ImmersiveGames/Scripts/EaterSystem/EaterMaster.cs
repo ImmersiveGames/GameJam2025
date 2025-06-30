@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public sealed class EaterMaster: ActorMaster, IHasFx, IDetector
     {
         private FxRoot _fxRoot;

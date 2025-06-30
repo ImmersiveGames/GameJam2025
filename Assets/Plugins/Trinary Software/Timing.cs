@@ -174,11 +174,11 @@ namespace MEC
             {
                 if (_instance == null || !_instance.gameObject)
                 {
-                    GameObject instanceHome = GameObject.Find("Timing MovementController");
+                    GameObject instanceHome = GameObject.Find("Timing DefensesMovement");
 
                     if (instanceHome == null)
                     {
-                        instanceHome = new GameObject { name = "Timing MovementController" };
+                        instanceHome = new GameObject { name = "Timing DefensesMovement" };
 
                         DontDestroyOnLoad(instanceHome);
                     }

@@ -81,9 +81,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d806102eb86411aa9f5929970a1a43c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelRoot: {fileID: 7724317602262783512}
-  canvasRoot: {fileID: 0}
-  fxRoot: {fileID: 3177215126190169237}
   config: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
 --- !u!114 &1273904180078409868
 MonoBehaviour:
@@ -98,12 +95,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: edf85fa2ddd546d47a4b3c063a6a3fc2, type: 2}
-  onDepleted:
-    m_PersistentCalls:
-      m_Calls: []
-  onValueChanged:
-    m_PersistentCalls:
-      m_Calls: []
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
@@ -120,12 +111,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: a87ab108d4f95844aade42acd79691f7, type: 2}
-  onDepleted:
-    m_PersistentCalls:
-      m_Calls: []
-  onValueChanged:
-    m_PersistentCalls:
-      m_Calls: []
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
@@ -474,6 +459,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e2ae03446b99da34e962c5976558d4c2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6130816098414960579}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e2ae03446b99da34e962c5976558d4c2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9003474547172036026}
   m_SourcePrefab: {fileID: 100100000, guid: e2ae03446b99da34e962c5976558d4c2, type: 3}
 --- !u!1 &1409332408443849845 stripped
 GameObject:
@@ -502,6 +490,27 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!65 &9003474547172036026
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1409332408443849845}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 4.5, y: 4.5, z: 2}
+  m_Center: {x: 0, y: 1.5, z: 0}
 --- !u!4 &1784873472158963407 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e2ae03446b99da34e962c5976558d4c2, type: 3}

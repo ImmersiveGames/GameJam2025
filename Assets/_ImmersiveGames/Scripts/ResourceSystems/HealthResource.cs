@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     // Sistema de saúde que implementa IDestructible e IResettable
     public class HealthResource : ResourceSystem, IDestructible, IResettable
     {

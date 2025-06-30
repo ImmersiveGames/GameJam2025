@@ -22,11 +22,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
         }
-        public override void TakeDamage(float damage, IActor byActor)
-        {
-            base.TakeDamage(damage, byActor);
-            lastChanger = byActor;
-        }
 
         protected override void OnDeath()
         {

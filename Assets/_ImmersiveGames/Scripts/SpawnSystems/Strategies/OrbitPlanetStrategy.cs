@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -8,10 +7,9 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Strategies
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Warning)]
     public class OrbitPlanetStrategy : ISpawnStrategy
     {
         #region Fields and Constructor

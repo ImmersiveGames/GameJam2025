@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class ProjectileMovement : MonoBehaviour,IMoveObject
     {
         private Vector3 _direction;

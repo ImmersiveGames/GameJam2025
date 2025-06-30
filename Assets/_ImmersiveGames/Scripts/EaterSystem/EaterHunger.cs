@@ -8,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterHunger : ResourceSystem, IResettable
     {
         private EaterMaster _eater;

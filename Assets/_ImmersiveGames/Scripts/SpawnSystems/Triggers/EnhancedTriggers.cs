@@ -2,7 +2,7 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     // Spawna na inicialização
     [DebugLevel(DebugLevel.Logs)]

@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    [DefaultExecutionOrder(-1), DebugLevel(DebugLevel.Logs)]
+    [DefaultExecutionOrder(-1), DebugLevel(DebugLevel.Warning)]
     public class SpawnManager : MonoBehaviour
     {
         public static SpawnManager Instance { get; private set; }

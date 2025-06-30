@@ -1,12 +1,14 @@
-﻿using _ImmersiveGames.Scripts.SpawnSystems;
+﻿using System;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
+using _ImmersiveGames.Scripts.SpawnSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
+namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
-    public class MovementController : MonoBehaviour, IMoveObject
+    public class DefensesMovement : MonoBehaviour, IMoveObject
     {
-        [Header("Configuração")]
-        [SerializeField] private ProjectilesData projectilesData;
-        
+        private DefensesMaster _defensesMaster;
+        private ProjectilesData _projectilesData;
         private MovementType _movementType;
         private IMovementStrategy _strategy;
         private Vector3 _direction;
@@ -14,7 +16,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 
         private void Awake()
         {
-            _movementType = projectilesData.movementType;
+            if (!TryGetComponent(out _defensesMaster))
+            {
+                DebugUtility.LogError<DefensesMovement>($"No DefensesMaster found on {gameObject.name}. Please add a DefensesMaster component.");
+                return;
+            }
+            if (_defensesMaster.ProjectilesData is null)
+            {
+                DebugUtility.LogError<DefensesMovement>($"No ProjectilesData found on {gameObject.name}. Please assign ProjectilesData in the DefensesMaster component.");
+                return;
+            }
+            _projectilesData = _defensesMaster.ProjectilesData; 
+            _movementType = _projectilesData.movementType;
             _strategy = CreateStrategy(_movementType);
         }
         public void Initialize(Vector3? direction, float speed, Transform target = null)
@@ -28,20 +41,21 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
         }
         void Update()
         {
-            _strategy?.Tick();
+            if (_defensesMaster.IsActive)
+                _strategy?.Tick();
         }
         private IMovementStrategy CreateStrategy(MovementType tipo)
         {
             switch (tipo)
             {
                 case MovementType.Direct:
-                    return new DirectMovement(projectilesData);
+                    return new DirectMovement(_projectilesData);
                 case MovementType.Missile:
-                    return new InercialMovement(projectilesData);
+                    return new InercialMovement(_projectilesData);
                 case MovementType.Spiral:
-                    return new SpiralMovement(projectilesData);
+                    return new SpiralMovement(_projectilesData);
                 case MovementType.ZigZag:
-                    return new ZigZagMovement(projectilesData);
+                    return new ZigZagMovement(_projectilesData);
                 default:
                     return null;
             }

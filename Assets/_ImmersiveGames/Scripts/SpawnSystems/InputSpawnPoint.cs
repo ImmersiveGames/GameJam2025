@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class InputSpawnPoint : SpawnPoint
     {
         [SerializeField] private PlayerInput playerInput;

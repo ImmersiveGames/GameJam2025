@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class EaterAnimationController : MonoBehaviour
     {
         private EaterMaster _eaterMaster;
