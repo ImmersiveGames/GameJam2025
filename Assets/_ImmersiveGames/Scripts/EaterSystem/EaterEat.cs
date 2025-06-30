@@ -1,11 +1,10 @@
-﻿using UnityEngine;
+﻿using System.Collections;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using System.Collections;
-using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -20,7 +19,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterConfigSo _config;
         private PlanetHealth _planetHealth;
         private Coroutine _damageCoroutine;
-        private EventBinding<DeathEvent> _deathEventBinding;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyedEventBinding;
 
         private void Awake()
         {
@@ -39,9 +38,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnEnable()
         {
             _eater.EventStartEatPlanet += OnEatPlanetEvent;
-            _deathEventBinding = new EventBinding<DeathEvent>(OnPlanetDeath);
-            EventBus<DeathEvent>.Register(_deathEventBinding);
-            DebugUtility.Log<EaterEat>($"Registrado DeathEvent em {gameObject.name}.");
+            _planetDestroyedEventBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDeath);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedEventBinding);
+            DebugUtility.Log<EaterEat>($"Registrado PlanetDestroyedEvent em {gameObject.name}.");
         }
 
         private void OnDisable()
@@ -50,7 +49,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _eater.EventStartEatPlanet -= OnEatPlanetEvent;
             }
-            EventBus<DeathEvent>.Unregister(_deathEventBinding);
+            EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedEventBinding);
             _planetHealth = null;
             StopDamageCoroutine();
             DebugUtility.Log<EaterEat>($"Desativado EaterEat em {gameObject.name}.");
@@ -76,16 +75,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.Log<EaterEat>($"Iniciado dano automático ao planeta {obj.GetPlanetsMaster().name} a cada {damageInterval} segundos.");
         }
 
-        private void OnPlanetDeath(DeathEvent evt)
+        private void OnPlanetDeath(PlanetDestroyedEvent evt)
         {
-            if (_planetHealth == null) return;
-            var planetMaster = _planetHealth.GetComponent<PlanetsMaster>();
+            if (_planetHealth == null || evt.Detected.GetPlanetsMaster() != _planetHealth.GetComponent<PlanetsMaster>()) return;
             StopDamageCoroutine();
             _planetHealth = null;
-            
-            //TODO: Provavelmente vou precisar de um atraso aqui (ou mudar de estado) para o Eater Avaliar o planeta como destruído
-            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planetMaster));
-            DebugUtility.Log<EaterEat>($"Planeta {evt.SourceGameObject.name} destruído. Dano automático interrompido.");
+            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
+            DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.Name} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()

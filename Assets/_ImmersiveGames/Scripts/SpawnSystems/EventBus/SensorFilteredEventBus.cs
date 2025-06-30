@@ -2,8 +2,7 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.EventBus
 {
     [DebugLevel(DebugLevel.Logs)]
     public static class SensorFilteredEventBus

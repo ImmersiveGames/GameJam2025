@@ -9,7 +9,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DebugLevel(DebugLevel.Warning)]
-    public class EaterAnimationController : MonoBehaviour
+    public class EaterAnimation : MonoBehaviour
     {
         private EaterMaster _eaterMaster;
         private Animator _animator;
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             TryGetComponent(out _eaterMaster);
             if (_eaterMaster.ModelTransform.TryGetComponentInChildren(out _animator)) return;
-            DebugUtility.LogError<EaterAnimationController>("Animator não encontrado no Actor!", this);
+            DebugUtility.LogError<EaterAnimation>("Animator não encontrado no Actor!", this);
             enabled = false;
         }
 
@@ -52,12 +52,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnFinishedEating(IDetectable obj)
         {
             _animator.SetBool(_isEating, false);
-            DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer finalizada.");
+            DebugUtility.LogVerbose<EaterAnimation>("Animação de comer finalizada.");
         }
         private void OnStartedEating(IDetectable obj)
         {
             _animator.SetBool(_isEating, true);
-            DebugUtility.LogVerbose<EaterAnimationController>("Animação de comer iniciada.");
+            DebugUtility.LogVerbose<EaterAnimation>("Animação de comer iniciada.");
         }
 
         private void OnConsumeResource(IDetectable obj, bool isHappy, IActor byActor)

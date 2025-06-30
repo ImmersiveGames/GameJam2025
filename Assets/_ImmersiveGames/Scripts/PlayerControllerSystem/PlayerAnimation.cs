@@ -9,8 +9,8 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
-    public class PlayerAnimationController : MonoBehaviour
+    [DebugLevel(DebugLevel.Warning)]
+    public class PlayerAnimation : MonoBehaviour
     {
         private PlayerMaster _playerMaster;
         private Animator _animator;
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         {
             TryGetComponent(out _playerMaster);
             if (_playerMaster.ModelTransform.TryGetComponentInChildren(out _animator)) return;
-            DebugUtility.LogError<EaterAnimationController>("Animator n�o encontrado no Actor!", this);
+            DebugUtility.LogError<EaterAnimation>("Animator n�o encontrado no Actor!", this);
             enabled = false;
         }
 

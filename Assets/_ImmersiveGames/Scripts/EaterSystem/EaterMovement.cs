@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 {
     using FSM = StateMachine.StateMachine;
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EaterMovement : MonoBehaviour, IResettable
     {
         private FSM _stateMachine;
@@ -23,8 +23,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         public bool IsOrbiting {get; set;}
-        public Transform TargetTransform => Target?.Detectable.Transform;
-        public IDetectable Target { get; private set; }
+        public Transform TargetTransform => _target?.Detectable.Transform;
+        private IDetectable _target;
+        public IDetectable Target {
+            get => _target;
+            set {
+                Debug.Log($"[Eater] Target {(value == null ? "cleared" : "set to " + value.Detectable.Name)}");
+                _target = value;
+            }
+        }
 
         private IState _wanderingState;
         private IState _chasingState;
@@ -71,9 +78,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.AddState(new WanderingState(this, _config), out _wanderingState)
                 .AddState(new ChasingState(this, _config,_sensorController), out _chasingState)
                 .AddState(new OrbitingState(this), out _orbitingState)
-                .Any(_chasingState, new FuncPredicate(() => Target != null && !IsOrbiting))
-                .Any(_orbitingState, new FuncPredicate(() => Target != null && IsOrbiting))
-                .Any(_wanderingState, new PredicateTargetIsNull(() => Target))
+                .Any(_chasingState, new FuncPredicate(() => _target != null && !IsOrbiting))
+                .Any(_orbitingState, new FuncPredicate(() => _target != null && IsOrbiting))
+                .Any(_wanderingState, new PredicateTargetIsNull(() => _target))
                 .StateInitial(_wanderingState);
             _stateMachine = builder.Build();
 
@@ -81,17 +88,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
-            Target = obj.Detected;
-            IsOrbiting = _sensorController.IsObjectInSensorRange(Target, SensorTypes.EaterEatSensor);
+            _target = obj.Detected;
+            IsOrbiting = _sensorController.IsObjectInSensorRange(_target, SensorTypes.EaterEatSensor);
             if (IsOrbiting)
             {
                 _eater.OnEventStartEatPlanet(obj.Detected);
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Detectable.Transform} está na área do EaterEatSensor, ativando órbita.", "green");
+                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {_target.Detectable.Transform} está na área do EaterEatSensor, ativando órbita.", "green");
             }
             else
             {
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {Target.Detectable.Transform}, fora da área do EaterEatSensor.", "yellow");
+                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {_target.Detectable.Transform}, fora da área do EaterEatSensor.", "yellow");
             }
+            // Forçar verificação imediata da máquina de estados
+            _stateMachine.Update();
         }
 
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
@@ -100,7 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _eater.OnEventEndEatPlanet(obj.Detected);
             }
-            Target = null;
+            _target = null;
             IsOrbiting = false;
         }
         
@@ -108,16 +117,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Detectable.Name}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
             if (sensor != SensorTypes.EaterEatSensor || !PlanetsManager.Instance.IsMarkedPlanet(obj)) return;
-            Target = obj;
+            _target = obj;
             IsOrbiting = true;
             _eater.OnEventStartEatPlanet(obj);
-            DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {Target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {_target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
         }
 
         public void Reset()
         {
             IsOrbiting = false;
-            Target = null;
+            _target = null;
         }
     }
     

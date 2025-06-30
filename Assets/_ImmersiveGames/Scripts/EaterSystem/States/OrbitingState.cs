@@ -47,13 +47,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _orbitRadius = CalculateOrbitRadius(target);
             _currentAngle = GetAngleToTarget(target.position);
 
-            // Calcula o raio inicial (distância atual ao alvo no plano XZ)
             float initialRadius = Vector3.Distance(
                 new Vector3(_transform.position.x, 0f, _transform.position.z),
                 new Vector3(target.position.x, 0f, target.position.z)
             );
             _sensorsController.DisableSensor(SensorTypes.EaterEatSensor);
-            // Inicia a transição suave
+            DebugUtility.LogVerbose<OrbitingState>($"Sensor EaterEatSensor desativado ao entrar no OrbitingState.");
             _eaterMovement.StartCoroutine(TransitionToOrbit(initialRadius, _orbitRadius, TransitionDuration));
 
             DebugUtility.Log<OrbitingState>($"Entered Orbiting State: radius={_orbitRadius}, initialAngle={_currentAngle}");
@@ -84,6 +83,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _eaterMovement.IsOrbiting = false;
             _isTransitioning = false;
             _sensorsController.EnableSensor(SensorTypes.EaterEatSensor);
+            DebugUtility.LogVerbose<OrbitingState>($"Sensor EaterEatSensor ativado ao sair do OrbitingState.");
             DebugUtility.LogVerbose<OrbitingState>("Exited Orbiting State");
         }
 

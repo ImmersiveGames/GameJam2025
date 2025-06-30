@@ -11,7 +11,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Warning)]
+    [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Verbose)]
     public class PlanetsManager : Singleton<PlanetsManager>
     {
         [SerializeField] private List<PlanetData> planetOptions = new List<PlanetData>();

@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.SpawnSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
         public bool DebugMode { get; }
         private Transform Origin { get; }
         private float CurrentDetectionFrequency { get; set; }
-        private bool IsEnabled { get; set; }
+        public bool IsEnabled { get; set; }
         private IDetector DetectorEntity { get; }
         public SensorTypes SensorName { get; }
 
