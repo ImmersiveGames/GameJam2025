@@ -53,8 +53,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 ReturnToPool();
         }
 
-        public void OnObjectSpawned() { }
-        public void OnObjectReturned() { }
+        private void OnObjectSpawned() { }
+        private void OnObjectReturned() { }
         public IActor Spawner => _spawner;
         public PoolableObjectData Data => _data;
 

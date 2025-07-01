@@ -19,7 +19,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             if (!TryGetComponent(out _defensesMaster))
             {
                 DebugUtility.LogError<DefensesMovement>($"No DefensesMaster found on {gameObject.name}. Please add a DefensesMaster component.");
-                return;
             }
             
         }
@@ -64,11 +63,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
         
         public void ChangeStrategy(MovementType newType)
         {
-            if (_strategy != null)
-            {
-                _strategy = CreateStrategy(newType);
-                _strategy.Initialize(transform, _target);
-            }
+            if (_strategy == null) return;
+            _strategy = CreateStrategy(newType);
+            _strategy.Initialize(transform, _target);
         }
         
     }

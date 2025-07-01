@@ -68,6 +68,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         public void Initialize(int id, IPoolable poolableObject, PlanetData data, PlanetResourcesSo resources, IActor owner = null)
         {
+            //TODO: Implementar variações de data no pool.
             IsActive = true;
             gameObject.name = $"Planet_{data.name}_{id}";
             _data = data;
