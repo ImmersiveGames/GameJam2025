@@ -1,12 +1,7 @@
-﻿using System;
-using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.PlayerControllerSystem;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
     [DebugLevel(DebugLevel.Verbose)]

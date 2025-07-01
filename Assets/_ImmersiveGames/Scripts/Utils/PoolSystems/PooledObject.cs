@@ -56,6 +56,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public void OnObjectSpawned() { }
         public void OnObjectReturned() { }
         public IActor Spawner => _spawner;
+        public PoolableObjectData Data => _data;
 
         public GameObject GetGameObject() => gameObject;
         public T GetData<T>() where T : PoolableObjectData

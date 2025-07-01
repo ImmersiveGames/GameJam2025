@@ -10,21 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 668f864c23e943ac9851189fd25e0666, type: 3}
-  m_Name: PlanetBullet
+  m_Name: SpaceShipRed
   m_EditorClassIdentifier: 
-  objectName: BulletPlanet
+  objectName: SpaceShipRed
   prefab: {fileID: 3015346662811978556, guid: 055f0320f656f0842ac7b58f6fa7dbeb, type: 3}
   modelPrefab:
   - {fileID: 3888492592174658699, guid: 4b41eaa5a5c87924a94e208bce0584f5, type: 3}
-  - {fileID: 7652988491447358196, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
-  - {fileID: 5709824488846910556, guid: 1c8d0783213527744b706ebf88b8d8b4, type: 3}
-  - {fileID: 4942454914798141661, guid: a28c8bd39a9e496448c54b020677f90a, type: 3}
   noRandomModel: 1
   lifetime: 0
   initialPoolSize: 50
   factoryType: 0
   canExpand: 1
-  movementType: 2
+  movementType: 3
   moveSpeed: 30
   damage: 10
   curveMode: 1
@@ -35,27 +32,36 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 0
       value: 0
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
       weightedMode: 3
-      inWeight: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.50213
+      value: 1.0001754
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 3
+      inWeight: 0.33333334
       outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
-      value: 1
-      inSlope: 1
-      outSlope: 1
-      tangentMode: 34
-      weightedMode: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 136
+      weightedMode: 1
       inWeight: 0.33333334
-      outWeight: 0
+      outWeight: 0.33333334
     m_PreInfinity: 1
     m_PostInfinity: 1
     m_RotationOrder: 4
-  errorRadius: 2
-  spiralRadius: 10
-  spiralRotationPerSecond: 3
-  zigzagAmplitude: 10
-  zigzagFrequency: 2
-  missileRotationSpeed: 50
+  errorRadius: 20
+  spiralRadius: 0
+  spiralRotationPerSecond: 0
+  zigzagAmplitude: 50
+  zigzagFrequency: 1
+  missileRotationSpeed: 0

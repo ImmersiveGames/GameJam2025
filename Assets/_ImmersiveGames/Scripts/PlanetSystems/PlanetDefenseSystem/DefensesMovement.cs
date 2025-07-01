@@ -21,6 +21,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
                 DebugUtility.LogError<DefensesMovement>($"No DefensesMaster found on {gameObject.name}. Please add a DefensesMaster component.");
                 return;
             }
+            
+        }
+        public void Initialize(Vector3? direction, float speed, Transform target = null)
+        {
             if (_defensesMaster.ProjectilesData is null)
             {
                 DebugUtility.LogError<DefensesMovement>($"No ProjectilesData found on {gameObject.name}. Please assign ProjectilesData in the DefensesMaster component.");
@@ -29,9 +33,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             _projectilesData = _defensesMaster.ProjectilesData; 
             _movementType = _projectilesData.movementType;
             _strategy = CreateStrategy(_movementType);
-        }
-        public void Initialize(Vector3? direction, float speed, Transform target = null)
-        {
             _strategy.Initialize(transform, target);
             _direction = direction ?? Vector3.forward;
             if (_direction != Vector3.zero)

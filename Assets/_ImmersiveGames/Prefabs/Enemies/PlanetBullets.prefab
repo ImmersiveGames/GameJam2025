@@ -122,7 +122,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54c2e50fabe944b5b6b4d1ed3842b4ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilesData: {fileID: 11400000, guid: c48688367f863d8439ac93bf66d120a4, type: 2}
+  projectilesData: {fileID: 11400000, guid: 27cee7a1ba8793f42a5699cd71bd3b51, type: 2}
 --- !u!114 &535006293948675013
 MonoBehaviour:
   m_ObjectHideFlags: 0

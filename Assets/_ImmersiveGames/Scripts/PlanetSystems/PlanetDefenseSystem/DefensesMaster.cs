@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
     public sealed class DefensesMaster : MonoBehaviour, IEntity, IHasSkin
     {
         [Header("Configuração")]
-        [SerializeField] private ProjectilesData projectilesData;
+        
         private PooledObject _pooledObject;
         private ModelRoot _modelRoot;
         public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             IsActive = true;
         }
         public event Action EventDefensesDeath;
-        public ProjectilesData ProjectilesData => projectilesData;
+        public ProjectilesData ProjectilesData => _pooledObject.Data as ProjectilesData;
         public void OnDefensesDeath()
         {
             DebugUtility.LogVerbose<DefensesMaster>($"EventDefensesDeath invoked for {gameObject.name}", "yellow", this);

@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             //Para colisão com EaterMaster ou PlayerMaster
             var actor = other.GetComponentInParent<IActor>();
             if (actor is not EaterMaster && actor is not PlayerMaster) return;
-            TakeDamage(10, actor);
+            TakeDamage(10, actor); //Dano a si, pode ser ajustado conforme necessário
             var destructible = other.GetComponentInParent<IDestructible>();
             destructible?.TakeDamage(_defensesMaster.ProjectilesData.damage, _pooledObject.GetComponentInParent<IActor>());
         }

@@ -19,15 +19,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             }
         }
 
-        public override void TakeDamage(float damage,IActor byActor = null)
+        public override void TakeDamage(float damage,IActor byActor)
         {
             base.TakeDamage(damage,byActor);
             _playerMaster.OnEventPlayerTakeDamage(byActor);
-        }
-        public void Defeat(Vector3 position)
-        {
-            EventBus<PlayerDiedEvent>.Raise(new PlayerDiedEvent(position, gameObject));
-            DebugUtility.LogVerbose<PlayerHealth>($"Jogador derrotado na posição {position}.");
         }
     }
 }
