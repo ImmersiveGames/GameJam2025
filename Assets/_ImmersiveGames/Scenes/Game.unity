@@ -777,6 +777,7 @@ MonoBehaviour:
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   player: {fileID: 306141544}
   worldEater: {fileID: 1884843005631714081}
+  startGameScene: Game
 --- !u!4 &2009245416
 Transform:
   m_ObjectHideFlags: 0
@@ -1012,6 +1013,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6470516389975364022, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: sensorConfigs.Array.data[0].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
+    - target: {fileID: 6470516389975364022, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: sensorConfigs.Array.data[1].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
     - target: {fileID: 8039497567803939213, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: useManagerLocking
       value: 0
@@ -1049,6 +1058,14 @@ PrefabInstance:
     - target: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6093211774009013911, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: sensorConfigs.Array.data[0].detectLayer.m_Bits
+      value: 1024
+      objectReference: {fileID: 0}
+    - target: {fileID: 6093211774009013911, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: sensorConfigs.Array.data[1].detectLayer.m_Bits
+      value: 1024
       objectReference: {fileID: 0}
     - target: {fileID: 8300726475238203345, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_LocalPosition.x

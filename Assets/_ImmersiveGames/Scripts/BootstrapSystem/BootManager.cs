@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
         private static void LoadInitialScene()
         {
             if (SceneManager.GetActiveScene().name != "Bootstrap") return;
-            var loadOperation = SceneManager.LoadSceneAsync(InitialSceneName, LoadSceneMode.Additive);
+            var loadOperation = SceneManager.LoadSceneAsync(InitialSceneName, LoadSceneMode.Single);
             if (loadOperation != null)
                 loadOperation.completed += (asyncOperation) => {
                     DebugUtility.Log<BootManager>($"Cena {InitialSceneName} carregada com sucesso.");

@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.StateMachine;
 using _ImmersiveGames.Scripts.StateMachine.GameStates;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts
@@ -94,6 +95,7 @@ namespace _ImmersiveGames.Scripts
                     if (Input.GetKeyDown(KeyCode.R))
                     {
                         gameManager.ForceReset(); // Força reinicialização
+                        
                         return true;
                     }
                     return false;

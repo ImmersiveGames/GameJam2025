@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -6,23 +7,22 @@ using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Logs), DefaultExecutionOrder(10)]
     public class EaterDesireUI : MonoBehaviour
     {
         [SerializeField] private Image desireIcon;
          private EaterDesire _eaterDesire; // Alterado para EaterDesire
         private EventBinding<DesireChangedEvent> _desireChangedBinding;
 
-        private void Awake()
-        {
-            _eaterDesire = FindFirstObjectByType<EaterDesire>();
-            if (_eaterDesire) return;
-            DebugUtility.LogError<EaterDesireUI>("EaterDesire não encontrado na cena!", this);
-            enabled = false;
-        }
-
         private void OnEnable()
         {
+            _eaterDesire = FindFirstObjectByType<EaterDesire>();
+            if (!_eaterDesire)
+            {
+                DebugUtility.LogError<EaterDesireUI>("EaterDesire não encontrado na cena!", this);
+                enabled = false;
+                return;
+            }
             _desireChangedBinding = new EventBinding<DesireChangedEvent>(OnDesireChanged);
             EventBus<DesireChangedEvent>.Register(_desireChangedBinding);
             UpdateUI();

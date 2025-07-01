@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -123,6 +124,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void Update()
         {
+            if(!GameManager.Instance.ShouldPlayingGame())return;
             if (!IsSpawnValid || SpawnTrigger == null)
                 return;
 
@@ -142,6 +144,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         private void LateUpdate()
         {
+            if(!GameManager.Instance.ShouldPlayingGame())return;
             if (!IsSpawnValid || _pendingTriggerPosition == null || _pendingSourceObject == null)
                 return;
 
@@ -154,7 +157,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _cachedPosition = transform.position;
         }
 
-        private void ExecuteSpawn(Vector3 position, GameObject sourceObject)
+        protected virtual void ExecuteSpawn(Vector3 position, GameObject sourceObject)
         {
             if (!_cachedPool)
             {
