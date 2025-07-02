@@ -124,6 +124,56 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6123967762187821120, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
   m_PrefabInstance: {fileID: 1045427926088954173}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &625749942
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 625749944}
+  - component: {fileID: 625749943}
+  m_Layer: 0
+  m_Name: SoundManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &625749943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 625749942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8d36b044fc78234b89a32f91b535edb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AutoUnparentOnAwake: 1
+  soundEmitterPrefab: {fileID: 5321010425021066870, guid: 95de774ff4e1f284d8beaf6df3cb580c, type: 3}
+  collectionCheck: 1
+  defaultCapacity: 10
+  maxPoolSize: 100
+  maxSoundInstances: 15
+--- !u!4 &625749944
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 625749942}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1171078545
 GameObject:
   m_ObjectHideFlags: 0
@@ -965,6 +1015,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: dieSoundEffect.mixerGroup
+      value: 
+      objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.mixerGroup
+      value: 
+      objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: getHitSoundEffect.mixerGroup
+      value: 
+      objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.frequentSound
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: getHitSoundEffect.frequentSound
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3483309183724010783, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: m_Name
       value: Player
@@ -1120,6 +1190,7 @@ SceneRoots:
   - {fileID: 2013597643}
   - {fileID: 1171078547}
   - {fileID: 2009245416}
+  - {fileID: 625749944}
   - {fileID: 1849846776}
   - {fileID: 1045427926088954173}
   - {fileID: 1912513661}

@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
     {
         IObjectPool<SoundEmitter> soundEmitterPool;
         readonly List<SoundEmitter> activeSoundEmitters = new();
-        public readonly Dictionary<SoundData, int> Counts = new();
+        public readonly Queue<SoundEmitter> FrequentSoundEmitters = new();
 
         [SerializeField] SoundEmitter soundEmitterPrefab;
         [SerializeField] bool collectionCheck = true;
@@ -27,7 +27,23 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public bool CanPlaySound(SoundData data)
         {
-            return !Counts.TryGetValue(data, out var count) || count < maxSoundInstances;
+            if (!data.frequentSound) return true;
+
+            if (FrequentSoundEmitters.Count >= maxSoundInstances &&
+                FrequentSoundEmitters.TryDequeue(out var soundEmitter)) 
+            {
+                try
+                {
+                    soundEmitter.Stop();
+                    return true;
+                }
+                catch 
+                {
+                    Debug.Log("SoundEmitter is already released");
+                }
+                return false;
+            }
+            return true;
         }
 
         public SoundEmitter Get() {
@@ -65,11 +81,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         void OnReturnedToPool(SoundEmitter soundEmitter)
         {
-            if (Counts.TryGetValue(soundEmitter.Data, out var count))
-            {
-                Counts[soundEmitter.Data] -= count > 0 ? 1 : 0;
-            }
-
             soundEmitter.gameObject.SetActive(false);
             activeSoundEmitters.Remove(soundEmitter);
         }
