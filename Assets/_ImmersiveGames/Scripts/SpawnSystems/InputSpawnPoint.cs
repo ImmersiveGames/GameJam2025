@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if(!GameManager.Instance.ShouldPlayingGame())return;
             base.ExecuteSpawn(position, sourceObject);
+            GetComponent<PlayerMaster>().OnEventPlayerShoot();
         }
     }
 }

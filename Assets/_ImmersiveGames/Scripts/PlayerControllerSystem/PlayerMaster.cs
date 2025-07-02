@@ -16,6 +16,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private DetectorController DetectorController => _detectorController ??= new DetectorController(this);
         public IActor Owner => this;
         public event Action<IActor> EventPlayerTakeDamage;
+        public event Action<IActor> EventPlayerShoot;
+
 
         public void SetFxActive(bool active)
         {
@@ -37,6 +39,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         {
             EventPlayerTakeDamage?.Invoke(byActor);
         }
+
+        public void OnEventPlayerShoot(IActor byActor = null) 
+        {
+            EventPlayerShoot?.Invoke(byActor);
+        }
+
         public void OnObjectDetected(IDetectable detectable, IDetector detectorContext, SensorTypes sensorName)
         {
             _detectorController.OnObjectDetected(detectable, detectorContext, sensorName);

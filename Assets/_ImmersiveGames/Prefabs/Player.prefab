@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 6470516389975364022}
   - component: {fileID: 4352393240066868659}
   - component: {fileID: 8039497567803939213}
+  - component: {fileID: 319906815652540507}
   m_Layer: 7
   m_Name: Player
   m_TagString: Untagged
@@ -197,12 +198,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 339cdd7183197b74f9436ea0f7c594a4, type: 2}
-  onDepleted:
-    m_PersistentCalls:
-      m_Calls: []
-  onValueChanged:
-    m_PersistentCalls:
-      m_Calls: []
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
@@ -218,9 +213,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f279b5e098c84676a3dbe9f7a3af96fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelRoot: {fileID: 4914690377017914604}
-  canvasRoot: {fileID: 0}
-  fxRoot: {fileID: 8150410252750414971}
 --- !u!114 &6470516389975364022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -279,6 +271,33 @@ MonoBehaviour:
   triggerData: {fileID: 11400000, guid: d683c40633cf8804781c104a7731d031, type: 2}
   strategyData: {fileID: 11400000, guid: f57ac1bcbab323c48b1816210e36654a, type: 2}
   playerInput: {fileID: 4675084478555042006}
+--- !u!114 &319906815652540507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3483309183724010783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6579a0cd9fefead449eab7966e71bf9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shootSoundEffect:
+    clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
+    mixerGroup: {fileID: 0}
+    loop: 0
+    playOnAwake: 0
+  getHitSoundEffect:
+    clip: {fileID: 8300000, guid: b151b14532ab2f24db1d4bdab6b96bcf, type: 3}
+    mixerGroup: {fileID: 0}
+    loop: 0
+    playOnAwake: 0
+  dieSoundEffect:
+    clip: {fileID: 8300000, guid: b151b14532ab2f24db1d4bdab6b96bcf, type: 3}
+    mixerGroup: {fileID: 0}
+    loop: 0
+    playOnAwake: 0
 --- !u!1 &4080467401247200046
 GameObject:
   m_ObjectHideFlags: 0

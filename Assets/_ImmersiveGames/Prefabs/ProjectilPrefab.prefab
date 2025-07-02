@@ -47,6 +47,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44708ff333a342c6958699be22b48fdf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  soundData:
+    clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    loop: 0
+    playOnAwake: 1
 --- !u!114 &5929317122571851181
 MonoBehaviour:
   m_ObjectHideFlags: 0

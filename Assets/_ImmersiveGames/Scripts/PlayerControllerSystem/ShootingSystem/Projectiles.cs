@@ -1,12 +1,13 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     public class Projectiles : MonoBehaviour
-    {
+    {      
         private PooledObject _pooledObject;
         private void Awake()
         {
