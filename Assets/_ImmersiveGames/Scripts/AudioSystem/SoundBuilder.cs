@@ -26,9 +26,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             return this;
         }
 
-        public SoundBuilder WithRandomPitch()
+        public SoundBuilder WithRandomPitch(bool randomPitch)
         {
-            this.randomPitch = true;
+            this.randomPitch = randomPitch;
             return this;
         }
 

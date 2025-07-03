@@ -23,6 +23,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool InHungry { get; set; }
         public bool IsEating { get; set; }
 
+        public event Action<IActor> EventEaterBite;
         public event Action<IActor> EventEaterTakeDamage;
         public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
         public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
@@ -57,6 +58,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DetectorController.Reset();
             _fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
             SetFxActive(false);
+        }
+        public void OnEventEaterBite(IActor byActor) 
+        {
+            EventEaterBite?.Invoke(byActor);
         }
         public void OnEventEaterTakeDamage(IActor byActor)
         {

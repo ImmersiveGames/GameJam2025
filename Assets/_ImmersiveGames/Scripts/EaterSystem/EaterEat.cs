@@ -97,6 +97,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _planetHealth.TakeDamage(_config.BiteDamage, _eater);
                 if (_planetHealth != null)
                 {
+                    _eater.OnEventEaterBite(null);
                     DebugUtility.Log<EaterEat>($"Aplicado dano de {_config.BiteDamage} ao planeta {_planetHealth.gameObject.name}. Saúde atual: {_planetHealth.GetCurrentValue()}.");
                 }
                 else

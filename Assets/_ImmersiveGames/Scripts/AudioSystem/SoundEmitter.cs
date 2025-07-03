@@ -51,6 +51,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             Data = data;
             audioSource.clip = data.clip;
             audioSource.outputAudioMixerGroup = data.mixerGroup;
+            audioSource.volume = data.volume;
+            audioSource.priority = data.priority;
             audioSource.loop = data.loop;
             audioSource.playOnAwake = data.playOnAwake;
         }
