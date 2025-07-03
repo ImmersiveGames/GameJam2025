@@ -88,6 +88,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         void OnDestroyPoolObject(SoundEmitter soundEmitter)
         {
             Destroy(soundEmitter.gameObject);
-        }
+        }        
     }
 }

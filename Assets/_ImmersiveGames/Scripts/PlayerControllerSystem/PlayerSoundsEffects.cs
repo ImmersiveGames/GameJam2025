@@ -42,7 +42,7 @@ public class PlayerSoundsEffects : MonoBehaviour
     {
         SoundManager.Instance.CreateSound()
             .WithSoundData(soundData)
-            .WithRandomPitch()
+            .WithRandomPitch(soundData.randomPitch)
             .WithPosition(this.transform.position)
             .Play();
     }

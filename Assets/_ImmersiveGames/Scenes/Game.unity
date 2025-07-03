@@ -156,9 +156,9 @@ MonoBehaviour:
   AutoUnparentOnAwake: 1
   soundEmitterPrefab: {fileID: 5321010425021066870, guid: 95de774ff4e1f284d8beaf6df3cb580c, type: 3}
   collectionCheck: 1
-  defaultCapacity: 10
+  defaultCapacity: 20
   maxPoolSize: 100
-  maxSoundInstances: 15
+  maxSoundInstances: 30
 --- !u!4 &625749944
 Transform:
   m_ObjectHideFlags: 0
@@ -174,6 +174,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &893437930 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+  m_PrefabInstance: {fileID: 6773533554893788347}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1171078545
 GameObject:
   m_ObjectHideFlags: 0
@@ -1016,17 +1021,49 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.loop
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.volume
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: dieSoundEffect.mixerGroup
       value: 
       objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
     - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.priority
+      value: 256
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: dieSoundEffect.playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: dieSoundEffect.randomPitch
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: shootSoundEffect.mixerGroup
       value: 
-      objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+      objectReference: {fileID: 0}
     - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: getHitSoundEffect.mixerGroup
       value: 
       objectReference: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: shootSoundEffect.playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: getHitSoundEffect.playOnAwake
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
+      propertyPath: getHitSoundEffect.randomPitch
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 319906815652540507, guid: 2dc528a144c4c944db63a93eba8db41d, type: 3}
       propertyPath: shootSoundEffect.frequentSound
       value: 1
@@ -1109,6 +1146,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8300726475238203345, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
   m_PrefabInstance: {fileID: 6773533554893788347}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1884843005631714091
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 893437930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ea32ee6038dded42970bab3dae788ae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  biteSoundEffect:
+    clip: {fileID: 8300000, guid: 1edd44579bcb1454ba6031aef427697d, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 0.5
+    priority: 0
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+  getHitSoundEffect:
+    clip: {fileID: 8300000, guid: e38ba750ccfb28c4db2ade1014645ad8, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 0.3
+    priority: 128
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+  dieSoundEffect:
+    clip: {fileID: 8300000, guid: 18e76de34446aa844b59cd4b9d34e039, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 0.3
+    priority: 128
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+  happySoundEffect:
+    clip: {fileID: 8300000, guid: b3cda755ba01fd843b61a54d7219ac33, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 0.12
+    priority: 128
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+  madSoundEffect:
+    clip: {fileID: 8300000, guid: 4f66a3b63139ff1469327f274505a1de, type: 3}
+    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 0.12
+    priority: 128
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
 --- !u!1001 &6773533554893788347
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1117,6 +1211,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2315886966983840415, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0.000008481596
+      objectReference: {fileID: 0}
+    - target: {fileID: 2315886966983840415, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -0.000014081353
+      objectReference: {fileID: 0}
     - target: {fileID: 2793666448605492182, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: damageInterval
       value: 1
@@ -1128,6 +1230,18 @@ PrefabInstance:
     - target: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4094597817144854966, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 80.45776
+      objectReference: {fileID: 0}
+    - target: {fileID: 4094597817144854966, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 161.27986
+      objectReference: {fileID: 0}
+    - target: {fileID: 4094597817144854966, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 161.27985
       objectReference: {fileID: 0}
     - target: {fileID: 6093211774009013911, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
       propertyPath: sensorConfigs.Array.data[0].detectLayer.m_Bits
@@ -1180,7 +1294,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3638558015332289684, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1884843005631714091}
   m_SourcePrefab: {fileID: 100100000, guid: ae235dcc443940849992c50c15fe4eb8, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
