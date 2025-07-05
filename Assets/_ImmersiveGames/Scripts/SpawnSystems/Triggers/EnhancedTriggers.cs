@@ -153,9 +153,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
     {
         if (!_isActive || _spawnPoint == null || _wasPressedThisFrame) return;
         _wasPressedThisFrame = true;
-        FilteredEventBus.RaiseFiltered(
-            new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position)
-        );
+        FilteredEventBus<SpawnRequestEvent>.RaiseFiltered(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), _spawnPoint.gameObject, _spawnPoint.transform.position), this);
+
         DebugUtility.Log<InputSystemTrigger>($"Trigger disparado por input '{_actionName}' em '{_spawnPoint.name}' na posição {_spawnPoint.transform.position}.", "green", _spawnPoint);
     }
 

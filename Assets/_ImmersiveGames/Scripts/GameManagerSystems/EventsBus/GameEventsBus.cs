@@ -42,4 +42,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.EventsBus
         }
     }
     
+    public class ResetEvent : IEvent
+    {
+        // Evento para reiniciar o jogo, pode incluir dados adicionais se necessário
+    }
+    
 }

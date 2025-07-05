@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &724543238
+--- !u!1 &670195009
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,39 +127,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 724543240}
-  - component: {fileID: 724543239}
+  - component: {fileID: 670195011}
+  - component: {fileID: 670195010}
   m_Layer: 0
-  m_Name: Teste
+  m_Name: Jogador
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &724543239
+--- !u!114 &670195010
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 724543238}
+  m_GameObject: {fileID: 670195009}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3c35845f7e3424d88b518e7e86d7d6a, type: 3}
+  m_Script: {fileID: 11500000, guid: 2e24b1dc552c45f6bc99d588054e5976, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  poolableData: {fileID: 11400000, guid: bb613fc72a885ed4e9b1031409bace9a, type: 2}
-  spawnPosition: {x: 0, y: 0, z: 0}
-  activateKey: 97
-  returnKey: 114
-  returnAllKey: 116
---- !u!4 &724543240
+  skinSelectors:
+  - {fileID: 11400000, guid: 8f88b84846b83b948a2694de08091579, type: 2}
+  - {fileID: 11400000, guid: 66575ad8d5aad01478f9445c94c89de9, type: 2}
+--- !u!4 &670195011
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 724543238}
+  m_GameObject: {fileID: 670195009}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -477,4 +475,4 @@ SceneRoots:
   - {fileID: 1456061208}
   - {fileID: 2012249213}
   - {fileID: 1481251176}
-  - {fileID: 724543240}
+  - {fileID: 670195011}

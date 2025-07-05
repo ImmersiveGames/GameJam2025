@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
             {
                 if (GUILayout.Button("Test Spawn"))
                     ForEachSpawnPoint(sp => {
-                        FilteredEventBus.RaiseFiltered(new SpawnRequestEvent(sp.GetPoolKey(), sp.gameObject, sp.transform.position));
+                        FilteredEventBus<SpawnRequestEvent>.RaiseFiltered(new SpawnRequestEvent(sp.GetPoolKey(), sp.gameObject, sp.transform.position), this);
                         DebugUtility.LogVerbose<SpawnPointEditor>($"Teste de spawn disparado para '{sp.name}'.");
                     });
 

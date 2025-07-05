@@ -104,7 +104,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void OnEnable()
         {
-            FilteredEventBus.Register(_spawnBinding, this);
+            FilteredEventBus<SpawnRequestEvent>.Register(_spawnBinding, this);
             EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
             EventBus<PoolRestoredEvent>.Register(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Register(_lockedBinding);
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void OnDisable()
         {
-            FilteredEventBus.Unregister(this);
+            FilteredEventBus<SpawnRequestEvent>.Unregister(this);
             EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
             EventBus<PoolRestoredEvent>.Unregister(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Unregister(_lockedBinding);
