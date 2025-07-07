@@ -1,8 +1,14 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
+    public interface IPoolService
+    {
+        ObjectPool GetPool(string poolKey);
+        void RegisterPool(PoolableObjectData data);
+    }
+    
+    
     public interface ISpawnStrategy
     {
         void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null);

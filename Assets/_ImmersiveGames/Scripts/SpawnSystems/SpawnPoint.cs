@@ -1,6 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
