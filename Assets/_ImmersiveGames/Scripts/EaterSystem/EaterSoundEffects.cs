@@ -53,11 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 .Play();
         }
 
-        private void PlayBiteSoundEffect(IActor byActor)
-        {
-            PlaySoundEffect(biteSoundEffect);
-        }
-
+        private void PlayBiteSoundEffect(IActor byActor) { PlaySoundEffect(biteSoundEffect); }
         public void PlayGetHitSoundEffect(IActor byActor) { PlaySoundEffect(getHitSoundEffect); }
         public void PlayDieSoundEffect() { PlaySoundEffect(dieSoundEffect); }
         

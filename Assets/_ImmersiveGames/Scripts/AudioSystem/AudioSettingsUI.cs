@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.AudioSystem;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,11 +16,11 @@ public class AudioSettingsUI : MonoBehaviour
 
     public void SetBGMVolume(float value)
     {
-        AudioManager.Instance.SetBGMVolume(value);
+        SoundManager.Instance.SetBGMVolume(value);
     }
 
     public void SetSFXVolume(float value)
     {
-        AudioManager.Instance.SetSFXVolume(value);
+        SoundManager.Instance.SetSFXVolume(value);
     }
 }

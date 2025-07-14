@@ -874,6 +874,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: DirectionIndicator
       objectReference: {fileID: 0}
+    - target: {fileID: 7899787389855866408, guid: 0708d0939ebbde34b9cce04c3f693300, type: 3}
+      propertyPath: nextDistance
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 7899787389855866408, guid: 0708d0939ebbde34b9cce04c3f693300, type: 3}
+      propertyPath: mediaDistance
+      value: 60
+      objectReference: {fileID: 0}
     - target: {fileID: 8937639975645925433, guid: 0708d0939ebbde34b9cce04c3f693300, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

@@ -15,18 +15,47 @@ MonoBehaviour:
   objectName: Bullet
   prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
   modelPrefab:
-  - {fileID: 740186002330760438, guid: 0255c145002626240bb559415d9a76ee, type: 3}
-  - {fileID: 2856293464993286795, guid: 72cdc8c9f50786e408f1c71af176328d, type: 3}
+  - {fileID: 6004305604637168715, guid: 654b85b1e885a6544842aed1ff033e3b, type: 3}
+  - {fileID: 1542112267451166134, guid: 1846ee979c1a55b41bbc9ebadc832631, type: 3}
+  - {fileID: 5783526897520017423, guid: 5ea5d3582dbcd1b4097aa8714d505492, type: 3}
+  - {fileID: 6583542199602727168, guid: 939f9d9b42e76fb4b8f6ab7b1111933b, type: 3}
   noRandomModel: 1
   lifetime: 3
   initialPoolSize: 30
   factoryType: 0
   canExpand: 1
-  moveSpeed: 10
-  rotationSpeed: 10
-  damage: 10
   movementType: 0
-  moveEase: 1
-  rotationEase: 6
+  moveSpeed: 20
+  damage: 10
+  curveMode: 0
+  curveDuration: 2
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   errorRadius: 1
-  faceTarget: 1
+  spiralRadius: 3
+  spiralRotationPerSecond: 3
+  zigzagAmplitude: 2
+  zigzagFrequency: 2
+  missileRotationSpeed: 90

@@ -59,6 +59,12 @@ namespace _ImmersiveGames.Scripts.UI
 
             // Direção na tela
             var direcaoTela = (telaPos - centroTela).normalized;
+            if (telaPos.z < 0)
+            {
+                direcaoTela *= -1f; // Inverte a direção se o NPC estiver atrás da câmera
+            }
+
+            direcaoTela.Normalize();
 
             // Posição do ìcone nas bordas
             var posicaoIcone = centroTela + direcaoTela * (Mathf.Min(Screen.width, Screen.height) / 2f - screenMargin);

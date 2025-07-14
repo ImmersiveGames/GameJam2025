@@ -15,43 +15,43 @@ MonoBehaviour:
   strategyType: 1
   dynamicProperties:
     properties:
-    - rid: 8761739247831220333
-    - rid: 8761739247831220334
-    - rid: 8761739247831220335
-    - rid: 8761739247831220336
-    - rid: 8761739247831220337
+    - rid: 7993030723530391638
+    - rid: 7993030723530391639
+    - rid: 7993030723530391640
+    - rid: 7993030723530391641
+    - rid: 7993030723530391642
   references:
     version: 2
     RefIds:
-    - rid: 8761739247831220333
+    - rid: 7993030723530391638
       type: {class: Vector3Property, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: offset
         value: {x: 0, y: 0, z: 0}
         isRequired: 0
         description: "Deslocamento relativo \xE0 posi\xE7\xE3o do SpawnPoint"
-    - rid: 8761739247831220334
+    - rid: 7993030723530391639
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnCount
         value: 1
         isRequired: 1
         description: "N\xFAmero de objetos a spawnar"
-    - rid: 8761739247831220335
+    - rid: 7993030723530391640
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: speed
-        value: 30
+        value: 100
         isRequired: 1
         description: Velocidade do projetil (unidades/segundo)
-    - rid: 8761739247831220336
+    - rid: 7993030723530391641
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: randomizeDirection
         value: 0
         isRequired: 0
         description: "Randomizar dire\xE7\xE3o dos objetos"
-    - rid: 8761739247831220337
+    - rid: 7993030723530391642
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: directionVariation

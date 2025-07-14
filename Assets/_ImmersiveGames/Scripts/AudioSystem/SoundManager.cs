@@ -1,17 +1,23 @@
-﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityUtils;
 using UnityEngine.Pool;
+using UnityEngine.Audio;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class SoundManager : PersistentSingleton<SoundManager>
     {
+        [Header("Audio Mixer Settings")]
+        [SerializeField] private AudioMixer audioMixer;
+        [SerializeField] private string bgmParameter = "BGM_Volume";
+        [SerializeField] private string sfxParameter = "SFX_Volume";
+
         IObjectPool<SoundEmitter> soundEmitterPool;
         readonly List<SoundEmitter> activeSoundEmitters = new();
         public readonly Queue<SoundEmitter> FrequentSoundEmitters = new();
 
+        [Header("Emitters Pool Settings")]
         [SerializeField] SoundEmitter soundEmitterPrefab;
         [SerializeField] bool collectionCheck = true;
         [SerializeField] int defaultCapacity = 10;
@@ -30,14 +36,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (!data.frequentSound) return true;
 
             if (FrequentSoundEmitters.Count >= maxSoundInstances &&
-                FrequentSoundEmitters.TryDequeue(out var soundEmitter)) 
+                FrequentSoundEmitters.TryDequeue(out var soundEmitter))
             {
                 try
                 {
                     soundEmitter.Stop();
                     return true;
                 }
-                catch 
+                catch
                 {
                     Debug.Log("SoundEmitter is already released");
                 }
@@ -46,11 +52,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             return true;
         }
 
-        public SoundEmitter Get() {
-            return soundEmitterPool.Get();
-        }
+        public SoundEmitter Get() { return soundEmitterPool.Get(); }
 
-        public void ReturnToPool(SoundEmitter soundEmitter) {
+        public void ReturnToPool(SoundEmitter soundEmitter)
+        {
             soundEmitterPool.Release(soundEmitter);
         }
 
@@ -88,6 +93,31 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         void OnDestroyPoolObject(SoundEmitter soundEmitter)
         {
             Destroy(soundEmitter.gameObject);
-        }        
+        }
+
+        public void SetBGMVolume(float volume)
+        {
+            audioMixer.SetFloat(bgmParameter, LinearToDecibel(volume));
+        }
+
+        /// Define o volume dos efeitos sonoros.
+        public void SetSFXVolume(float volume)
+        {
+            audioMixer.SetFloat(sfxParameter, LinearToDecibel(volume));
+        }
+
+        /// Converte de escala linear (0-1) para decib�is.
+        private float LinearToDecibel(float linear)
+        {
+            if (linear <= 0.0001f)
+                return -80f; // Sil�ncio total
+            return Mathf.Log10(linear) * 20;
+        }
+
+        /// Converte de decib�is para escala linear (0-1).
+        private float DecibelToLinear(float dB)
+        {
+            return Mathf.Pow(10f, dB / 20f);
+        }
     }
 }
