@@ -1,64 +1,65 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-
-public class PlayerSoundsEffects : MonoBehaviour
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [SerializeField] SoundData shootSoundEffect;
-    [SerializeField] SoundData getHitSoundEffect;
-    [SerializeField] SoundData dieSoundEffect;
-
-    private PlayerMaster _playerMaster;
-
-    private EventBinding<PlayerDiedEvent> _playerDiedEvent;
-
-    private void Awake()
+    public class PlayerSoundsEffects : MonoBehaviour
     {
-        TryGetComponent(out _playerMaster);
+        [SerializeField] SoundData shootSoundEffect;
+        [SerializeField] SoundData getHitSoundEffect;
+        [SerializeField] SoundData dieSoundEffect;
 
-    }
+        private PlayerMaster _playerMaster;
 
-    void OnEnable()
-    {
-        _playerMaster.EventPlayerShoot += PlayShootSoundEffect;
-        _playerMaster.EventPlayerTakeDamage += PlayGetHitSoundEffect;
+        private EventBinding<PlayerDiedEvent> _playerDiedEvent;
 
-        _playerDiedEvent = new EventBinding<PlayerDiedEvent>(PlayDieSoundEffect);
-        EventBus<PlayerDiedEvent>.Register(_playerDiedEvent);
-    }
+        private void Awake()
+        {
+            TryGetComponent(out _playerMaster);
 
-    void OnDisable()
-    {
-        _playerMaster.EventPlayerShoot -= PlayShootSoundEffect;
-        _playerMaster.EventPlayerTakeDamage -= PlayGetHitSoundEffect;
+        }
 
-        EventBus<PlayerDiedEvent>.Unregister(_playerDiedEvent);
-    }
+        void OnEnable()
+        {
+            _playerMaster.EventPlayerShoot += PlayShootSoundEffect;
+            _playerMaster.EventPlayerTakeDamage += PlayGetHitSoundEffect;
 
-    void PlaySoundEffect(SoundData soundData) 
-    {
-        SoundManager.Instance.CreateSound()
-            .WithSoundData(soundData)
-            .WithRandomPitch(soundData.randomPitch)
-            .WithPosition(this.transform.position)
-            .Play();
-    }
+            _playerDiedEvent = new EventBinding<PlayerDiedEvent>(PlayDieSoundEffect);
+            EventBus<PlayerDiedEvent>.Register(_playerDiedEvent);
+        }
 
-    public void PlayShootSoundEffect(IActor byActor)
-    {
-        PlaySoundEffect(shootSoundEffect);
-    }
+        void OnDisable()
+        {
+            _playerMaster.EventPlayerShoot -= PlayShootSoundEffect;
+            _playerMaster.EventPlayerTakeDamage -= PlayGetHitSoundEffect;
 
-    public void PlayGetHitSoundEffect(IActor byActor) 
-    {
-        PlaySoundEffect(getHitSoundEffect);
-    }
+            EventBus<PlayerDiedEvent>.Unregister(_playerDiedEvent);
+        }
 
-    public void PlayDieSoundEffect() 
-    {
-        PlaySoundEffect(dieSoundEffect);
+        void PlaySoundEffect(SoundData soundData) 
+        {
+            SoundManager.Instance.CreateSound()
+                .WithSoundData(soundData)
+                .WithRandomPitch(soundData.randomPitch)
+                .WithPosition(this.transform.position)
+                .Play();
+        }
+
+        public void PlayShootSoundEffect(IActor byActor)
+        {
+            PlaySoundEffect(shootSoundEffect);
+        }
+
+        public void PlayGetHitSoundEffect(IActor byActor) 
+        {
+            PlaySoundEffect(getHitSoundEffect);
+        }
+
+        public void PlayDieSoundEffect() 
+        {
+            PlaySoundEffect(dieSoundEffect);
+        }
     }
 }

@@ -15,44 +15,44 @@ MonoBehaviour:
   triggerType: 5
   dynamicProperties:
     properties:
-    - rid: 8761739383464001648
-    - rid: 8761739383464001649
-    - rid: 8761739383464001650
-    - rid: 8761739383464001651
-    - rid: 8761739383464001652
+    - rid: 10781047599399000
+    - rid: 10781047599399001
+    - rid: 10781047599399002
+    - rid: 10781047599399003
+    - rid: 10781047599399004
   references:
     version: 2
     RefIds:
-    - rid: 8761739383464001648
+    - rid: 10781047599399000
       type: {class: 'EnumProperty`1[[_ImmersiveGames.Scripts.DetectionsSystems.SensorTypes, _ImmersiveGames.Scripts]]', ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: sensorType
         value: 0
         isRequired: 1
         description: Nome do sensor a ser usado
-    - rid: 8761739383464001649
+    - rid: 10781047599399001
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: continuous
-        value: 0
+        value: 1
         isRequired: 0
         description: "Se verdadeiro, spawns s\xE3o cont\xEDnuos enquanto o sensor
           detectar"
-    - rid: 8761739383464001650
+    - rid: 10781047599399002
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnInterval
         value: 1
         isRequired: 0
         description: "Intervalo entre spawns cont\xEDnuos em segundos"
-    - rid: 8761739383464001651
+    - rid: 10781047599399003
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: rearmDelay
-        value: 3
+        value: 0.5
         isRequired: 0
         description: Tempo antes de rearmar o trigger em segundos
-    - rid: 8761739383464001652
+    - rid: 10781047599399004
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: maxSpawns

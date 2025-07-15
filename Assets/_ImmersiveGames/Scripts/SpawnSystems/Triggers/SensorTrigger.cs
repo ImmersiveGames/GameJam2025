@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.Data;
 using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -52,7 +53,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 
         private void HandleSensorDetected(SensorDetectedEvent evt)
         {
-            if (evt.SensorName != _sensorType || !isRearmed || !evt.Planet.Detectable.IsActive) return;
+            if (evt.SensorName != _sensorType || !evt.Planet.Detectable.IsActive) return;
 
             if (_detectedPlanet == null || _detectedPlanet.Detectable != evt.Planet.Detectable)
             {

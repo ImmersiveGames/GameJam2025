@@ -1,9 +1,7 @@
 ﻿using System.Linq;
-using UnityEngine;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.Testing
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DisallowMultipleComponent]
     public class ResourceSystemTester : MonoBehaviour

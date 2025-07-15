@@ -1,26 +1,27 @@
-using _ImmersiveGames.Scripts.AudioSystem;
 using UnityEngine;
 using UnityEngine.UI;
-
-public class AudioSettingsUI : MonoBehaviour
+namespace _ImmersiveGames.Scripts.AudioSystem
 {
-    [SerializeField] private Slider bgmSlider;
-    [SerializeField] private Slider sfxSlider;
-
-    private void Start()
+    public class AudioSettingsUI : MonoBehaviour
     {
-        // Inicializar os sliders com algum valor salvo, se desejar.
-        bgmSlider.onValueChanged.AddListener(SetBGMVolume);
-        sfxSlider.onValueChanged.AddListener(SetSFXVolume);
-    }
+        [SerializeField] private Slider bgmSlider;
+        [SerializeField] private Slider sfxSlider;
 
-    public void SetBGMVolume(float value)
-    {
-        SoundManager.Instance.SetBGMVolume(value);
-    }
+        private void Start()
+        {
+            // Inicializar os sliders com algum valor salvo, se desejar.
+            bgmSlider.onValueChanged.AddListener(SetBGMVolume);
+            sfxSlider.onValueChanged.AddListener(SetSFXVolume);
+        }
 
-    public void SetSFXVolume(float value)
-    {
-        SoundManager.Instance.SetSFXVolume(value);
+        public void SetBGMVolume(float value)
+        {
+            SoundManager.Instance.SetBGMVolume(value);
+        }
+
+        public void SetSFXVolume(float value)
+        {
+            SoundManager.Instance.SetSFXVolume(value);
+        }
     }
 }

@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             throw new InvalidCastException($"Não é possível converter {_data.GetType()} para {typeof(T)}.");
         }
 
-        public void Reset()
+        public void PoolableReset()
         {
             transform.position = Vector3.zero;
             transform.rotation = Quaternion.identity;

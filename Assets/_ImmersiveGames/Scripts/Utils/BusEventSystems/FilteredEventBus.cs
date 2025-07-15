@@ -1,45 +1,43 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.SpawnSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using System;
+using System.Collections.Generic;
+
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
-    public static class FilteredEventBus
+    public static class FilteredEventBus<T> where T : IEvent
     {
-        private static readonly Dictionary<object, IEventBinding<SpawnRequestEvent>> _spawnRequestBindings = new();
+        private static readonly Dictionary<object, IEventBinding<T>> _bindings = new();
 
-        public static void Register(IEventBinding<SpawnRequestEvent> binding, SpawnPoint spawnPoint)
+        public static void Register(IEventBinding<T> binding, object scope)
         {
-            if (!_spawnRequestBindings.TryAdd(spawnPoint, binding))
-                return;
-            EventBus<SpawnRequestEvent>.Register((EventBinding<SpawnRequestEvent>)binding);
-            DebugUtility.LogVerbose(typeof(FilteredEventBus),$"Registrado listener para SpawnRequestEvent por '{spawnPoint.name}'. Total de listeners: {_spawnRequestBindings.Count}.", "blue");
+            if (!_bindings.TryAdd(scope, binding)) return;
+
+            EventBus<T>.Register((EventBinding<T>)binding);
         }
 
-        public static void Unregister(SpawnPoint spawnPoint)
+        public static void Unregister(object scope)
         {
-            if (!_spawnRequestBindings.Remove(spawnPoint, out IEventBinding<SpawnRequestEvent> binding)) return;
-            if (binding is EventBinding<SpawnRequestEvent> eventBinding)
+            if (_bindings.TryGetValue(scope, out IEventBinding<T> binding))
             {
-                EventBus<SpawnRequestEvent>.Unregister(eventBinding);
-                DebugUtility.LogVerbose(typeof(FilteredEventBus),$"Removido listener para SpawnRequestEvent por '{spawnPoint.name}'. Total de listeners: {_spawnRequestBindings.Count}.", "blue");
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(FilteredEventBus),$"Binding para '{spawnPoint.name}' não é do tipo EventBinding<SpawnRequestEvent>.");
+                EventBus<T>.Unregister((EventBinding<T>)binding);
+                _bindings.Remove(scope);
             }
         }
 
-        public static void RaiseFiltered(SpawnRequestEvent evt)
+        public static void RaiseFiltered(T evt, object targetScope)
         {
-            foreach (KeyValuePair<object, IEventBinding<SpawnRequestEvent>> pair in _spawnRequestBindings)
+            if (_bindings.TryGetValue(targetScope, out IEventBinding<T> binding))
             {
-                var spawnPoint = pair.Key as SpawnPoint;
-                if (spawnPoint == null || spawnPoint.GetPoolKey() != evt.PoolKey || spawnPoint.gameObject != evt.SourceGameObject) continue;
-                pair.Value.OnEvent?.Invoke(evt);
-                pair.Value.OnEventNoArgs?.Invoke();
-                DebugUtility.LogVerbose(typeof(FilteredEventBus),$"Evento enviado para '{spawnPoint.name}'.", "cyan");
+                binding.OnEvent?.Invoke(evt);
+                binding.OnEventNoArgs?.Invoke();
             }
+        }
+
+        public static void Clear()
+        {
+            foreach (IEventBinding<T> binding in _bindings.Values)
+                EventBus<T>.Unregister((EventBinding<T>)binding);
+
+            _bindings.Clear();
         }
     }
 }

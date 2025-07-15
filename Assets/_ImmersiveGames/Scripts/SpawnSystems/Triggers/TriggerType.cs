@@ -1,4 +1,4 @@
-﻿namespace _ImmersiveGames.Scripts.SpawnSystems
+﻿namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     public enum TriggerType
     {
