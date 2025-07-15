@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.SpawnSystems;
-using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
@@ -15,17 +14,17 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         private readonly Queue<IPoolable> _pool = new();
         private readonly List<IPoolable> _activeObjects = new();
-        private PoolableObjectData Data { get; set; }
+        private PoolData Data { get; set; }
         public bool IsInitialized { get; private set; }
         private readonly ObjectPoolFactory _factory = new();
 
-        public void SetData(PoolableObjectData data)
+        public UnityEvent<IPoolable> OnObjectActivated { get; } = new UnityEvent<IPoolable>();
+        public UnityEvent<IPoolable> OnObjectReturned { get; } = new UnityEvent<IPoolable>();
+
+        public void SetData(PoolData data)
         {
-            if (!data || !data.Prefab || !data.ModelPrefab)
-            {
-                DebugUtility.LogError<ObjectPool>($"PoolableObjectData, LogicPrefab ou ModelPrefab nulo.", this);
+            if (!PoolValidationUtility.ValidatePoolData(data, this))
                 return;
-            }
             Data = data;
         }
 
@@ -33,13 +32,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (!Data)
             {
-                DebugUtility.LogError<ObjectPool>($"Dados não configurados para o pool.", this);
+                DebugUtility.LogError<ObjectPool>("Dados não configurados para o pool.", this);
                 return;
             }
 
             for (int i = 0; i < Data.InitialPoolSize; i++)
             {
-                var poolable = _factory.CreateObject(Data, transform, Vector3.zero, $"{Data.ObjectName}_{i}", this);
+                // Usar configurações em ordem fixa, reiniciando do início se necessário
+                var config = Data.ObjectConfigs[i % Data.ObjectConfigs.Length];
+                var poolable = _factory.CreateObject(config, transform, Vector3.zero, $"{Data.ObjectName}_{i}", this);
                 if (poolable == null)
                 {
                     DebugUtility.LogError<ObjectPool>($"Falha ao criar objeto {i} para pool '{Data.ObjectName}'.", this);
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 }
                 poolable.Deactivate();
                 _pool.Enqueue(poolable);
-                DebugUtility.LogVerbose<ObjectPool>($"Objeto {i} criado e enfileirado para '{Data.ObjectName}'.", "cyan", this);
+                DebugUtility.LogVerbose<ObjectPool>($"Objeto {i} criado e enfileirado para '{Data.ObjectName}' com config {config.name}.", "cyan", this);
             }
             IsInitialized = true;
             DebugUtility.Log<ObjectPool>($"Pool inicializado com {_pool.Count} objetos para '{Data.ObjectName}'.", "green", this);
@@ -68,7 +69,20 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             }
             else if (Data.CanExpand)
             {
-                poolable = _factory.CreateObject(Data, transform, position, $"{Data.ObjectName}_{_activeObjects.Count + _pool.Count}", this);
+                // Usar a próxima configuração na ordem, com base no número total de objetos
+                var configIndex = (_activeObjects.Count + _pool.Count) % Data.ObjectConfigs.Length;
+                var config = Data.ObjectConfigs[configIndex];
+                poolable = _factory.CreateObject(config, transform, position, $"{Data.ObjectName}_{_activeObjects.Count + _pool.Count}", this);
+            }
+            else
+            {
+                // Fallback: Reutilizar o objeto ativo mais antigo
+                if (_activeObjects.Count > 0)
+                {
+                    poolable = _activeObjects.OrderBy(obj => obj.GetGameObject().GetInstanceID()).First();
+                    poolable.Deactivate();
+                    _activeObjects.Remove(poolable);
+                }
             }
 
             if (poolable == null)
@@ -81,17 +95,81 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             poolable.PoolableReset();
             poolable.Activate(position, null);
             _activeObjects.Add(poolable);
-            EventBus<SpawnTriggeredEvent>.Raise(new SpawnTriggeredEvent(Data.ObjectName, position));
+            OnObjectActivated.Invoke(poolable);
             return poolable;
+        }
+
+        public List<IPoolable> GetMultipleObjects(int count, Vector3 position)
+        {
+            if (!IsInitialized || !Data)
+            {
+                DebugUtility.LogError<ObjectPool>($"Pool '{Data?.ObjectName}' não inicializado ou dados inválidos.", this);
+                return new List<IPoolable>();
+            }
+
+            var result = new List<IPoolable>();
+            bool wasEmpty = _pool.Count == 0;
+
+            for (int i = 0; i < count; i++)
+            {
+                IPoolable poolable = null;
+                if (_pool.Count > 0)
+                {
+                    poolable = _pool.Dequeue();
+                }
+                else if (Data.CanExpand)
+                {
+                    // Usar a próxima configuração na ordem
+                    var configIndex = (_activeObjects.Count + _pool.Count + i) % Data.ObjectConfigs.Length;
+                    var config = Data.ObjectConfigs[configIndex];
+                    poolable = _factory.CreateObject(config, transform, position, $"{Data.ObjectName}_{_activeObjects.Count + _pool.Count + i}", this);
+                }
+                else
+                {
+                    // Fallback: Reutilizar o objeto ativo mais antigo
+                    if (_activeObjects.Count > 0)
+                    {
+                        poolable = _activeObjects.OrderBy(obj => obj.GetGameObject().GetInstanceID()).First();
+                        poolable.Deactivate();
+                        _activeObjects.Remove(poolable);
+                    }
+                }
+
+                if (poolable == null)
+                {
+                    if (!wasEmpty)
+                    {
+                        DebugUtility.Log<ObjectPool>($"Pool '{Data.ObjectName}' exausto após obter {result.Count} objetos.", "yellow", this);
+                        EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(Data.ObjectName));
+                    }
+                    break;
+                }
+
+                poolable.PoolableReset();
+                poolable.Activate(position, null);
+                result.Add(poolable);
+                _activeObjects.Add(poolable);
+                OnObjectActivated.Invoke(poolable);
+            }
+
+            if (wasEmpty && _pool.Count > 0)
+            {
+                EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(Data.ObjectName));
+            }
+
+            DebugUtility.Log<ObjectPool>($"Obtidos {result.Count} objetos do pool '{Data.ObjectName}'.", "green", this);
+            return result;
         }
 
         public void ReturnObject(IPoolable poolable)
         {
-            if (poolable == null || !_activeObjects.Remove(poolable)) return;
+            if (poolable == null || !_activeObjects.Contains(poolable)) return;
 
             bool wasEmpty = _pool.Count == 0;
+            _activeObjects.Remove(poolable);
             poolable.Deactivate();
             _pool.Enqueue(poolable);
+            OnObjectReturned.Invoke(poolable);
             if (wasEmpty && _pool.Count > 0)
             {
                 EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(Data.ObjectName));
@@ -100,16 +178,23 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void ClearPool()
         {
-            foreach (var obj in _activeObjects.Where(obj => obj != null && obj.GetGameObject() != null))
+            foreach (var obj in _activeObjects.ToList())
             {
-                obj.Deactivate();
+                if (obj != null && obj.GetGameObject() != null)
+                {
+                    obj.Deactivate();
+                }
             }
             _activeObjects.Clear();
             _pool.Clear();
             IsInitialized = false;
         }
 
-        public IReadOnlyList<IPoolable> GetActiveObjects() => _activeObjects;
+        public IReadOnlyList<IPoolable> GetActiveObjects()
+        {
+            return _activeObjects.ToList().AsReadOnly();
+        }
+
         public int GetAvailableCount() => _pool.Count;
     }
 }

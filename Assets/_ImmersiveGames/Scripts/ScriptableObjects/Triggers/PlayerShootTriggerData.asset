@@ -15,22 +15,22 @@ MonoBehaviour:
   triggerType: 2
   dynamicProperties:
     properties:
-    - rid: 10781047599398990
-    - rid: 10781047599398991
-    - rid: 10781047599398992
-    - rid: 10781047599398993
-    - rid: 10781047599398994
+    - rid: 10781065061335116
+    - rid: 10781065061335117
+    - rid: 10781065061335118
+    - rid: 10781065061335119
+    - rid: 10781065061335120
   references:
     version: 2
     RefIds:
-    - rid: 10781047599398990
+    - rid: 10781065061335116
       type: {class: StringProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: actionName
         value: Fire
         isRequired: 1
         description: "Nome da a\xE7\xE3o no Input System"
-    - rid: 10781047599398991
+    - rid: 10781065061335117
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: continuous
@@ -38,21 +38,21 @@ MonoBehaviour:
         isRequired: 0
         description: "Se verdadeiro, spawns s\xE3o cont\xEDnuos enquanto o input
           \xE9 mantido"
-    - rid: 10781047599398992
+    - rid: 10781065061335118
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnInterval
         value: 1
         isRequired: 0
         description: "Intervalo entre spawns cont\xEDnuos em segundos"
-    - rid: 10781047599398993
+    - rid: 10781065061335119
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: rearmDelay
         value: 0.5
         isRequired: 0
         description: Tempo antes de rearmar o trigger em segundos
-    - rid: 10781047599398994
+    - rid: 10781065061335120
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: maxSpawns

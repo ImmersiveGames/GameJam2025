@@ -15,43 +15,43 @@ MonoBehaviour:
   strategyType: 1
   dynamicProperties:
     properties:
-    - rid: 10781047599399005
-    - rid: 10781047599399006
-    - rid: 10781047599399007
-    - rid: 10781047599399008
-    - rid: 10781047599399009
+    - rid: 10781065061335040
+    - rid: 10781065061335041
+    - rid: 10781065061335042
+    - rid: 10781065061335043
+    - rid: 10781065061335044
   references:
     version: 2
     RefIds:
-    - rid: 10781047599399005
+    - rid: 10781065061335040
       type: {class: Vector3Property, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: offset
         value: {x: 0, y: 0, z: 0}
         isRequired: 0
         description: "Deslocamento relativo \xE0 posi\xE7\xE3o do SpawnPoint"
-    - rid: 10781047599399006
+    - rid: 10781065061335041
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnCount
         value: 1
         isRequired: 1
         description: "N\xFAmero de objetos a spawnar"
-    - rid: 10781047599399007
+    - rid: 10781065061335042
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: speed
         value: 100
         isRequired: 1
         description: Velocidade do projetil (unidades/segundo)
-    - rid: 10781047599399008
+    - rid: 10781065061335043
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: randomizeDirection
         value: 0
         isRequired: 0
         description: "Randomizar dire\xE7\xE3o dos objetos"
-    - rid: 10781047599399009
+    - rid: 10781065061335044
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: directionVariation

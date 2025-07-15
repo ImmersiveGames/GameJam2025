@@ -203,8 +203,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                         EditorGUILayout.HelpBox("⚠️ ObjectName está vazio em PoolableObjectData. Defina um nome único para o pool.", MessageType.Error);
                     if (poolableData.Prefab == null)
                         EditorGUILayout.HelpBox("⚠️ Prefab está nulo em PoolableObjectData.", MessageType.Error);
-                    if (poolableData.ModelPrefab == null)
-                        EditorGUILayout.HelpBox("⚠️ ModelPrefab está nulo em PoolableObjectData.", MessageType.Error);
+                    /*if (poolableData.ModelPrefab == null)
+                        EditorGUILayout.HelpBox("⚠️ ModelPrefab está nulo em PoolableObjectData.", MessageType.Error);*/
                     if (poolableData.InitialPoolSize <= 0)
                         EditorGUILayout.HelpBox("⚠️ InitialPoolSize deve ser maior que 0 em PoolableObjectData.", MessageType.Warning);
                 }

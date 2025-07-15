@@ -17,5 +17,4 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             return null;
         }
     }
-    public enum FactoryType { Default, Custom }
 }

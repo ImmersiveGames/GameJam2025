@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var poolManager = PoolManager.Instance;
             if (poolManager && point.GetPoolableData() != null)
             {
-                poolManager.RegisterPool(point.GetPoolableData());
+                //poolManager.RegisterPool(point.GetPoolableData());
                 DebugUtility.LogVerbose<SpawnManager>($"Pool '{point.GetPoolKey()}' registrado para SpawnPoint '{point.name}'.", "blue", this);
             }
             else
