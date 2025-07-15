@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
@@ -42,19 +42,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 Destroy(_poolsParent.gameObject);
         }
 
-        public void RegisterPool(PoolableObjectData data)
+        public void RegisterPool(PoolData data)
         {
-            if (data == null || string.IsNullOrEmpty(data.ObjectName))
-            {
-                DebugUtility.LogError<PoolManager>("PoolableObjectData ou ObjectName nulo. Verifique a configuração do SpawnData.PoolableData.", this);
+            if (!PoolValidationUtility.ValidatePoolData(data, this))
                 return;
-            }
-
-            if (!data.Prefab || !data.ModelPrefab)
-            {
-                DebugUtility.LogError<PoolManager>($"Prefab ou ModelPrefab nulo para pool '{data.ObjectName}'. Configure corretamente o PoolableObjectData.", this);
-                return;
-            }
 
             if (_pools.ContainsKey(data.ObjectName))
             {
@@ -69,7 +60,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             pool.Initialize();
             if (!pool.IsInitialized)
             {
-                DebugUtility.LogError<PoolManager>($"Falha ao inicializar pool '{data.ObjectName}'. Verifique o PoolableObjectData.", this);
+                DebugUtility.LogError<PoolManager>($"Falha ao inicializar pool '{data.ObjectName}'.", this);
                 Destroy(poolObject);
                 return;
             }
@@ -78,18 +69,34 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registrado com sucesso.", "green", this);
         }
 
+        public void RemovePool(string key)
+        {
+            if (!PoolValidationUtility.ValidatePoolKey(key, this))
+                return;
+
+            if (_pools.TryGetValue(key, out var pool))
+            {
+                pool.ClearPool();
+                if (pool.gameObject != null)
+                    Destroy(pool.gameObject);
+                _pools.Remove(key);
+                DebugUtility.Log<PoolManager>($"Pool '{key}' removido com sucesso.", "green", this);
+            }
+            else
+            {
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{key}' não encontrado.", "yellow", this);
+            }
+        }
+
         public ObjectPool GetPool(string key)
         {
-            if (string.IsNullOrEmpty(key))
-            {
-                DebugUtility.LogError<PoolManager>("Tentativa de acessar pool com chave vazia. Verifique o PoolableObjectData.ObjectName do SpawnPoint.", this);
+            if (!PoolValidationUtility.ValidatePoolKey(key, this))
                 return null;
-            }
 
             if (_pools.TryGetValue(key, out var pool) && pool.IsInitialized)
                 return pool;
 
-            DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado. Verifique se o pool foi registrado pelo SpawnManager.", this);
+            DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado.", this);
             return null;
         }
     }

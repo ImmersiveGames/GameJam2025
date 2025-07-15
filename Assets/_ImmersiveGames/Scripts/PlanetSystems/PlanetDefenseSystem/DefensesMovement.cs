@@ -30,8 +30,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
                 DebugUtility.LogError<DefensesMovement>($"No ProjectilesData found on {gameObject.name}. Please assign ProjectilesData in the DefensesMaster component.");
                 return;
             }
-            _projectilesData = _defensesMaster.ProjectilesData; 
-            _movementType = _projectilesData.movementType;
+            _projectilesData = _defensesMaster.ProjectilesData;
+            _movementType = MovementType.Direct;//_projectilesData.movementType;
             _strategy = CreateStrategy(_movementType);
             _strategy.Initialize(transform, target);
             _direction = direction ?? Vector3.forward;

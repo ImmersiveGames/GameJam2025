@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 668f864c23e943ac9851189fd25e0666, type: 3}
+  m_Name: BulletData
+  m_EditorClassIdentifier: 
+  objectName: Teste
+  prefab: {fileID: 3329658108258038770, guid: a20ab21aa4f74e24a99a8d0a3d9d75e2, type: 3}
+  lifetime: 5
+  initialPoolSize: 5
+  canExpand: 1
+  factoryType: 0
+  bulletConfigs: []
+  movementType: 0
+  moveSpeed: 10
+  damage: 10
+  curveMode: 0
+  curveDuration: 2
+  movementCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  errorRadius: 1
+  spiralRadius: 3
+  spiralRotationPerSecond: 3
+  zigzagAmplitude: 2
+  zigzagFrequency: 2
+  missileRotationSpeed: 90

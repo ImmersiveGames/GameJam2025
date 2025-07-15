@@ -145,14 +145,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 724543238}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3c35845f7e3424d88b518e7e86d7d6a, type: 3}
+  m_Script: {fileID: 11500000, guid: 4158fdb8090d4828a7e4ab97f31d8d87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  poolableData: {fileID: 11400000, guid: bb613fc72a885ed4e9b1031409bace9a, type: 2}
-  spawnPosition: {x: 0, y: 0, z: 0}
-  activateKey: 97
-  returnKey: 114
-  returnAllKey: 116
+  poolDataArray:
+  - {fileID: 11400000, guid: 7e4d8ffef552694459663b6f2eb979cd, type: 2}
+  spawnInterval: 2
+  spawnAreaSize: {x: 10, y: 0, z: 10}
+  spawnKey: 32
+  returnAllKey: 114
+  listActiveKey: 108
+  exhaustPoolKey: 101
+  spawnMultipleKey: 109
+  multipleSpawnCount: 3
 --- !u!4 &724543240
 Transform:
   m_ObjectHideFlags: 0
@@ -315,6 +320,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1481251176}
   - component: {fileID: 1481251175}
+  - component: {fileID: 1481251177}
   m_Layer: 0
   m_Name: PoolManager
   m_TagString: Untagged
@@ -349,6 +355,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1481251177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1481251173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 042bb3c6385c4a0ab294fff4f3469873, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2012249211
 GameObject:
   m_ObjectHideFlags: 0
