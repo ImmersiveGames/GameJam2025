@@ -4,6 +4,8 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.Data;
+using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.Utils.DebugSystems; // Adicionado para DebugUtility
 

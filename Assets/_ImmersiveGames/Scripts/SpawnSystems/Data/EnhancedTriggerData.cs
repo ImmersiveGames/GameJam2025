@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Data
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Spawn/Enhanced/TriggerData")]
     public class EnhancedTriggerData : ScriptableObject

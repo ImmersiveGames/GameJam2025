@@ -8,6 +8,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
         void Activate(Vector3 position, IActor actor);
         void Deactivate();
         GameObject GetGameObject(); // Para acessar o Actor associado
-        void Reset(); // Novo: Reseta estado do objeto
+        void PoolableReset(); // Novo: Reseta estado do objeto
+        //void Tick(float deltaTime); // Novo: Atualiza o objeto a cada frame
     }
 }

@@ -1,7 +1,6 @@
-﻿using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-
-namespace _ImmersiveGames.Scripts.SpawnSystems
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.SpawnSystems.EventBus
 {
     public struct SpawnRequestEvent : ISpawnEvent
     {

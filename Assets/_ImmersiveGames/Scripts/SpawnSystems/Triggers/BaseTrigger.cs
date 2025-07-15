@@ -1,50 +1,48 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.SpawnSystems.Data;
+using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
+using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
+    [DebugLevel(DebugLevel.Logs)]
     public abstract class BaseTrigger : ISpawnTrigger
     {
-        protected bool isActive;
+        protected readonly EnhancedTriggerData data;
         protected SpawnPoint spawnPoint;
-        private readonly float _spawnInterval;
-        protected readonly int maxSpawns;
-        protected float timer;
-        protected int spawnCount;
+        protected bool isActive;
 
         protected BaseTrigger(EnhancedTriggerData data)
         {
-            _spawnInterval = Mathf.Max(data.GetProperty("spawnInterval", 1.0f), 0.01f);
-            maxSpawns = Mathf.Max(data.GetProperty("maxSpawns", -1), -1);
+            this.data = data;
             isActive = true;
-            timer = _spawnInterval;
-            spawnCount = 0;
         }
 
         public virtual void Initialize(SpawnPoint spawnPointRef)
         {
-            spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
+            spawnPoint = spawnPointRef;
+            isActive = true;
         }
 
         public abstract bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject);
 
         public virtual void SetActive(bool active)
         {
-            if (isActive == active) return;
             isActive = active;
-            if (!active)
-            {
-                timer = _spawnInterval;
-                spawnCount = 0;
-            }
+            DebugUtility.LogVerbose<BaseTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{spawnPoint?.name}'.", "yellow", spawnPoint);
         }
 
         public virtual void Reset()
         {
-            timer = _spawnInterval;
-            spawnCount = 0;
-            isActive = true;
+            SetActive(true);
         }
 
-        public virtual void OnDisable() { }
+        public virtual void OnDisable()
+        {
+            isActive = false;
+            DebugUtility.LogVerbose<BaseTrigger>($"OnDisable chamado para '{spawnPoint?.name}'.", "yellow", spawnPoint);
+        }
 
         public bool IsActive => isActive;
     }

@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -33,11 +32,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             SpawnTrigger.Initialize(this);
         }
 
-        protected override void ExecuteSpawn(Vector3 position, GameObject sourceObject)
+        protected override void Update()
         {
-            if(!GameManager.Instance.ShouldPlayingGame())return;
-            base.ExecuteSpawn(position, sourceObject);
-            GetComponent<PlayerMaster>().OnEventPlayerShoot();
+            if (!GameManager.Instance.ShouldPlayingGame())
+            {
+                DebugUtility.LogVerbose<InputSpawnPoint>($"Input ignorado em '{name}' porque o jogo não está no estado de execução.", "yellow", this);
+                return;
+            }
+
+            base.Update();
         }
     }
 }

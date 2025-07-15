@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Warning)]
@@ -79,8 +80,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public ObjectPool GetPool(string key)
         {
+            if (string.IsNullOrEmpty(key))
+            {
+                DebugUtility.LogError<PoolManager>("Tentativa de acessar pool com chave vazia. Verifique o PoolableObjectData.ObjectName do SpawnPoint.", this);
+                return null;
+            }
+
             if (_pools.TryGetValue(key, out var pool) && pool.IsInitialized)
                 return pool;
+
             DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado. Verifique se o pool foi registrado pelo SpawnManager.", this);
             return null;
         }

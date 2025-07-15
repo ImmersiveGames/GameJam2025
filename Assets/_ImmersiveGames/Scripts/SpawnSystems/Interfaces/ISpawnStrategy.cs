@@ -1,7 +1,6 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
     public interface ISpawnStrategy
     {
@@ -14,6 +13,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         void SetActive(bool active);
         void Reset();
         bool IsActive { get; }
+
+        void OnDisable();
     }
     public interface IMoveObject
     { void Initialize(Vector3? direction, float speed, Transform target = null);

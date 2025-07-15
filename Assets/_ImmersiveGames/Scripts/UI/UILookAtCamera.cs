@@ -1,22 +1,24 @@
 using UnityEngine;
-
-public class UILookAtCamera : MonoBehaviour
+namespace _ImmersiveGames.Scripts.UI
 {
-    private Camera mainCamera;
-
-    void Start()
+    public class UILookAtCamera : MonoBehaviour
     {
-        // Obtém a câmera principal
-        mainCamera = Camera.main;
-    }
+        private Camera mainCamera;
 
-    void LateUpdate()
-    {
-        if (mainCamera != null)
+        void Start()
         {
-            // Faz o objeto olhar para a câmera
-            transform.LookAt(transform.position + mainCamera.transform.rotation * Vector3.forward,
-                             mainCamera.transform.rotation * Vector3.up);
+            // Obtï¿½m a cï¿½mera principal
+            mainCamera = Camera.main;
+        }
+
+        void LateUpdate()
+        {
+            if (mainCamera != null)
+            {
+                // Faz o objeto olhar para a cï¿½mera
+                transform.LookAt(transform.position + mainCamera.transform.rotation * Vector3.forward,
+                    mainCamera.transform.rotation * Vector3.up);
+            }
         }
     }
 }

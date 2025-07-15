@@ -15,43 +15,43 @@ MonoBehaviour:
   strategyType: 1
   dynamicProperties:
     properties:
-    - rid: 7993030723530391638
-    - rid: 7993030723530391639
-    - rid: 7993030723530391640
-    - rid: 7993030723530391641
-    - rid: 7993030723530391642
+    - rid: 10781047599399005
+    - rid: 10781047599399006
+    - rid: 10781047599399007
+    - rid: 10781047599399008
+    - rid: 10781047599399009
   references:
     version: 2
     RefIds:
-    - rid: 7993030723530391638
+    - rid: 10781047599399005
       type: {class: Vector3Property, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: offset
         value: {x: 0, y: 0, z: 0}
         isRequired: 0
         description: "Deslocamento relativo \xE0 posi\xE7\xE3o do SpawnPoint"
-    - rid: 7993030723530391639
+    - rid: 10781047599399006
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: spawnCount
         value: 1
         isRequired: 1
         description: "N\xFAmero de objetos a spawnar"
-    - rid: 7993030723530391640
+    - rid: 10781047599399007
       type: {class: IntProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: speed
         value: 100
         isRequired: 1
         description: Velocidade do projetil (unidades/segundo)
-    - rid: 7993030723530391641
+    - rid: 10781047599399008
       type: {class: BoolProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: randomizeDirection
         value: 0
         isRequired: 0
         description: "Randomizar dire\xE7\xE3o dos objetos"
-    - rid: 7993030723530391642
+    - rid: 10781047599399009
       type: {class: FloatProperty, ns: _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem, asm: _ImmersiveGames.Scripts}
       data:
         name: directionVariation
