@@ -27,8 +27,8 @@ MonoBehaviour:
   maxScale: 15
   minTiltAngle: -15
   maxTiltAngle: 15
-  minOrbitSpeed: 3
-  maxOrbitSpeed: 10
+  minOrbitSpeed: 1
+  maxOrbitSpeed: 3
   minRotationSpeed: 10
   maxRotationSpeed: 30
   rotationRightChance: 0.5
