@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Warning), DefaultExecutionOrder(-10)]
     public class LifetimeManager : MonoBehaviour
     {
         public static LifetimeManager Instance { get; private set; }

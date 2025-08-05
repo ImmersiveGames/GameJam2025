@@ -166,7 +166,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                         ObjectPool pool = PoolManager.Instance?.GetPool(sp.GetPoolKey());
                         EditorGUILayout.LabelField("Pool Status", pool != null && pool.IsInitialized ? "✅ Initialized" : "❌ Not Initialized", pool != null && pool.IsInitialized ? EditorStyles.boldLabel : EditorStyles.helpBox);
                         EditorGUILayout.LabelField("Available Objects", pool?.GetAvailableCount().ToString() ?? "N/A", EditorStyles.miniLabel);
-                        EditorGUILayout.LabelField("Can Expand", sp.GetPoolableData()?.CanExpand.ToString() ?? "N/A", EditorStyles.miniLabel);
+                        //EditorGUILayout.LabelField("Can Expand", sp.GetPoolableData()?.CanExpand.ToString() ?? "N/A", EditorStyles.miniLabel);
 
                         if (sp.useManagerLocking && SpawnManager.Instance != null)
                         {
@@ -205,8 +205,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                         EditorGUILayout.HelpBox("⚠️ Prefab está nulo em PoolableObjectData.", MessageType.Error);
                     /*if (poolableData.ModelPrefab == null)
                         EditorGUILayout.HelpBox("⚠️ ModelPrefab está nulo em PoolableObjectData.", MessageType.Error);*/
-                    if (poolableData.InitialPoolSize <= 0)
-                        EditorGUILayout.HelpBox("⚠️ InitialPoolSize deve ser maior que 0 em PoolableObjectData.", MessageType.Warning);
+                    /*if (poolableData.InitialPoolSize <= 0)
+                        EditorGUILayout.HelpBox("⚠️ InitialPoolSize deve ser maior que 0 em PoolableObjectData.", MessageType.Warning);*/
                 }
             }
         }

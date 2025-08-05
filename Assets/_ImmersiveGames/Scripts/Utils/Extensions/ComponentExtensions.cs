@@ -106,13 +106,13 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         /// Tenta obter um componente no filho de um objeto. Se não encontrar, cria um objeto filho e adiciona o componente nesse filho.
         /// </summary>
         /// <typeparam name="T">Tipo do componente</typeparam>
-        /// <param name="parentGameObject">O objeto pai</param>
+        /// <param name="parentTransform">O objeto pai</param>
         /// <param name="childName">Nome do objeto filho (se precisar criar)</param>
         /// <returns>O componente encontrado ou criado</returns>
-        public static T GetOrCreateComponentInChild<T>(this GameObject parentGameObject, string childName = null) where T : Component
+        public static T GetOrCreateComponentInChild<T>(this Transform parentTransform, string childName = null) where T : Component
         {
             // Tenta encontrar o componente nos filhos
-            T component = parentGameObject.GetComponentInChildren<T>();
+            T component = parentTransform.GetComponentInChildren<T>();
 
             // Se o componente existir, retorna ele
             if (component != null)
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
 
             // Cria um novo Actor como filho
             GameObject childObject = new GameObject(childName);
-            childObject.transform.SetParent(parentGameObject.transform);
+            childObject.transform.SetParent(parentTransform);
             childObject.transform.localPosition = Vector3.zero;
             childObject.transform.localRotation = Quaternion.identity;
             childObject.transform.localScale = Vector3.one;
