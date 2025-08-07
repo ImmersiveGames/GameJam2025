@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _isActive = false;
             _returningToPool = false;
             gameObject.SetActive(false);
-            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' inicializado com lifetime {_data.Lifetime}.", "green", this);
+            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' inicializado com lifetime {_data.Lifetime}, Parent: {(transform.parent != null ? transform.parent.name : "None")}.", "green", this);
         }
 
         public void Activate(Vector3 position, IActor actor)
@@ -40,8 +40,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             gameObject.SetActive(true);
             _returningToPool = false;
             LifetimeManager.Instance.RegisterObject(this, _data.Lifetime);
-            OnActivated.Invoke();
-            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' ativado na posição {transform.position}.", "green", this);
+            OnActivated.Invoke(); // Notifica SkinModelBuild para ativar contêineres
+            DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' ativado na posição {transform.position}, Active: {gameObject.activeSelf}.", "green", this);
         }
 
         public void Deactivate()
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _isActive = false;
             gameObject.SetActive(false);
             LifetimeManager.Instance.UnregisterObject(this);
-            OnDeactivated.Invoke();
+            OnDeactivated.Invoke(); // Notifica SkinModelBuild para desativar contêineres
             if (!_returningToPool)
                 ReturnToPool();
         }
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             if (_pool)
             {
                 _pool.ReturnObject(this);
-                DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' retornado ao pool.", "blue", this);
+                DebugUtility.LogVerbose<PooledObject>($"Objeto '{name}' retornado ao pool, Parent: {_pool.transform.name}.", "blue", this);
             }
             else
             {

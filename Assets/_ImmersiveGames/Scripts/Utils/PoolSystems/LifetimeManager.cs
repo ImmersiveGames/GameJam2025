@@ -51,7 +51,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (obj != null && _activeObjects.ContainsKey(obj))
                 {
-                    obj.Deactivate();
+                    if (obj.GetGameObject() != null)
+                    {
+                        obj.Deactivate(); // Chama ReturnObject no PooledObject
+                        DebugUtility.LogVerbose<LifetimeManager>($"Objeto '{obj.GetGameObject().name}' desativado pelo lifetime.", "blue", this);
+                    }
                     _activeObjects.Remove(obj);
                 }
             }

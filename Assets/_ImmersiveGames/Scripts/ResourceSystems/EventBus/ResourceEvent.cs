@@ -27,6 +27,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.EventBus
             Info = info;
         }
     }
+    //Bind para associar um recurso a um objeto específico
     public class ResourceBindEvent : IEvent
     {
         public GameObject Source { get; }

@@ -1,60 +1,84 @@
 ﻿using System;
 using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class SkinController : MonoBehaviour
     {
         [SerializeField] private SkinCollectionData skinCollectionData;
-        private SkinModelBuild _skinModelBuild;
+        private SkinPoolableComponent _skinPoolable;
         public event Action<ISkinConfig> OnSkinChanged;
         public event Action<string> OnSkinChangeFailed;
 
-        private void Start()
+        private void Awake()
         {
             if (skinCollectionData == null)
             {
-                Debug.LogError($"SkinCollectionData is not assigned in SkinController on '{gameObject.name}'.", this);
+                DebugUtility.LogError<SkinController>($"SkinCollectionData is not assigned in '{gameObject.name}'.", this);
                 OnSkinChangeFailed?.Invoke("SkinCollectionData is not assigned.");
                 return;
             }
 
-            if (_skinModelBuild == null)
+            _skinPoolable = GetComponent<SkinPoolableComponent>();
+            if (_skinPoolable == null)
             {
-                _skinModelBuild = new SkinModelBuild(skinCollectionData, transform);
+                _skinPoolable = gameObject.AddComponent<SkinPoolableComponent>();
+                // Atribuir SkinCollectionData via campo SerializeField (já definido no Inspector)
+                // Não é necessário chamar SetSkinCollectionData, pois o campo é configurado diretamente
             }
-            else
+
+            // Validar se SkinPoolableComponent tem SkinCollectionData
+            if (_skinPoolable.GetSkinCollectionData() == null)
             {
-                Debug.LogWarning($"SkinModelBuild already initialized in SkinController on '{gameObject.name}'. Skipping re-initialization.", this);
+                DebugUtility.LogError<SkinController>($"SkinPoolableComponent in '{gameObject.name}' does not have a valid SkinCollectionData.", this);
+                OnSkinChangeFailed?.Invoke("SkinPoolableComponent does not have a valid SkinCollectionData.");
             }
         }
 
         public void ChangeSkin(ISkinConfig newSkin)
         {
-            if (_skinModelBuild == null)
+            if (_skinPoolable == null)
             {
-                Debug.LogError($"SkinModelBuild is not initialized in SkinController on '{gameObject.name}'.");
-                OnSkinChangeFailed?.Invoke("SkinModelBuild is not initialized.");
+                DebugUtility.LogError<SkinController>($"SkinPoolableComponent is not initialized in '{gameObject.name}'.", this);
+                OnSkinChangeFailed?.Invoke("SkinPoolableComponent is not initialized.");
                 return;
             }
             if (newSkin == null)
             {
-                Debug.LogError($"Invalid SkinConfig provided in SkinController on '{gameObject.name}'.");
+                DebugUtility.LogError<SkinController>($"Invalid SkinConfig provided in '{gameObject.name}'.", this);
                 OnSkinChangeFailed?.Invoke("Invalid SkinConfig provided.");
                 return;
             }
-            _skinModelBuild.ApplySkin(newSkin);
+            _skinPoolable.ApplySkin(newSkin);
             OnSkinChanged?.Invoke(newSkin);
         }
 
         public Transform GetContainer(ModelType modelType)
         {
-            if (_skinModelBuild == null)
+            if (_skinPoolable == null)
             {
-                Debug.LogError($"SkinModelBuild is not initialized in SkinController on '{gameObject.name}'.");
+                DebugUtility.LogError<SkinController>($"SkinPoolableComponent is not initialized in '{gameObject.name}'.", this);
                 return null;
             }
-            return _skinModelBuild.GetContainer(modelType);
+            return _skinPoolable.GetContainer(modelType);
+        }
+
+        public void ActivateSkin()
+        {
+            if (_skinPoolable != null)
+            {
+                _skinPoolable.Activate();
+            }
+        }
+
+        public void DeactivateSkin()
+        {
+            if (_skinPoolable != null)
+            {
+                _skinPoolable.Deactivate();
+            }
         }
     }
 }

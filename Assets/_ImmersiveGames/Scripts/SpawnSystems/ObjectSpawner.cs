@@ -1,34 +1,33 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using UnityEngine;
 
-namespace _ImmersiveGames.Scripts.SpawnSystem
+namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
     public class ObjectSpawner : MonoBehaviour
     {
-        [SerializeField] private PoolData[] poolDataArray; // Array de dados para criar pools
-        [SerializeField] private float spawnInterval = 1f; // Intervalo entre spawns automáticos
-        [SerializeField] private KeyCode spawnKey = KeyCode.Space; // Tecla para spawn manual
-        [SerializeField] private KeyCode returnAllKey = KeyCode.R; // Tecla para retornar todos os objetos
-        [SerializeField] private KeyCode listActiveKey = KeyCode.L; // Tecla para listar objetos ativos
-        [SerializeField] private KeyCode exhaustPoolKey = KeyCode.E; // Tecla para testar exaustão do pool
-        [SerializeField] private KeyCode spawnMultipleKey = KeyCode.M; // Tecla para spawnar múltiplos objetos
-        [SerializeField, Min(1)] private int multipleSpawnCount = 3; // Quantidade de objetos a spawnar com spawn múltiplo
-        [SerializeField] private Vector3 spawnAreaSize = Vector3.zero; // Área XZ para spawn (0, 0, 0) se zero
-        [SerializeField] private bool enableAutoSpawn = true; // Controla se o spawn automático está ativo
+        [SerializeField] protected PoolData[] poolDataArray; // Array de dados para criar pools
+        [SerializeField] protected float spawnInterval = 1f; // Intervalo entre spawns automáticos
+        [SerializeField] protected KeyCode spawnKey = KeyCode.Space; // Tecla para spawn manual
+        [SerializeField] protected KeyCode returnAllKey = KeyCode.R; // Tecla para retornar todos os objetos
+        [SerializeField] protected KeyCode listActiveKey = KeyCode.L; // Tecla para listar objetos ativos
+        [SerializeField] protected KeyCode exhaustPoolKey = KeyCode.E; // Tecla para testar exaustão do pool
+        [SerializeField] protected KeyCode spawnMultipleKey = KeyCode.M; // Tecla para spawnar múltiplos objetos
+        [SerializeField, Min(1)] protected int multipleSpawnCount = 3; // Quantidade de objetos a spawnar com spawn múltiplo
+        [SerializeField] protected Vector3 spawnAreaSize = Vector3.zero; // Área XZ para spawn (0, 0, 0) se zero
+        [SerializeField] protected bool enableAutoSpawn = true; // Controla se o spawn automático está ativo
 
-        private PoolManager _poolManager;
-        private float _timer;
-        private EventBinding<PoolExhaustedEvent> _poolExhaustedBinding;
-        private EventBinding<PoolRestoredEvent> _poolRestoredBinding;
-        private List<string> _validPoolKeys; // Lista de chaves de pools válidos
+        protected PoolManager _poolManager;
+        protected float _timer;
+        protected EventBinding<PoolExhaustedEvent> _poolExhaustedBinding;
+        protected EventBinding<PoolRestoredEvent> _poolRestoredBinding;
+        protected List<string> _validPoolKeys; // Lista de chaves de pools válidos
 
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             _poolExhaustedBinding = new EventBinding<PoolExhaustedEvent>(OnPoolExhausted);
             EventBus<PoolExhaustedEvent>.Register(_poolExhaustedBinding);
@@ -36,13 +35,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             EventBus<PoolRestoredEvent>.Register(_poolRestoredBinding);
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             EventBus<PoolExhaustedEvent>.Unregister(_poolExhaustedBinding);
             EventBus<PoolRestoredEvent>.Unregister(_poolRestoredBinding);
         }
 
-        private void Awake()
+        protected virtual void Awake()
         {
             _validPoolKeys = new List<string>();
 
@@ -80,7 +79,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
                     continue;
                 }
 
-                // Registrar mesmo se a validação falhar, para suportar ProjectilesData
                 _poolManager.RegisterPool(data);
                 var pool = _poolManager.GetPool(data.ObjectName);
                 if (pool != null && pool.IsInitialized)
@@ -101,7 +99,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        private void Update()
+        protected virtual void Update()
         {
             // Spawn automático a cada intervalo, se ativado
             if (enableAutoSpawn && _validPoolKeys.Count > 0)
@@ -145,7 +143,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        public void SpawnObject()
+        public virtual void SpawnObject()
         {
             if (_validPoolKeys.Count == 0)
             {
@@ -159,7 +157,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             if (pool == null || !pool.IsInitialized)
             {
                 DebugUtility.LogError<ObjectSpawner>($"Pool '{poolKey}' não encontrado ou não inicializado.", this);
-                _validPoolKeys.Remove(poolKey); // Remover pool inválido
+                _validPoolKeys.Remove(poolKey);
                 return;
             }
 
@@ -175,9 +173,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             var poolable = pool.GetObject(position);
             if (poolable != null)
             {
-                // Garantir que o objeto não tenha parent (evitar interferência do SkinModelBuild)
-                poolable.GetGameObject().transform.SetParent(null);
-                // Verificar visibilidade
+                poolable.GetGameObject().transform.SetParent(null); // Garantir que não tenha parent
                 if (!poolable.GetGameObject().activeSelf)
                 {
                     DebugUtility.LogWarning<ObjectSpawner>($"Objeto '{poolKey}' (ID: {poolable.GetGameObject().GetInstanceID()}) spawnado, mas não está ativo. Forçando ativação.", this);
@@ -191,7 +187,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        public void SpawnMultipleObjects(int count)
+        public virtual void SpawnMultipleObjects(int count)
         {
             if (_validPoolKeys.Count == 0)
             {
@@ -205,7 +201,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             if (pool == null || !pool.IsInitialized)
             {
                 DebugUtility.LogError<ObjectSpawner>($"Pool '{poolKey}' não encontrado ou não inicializado para spawn múltiplo.", this);
-                _validPoolKeys.Remove(poolKey); // Remover pool inválido
+                _validPoolKeys.Remove(poolKey);
                 return;
             }
 
@@ -241,7 +237,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        public void ReturnAllObjects()
+        public virtual void ReturnAllObjects()
         {
             bool anyActiveObjects = false;
             foreach (var poolKey in _validPoolKeys.ToList())
@@ -250,7 +246,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
                 if (pool == null || !pool.IsInitialized)
                 {
                     DebugUtility.LogError<ObjectSpawner>($"Pool '{poolKey}' não encontrado ou não inicializado.", this);
-                    _validPoolKeys.Remove(poolKey); // Remover pool inválido
+                    _validPoolKeys.Remove(poolKey);
                     continue;
                 }
 
@@ -266,8 +262,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
                     {
                         if (obj != null && obj.GetGameObject() != null)
                         {
-                            obj.Deactivate();
-                            DebugUtility.Log<ObjectSpawner>($"Returned object '{poolKey}' (ID: {obj.GetGameObject().GetInstanceID()}) to pool.", "blue", this);
+                            pool.ReturnObject(obj); // Usa ReturnObject para reparentar ao pool
+                            DebugUtility.Log<ObjectSpawner>($"Returned object '{poolKey}' (ID: {obj.GetGameObject().GetInstanceID()}) to pool, Parent: {pool.gameObject.name}.", "blue", this);
                         }
                         else
                         {
@@ -283,7 +279,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        public void ListActiveObjects()
+        public virtual void ListActiveObjects()
         {
             DebugUtility.Log<ObjectSpawner>("Listando objetos ativos e disponíveis:", "cyan", this);
 
@@ -300,7 +296,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
                 if (pool == null || !pool.IsInitialized)
                 {
                     DebugUtility.LogError<ObjectSpawner>($"Pool '{poolKey}' não encontrado ou não inicializado.", this);
-                    _validPoolKeys.Remove(poolKey); // Remover pool inválido
+                    _validPoolKeys.Remove(poolKey);
                     continue;
                 }
 
@@ -336,7 +332,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        public void ExhaustPool()
+        public virtual void ExhaustPool()
         {
             if (_validPoolKeys.Count == 0)
             {
@@ -349,7 +345,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             if (pool == null || !pool.IsInitialized)
             {
                 DebugUtility.LogError<ObjectSpawner>($"Pool '{poolKey}' não encontrado ou não inicializado para teste de exaustão.", this);
-                _validPoolKeys.Remove(poolKey); // Remover pool inválido
+                _validPoolKeys.Remove(poolKey);
                 return;
             }
 
@@ -389,17 +385,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystem
             }
         }
 
-        private void OnPoolExhausted(PoolExhaustedEvent evt)
+        protected virtual void OnPoolExhausted(PoolExhaustedEvent evt)
         {
             DebugUtility.LogWarning<ObjectSpawner>($"Pool '{evt.PoolKey}' exausto. Considere aumentar InitialPoolSize ou ativar CanExpand.", this);
         }
 
-        private void OnPoolRestored(PoolRestoredEvent evt)
+        protected virtual void OnPoolRestored(PoolRestoredEvent evt)
         {
             DebugUtility.Log<ObjectSpawner>($"Pool '{evt.PoolKey}' restaurado. Objetos disponíveis novamente.", "green", this);
         }
 
-        private void OnDrawGizmos()
+        protected virtual void OnDrawGizmos()
         {
             Gizmos.color = Color.green;
             Gizmos.DrawWireCube(Vector3.zero, new Vector3(spawnAreaSize.x, 0.1f, spawnAreaSize.z));
