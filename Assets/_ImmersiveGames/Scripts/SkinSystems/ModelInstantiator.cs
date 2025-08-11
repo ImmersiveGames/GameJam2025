@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
     public class ModelInstantiator
@@ -14,7 +13,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (prefab != null)
             {
-                GameObject instantiatedModel = Object.Instantiate(prefab, container);
+                var instantiatedModel = Object.Instantiate(prefab, container);
                 instantiatedModel.name = $"{configName}_{modelType}";
                 instantiatedModel.transform.localPosition = Vector3.zero;
                 instantiatedModel.transform.localRotation = Quaternion.identity;

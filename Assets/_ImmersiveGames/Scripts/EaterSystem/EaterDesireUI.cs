@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.EaterSystem.EventBus;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

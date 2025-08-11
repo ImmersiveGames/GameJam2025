@@ -4,81 +4,46 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
+    /// <summary>
+    /// Gerencia skins para objetos fora do sistema de pooling, com eventos de notificação.
+    /// </summary>
     [DebugLevel(DebugLevel.Warning)]
-    public class SkinController : MonoBehaviour
+    public class SkinController : SkinComponentBase
     {
-        [SerializeField] private SkinCollectionData skinCollectionData;
-        private SkinPoolableComponent _skinPoolable;
+        #region Fields
         public event Action<ISkinConfig> OnSkinChanged;
         public event Action<string> OnSkinChangeFailed;
+        #endregion
 
-        private void Awake()
+        #region Initialization
+        protected override void Awake()
         {
+            base.Awake();
+
             if (skinCollectionData == null)
             {
-                DebugUtility.LogError<SkinController>($"SkinCollectionData is not assigned in '{gameObject.name}'.", this);
-                OnSkinChangeFailed?.Invoke("SkinCollectionData is not assigned.");
+                DebugUtility.LogError<SkinController>($"SkinCollectionData não atribuído em '{name}'.", this);
+                OnSkinChangeFailed?.Invoke("SkinCollectionData não atribuído.");
                 return;
             }
 
-            _skinPoolable = GetComponent<SkinPoolableComponent>();
-            if (_skinPoolable == null)
-            {
-                _skinPoolable = gameObject.AddComponent<SkinPoolableComponent>();
-                // Atribuir SkinCollectionData via campo SerializeField (já definido no Inspector)
-                // Não é necessário chamar SetSkinCollectionData, pois o campo é configurado diretamente
-            }
-
-            // Validar se SkinPoolableComponent tem SkinCollectionData
-            if (_skinPoolable.GetSkinCollectionData() == null)
-            {
-                DebugUtility.LogError<SkinController>($"SkinPoolableComponent in '{gameObject.name}' does not have a valid SkinCollectionData.", this);
-                OnSkinChangeFailed?.Invoke("SkinPoolableComponent does not have a valid SkinCollectionData.");
-            }
+            Initialize();
         }
+        #endregion
 
-        public void ChangeSkin(ISkinConfig newSkin)
+        #region Skin Management
+        public override void ApplySkin(ISkinConfig newSkin)
         {
-            if (_skinPoolable == null)
-            {
-                DebugUtility.LogError<SkinController>($"SkinPoolableComponent is not initialized in '{gameObject.name}'.", this);
-                OnSkinChangeFailed?.Invoke("SkinPoolableComponent is not initialized.");
-                return;
-            }
             if (newSkin == null)
             {
-                DebugUtility.LogError<SkinController>($"Invalid SkinConfig provided in '{gameObject.name}'.", this);
-                OnSkinChangeFailed?.Invoke("Invalid SkinConfig provided.");
+                DebugUtility.LogError<SkinController>($"SkinConfig inválido fornecido em '{name}'.", this);
+                OnSkinChangeFailed?.Invoke("SkinConfig inválido fornecido.");
                 return;
             }
-            _skinPoolable.ApplySkin(newSkin);
+
+            base.ApplySkin(newSkin);
             OnSkinChanged?.Invoke(newSkin);
         }
-
-        public Transform GetContainer(ModelType modelType)
-        {
-            if (_skinPoolable == null)
-            {
-                DebugUtility.LogError<SkinController>($"SkinPoolableComponent is not initialized in '{gameObject.name}'.", this);
-                return null;
-            }
-            return _skinPoolable.GetContainer(modelType);
-        }
-
-        public void ActivateSkin()
-        {
-            if (_skinPoolable != null)
-            {
-                _skinPoolable.Activate();
-            }
-        }
-
-        public void DeactivateSkin()
-        {
-            if (_skinPoolable != null)
-            {
-                _skinPoolable.Deactivate();
-            }
-        }
+        #endregion
     }
 }

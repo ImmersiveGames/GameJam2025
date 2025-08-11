@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.SpawnSystems.Data;
-using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
 using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
 using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;

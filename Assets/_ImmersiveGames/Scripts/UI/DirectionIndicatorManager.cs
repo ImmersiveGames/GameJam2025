@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.UI;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class DirectionIndicatorManager : MonoBehaviour
 {

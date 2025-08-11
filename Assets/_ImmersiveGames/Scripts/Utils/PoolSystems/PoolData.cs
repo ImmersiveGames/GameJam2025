@@ -12,7 +12,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public string ObjectName => objectName;
         public int InitialPoolSize => initialPoolSize;
-        public bool CanExpand => canExpand;
+        public bool CanExpand
+        {
+            get => canExpand;
+            set => canExpand = value;
+        }
         public PoolableObjectData[] ObjectConfigs => objectConfigs;
 
 #if UNITY_EDITOR

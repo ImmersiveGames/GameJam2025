@@ -1,9 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     public class PlayerHealth : HealthResource

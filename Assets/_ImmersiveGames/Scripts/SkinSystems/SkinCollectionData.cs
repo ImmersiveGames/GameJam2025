@@ -1,6 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
-
+﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
     [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 3)]
@@ -44,11 +42,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 Debug.LogWarning($"CanvasRootConfig in '{collectionName}' has incorrect ModelType '{canvasRootConfig.ModelType}'. Resetting.", this);
                 canvasRootConfig = null;
             }
-            if (fxRootConfig != null && fxRootConfig.ModelType != ModelType.FxRoot)
-            {
-                Debug.LogWarning($"FxRootConfig in '{collectionName}' has incorrect ModelType '{fxRootConfig.ModelType}'. Resetting.", this);
-                fxRootConfig = null;
-            }
+            if (fxRootConfig == null || fxRootConfig.ModelType == ModelType.FxRoot) return;
+            Debug.LogWarning($"FxRootConfig in '{collectionName}' has incorrect ModelType '{fxRootConfig.ModelType}'. Resetting.", this);
+            fxRootConfig = null;
         }
 #endif
     }

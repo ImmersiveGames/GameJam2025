@@ -5,83 +5,71 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Warning), DefaultExecutionOrder(-10)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class LifetimeManager : MonoBehaviour
     {
         public static LifetimeManager Instance { get; private set; }
-        private readonly Dictionary<IPoolable, float> _activeObjects = new();
+
+        private readonly Dictionary<IPoolable, Coroutine> _activeObjects = new();
 
         private void Awake()
         {
-            if (Instance == null)
+            if (Instance != null && Instance != this)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
+                DebugUtility.LogError<LifetimeManager>("Another instance of LifetimeManager already exists. Destroying this duplicate.", this);
                 Destroy(gameObject);
+                return;
             }
-        }
-
-        private void Update()
-        {
-            // Criar uma cópia da coleção para iteração segura
-            var objectsToProcess = new List<KeyValuePair<IPoolable, float>>(_activeObjects);
-            var toRemove = new List<IPoolable>();
-            var updatedLifetimes = new Dictionary<IPoolable, float>();
-
-            // Iterar sobre a cópia
-            foreach (var pair in objectsToProcess)
-            {
-                var obj = pair.Key;
-                var timeLeft = pair.Value - Time.deltaTime;
-                if (timeLeft <= 0)
-                {
-                    toRemove.Add(obj);
-                }
-                else
-                {
-                    updatedLifetimes[obj] = timeLeft;
-                }
-            }
-
-            // Aplicar desativações após a iteração
-            foreach (var obj in toRemove)
-            {
-                if (obj != null && _activeObjects.ContainsKey(obj))
-                {
-                    if (obj.GetGameObject() != null)
-                    {
-                        obj.Deactivate(); // Chama ReturnObject no PooledObject
-                        DebugUtility.LogVerbose<LifetimeManager>($"Objeto '{obj.GetGameObject().name}' desativado pelo lifetime.", "blue", this);
-                    }
-                    _activeObjects.Remove(obj);
-                }
-            }
-
-            // Aplicar atualizações de lifetime após a iteração
-            foreach (var pair in updatedLifetimes)
-            {
-                if (_activeObjects.ContainsKey(pair.Key))
-                {
-                    _activeObjects[pair.Key] = pair.Value;
-                }
-            }
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
 
         public void RegisterObject(IPoolable poolable, float lifetime)
         {
             if (poolable == null || lifetime <= 0) return;
-            _activeObjects[poolable] = lifetime;
-            DebugUtility.LogVerbose<LifetimeManager>($"Objeto '{poolable.GetGameObject().name}' registrado com lifetime {lifetime}.", "cyan", this);
+
+            if (_activeObjects.ContainsKey(poolable))
+            {
+                DebugUtility.LogWarning<LifetimeManager>($"Object '{poolable.GetGameObject().name}' already registered.", this);
+                return;
+            }
+
+            var coroutine = StartCoroutine(LifetimeCoroutine(poolable, lifetime));
+            _activeObjects.Add(poolable, coroutine);
+            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.", "cyan", this);
         }
 
         public void UnregisterObject(IPoolable poolable)
         {
-            if (_activeObjects.Remove(poolable))
+            if (poolable == null || !_activeObjects.ContainsKey(poolable)) return;
+
+            var coroutine = _activeObjects[poolable];
+            if (coroutine != null)
             {
-                DebugUtility.LogVerbose<LifetimeManager>($"Objeto '{poolable.GetGameObject().name}' desregistrado.", "cyan", this);
+                StopCoroutine(coroutine);
+            }
+            _activeObjects.Remove(poolable);
+            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.", "cyan", this);
+        }
+
+        private System.Collections.IEnumerator LifetimeCoroutine(IPoolable poolable, float lifetime)
+        {
+            yield return new WaitForSeconds(lifetime);
+
+            if (poolable != null && poolable.GetGameObject() != null)
+            {
+                poolable.Deactivate();
+                poolable.ReturnToPool();
+                DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' expired and returned to pool. Active: {poolable.GetGameObject().activeSelf}", "blue", this);
+            }
+            _activeObjects.Remove(poolable);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
             }
         }
     }

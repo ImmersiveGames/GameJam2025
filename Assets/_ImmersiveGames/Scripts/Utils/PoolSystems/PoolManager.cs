@@ -40,16 +40,20 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _pools.Clear();
             if (_poolsParent != null)
                 Destroy(_poolsParent.gameObject);
+            // Removido ValidationService.ClearCache() para evitar log com timestamp inválido
         }
 
         public void RegisterPool(PoolData data)
         {
-            if (!PoolValidationUtility.ValidatePoolData(data, this))
+            if (data == null || string.IsNullOrEmpty(data.ObjectName))
+            {
+                DebugUtility.LogError<PoolManager>("PoolData is null or ObjectName is empty.", this);
                 return;
+            }
 
             if (_pools.ContainsKey(data.ObjectName))
             {
-                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' já registrado.", "yellow", this);
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' already registered.", "yellow", this);
                 return;
             }
 
@@ -60,19 +64,22 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             pool.Initialize();
             if (!pool.IsInitialized)
             {
-                DebugUtility.LogError<PoolManager>($"Falha ao inicializar pool '{data.ObjectName}'.", this);
+                DebugUtility.LogError<PoolManager>($"Failed to initialize pool '{data.ObjectName}'.", this);
                 Destroy(poolObject);
                 return;
             }
             _pools[data.ObjectName] = pool;
 
-            DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registrado com sucesso.", "green", this);
+            DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registered successfully.", "green", this);
         }
 
         public void RemovePool(string key)
         {
-            if (!PoolValidationUtility.ValidatePoolKey(key, this))
+            if (string.IsNullOrEmpty(key))
+            {
+                DebugUtility.LogError<PoolManager>("Pool key is empty or null.", this);
                 return;
+            }
 
             if (_pools.TryGetValue(key, out var pool))
             {
@@ -80,23 +87,26 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 if (pool.gameObject != null)
                     Destroy(pool.gameObject);
                 _pools.Remove(key);
-                DebugUtility.Log<PoolManager>($"Pool '{key}' removido com sucesso.", "green", this);
+                DebugUtility.Log<PoolManager>($"Pool '{key}' removed successfully.", "green", this);
             }
             else
             {
-                DebugUtility.LogVerbose<PoolManager>($"Pool '{key}' não encontrado.", "yellow", this);
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{key}' not found.", "yellow", this);
             }
         }
 
         public ObjectPool GetPool(string key)
         {
-            if (!PoolValidationUtility.ValidatePoolKey(key, this))
+            if (string.IsNullOrEmpty(key))
+            {
+                DebugUtility.LogError<PoolManager>("Pool key is empty or null.", this);
                 return null;
+            }
 
             if (_pools.TryGetValue(key, out var pool) && pool.IsInitialized)
                 return pool;
 
-            DebugUtility.LogError<PoolManager>($"Pool '{key}' não encontrado ou não inicializado.", this);
+            DebugUtility.LogError<PoolManager>($"Pool '{key}' not found or not initialized.", this);
             return null;
         }
     }

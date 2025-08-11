@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
     public class ContainerManager
@@ -18,9 +17,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             // Desativar contêineres existentes em vez de destruí-los
             foreach (Transform child in logicTransform)
             {
-                if (child.name == ModelType.ModelRoot.ToString() ||
-                    child.name == ModelType.CanvasRoot.ToString() ||
-                    child.name == ModelType.FxRoot.ToString())
+                if (child.name is nameof(ModelType.ModelRoot) or nameof(ModelType.CanvasRoot) or nameof(ModelType.FxRoot))
                 {
                     child.gameObject.SetActive(false);
                 }
@@ -38,7 +35,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         public Transform CreateContainer(ModelType modelType, Transform logicTransform)
         {
             string containerName = modelType.ToString();
-            Transform container = logicTransform.Find(containerName);
+            var container = logicTransform.Find(containerName);
             if (container != null)
             {
                 // Limpar filhos, mas manter o contêiner
