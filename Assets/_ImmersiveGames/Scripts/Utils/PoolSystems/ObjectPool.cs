@@ -1,145 +1,213 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Events;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-using _ImmersiveGames.Scripts.ActorSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
     public class ObjectPool : MonoBehaviour
     {
-        private readonly Queue<IPoolable> _pool = new();
+        private PoolData _data;
+        private readonly List<IPoolable> _availableObjects = new();
         private readonly List<IPoolable> _activeObjects = new();
-        private PoolData Data { get; set; }
-        public bool IsInitialized { get; private set; }
-        private readonly ObjectPoolFactory _factory = new();
-        private float _lastGetObjectTime;
+        private bool _isInitialized;
+        private ObjectPoolFactory _factory;
 
-        public UnityEvent<IPoolable> OnObjectActivated { get; } = new UnityEvent<IPoolable>();
-        public UnityEvent<IPoolable> OnObjectReturned { get; } = new UnityEvent<IPoolable>();
+        public bool IsInitialized => _isInitialized;
+        public string PoolKey => _data.ObjectName;
 
         public void SetData(PoolData data)
         {
-            if (!ValidationService.ValidatePoolData(data, this))
-                return;
-            Data = data;
+            _data = data;
+            _factory = new ObjectPoolFactory(); // Usa factory padrão
         }
+
+        public PoolData GetData() => _data;
 
         public void Initialize()
         {
-            if (!Data)
+            if (_data == null || !ValidationService.ValidatePoolData(_data, this))
             {
-                DebugUtility.LogError<ObjectPool>("Data not set for pool.", this);
+                DebugUtility.LogError<ObjectPool>("Cannot initialize pool with invalid PoolData.", this);
                 return;
             }
 
-            for (int i = 0; i < Data.InitialPoolSize; i++)
+            if (_isInitialized)
             {
-                var config = Data.ObjectConfigs[i % Data.ObjectConfigs.Length];
-                var poolable = _factory.CreateObject(config, transform, Vector3.zero, $"{Data.ObjectName}_{i}", this);
-                if (poolable == null) continue;
-                _pool.Enqueue(poolable);
+                DebugUtility.LogWarning<ObjectPool>("Pool already initialized.", this);
+                return;
             }
-            IsInitialized = true;
-            DebugUtility.Log<ObjectPool>($"Pool initialized with {_pool.Count} objects for '{Data.ObjectName}'.", "green", this);
+
+            foreach (var config in _data.ObjectConfigs)
+            {
+                for (int i = 0; i < _data.InitialPoolSize / _data.ObjectConfigs.Length; i++)
+                {
+                    var poolableObject = CreatePoolableObject(config);
+                    if (poolableObject != null)
+                    {
+                        _availableObjects.Add(poolableObject);
+                    }
+                }
+            }
+
+            _isInitialized = true;
+            DebugUtility.Log<ObjectPool>($"Pool initialized with {_availableObjects.Count} objects for '{_data.ObjectName}'.", "green", this);
         }
 
-        public IPoolable GetObject(Vector3 position, IActor actor = null)
+        private IPoolable CreatePoolableObject(PoolableObjectData config)
         {
-            if (!IsInitialized || !Data) return null;
-
-            if (Time.time == _lastGetObjectTime)
+            var go = _factory.CreateObject(config, transform, Vector3.zero, $"{config.ObjectName}_{_availableObjects.Count}", this);
+            if (go == null)
             {
-                DebugUtility.LogWarning<ObjectPool>("Multiple GetObject calls in the same frame, skipping.", this);
-                return null;
-            }
-            _lastGetObjectTime = Time.time;
-
-            IPoolable poolable = null;
-            if (_pool.Count > 0)
-            {
-                poolable = _pool.Dequeue();
-            }
-            else if (Data.CanExpand)
-            {
-                var configIndex = (_activeObjects.Count + _pool.Count) % Data.ObjectConfigs.Length;
-                var config = Data.ObjectConfigs[configIndex];
-                poolable = _factory.CreateObject(config, transform, position, $"{Data.ObjectName}_{_activeObjects.Count + _pool.Count}", this);
-            }
-            else
-            {
-                EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(Data.ObjectName));
-                DebugUtility.LogWarning<ObjectPool>($"Pool '{Data.ObjectName}' exhausted. No objects available.", this);
+                DebugUtility.LogError<ObjectPool>($"Failed to create object for config '{config.ObjectName}'.", this);
                 return null;
             }
 
+            var poolable = go.GetComponent<IPoolable>();
             if (poolable == null)
             {
-                EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(Data.ObjectName));
+                DebugUtility.LogError<ObjectPool>($"Object '{go.name}' does not implement IPoolable.", this);
+                Destroy(go);
                 return null;
             }
 
-            poolable.PoolableReset();
-            poolable.Activate(position, actor);
-            _activeObjects.Add(poolable);
-            OnObjectActivated.Invoke(poolable);
-            DebugUtility.LogVerbose<ObjectPool>($"Object '{poolable.GetGameObject().name}' activated. Active objects: {_activeObjects.Count}, Available: {_pool.Count}", "green", this);
+            poolable.Configure(config, this);
+            go.SetActive(false);
+            EventBus<ObjectCreatedEvent>.Raise(new ObjectCreatedEvent(poolable, config, this));
             return poolable;
         }
 
-        public List<IPoolable> GetMultipleObjects(int count, Vector3 position, IActor actor = null)
-        {
-            if (!IsInitialized || !Data) return new List<IPoolable>();
+        public List<IPoolable> GetActiveObjects() => new List<IPoolable>(_activeObjects);
 
-            var result = new List<IPoolable>();
-            for (int i = 0; i < count; i++)
+        public int GetAvailableCount() => _availableObjects.Count;
+
+        public IPoolable GetObject(Vector3 position, IActor actor = null, bool activateImmediately = true)
+        {
+            if (!_isInitialized)
             {
-                var poolable = GetObject(position, actor);
-                if (poolable == null) break;
-                result.Add(poolable);
+                DebugUtility.LogError<ObjectPool>("Pool not initialized.", this);
+                return null;
             }
-            DebugUtility.Log<ObjectPool>($"Retrieved {result.Count} objects from pool '{Data.ObjectName}'.", "green", this);
-            return result;
+
+            if (_availableObjects.Count == 0)
+            {
+                if (_data.CanExpand)
+                {
+                    var config = _data.ObjectConfigs[Random.Range(0, _data.ObjectConfigs.Length)];
+                    var poolable = CreatePoolableObject(config);
+                    if (poolable != null)
+                    {
+                        _availableObjects.Add(poolable);
+                    }
+                }
+                else
+                {
+                    DebugUtility.LogWarning<ObjectPool>($"Pool '{name}' exhausted.", this);
+                    EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(name));
+                    return null;
+                }
+            }
+
+            var poolable = _availableObjects[0];
+            _availableObjects.RemoveAt(0);
+            _activeObjects.Add(poolable);
+
+            if (activateImmediately)
+            {
+                ActivateObject(poolable, position, actor);
+            }
+
+            DebugUtility.LogVerbose<ObjectPool>($"Object '{poolable.GetGameObject().name}' retrieved in GetObject. Active objects: {_activeObjects.Count}, Available: {_availableObjects.Count}", "green", this);
+            return poolable;
+        }
+
+        public List<IPoolable> GetMultipleObjects(int count, Vector3 position, IActor actor = null, bool activateImmediately = true)
+        {
+            var poolables = new List<IPoolable>();
+            for (int i = 0; i < count && (_availableObjects.Count > 0 || _data.CanExpand); i++)
+            {
+                var poolable = GetObject(position, actor, activateImmediately);
+                if (poolable != null)
+                {
+                    poolables.Add(poolable);
+                }
+            }
+
+            if (poolables.Count > 0)
+            {
+                DebugUtility.Log<ObjectPool>($"Retrieved {poolables.Count} objects from pool '{name}' in GetMultipleObjects.", "green", this);
+                if (_availableObjects.Count == 0 && !_data.CanExpand)
+                {
+                    EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(name));
+                }
+            }
+
+            return poolables;
         }
 
         public void ReturnObject(IPoolable poolable)
         {
-            if (poolable == null || !_activeObjects.Contains(poolable)) return;
+            if (!_activeObjects.Contains(poolable))
+            {
+                DebugUtility.LogWarning<ObjectPool>($"Object '{poolable.GetGameObject().name}' is not active in pool '{name}'.", this);
+                return;
+            }
 
             _activeObjects.Remove(poolable);
-            if (poolable.GetGameObject().activeSelf)
+            _availableObjects.Add(poolable);
+            poolable.GetGameObject().SetActive(false);
+            if (_data.ReconfigureOnReturn)
             {
-                poolable.Deactivate();
+                var config = _data.ObjectConfigs[Random.Range(0, _data.ObjectConfigs.Length)];
+                _factory.ReinitializeObject(poolable, config);
             }
-            poolable.GetGameObject().transform.SetParent(transform);
-            _pool.Enqueue(poolable);
-            OnObjectReturned.Invoke(poolable);
-            DebugUtility.LogVerbose<ObjectPool>($"Object '{poolable.GetGameObject().name}' returned to pool. Active: {poolable.GetGameObject().activeSelf}, Available now: {_pool.Count}", "blue", this);
+            EventBus<PoolObjectReturnedEvent>.Raise(new PoolObjectReturnedEvent(name, poolable));
+            DebugUtility.LogVerbose<ObjectPool>($"Object '{poolable.GetGameObject().name}' returned to pool '{name}'. Active objects: {_activeObjects.Count}, Available: {_availableObjects.Count}", "blue", this);
+
+            if (_availableObjects.Count == 1)
+            {
+                EventBus<PoolRestoredEvent>.Raise(new PoolRestoredEvent(name));
+            }
+        }
+
+        public void ActivateObject(IPoolable poolable, Vector3 position, IActor actor = null)
+        {
+            if (!_activeObjects.Contains(poolable))
+            {
+                DebugUtility.LogWarning<ObjectPool>($"Object '{poolable.GetGameObject().name}' is not active in pool '{name}'. Cannot activate.", this);
+                return;
+            }
+
+            poolable.GetGameObject().transform.position = position;
+            poolable.Activate(position, actor);
+            DebugUtility.LogVerbose<ObjectPool>($"Object '{poolable.GetGameObject().name}' activated at {position}. Active objects: {_activeObjects.Count}", "green", this);
         }
 
         public void ClearPool()
         {
-            foreach (var obj in _activeObjects.ToList())
+            foreach (var obj in _activeObjects)
             {
-                if (obj != null && obj.GetGameObject() != null)
+                if (obj.GetGameObject() != null)
                 {
-                    if (obj.GetGameObject().activeSelf)
-                    {
-                        obj.Deactivate();
-                    }
-                    obj.GetGameObject().transform.SetParent(transform);
+                    Destroy(obj.GetGameObject());
                 }
             }
-            _activeObjects.Clear();
-            _pool.Clear();
-            IsInitialized = false;
-        }
 
-        public IReadOnlyList<IPoolable> GetActiveObjects() => _activeObjects.AsReadOnly();
-        public int GetAvailableCount() => _pool.Count;
+            foreach (var obj in _availableObjects)
+            {
+                if (obj.GetGameObject() != null)
+                {
+                    Destroy(obj.GetGameObject());
+                }
+            }
+
+            _activeObjects.Clear();
+            _availableObjects.Clear();
+            _isInitialized = false;
+            DebugUtility.Log<ObjectPool>($"Pool '{name}' cleared.", "cyan", this);
+        }
     }
 }

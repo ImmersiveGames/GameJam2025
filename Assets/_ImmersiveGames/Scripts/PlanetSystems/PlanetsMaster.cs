@@ -1,36 +1,40 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DebugLevel(DebugLevel.Logs)]
-    public sealed class PlanetsMaster : ActorMaster, IDetectable
+    public sealed class PlanetsMaster : ActorMaster, IDetectable, ISizeMeasurable
     {
         public IActor Detectable => this;
-        
-        private PlanetInfo _planetInfo;
-        private TargetFlag _targetFlag;
-        private PlanetData _data;
-        private readonly List<IDetector> _detectors = new ();
-        public event Action<IDetector, SensorTypes> EventPlanetDetected;
-        public event Action<IDetector, SensorTypes> EventPlanetLost;
-        
-        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
-        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
 
+        [SerializeField] private PlanetsManager planetsManager; // Injeção via Inspector
         [SerializeField] private bool drawBoundsGizmos = true;
         [SerializeField] private Color boundsGizmoColor = Color.blue;
-        
+
+        private PlanetInfo _planetInfo;
+        private TargetFlag _targetFlag;
+        private readonly List<IDetector> _detectors = new();
+        public event Action<IDetector, SensorTypes> EventPlanetDetected;
+        public event Action<IDetector, SensorTypes> EventPlanetLost;
+
+        private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EventBinding<ObjectCreatedEvent> _objectCreatedBinding;
+        private EventBinding<PoolObjectReturnedEvent> _objectReturnedBinding;
+
+        public PlanetData GetPlanetData() => _planetInfo?.PoolableObject.GetData<PoolableObjectData>() as PlanetData;
         public PlanetsMaster GetPlanetsMaster() => this;
-        
         public PlanetInfo GetPlanetInfo() => _planetInfo;
 
         protected override void Awake()
@@ -39,10 +43,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _targetFlag = GetComponentInChildren<TargetFlag>();
             if (!_targetFlag)
             {
-                DebugUtility.LogWarning<PlanetsMaster>($"TargetFlag não encontrado em {gameObject.name}!");
-                return;
+                DebugUtility.LogWarning<PlanetsMaster>($"TargetFlag não encontrado em {gameObject.name}!", this);
             }
-            _targetFlag.gameObject.SetActive(false);
+            else
+            {
+                _targetFlag.gameObject.SetActive(false);
+            }
         }
 
         public override void Reset()
@@ -58,60 +64,93 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+
+            _objectCreatedBinding = new EventBinding<ObjectCreatedEvent>(OnObjectCreated);
+            EventBus<ObjectCreatedEvent>.Register(_objectCreatedBinding);
+
+            _objectReturnedBinding = new EventBinding<PoolObjectReturnedEvent>(OnObjectReturned);
+            EventBus<PoolObjectReturnedEvent>.Register(_objectReturnedBinding);
         }
 
         private void OnDisable()
         {
             EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            EventBus<ObjectCreatedEvent>.Unregister(_objectCreatedBinding);
+            EventBus<PoolObjectReturnedEvent>.Unregister(_objectReturnedBinding);
         }
 
-        public void Initialize(int id, IPoolable poolableObject, PlanetData data, PlanetResourcesSo resources, IActor owner = null)
+        private void OnObjectCreated(ObjectCreatedEvent evt)
         {
-            //TODO: Implementar variações de data no pool.
+            if (evt.Poolable.GetGameObject() != gameObject || evt.Poolable.Spawner != this) return;
+            if (!(evt.Config is PlanetData planetData)) return;
+
+            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1).FirstOrDefault() : null;
+            if (planetsManager == null)
+            {
+                DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
+            }
+            Configure(evt.Poolable, planetData, resource);
+        }
+
+        private void OnObjectReturned(PoolObjectReturnedEvent evt)
+        {
+            if (evt.Poolable.GetGameObject() != gameObject || evt.Poolable.Spawner != this) return;
+            if (!(evt.Poolable.GetData<PoolableObjectData>() is PlanetData planetData)) return;
+            if (!evt.Poolable.GetPool().GetData().ReconfigureOnReturn) return;
+
+            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1).FirstOrDefault() : null;
+            if (planetsManager == null)
+            {
+                DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
+            }
+            Configure(evt.Poolable, planetData, resource);
+        }
+
+        public void Configure(IPoolable poolable, PlanetData data, PlanetResourcesSo resources)
+        {
             IsActive = true;
-            gameObject.name = $"Planet_{data.name}_{id}";
-            _data = data;
-            transform.localPosition = Vector3.zero;
-            
-            _planetInfo = new PlanetInfo(id, resources, poolableObject)
+            gameObject.name = $"Planet_{data.name}_{GetInstanceID()}";
+            _planetInfo = new PlanetInfo(GetInstanceID(), resources, poolable)
             {
                 planetScale = data.GetRandomScale(),
-                planetAngle = data.GetRandomTiltAngle()
+                planetAngle = data.GetRandomTiltAngle(),
+                planetDiameter = data.size
             };
 
             transform.localScale = Vector3.one * _planetInfo.planetScale;
+            transform.localRotation = _planetInfo.planetAngle;
 
-            // Calcular o diâmetro do planeta
+            // Calcula diâmetro real
             var modelRoot = GetComponentInChildren<ModelRoot>(true);
-            float diameter = 5.2f; // Valor padrão se o colisor não for encontrado
             if (modelRoot != null)
             {
                 var sphereCollider = modelRoot.GetComponentInChildren<SphereCollider>();
                 if (sphereCollider != null)
                 {
-                    diameter = 2f * sphereCollider.radius * _planetInfo.planetScale;
-                    DebugUtility.LogVerbose<PlanetsMaster>(
-                        $"Planeta {gameObject.name} diâmetro calculado: {diameter:F2}, raio colisor: {sphereCollider.radius:F2}, escala: {_planetInfo.planetScale:F2}",
-                        "cyan");
+                    _planetInfo.planetDiameter = 2f * sphereCollider.radius * transform.localScale.x;
+                    DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} configurado com diâmetro real: {_planetInfo.planetDiameter:F2}", "cyan", this);
                 }
                 else
                 {
-                    DebugUtility.LogWarning<PlanetsMaster>($"SphereCollider não encontrado no ModelRoot para {gameObject.name}. Usando diâmetro padrão: {diameter:F2}");
+                    DebugUtility.LogWarning<PlanetsMaster>($"SphereCollider não encontrado em ModelRoot de {gameObject.name}. Usando diâmetro padrão: {_planetInfo.planetDiameter:F2}", this);
                 }
             }
             else
             {
-                DebugUtility.LogWarning<PlanetsMaster>($"ModelRoot não encontrado para {gameObject.name}. Usando diâmetro padrão: {diameter:F2}");
+                DebugUtility.LogWarning<PlanetsMaster>($"ModelRoot não encontrado em {gameObject.name}. Usando diâmetro padrão: {_planetInfo.planetDiameter:F2}", this);
             }
 
-            _planetInfo.SetPlanetDiameter(diameter);
-
-            transform.localRotation = _planetInfo.planetAngle;
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} criado com ID {id}, recurso {resources.ResourceType}, diâmetro {diameter:F2}.", "green");
+            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} configurado com ID {GetInstanceID()}, recurso {resources?.ResourceType ?? "Nenhum"}, diâmetro {_planetInfo.planetDiameter:F2}, escala {_planetInfo.planetScale:F2}.", "green", this);
         }
 
-        
+        public float GetDiameter()
+        {
+            float diameter = _planetInfo?.planetDiameter ?? 5f;
+            DebugUtility.LogVerbose<PlanetsMaster>($"GetDiameter chamado para {gameObject.name}. Retornando: {diameter:F2}", "cyan", this);
+            return diameter;
+        }
+
         public void OnDetectableRanged(IDetector entity, SensorTypes sensorName)
         {
             if (!IsActive) return;
@@ -123,8 +162,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (!IsActive) return;
             OnEventPlanetLost(entity, sensorName);
         }
-        
-        public PlanetData GetPlanetData() => _data;
 
         public PlanetResourcesSo GetResource() => _planetInfo?.Resources;
 
@@ -135,7 +172,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (detector != null && !_detectors.Contains(detector))
             {
                 _detectors.Add(detector);
-                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' adicionado à lista de detectores do planeta '{gameObject.name}'.", "blue");
+                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' adicionado à lista de detectores do planeta '{gameObject.name}'.", "blue", this);
             }
         }
 
@@ -143,7 +180,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (detector != null && _detectors.Remove(detector))
             {
-                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' removido da lista de detectores do planeta '{gameObject.name}'.", "yellow");
+                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' removido da lista de detectores do planeta '{gameObject.name}'.", "yellow", this);
             }
         }
 
@@ -154,7 +191,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(true);
             }
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} marcado para destruição.", "yellow", this);
         }
 
         private void OnUnmarked(PlanetUnmarkedEvent evt)
@@ -164,21 +201,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 _targetFlag.gameObject.SetActive(false);
             }
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta {gameObject.name} desmarcado.", "cyan", this);
         }
-        
+
         private void OnEventPlanetDetected(IDetector obj, SensorTypes sensor)
         {
             EventPlanetDetected?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} foi detectado por {entityType} - {sensor}", "yellow", this);
         }
 
         private void OnEventPlanetLost(IDetector obj, SensorTypes sensor)
         {
             EventPlanetLost?.Invoke(obj, sensor);
             string entityType = obj.GetType().Name;
-            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} saiu da area de detecção de {entityType} - {sensor}", "yellow");
+            DebugUtility.LogVerbose<PlanetsMaster>($"Planeta: {gameObject.name} saiu da área de detecção de {entityType} - {sensor}", "yellow", this);
         }
 
         [Serializable]
@@ -189,14 +226,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             public PlanetResourcesSo Resources { get; private set; }
             public GameObject PlanetObject { get; private set; }
             public IPoolable PoolableObject { get; private set; }
-
             public int planetScale;
             public Quaternion planetAngle;
-            public Vector3 orbitPosition;
-            public float planetRadius;
-            public float orbitSpeed;
-            public float initialAngle;
-            public float planetDiameter; // Novo campo para armazenar o diâmetro
+            public float planetDiameter;
 
             public PlanetInfo(int id, PlanetResourcesSo resources, IPoolable poolableObject)
             {
@@ -204,36 +236,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 Name = poolableObject.GetGameObject().name;
                 Resources = resources;
                 PoolableObject = poolableObject;
-
                 PlanetObject = poolableObject.GetGameObject();
                 planetScale = 1;
                 planetAngle = Quaternion.identity;
-                orbitPosition = Vector3.zero;
-                planetRadius = 1f;
-                orbitSpeed = 0f;
-                initialAngle = 0f;
-                planetDiameter = 5.2f; // Valor padrão
-            }
-
-            public void SetPlanetDiameter(float diameter)
-            {
-                planetDiameter = diameter;
-            }
-
-            public void SetPlanetRadius(float radius)
-            {
-                planetRadius = radius;
-            }
-
-            public void SetOrbitSpeed(float speed)
-            {
-                orbitSpeed = speed;
+                planetDiameter = 5f;
             }
         }
 
         private void OnDrawGizmos()
         {
-            if (!drawBoundsGizmos) return;
+            if (!drawBoundsGizmos || _planetInfo == null) return;
 
             var modelRoot = GetComponentInChildren<ModelRoot>(true);
             if (modelRoot == null) return;

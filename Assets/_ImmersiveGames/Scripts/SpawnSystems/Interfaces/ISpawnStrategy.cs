@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
+using UnityEngine.Events;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
 {
     public abstract class SpawnStrategyConfigBase : ScriptableObject, ISpawnStrategyConfig
@@ -24,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
     {
         void Spawn(ObjectPool pool, Vector3 origin, GameObject sourceObject = null);
     }
-    public interface ISpawnTrigger
+    public interface ISpawnTriggerOld
     {
         void Initialize(SpawnPoint spawnPointRef);
         bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject);
@@ -35,7 +37,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Interfaces
         void OnDisable();
     }
     public interface IMoveObject
-    { void Initialize(Vector3? direction, float speed, Transform target = null);
+    { 
+        void Initialize(Vector3? direction, float speed, Transform target = null);
     }
-    
+    public interface ISizeMeasurable
+    {
+        float GetDiameter();
+    }
 }

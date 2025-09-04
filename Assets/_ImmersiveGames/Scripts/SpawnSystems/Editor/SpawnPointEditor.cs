@@ -2,7 +2,7 @@
 using System;
 using UnityEditor;
 using UnityEngine;
-using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
+using _ImmersiveGames.Scripts.SpawnSystems.Events;
 using _ImmersiveGames.Scripts.SpawnSystems.Triggers;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                 EditorGUILayout.PropertyField(_useManagerLockingProp, new GUIContent("Use Manager Locking", "Controla limites de spawn pelo SpawnManager."));
 
                 if (serializedObject.targetObject is InputSpawnPoint)
-                    EditorGUILayout.PropertyField(_playerInputProp, new GUIContent("Player Input", "Componente PlayerInput para InputSystemTrigger."));
+                    EditorGUILayout.PropertyField(_playerInputProp, new GUIContent("Player Input", "Componente PlayerInput para InputSystemTriggerOld."));
 
                 EditorGUILayout.PropertyField(_poolableDataProp, new GUIContent("Poolable Data", "Configuração do pool de objetos."));
                 ValidatePoolableData();
@@ -130,11 +130,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                             {
                                 Vector3 spawnPosition = new Vector3(isp.transform.position.x, 0f, isp.transform.position.z); // Visão top-down
                                 FilteredEventBus<SpawnRequestEvent>.RaiseFiltered(new SpawnRequestEvent(isp.GetPoolKey(), isp.gameObject, spawnPosition), isp);
-                                DebugUtility.LogVerbose<SpawnPointEditor>($"Teste de InputSystemTrigger disparado para '{isp.name}' com ação '{actionName}' na posição {spawnPosition}.", "cyan", this);
+                                DebugUtility.LogVerbose<SpawnPointEditor>($"Teste de InputSystemTriggerOld disparado para '{isp.name}' com ação '{actionName}' na posição {spawnPosition}.", "cyan", this);
                             }
                             else
                             {
-                                DebugUtility.LogWarning<SpawnPointEditor>($"Não foi possível testar InputSystemTrigger para '{isp.name}'. Verifique PlayerInput e actionName '{actionName}'.", this);
+                                DebugUtility.LogWarning<SpawnPointEditor>($"Não foi possível testar InputSystemTriggerOld para '{isp.name}'. Verifique PlayerInput e actionName '{actionName}'.", this);
                             }
                         }
                     }
@@ -225,9 +225,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
                     if (triggerData.triggerType == TriggerType.InputSystemTrigger)
                     {
                         if (!(sp is InputSpawnPoint))
-                            EditorGUILayout.HelpBox($"⚠️ InputSystemTrigger só pode ser usado com InputSpawnPoint, não {sp.GetType().Name}.", MessageType.Error);
+                            EditorGUILayout.HelpBox($"⚠️ InputSystemTriggerOld só pode ser usado com InputSpawnPoint, não {sp.GetType().Name}.", MessageType.Error);
                         else if (_playerInputProp != null && _playerInputProp.objectReferenceValue == null)
-                            EditorGUILayout.HelpBox("⚠️ InputSystemTrigger requer um componente PlayerInput atribuído.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("⚠️ InputSystemTriggerOld requer um componente PlayerInput atribuído.", MessageType.Warning);
                         else
                         {
                             string actionName = triggerData.GetProperty("actionName", "Fire");

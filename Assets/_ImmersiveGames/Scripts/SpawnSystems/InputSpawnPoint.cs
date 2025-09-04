@@ -16,20 +16,20 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             base.Awake();
             if (playerInput == null)
             {
-                DebugUtility.LogWarning<InputSpawnPoint>($"PlayerInput não configurado em '{name}'. InputSystemTrigger não funcionará.", this);
+                DebugUtility.LogWarning<InputSpawnPoint>($"PlayerInput não configurado em '{name}'. InputSystemTriggerOld não funcionará.", this);
             }
         }
 
         protected override void InitializeTrigger()
         {
             InputActionAsset inputAsset = playerInput != null ? playerInput.actions : null;
-            SpawnTrigger = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData, inputAsset);
-            if (SpawnTrigger == null)
+            SpawnTriggerOld = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData, inputAsset);
+            if (SpawnTriggerOld == null)
             {
                 DebugUtility.LogError<InputSpawnPoint>($"Falha ao criar trigger para {triggerData?.triggerType} em '{name}'.", this);
                 return;
             }
-            SpawnTrigger.Initialize(this);
+            SpawnTriggerOld.Initialize(this);
         }
 
         protected override void Update()

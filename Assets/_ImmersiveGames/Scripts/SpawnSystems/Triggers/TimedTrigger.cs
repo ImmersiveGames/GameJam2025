@@ -5,11 +5,11 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     [DebugLevel(DebugLevel.Logs)]
-    public abstract class TimedTrigger : BaseTrigger
+    public abstract class TimedTriggerOld : BaseTriggerOld
     {
         protected float timer;
 
-        protected TimedTrigger(EnhancedTriggerData data) : base(data)
+        protected TimedTriggerOld(EnhancedTriggerData data) : base(data)
         {
         }
 

@@ -122,50 +122,50 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
         private static void InitializeTriggerTemplates()
         {
-            _triggerTemplates[TriggerType.InitializationTrigger] = new PropertyTemplate("InitializationTrigger")
+            _triggerTemplates[TriggerType.InitializationTrigger] = new PropertyTemplate("InitializationTriggerOld")
                 .AddProperty("delay", 0f, false, "Atraso inicial em segundos antes do primeiro spawn")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos após o delay")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.IntervalTrigger] = new PropertyTemplate("IntervalTrigger")
+            _triggerTemplates[TriggerType.IntervalTrigger] = new PropertyTemplate("IntervalTriggerOld")
                 .AddProperty("spawnInterval", 2f, true, "Intervalo entre spawns em segundos")
                 .AddProperty("startImmediately", true, false, "Iniciar imediatamente ao ativar")
-                .AddProperty("continuous", true, false, "Se verdadeiro, spawns são contínuos (padrão para IntervalTrigger)")
+                .AddProperty("continuous", true, false, "Se verdadeiro, spawns são contínuos (padrão para IntervalTriggerOld)")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.InputSystemTrigger] = new PropertyTemplate("InputSystemTrigger")
+            _triggerTemplates[TriggerType.InputSystemTrigger] = new PropertyTemplate("InputSystemTriggerOld")
                 .AddProperty("actionName", "Fire", true, "Nome da ação no Input System")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos enquanto o input é mantido")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.GlobalEventTrigger] = new PropertyTemplate("GlobalEventTrigger")
+            _triggerTemplates[TriggerType.GlobalEventTrigger] = new PropertyTemplate("GlobalEventTriggerOld")
                 .AddProperty("eventName", "GlobalSpawnEvent", true, "Nome do evento global a escutar")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos após o evento")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.GenericGlobalEventTrigger] = new PropertyTemplate("GenericGlobalEventTrigger")
+            _triggerTemplates[TriggerType.GenericGlobalEventTrigger] = new PropertyTemplate("GenericGlobalEventTriggerOld")
                 .AddProperty("eventName", "GlobalGenericSpawnEvent", true, "Nome do evento global genérico a escutar")
-                .AddProperty("useGenericTrigger", false, false, "Usar GenericGlobalEventTrigger para eventos sem Position/Actor")
+                .AddProperty("useGenericTrigger", false, false, "Usar GenericGlobalEventTriggerOld para eventos sem Position/Actor")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos após o evento")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.PredicateTrigger] = new PropertyTemplate("PredicateTrigger")
+            _triggerTemplates[TriggerType.PredicateTrigger] = new PropertyTemplate("PredicateTriggerOld")
                 .AddProperty("checkInterval", 0.5f, true, "Intervalo de verificação do predicado em segundos")
                 .AddProperty("continuous", false, false, "Se verdadeiro, spawns são contínuos enquanto o predicado for verdadeiro")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")
                 .AddProperty("rearmDelay", 0.5f, false, "Tempo antes de rearmar o trigger em segundos")
                 .AddProperty("maxSpawns", -1, false, "Número máximo de spawns por ativação (-1 para sem limite)");
 
-            _triggerTemplates[TriggerType.SensorTrigger] = new PropertyTemplate("SensorTrigger")
+            _triggerTemplates[TriggerType.SensorTrigger] = new PropertyTemplate("SensorTriggerOld")
                 .AddProperty("sensorType", SensorTypes.OtherSensor, true, "Nome do sensor a ser usado")
                 .AddProperty("continuous", true, false, "Se verdadeiro, spawns são contínuos enquanto o sensor detectar")
                 .AddProperty("spawnInterval", 1.0f, false, "Intervalo entre spawns contínuos em segundos")

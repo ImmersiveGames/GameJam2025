@@ -1,130 +1,211 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
+using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-using UnityEngine;
-using UnityEngine.Events;
+
 namespace _ImmersiveGames.Scripts.SpawnSystems.New
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-50)]
     public class SpawnSystem : MonoBehaviour
     {
-        [SerializeField] private string poolKey = "PoolBullet";
-        [SerializeField] private float spawnRate = 1f; // Spawns por segundo
-        [SerializeField] private Vector3 spawnAreaSize = new Vector3(10f, 0f, 10f);
-        [SerializeField] private Vector3 basePosition = Vector3.zero;
-        [SerializeField] private int maxActiveObjects = 10; // Limite de objetos ativos
-        [SerializeField] private bool autoStart = true; // Iniciar spawn automaticamente
+        [SerializeField] private ObjectPool[] pools; // Pools diretamente configurados
+        [SerializeField] private MonoBehaviour triggerComponent; // Componente que implementa ITrigger
+        [SerializeField] private MonoBehaviour strategyComponent; // Componente que implementa ISpawnStrategy
+        [SerializeField] private MonoBehaviour actorComponent; // Componente que implementa IActor (opcional)
+        [SerializeField] private bool exhaustOnSpawn = false; // Tentar exaurir o pool
+        [SerializeField] private bool autoRespawnOnReturn = false; // Respawnar quando objetos retornam
+        [SerializeField] private bool asyncInit = false; // Inicialização assíncrona dos pools
+        [SerializeField] private Transform orbitCenter; // Centro da órbita para a estratégia (opcional)
 
-        public UnityEvent<IPoolable> OnObjectSpawned { get; } = new UnityEvent<IPoolable>();
-
-        private ObjectPool _pool;
-        private ISpawnPattern _spawnPattern;
-        private bool _isSpawning;
-        private IActor _spawner; // Para futura integração com IActor
+        private ITrigger _trigger;
+        private ISpawnStrategy _spawnStrategy;
+        private IActor _actor;
+        private bool _isInitialized;
+        private EventBinding<PoolObjectReturnedEvent> _returnEventBinding;
 
         private void Awake()
         {
-            _spawnPattern = new RandomSpawnPattern(); // Padrão inicial
+            ValidateComponents();
+
+            // Autoinjeção de IActor se não configurado manualmente
+            if (_actor == null)
+            {
+                _actor = GetComponent<IActor>();
+                if (_actor != null)
+                {
+                    DebugUtility.LogVerbose<SpawnSystem>($"Auto-injetado IActor: {_actor.Name}", "cyan", this);
+                }
+            }
         }
 
         private void Start()
         {
-            Initialize();
-            if (autoStart)
+            // Configura centro da órbita, se definido
+            if (orbitCenter != null && _spawnStrategy != null)
             {
-                StartSpawning();
+                _spawnStrategy.SetCenterTransform(orbitCenter);
+            }
+
+            if (asyncInit)
+            {
+                StartCoroutine(InitializePoolsAsync());
+            }
+            else
+            {
+                InitializePoolsSync();
             }
         }
 
-        private void Initialize()
+        private void OnEnable()
         {
-            if (PoolManager.Instance == null)
+            if (_trigger != null)
             {
-                DebugUtility.LogError<SpawnSystem>("PoolManager not found in scene.", this);
+                _trigger.OnTriggered += HandleTrigger;
+            }
+            if (autoRespawnOnReturn)
+            {
+                _returnEventBinding = new EventBinding<PoolObjectReturnedEvent>(OnObjectReturned);
+                EventBus<PoolObjectReturnedEvent>.Register(_returnEventBinding);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_trigger != null)
+            {
+                _trigger.OnTriggered -= HandleTrigger;
+            }
+            if (_returnEventBinding != null)
+            {
+                EventBus<PoolObjectReturnedEvent>.Unregister(_returnEventBinding);
+            }
+        }
+
+        private void ValidateComponents()
+        {
+            _trigger = triggerComponent as ITrigger;
+            if (_trigger == null)
+            {
+                DebugUtility.LogError<SpawnSystem>("Trigger component must implement ITrigger.", this);
                 enabled = false;
                 return;
             }
 
-            _pool = PoolManager.Instance.GetPool(poolKey);
-            if (_pool == null)
+            _spawnStrategy = strategyComponent as ISpawnStrategy;
+            if (_spawnStrategy == null)
             {
-                DebugUtility.LogError<SpawnSystem>($"Pool '{poolKey}' not found or not initialized.", this);
+                DebugUtility.LogError<SpawnSystem>("Strategy component must implement ISpawnStrategy.", this);
                 enabled = false;
                 return;
             }
 
-            DebugUtility.Log<SpawnSystem>($"SpawnSystem initialized with pool '{poolKey}'.", "green", this);
+            _actor = actorComponent as IActor;
+            if (actorComponent != null && _actor == null)
+            {
+                DebugUtility.LogError<SpawnSystem>("Actor component must implement IActor.", this);
+                enabled = false;
+                return;
+            }
+            if (_actor != null)
+            {
+                DebugUtility.LogVerbose<SpawnSystem>($"Actor configured: {_actor.Name}", "cyan", this);
+            }
         }
 
-        public void StartSpawning()
+        private void InitializePoolsSync()
         {
-            if (_isSpawning)
+            foreach (var pool in pools)
             {
-                DebugUtility.LogWarning<SpawnSystem>("SpawnSystem already spawning.", this);
+                if (pool != null && !pool.IsInitialized)
+                {
+                    pool.Initialize();
+                }
+            }
+            _isInitialized = true;
+            DebugUtility.Log<SpawnSystem>($"Pools initialized synchronously. Total pools: {pools.Length}", "green", this);
+        }
+
+        private IEnumerator InitializePoolsAsync()
+        {
+            foreach (var pool in pools)
+            {
+                if (pool != null && !pool.IsInitialized)
+                {
+                    pool.Initialize();
+                }
+                yield return null;
+            }
+            _isInitialized = true;
+            DebugUtility.Log<SpawnSystem>($"Pools initialized asynchronously. Total pools: {pools.Length}", "green", this);
+        }
+
+        private void HandleTrigger()
+        {
+            if (!_isInitialized)
+            {
+                DebugUtility.LogWarning<SpawnSystem>("Cannot spawn, pools not initialized.", this);
                 return;
             }
 
-            _isSpawning = true;
-            StartCoroutine(SpawnRoutine());
-            DebugUtility.Log<SpawnSystem>("Started spawning objects from pool '{poolKey}'.", "cyan", this);
-        }
-
-        public void StopSpawning()
-        {
-            if (!_isSpawning)
+            foreach (var pool in pools)
             {
-                DebugUtility.LogWarning<SpawnSystem>("SpawnSystem not spawning.", this);
-                return;
-            }
-
-            _isSpawning = false;
-            StopCoroutine(SpawnRoutine());
-            DebugUtility.Log<SpawnSystem>("Stopped spawning objects from pool '{poolKey}'.", "cyan", this);
-        }
-
-        private IEnumerator SpawnRoutine()
-        {
-            while (_isSpawning)
-            {
-                if (_pool.GetActiveObjects().Count < maxActiveObjects)
-                {
-                    Vector3 position = _spawnPattern.GetSpawnPosition(basePosition, spawnAreaSize);
-                    var poolable = _pool.GetObject(position, _spawner);
-                    if (poolable != null)
-                    {
-                        OnObjectSpawned.Invoke(poolable);
-                        DebugUtility.Log<SpawnSystem>($"Spawned object '{poolable.GetGameObject().name}' at {position}. Active: {poolable.GetGameObject().activeSelf}", "green", this);
-                    }
-                    else
-                    {
-                        DebugUtility.LogWarning<SpawnSystem>($"Failed to spawn object from pool '{poolKey}'.", this);
-                    }
-                }
-                else
-                {
-                    DebugUtility.LogVerbose<SpawnSystem>($"Max active objects ({maxActiveObjects}) reached for pool '{poolKey}'.", "yellow", this);
-                }
-                yield return new WaitForSeconds(1f / spawnRate);
+                if (pool == null) continue;
+                _spawnStrategy.Execute(pool, transform, exhaustOnSpawn, _actor, this);
             }
         }
 
-        public void SetSpawnPattern(ISpawnPattern pattern)
+        private void OnObjectReturned(PoolObjectReturnedEvent evt)
         {
-            _spawnPattern = pattern ?? new RandomSpawnPattern();
-            DebugUtility.Log<SpawnSystem>($"Spawn pattern set to {pattern.GetType().Name}.", "cyan", this);
+            if (!_isInitialized || !autoRespawnOnReturn) return;
+
+            foreach (var pool in pools)
+            {
+                if (pool != null && pool.PoolKey == evt.PoolKey)
+                {
+                    _spawnStrategy.Execute(pool, transform, exhaustOnSpawn, _actor, this);
+                    break;
+                }
+            }
         }
 
-        public void SetSpawner(IActor spawner)
+        public void ReturnAllToPool()
         {
-            _spawner = spawner;
-            DebugUtility.Log<SpawnSystem>($"Spawner set to {spawner?.GetType().Name ?? "null"}.", "cyan", this);
+            foreach (var pool in pools)
+            {
+                if (pool != null)
+                {
+                    pool.ClearPool();
+                }
+            }
         }
 
-        private void OnDestroy()
+        public List<IPoolable> GetActiveObjects()
         {
-            StopSpawning();
+            var activeObjects = new List<IPoolable>();
+            foreach (var pool in pools)
+            {
+                if (pool != null)
+                {
+                    activeObjects.AddRange(pool.GetActiveObjects());
+                }
+            }
+            return activeObjects;
+        }
+
+        public void ResetPool()
+        {
+            foreach (var pool in pools)
+            {
+                if (pool != null)
+                {
+                    pool.ClearPool();
+                }
+            }
+            _isInitialized = false;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         [SerializeField] private int initialPoolSize = 5;
         [SerializeField] private bool canExpand;
         [SerializeField] private PoolableObjectData[] objectConfigs; // Configurações variadas para objetos no pool
-
+        [SerializeField] private bool reconfigureOnReturn = true;
         public string ObjectName => objectName;
         public int InitialPoolSize => initialPoolSize;
         public bool CanExpand
@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             set => canExpand = value;
         }
         public PoolableObjectData[] ObjectConfigs => objectConfigs;
+        public bool ReconfigureOnReturn => reconfigureOnReturn;
 
 #if UNITY_EDITOR
         private void OnValidate()

@@ -71,15 +71,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var planetData = obj.Detected.GetPlanetData();
             var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
             _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
-            _orbitRadius = planetInfo.planetRadius;
+            _orbitRadius = planetInfo.planetDiameter;
             DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");
        
             
             _orbitSpeed = planetData.GetRandomOrbitSpeed();
-            planetInfo.SetOrbitSpeed(_orbitSpeed);
+            //planetInfo.SetOrbitSpeed(_orbitSpeed);
             _selfRotationSpeed = planetData.GetRandomRotationSpeed();
             _orbitClockwise = Random.value > planetData.rotationRightChance;
-            _currentAngle = planetInfo.initialAngle;
+            //_currentAngle = planetInfo.planetAngle;
             UpdateOrbitPosition(_currentAngle);
             StartOrbit();
         }

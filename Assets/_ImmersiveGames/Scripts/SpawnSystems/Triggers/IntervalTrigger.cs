@@ -5,18 +5,18 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     [DebugLevel(DebugLevel.Logs)]
-    public class IntervalTrigger : TimedTrigger
+    public class IntervalTriggerOld : TimedTriggerOld
     {
         private readonly float _interval;
         private readonly bool _startImmediately;
         private float _timer;
 
-        public IntervalTrigger(EnhancedTriggerData data) : base(data)
+        public IntervalTriggerOld(EnhancedTriggerData data) : base(data)
         {
             _interval = data.GetProperty("interval", 2f);
             if (_interval <= 0f)
             {
-                DebugUtility.LogError<IntervalTrigger>("Interval deve ser maior que 0. Usando 2s.", spawnPoint);
+                DebugUtility.LogError<IntervalTriggerOld>("Interval deve ser maior que 0. Usando 2s.", spawnPoint);
                 _interval = 2f;
             }
             _startImmediately = data.GetProperty("startImmediately", true);
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         public override void Initialize(SpawnPoint spawnPointRef)
         {
             base.Initialize(spawnPointRef);
-            DebugUtility.LogVerbose<IntervalTrigger>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{spawnPoint.name}'.", "blue", spawnPoint);
+            DebugUtility.LogVerbose<IntervalTriggerOld>($"Inicializado com interval={_interval}s, startImmediately={_startImmediately} para '{spawnPoint.name}'.", "blue", spawnPoint);
         }
 
         protected override bool OnCheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
             if (_timer <= 0f)
             {
                 _timer = _interval;
-                DebugUtility.Log<IntervalTrigger>($"Trigger disparado para '{spawnPoint.name}' na posição {triggerPosition} a cada {_interval}s.", "green", spawnPoint);
+                DebugUtility.Log<IntervalTriggerOld>($"Trigger disparado para '{spawnPoint.name}' na posição {triggerPosition} a cada {_interval}s.", "green", spawnPoint);
                 return true;
             }
             return false;

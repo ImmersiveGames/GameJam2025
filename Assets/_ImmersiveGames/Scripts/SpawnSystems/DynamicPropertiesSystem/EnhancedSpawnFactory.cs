@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
         private EnhancedSpawnFactory() { }
 
-        public ISpawnTrigger CreateTrigger(EnhancedTriggerData data, InputActionAsset inputAsset = null)
+        public ISpawnTriggerOld CreateTrigger(EnhancedTriggerData data, InputActionAsset inputAsset = null)
         {
             if (data == null)
             {
@@ -24,19 +24,19 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
 
             if (data.triggerType == TriggerType.InputSystemTrigger && inputAsset == null)
             {
-                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para InputSystemTrigger.");
+                DebugUtility.LogError<EnhancedSpawnFactory>($"InputActionAsset é necessário para InputSystemTriggerOld.");
                 return null;
             }
 
             return data.triggerType switch
             {
-                TriggerType.InitializationTrigger => new InitializationTrigger(data),
-                TriggerType.IntervalTrigger => new IntervalTrigger(data),
-                TriggerType.InputSystemTrigger => new InputSystemTrigger(data, inputAsset),
-                TriggerType.GlobalEventTrigger => new GlobalEventTrigger(data),
-                TriggerType.GenericGlobalEventTrigger => new GenericGlobalEventTrigger(data),
-                TriggerType.SensorTrigger => new SensorTrigger(data),
-                TriggerType.PredicateTrigger => new PredicateTrigger(data),
+                TriggerType.InitializationTrigger => new InitializationTriggerOld(data),
+                TriggerType.IntervalTrigger => new IntervalTriggerOld(data),
+                TriggerType.InputSystemTrigger => new InputSystemTriggerOld(data, inputAsset),
+                TriggerType.GlobalEventTrigger => new GlobalEventTriggerOld(data),
+                TriggerType.GenericGlobalEventTrigger => new GenericGlobalEventTriggerOld(data),
+                TriggerType.SensorTrigger => new SensorTriggerOld(data),
+                TriggerType.PredicateTrigger => new PredicateTriggerOld(data),
                 _ => null
             };
         }
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem
                     StrategyType.SimpleSpawnStrategy => new SimpleSpawnStrategy(data),
                     StrategyType.DirectionalSpawnStrategy => new DirectionalSpawnStrategy(data),
                     StrategyType.FullPoolSpawnStrategy => new FullPoolSpawnStrategy(data),
-                    StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
+                    //StrategyType.OrbitPlanetStrategy => new OrbitPlanetStrategy(data),
                     StrategyType.CircularZoomOutStrategy => new CircularZoomOutStrategy(data),
                     _ => null
                 };

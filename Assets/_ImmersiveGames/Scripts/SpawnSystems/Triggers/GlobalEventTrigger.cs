@@ -1,24 +1,24 @@
 ﻿using _ImmersiveGames.Scripts.SpawnSystems.Data;
-using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
+using _ImmersiveGames.Scripts.SpawnSystems.Events;
 using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
-    public class GlobalEventTrigger : ISpawnTrigger
+    public class GlobalEventTriggerOld : ISpawnTriggerOld
     {
         private readonly string _eventName;
         private bool _isActive;
         private SpawnPoint _spawnPoint;
         private readonly EventBinding<ISpawnEvent> _eventBinding;
 
-        public GlobalEventTrigger(EnhancedTriggerData data)
+        public GlobalEventTriggerOld(EnhancedTriggerData data)
         {
             _eventName = data.GetProperty("eventName", "GlobalSpawnEvent");
             if (string.IsNullOrEmpty(_eventName))
             {
-                DebugUtility.LogError<GlobalEventTrigger>("eventName não pode ser vazio. Usando 'GlobalSpawnEvent'.");
+                DebugUtility.LogError<GlobalEventTriggerOld>("eventName não pode ser vazio. Usando 'GlobalSpawnEvent'.");
                 _eventName = "GlobalSpawnEvent";
             }
             _isActive = true;
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         {
             _spawnPoint = spawnPointRef ?? throw new System.ArgumentNullException(nameof(spawnPointRef));
             EventBus<ISpawnEvent>.Register(_eventBinding);
-            DebugUtility.Log<GlobalEventTrigger>($"Inicializado com eventName='{_eventName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
+            DebugUtility.Log<GlobalEventTriggerOld>($"Inicializado com eventName='{_eventName}' para '{_spawnPoint.name}'.", "blue", _spawnPoint);
         }
 
         public bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -47,17 +47,17 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
             GameObject sourceObject = evt.SourceGameObject ?? _spawnPoint.gameObject;
             if (sourceObject == null)
             {
-                DebugUtility.LogWarning<GlobalEventTrigger>("sourceObject do evento é nulo. Usando SpawnPoint como source.", _spawnPoint);
+                DebugUtility.LogWarning<GlobalEventTriggerOld>("sourceObject do evento é nulo. Usando SpawnPoint como source.", _spawnPoint);
             }
 
             EventBus<SpawnRequestEvent>.Raise(new SpawnRequestEvent(_spawnPoint.GetPoolKey(), sourceObject, spawnPosition));
-            DebugUtility.Log<GlobalEventTrigger>($"Trigger disparado por evento '{_eventName}' em '{_spawnPoint.name}' na posição {spawnPosition} com sourceObject {(sourceObject != null ? sourceObject.name : "null")}.", "green", _spawnPoint);
+            DebugUtility.Log<GlobalEventTriggerOld>($"Trigger disparado por evento '{_eventName}' em '{_spawnPoint.name}' na posição {spawnPosition} com sourceObject {(sourceObject != null ? sourceObject.name : "null")}.", "green", _spawnPoint);
         }
 
         public void Reset()
         {
             SetActive(true);
-            DebugUtility.Log<GlobalEventTrigger>($"Resetado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.Log<GlobalEventTriggerOld>($"Resetado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void SetActive(bool active)
@@ -68,13 +68,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
                 EventBus<ISpawnEvent>.Register(_eventBinding);
             else
                 EventBus<ISpawnEvent>.Unregister(_eventBinding);
-            DebugUtility.Log<GlobalEventTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.Log<GlobalEventTriggerOld>($"Trigger {(active ? "ativado" : "desativado")} para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public void OnDisable()
         {
             EventBus<ISpawnEvent>.Unregister(_eventBinding);
-            DebugUtility.Log<GlobalEventTrigger>($"OnDisable chamado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
+            DebugUtility.Log<GlobalEventTriggerOld>($"OnDisable chamado para '{_spawnPoint?.name}'.", "yellow", _spawnPoint);
         }
 
         public bool IsActive => _isActive;

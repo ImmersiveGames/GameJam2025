@@ -1,14 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-
-namespace _ImmersiveGames.Scripts.Tests
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
 {
     [DebugLevel(DebugLevel.Verbose)]
     public class PoolTest : MonoBehaviour

@@ -5,18 +5,18 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     [DebugLevel(DebugLevel.Logs)]
-    public class InitializationTrigger : BaseTrigger
+    public class InitializationTriggerOld : BaseTriggerOld
     {
         private readonly float _delay;
         private bool _hasSpawned;
         private float _timer;
 
-        public InitializationTrigger(EnhancedTriggerData data) : base(data)
+        public InitializationTriggerOld(EnhancedTriggerData data) : base(data)
         {
             _delay = data.GetProperty("delay", 0f);
             if (_delay < 0f)
             {
-                DebugUtility.LogError<InitializationTrigger>("Delay não pode ser negativo. Usando 0.", spawnPoint);
+                DebugUtility.LogError<InitializationTriggerOld>("Delay não pode ser negativo. Usando 0.", spawnPoint);
                 _delay = 0f;
             }
             _hasSpawned = false;
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         public override void Initialize(SpawnPoint spawnPointRef)
         {
             base.Initialize(spawnPointRef);
-            DebugUtility.LogVerbose<InitializationTrigger>($"Inicializado com delay={_delay}s para '{spawnPoint.name}'.", "blue", spawnPoint);
+            DebugUtility.LogVerbose<InitializationTriggerOld>($"Inicializado com delay={_delay}s para '{spawnPoint.name}'.", "blue", spawnPoint);
         }
 
         public override bool CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject)
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
             if (_timer <= 0f)
             {
                 _hasSpawned = true;
-                DebugUtility.Log<InitializationTrigger>($"Spawn inicial disparado para '{spawnPoint.name}' na posição {triggerPosition}.", "green", spawnPoint);
+                DebugUtility.Log<InitializationTriggerOld>($"Spawn inicial disparado para '{spawnPoint.name}' na posição {triggerPosition}.", "green", spawnPoint);
                 return true;
             }
             return false;
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
             base.Reset();
             _hasSpawned = false;
             _timer = _delay;
-            DebugUtility.LogVerbose<InitializationTrigger>($"Resetado para '{spawnPoint?.name}' com delay={_delay}s.", "yellow", spawnPoint);
+            DebugUtility.LogVerbose<InitializationTriggerOld>($"Resetado para '{spawnPoint?.name}' com delay={_delay}s.", "yellow", spawnPoint);
         }
 
         public override void OnDisable()

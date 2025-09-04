@@ -1,7 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.SpawnSystems.Data;
 using _ImmersiveGames.Scripts.SpawnSystems.DynamicPropertiesSystem;
-using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
+using _ImmersiveGames.Scripts.SpawnSystems.Events;
 using _ImmersiveGames.Scripts.SpawnSystems.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private SpawnManager _spawnManager;
         private PoolManager _poolManager;
         private ISpawnStrategy SpawnStrategy { get; set; }
-        public ISpawnTrigger SpawnTrigger { get; protected set; }
+        public ISpawnTriggerOld SpawnTriggerOld { get; protected set; }
         private Vector3? _pendingTriggerPosition;
         private GameObject _pendingSourceObject;
 
@@ -107,14 +107,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         protected virtual void InitializeTrigger()
         {
-            SpawnTrigger = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData);
-            if (SpawnTrigger == null)
+            SpawnTriggerOld = EnhancedSpawnFactory.Instance.CreateTrigger(triggerData);
+            if (SpawnTriggerOld == null)
             {
                 DebugUtility.LogError<SpawnPoint>($"Falha ao criar trigger para {triggerData?.triggerType} em '{name}'.", this);
                 enabled = false;
                 return;
             }
-            SpawnTrigger.Initialize(this);
+            SpawnTriggerOld.Initialize(this);
         }
 
         protected virtual void OnEnable()
@@ -140,14 +140,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         protected virtual void Update()
         {
             if (!GameManager.Instance.ShouldPlayingGame()) return;
-            if (!IsSpawnValid || SpawnTrigger == null)
+            if (!IsSpawnValid || SpawnTriggerOld == null)
             {
-                DebugUtility.LogVerbose<SpawnPoint>($"Update ignorado em '{name}'. IsSpawnValid: {IsSpawnValid}, SpawnTrigger: {(SpawnTrigger != null ? "presente" : "nulo")}", "yellow", this);
+                DebugUtility.LogVerbose<SpawnPoint>($"Update ignorado em '{name}'. IsSpawnValid: {IsSpawnValid}, SpawnTriggerOld: {(SpawnTriggerOld != null ? "presente" : "nulo")}", "yellow", this);
                 return;
             }
 
             UpdateTransformCache();
-            if (SpawnTrigger.CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject))
+            if (SpawnTriggerOld.CheckTrigger(out Vector3? triggerPosition, out GameObject sourceObject))
             {
                 _pendingTriggerPosition = triggerPosition;
                 _pendingSourceObject = sourceObject ?? gameObject;
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (!_cachedPool)
             {
                 DebugUtility.LogError<SpawnPoint>($"Pool '{_poolKey}' não encontrado para '{name}'.", this);
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, position));
+                //EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, position));
                 return;
             }
 
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     _isExhausted = true;
                 UpdateSpawnState();
                 EventBus<PoolExhaustedEvent>.Raise(new PoolExhaustedEvent(_poolKey));
-                EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, position));
+                //EventBus<SpawnFailedEvent>.Raise(new SpawnFailedEvent(_poolKey, position));
                 DebugUtility.LogVerbose<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}'.", "yellow", this);
                 return;
             }
@@ -270,16 +270,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
 
             _isExhausted = false;
-            SpawnTrigger?.SetActive(true);
-            SpawnTrigger?.Reset();
+            SpawnTriggerOld?.SetActive(true);
+            SpawnTriggerOld?.Reset();
             UpdateSpawnState();
             DebugUtility.LogVerbose<SpawnPoint>($"SpawnPoint '{name}' resetado.", "green", this);
         }
 
         private void UpdateSpawnState()
         {
-            IsSpawnValid = _spawnManager.CanSpawn(this) && (!_isExhausted || useManagerLocking) && SpawnTrigger != null && SpawnStrategy != null && _cachedPool != null && _cachedPool.IsInitialized;
-            DebugUtility.LogVerbose<SpawnPoint>($"UpdateSpawnState em '{name}': IsSpawnValid={IsSpawnValid}, CanSpawn={_spawnManager.CanSpawn(this)}, IsExhausted={_isExhausted}, UseManagerLocking={useManagerLocking}, SpawnTrigger={(SpawnTrigger != null ? "presente" : "nulo")}, SpawnStrategy={(SpawnStrategy != null ? "presente" : "nulo")}, CachedPool={(_cachedPool != null ? "presente" : "nulo")}", "yellow", this);
+            IsSpawnValid = _spawnManager.CanSpawn(this) && (!_isExhausted || useManagerLocking) && SpawnTriggerOld != null && SpawnStrategy != null && _cachedPool != null && _cachedPool.IsInitialized;
+            DebugUtility.LogVerbose<SpawnPoint>($"UpdateSpawnState em '{name}': IsSpawnValid={IsSpawnValid}, CanSpawn={_spawnManager.CanSpawn(this)}, IsExhausted={_isExhausted}, UseManagerLocking={useManagerLocking}, SpawnTriggerOld={(SpawnTriggerOld != null ? "presente" : "nulo")}, SpawnStrategy={(SpawnStrategy != null ? "presente" : "nulo")}, CachedPool={(_cachedPool != null ? "presente" : "nulo")}", "yellow", this);
         }
 
         public void SetStrategyData(EnhancedStrategyData newData)
@@ -303,7 +303,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         public void SetTriggerActive(bool active)
         {
-            SpawnTrigger?.SetActive(active);
+            SpawnTriggerOld?.SetActive(active);
             UpdateSpawnState();
             DebugUtility.LogVerbose<SpawnPoint>($"Trigger {(active ? "ativado" : "desativado")} em '{name}'.", "yellow", this);
         }
@@ -312,6 +312,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public PoolableObjectData GetPoolableData() => poolableData;
         public EnhancedTriggerData GetTriggerData() => triggerData;
         public bool IsSpawnValid { get; private set; }
-        public bool GetTriggerActive() => SpawnTrigger?.IsActive ?? false;
+        public bool GetTriggerActive() => SpawnTriggerOld?.IsActive ?? false;
     }
 }

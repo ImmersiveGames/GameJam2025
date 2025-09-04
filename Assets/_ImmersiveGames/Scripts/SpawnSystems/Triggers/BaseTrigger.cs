@@ -6,13 +6,13 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     [DebugLevel(DebugLevel.Logs)]
-    public abstract class BaseTrigger : ISpawnTrigger
+    public abstract class BaseTriggerOld : ISpawnTriggerOld
     {
         protected readonly EnhancedTriggerData data;
         protected SpawnPoint spawnPoint;
         protected bool isActive;
 
-        protected BaseTrigger(EnhancedTriggerData data)
+        protected BaseTriggerOld(EnhancedTriggerData data)
         {
             this.data = data;
             isActive = true;
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         public virtual void SetActive(bool active)
         {
             isActive = active;
-            DebugUtility.LogVerbose<BaseTrigger>($"Trigger {(active ? "ativado" : "desativado")} para '{spawnPoint?.name}'.", "yellow", spawnPoint);
+            DebugUtility.LogVerbose<BaseTriggerOld>($"Trigger {(active ? "ativado" : "desativado")} para '{spawnPoint?.name}'.", "yellow", spawnPoint);
         }
 
         public virtual void Reset()
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         public virtual void OnDisable()
         {
             isActive = false;
-            DebugUtility.LogVerbose<BaseTrigger>($"OnDisable chamado para '{spawnPoint?.name}'.", "yellow", spawnPoint);
+            DebugUtility.LogVerbose<BaseTriggerOld>($"OnDisable chamado para '{spawnPoint?.name}'.", "yellow", spawnPoint);
         }
 
         public bool IsActive => isActive;

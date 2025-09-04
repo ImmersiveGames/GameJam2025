@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using _ImmersiveGames.Scripts.ActorSystems;
@@ -14,13 +15,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public UnityEvent OnDeactivated { get; } = new UnityEvent();
         public IActor Spawner { get; private set; }
         private ObjectPool _pool;
-        private bool _isInitialized;
+        private bool _isConfigured;
 
-        public void Initialize(PoolableObjectData data, ObjectPool pool, IActor actor = null)
+        public void Configure(PoolableObjectData data, ObjectPool pool, IActor actor = null)
         {
-            if (_isInitialized)
+            if (_isConfigured)
             {
-                DebugUtility.LogWarning<PooledObject>($"Object '{name}' already initialized.", this);
+                DebugUtility.LogWarning<PooledObject>($"Object '{name}' already configured.", this);
                 return;
             }
 
@@ -33,17 +34,18 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             Data = data;
             _pool = pool;
             Spawner = actor;
-            _isInitialized = true;
+            _isConfigured = true;
 
             gameObject.SetActive(false);
-            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' initialized with lifetime {data.Lifetime}.", "green", this);
+            EventBus<ObjectCreatedEvent>.Raise(new ObjectCreatedEvent(this, data, pool));
+            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' configured with lifetime {data.Lifetime}.", "green", this);
         }
 
         public void Activate(Vector3 position, IActor actor)
         {
-            if (!_isInitialized)
+            if (!_isConfigured)
             {
-                DebugUtility.LogError<PooledObject>($"Cannot activate '{name}': not initialized.", this);
+                DebugUtility.LogError<PooledObject>($"Cannot activate '{name}': not configured.", this);
                 return;
             }
 
@@ -57,9 +59,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void Deactivate()
         {
-            if (!_isInitialized)
+            if (!_isConfigured)
             {
-                DebugUtility.LogError<PooledObject>($"Cannot deactivate '{name}': not initialized.", this);
+                DebugUtility.LogError<PooledObject>($"Cannot deactivate '{name}': not configured.", this);
                 return;
             }
 
@@ -72,14 +74,15 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             gameObject.SetActive(false);
             LifetimeManager.Instance.UnregisterObject(this);
             OnDeactivated.Invoke();
+            EventBus<PoolObjectReturnedEvent>.Raise(new PoolObjectReturnedEvent(_pool.GetData().ObjectName, this));
             DebugUtility.LogVerbose<PooledObject>($"Object '{name}' deactivated (set inactive). Active: {gameObject.activeSelf}", "blue", this);
         }
 
         public void PoolableReset()
         {
-            if (!_isInitialized)
+            if (!_isConfigured)
             {
-                DebugUtility.LogError<PooledObject>($"Cannot reset '{name}': not initialized.", this);
+                DebugUtility.LogError<PooledObject>($"Cannot reset '{name}': not configured.", this);
                 return;
             }
 
@@ -91,9 +94,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void ReturnToPool()
         {
-            if (!_isInitialized || _pool == null)
+            if (!_isConfigured || _pool == null)
             {
-                DebugUtility.LogError<PooledObject>($"Cannot return '{name}' to pool: not initialized or pool not set.", this);
+                DebugUtility.LogError<PooledObject>($"Cannot return '{name}' to pool: not configured or pool not set.", this);
                 return;
             }
 
@@ -109,6 +112,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public T GetData<T>() where T : PoolableObjectData
         {
             return Data as T;
+        }
+
+        public ObjectPool GetPool()
+        {
+            return _pool;
         }
     }
 }

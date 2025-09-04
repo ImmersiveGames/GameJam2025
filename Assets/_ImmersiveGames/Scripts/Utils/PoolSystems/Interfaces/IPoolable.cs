@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
     public interface IPoolable
     {
         // Inicializa o objeto com os dados e o pool associado
-        void Initialize(PoolableObjectData data, ObjectPool pool, IActor actor = null);
+        void Configure(PoolableObjectData data, ObjectPool pool, IActor actor = null);
         
         // Ativa o objeto na posição especificada, opcionalmente com um spawner
         void Activate(Vector3 position, IActor actor);
@@ -38,5 +38,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces
         
         // Obtém os dados tipados do objeto
         T GetData<T>() where T : PoolableObjectData;
+        ObjectPool GetPool();
     }
 }

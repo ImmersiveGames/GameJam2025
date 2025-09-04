@@ -1,14 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.SpawnSystems.Data;
-using _ImmersiveGames.Scripts.SpawnSystems.EventBus;
+using _ImmersiveGames.Scripts.SpawnSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 {
     [DebugLevel(DebugLevel.Logs)]
-    public class SensorTrigger : TimedTrigger
+    public class SensorTriggerOld : TimedTriggerOld
     {
         private readonly SensorTypes _sensorType;
         private IDetectable _detectedPlanet;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
         private EventBinding<SensorDetectedEvent> _detectedBinding;
         private EventBinding<SensorLostEvent> _lostBinding;
 
-        public SensorTrigger(EnhancedTriggerData data) : base(data)
+        public SensorTriggerOld(EnhancedTriggerData data) : base(data)
         {
             _sensorType = data.GetProperty("sensorType", SensorTypes.OtherSensor);
         }
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
 
             if (!isActive || _detectedPlanet is not { Detectable: { IsActive: true } } || _detector == null)
             {
-                DebugUtility.LogVerbose<SensorTrigger>($"Trigger inativo: IsActive={isActive}, DetectedPlanet={_detectedPlanet?.Detectable.Name}, PlanetActive={_detectedPlanet?.Detectable.IsActive}, DetectorController={_detector?.Owner.Name}", "cyan");
+                DebugUtility.LogVerbose<SensorTriggerOld>($"Trigger inativo: IsActive={isActive}, DetectedPlanet={_detectedPlanet?.Detectable.Name}, PlanetActive={_detectedPlanet?.Detectable.IsActive}, DetectorController={_detector?.Owner.Name}", "cyan");
                 return false;
             }
 
@@ -65,13 +65,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
                 if (_detectedPlanet.Detectable.Transform.gameObject.TryGetComponent(out PlanetsMaster planetsMaster))
                 {
                     planetsMaster.AddDetector(evt.Owner);
-                    DebugUtility.LogVerbose<SensorTrigger>($"DetectorController '{evt.Owner.Owner.Name}' adicionado ao PlanetsMaster do planeta '{evt.Planet.Detectable.Name}'.", "blue");
+                    DebugUtility.LogVerbose<SensorTriggerOld>($"DetectorController '{evt.Owner.Owner.Name}' adicionado ao PlanetsMaster do planeta '{evt.Planet.Detectable.Name}'.", "blue");
                 }
                 else
                 {
-                    DebugUtility.LogWarning<SensorTrigger>($"PlanetsMaster não encontrado no planeta '{evt.Planet.Detectable.Name}'.", evt.Planet.Detectable.Transform.gameObject);
+                    DebugUtility.LogWarning<SensorTriggerOld>($"PlanetsMaster não encontrado no planeta '{evt.Planet.Detectable.Name}'.", evt.Planet.Detectable.Transform.gameObject);
                 }
-                DebugUtility.Log<SensorTrigger>($"Planeta '{evt.Planet.Detectable.Name}' detectado por '{evt.Owner?.Owner.Name}' com sensor '{_sensorType}'. Ativando trigger.", "green");
+                DebugUtility.Log<SensorTriggerOld>($"Planeta '{evt.Planet.Detectable.Name}' detectado por '{evt.Owner?.Owner.Name}' com sensor '{_sensorType}'. Ativando trigger.", "green");
             }
         }
 
@@ -82,21 +82,21 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
             if (_detectedPlanet.Detectable.Transform.gameObject.TryGetComponent(out PlanetsMaster planetsMaster))
             {
                 planetsMaster.RemoveDetector(evt.Owner);
-                DebugUtility.LogVerbose<SensorTrigger>($"DetectorController '{evt.Owner.Owner.Name}' removido do PlanetsMaster do planeta '{evt.Planet.Detectable.Name}'.", "yellow");
+                DebugUtility.LogVerbose<SensorTriggerOld>($"DetectorController '{evt.Owner.Owner.Name}' removido do PlanetsMaster do planeta '{evt.Planet.Detectable.Name}'.", "yellow");
             }
 
             isActive = false;
             _detectedPlanet = null;
             _detector = null;
             _targetPosition = null;
-            DebugUtility.Log<SensorTrigger>($"Planeta '{evt.Planet.Detectable.Name}' perdido por '{_sensorType}'. Desativando trigger.", "yellow");
+            DebugUtility.Log<SensorTriggerOld>($"Planeta '{evt.Planet.Detectable.Name}' perdido por '{_sensorType}'. Desativando trigger.", "yellow");
         }
 
         public override void Reset()
         {
             base.Reset();
             isActive = _detectedPlanet != null && _detectedPlanet.Detectable.IsActive;
-            DebugUtility.LogVerbose<SensorTrigger>($"Resetado para '{spawnPoint?.name}'. Ativo: {isActive}.", "yellow", spawnPoint);
+            DebugUtility.LogVerbose<SensorTriggerOld>($"Resetado para '{spawnPoint?.name}'. Ativo: {isActive}.", "yellow", spawnPoint);
         }
 
         public override void OnDisable()
@@ -106,9 +106,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.Triggers
                 _detectedPlanet.Detectable.Transform.gameObject.TryGetComponent(out PlanetsMaster planetsMaster))
             {
                 planetsMaster.RemoveDetector(_detector);
-                DebugUtility.LogVerbose<SensorTrigger>($"DetectorController '{_detector.Owner.Name}' removido do PlanetsMaster ao desativar componente.", "yellow");
+                DebugUtility.LogVerbose<SensorTriggerOld>($"DetectorController '{_detector.Owner.Name}' removido do PlanetsMaster ao desativar componente.", "yellow");
             }
-            DebugUtility.LogVerbose<SensorTrigger>($"OnDisable chamado para '{spawnPoint?.name}'.", "yellow", spawnPoint);
+            DebugUtility.LogVerbose<SensorTriggerOld>($"OnDisable chamado para '{spawnPoint?.name}'.", "yellow", spawnPoint);
         }
     }
 }

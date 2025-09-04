@@ -10,34 +10,28 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public static bool ValidatePoolData(PoolData data, Object caller)
         {
-            string cacheKey = data.name + "_" + data.GetInstanceID();
+            if (data == null || string.IsNullOrEmpty(data.ObjectName))
+            {
+                DebugUtility.LogError<ObjectPool>("PoolData is null or ObjectName is empty.", caller);
+                return false;
+            }
+
+            string cacheKey = data.ObjectName;
             if (_cache.TryGetValue(cacheKey, out bool cachedResult) && Time.time == _lastValidationTime)
             {
-                DebugUtility.LogVerbose<ObjectPool>($"PoolData '{data.name}' (ObjectName: {data.ObjectName}) validated successfully and cached.", "green", caller);
+                DebugUtility.LogVerbose<ObjectPool>($"PoolData '{data.ObjectName}' validated successfully and cached.", "green", caller);
                 return cachedResult;
-            }
-
-            if (data == null)
-            {
-                DebugUtility.LogError<ObjectPool>($"PoolData is null.", caller);
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(data.ObjectName))
-            {
-                DebugUtility.LogError<ObjectPool>($"PoolData '{data.name}' has empty ObjectName.", caller);
-                return false;
             }
 
             if (data.InitialPoolSize <= 0)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolData '{data.name}' has invalid InitialPoolSize: {data.InitialPoolSize}.", caller);
+                DebugUtility.LogError<ObjectPool>($"PoolData '{data.ObjectName}' has invalid InitialPoolSize: {data.InitialPoolSize}.", caller);
                 return false;
             }
 
             if (data.ObjectConfigs == null || data.ObjectConfigs.Length == 0)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolData '{data.name}' has no ObjectConfigs.", caller);
+                DebugUtility.LogError<ObjectPool>($"PoolData '{data.ObjectName}' has no ObjectConfigs.", caller);
                 return false;
             }
 
@@ -46,7 +40,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (!ValidatePoolableObjectData(data.ObjectConfigs[i], caller))
                 {
-                    DebugUtility.LogError<ObjectPool>($"Invalid PoolableObjectData at index {i} in PoolData '{data.name}'.", caller);
+                    DebugUtility.LogError<ObjectPool>($"Invalid PoolableObjectData at index {i} in PoolData '{data.ObjectName}'.", caller);
                     allConfigsValid = false;
                 }
             }
@@ -58,23 +52,23 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             _cache[cacheKey] = true;
             _lastValidationTime = Time.time;
-            DebugUtility.LogVerbose<ObjectPool>($"PoolData '{data.name}' (ObjectName: {data.ObjectName}) validated successfully and cached.", "green", caller);
+            DebugUtility.LogVerbose<ObjectPool>($"PoolData '{data.ObjectName}' validated successfully and cached.", "green", caller);
             return true;
         }
 
         public static bool ValidatePoolableObjectData(PoolableObjectData data, Object caller)
         {
-            string cacheKey = data.name + "_" + data.GetInstanceID();
+            if (data == null || string.IsNullOrEmpty(data.name))
+            {
+                DebugUtility.LogError<ObjectPool>("PoolableObjectData is null or name is empty.", caller);
+                return false;
+            }
+
+            string cacheKey = data.name;
             if (_cache.TryGetValue(cacheKey, out bool cachedResult) && Time.time == _lastValidationTime)
             {
                 DebugUtility.LogVerbose<ObjectPool>($"PoolableObjectData '{data.name}' validated successfully and cached.", "green", caller);
                 return cachedResult;
-            }
-
-            if (data == null)
-            {
-                DebugUtility.LogError<ObjectPool>("PoolableObjectData is null.", caller);
-                return false;
             }
 
             if (data.Prefab == null)

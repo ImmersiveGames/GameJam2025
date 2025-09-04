@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 06417b403fcf41b1a369879ffeb21cb9, type: 3}
-  m_Name: PoolData 1
+  m_Name: PoolPLanets
   m_EditorClassIdentifier: 
-  objectName: PoolBullet
-  initialPoolSize: 5
+  objectName: PoolPlanet
+  initialPoolSize: 10
   canExpand: 0
   objectConfigs:
-  - {fileID: 11400000, guid: 816bab86ec7d01e4c82ff80efd557fa7, type: 2}
-  - {fileID: 11400000, guid: 6b04ed7b0fefd8847b2085a187f757d9, type: 2}
+  - {fileID: 11400000, guid: e83010ab8315c8e4089abdc4435f823a, type: 2}
+  reconfigureOnReturn: 0

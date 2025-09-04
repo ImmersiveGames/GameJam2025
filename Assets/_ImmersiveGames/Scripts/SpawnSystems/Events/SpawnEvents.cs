@@ -1,6 +1,10 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.SpawnSystems.New;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.SpawnSystems.EventBus
+namespace _ImmersiveGames.Scripts.SpawnSystems.Events
 {
     public struct SpawnRequestEvent : ISpawnEvent
     {
@@ -80,4 +84,33 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.EventBus
             EventName = eventName;
         }
     }
+    
+    public class SpawnEvent : IEvent
+    {
+        public IPoolable Poolable { get; }
+        public string PoolKey { get; }
+
+        public SpawnEvent(IPoolable poolable, string poolKey)
+        {
+            Poolable = poolable;
+            PoolKey = poolKey;
+        }
+    }
+    
+    public class OrbitsSpawnedEvent : IEvent
+    {
+        public List<IPoolable> SpawnedObjects { get; }
+        public Vector3 Center { get; }
+        public List<float> Radii { get; }
+        public SpawnSystem SpawnSystem { get; }
+
+        public OrbitsSpawnedEvent(List<IPoolable> spawnedObjects, Vector3 center, List<float> radii, SpawnSystem spawnSystem = null)
+        {
+            SpawnedObjects = spawnedObjects;
+            Center = center;
+            Radii = radii;
+            SpawnSystem = spawnSystem;
+        }
+    }
+
 }

@@ -24,9 +24,21 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
 
-            poolable.Initialize(config, pool);
-            DebugUtility.LogVerbose<ObjectPoolFactory>($"Created projectile '{objectName}' with speed={config.Lifetime}, damage={config.ObjectName}.", "cyan", null);
+            poolable.Configure(config, pool);
+            DebugUtility.LogVerbose<ObjectPoolFactory>($"Created object '{objectName}' with config '{config.ObjectName}'.", "cyan", null);
             return poolable;
+        }
+
+        public void ReinitializeObject(IPoolable poolable, PoolableObjectData config)
+        {
+            if (poolable == null || config == null)
+            {
+                DebugUtility.LogWarning<ObjectPoolFactory>("Cannot reinitialize: poolable or config is null.", null);
+                return;
+            }
+
+            poolable.Configure(config, poolable.GetPool());
+            DebugUtility.LogVerbose<ObjectPoolFactory>($"Reinitialized object '{poolable.GetGameObject().name}' with config '{config.ObjectName}'.", "blue", null);
         }
     }
 }
