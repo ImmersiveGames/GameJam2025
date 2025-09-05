@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 2943765720433415695}
   - component: {fileID: 8089992123675145888}
   - component: {fileID: 1781660901181553424}
+  - component: {fileID: 7757174408074400527}
+  - component: {fileID: -8389335224771437628}
   m_Layer: 0
   m_Name: TestePool
   m_TagString: Untagged
@@ -58,3 +60,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinCollectionData: {fileID: 11400000, guid: 05c7883fda18f3048a6883de09524a83, type: 2}
+--- !u!114 &7757174408074400527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3329658108258038770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bf343e15e7147bdba96826c53a8c820, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-8389335224771437628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3329658108258038770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29dbc67f62e24d1b80128cb3937fe387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

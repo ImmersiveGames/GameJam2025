@@ -14,7 +14,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DebugLevel(DebugLevel.Logs)]
-    public sealed class PlanetsMaster : ActorMaster, IDetectable, ISizeMeasurable
+    public sealed class PlanetsMaster : ActorMaster, IDetectable
     {
         public IActor Detectable => this;
 
@@ -82,29 +82,29 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnObjectCreated(ObjectCreatedEvent evt)
         {
-            if (evt.Poolable.GetGameObject() != gameObject || evt.Poolable.Spawner != this) return;
+            if (evt.Poolable.GetGameObject() != gameObject ) return;
             if (!(evt.Config is PlanetData planetData)) return;
 
-            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1).FirstOrDefault() : null;
+            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1) : null;
             if (planetsManager == null)
             {
                 DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
             }
-            Configure(evt.Poolable, planetData, resource);
+            Configure(evt.Poolable, planetData, null);
         }
 
         private void OnObjectReturned(PoolObjectReturnedEvent evt)
         {
-            if (evt.Poolable.GetGameObject() != gameObject || evt.Poolable.Spawner != this) return;
+            if (evt.Poolable.GetGameObject() != gameObject ) return;
             if (!(evt.Poolable.GetData<PoolableObjectData>() is PlanetData planetData)) return;
             if (!evt.Poolable.GetPool().GetData().ReconfigureOnReturn) return;
 
-            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1).FirstOrDefault() : null;
+            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1): null;
             if (planetsManager == null)
             {
                 DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
             }
-            Configure(evt.Poolable, planetData, resource);
+            Configure(evt.Poolable, planetData, null);
         }
 
         public void Configure(IPoolable poolable, PlanetData data, PlanetResourcesSo resources)
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 DebugUtility.LogWarning<PlanetsMaster>($"ModelRoot não encontrado em {gameObject.name}. Usando diâmetro padrão: {_planetInfo.planetDiameter:F2}", this);
             }
 
-            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} configurado com ID {GetInstanceID()}, recurso {resources?.ResourceType ?? "Nenhum"}, diâmetro {_planetInfo.planetDiameter:F2}, escala {_planetInfo.planetScale:F2}.", "green", this);
+            DebugUtility.Log<PlanetsMaster>($"Planeta {gameObject.name} configurado com ID {GetInstanceID()}, recurso {resources?.ResourceType }, diâmetro {_planetInfo.planetDiameter:F2}, escala {_planetInfo.planetScale:F2}.", "green", this);
         }
 
         public float GetDiameter()

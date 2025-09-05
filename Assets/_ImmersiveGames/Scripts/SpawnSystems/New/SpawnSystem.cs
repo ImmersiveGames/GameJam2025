@@ -164,11 +164,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems.New
 
             foreach (var pool in pools)
             {
-                if (pool != null && pool.PoolKey == evt.PoolKey)
+                /*if (pool != null && pool.PoolKey == evt.PoolKey)
                 {
                     _spawnStrategy.Execute(pool, transform, exhaustOnSpawn, _actor, this);
                     break;
-                }
+                }*/
             }
         }
 

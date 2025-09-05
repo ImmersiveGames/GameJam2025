@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private readonly List<SpawnPoint> _allSpawnPoints = new();
         private readonly Dictionary<SpawnPoint, ManagedSpawnData> _managedSpawnPoints = new();
         private readonly Dictionary<SpawnPoint, int> _spawnCounts = new();
-        private EventBinding<PoolRestoredEvent> _poolRestoredBinding;
+        //private EventBinding<PoolRestoredEvent> _poolRestoredBinding;
 
         private void Awake()
         {
@@ -33,18 +33,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 Destroy(gameObject);
             }
 
-            _poolRestoredBinding = new EventBinding<PoolRestoredEvent>(HandlePoolRestored);
+            //_poolRestoredBinding = new EventBinding<PoolRestoredEvent>(HandlePoolRestored);
         }
 
-        private void OnEnable()
-        {
-            EventBus<PoolRestoredEvent>.Register(_poolRestoredBinding);
-        }
+       
 
-        private void OnDisable()
-        {
-            EventBus<PoolRestoredEvent>.Unregister(_poolRestoredBinding);
-        }
+       
 
         public void RegisterSpawnPoint(SpawnPoint point, bool useManagerLocking)
         {
@@ -148,7 +142,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.LogVerbose<SpawnManager>("Todos os SpawnPoints foram resetados.", "blue", this);
         }
 
-        private void HandlePoolRestored(PoolRestoredEvent evt)
+        /*private void HandlePoolRestored(PoolRestoredEvent evt)
         {
             var points = _managedSpawnPoints.Keys.ToList();
             foreach (var point in points)
@@ -161,7 +155,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     DebugUtility.LogVerbose<SpawnManager>($"SpawnPoint '{point.name}' desbloqueado devido à restauração do pool '{evt.PoolKey}'.", "green", this);
                 }
             }
-        }
+        }*/
 
         private void OnDestroy()
         {

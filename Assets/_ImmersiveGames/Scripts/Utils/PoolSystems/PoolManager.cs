@@ -26,7 +26,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             if (_pools.ContainsKey(data.ObjectName))
             {
-                DebugUtility.LogWarning<PoolManager>($"Pool '{data.ObjectName}' already registered.", this);
                 return;
             }
 

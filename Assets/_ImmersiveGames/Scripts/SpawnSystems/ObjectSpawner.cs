@@ -24,21 +24,21 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         protected PoolManager _poolManager;
         protected float _timer;
         protected EventBinding<PoolExhaustedEvent> _poolExhaustedBinding;
-        protected EventBinding<PoolRestoredEvent> _poolRestoredBinding;
+        //protected EventBinding<PoolRestoredEvent> _poolRestoredBinding;
         protected List<string> _validPoolKeys; // Lista de chaves de pools válidos
 
         protected virtual void OnEnable()
         {
             _poolExhaustedBinding = new EventBinding<PoolExhaustedEvent>(OnPoolExhausted);
             EventBus<PoolExhaustedEvent>.Register(_poolExhaustedBinding);
-            _poolRestoredBinding = new EventBinding<PoolRestoredEvent>(OnPoolRestored);
-            EventBus<PoolRestoredEvent>.Register(_poolRestoredBinding);
+            //_poolRestoredBinding = new EventBinding<PoolRestoredEvent>(OnPoolRestored);
+            //EventBus<PoolRestoredEvent>.Register(_poolRestoredBinding);
         }
 
         protected virtual void OnDisable()
         {
             EventBus<PoolExhaustedEvent>.Unregister(_poolExhaustedBinding);
-            EventBus<PoolRestoredEvent>.Unregister(_poolRestoredBinding);
+           // EventBus<PoolRestoredEvent>.Unregister(_poolRestoredBinding);
         }
 
         protected virtual void Awake()
@@ -390,10 +390,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.LogWarning<ObjectSpawner>($"Pool '{evt.PoolKey}' exausto. Considere aumentar InitialPoolSize ou ativar CanExpand.", this);
         }
 
-        protected virtual void OnPoolRestored(PoolRestoredEvent evt)
+        /*protected virtual void OnPoolRestored(PoolRestoredEvent evt)
         {
             DebugUtility.Log<ObjectSpawner>($"Pool '{evt.PoolKey}' restaurado. Objetos disponíveis novamente.", "green", this);
-        }
+        }*/
 
         protected virtual void OnDrawGizmos()
         {

@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    public class ObjectPoolFactory
+    public class ObjectPoolFactory : IObjectPoolFactory
     {
         public IPoolable CreateObject(PoolableObjectData config, Transform parent, Vector3 position, string objectName, ObjectPool pool)
         {
@@ -27,18 +27,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             poolable.Configure(config, pool);
             DebugUtility.LogVerbose<ObjectPoolFactory>($"Created object '{objectName}' with config '{config.ObjectName}'.", "cyan", null);
             return poolable;
-        }
-
-        public void ReinitializeObject(IPoolable poolable, PoolableObjectData config)
-        {
-            if (poolable == null || config == null)
-            {
-                DebugUtility.LogWarning<ObjectPoolFactory>("Cannot reinitialize: poolable or config is null.", null);
-                return;
-            }
-
-            poolable.Configure(config, poolable.GetPool());
-            DebugUtility.LogVerbose<ObjectPoolFactory>($"Reinitialized object '{poolable.GetGameObject().name}' with config '{config.ObjectName}'.", "blue", null);
         }
     }
 }

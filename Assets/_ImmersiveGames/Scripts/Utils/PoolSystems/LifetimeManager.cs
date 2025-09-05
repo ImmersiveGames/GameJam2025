@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         public static LifetimeManager Instance { get; private set; }
 
-        private readonly Dictionary<IPoolable, Coroutine> _activeObjects = new();
+        private readonly Dictionary<IPoolable, float> _activeObjects = new();
 
         private void Awake()
         {
@@ -34,8 +35,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
 
-            var coroutine = StartCoroutine(LifetimeCoroutine(poolable, lifetime));
-            _activeObjects.Add(poolable, coroutine);
+            _activeObjects[poolable] = lifetime;
             DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.", "cyan", this);
         }
 
@@ -43,26 +43,29 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (poolable == null || !_activeObjects.ContainsKey(poolable)) return;
 
-            var coroutine = _activeObjects[poolable];
-            if (coroutine != null)
-            {
-                StopCoroutine(coroutine);
-            }
             _activeObjects.Remove(poolable);
             DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.", "cyan", this);
         }
 
-        private System.Collections.IEnumerator LifetimeCoroutine(IPoolable poolable, float lifetime)
+        private void Update()
         {
-            yield return new WaitForSeconds(lifetime);
-
-            if (poolable != null && poolable.GetGameObject() != null)
+            var poolables = _activeObjects.Keys.ToList(); // Cópia das chaves para evitar modificação durante iteração
+            foreach (var poolable in poolables)
             {
-                poolable.Deactivate();
-                poolable.ReturnToPool();
-                DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' expired and returned to pool. Active: {poolable.GetGameObject().activeSelf}", "blue", this);
+                if (!_activeObjects.ContainsKey(poolable)) continue;
+
+                _activeObjects[poolable] -= Time.deltaTime;
+                if (_activeObjects[poolable] <= 0)
+                {
+                    if (poolable != null && poolable.GetGameObject() != null)
+                    {
+                        poolable.Deactivate();
+                        poolable.ReturnToPool();
+                        DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' expired and returned to pool. Active: {poolable.GetGameObject().activeSelf}", "blue", this);
+                    }
+                    _activeObjects.Remove(poolable);
+                }
             }
-            _activeObjects.Remove(poolable);
         }
 
         private void OnDestroy()

@@ -13,18 +13,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public PoolableObjectData Data { get; private set; }
         public UnityEvent OnActivated { get; } = new UnityEvent();
         public UnityEvent OnDeactivated { get; } = new UnityEvent();
-        public IActor Spawner { get; private set; }
         private ObjectPool _pool;
         private bool _isConfigured;
 
-        public void Configure(PoolableObjectData data, ObjectPool pool, IActor actor = null)
+        public void Configure(PoolableObjectData data, ObjectPool pool)
         {
-            if (_isConfigured)
-            {
-                DebugUtility.LogWarning<PooledObject>($"Object '{name}' already configured.", this);
-                return;
-            }
-
             if (!ValidationService.ValidatePoolableObjectData(data, this))
             {
                 DebugUtility.LogError<PooledObject>($"Invalid PoolableObjectData for '{name}'.", this);
@@ -33,7 +26,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             Data = data;
             _pool = pool;
-            Spawner = actor;
             _isConfigured = true;
 
             gameObject.SetActive(false);
@@ -41,7 +33,19 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             DebugUtility.LogVerbose<PooledObject>($"Object '{name}' configured with lifetime {data.Lifetime}.", "green", this);
         }
 
-        public void Activate(Vector3 position, IActor actor)
+        public void Reconfigure(PoolableObjectData data)
+        {
+            if (!ValidationService.ValidatePoolableObjectData(data, this))
+            {
+                DebugUtility.LogError<PooledObject>($"Invalid PoolableObjectData for reconfiguration of '{name}'.", this);
+                return;
+            }
+
+            Data = data;
+            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' reconfigured with lifetime {data.Lifetime}.", "blue", this);
+        }
+
+        public void Activate(Vector3 position, IActor spawner = null)
         {
             if (!_isConfigured)
             {
@@ -49,25 +53,23 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
 
-            Spawner = actor;
+            var tracker = gameObject.GetComponent<SpawnerTracker>();
+            if (tracker != null && spawner != null)
+            {
+                tracker.SetSpawner(spawner);
+            }
             transform.position = position;
             gameObject.SetActive(true);
             LifetimeManager.Instance.RegisterObject(this, Data.Lifetime);
             OnActivated.Invoke();
-            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' activated at {position} by actor {Spawner?.GetType().Name ?? "null"}.", "green", this);
+            EventBus<ObjectActivatedEvent>.Raise(new ObjectActivatedEvent(this, spawner, position));
+            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' activated at {position}.", "green", this);
         }
 
         public void Deactivate()
         {
-            if (!_isConfigured)
+            if (!_isConfigured || !gameObject.activeSelf)
             {
-                DebugUtility.LogError<PooledObject>($"Cannot deactivate '{name}': not configured.", this);
-                return;
-            }
-
-            if (!gameObject.activeSelf)
-            {
-                DebugUtility.LogVerbose<PooledObject>($"Object '{name}' already deactivated.", "blue", this);
                 return;
             }
 
@@ -75,20 +77,18 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             LifetimeManager.Instance.UnregisterObject(this);
             OnDeactivated.Invoke();
             EventBus<PoolObjectReturnedEvent>.Raise(new PoolObjectReturnedEvent(_pool.GetData().ObjectName, this));
-            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' deactivated (set inactive). Active: {gameObject.activeSelf}", "blue", this);
+            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' deactivated.", "blue", this);
         }
 
         public void PoolableReset()
         {
-            if (!_isConfigured)
-            {
-                DebugUtility.LogError<PooledObject>($"Cannot reset '{name}': not configured.", this);
-                return;
-            }
-
             transform.position = Vector3.zero;
             transform.rotation = Quaternion.identity;
-            Spawner = null;
+            var tracker = gameObject.GetComponent<SpawnerTracker>();
+            if (tracker != null)
+            {
+                tracker.SetSpawner(null);
+            }
             DebugUtility.LogVerbose<PooledObject>($"Object '{name}' reset.", "green", this);
         }
 
@@ -100,23 +100,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
 
+            Deactivate();
+            PoolableReset();  // Adicionado para garantir o reset do tracker ao return
             _pool.ReturnObject(this);
-            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' returned to pool. Active: {gameObject.activeSelf}", "blue", this);
+            DebugUtility.LogVerbose<PooledObject>($"Object '{name}' returned to pool.", "blue", this);
         }
 
-        public GameObject GetGameObject()
-        {
-            return gameObject;
-        }
-
-        public T GetData<T>() where T : PoolableObjectData
-        {
-            return Data as T;
-        }
-
-        public ObjectPool GetPool()
-        {
-            return _pool;
-        }
+        public GameObject GetGameObject() => gameObject;
+        public T GetData<T>() where T : PoolableObjectData => Data as T;
+        public ObjectPool GetPool() => _pool;
     }
 }

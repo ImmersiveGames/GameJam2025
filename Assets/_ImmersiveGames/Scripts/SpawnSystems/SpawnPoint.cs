@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private Vector3 _cachedPosition;
         private EventBinding<SpawnRequestEvent> _spawnBinding;
         private EventBinding<PoolExhaustedEvent> _exhaustedBinding;
-        private EventBinding<PoolRestoredEvent> _restoredBinding;
+        //private EventBinding<PoolRestoredEvent> _restoredBinding;
         private EventBinding<SpawnPointLockedEvent> _lockedBinding;
         private EventBinding<SpawnPointUnlockedEvent> _unlockedBinding;
         private EventBinding<SpawnPointResetEvent> _resetBinding;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             _spawnBinding = new EventBinding<SpawnRequestEvent>(HandleSpawnRequest);
             _exhaustedBinding = new EventBinding<PoolExhaustedEvent>(HandlePoolExhausted);
-            _restoredBinding = new EventBinding<PoolRestoredEvent>(HandlePoolRestored);
+            //_restoredBinding = new EventBinding<PoolRestoredEvent>(HandlePoolRestored);
             _lockedBinding = new EventBinding<SpawnPointLockedEvent>(HandleSpawnPointLocked);
             _unlockedBinding = new EventBinding<SpawnPointUnlockedEvent>(HandleSpawnPointUnlocked);
             _resetBinding = new EventBinding<SpawnPointResetEvent>(HandleSpawnPointReset);
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             FilteredEventBus<SpawnRequestEvent>.Register(_spawnBinding, this);
             EventBus<PoolExhaustedEvent>.Register(_exhaustedBinding);
-            EventBus<PoolRestoredEvent>.Register(_restoredBinding);
+            //EventBus<PoolRestoredEvent>.Register(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Register(_lockedBinding);
             EventBus<SpawnPointUnlockedEvent>.Register(_unlockedBinding);
             EventBus<SpawnPointResetEvent>.Register(_resetBinding);
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             FilteredEventBus<SpawnRequestEvent>.Unregister(this);
             EventBus<PoolExhaustedEvent>.Unregister(_exhaustedBinding);
-            EventBus<PoolRestoredEvent>.Unregister(_restoredBinding);
+            //EventBus<PoolRestoredEvent>.Unregister(_restoredBinding);
             EventBus<SpawnPointLockedEvent>.Unregister(_lockedBinding);
             EventBus<SpawnPointUnlockedEvent>.Unregister(_unlockedBinding);
             EventBus<SpawnPointResetEvent>.Unregister(_resetBinding);
@@ -231,7 +231,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             DebugUtility.LogVerbose<SpawnPoint>($"Pool '{_poolKey}' esgotado para '{name}'.", "yellow", this);
         }
 
-        private void HandlePoolRestored(PoolRestoredEvent evt)
+        /*private void HandlePoolRestored(PoolRestoredEvent evt)
         {
             if (evt.PoolKey != _poolKey || useManagerLocking)
                 return;
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 UpdateSpawnState();
                 DebugUtility.LogVerbose<SpawnPoint>($"Pool '{_poolKey}' restaurado para '{name}'.", "green", this);
             }
-        }
+        }*/
 
         private void HandleSpawnPointLocked(SpawnPointLockedEvent evt)
         {
