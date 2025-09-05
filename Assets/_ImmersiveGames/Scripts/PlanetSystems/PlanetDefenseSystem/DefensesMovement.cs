@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
-    public class DefensesMovement : MonoBehaviour, IMoveObject
+    public class DefensesMovement : MonoBehaviour
     {
         private DefensesMaster _defensesMaster;
         private ProjectilesData _projectilesData;

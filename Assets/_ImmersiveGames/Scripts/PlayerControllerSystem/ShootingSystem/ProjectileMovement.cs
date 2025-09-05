@@ -4,7 +4,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
 {
     [DebugLevel(DebugLevel.Logs)]
-    public class ProjectileMovement : MonoBehaviour,IMoveObject
+    public class ProjectileMovement : MonoBehaviour
     {
         private Vector3 _direction;
         private float _speed;

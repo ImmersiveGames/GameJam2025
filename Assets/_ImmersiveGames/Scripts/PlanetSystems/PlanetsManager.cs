@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private readonly List<IDetectable> _activePlanets = new();
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-        private EventBinding<OrbitsSpawnedEvent> _orbitsSpawnedBinding;
+       // private EventBinding<OrbitsSpawnedEvent> _orbitsSpawnedBinding;
 
         private void OnEnable()
         {
@@ -31,15 +31,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(ClearMarkedPlanet);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
 
-            _orbitsSpawnedBinding = new EventBinding<OrbitsSpawnedEvent>(OnOrbitsSpawned);
-            EventBus<OrbitsSpawnedEvent>.Register(_orbitsSpawnedBinding);
+            //_orbitsSpawnedBinding = new EventBinding<OrbitsSpawnedEvent>(OnOrbitsSpawned);
+            //EventBus<OrbitsSpawnedEvent>.Register(_orbitsSpawnedBinding);
         }
 
         private void OnDisable()
         {
             EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            EventBus<OrbitsSpawnedEvent>.Unregister(_orbitsSpawnedBinding);
+            //EventBus<OrbitsSpawnedEvent>.Unregister(_orbitsSpawnedBinding);
         }
 
         private void OnValidate()
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private void OnOrbitsSpawned(OrbitsSpawnedEvent evt)
+        /*private void OnOrbitsSpawned(OrbitsSpawnedEvent evt)
         {
             DebugUtility.LogVerbose<PlanetsManager>($"Received OrbitsSpawnedEvent with {evt.SpawnedObjects.Count} objects from SpawnSystem {evt.SpawnSystem?.name ?? "null"}.", "cyan", this);
 
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                     DebugUtility.Log<PlanetsManager>($"Planeta {poolable.GetGameObject().name} adicionado à lista de ativos com recurso {planetMaster.GetResource()?.ResourceType }.", "green", this);
                 }
             }
-        }
+        }*/
 
         public List<PlanetResourcesSo> GenerateResourceList(int numPlanets)
         {

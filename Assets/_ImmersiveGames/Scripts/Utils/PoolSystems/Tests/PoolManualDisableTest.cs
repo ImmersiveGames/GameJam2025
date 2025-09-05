@@ -3,6 +3,7 @@ using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
+using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
 {
@@ -10,7 +11,12 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
     public class PoolManualDisableTest : MonoBehaviour
     {
         [SerializeField] private PoolData[] poolDataArray;
-        private readonly IActor _mockSpawner = new MockActor();
+        private IActor _mockSpawner; 
+
+        private void Awake()
+        {
+            _mockSpawner = gameObject.GetOrAdd<MockActor>();
+        }
 
         private void Start()
         {

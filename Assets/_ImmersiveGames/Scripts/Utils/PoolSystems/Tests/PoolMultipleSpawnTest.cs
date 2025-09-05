@@ -3,6 +3,7 @@ using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
+using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
 {
@@ -11,7 +12,12 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems.Tests
     {
         [SerializeField] private PoolData[] poolDataArray;
         [SerializeField] private Vector3 spawnAreaSize = new Vector3(10f, 0f, 10f);
-        private readonly IActor _mockSpawner = new MockActor();
+        private IActor _mockSpawner; 
+
+        private void Awake()
+        {
+            _mockSpawner = gameObject.GetOrAdd<MockActor>();
+        }
 
         private void Start()
         {
