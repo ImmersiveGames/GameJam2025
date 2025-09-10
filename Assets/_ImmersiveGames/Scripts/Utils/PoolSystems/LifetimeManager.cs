@@ -1,78 +1,114 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
-
+using UnityEngine;
+using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class LifetimeManager : MonoBehaviour
+    public class LifetimeManager : PersistentSingleton<LifetimeManager>
     {
-        public static LifetimeManager Instance { get; private set; }
-
-        private readonly Dictionary<IPoolable, float> _activeObjects = new();
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                DebugUtility.LogError<LifetimeManager>("Another instance of LifetimeManager already exists. Destroying this duplicate.", this);
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-
-        public void RegisterObject(IPoolable poolable, float lifetime)
-        {
-            if (poolable == null || lifetime <= 0) return;
-
-            if (_activeObjects.ContainsKey(poolable))
-            {
-                DebugUtility.LogWarning<LifetimeManager>($"Object '{poolable.GetGameObject().name}' already registered.", this);
-                return;
-            }
-
-            _activeObjects[poolable] = lifetime;
-            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.", "cyan", this);
-        }
-
-        public void UnregisterObject(IPoolable poolable)
-        {
-            if (poolable == null || !_activeObjects.ContainsKey(poolable)) return;
-
-            _activeObjects.Remove(poolable);
-            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.", "cyan", this);
-        }
+        private readonly Dictionary<IPoolable, float> _objectLifetimes = new();
+        private readonly List<IPoolable> _objectsToRemove = new();
 
         private void Update()
         {
-            var poolables = _activeObjects.Keys.ToList(); // Cópia das chaves para evitar modificação durante iteração
-            foreach (var poolable in poolables)
-            {
-                if (!_activeObjects.ContainsKey(poolable)) continue;
+            _objectsToRemove.Clear();
 
-                _activeObjects[poolable] -= Time.deltaTime;
-                if (_activeObjects[poolable] <= 0)
+            // Usar ToList() para criar snapshot e evitar exceções de modificação durante iteração
+            var poolableEntries = new List<KeyValuePair<IPoolable, float>>(_objectLifetimes);
+
+            foreach ((var poolable, float f) in poolableEntries)
+            {
+
+                // Se o poolable foi destruído (mas a referência ainda existe), remove da lista
+                if (poolable == null || poolable.GetGameObject() == null)
                 {
-                    if (poolable != null && poolable.GetGameObject() != null)
-                    {
-                        poolable.Deactivate();
-                        poolable.ReturnToPool();
-                        DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' expired and returned to pool. Active: {poolable.GetGameObject().activeSelf}", "blue", this);
-                    }
-                    _activeObjects.Remove(poolable);
+                    _objectsToRemove.Add(poolable);
+                    continue;
+                }
+
+                float remainingTime = f - Time.deltaTime;
+                if (remainingTime <= 0)
+                {
+                    _objectsToRemove.Add(poolable);
+                }
+                else
+                {
+                    _objectLifetimes[poolable] = remainingTime;
+                }
+            }
+
+            // Remove objetos expirados ou nulos
+            foreach (var poolable in _objectsToRemove)
+            {
+                if (poolable == null || poolable.GetGameObject() == null)
+                {
+                    // Para objetos nulos/destruídos, apenas remove do dicionário
+                    _objectLifetimes.Remove(poolable);
+                }
+                else
+                {
+                    // Para objetos válidos expirados, retorna ao pool
+                    ReturnToPool(poolable);
                 }
             }
         }
 
-        private void OnDestroy()
+        public void Register(IPoolable poolable, float lifetime)
         {
-            if (Instance == this)
+            if (poolable == null)
             {
-                Instance = null;
+                DebugUtility.LogError<LifetimeManager>("Cannot register null poolable object.", this);
+                return;
+            }
+
+            if (!_objectLifetimes.TryAdd(poolable, lifetime))
+            {
+                DebugUtility.LogWarning<LifetimeManager>($"Object '{poolable.GetGameObject().name}' already registered in LifetimeManager.", this);
+                return;
+            }
+
+            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.", "cyan", this);
+        }
+
+        public void Unregister(IPoolable poolable)
+        {
+            if (poolable == null)
+            {
+                DebugUtility.LogError<LifetimeManager>("Cannot unregister null poolable object.", this);
+                return;
+            }
+
+            if (_objectLifetimes.Remove(poolable))
+            {
+                DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.", "cyan", this);
+            }
+        }
+
+        public void ReturnToPool(IPoolable poolable)
+        {
+            if (poolable == null)
+            {
+                DebugUtility.LogError<LifetimeManager>("Cannot return null poolable object to pool.", this);
+                return;
+            }
+
+            if (!_objectLifetimes.Remove(poolable))
+            {
+                DebugUtility.LogWarning<LifetimeManager>($"Object '{poolable.GetGameObject().name}' not registered in LifetimeManager.", this);
+                return;
+            }
+
+            poolable.Deactivate();
+            var pooledObject = poolable.GetGameObject().GetComponent<PooledObject>();
+            if (pooledObject != null && pooledObject.GetPool != null)
+            {
+                pooledObject.GetPool.ReturnObject(poolable);
+                DebugUtility.LogVerbose<LifetimeManager>($"Object '{poolable.GetGameObject().name}' returned to pool.", "blue", this);
+            }
+            else
+            {
+                DebugUtility.LogError<LifetimeManager>($"Object '{poolable.GetGameObject().name}' has no associated pool or PooledObject component.", this);
             }
         }
     }

@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem

@@ -1,10 +1,10 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.EaterSystem.EventBus;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using DG.Tweening;
-using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems

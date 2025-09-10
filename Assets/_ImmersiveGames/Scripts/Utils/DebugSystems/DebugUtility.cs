@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static readonly Dictionary<string, string> _messagePool = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Initialize()
+        public static void Initialize()
         {
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;

@@ -1,7 +1,7 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
-using _ImmersiveGames.Scripts.EaterSystem.EventBus;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.EventBus;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;

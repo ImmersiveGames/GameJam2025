@@ -1,5 +1,5 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using _ImmersiveGames.Scripts.SpawnSystems.Events;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -126,7 +125,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             foreach (var item in currentObj.Where(item => !_detectedObj.Contains(item)))
             {
                 _detectedObj.Add(item);
-                SensorFilteredEventBus.RaiseFiltered(new SensorDetectedEvent(item, DetectorEntity, SensorName));
+                //SensorFilteredEventBus.RaiseFiltered(new SensorDetectedEvent(item, DetectorEntity, SensorName));
                 item.OnDetectableRanged(DetectorEntity, SensorName);
                 DetectorEntity?.OnObjectDetected(item, DetectorEntity, SensorName);
             }
@@ -134,7 +133,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             _detectedObj.RemoveAll(obj => {
                 if (currentObj.Contains(obj)) return false;
 
-                SensorFilteredEventBus.RaiseFiltered(new SensorLostEvent(obj, DetectorEntity, SensorName));
+               // SensorFilteredEventBus.RaiseFiltered(new SensorLostEvent(obj, DetectorEntity, SensorName));
                 obj.OnDetectableLost(DetectorEntity, SensorName);
                 DetectorEntity?.OnPlanetLost(obj, DetectorEntity, SensorName);
                 return true;

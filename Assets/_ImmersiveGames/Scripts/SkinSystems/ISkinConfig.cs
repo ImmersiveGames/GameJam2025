@@ -17,6 +17,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     {
         ModelRoot,
         CanvasRoot,
-        FxRoot
+        FxRoot,
+        SoundRoot
+    }
+    public enum InstantiationMode
+    {
+        All,
+        First,
+        Random,
+        Specific
     }
 }

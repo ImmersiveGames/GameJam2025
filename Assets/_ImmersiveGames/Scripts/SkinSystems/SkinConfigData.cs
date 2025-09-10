@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         }
 
 #if UNITY_EDITOR
-        private void OnValidate()
+        protected void OnValidate()
         {
             for (int i = modelPrefabs.Count - 1; i >= 0; i--)
             {
@@ -61,12 +61,5 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             specificIndex = Mathf.Clamp(specificIndex, 0, modelPrefabs.Count - 1);
         }
 #endif
-    }
-    public enum InstantiationMode
-    {
-        All,
-        First,
-        Random,
-        Specific
     }
 }

@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             IsActive = true;
         }
         public event Action EventDefensesDeath;
-        public ProjectilesData ProjectilesData => _pooledObject.Data as ProjectilesData;
+        public ProjectilesData ProjectilesData => _pooledObject.GetData<ProjectilesData>();
         public void OnDefensesDeath()
         {
             DebugUtility.LogVerbose<DefensesMaster>($"EventDefensesDeath invoked for {gameObject.name}", "yellow", this);

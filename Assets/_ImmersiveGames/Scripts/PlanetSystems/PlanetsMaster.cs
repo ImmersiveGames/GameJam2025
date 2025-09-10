@@ -4,12 +4,11 @@ using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems.Interfaces;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -30,8 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private EventBinding<PlanetMarkedEvent> _planetMarkedBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-        private EventBinding<ObjectCreatedEvent> _objectCreatedBinding;
-        private EventBinding<PoolObjectReturnedEvent> _objectReturnedBinding;
+        
 
         public PlanetData GetPlanetData() => _planetInfo?.PoolableObject.GetData<PoolableObjectData>() as PlanetData;
         public PlanetsMaster GetPlanetsMaster() => this;
@@ -65,47 +63,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
 
-            _objectCreatedBinding = new EventBinding<ObjectCreatedEvent>(OnObjectCreated);
-            EventBus<ObjectCreatedEvent>.Register(_objectCreatedBinding);
-
-            _objectReturnedBinding = new EventBinding<PoolObjectReturnedEvent>(OnObjectReturned);
-            EventBus<PoolObjectReturnedEvent>.Register(_objectReturnedBinding);
+            
         }
 
         private void OnDisable()
         {
             EventBus<PlanetMarkedEvent>.Unregister(_planetMarkedBinding);
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            EventBus<ObjectCreatedEvent>.Unregister(_objectCreatedBinding);
-            EventBus<PoolObjectReturnedEvent>.Unregister(_objectReturnedBinding);
+            
         }
 
-        private void OnObjectCreated(ObjectCreatedEvent evt)
-        {
-            if (evt.Poolable.GetGameObject() != gameObject ) return;
-            if (!(evt.Config is PlanetData planetData)) return;
-
-            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1) : null;
-            if (planetsManager == null)
-            {
-                DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
-            }
-            Configure(evt.Poolable, planetData, null);
-        }
-
-        private void OnObjectReturned(PoolObjectReturnedEvent evt)
-        {
-            if (evt.Poolable.GetGameObject() != gameObject ) return;
-            if (!(evt.Poolable.GetData<PoolableObjectData>() is PlanetData planetData)) return;
-            if (!evt.Poolable.GetPool().GetData().ReconfigureOnReturn) return;
-
-            var resource = planetsManager != null ? planetsManager.GenerateResourceList(1): null;
-            if (planetsManager == null)
-            {
-                DebugUtility.LogWarning<PlanetsMaster>("PlanetsManager not assigned. Using null resource.", this);
-            }
-            Configure(evt.Poolable, planetData, null);
-        }
 
         public void Configure(IPoolable poolable, PlanetData data, PlanetResourcesSo resources)
         {

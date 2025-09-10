@@ -16,3 +16,4 @@ MonoBehaviour:
   modelRootConfig: {fileID: 11400000, guid: b9fe3dccce8d149459860a7def73114d, type: 2}
   canvasRootConfig: {fileID: 11400000, guid: 07aefe5b0269c934bbba100843169375, type: 2}
   fxRootConfig: {fileID: 11400000, guid: 395281036d9fc054d888d9127b5c3250, type: 2}
+  soundRootConfig: {fileID: 0}

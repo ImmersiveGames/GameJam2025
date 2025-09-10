@@ -17,8 +17,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem
             var destructible = other.GetComponentInParent<IDestructible>();
             DebugUtility.Log<Projectiles>($"Attempting to hit destructible: {destructible} with owner actor: {_pooledObject}");
             if (destructible is null) return;
-            var data = _pooledObject.GetData<ProjectilesData>();
-            destructible.TakeDamage(data.damage, _pooledObject.GetComponentInParent<IActor>());
+            //var data = _pooledObject.GetData<ProjectilesData>();
+            //destructible.TakeDamage(data.damage, _pooledObject.GetComponentInParent<IActor>());
             _pooledObject.Deactivate();
         }
     }

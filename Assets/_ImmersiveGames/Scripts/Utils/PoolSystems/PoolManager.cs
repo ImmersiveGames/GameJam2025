@@ -5,10 +5,11 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
+
     [DebugLevel(DebugLevel.Verbose)]
     public class PoolManager : PersistentSingleton<PoolManager>
     {
-        private readonly Dictionary<string, ObjectPool> _pools = new();
+        private readonly Dictionary<FactoryType, ObjectPool> _pools = new();
 
         protected override void Awake()
         {
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             DebugUtility.Log<PoolManager>("PoolManager initialized.", "cyan", this);
         }
 
-        public void RegisterPool(PoolData data)
+        public void RegisterPool(PoolData data, FactoryType factoryType)
         {
             if (data == null || string.IsNullOrEmpty(data.ObjectName))
             {
@@ -24,43 +25,37 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
 
-            if (_pools.ContainsKey(data.ObjectName))
+            if (_pools.ContainsKey(factoryType))
             {
+                DebugUtility.LogWarning<PoolManager>($"Pool '{factoryType}' already registered.", this);
                 return;
             }
 
             var poolObject = new GameObject($"Pool_{data.ObjectName}");
             poolObject.transform.SetParent(transform);
             var pool = poolObject.AddComponent<ObjectPool>();
+            pool.SetFactory(new ObjectPoolFactory());
             pool.SetData(data);
             pool.Initialize();
-            _pools.Add(data.ObjectName, pool);
-            DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registered.", "green", this);
+            if (!pool.IsInitialized)
+            {
+                DebugUtility.LogError<PoolManager>($"Failed to initialize pool '{factoryType}'. Check PoolData and prefab.", this);
+                Destroy(poolObject);
+                return;
+            }
+            _pools.Add(factoryType, pool);
+            DebugUtility.Log<PoolManager>($"Pool '{factoryType}' registered successfully.", "green", this);
         }
 
-        public ObjectPool GetPool(string key)
+        public ObjectPool GetPool(FactoryType factoryType)
         {
-            if (string.IsNullOrEmpty(key))
+            if (_pools.TryGetValue(factoryType, out var pool))
             {
-                DebugUtility.LogError<PoolManager>("Pool key is empty or null.", this);
-                return null;
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{factoryType}' found.", "green", this);
+                return pool;
             }
 
-            if (_pools.TryGetValue(key, out var pool))
-            {
-                if (pool.IsInitialized)
-                {
-                    DebugUtility.LogVerbose<PoolManager>($"Pool '{key}' found and initialized.", "green", this);
-                    return pool;
-                }
-                else
-                {
-                    DebugUtility.LogWarning<PoolManager>($"Pool '{key}' found but not initialized.", this);
-                    return null;
-                }
-            }
-
-            DebugUtility.LogWarning<PoolManager>($"Pool '{key}' not found in _pools.", this);
+            DebugUtility.LogWarning<PoolManager>($"Pool '{factoryType}' not found.", this);
             return null;
         }
 

@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using UnityEngine;
 using UnityEngine.UI;
-using _ImmersiveGames.Scripts.PlanetSystems.EventsBus;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 

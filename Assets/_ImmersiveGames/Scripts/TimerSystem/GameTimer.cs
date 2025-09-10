@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.EventsBus;
-using _ImmersiveGames.Scripts.TimerSystem.EventsBus;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;

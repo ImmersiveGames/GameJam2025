@@ -1,6 +1,11 @@
 ﻿using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
+    /// <summary>
+    /// Armazena uma coleção de configurações de skin para diferentes ModelType (ModelRoot, CanvasRoot, FxRoot, SoundRoot).
+    /// </summary>
     [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 3)]
     public class SkinCollectionData : ScriptableObject, ISkinCollection
     {
@@ -8,9 +13,15 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         [SerializeField] private SkinConfigData modelRootConfig;
         [SerializeField] private SkinConfigData canvasRootConfig;
         [SerializeField] private SkinConfigData fxRootConfig;
+        [SerializeField] private SkinConfigData soundRootConfig;
 
         public string CollectionName => collectionName;
 
+        /// <summary>
+        /// Obtém a configuração de skin para o ModelType especificado.
+        /// </summary>
+        /// <param name="modelType">Tipo do modelo (ex: ModelRoot).</param>
+        /// <returns>Configuração de skin ou null se não configurada.</returns>
         public ISkinConfig GetConfig(ModelType modelType)
         {
             switch (modelType)
@@ -18,34 +29,40 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 case ModelType.ModelRoot: return modelRootConfig;
                 case ModelType.CanvasRoot: return canvasRootConfig;
                 case ModelType.FxRoot: return fxRootConfig;
-                default: return null;
+                case ModelType.SoundRoot: return soundRootConfig;
+                default:
+                    DebugUtility.LogWarning<SkinCollectionData>($"Unknown ModelType '{modelType}' in '{collectionName}'.", this);
+                    return null;
             }
         }
 
-#if UNITY_EDITOR
+    #if UNITY_EDITOR
         private void OnValidate()
         {
-            // Ensure modelRootConfig is not null and has the correct ModelType
-            if (modelRootConfig == null)
+            if (modelRootConfig == null || modelRootConfig.ModelType != ModelType.ModelRoot)
             {
-                Debug.LogError($"ModelRootConfig is required in '{collectionName}'.", this);
-            }
-            else if (modelRootConfig.ModelType != ModelType.ModelRoot)
-            {
-                Debug.LogWarning($"ModelRootConfig in '{collectionName}' has incorrect ModelType '{modelRootConfig.ModelType}'. Resetting.", this);
+                DebugUtility.LogError<SkinCollectionData>($"ModelRootConfig is invalid in '{collectionName}'. Must be set and match ModelType.ModelRoot.", this);
                 modelRootConfig = null;
             }
 
-            // Validate optional configs
             if (canvasRootConfig != null && canvasRootConfig.ModelType != ModelType.CanvasRoot)
             {
-                Debug.LogWarning($"CanvasRootConfig in '{collectionName}' has incorrect ModelType '{canvasRootConfig.ModelType}'. Resetting.", this);
+                DebugUtility.LogWarning<SkinCollectionData>($"Invalid CanvasRootConfig in '{collectionName}'. Resetting.", this);
                 canvasRootConfig = null;
             }
-            if (fxRootConfig == null || fxRootConfig.ModelType == ModelType.FxRoot) return;
-            Debug.LogWarning($"FxRootConfig in '{collectionName}' has incorrect ModelType '{fxRootConfig.ModelType}'. Resetting.", this);
-            fxRootConfig = null;
+
+            if (fxRootConfig != null && fxRootConfig.ModelType != ModelType.FxRoot)
+            {
+                DebugUtility.LogWarning<SkinCollectionData>($"Invalid FxRootConfig in '{collectionName}'. Resetting.", this);
+                fxRootConfig = null;
+            }
+
+            if (soundRootConfig != null && soundRootConfig.ModelType != ModelType.SoundRoot)
+            {
+                DebugUtility.LogWarning<SkinCollectionData>($"Invalid SoundRootConfig in '{collectionName}'. Resetting.", this);
+                soundRootConfig = null;
+            }
         }
-#endif
+    #endif
     }
 }
