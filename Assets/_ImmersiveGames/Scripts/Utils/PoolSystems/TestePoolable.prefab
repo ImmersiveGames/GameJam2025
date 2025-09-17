@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 7139539246623467768}
   - component: {fileID: 3098159057708542140}
   - component: {fileID: 6991978030624266748}
-  - component: {fileID: -210963638462339827}
   m_Layer: 0
   m_Name: TestePoolable
   m_TagString: Untagged
@@ -47,7 +46,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 70cf6b56a7f8413b8f787278d14d380a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _pool: {fileID: 0}
 --- !u!114 &6991978030624266748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -61,20 +59,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinCollectionData: {fileID: 11400000, guid: 05c7883fda18f3048a6883de09524a83, type: 2}
---- !u!114 &-210963638462339827
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3107806828334856383}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b92ecd203a0f4ff79f7dee13bdd06230, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  alternateSkinCollection: {fileID: 11400000, guid: 7ae1eaf719130894fb029936abd4ff7a, type: 2}
-  individualSkinData: {fileID: 11400000, guid: c6b0de94b43256447a341e24c2f9d17d, type: 2}
 --- !u!1 &4263623367888185242
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ea8da0e312e4109a23f2ddb65cc3866, type: 3}
+  m_Name: PoolBullet
+  m_EditorClassIdentifier: 
+  objectName: Bullets
+  initialPoolSize: 5
+  canExpand: 1
+  objectConfigs:
+  - {fileID: 11400000, guid: c4cb429c3962be7438236ce042bbf1b7, type: 2}
+  reconfigureOnReturn: 0

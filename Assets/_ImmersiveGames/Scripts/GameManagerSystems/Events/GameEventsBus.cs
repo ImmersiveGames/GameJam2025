@@ -2,6 +2,17 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
+    public class StateChangedEvent : IEvent
+    {
+        public string StateName { get; }
+        public bool IsGameActive { get; }
+
+        public StateChangedEvent(string stateName, bool isGameActive)
+        {
+            StateName = stateName;
+            IsGameActive = isGameActive;
+        }
+    }
     public class GameStartEvent : IEvent
     {
         // Não precisa de dados adicionais, mas pode incluir se necessário

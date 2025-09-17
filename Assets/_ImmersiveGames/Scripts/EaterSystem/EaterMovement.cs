@@ -7,15 +7,15 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.StateMachine;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StatesMachines;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    using FSM = StateMachine.StateMachine;
     [RequireComponent(typeof(EaterMaster))]
     [DebugLevel(DebugLevel.Verbose)]
     public class EaterMovement : MonoBehaviour, IResettable
     {
-        private FSM _stateMachine;
+        private StateMachine _stateMachine;
         private EaterMaster _eater;
         private SensorController _sensorController;
         private EaterConfigSo _config;

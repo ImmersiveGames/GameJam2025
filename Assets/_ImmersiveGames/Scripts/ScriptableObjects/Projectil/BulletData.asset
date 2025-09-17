@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: BulletData
   m_EditorClassIdentifier: 
   objectName: Bullet
-  prefab: {fileID: 8648089775525046338, guid: b3a75d1c4cf700f44bfabab0d78da008, type: 3}
-  modelPrefab:
-  - {fileID: 6004305604637168715, guid: 654b85b1e885a6544842aed1ff033e3b, type: 3}
-  - {fileID: 1542112267451166134, guid: 1846ee979c1a55b41bbc9ebadc832631, type: 3}
-  - {fileID: 5783526897520017423, guid: 5ea5d3582dbcd1b4097aa8714d505492, type: 3}
-  - {fileID: 6583542199602727168, guid: 939f9d9b42e76fb4b8f6ab7b1111933b, type: 3}
-  noRandomModel: 1
+  prefab: {fileID: 3107806828334856383, guid: da3bb6d4b25126640afeb56f9e14a473, type: 3}
   lifetime: 3
-  initialPoolSize: 30
-  factoryType: 0
-  canExpand: 1
+  modelFactory: 0
   movementType: 0
   moveSpeed: 20
   damage: 10

@@ -3,21 +3,13 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    public enum FactoryType
-    {
-        Default,
-        Bullet,
-        Enemy,
-        Skin
-    }
-
     [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/PoolData")]
     public class PoolData : ScriptableObject
     {
-        [SerializeField] public string objectName;
-        [SerializeField] public int initialPoolSize = 5;
-        [SerializeField] public bool canExpand;
-        [SerializeField] public PoolableObjectData[] objectConfigs;
+        [SerializeField] private string objectName;
+        [SerializeField] private int initialPoolSize = 5;
+        [SerializeField] private bool canExpand;
+        [SerializeField] private PoolableObjectData[] objectConfigs;
         [SerializeField] private bool reconfigureOnReturn = true;
 
         public string ObjectName => objectName;
@@ -26,7 +18,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public PoolableObjectData[] ObjectConfigs => objectConfigs;
         public bool ReconfigureOnReturn => reconfigureOnReturn;
 
-        // ÚNICO ponto de validação (remove redundância do ValidationService)
         public static bool Validate(PoolData data, Object caller)
         {
             if (data == null || string.IsNullOrEmpty(data.ObjectName))
@@ -84,7 +75,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             return true;
         }
 
-    #if UNITY_EDITOR
+#if UNITY_EDITOR
         private void OnValidate()
         {
             if (string.IsNullOrEmpty(objectName))
@@ -101,10 +92,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 Debug.LogWarning($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
             }
         }
-    #endif
+#endif
     }
 }
-
-
-
-

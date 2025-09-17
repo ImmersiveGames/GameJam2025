@@ -1,6 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.StateMachine;
+using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -59,6 +59,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             pos.z = Mathf.Clamp(pos.z, _gameArea.yMin, _gameArea.yMax);
             _transform.position = pos;
         }
+        public bool CanPerformAction(ActionType action) => true; // Bloqueia todas as ações
+        public bool IsGameActive() => true;
     }
 
 

@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.StateMachine;
+using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -43,5 +43,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentSpeed = targetMotion.GetOrbitSpeed() + _config.MinSpeed * 5f;
             DebugUtility.LogVerbose<ChasingState>($"Entering Chasing State for EaterMovement: {nameof(EaterMovement)}");
         }
+        public bool CanPerformAction(ActionType action) => true; // Bloqueia todas as ações
+        public bool IsGameActive() => true;
     }
 }

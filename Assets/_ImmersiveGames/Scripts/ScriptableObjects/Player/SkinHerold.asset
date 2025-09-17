@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11b4bd1454444c1486a01758f23664aa, type: 3}
+  m_Name: SkinHerold
+  m_EditorClassIdentifier: 
+  configName: Skin Herold
+  modelPrefabs:
+  - {fileID: 7678704797045127535, guid: bcda19af55909a94d8b4af5f6a98f0e6, type: 3}
+  - {fileID: 7259181851142265114, guid: ae1516735f2dbf341902e563b72694d4, type: 3}
+  modelType: 0
+  instantiationMode: 1
+  specificIndex: 0

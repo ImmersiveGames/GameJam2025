@@ -6,9 +6,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    /// <summary>
-    /// Pool de objetos para otimizar criação e destruição, com suporte a expansão e reconfiguração.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class ObjectPool : MonoBehaviour
     {
@@ -18,7 +15,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private PoolData Data { get; set; }
         public bool IsInitialized { get; private set; }
 
-        private IObjectPoolFactory _factory;
         private int _lastGetFrame;
         private bool _allowMultipleGetsInFrame = true;
         private bool _hasWarnedExhausted;
@@ -26,15 +22,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public UnityEvent<IPoolable> OnObjectActivated { get; } = new();
         public UnityEvent<IPoolable> OnObjectReturned { get; } = new();
 
-        private void Awake() => _factory = new ObjectPoolFactory();
-
-        /// <summary>Define a fábrica usada para criar objetos do pool.</summary>
-        public void SetFactory(IObjectPoolFactory factory) => _factory = factory ?? new ObjectPoolFactory();
-
-        /// <summary>Define se o pool permite múltiplos GetObject no mesmo frame.</summary>
-        public void SetAllowMultipleGetsInFrame(bool allow) => _allowMultipleGetsInFrame = allow;
-
-        /// <summary>Define os dados do pool.</summary>
         public void SetData(PoolData data)
         {
             if (!PoolData.Validate(data, this))
@@ -45,12 +32,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             Data = data;
         }
 
-        /// <summary>Inicializa o pool com objetos de acordo com o PoolData.</summary>
+        public void SetAllowMultipleGetsInFrame(bool allow) => _allowMultipleGetsInFrame = allow;
+
         public void Initialize()
         {
-            if (!Data || _factory == null)
+            if (!Data)
             {
-                DebugUtility.LogError<ObjectPool>("Cannot initialize pool: missing Data or Factory.", this);
+                DebugUtility.LogError<ObjectPool>("Cannot initialize pool: missing Data.", this);
                 return;
             }
 
@@ -63,8 +51,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             IsInitialized = _pool.Count > 0;
         }
 
-        /// <summary>Obtém um objeto do pool.</summary>
-        public IPoolable GetObject(Vector3 position, IActor spawner = null, bool activateImmediately = true)
+        public IPoolable GetObject(Vector3 position, IActor spawner = null, Vector3? direction = null, bool activateImmediately = true)
         {
             if (!ValidatePool()) return null;
             WarnIfMultipleGetsSameFrame();
@@ -74,14 +61,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             if (activateImmediately)
             {
-                ActivatePoolable(poolable, position, spawner);
+                ActivatePoolable(poolable, position, direction, spawner);
             }
 
             return poolable;
         }
 
-        /// <summary>Obtém múltiplos objetos do pool.</summary>
-        public List<IPoolable> GetMultipleObjects(int count, Vector3 position, IActor spawner = null, bool activateImmediately = true)
+        public List<IPoolable> GetMultipleObjects(int count, Vector3 position, IActor spawner = null, Vector3? direction = null, bool activateImmediately = true)
         {
             if (!ValidatePool()) return new();
 
@@ -95,7 +81,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
                 if (activateImmediately)
                 {
-                    ActivatePoolable(poolable, position, spawner);
+                    ActivatePoolable(poolable, position, direction, spawner);
                 }
 
                 result.Add(poolable);
@@ -105,15 +91,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             return result;
         }
 
-        /// <summary>Ativa manualmente um objeto do pool.</summary>
-        public void ActivateObject(IPoolable poolable, Vector3 position, IActor spawner = null)
+        public void ActivateObject(IPoolable poolable, Vector3 position, Vector3? direction = null, IActor spawner = null)
         {
             if (poolable == null || _activeObjects.Contains(poolable)) return;
 
-            ActivatePoolable(poolable, position, spawner);
+            ActivatePoolable(poolable, position, direction, spawner);
         }
 
-        /// <summary>Retorna um objeto para o pool.</summary>
         public void ReturnObject(IPoolable poolable)
         {
             if (poolable == null || !_activeObjects.Contains(poolable)) return;
@@ -131,7 +115,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             _hasWarnedExhausted = false;
         }
 
-        /// <summary>Expande o pool criando novos objetos.</summary>
         public void ExpandPool(int additionalCount)
         {
             if (!Data.CanExpand)
@@ -147,7 +130,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             }
         }
 
-        /// <summary>Destrói todos os objetos do pool.</summary>
         public void ClearPool()
         {
             foreach (var obj in _activeObjects) DestroyObject(obj);
@@ -158,10 +140,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             IsInitialized = false;
         }
-
-        // -----------------------------
-        // Métodos auxiliares
-        // -----------------------------
 
         private IPoolable RetrieveOrCreate(Vector3 position, IActor spawner)
         {
@@ -184,7 +162,28 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         private IPoolable CreatePoolable(int index, Vector3 position, IActor spawner)
         {
             var config = GetConfigForIndex(index);
-            var poolable = _factory.CreateObject(config, transform, position, $"{Data.ObjectName}_{index}", this, spawner);
+
+            if (config == null || config.Prefab == null)
+            {
+                DebugUtility.LogError<ObjectPool>($"Invalid PoolableObjectData or null Prefab in '{config?.ObjectName}'.", this);
+                return null;
+            }
+
+            if (config.Prefab.GetComponent<IPoolable>() == null)
+            {
+                DebugUtility.LogError<ObjectPool>($"Prefab '{config.Prefab.name}' does not implement IPoolable.", this);
+                return null;
+            }
+
+            var instance = Instantiate(config.Prefab, position, Quaternion.identity, transform);
+            instance.name = $"{Data.ObjectName}_{index}";
+            instance.SetActive(false);
+
+            var poolable = instance.GetComponent<IPoolable>();
+            poolable.Configure(config, this, spawner);
+
+            DebugUtility.LogVerbose<ObjectPool>($"Created pooled object '{instance.name}' with config '{config.ObjectName}'.", "cyan", this);
+
             return poolable;
         }
 
@@ -195,9 +194,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             return poolable;
         }
 
-        private void ActivatePoolable(IPoolable poolable, Vector3 position, IActor spawner)
+        private void ActivatePoolable(IPoolable poolable, Vector3 position, Vector3? direction, IActor spawner)
         {
-            poolable.Activate(new Vector3(position.x, 0, position.z), spawner);
+            poolable.Activate(new Vector3(position.x, 0, position.z), direction, spawner);
             _activeObjects.Add(poolable);
             OnObjectActivated.Invoke(poolable);
         }

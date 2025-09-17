@@ -9,10 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7730062546828630183}
-  - component: {fileID: 6330155506882419351}
-  - component: {fileID: 5929317122571851181}
-  - component: {fileID: 2357225128077129188}
   - component: {fileID: -3191423032800938798}
+  - component: {fileID: -3433789961080299914}
+  - component: {fileID: -6241042625207907278}
   m_Layer: 8
   m_Name: ProjectilPrefab
   m_TagString: Untagged
@@ -35,47 +34,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6330155506882419351
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8648089775525046338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44708ff333a342c6958699be22b48fdf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  soundData:
-    clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
-    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    loop: 0
-    playOnAwake: 1
---- !u!114 &5929317122571851181
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8648089775525046338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 180acb50eb3d4c7bb5371a6880fa136f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &2357225128077129188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8648089775525046338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ab499301cbb4582984fab0b82082454, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!54 &-3191423032800938798
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -103,3 +61,28 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &-3433789961080299914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2513dd39b704579b039af459eb3300f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &-6241042625207907278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinCollectionData: {fileID: 11400000, guid: c7bb6616b8c94c84cbcfd48eab9d968b, type: 2}
