@@ -1,7 +1,6 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
-using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -9,7 +8,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
     // Sistema de saúde que implementa IDestructible e IResettable
-    public class HealthResource : ResourceSystem, IDestructible, IResettable
+    public class HealthResource : ResourceSystem, IHealthSpecific
     {
         private IHasSkin _skinRoot; // Raiz do modelo do ator
         protected IActor lastChanger; // Último ator que causou dano
@@ -28,7 +27,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             OnDeath(); // Chama o método de extensão
         }
 
-        protected virtual void OnDeath()
+        public virtual void OnDeath()
         {
             var spawnPoint = _skinRoot is not null ? _skinRoot.ModelTransform.position : transform.position;
             DebugUtility.LogVerbose<HealthResource>($"HealthResource {gameObject.name}: Disparando DeathEvent com posição {spawnPoint}");
@@ -52,18 +51,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         
 
         // Reinicia o recurso ao estado padrão
-        public virtual void Reset()
+        public override void Reset(bool resetSkin = true)
         {
-            currentValue = maxValue; // Restaura ao valor máximo
-            triggeredThresholds.Clear(); // Limpa limiares disparados
-            modifiers.Clear(); // Remove todos os modificadores
+            base.Reset(resetSkin);
             lastChanger = null;
-            //TODO: isso não deveria ser feito no skin?
-            _skinRoot = GetComponentInParent<IHasSkin>();
-            _skinRoot?.SetSkinActive(true); // Reativa o modelo, se disponível
-            float percentage = GetPercentage();
-            OnEventValueChanged(percentage); // Notifica mudança
-            EventBus<ResourceEvent>.Raise(new ResourceEvent(config.UniqueId, gameObject, config.ResourceType, percentage)); // Dispara evento
+            if (resetSkin && _skinRoot != null)
+            {
+                _skinRoot.SetSkinActive(true);
+                DebugUtility.LogVerbose<HealthResource>($"Skin reativada para {gameObject.name}");
+            }
+            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, GetPercentage(), true));
         }
         
     }

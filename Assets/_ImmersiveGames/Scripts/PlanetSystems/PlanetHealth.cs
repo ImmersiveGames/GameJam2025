@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
         }
 
-        protected override void OnDeath()
+        public override void OnDeath()
         {
             if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
             base.OnDeath();

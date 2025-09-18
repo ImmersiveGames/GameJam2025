@@ -27,11 +27,11 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             }
         }
 
-        public virtual void Reset()
+        public virtual void Reset(bool resetSkin = false)
         {
             IsActive = true;
             _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
-            SetSkinActive(true);
+            SetSkinActive(resetSkin);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems {
     /// definir o estado inicial e construir a máquina de estados.
     /// </summary>
     public class StateMachineBuilder {
-        private readonly StateMachineSystems.StateMachine _stateMachine = new();
+        private readonly StateMachine _stateMachine = new();
 
         public StateMachineBuilder AddState(IState state, out IState reference) {
             reference = Preconditions.CheckNotNull(state, "State cannot be null.");
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems {
             return this;
         }
 
-        public StateMachineSystems.StateMachine Build() {
+        public StateMachine Build() {
             return _stateMachine;
         }
     }

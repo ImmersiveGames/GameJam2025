@@ -1,134 +1,100 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
-using UnityEngine;
-using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    // UI para exibir a saúde do recurso
-    public class ResourceHealthUI : MonoBehaviour
+    public class ResourceHealthUI : ResourceUI
     {
-        [SerializeField] private HealthResource healthSystem; // Referência ao sistema de saúde
-        [SerializeField]
-        protected Image healthBar; // Barra de preenchimento
-        [SerializeField]
-        protected Image backgroundImage; // Imagem de fundo
-        [SerializeField] private Image resourceIcon; // Ícone do recurso
-        [SerializeField] private Color[] thresholdColors = {
-            Color.green, // 100%-75%
-            Color.yellow, // 75%-50%
-            new(1f, 0.5f, 0f), // 50%-25%
-            Color.red // 25%-0%
-        };
-        [SerializeField] private float smoothTransitionSpeed = 5f; // Velocidade da transição suave
-        private float _targetFillAmount; // Alvo para preenchimento suave
-        private EventBinding<DeathEvent> _deathEventBinding; // Binding para evento de morte
-        private EventBinding<ResourceEvent> _resourceEventBinding; // Binding para eventos de recurso
+        private HealthResource _healthSystem;
+        private EventBinding<DeathEvent> _deathEventBinding;
 
-        // Desregistra eventos ao desativar
-        protected virtual void OnDisable()
+        protected override void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            if (_deathEventBinding != null)
-                EventBus<DeathEvent>.Unregister(_deathEventBinding);
-            if (_resourceEventBinding != null)
-                EventBus<ResourceEvent>.Unregister(_resourceEventBinding);
+            if (evt.UniqueId != targetResourceId || evt.Type != ResourceType.Health)
+            {
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, Expected={targetResourceId}, Type={evt.Type}");
+                return;
+            }
+
+            _healthSystem = evt.Resource as HealthResource;
+            if (_healthSystem != null)
+            {
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido para HealthResource em {evt.Source.name}, UniqueId={evt.UniqueId}");
+                _resource = _healthSystem;
+                _config = _healthSystem.Config;
+                Initialize();
+            }
+            else
+            {
+                DebugUtility.LogWarning<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido, mas não é HealthResource para ID={targetResourceId}!");
+            }
         }
 
-        // Inicializa a UI
-        protected virtual void Initialization()
+        protected override void Initialize()
         {
-            if (!healthSystem)
+            base.Initialize();
+            if (_healthSystem != null)
             {
-                healthSystem = GetComponentInParent<HealthResource>();
-                if (!healthSystem)
+                _targetFillAmount = _healthSystem.GetPercentage();
+                if (resourceBar)
                 {
-                    Debug.LogWarning("HealthSystem não encontrado!", this);
-                    return;
+                    resourceBar.fillAmount = _targetFillAmount;
+                    resourceBar.gameObject.SetActive(_targetFillAmount > 0);
                 }
+                UpdateThresholdColor(_targetFillAmount);
+                DebugUtility.LogVerbose<ResourceHealthUI>($"Initialize: HealthResource inicializado, Percentage={_targetFillAmount:F3}, fillAmount={resourceBar?.fillAmount:F3}, UniqueId={_config?.UniqueId}");
             }
-            // Define o ícone do recurso
-            if (healthSystem.Config && resourceIcon)
-                resourceIcon.sprite = healthSystem.Config.ResourceIcon;
+            else
+            {
+                DebugUtility.LogWarning<ResourceHealthUI>($"Initialize: healthSystem é nulo!");
+            }
+        }
 
-            healthSystem.EventValueChanged += UpdateHealthBar;
-            healthSystem.onThresholdReached.AddListener(UpdateThresholdColor);
+        protected override void InitializeCustomBindings()
+        {
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeath);
             EventBus<DeathEvent>.Register(_deathEventBinding);
-            _resourceEventBinding = new EventBinding<ResourceEvent>(OnResourceEvent);
-            EventBus<ResourceEvent>.Register(_resourceEventBinding);
-            ResetUI();
+            DebugUtility.LogVerbose<ResourceHealthUI>($"InitializeCustomBindings: Registrado binding para DeathEvent");
         }
 
-        private void Start()
+        protected override void UnregisterCustomBindings()
         {
-            Initialization();
-        }
-
-        // Atualiza a transição suave da barra
-        private void Update()
-        {
-            if (healthBar && healthBar.gameObject.activeSelf && Mathf.Abs(healthBar.fillAmount - _targetFillAmount) > 0.01f)
+            if (_deathEventBinding != null)
             {
-                healthBar.fillAmount = Mathf.Lerp(healthBar.fillAmount, _targetFillAmount, Time.deltaTime * smoothTransitionSpeed);
+                EventBus<DeathEvent>.Unregister(_deathEventBinding);
+                DebugUtility.LogVerbose<ResourceHealthUI>($"UnregisterCustomBindings: Desregistrado binding para DeathEvent");
             }
         }
 
-        // Reseta a UI para estado inicial
-        private void ResetUI()
+        protected override void OnResourceValueChanged(ResourceValueChangedEvent evt)
         {
-            if (healthBar) healthBar.gameObject.SetActive(true);
-            if (backgroundImage) backgroundImage.gameObject.SetActive(true);
-
-            UpdateHealthBar(healthSystem.GetPercentage());
-            UpdateThresholdColor(healthSystem.GetPercentage());
-        }
-
-        // Atualiza o preenchimento da barra
-        private void UpdateHealthBar(float healthPercentage)
-        {
-            if (!healthBar) return;
-            _targetFillAmount = healthPercentage;
-            // Desativa a barra se a saúde chegar a zero
-            healthBar.gameObject.SetActive(!(healthPercentage <= 0));
-        }
-
-        // Atualiza a cor com base na porcentagem
-        private void UpdateThresholdColor(float threshold)
-        {
-            if (!healthBar) return;
-
-            float healthPercentage = healthSystem.GetPercentage();
-            healthBar.color = healthPercentage switch
+            if (evt.Source != _healthSystem?.gameObject)
             {
-                > 0.75f => thresholdColors[0],
-                > 0.5f => thresholdColors[1],
-                > 0.25f => thresholdColors[2],
-                _ => thresholdColors[3]
-            };
-        }
-
-        // Reage ao evento de morte
-        private void OnDeath(DeathEvent evt)
-        {
-            if (!transform.IsChildOrSelf(evt.SourceGameObject.transform)) return;
-            if (backgroundImage)
-            {
-                backgroundImage.color = thresholdColors[3]; // Vermelho ao morrer
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: Source={evt.Source?.name}, Expected={_healthSystem?.gameObject?.name}");
+                return;
             }
-            if (healthBar) healthBar.gameObject.SetActive(false);
-            if (backgroundImage) backgroundImage.gameObject.SetActive(false);
-        }
-
-        // Reage a eventos de recurso (ex.: reset)
-        private void OnResourceEvent(ResourceEvent evt)
-        {
-            if (evt.Source != healthSystem.gameObject) return;
-            if (evt.Percentage >= 1f) // Recurso cheio (reset)
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged: Percentage={evt.Percentage:F3}, Ascending={evt.IsAscending}, UniqueId={evt.UniqueId}");
+            UpdateResourceBar(evt.Percentage);
+            if (evt.Percentage >= 1f)
             {
                 ResetUI();
             }
+        }
+
+        private void OnDeath(DeathEvent evt)
+        {
+            if (!transform.IsChildOrSelf(evt.SourceGameObject.transform))
+                return;
+            if (backgroundImage)
+            {
+                backgroundImage.color = thresholdColors[3];
+            }
+            if (resourceBar) resourceBar.gameObject.SetActive(false);
+            if (backgroundImage) backgroundImage.gameObject.SetActive(false);
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnDeath: DeathEvent recebido para {evt.SourceGameObject.name}, Barra e fundo desativados");
         }
     }
 }

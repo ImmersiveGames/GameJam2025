@@ -49,9 +49,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         
 
-        public override void Reset()
+        public override void Reset(bool resetSkin)
         {
-            base.Reset();
+            base.Reset(resetSkin);
             IsActive = true;
             IsEating = false;
             InHungry = false;

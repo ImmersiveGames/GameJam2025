@@ -348,6 +348,70 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AutoUnparentOnAwake: 1
+--- !u!1 &1513714882
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1513714884}
+  - component: {fileID: 1513714883}
+  - component: {fileID: 1513714885}
+  m_Layer: 0
+  m_Name: TesteRecursos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1513714883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513714882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c96cb68d1a42ff95b9e5d9141548db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uniqueIdParaTestar: PlayerHealth
+  testAmount: 10
+  resetToInitial: 1
+--- !u!4 &1513714884
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513714882}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1513714885
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513714882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a0b8abcc2a94d6089eb35fcdd34bf5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 339cdd7183197b74f9436ea0f7c594a4, type: 2}
+  onThresholdReached:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1555126166
 GameObject:
   m_ObjectHideFlags: 0
@@ -910,38 +974,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 4438320651933206523, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: m_Constraints
-      value: 116
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: actionName
-      value: Fire
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: strategyType
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: spawnOffset.x
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: spawnOffset.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: singleStrategy.fuzzyAngle
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: singleStrategy.fuzzyPercent
-      value: 0.15
-      objectReference: {fileID: 0}
-    - target: {fileID: 5241393699780179374, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
-      propertyPath: circularStrategy.fuzzyPercent
-      value: 0.1
-      objectReference: {fileID: 0}
     - target: {fileID: 6318117956975829155, guid: d5fb9d9c392841a4aa88ecd625c5f74f, type: 3}
       propertyPath: m_Name
       value: PlayerPrefab
@@ -1013,3 +1045,4 @@ SceneRoots:
   - {fileID: 1912513661}
   - {fileID: 1467168392}
   - {fileID: 6167380739191915579}
+  - {fileID: 1513714884}

@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             var destructible = other.GetComponentInParent<IDestructible>();
             destructible?.TakeDamage(_defensesMaster.ProjectilesData.damage, _pooledObject.GetComponentInParent<IActor>());
         }
-        protected override void OnDeath()
+        public override void OnDeath()
         {
             base.OnDeath(); 
             _defensesMaster.OnDefensesDeath();

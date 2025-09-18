@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (_resource is IResettable resettable)
             {
-                resettable.Reset();
+                resettable.Reset(resetToInitial);
                 DebugUtility.LogVerbose<ResourceSystemTester>($"🔄 Reset via IResettable em '{uniqueIdParaTestar}'");
             }
             else

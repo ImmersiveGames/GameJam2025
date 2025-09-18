@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Gerencia skins para objetos (estáticos ou poolados), suportando troca coletiva e individual via EventBus.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Error)]
     public class SkinController : MonoBehaviour
     {
         [SerializeField] private SkinCollectionData skinCollectionData;

@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {_target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
         }
 
-        public void Reset()
+        public void Reset(bool resetSkin = true)
         {
             IsOrbiting = false;
             _target = null;

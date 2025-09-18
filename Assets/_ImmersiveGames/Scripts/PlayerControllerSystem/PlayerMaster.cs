@@ -27,9 +27,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             }
         }
 
-        public override void Reset()
+        public override void Reset(bool resetSkin)
         {
-            base.Reset();
+            base.Reset(resetSkin);
             DetectorController.Reset();
             _fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
             SetFxActive(false);

@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(Rigidbody)), DebugLevel(DebugLevel.Error)]
     public class BulletPoolable : PooledObject
     {
         private Rigidbody _rb;

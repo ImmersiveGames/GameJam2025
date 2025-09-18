@@ -3,8 +3,6 @@ using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
-using System.Collections.Generic;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
@@ -16,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     /// Inclui cooldown e estratégias modulares de posicionamento selecionáveis.
     /// </summary>
     [RequireComponent(typeof(PlayerInput))]
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Error)]
     public class InputSpawnerComponent : MonoBehaviour
     {
         [Header("Pool Config")]

@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Gerencia a criação e manutenção de contêineres hierárquicos (ModelRoot, CanvasRoot, FxRoot, SoundRoot) para objetos.
     /// </summary>
+    [DebugLevel(DebugLevel.Error)]
     public class ContainerManager
     {
         private readonly Dictionary<ModelType, Transform> _containers = new();
@@ -111,6 +112,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Instancia modelos (prefabs) em contêineres, usando instanciação direta para todos os ModelType.
     /// </summary>
+    
+    [DebugLevel(DebugLevel.Error)]
     public class ModelInstantiator
     {
         /// <summary>

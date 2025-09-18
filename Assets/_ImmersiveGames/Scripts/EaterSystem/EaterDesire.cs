@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.EventBus;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 .Distinct()
                 .ToList();
         }
-        public void Reset()
+        public void Reset(bool skipEvent = false)
         {
             CancelInvoke();
             _desiredResource = null;

@@ -5,7 +5,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Error)]
     public class PoolManager : PersistentSingleton<PoolManager>
     {
         private readonly Dictionary<string, ObjectPool> _pools = new();

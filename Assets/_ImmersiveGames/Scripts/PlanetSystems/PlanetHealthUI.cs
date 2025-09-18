@@ -8,9 +8,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding; // Binding para eventos de recurso
         private PlanetsMaster _planetMaster;
 
-        protected override void Initialization()
+        protected void Initialization()
         {
-            base.Initialization();
             _planetMaster = GetComponentInParent<PlanetsMaster>();
             _planetDestroyBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
             EventBus<PlanetDestroyedEvent>.Register(_planetDestroyBinding);
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
         {
             if(evt.Detected.GetPlanetsMaster() != _planetMaster) return;
-            if (healthBar) healthBar.gameObject.SetActive(false);
+            //if (healthBar) healthBar.gameObject.SetActive(false);
             if (backgroundImage) backgroundImage.gameObject.SetActive(false);
         }
     }

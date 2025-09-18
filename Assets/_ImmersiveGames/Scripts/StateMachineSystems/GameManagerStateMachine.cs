@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public class GameManagerStateMachine : Singleton<GameManagerStateMachine>
     {
-        private StateMachineSystems.StateMachine _stateMachine;
+        private StateMachine _stateMachine;
 
         public IState CurrentState => _stateMachine?.CurrentState;
 

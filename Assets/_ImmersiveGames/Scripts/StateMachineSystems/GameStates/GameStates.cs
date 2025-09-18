@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             // Ativar UI do menu
             // Desativar elementos do jogo
-            Debug.Log($"Iniciando o menu do jogo.");
+            Debug.Log("Iniciando o menu do jogo.");
             gameManager.SetPlayGame(false);
         }
     }
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             // Mostrar pontuação final
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, false));
             
-            Debug.Log($"game over!");
+            Debug.Log("game over!");
         }
         public override void OnExit()
         {
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             // Mostrar tela de vitória
             // Mostrar estatísticas
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, false));
-            Debug.Log($"Terminou o jogo!");
+            Debug.Log("Terminou o jogo!");
         }
         public override void OnExit()
         {

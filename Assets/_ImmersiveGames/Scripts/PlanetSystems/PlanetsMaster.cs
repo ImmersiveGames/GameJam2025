@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -49,7 +48,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        public override void Reset()
+        public override void Reset(bool resetSkin)
         {
             IsActive = true;
             _detectors.Clear();

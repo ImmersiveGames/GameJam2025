@@ -4,11 +4,12 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
+    [DebugLevel(DebugLevel.Error)]
     public abstract class PooledObject : MonoBehaviour, IPoolable
     {
-        protected PoolableObjectData _config;
-        protected ObjectPool _pool;
-        protected float _currentLifetime;
+        private PoolableObjectData _config;
+        private ObjectPool _pool;
+        private float _currentLifetime;
         private bool _isRegisteredInLifetimeManager;
 
         public IActor Spawner { get; private set; }
