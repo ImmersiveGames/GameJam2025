@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.Extensions;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class ResourceHealthUI : ResourceUI
     {
         private HealthResource _healthSystem;
@@ -13,17 +14,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected override void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateBind(evt))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            if (resourceId != targetResourceId || 
-                evt.Type != ResourceType.Health ||
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Type={evt.Type}, ExpectedType={ResourceType.Health}, Source={evt.Source.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
 
@@ -60,17 +53,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected override void OnResourceValueChanged(ResourceValueChangedEvent evt)
         {
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateValueChanged(evt, _healthSystem?.gameObject))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            if (resourceId != targetResourceId || 
-                evt.Source != _healthSystem?.gameObject ||
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Source={evt.Source?.name}, ExpectedSource={_healthSystem?.gameObject?.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={_healthSystem?.gameObject?.name}, UI Source={gameObject.name}");
                 return;
             }
 

@@ -84,21 +84,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Events
     /// </summary>
     public class ModifierAppliedEvent : IEvent
     {
-        public string UniqueId { get; }
-        public GameObject Source { get; }
-        public ResourceModifier Modifier { get; }
-        public bool IsAdded { get; } // true: adicionado, false: removido
-        public string ActorId { get; } // Entidade alvo
-        public IActor? AppliedBy { get; } // Quem aplicou (opcional)
+        public readonly string UniqueId;
+        public readonly GameObject Source;
+        public readonly ResourceModifier Modifier;
+        public readonly bool IsAdded;
+        public readonly string ActorId;
 
-        public ModifierAppliedEvent(string uniqueId, GameObject source, ResourceModifier modifier, bool isAdded, string actorId = "", IActor? appliedBy = null)
+        public ModifierAppliedEvent(string uniqueId, GameObject source, ResourceModifier modifier, bool isAdded, string actorId)
         {
             UniqueId = uniqueId;
             Source = source;
             Modifier = modifier;
             IsAdded = isAdded;
             ActorId = actorId;
-            AppliedBy = appliedBy;
         }
     }
 }

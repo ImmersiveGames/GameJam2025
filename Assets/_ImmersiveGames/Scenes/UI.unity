@@ -539,6 +539,7 @@ GameObject:
   - component: {fileID: 694448709}
   - component: {fileID: 694448708}
   - component: {fileID: 694448707}
+  - component: {fileID: 694448710}
   m_Layer: 5
   m_Name: Herald Health Bar (1)
   m_TagString: Untagged
@@ -629,6 +630,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 694448705}
   m_CullTransparentMesh: 1
+--- !u!114 &694448710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 694448705}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d7664241ef544c3bedb0ad800b9f9e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiComponent: {fileID: 694448707}
 --- !u!114 &854540533
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -817,6 +831,7 @@ GameObject:
   - component: {fileID: 1549917151}
   - component: {fileID: 1549917150}
   - component: {fileID: 1549917149}
+  - component: {fileID: 1549917152}
   m_Layer: 5
   m_Name: Herald Health Bar (2)
   m_TagString: Untagged
@@ -907,6 +922,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1549917147}
   m_CullTransparentMesh: 1
+--- !u!114 &1549917152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1549917147}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d7664241ef544c3bedb0ad800b9f9e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiComponent: {fileID: 1549917149}
 --- !u!1 &1747661151
 GameObject:
   m_ObjectHideFlags: 0
@@ -1239,6 +1267,7 @@ GameObject:
   - component: {fileID: 4684118965651142352}
   - component: {fileID: 1481500210953357777}
   - component: {fileID: 854540533}
+  - component: {fileID: 4684118965651142353}
   m_Layer: 5
   m_Name: Herald Health Bar
   m_TagString: Untagged
@@ -1291,6 +1320,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3683447391120146832}
   m_CullTransparentMesh: 1
+--- !u!114 &4684118965651142353
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3683447391120146832}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d7664241ef544c3bedb0ad800b9f9e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  uiComponent: {fileID: 854540533}
 --- !u!224 &5214954391769444429
 RectTransform:
   m_ObjectHideFlags: 0

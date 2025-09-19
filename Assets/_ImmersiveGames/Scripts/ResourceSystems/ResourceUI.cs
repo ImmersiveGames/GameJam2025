@@ -10,20 +10,26 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     [DebugLevel(DebugLevel.Verbose)]
     public abstract class ResourceUI : MonoBehaviour
     {
-        [SerializeField] protected string targetResourceId; // ID base do recurso (ex.: Health)
-        [SerializeField] protected string targetActorId = ""; // ID do IActor (ex.: Player1)
-        [SerializeField] protected ResourceType targetResourceType;
-        [SerializeField] protected Image resourceBar;
-        [SerializeField] protected Image backgroundImage;
-        [SerializeField] protected Image resourceIcon;
-        [SerializeField] protected TextMeshProUGUI resourceNameText;
-        [SerializeField] protected Color[] thresholdColors = {
+        [SerializeField]
+        public string targetResourceId;
+        [SerializeField]
+        public string targetActorId = "";
+        [SerializeField]
+        public ResourceType targetResourceType;
+        [SerializeField]
+        protected Image resourceBar;
+        [SerializeField]
+        protected Image backgroundImage;
+        [SerializeField] private Image resourceIcon;
+        [SerializeField] private TextMeshProUGUI resourceNameText;
+        [SerializeField]
+        protected Color[] thresholdColors = {
             Color.green,
             new Color(1f, 0.922f, 0.016f),
             new Color(1f, 0.5f, 0f),
             Color.red
         };
-        [SerializeField] protected float smoothTransitionSpeed = 5f;
+        [SerializeField] private float smoothTransitionSpeed = 5f;
         protected IResourceValue _resource;
         protected ResourceConfigSo _config;
         protected float _targetFillAmount;
@@ -31,6 +37,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private EventBinding<ResourceValueChangedEvent> _valueChangedBinding;
         private EventBinding<ResourceThresholdCrossedEvent> _thresholdCrossedBinding;
         private EventBinding<ModifierAppliedEvent> _modifierEventBinding;
+        protected BindHandler _bindHandler;
 
         protected virtual void Awake()
         {
@@ -43,6 +50,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogError<ResourceUI>($"Awake: targetResourceId='{targetResourceId}' parece conter um prefixo (ex.: 'Player1_Health'). Use o ID base do ResourceConfigSo (ex.: 'Health') e configure targetActorId para 'Player1'.", this);
             }
             DebugUtility.LogVerbose<ResourceUI>($"Awake: targetResourceId={targetResourceId}, targetActorId={targetActorId}, targetResourceType={targetResourceType}, Source={gameObject.name}");
+            _bindHandler = new BindHandler(targetResourceId, targetActorId, targetResourceType);
         }
 
         protected virtual void OnEnable()
@@ -80,6 +88,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             DebugUtility.LogVerbose<ResourceUI>($"OnDisable: Desregistrados todos os bindings, Source={gameObject.name}");
             UnregisterCustomBindings();
+        }
+
+        public void SetBindHandler(BindHandler bindHandler)
+        {
+            _bindHandler = bindHandler ?? new BindHandler(targetResourceId, targetActorId, targetResourceType);
+            DebugUtility.LogVerbose<ResourceUI>($"SetBindHandler: Novo BindHandler configurado, Source={gameObject.name}");
         }
 
         protected virtual void Initialize()
@@ -172,23 +186,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            // Extrair o ResourceId base do UniqueId (remover prefixo ActorId_)
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateBind(evt))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1); // Remove "ActorId_"
-            }
-
-            // Validar ResourceId, ActorId e Type
-            if (resourceId != targetResourceId || 
-                (targetResourceType != ResourceType.Custom && evt.Type != targetResourceType) ||
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Type={evt.Type}, ExpectedType={targetResourceType}, Source={evt.Source.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
 
-            DebugUtility.LogVerbose<ResourceUI>($"OnResourceBindEvent: Recebido bind para UniqueId={evt.UniqueId}, ResourceId={resourceId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+            DebugUtility.LogVerbose<ResourceUI>($"OnResourceBindEvent: Recebido bind para UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
             _resource = evt.Resource;
             _config = (_resource as ResourceSystem)?.Config;
             if (_resource != null)
@@ -203,18 +207,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceValueChanged(ResourceValueChangedEvent evt)
         {
-            // Extrair ResourceId base
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateValueChanged(evt, (_resource as ResourceSystem)?.gameObject))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            if (resourceId != targetResourceId || 
-                evt.Source != (_resource as ResourceSystem)?.gameObject ||
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Source={evt.Source?.name}, ExpectedSource={(_resource as ResourceSystem)?.gameObject.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={(_resource as ResourceSystem)?.gameObject.name}, UI Source={gameObject.name}");
                 return;
             }
             DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged: Percentage={evt.Percentage:F3}, Ascending={evt.IsAscending}, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
@@ -223,18 +218,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceThresholdCrossed(ResourceThresholdCrossedEvent evt)
         {
-            // Extrair ResourceId base
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateThresholdCrossed(evt, (_resource as ResourceSystem)?.gameObject))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            if (resourceId != targetResourceId || 
-                evt.Source != (_resource as ResourceSystem)?.gameObject ||
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceUI>($"OnResourceThresholdCrossed ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceUI>($"OnResourceThresholdCrossed ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
             DebugUtility.LogVerbose<ResourceUI>($"OnResourceThresholdCrossed: Threshold={evt.Info.Threshold:F3}, Ascending={evt.Info.IsAscending}, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
@@ -243,21 +229,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnModifierApplied(ModifierAppliedEvent evt)
         {
-            // Extrair ResourceId base
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            if (_bindHandler == null || !_bindHandler.ValidateModifierApplied(evt))
             {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            if (resourceId != targetResourceId || 
-                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
-            {
-                DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
             DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied: {(evt.IsAdded ? "Adicionado" : "Removido")} modifier {evt.Modifier.amountPerSecond:F2}/s, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
-            // Futuro: Atualizar UI (ex.: ícone de buff)
         }
 
         public void SetResource(IResourceValue newResource)

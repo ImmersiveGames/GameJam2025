@@ -5,7 +5,7 @@
     {
         public readonly float amountPerSecond; // Quantidade por segundo (positivo para buff, negativo para debuff)
         private readonly float _duration; // Duração em segundos
-        private readonly bool _isPermanent; // Se verdadeiro, dura até ser removido manualmente
+        public readonly bool _isPermanent; // Se verdadeiro, dura até ser removido manualmente
         private float Timer { get; set; } // Temporizador interno
 
         public ResourceModifier(float amountPerSecond, float duration, bool isPermanent = false)

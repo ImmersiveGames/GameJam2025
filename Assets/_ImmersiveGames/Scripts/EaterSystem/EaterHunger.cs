@@ -59,11 +59,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnStarved()
         {
-            DebugUtility.Log<EaterHunger>($"☠️ Morreu de fome! currentValue: {currentValue}");
+            //DebugUtility.Log<EaterHunger>($"☠️ Morreu de fome! currentValue: {currentValue}");
 
             if (_health != null)
             {
-                _health.SetExternalAutoChange(false, true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
+               // _health.SetExternalAutoChange(false, true, config.AutoDrainRate); // Por exemplo, 2 de vida por segundo
             }
             else
             {
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     }
                     if (_health)
                     {
-                        _health.SetExternalAutoChange(false, false, 0f);
+                        //_health.SetExternalAutoChange(false, false, 0f);
                     }
                 }
 
@@ -111,13 +111,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public void Reset()
         {
-            currentValue = config.InitialValue;
-            triggeredThresholds.Clear();
+            //currentValue = config.InitialValue;
+            //triggeredThresholds.Clear();
             _crossedDown.Clear();
             _crossedUp.Clear();
             _lastPercentage = GetPercentage(); // Garante consistência após reset
             DebugUtility.LogVerbose<EaterHunger>("♻️ EaterHunger resetado.");
-            _health.OnEventValueChanged(_lastPercentage); // revalida estado visual, se necessário
+            //_health.OnEventValueChanged(_lastPercentage); // revalida estado visual, se necessário
         }
     }
 }

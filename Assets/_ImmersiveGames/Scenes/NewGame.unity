@@ -130,7 +130,6 @@ GameObject:
   - component: {fileID: 53621934}
   - component: {fileID: 53621933}
   - component: {fileID: 53621932}
-  - component: {fileID: 53621931}
   - component: {fileID: 53621935}
   m_Layer: 0
   m_Name: NPC1
@@ -139,18 +138,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &53621931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 53621930}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 802f0a2389974a2582fa70791ab3e3ce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &53621932
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,7 +151,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: edf85fa2ddd546d47a4b3c063a6a3fc2, type: 2}
-  _modifierManager: {fileID: 53621931}
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
@@ -654,7 +640,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 339cdd7183197b74f9436ea0f7c594a4, type: 2}
-  _modifierManager: {fileID: 0}
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
