@@ -15,6 +15,8 @@ GameObject:
   - component: {fileID: 7265921888426314459}
   - component: {fileID: 5241393699780179374}
   - component: {fileID: 2948020572070910234}
+  - component: {fileID: 6823855768395240950}
+  - component: {fileID: 2426434325802355146}
   m_Layer: 7
   m_Name: PlayerPrefab
   m_TagString: Untagged
@@ -165,6 +167,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 339cdd7183197b74f9436ea0f7c594a4, type: 2}
+  _modifierManager: {fileID: 6823855768395240950}
   onThresholdReached:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6823855768395240950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6318117956975829155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 802f0a2389974a2582fa70791ab3e3ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2426434325802355146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6318117956975829155}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07c96cb68d1a42ff95b9e5d9141548db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetActorId: Player1
+  targetResourceId: Health

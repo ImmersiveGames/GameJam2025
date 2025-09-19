@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems.Editor
 {
     [CustomEditor(typeof(ResourceSystemTester))]
@@ -17,14 +18,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Editor
 
             GUI.enabled = Application.isPlaying;
 
-            if (GUILayout.Button("⬆️ Aumentar Recurso"))
-                tester.IncreaseTest();
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("⬆️ Aumentar", "Aumenta o recurso em {amount} unidades")))
+                tester.IncreaseResource();
+            if (GUILayout.Button(new GUIContent("⬇️ Diminuir", "Diminui o recurso em {amount} unidades")))
+                tester.DecreaseResource();
+            if (GUILayout.Button(new GUIContent("🔄 Resetar", "Reseta o recurso para o valor inicial")))
+                tester.ResetResource();
+            EditorGUILayout.EndHorizontal();
 
-            if (GUILayout.Button("⬇️ Diminuir Recurso"))
-                tester.DecreaseTest();
-
-            if (GUILayout.Button("🔄 Resetar Recurso"))
-                tester.ResetTest();
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("🧪 Adicionar Modificador", "Adiciona um modificador ao recurso")))
+                tester.AddModifier();
+            EditorGUILayout.EndHorizontal();
 
             GUI.enabled = true;
         }

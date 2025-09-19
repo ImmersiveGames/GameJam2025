@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b037e3d919f045658fa89781b5718fe3, type: 3}
   m_Name: PlayerHealth
   m_EditorClassIdentifier: 
-  uniqueId: PlayerHealth
+  uniqueId: Health
   resourceName: PlayerHealth
   resourceType: 0
   maxValue: 100
@@ -22,8 +22,8 @@ MonoBehaviour:
   - 0.5
   - 0.25
   resourceIcon: {fileID: -812359318, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
-  autoFillEnabled: 0
+  autoFillEnabled: 1
   autoDrainEnabled: 0
-  autoFillRate: 0
-  autoDrainRate: 0
+  autoFillRate: 10
+  autoDrainRate: 10
   autoChangeDelay: 1

@@ -4,6 +4,8 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -15,14 +17,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public abstract class ResourceSystem : MonoBehaviour, IResourceValue, IResourceThreshold, IResettable
     {
         [SerializeField] protected ResourceConfigSo config;
+        [SerializeField] private ModifierManager _modifierManager;
         public event Action EventDepleted;
         public event Action<float> EventValueChanged;
         public event Action<float> OnThresholdReached;
         [SerializeField] public ResourceThresholdUnityEvent onThresholdReached;
-        private float _maxValue;
+        protected float maxValue;
         protected float currentValue;
         protected readonly List<float> triggeredThresholds = new();
-        private readonly List<ResourceModifier> _modifiers = new();
         private float _autoFillTimer;
         private float _autoDrainTimer;
         private bool _autoFillEnabled;
@@ -31,6 +33,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private float _autoDrainRate;
         private bool _isGameActive;
         private EventBinding<StateChangedEvent> _stateChangedBinding;
+        private string _uniqueId;
 
         protected virtual void Awake()
         {
@@ -39,13 +42,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogError<ResourceSystem>("ResourceConfigSO não atribuído!", this);
                 return;
             }
-            _maxValue = config.MaxValue;
+            maxValue = config.MaxValue;
             currentValue = config.InitialValue;
             triggeredThresholds.Clear();
             _isGameActive = false;
             _autoFillTimer = config.AutoChangeDelay;
             _autoDrainTimer = config.AutoChangeDelay;
-            DebugUtility.LogVerbose<ResourceSystem>($"Awake: Inicializado ResourceSystem com UniqueId={config.UniqueId}, InitialValue={currentValue}, MaxValue={_maxValue}, AutoFillEnabled={config.AutoFillEnabled}, AutoDrainEnabled={config.AutoDrainEnabled}, AutoFillRate={config.AutoFillRate}, AutoDrainRate={config.AutoDrainRate}, AutoChangeDelay={config.AutoChangeDelay}");
+            _modifierManager = GetComponent<ModifierManager>() ?? gameObject.AddComponent<ModifierManager>();
+            _uniqueId = UniqueIdFactory.Instance.GenerateId(gameObject, config.UniqueId);
+            DebugUtility.LogVerbose<ResourceSystem>($"Awake: Inicializado ResourceSystem com UniqueId={_uniqueId}, InitialValue={currentValue}, MaxValue={maxValue}, AutoFillEnabled={config.AutoFillEnabled}, AutoDrainEnabled={config.AutoDrainEnabled}, Source={gameObject.name}");
         }
 
         protected virtual void OnEnable()
@@ -56,21 +61,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _autoDrainRate = Mathf.Max(0, config.AutoDrainRate);
             _stateChangedBinding = new EventBinding<StateChangedEvent>(OnStateChanged);
             EventBus<StateChangedEvent>.Register(_stateChangedBinding);
-            DebugUtility.LogVerbose<ResourceSystem>($"OnEnable: AutoFillEnabled={_autoFillEnabled} (Rate={_autoFillRate}), AutoDrainEnabled={_autoDrainEnabled} (Rate={_autoDrainRate}), AutoChangeDelay={config.AutoChangeDelay}");
+            DebugUtility.LogVerbose<ResourceSystem>($"OnEnable: AutoFillEnabled={_autoFillEnabled} (Rate={_autoFillRate}), AutoDrainEnabled={_autoDrainEnabled} (Rate={_autoDrainRate}), Source={gameObject.name}");
         }
 
         private void Start()
         {
-            EventBus<ResourceBindEvent>.Raise(new ResourceBindEvent(gameObject, config.ResourceType, config.UniqueId, this));
-            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, GetPercentage(), true));
-            DebugUtility.LogVerbose<ResourceSystem>($"Start: Disparado ResourceBindEvent para UniqueId={config.UniqueId}");
+            var actorId = GetActorId();
+            EventBus<ResourceBindEvent>.Raise(new ResourceBindEvent(gameObject, config.ResourceType, _uniqueId, this, actorId));
+            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(_uniqueId, gameObject, config.ResourceType, GetPercentage(), true, actorId));
+            DebugUtility.LogVerbose<ResourceSystem>($"Start: Disparado ResourceBindEvent para UniqueId={_uniqueId}, ActorId={actorId}, Source={gameObject.name}");
         }
 
         protected virtual void Update()
         {
             if (!_isGameActive)
             {
-                DebugUtility.LogWarning<ResourceSystem>($"Update ignorado: Jogo não está ativo (_isGameActive={_isGameActive})");
+                DebugUtility.LogWarning<ResourceSystem>($"Update ignorado: Jogo não está ativo (_isGameActive={_isGameActive}), Source={gameObject.name}");
                 return;
             }
             AutoFill();
@@ -84,53 +90,52 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
             }
-            DebugUtility.LogVerbose<ResourceSystem>($"OnDisable: Desregistrado binding de StateChangedEvent");
+            DebugUtility.LogVerbose<ResourceSystem>($"OnDisable: Desregistrado binding de StateChangedEvent, Source={gameObject.name}");
         }
 
         private void OnStateChanged(StateChangedEvent evt)
         {
             _isGameActive = evt.IsGameActive;
-            DebugUtility.LogVerbose<ResourceSystem>($"OnStateChanged: Estado do jogo atualizado: IsGameActive={_isGameActive} (Estado: {evt.StateName})");
+            DebugUtility.LogVerbose<ResourceSystem>($"OnStateChanged: Estado do jogo atualizado: IsGameActive={_isGameActive} (Estado: {evt.StateName}), Source={gameObject.name}");
         }
 
         private void ApplyModifiers()
         {
-            for (int i = _modifiers.Count - 1; i >= 0; i--)
+            if (_modifierManager != null)
             {
-                var modifier = _modifiers[i];
-                if (modifier.amountPerSecond > 0)
-                    Increase(modifier.amountPerSecond * Time.deltaTime);
-                else
-                    Decrease(-modifier.amountPerSecond * Time.deltaTime);
-
-                if (modifier.Update(Time.deltaTime))
-                    _modifiers.RemoveAt(i);
+                float delta = _modifierManager.UpdateAndGetDelta(Time.deltaTime);
+                if (delta > 0)
+                    Increase(delta);
+                else if (delta < 0)
+                    Decrease(-delta);
             }
         }
 
         private void AutoFill()
         {
-            if (!_autoFillEnabled || currentValue >= _maxValue)
-                return;
+            if (!_autoFillEnabled || currentValue >= maxValue) return;
             _autoFillTimer += Time.deltaTime;
             if (_autoFillTimer >= config.AutoChangeDelay)
             {
-                Increase(_autoFillRate);
+                var baseRate = _autoFillRate;
+                var modifiedRate = _modifierManager != null ? _modifierManager.UpdateAndGetDelta(config.AutoChangeDelay, baseRate) : baseRate;
+                Increase(modifiedRate);
                 _autoFillTimer = 0f;
-                DebugUtility.LogVerbose<ResourceSystem>($"AutoFill aplicado: Amount={_autoFillRate:F5}, CurrentValue={currentValue:F5}, AutoChangeDelay={config.AutoChangeDelay}");
+                DebugUtility.LogVerbose<ResourceSystem>($"AutoFill aplicado: Base={baseRate:F5}, Modified={modifiedRate:F5}, CurrentValue={currentValue:F5}, Source={gameObject.name}");
             }
         }
 
         private void AutoDrain()
         {
-            if (!_autoDrainEnabled || currentValue <= 0)
-                return;
+            if (!_autoDrainEnabled || currentValue <= 0) return;
             _autoDrainTimer += Time.deltaTime;
             if (_autoDrainTimer >= config.AutoChangeDelay)
             {
-                Decrease(_autoDrainRate);
+                var baseRate = _autoDrainRate;
+                var modifiedRate = _modifierManager != null ? _modifierManager.UpdateAndGetDelta(config.AutoChangeDelay, baseRate) : baseRate;
+                Decrease(modifiedRate);
                 _autoDrainTimer = 0f;
-                DebugUtility.LogVerbose<ResourceSystem>($"AutoDrain aplicado: Amount={_autoDrainRate:F5}, CurrentValue={currentValue:F5}, AutoChangeDelay={config.AutoChangeDelay}");
+                DebugUtility.LogVerbose<ResourceSystem>($"AutoDrain aplicado: Base={baseRate:F5}, Modified={modifiedRate:F5}, CurrentValue={currentValue:F5}, Source={gameObject.name}");
             }
         }
 
@@ -149,32 +154,32 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _autoDrainRate = rate;
                 _autoDrainTimer = config.AutoChangeDelay;
             }
-            DebugUtility.LogVerbose<ResourceSystem>($"SetExternalAutoChange: {(isFill ? "AutoFill" : "AutoDrain")} {(auto ? "ATIVADO" : "DESATIVADO")} a {rate:F2} por segundo, AutoChangeDelay={config.AutoChangeDelay}, UniqueId={config.UniqueId}");
+            DebugUtility.LogVerbose<ResourceSystem>($"SetExternalAutoChange: {(isFill ? "AutoFill" : "AutoDrain")} {(auto ? "ATIVADO" : "DESATIVADO")} a {rate:F2} por segundo, Source={gameObject.name}");
         }
 
         private void UpdateResourceValue(float amount, bool isIncrease)
         {
             if (amount < 0)
             {
-                DebugUtility.LogWarning<ResourceSystem>($"UpdateResourceValue: Tentativa de atualizar recurso com valor inválido (amount={amount})");
+                DebugUtility.LogWarning<ResourceSystem>($"UpdateResourceValue: Tentativa de atualizar recurso com valor inválido (amount={amount}), Source={gameObject.name}");
                 return;
             }
             float oldValue = currentValue;
-            currentValue = isIncrease
-                ? Mathf.Min(_maxValue, currentValue + amount)
-                : Mathf.Max(0, currentValue - amount);
+            float modifiedAmount = _modifierManager != null ? _modifierManager.UpdateAndGetDelta(Time.deltaTime, amount) : amount;
+            float newValue = isIncrease
+                ? Mathf.Min(maxValue, currentValue + modifiedAmount)
+                : Mathf.Max(0, currentValue - modifiedAmount);
+            if (Mathf.Approximately(newValue, currentValue)) return;
+            currentValue = newValue;
+            var actorId = GetActorId();
             float percentage = GetPercentage();
             EventValueChanged?.Invoke(percentage);
-            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, percentage, isIncrease));
+            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(_uniqueId, gameObject, config.ResourceType, percentage, isIncrease, actorId));
             CheckThresholds();
-            DebugUtility.LogVerbose<ResourceSystem>($"UpdateResourceValue: IsIncrease={isIncrease}, Amount={amount:F5}, OldValue={oldValue:F5}, NewValue={currentValue:F5}, Percentage={percentage:F3}");
+            DebugUtility.LogVerbose<ResourceSystem>($"UpdateResourceValue: IsIncrease={isIncrease}, Amount={amount:F5}, Modified={modifiedAmount:F5}, OldValue={oldValue:F5}, NewValue={currentValue:F5}, Source={gameObject.name}");
             if (!isIncrease && currentValue <= 0)
             {
                 OnResourceDepleted();
-            }
-            else if (isIncrease && currentValue >= _maxValue)
-            {
-                EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, percentage, true));
             }
         }
 
@@ -185,35 +190,34 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void CheckThresholds()
         {
             float percentage = GetPercentage();
+            var actorId = GetActorId();
             foreach (float threshold in config.Thresholds)
             {
                 if (percentage <= threshold && !triggeredThresholds.Contains(threshold))
                 {
                     triggeredThresholds.Add(threshold);
                     OnThresholdReached?.Invoke(threshold);
-                    EventBus<ResourceThresholdCrossedEvent>.Raise(new ResourceThresholdCrossedEvent(config.UniqueId, gameObject, new ThresholdCrossInfo(percentage, threshold, false)));
-                    DebugUtility.LogVerbose<ResourceSystem>($"CheckThresholds: Threshold cruzado (descendente): Threshold={threshold:F3}, Percentage={percentage:F3}, UniqueId={config.UniqueId}");
+                    EventBus<ResourceThresholdCrossedEvent>.Raise(new ResourceThresholdCrossedEvent(_uniqueId, gameObject, new ThresholdCrossInfo(percentage, threshold, false), actorId));
                 }
                 else if (percentage > threshold && triggeredThresholds.Contains(threshold))
                 {
                     triggeredThresholds.Remove(threshold);
                     OnThresholdReached?.Invoke(threshold);
-                    EventBus<ResourceThresholdCrossedEvent>.Raise(new ResourceThresholdCrossedEvent(config.UniqueId, gameObject, new ThresholdCrossInfo(percentage, threshold, true)));
-                    DebugUtility.LogVerbose<ResourceSystem>($"CheckThresholds: Threshold cruzado (ascendente): Threshold={threshold:F3}, Percentage={percentage:F3}, UniqueId={config.UniqueId}");
+                    EventBus<ResourceThresholdCrossedEvent>.Raise(new ResourceThresholdCrossedEvent(_uniqueId, gameObject, new ThresholdCrossInfo(percentage, threshold, true), actorId));
                 }
             }
         }
 
-        public virtual void Reset(bool resetSkin = false)
+        public virtual void Reset(bool resetSkin = true)
         {
             currentValue = resetSkin ? config.InitialValue : currentValue;
             triggeredThresholds.Clear();
-            _modifiers.Clear();
+            _modifierManager?.RemoveAllModifiers();
             _autoFillTimer = config.AutoChangeDelay;
             _autoDrainTimer = config.AutoChangeDelay;
+            var actorId = GetActorId();
             EventValueChanged?.Invoke(GetPercentage());
-            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, GetPercentage(), true));
-            DebugUtility.LogVerbose<ResourceSystem>($"Reset: CurrentValue={currentValue:F5}, UniqueId={config.UniqueId}");
+            EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(_uniqueId, gameObject, config.ResourceType, GetPercentage(), true, actorId));
         }
 
         public void OnEventValueChanged(float checkValue)
@@ -223,19 +227,29 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void AddModifier(float amountPerSecond, float duration, bool isPermanent = false)
         {
-            _modifiers.Add(new ResourceModifier(amountPerSecond, duration, isPermanent));
-            DebugUtility.LogVerbose<ResourceSystem>($"AddModifier: AmountPerSecond={amountPerSecond:F2}, Duration={duration:F2}, IsPermanent={isPermanent}");
+            _modifierManager?.AddModifier(amountPerSecond, duration, isPermanent);
         }
 
         public void RemoveAllModifiers()
         {
-            _modifiers.Clear();
-            DebugUtility.LogVerbose<ResourceSystem>($"RemoveAllModifiers: Todos os modificadores removidos, UniqueId={config.UniqueId}");
+            _modifierManager?.RemoveAllModifiers();
         }
 
         public float GetCurrentValue() => currentValue;
-        public float GetMaxValue() => _maxValue;
-        public float GetPercentage() => _maxValue > 0 ? currentValue / _maxValue : 0;
+        public float GetMaxValue() => maxValue;
+        public float GetPercentage() => maxValue > 0 ? currentValue / maxValue : 0;
+
+        private string GetActorId()
+        {
+            var actor = GetComponentInParent<IActor>();
+            if (actor != null)
+            {
+                DebugUtility.LogVerbose<ResourceSystem>($"GetActorId: Encontrado IActor com Name={actor.Name}, Source={gameObject.name}");
+                return actor.Name;
+            }
+            DebugUtility.LogWarning<ResourceSystem>($"GetActorId: Nenhum IActor encontrado em {gameObject.name}. Usando ID vazio.", this);
+            return "";
+        }
 
         [Serializable]
         public class ResourceSaveData
@@ -260,9 +274,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             triggeredThresholds.AddRange(data.triggeredThresholds);
             EventValueChanged?.Invoke(GetPercentage());
             CheckThresholds();
-            DebugUtility.LogVerbose<ResourceSystem>($"Load: CurrentValue={currentValue:F5}, UniqueId={config.UniqueId}");
         }
 
         public ResourceConfigSo Config => config;
+        public string UniqueId => _uniqueId;
     }
 }

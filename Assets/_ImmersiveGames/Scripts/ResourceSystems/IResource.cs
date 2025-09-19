@@ -40,4 +40,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         void Reset(bool resetSkin = true);
     }
+    /// <summary>
+    /// Interface para estratégias de aplicação de modificadores (Strategy Pattern para OCP).
+    /// Permite extensões futuras sem alterar ModifierManager.
+    /// </summary>
+    public interface IModifierStrategy
+    {
+        float Apply(ResourceModifier modifier, float deltaTime, float baseValue = 0f);
+    }
 }

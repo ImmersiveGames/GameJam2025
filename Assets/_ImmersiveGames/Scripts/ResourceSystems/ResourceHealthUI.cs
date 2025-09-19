@@ -13,23 +13,29 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected override void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            if (evt.UniqueId != targetResourceId || evt.Type != ResourceType.Health)
+            string resourceId = evt.UniqueId;
+            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
             {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, Expected={targetResourceId}, Type={evt.Type}");
+                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
+            }
+
+            if (resourceId != targetResourceId || 
+                evt.Type != ResourceType.Health ||
+                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
+            {
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Type={evt.Type}, ExpectedType={ResourceType.Health}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
 
             _healthSystem = evt.Resource as HealthResource;
             if (_healthSystem != null)
             {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido para HealthResource em {evt.Source.name}, UniqueId={evt.UniqueId}");
-                _resource = _healthSystem;
-                _config = _healthSystem.Config;
-                Initialize();
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido para HealthResource, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+                base.OnResourceBindEvent(evt);
             }
             else
             {
-                DebugUtility.LogWarning<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido, mas não é HealthResource para ID={targetResourceId}!");
+                DebugUtility.LogWarning<ResourceHealthUI>($"OnResourceBindEvent: Recurso não é HealthResource para UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
             }
         }
 
@@ -44,12 +50,35 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     resourceBar.fillAmount = _targetFillAmount;
                     resourceBar.gameObject.SetActive(_targetFillAmount > 0);
                 }
-                UpdateThresholdColor(_targetFillAmount);
-                DebugUtility.LogVerbose<ResourceHealthUI>($"Initialize: HealthResource inicializado, Percentage={_targetFillAmount:F3}, fillAmount={resourceBar?.fillAmount:F3}, UniqueId={_config?.UniqueId}");
+                DebugUtility.LogVerbose<ResourceHealthUI>($"Initialize: HealthResource inicializado, Percentage={_targetFillAmount:F3}, fillAmount={resourceBar?.fillAmount:F3}, UniqueId={_config?.UniqueId}, Source={gameObject.name}");
             }
             else
             {
-                DebugUtility.LogWarning<ResourceHealthUI>($"Initialize: healthSystem é nulo!");
+                DebugUtility.LogWarning<ResourceHealthUI>($"Initialize: healthSystem é nulo!, Source={gameObject.name}");
+            }
+        }
+
+        protected override void OnResourceValueChanged(ResourceValueChangedEvent evt)
+        {
+            string resourceId = evt.UniqueId;
+            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
+            {
+                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
+            }
+
+            if (resourceId != targetResourceId || 
+                evt.Source != _healthSystem?.gameObject ||
+                (!string.IsNullOrEmpty(targetActorId) && evt.ActorId != targetActorId))
+            {
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={targetActorId}, Source={evt.Source?.name}, ExpectedSource={_healthSystem?.gameObject?.name}, UI Source={gameObject.name}");
+                return;
+            }
+
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged: Percentage={evt.Percentage:F3}, Ascending={evt.IsAscending}, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+            UpdateResourceBar(evt.Percentage);
+            if (evt.Percentage >= 1f)
+            {
+                ResetUI();
             }
         }
 
@@ -57,7 +86,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             _deathEventBinding = new EventBinding<DeathEvent>(OnDeath);
             EventBus<DeathEvent>.Register(_deathEventBinding);
-            DebugUtility.LogVerbose<ResourceHealthUI>($"InitializeCustomBindings: Registrado binding para DeathEvent");
+            DebugUtility.LogVerbose<ResourceHealthUI>($"InitializeCustomBindings: Registrado binding para DeathEvent, Source={gameObject.name}");
         }
 
         protected override void UnregisterCustomBindings()
@@ -65,22 +94,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_deathEventBinding != null)
             {
                 EventBus<DeathEvent>.Unregister(_deathEventBinding);
-                DebugUtility.LogVerbose<ResourceHealthUI>($"UnregisterCustomBindings: Desregistrado binding para DeathEvent");
-            }
-        }
-
-        protected override void OnResourceValueChanged(ResourceValueChangedEvent evt)
-        {
-            if (evt.Source != _healthSystem?.gameObject)
-            {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: Source={evt.Source?.name}, Expected={_healthSystem?.gameObject?.name}");
-                return;
-            }
-            DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged: Percentage={evt.Percentage:F3}, Ascending={evt.IsAscending}, UniqueId={evt.UniqueId}");
-            UpdateResourceBar(evt.Percentage);
-            if (evt.Percentage >= 1f)
-            {
-                ResetUI();
+                DebugUtility.LogVerbose<ResourceHealthUI>($"UnregisterCustomBindings: Desregistrado binding para DeathEvent, Source={gameObject.name}");
             }
         }
 
@@ -94,7 +108,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             if (resourceBar) resourceBar.gameObject.SetActive(false);
             if (backgroundImage) backgroundImage.gameObject.SetActive(false);
-            DebugUtility.LogVerbose<ResourceHealthUI>($"OnDeath: DeathEvent recebido para {evt.SourceGameObject.name}, Barra e fundo desativados");
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnDeath: DeathEvent recebido para {evt.SourceGameObject.name}, Barra e fundo desativados, UI Source={gameObject.name}");
         }
     }
 }
