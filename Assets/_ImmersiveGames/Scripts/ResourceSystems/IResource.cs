@@ -1,7 +1,16 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    public interface IResource : IResourceValue, IResourceThreshold, IResettable
+    {
+        ResourceConfigSo Config { get; } 
+        ResourceType Type { get; } 
+        string UniqueId { get; } 
+        string ActorId { get; } 
+        GameObject Source { get; }
+    }
     /// <summary>
     /// Interface para gerenciamento de valores de recursos (aumentar, diminuir, obter valores).
     /// </summary>
@@ -39,13 +48,5 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public interface IResettable
     {
         void Reset(bool resetSkin = true);
-    }
-    /// <summary>
-    /// Interface para estratégias de aplicação de modificadores (Strategy Pattern para OCP).
-    /// Permite extensões futuras sem alterar ModifierManager.
-    /// </summary>
-    public interface IModifierStrategy
-    {
-        float Apply(ResourceModifier modifier, float deltaTime, float baseValue = 0f);
     }
 }

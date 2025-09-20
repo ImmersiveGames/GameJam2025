@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private ResourceType resourceType = ResourceType.Custom; // Tipo do recurso
         [SerializeField] private float maxValue = 100f; // Valor máximo do recurso
         [SerializeField] private float initialValue = 100f; // Valor inicial do recurso
-        [SerializeField] private List<float> thresholds = new() { 0.75f, 0.5f, 0.25f }; // Limiares de porcentagem
+        [SerializeField, Range(0f,1f)] private List<float> thresholds = new() { 0.75f, 0.5f, 0.25f }; // Limiares de porcentagem
         [SerializeField] private Sprite resourceIcon; // Ícone do recurso
         [SerializeField] private bool autoFillEnabled; // Habilita auto-preenchimento
         [SerializeField] private bool autoDrainEnabled; // Habilita auto-drenagem
