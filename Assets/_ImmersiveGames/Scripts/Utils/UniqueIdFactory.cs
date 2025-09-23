@@ -1,57 +1,75 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils
 {
     public class UniqueIdFactory : MonoBehaviour
     {
         private static UniqueIdFactory _instance;
-        private int _genericCounter = 0;
-
         public static UniqueIdFactory Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    var go = new GameObject("UniqueIdFactory");
-                    _instance = go.AddComponent<UniqueIdFactory>();
-                    DontDestroyOnLoad(go);
+                    _instance = FindFirstObjectByType<UniqueIdFactory>();
+                    if (_instance == null)
+                    {
+                        _instance = new GameObject("UniqueIdFactory").AddComponent<UniqueIdFactory>();
+                        DontDestroyOnLoad(_instance.gameObject);
+                    }
                 }
                 return _instance;
             }
         }
 
-        public string GenerateId(GameObject source, string baseId, bool useActor = true)
+        private readonly Dictionary<string, int> _instanceCounts = new Dictionary<string, int>();
+
+        public string GenerateId(GameObject source, string baseId)
         {
-            if (useActor)
+            var actor = source.GetComponentInParent<IActor>();
+            if (actor == null)
             {
-                var actor = source.GetComponentInParent<_ImmersiveGames.Scripts.ActorSystems.IActor>();
-                if (actor != null && !string.IsNullOrEmpty(actor.Name))
-                {
-                    return $"{actor.Name}_{baseId}";
-                }
+                DebugUtility.LogError<UniqueIdFactory>("IActor não encontrado para gerar ID!", source);
+                return baseId;
             }
-            // Para objetos sem IActor, usa GUID ou contador
-            return $"{baseId}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
-            // Alternativa: $"Generic_{_genericCounter++}_{baseId}";
+
+            string actorId;
+            var playerInput = source.GetComponent<PlayerInput>();
+            if (playerInput != null)
+            {
+                actorId = $"Player_{playerInput.playerIndex}";
+                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.Name}, PlayerIndex={playerInput.playerIndex}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
+            }
+            else
+            {
+                string baseActorName = actor.Name;
+                if (!_instanceCounts.ContainsKey(baseActorName))
+                    _instanceCounts[baseActorName] = 0;
+
+                int instanceId = _instanceCounts[baseActorName]++;
+                actorId = $"NPC_{baseActorName}_{instanceId}";
+                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.Name}, InstanceId={instanceId}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
+            }
+
+            return $"{actorId}_{baseId}";
         }
 
-        // Gera ID sem referência a GameObject (ex.: para managers ou UI)
-        public string GenerateGenericId(string baseId)
+        public int GetInstanceCount(string actorName)
         {
-            return $"{baseId}_{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            return _instanceCounts.TryGetValue(actorName, out int count) ? count : 0;
         }
 
-        private void Awake()
+        private void OnDestroy()
         {
-            if (_instance != null && _instance != this)
+            if (_instance == this)
             {
-                Destroy(gameObject);
-                return;
+                _instanceCounts.Clear();
+                _instance = null;
             }
-            _instance = this;
-            DontDestroyOnLoad(gameObject);
         }
     }
 }

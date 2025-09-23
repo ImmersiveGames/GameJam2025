@@ -66,13 +66,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             builder.StateInitial(menuState);
             _stateMachine = builder.Build();
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(menuState.GetType().Name, menuState.IsGameActive()));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(menuState.IsGameActive()));
         }
 
         public void ChangeState(IState newState, GameManager manager)
         {
             _stateMachine?.SetState(newState);
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(newState.GetType().Name, newState.IsGameActive()));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(newState.IsGameActive()));
         }
     }
 }

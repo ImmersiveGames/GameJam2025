@@ -4,12 +4,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
     public class StateChangedEvent : IEvent
     {
-        public string StateName { get; }
-        public bool IsGameActive { get; }
+        public readonly bool IsGameActive;
 
-        public StateChangedEvent(string stateName, bool isGameActive)
+        public StateChangedEvent(bool isGameActive)
         {
-            StateName = stateName;
             IsGameActive = isGameActive;
         }
     }
@@ -44,6 +42,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
     {
         public Vector3? Position { get; }
         public GameObject SourceGameObject{ get; }
+        public string ActorId { get; set; }
 
 
         public DeathEvent(Vector3 position, GameObject source)

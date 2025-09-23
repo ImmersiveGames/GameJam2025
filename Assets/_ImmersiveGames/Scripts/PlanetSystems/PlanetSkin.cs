@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
             if (_planetHealth != null)
             {
-                _planetHealth.onThresholdReached.RemoveListener(OnHealthThresholdReached);
+                //_planetHealth.onThresholdReached.RemoveListener(OnHealthThresholdReached);
             }
         }
         
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 DebugUtility.LogWarning<PlanetSkin>($"PlanetHealth não encontrado em {_planetMaster.name}!");
                 return;
             }
-            _planetHealth.onThresholdReached.AddListener(OnHealthThresholdReached);
+            //_planetHealth.onThresholdReached.AddListener(OnHealthThresholdReached);
             DebugUtility.Log<PlanetSkin>($"Registrado onThresholdReached para planeta {_planetMaster.name}.");
 
             // Inicializa as partes com base na saúde atual

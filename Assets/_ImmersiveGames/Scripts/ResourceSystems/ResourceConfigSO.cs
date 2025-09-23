@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.NewResourceSystem;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -23,26 +24,66 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private float autoDrainRate; // Taxa de drenagem (unidades/s)
         [SerializeField] private float autoChangeDelay = 1f; // Atraso antes de iniciar mudanças automáticas
 
-        public string UniqueId => uniqueId;
-        public string ResourceName => resourceName;
-        public ResourceType ResourceType => resourceType;
-        public float MaxValue => maxValue;
-        public float InitialValue => initialValue;
-        public List<float> Thresholds => thresholds;
-        public Sprite ResourceIcon => resourceIcon;
-        public bool AutoFillEnabled => autoFillEnabled;
+        public string UniqueId
+        {
+            get => uniqueId;
+            set => uniqueId = value;
+        }
+        public string ResourceName
+        {
+            get => resourceName;
+            set => resourceName = value;
+        }
+        public ResourceType ResourceType
+        {
+            get => resourceType;
+            set => resourceType = value;
+        }
+        public float MaxValue
+        {
+            get => maxValue;
+            set => maxValue = value;
+        }
+        public float InitialValue
+        {
+            get => initialValue;
+            set => initialValue = value;
+        }
+        public List<float> Thresholds
+        {
+            get => thresholds;
+            set => thresholds = value;
+        }
+        public Sprite ResourceIcon
+        {
+            get => resourceIcon;
+            set => resourceIcon = value;
+        }
+        public bool AutoFillEnabled
+        {
+            get => autoFillEnabled;
+            set => autoFillEnabled = value;
+        }
         public bool AutoDrainEnabled
         {
             get => autoDrainEnabled;
             set => autoDrainEnabled = value;
         }
-        public float AutoFillRate => autoFillRate;
+        public float AutoFillRate
+        {
+            get => autoFillRate;
+            set => autoFillRate = value;
+        }
         public float AutoDrainRate
         {
             get => autoDrainRate;
             set => autoDrainRate = value;
         }
-        public float AutoChangeDelay => autoChangeDelay;
+        public float AutoChangeDelay
+        {
+            get => autoChangeDelay;
+            set => autoChangeDelay = value;
+        }
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -70,6 +111,4 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
 #endif
     }
-
-    public enum ResourceType { Health, Mana, Energy, Stamina, Custom }
 }

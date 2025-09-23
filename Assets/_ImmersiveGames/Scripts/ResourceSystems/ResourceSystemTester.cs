@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Events;
+﻿using _ImmersiveGames.Scripts.NewResourceSystem.Events;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

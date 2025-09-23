@@ -22,8 +22,8 @@ MonoBehaviour:
   - 0.5
   - 0.25
   resourceIcon: {fileID: -812359318, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
-  autoFillEnabled: 1
-  autoDrainEnabled: 0
+  autoFillEnabled: 0
+  autoDrainEnabled: 1
   autoFillRate: 10
-  autoDrainRate: 10
+  autoDrainRate: 5
   autoChangeDelay: 1

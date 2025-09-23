@@ -12,6 +12,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     {
         private const string DebugColor = "yellow";
         private bool _hasBeenBootstrapped;
+        
 
         /// <summary>
         /// Executa a inicialização do sistema de dependências, se ainda não foi feita.
@@ -34,6 +35,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         private void Bootstrap()
         {
             DebugUtility.LogVerbose<DependencyBootstrapper>("Registrando serviços iniciais.", DebugColor, this);
+            //REGISTRAR OS SERVIÇOS ARQUI
             
         }
 

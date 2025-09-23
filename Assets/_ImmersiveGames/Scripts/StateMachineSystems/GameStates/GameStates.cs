@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public override void OnEnter()
         {
             gameManager.SetPlayGame(true);
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, true));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( true));
         }
 
         public override bool CanPerformAction(ActionType action) => true; // Permite todas as ações
@@ -57,13 +57,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             Time.timeScale = 0f;
             gameManager.SetPlayGame(false);
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, false));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( false));
         }
 
         public override void OnExit()
         {
             Time.timeScale = 1f;
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, true));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( true));
         }
 
         public override bool CanPerformAction(ActionType action) => false; // Bloqueia todas as ações
@@ -78,13 +78,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             // Mostrar tela de game over
             // Mostrar pontuação final
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, false));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( false));
             
             Debug.Log("game over!");
         }
         public override void OnExit()
         {
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, true));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( true));
         }
     }
 
@@ -97,12 +97,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             // Mostrar tela de vitória
             // Mostrar estatísticas
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, false));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( false));
             Debug.Log("Terminou o jogo!");
         }
         public override void OnExit()
         {
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(GetType().Name, true));
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent( true));
         }
     }
 }

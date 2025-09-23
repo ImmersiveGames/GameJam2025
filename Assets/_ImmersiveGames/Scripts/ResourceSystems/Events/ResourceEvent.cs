@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.NewResourceSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 
@@ -32,16 +33,28 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Events
     /// </summary>
     public class ResourceThresholdCrossedEvent : IEvent
     {
-        public string UniqueId { get; }
-        public GameObject Source { get; }
-        public ThresholdCrossInfo Info { get; }
-        public string ActorId { get; } // Novo
+        public readonly string UniqueId;
+        public readonly GameObject Source;
+        public readonly ResourceThresholdInfo Info;
+        public readonly string ActorId;
 
-        public ResourceThresholdCrossedEvent(string uniqueId, GameObject source, ThresholdCrossInfo info, string actorId = "")
+        public class ResourceThresholdInfo
+        {
+            public readonly float Threshold;
+            public readonly bool IsAscending;
+
+            public ResourceThresholdInfo(float threshold, bool isAscending)
+            {
+                Threshold = threshold;
+                IsAscending = isAscending;
+            }
+        }
+
+        public ResourceThresholdCrossedEvent(string uniqueId, GameObject source, float threshold, bool isAscending, string actorId)
         {
             UniqueId = uniqueId;
             Source = source;
-            Info = info;
+            Info = new ResourceThresholdInfo(threshold, isAscending);
             ActorId = actorId;
         }
     }
@@ -59,27 +72,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Events
     }
 
     /// <summary>
-    /// Evento para associar um recurso a um objeto específico.
-    /// </summary>
-    public class ResourceBindEvent : IEvent
-    {
-        public GameObject Source { get; }
-        public ResourceType Type { get; }
-        public string UniqueId { get; }
-        public IResourceValue Resource { get; }
-        public string ActorId { get; } // Novo: ID da entidade
-
-        public ResourceBindEvent(GameObject source, ResourceType type, string uniqueId, IResourceValue resource, string actorId = "")
-        {
-            Source = source;
-            Type = type;
-            UniqueId = uniqueId;
-            Resource = resource;
-            ActorId = actorId;
-        }
-    }
-
-    /// <summary>
     /// Evento disparado quando um modificador é aplicado ou removido.
     /// </summary>
     public class ModifierAppliedEvent : IEvent
@@ -87,15 +79,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Events
         public readonly string UniqueId;
         public readonly GameObject Source;
         public readonly ResourceModifier Modifier;
-        public readonly bool IsAdded;
+        public readonly bool IsApplied;
         public readonly string ActorId;
 
-        public ModifierAppliedEvent(string uniqueId, GameObject source, ResourceModifier modifier, bool isAdded, string actorId)
+        public ModifierAppliedEvent(string uniqueId, GameObject source, ResourceModifier modifier, bool isApplied, string actorId)
         {
             UniqueId = uniqueId;
             Source = source;
             Modifier = modifier;
-            IsAdded = isAdded;
+            IsApplied = isApplied;
             ActorId = actorId;
         }
     }

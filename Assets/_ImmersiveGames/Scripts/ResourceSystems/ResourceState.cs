@@ -1,14 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [Serializable]
-    public struct ResourceState
+    public class ResourceState
     {
-        public float CurrentValue;
-        public float MaxValue;
-        public List<float> TriggeredThresholds;
+        public float CurrentValue { get; set; }
+        public float MaxValue { get; }
+        public List<float> TriggeredThresholds { get; }
 
         public ResourceState(float currentValue, float maxValue)
         {
@@ -17,6 +16,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             TriggeredThresholds = new List<float>();
         }
 
-        public float GetPercentage() => MaxValue > 0 ? CurrentValue / MaxValue : 0f;
+        public float GetPercentage()
+        {
+            return MaxValue > 0 ? CurrentValue / MaxValue : 0f;
+        }
     }
 }

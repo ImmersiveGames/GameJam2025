@@ -1,35 +1,33 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.NewResourceSystem;
+using _ImmersiveGames.Scripts.NewResourceSystem.Interfaces;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    public interface IResource : IResourceValue, IResourceThreshold, IResettable
+    public interface IResource : IResourceValue, IResourceThreshold
     {
-        ResourceConfigSo Config { get; } 
-        ResourceType Type { get; } 
-        string UniqueId { get; } 
-        string ActorId { get; } 
+        ResourceConfigSo Config { get; }
+        ResourceType Type { get; }
+        string UniqueId { get; }
+        string ActorId { get; }
         GameObject Source { get; }
+        void AddModifier(float amountPerSecond, float duration, bool isPermanent = false);
+        void RemoveAllModifiers();
+        void Reset(bool resetSkin = true);
     }
-    /// <summary>
-    /// Interface para gerenciamento de valores de recursos (aumentar, diminuir, obter valores).
-    /// </summary>
-    public interface IResourceValue
-    {
-        void Increase(float amount);
-        void Decrease(float amount);
-        float GetCurrentValue();
-        float GetMaxValue();
-        float GetPercentage();
-    }
-
     /// <summary>
     /// Interface para gerenciamento de limiares (thresholds) de recursos.
     /// </summary>
     public interface IResourceThreshold
     {
         void CheckThresholds();
-        event Action<float> OnThresholdReached;
+    }
+    public interface IResourceModifier
+    {
+        void AddModifier(float amountPerSecond, float duration, bool isPermanent = false);
+        void RemoveAllModifiers();
+        float UpdateAndGetDelta(float deltaTime, float baseRate = 0f);
     }
 
     /// <summary>
@@ -49,4 +47,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         void Reset(bool resetSkin = true);
     }
+    public interface IAutoChangeStrategy
+    {
+        float GetBaseRate(ResourceConfigSo config);
+    }
+    
 }

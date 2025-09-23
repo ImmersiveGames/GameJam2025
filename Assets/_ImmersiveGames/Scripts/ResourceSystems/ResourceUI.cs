@@ -1,35 +1,34 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.NewResourceSystem;
+using _ImmersiveGames.Scripts.NewResourceSystem.Events;
+using _ImmersiveGames.Scripts.NewResourceSystem.Interfaces;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
     public abstract class ResourceUI : MonoBehaviour
     {
-        [SerializeField]
-        public string targetResourceId;
-        [SerializeField]
-        public string targetActorId = "";
-        [SerializeField]
-        public ResourceType targetResourceType;
-        [SerializeField]
-        protected Image resourceBar;
-        [SerializeField]
-        protected Image backgroundImage;
+        [SerializeField] public string targetResourceId;
+        [SerializeField] public string targetActorId = "";
+        [SerializeField] public ResourceType targetResourceType;
+        [SerializeField] protected Image resourceBar;
+        [SerializeField] protected Image backgroundImage;
         [SerializeField] private Image resourceIcon;
         [SerializeField] private TextMeshProUGUI resourceNameText;
-        [SerializeField]
-        protected Color[] thresholdColors = {
+        [SerializeField] protected Color[] thresholdColors = {
             Color.green,
             new Color(1f, 0.922f, 0.016f),
             new Color(1f, 0.5f, 0f),
             Color.red
         };
         [SerializeField] private float smoothTransitionSpeed = 5f;
+        [SerializeField]
+        protected BindHandler bindHandler; // Configurado via Inspector
         protected IResourceValue _resource;
         protected ResourceConfigSo _config;
         protected float _targetFillAmount;
@@ -37,7 +36,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private EventBinding<ResourceValueChangedEvent> _valueChangedBinding;
         private EventBinding<ResourceThresholdCrossedEvent> _thresholdCrossedBinding;
         private EventBinding<ModifierAppliedEvent> _modifierEventBinding;
-        protected BindHandler _bindHandler;
 
         protected virtual void Awake()
         {
@@ -49,8 +47,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 DebugUtility.LogError<ResourceUI>($"Awake: targetResourceId='{targetResourceId}' parece conter um prefixo (ex.: 'Player1_Health'). Use o ID base do ResourceConfigSo (ex.: 'Health') e configure targetActorId para 'Player1'.", this);
             }
+            if (bindHandler == null)
+            {
+                DebugUtility.LogError<ResourceUI>($"Awake: BindHandler não atribuído no Inspector!", this);
+            }
             DebugUtility.LogVerbose<ResourceUI>($"Awake: targetResourceId={targetResourceId}, targetActorId={targetActorId}, targetResourceType={targetResourceType}, Source={gameObject.name}");
-            _bindHandler = new BindHandler(targetResourceId, targetActorId, targetResourceType);
         }
 
         protected virtual void OnEnable()
@@ -77,22 +78,31 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 EventBus<ResourceThresholdCrossedEvent>.Unregister(_thresholdCrossedBinding);
             if (_modifierEventBinding != null)
                 EventBus<ModifierAppliedEvent>.Unregister(_modifierEventBinding);
-
-            if (_resource is ResourceSystem resourceSystem)
-            {
-                resourceSystem.EventValueChanged -= UpdateResourceBar;
-                if (resourceSystem is IResourceThreshold thresholdSystem)
-                {
-                    thresholdSystem.OnThresholdReached -= UpdateThresholdColor;
-                }
-            }
             DebugUtility.LogVerbose<ResourceUI>($"OnDisable: Desregistrados todos os bindings, Source={gameObject.name}");
             UnregisterCustomBindings();
         }
 
-        public void SetBindHandler(BindHandler bindHandler)
+        public void SetActorId(string actorId)
         {
-            _bindHandler = bindHandler ?? new BindHandler(targetResourceId, targetActorId, targetResourceType);
+            targetActorId = actorId;
+            DebugUtility.LogVerbose<ResourceUI>($"SetActorId: targetActorId={targetActorId}, Source={gameObject.name}");
+        }
+
+        public void SetResourceId(string resourceId)
+        {
+            targetResourceId = resourceId;
+            DebugUtility.LogVerbose<ResourceUI>($"SetResourceId: targetResourceId={targetResourceId}, Source={gameObject.name}");
+        }
+
+        public void SetResourceType(ResourceType resourceType)
+        {
+            targetResourceType = resourceType;
+            DebugUtility.LogVerbose<ResourceUI>($"SetResourceType: targetResourceType={resourceType}, Source={gameObject.name}");
+        }
+
+        public void SetBindHandler(BindHandler newBindHandler)
+        {
+            bindHandler = newBindHandler;
             DebugUtility.LogVerbose<ResourceUI>($"SetBindHandler: Novo BindHandler configurado, Source={gameObject.name}");
         }
 
@@ -105,16 +115,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 if (resourceNameText != null)
                     resourceNameText.text = _config.ResourceName;
                 DebugUtility.LogVerbose<ResourceUI>($"Initialize: Configurado ícone e nome para ResourceName={_config.ResourceName}, UniqueId={_config.UniqueId}, Source={gameObject.name}");
-            }
-
-            if (_resource is ResourceSystem resourceSystem)
-            {
-                resourceSystem.EventValueChanged += UpdateResourceBar;
-                if (resourceSystem is IResourceThreshold thresholdSystem)
-                {
-                    thresholdSystem.OnThresholdReached += UpdateThresholdColor;
-                }
-                DebugUtility.LogVerbose<ResourceUI>($"Initialize: Vinculado eventos EventValueChanged e OnThresholdReached para UniqueId={_config?.UniqueId}, Source={gameObject.name}");
             }
 
             _targetFillAmount = _resource?.GetPercentage() ?? 0f;
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateBind(evt))
+            if (bindHandler == null)
             {
                 DebugUtility.LogVerbose<ResourceUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
@@ -207,9 +207,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceValueChanged(ResourceValueChangedEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateValueChanged(evt, (_resource as ResourceSystem)?.gameObject))
+            if (bindHandler == null)
             {
-                DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={(_resource as ResourceSystem)?.gameObject.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={(_resource as ResourceSystem)?.Source.name}, UI Source={gameObject.name}");
                 return;
             }
             DebugUtility.LogVerbose<ResourceUI>($"OnResourceValueChanged: Percentage={evt.Percentage:F3}, Ascending={evt.IsAscending}, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
@@ -218,7 +218,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnResourceThresholdCrossed(ResourceThresholdCrossedEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateThresholdCrossed(evt, (_resource as ResourceSystem)?.gameObject))
+            if (bindHandler == null )
             {
                 DebugUtility.LogVerbose<ResourceUI>($"OnResourceThresholdCrossed ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
@@ -229,25 +229,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected virtual void OnModifierApplied(ModifierAppliedEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateModifierApplied(evt))
+            if (bindHandler == null )
             {
                 DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
-            DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied: {(evt.IsAdded ? "Adicionado" : "Removido")} modifier {evt.Modifier.amountPerSecond:F2}/s, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+            DebugUtility.LogVerbose<ResourceUI>($"OnModifierApplied: {(evt.IsApplied ? "Adicionado" : "Removido")} modifier {evt.Modifier.amountPerSecond:F2}/s, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
         }
 
         public void SetResource(IResourceValue newResource)
         {
-            if (_resource is ResourceSystem oldResourceSystem)
-            {
-                oldResourceSystem.EventValueChanged -= UpdateResourceBar;
-                if (oldResourceSystem is IResourceThreshold oldThresholdSystem)
-                {
-                    oldThresholdSystem.OnThresholdReached -= UpdateThresholdColor;
-                }
-            }
-
             _resource = newResource;
             _config = (newResource as ResourceSystem)?.Config;
 

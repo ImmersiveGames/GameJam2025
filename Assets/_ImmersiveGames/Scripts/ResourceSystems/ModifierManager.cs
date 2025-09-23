@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             foreach (var modifier in _modifiers.ToArray())
             {
                 totalDelta += modifier.amountPerSecond * deltaTime;
-                if (!modifier._isPermanent && modifier.Update(deltaTime))
+                if (!modifier.isPermanent && modifier.Update(deltaTime))
                 {
                     _modifiers.Remove(modifier);
                     EventBus<ModifierAppliedEvent>.Raise(new ModifierAppliedEvent(_uniqueId, _source, modifier, false, _actorId));

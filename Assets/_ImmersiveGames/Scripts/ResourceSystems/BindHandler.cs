@@ -1,95 +1,74 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Events;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.NewResourceSystem.Events;
+using _ImmersiveGames.Scripts.ResourceSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    public class BindHandler
+    [DebugLevel(DebugLevel.Verbose)]
+    public class BindHandler : MonoBehaviour
     {
-        private readonly string _targetResourceId;
-        private readonly string _targetActorId;
-        private readonly ResourceType _targetResourceType;
+        [SerializeField] private GameObject resourceUIPrefab;
+        private readonly Dictionary<string, ResourceUI> _uiBindings = new Dictionary<string, ResourceUI>();
+        private EventBinding<ResourceBindEvent> _bindEventBinding;
 
-        public BindHandler(string targetResourceId, string targetActorId, ResourceType targetResourceType)
+        private void Awake()
         {
-            _targetResourceId = targetResourceId;
-            _targetActorId = targetActorId;
-            _targetResourceType = targetResourceType;
+            if (resourceUIPrefab == null || resourceUIPrefab.GetComponent<ResourceUI>() == null)
+            {
+                DebugUtility.LogError<BindHandler>("resourceUIPrefab not assigned or does not contain ResourceUI!", this);
+                return;
+            }
         }
 
-        public bool ValidateBind(ResourceBindEvent evt)
+        private void OnEnable()
         {
+            _bindEventBinding = new EventBinding<ResourceBindEvent>(OnResourceBind);
+            EventBus<ResourceBindEvent>.Register(_bindEventBinding);
+            DebugUtility.LogVerbose<BindHandler>($"OnEnable: Registered for ResourceBindEvent, Source={gameObject.name}");
+        }
+
+        private void OnDisable()
+        {
+            if (_bindEventBinding != null)
+                EventBus<ResourceBindEvent>.Unregister(_bindEventBinding);
+            DebugUtility.LogVerbose<BindHandler>($"OnDisable: Unregistered from ResourceBindEvent, Source={gameObject.name}");
+        }
+
+        private void OnResourceBind(ResourceBindEvent evt)
+        {
+            if (_uiBindings.ContainsKey(evt.ActorId))
+            {
+                DebugUtility.LogVerbose<BindHandler>($"OnResourceBind: ActorId={evt.ActorId} already bound, Source={evt.Source.name}");
+                return;
+            }
+
             string resourceId = evt.UniqueId;
             if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
             {
                 resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
             }
 
-            bool valid = resourceId == _targetResourceId &&
-                         (_targetResourceType == ResourceType.Custom || evt.Type == _targetResourceType) &&
-                         (string.IsNullOrEmpty(_targetActorId) || evt.ActorId == _targetActorId);
-
-            if (!valid)
-            {
-                DebugUtility.LogVerbose<BindHandler>($"ValidateBind: Ignorado - UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={_targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={_targetActorId}, Type={evt.Type}, ExpectedType={_targetResourceType}, Source={evt.Source.name}");
-            }
-            return valid;
+            var uiInstance = Instantiate(resourceUIPrefab, transform).GetComponent<ResourceUI>();
+            uiInstance.SetActorId(evt.ActorId);
+            uiInstance.SetResourceId(resourceId);
+            uiInstance.SetResourceType(evt.Type);
+            uiInstance.SetBindHandler(this);
+            uiInstance.SetResource(evt.Resource);
+            _uiBindings.Add(evt.ActorId, uiInstance);
+            DebugUtility.LogVerbose<BindHandler>($"OnResourceBind: Created ResourceUI for ActorId={evt.ActorId}, ResourceId={resourceId}, Type={evt.Type}, Source={evt.Source.name}, UI Source={uiInstance.gameObject.name}");
         }
 
-        public bool ValidateValueChanged(ResourceValueChangedEvent evt, GameObject expectedSource)
+        public ResourceUI GetResourceUI(string actorId)
         {
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
-            {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            bool valid = resourceId == _targetResourceId &&
-                         evt.Source == expectedSource &&
-                         (string.IsNullOrEmpty(_targetActorId) || evt.ActorId == _targetActorId);
-
-            if (!valid)
-            {
-                DebugUtility.LogVerbose<BindHandler>($"ValidateValueChanged: Ignorado - UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={_targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={_targetActorId}, Source={evt.Source?.name}, ExpectedSource={expectedSource?.name}");
-            }
-            return valid;
+            return _uiBindings.TryGetValue(actorId, out var ui) ? ui : null;
         }
 
-        public bool ValidateThresholdCrossed(ResourceThresholdCrossedEvent evt, GameObject expectedSource)
+        private void OnDestroy()
         {
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
-            {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            bool valid = resourceId == _targetResourceId &&
-                         evt.Source == expectedSource &&
-                         (string.IsNullOrEmpty(_targetActorId) || evt.ActorId == _targetActorId);
-
-            if (!valid)
-            {
-                DebugUtility.LogVerbose<BindHandler>($"ValidateThresholdCrossed: Ignorado - UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={_targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={_targetActorId}, Source={evt.Source?.name}, ExpectedSource={expectedSource?.name}");
-            }
-            return valid;
-        }
-
-        public bool ValidateModifierApplied(ModifierAppliedEvent evt)
-        {
-            string resourceId = evt.UniqueId;
-            if (!string.IsNullOrEmpty(evt.ActorId) && evt.UniqueId.StartsWith(evt.ActorId + "_"))
-            {
-                resourceId = evt.UniqueId.Substring(evt.ActorId.Length + 1);
-            }
-
-            bool valid = resourceId == _targetResourceId &&
-                         (string.IsNullOrEmpty(_targetActorId) || evt.ActorId == _targetActorId);
-
-            if (!valid)
-            {
-                DebugUtility.LogVerbose<BindHandler>($"ValidateModifierApplied: Ignorado - UniqueId={evt.UniqueId}, ResourceId={resourceId}, ExpectedResourceId={_targetResourceId}, ActorId={evt.ActorId}, ExpectedActorId={_targetActorId}, Source={evt.Source?.name}");
-            }
-            return valid;
+            _uiBindings.Clear();
+            DebugUtility.LogVerbose<BindHandler>($"OnDestroy: Cleared bindings dictionary, Source={gameObject.name}");
         }
     }
 }

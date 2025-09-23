@@ -1,61 +1,52 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.NewResourceSystem.Events;
 using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.Extensions;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
     public class ResourceHealthUI : ResourceUI
     {
-        private HealthResource _healthSystem;
         private EventBinding<DeathEvent> _deathEventBinding;
 
         protected override void OnResourceBindEvent(ResourceBindEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateBind(evt))
+            if (bindHandler == null)
             {
                 DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
                 return;
             }
 
-            _healthSystem = evt.Resource as HealthResource;
-            if (_healthSystem != null)
-            {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido para HealthResource, UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
-                base.OnResourceBindEvent(evt);
-            }
-            else
-            {
-                DebugUtility.LogWarning<ResourceHealthUI>($"OnResourceBindEvent: Recurso não é HealthResource para UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
-            }
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceBindEvent: Bind recebido para UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source.name}, UI Source={gameObject.name}");
+            base.OnResourceBindEvent(evt);
         }
 
         protected override void Initialize()
         {
             base.Initialize();
-            if (_healthSystem != null)
+            if (_resource != null)
             {
-                _targetFillAmount = _healthSystem.GetPercentage();
+                _targetFillAmount = _resource.GetPercentage();
                 if (resourceBar)
                 {
                     resourceBar.fillAmount = _targetFillAmount;
                     resourceBar.gameObject.SetActive(_targetFillAmount > 0);
                 }
-                DebugUtility.LogVerbose<ResourceHealthUI>($"Initialize: HealthResource inicializado, Percentage={_targetFillAmount:F3}, fillAmount={resourceBar?.fillAmount:F3}, UniqueId={_config?.UniqueId}, Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceHealthUI>($"Initialize: Resource inicializado, Percentage={_targetFillAmount:F3}, fillAmount={resourceBar?.fillAmount:F3}, UniqueId={_config?.UniqueId}, Source={gameObject.name}");
             }
             else
             {
-                DebugUtility.LogWarning<ResourceHealthUI>($"Initialize: healthSystem é nulo!, Source={gameObject.name}");
+                DebugUtility.LogWarning<ResourceHealthUI>($"Initialize: _resource é nulo!, Source={gameObject.name}");
             }
         }
 
         protected override void OnResourceValueChanged(ResourceValueChangedEvent evt)
         {
-            if (_bindHandler == null || !_bindHandler.ValidateValueChanged(evt, _healthSystem?.gameObject))
+            if (bindHandler == null )
             {
-                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={_healthSystem?.gameObject?.name}, UI Source={gameObject.name}");
+                DebugUtility.LogVerbose<ResourceHealthUI>($"OnResourceValueChanged ignorado: UniqueId={evt.UniqueId}, ActorId={evt.ActorId}, Source={evt.Source?.name}, ExpectedSource={(_resource as ResourceSystem)?.Source.name}, UI Source={gameObject.name}");
                 return;
             }
 
@@ -85,7 +76,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void OnDeath(DeathEvent evt)
         {
-            if (!transform.IsChildOrSelf(evt.SourceGameObject.transform))
+            if (evt.ActorId != targetActorId)
                 return;
             if (backgroundImage)
             {
@@ -93,7 +84,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             if (resourceBar) resourceBar.gameObject.SetActive(false);
             if (backgroundImage) backgroundImage.gameObject.SetActive(false);
-            DebugUtility.LogVerbose<ResourceHealthUI>($"OnDeath: DeathEvent recebido para {evt.SourceGameObject.name}, Barra e fundo desativados, UI Source={gameObject.name}");
+            DebugUtility.LogVerbose<ResourceHealthUI>($"OnDeath: DeathEvent recebido para ActorId={evt.ActorId}, Barra e fundo desativados, UI Source={gameObject.name}");
         }
     }
 }

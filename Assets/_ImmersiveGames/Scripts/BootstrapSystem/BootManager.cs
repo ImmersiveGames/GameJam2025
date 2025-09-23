@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.BootstrapSystem
         private static bool _initialized;
         private const string InitialSceneName = "Menu"; // Nome da sua cena aqui
 
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {

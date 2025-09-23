@@ -62,6 +62,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             EventBus<ResourceValueChangedEvent>.Raise(new ResourceValueChangedEvent(config.UniqueId, gameObject, config.ResourceType, GetPercentage(), true));
         }
+
         
     }
 }
