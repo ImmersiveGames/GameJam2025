@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using System;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -78,6 +79,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 AnimateFill();
             }
+        }
+        public bool Matches(string actorId, ResourceType type)
+        {
+            return string.Equals(ExpectedActorId, actorId, StringComparison.OrdinalIgnoreCase)
+                && ExpectedType == type;
         }
 
         public void Configure(IResourceValue data)

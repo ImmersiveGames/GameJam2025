@@ -65,6 +65,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         /// <summary> Recupera um serviço global. </summary>
         public T GetGlobal<T>() where T : class => _globalRegistry.Get<T>();
+        public IEnumerable<T> GetAllGlobal<T>() where T : class
+        {
+            foreach (var serviceType in _globalRegistry.ListServices(null))
+            {
+                if (_globalRegistry.TryGet(null, out T service))
+                    yield return service;
+            }
+        }
 
         /// <summary> Tenta recuperar um serviço global. </summary>
         public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);

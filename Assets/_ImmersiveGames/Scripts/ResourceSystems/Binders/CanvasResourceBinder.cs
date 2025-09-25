@@ -39,11 +39,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogVerbose<CanvasResourceBinder>($"📋 Slot descoberto: {slotId}");
             }
         }
-
         private void RegisterGlobal()
         {
-            if (DependencyManager.Instance == null) return;
             DependencyManager.Instance.RegisterGlobal<ICanvasResourceBinder>(this);
+            EventBus<CanvasBinderRegisteredEvent>.Raise(new CanvasBinderRegisteredEvent(this));
             DebugUtility.LogVerbose<CanvasResourceBinder>($"🌐 Registrado globalmente: {canvasId}");
         }
 
@@ -57,11 +56,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             UpdateResource(evt.ActorId, evt.ResourceType, evt.NewValue);
         }
-
+        
         public bool TryBindActor(string actorId, ResourceType type, IResourceValue data)
         {
-            string slotId = $"{actorId}_{type}";
-            if (!_slots.TryGetValue(slotId, out var slot)) return false;
+            var slot = _slots.Values.FirstOrDefault(s => s.Matches(actorId, type));
+            if (slot == null)
+            {
+                DebugUtility.LogWarning<CanvasResourceBinder>($"❌ Slot não encontrado: {actorId}.{type}");
+                return false;
+            }
+
             slot.Configure(data);
             DebugUtility.LogVerbose<CanvasResourceBinder>($"🔗 Actor vinculado: {actorId}.{type} → {canvasId}");
             return true;

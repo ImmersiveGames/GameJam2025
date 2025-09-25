@@ -14,4 +14,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             NewValue = newValue;
         }
     }
+    public class CanvasBinderRegisteredEvent : IEvent
+    {
+        public ICanvasResourceBinder Binder { get; }
+        public CanvasBinderRegisteredEvent(ICanvasResourceBinder binder) => Binder = binder;
+    }
 }

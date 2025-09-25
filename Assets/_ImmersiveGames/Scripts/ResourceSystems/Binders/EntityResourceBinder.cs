@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -44,12 +45,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void DiscoverResourceSystem()
         {
             _resourceSystem = GetComponent<EntityResourceSystem>();
+            EventBus<CanvasBinderRegisteredEvent>.Register(new EventBinding<CanvasBinderRegisteredEvent>(OnBinderRegistered));
             if (_resourceSystem == null)
             {
                 DebugUtility.LogError<EntityResourceBinder>($"❌ EntityResourceSystem não encontrado em {_actorId}");
             }
         }
-
+        private void OnBinderRegistered(CanvasBinderRegisteredEvent evt)
+        {
+            _canvasBinders.Add(evt.Binder);
+            BindAllResources();
+        }
         private void DiscoverWorldBinder()
         {
             _worldBinder = GetComponentInChildren<WorldSpaceResourceBinder>();
@@ -58,23 +64,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _worldBinder.Initialize(_actorId, _resourceSystem);
             }
         }
-
+        
         private void DiscoverCanvasBinders()
         {
-            // Buscar binders globais via DependencyManager
-            if (DependencyManager.Instance.TryGetGlobal<ICanvasResourceBinder>(out var globalBinder))
+            _canvasBinders.Clear();
+
+            if (DependencyManager.Instance != null)
             {
-                _canvasBinders.Add(globalBinder);
+                foreach (var binder in DependencyManager.Instance.GetAllGlobal<ICanvasResourceBinder>())
+                {
+                    _canvasBinders.Add(binder);
+                    DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder global encontrado: {binder.CanvasId}");
+                }
             }
 
-            // Buscar binders específicos da cena
-            string sceneName = gameObject.scene.name;
-            if (DependencyManager.Instance.TryGetForScene<ICanvasResourceBinder>(sceneName, out var sceneBinder))
-            {
-                _canvasBinders.Add(sceneBinder);
-            }
-
-            DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 Encontrados {_canvasBinders.Count} canvas binders para {_actorId}");
+            DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 Total de CanvasBinders encontrados: {_canvasBinders.Count}");
         }
 
         private void BindAllResources()

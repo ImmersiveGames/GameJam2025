@@ -3,9 +3,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IResourceUISlot
     {
-        string SlotId { get; }
         string ExpectedActorId { get; }
         ResourceType ExpectedType { get; }
+        bool Matches(string actorId, ResourceType type);
         void Configure(IResourceValue data);
         void Clear();
         void SetVisible(bool visible);
