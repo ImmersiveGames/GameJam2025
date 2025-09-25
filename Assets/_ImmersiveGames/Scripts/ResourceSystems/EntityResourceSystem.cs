@@ -131,6 +131,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // ✅ MÉTODOS DE CONVENIÊNCIA
         [ContextMenu("Take Damage 10")]
         public void TakeDamage() => ModifyResource(ResourceType.Health, -10);
+        // ✅ MÉTODOS DE CONVENIÊNCIA
+        [ContextMenu("Take Damage 50")]
+        public void TakeDamage50() => ModifyResource(ResourceType.Health, -40);
 
         [ContextMenu("Heal 20")]
         public void Heal() => ModifyResource(ResourceType.Health, 20);
