@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.NewResourceSystem.Events;
 using _ImmersiveGames.Scripts.NewResourceSystem.Interfaces;
+using _ImmersiveGames.Scripts.NewResourceSystem.UI;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
@@ -35,18 +37,19 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         [SerializeField] private bool showDebugLogs = true;
 
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
-        [Inject] private IResourceUpdater _resourceUpdater; // Atualizado para interface segregada
         private bool _isInitialized = false;
 
         public string ActorId => entityId;
         public Dictionary<ResourceType, IResourceValue> Resources => new Dictionary<ResourceType, IResourceValue>(_resources);
+        public bool IsInitialized => _isInitialized;
 
         private void Start()
         {
             if (string.IsNullOrEmpty(entityId))
                 entityId = gameObject.name;
 
-            DependencyManager.Instance.InjectDependencies(this);
+            // 🔥 REMOVIDA a injeção de IResourceUpdater
+            // DependencyManager.Instance.InjectDependencies(this);
 
             if (autoInitialize && !_isInitialized)
             {
@@ -60,7 +63,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         {
             if (_isInitialized)
             {
-                Debug.LogWarning($"Resources already initialized for {entityId}");
+                DebugUtility.LogWarning<EntityResourceSystem>($"Resources already initialized for {entityId}");
                 return;
             }
 
@@ -76,53 +79,46 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
 
             if (showDebugLogs)
             {
-                Debug.Log($"✅ Resources initialized for {entityId}: {_resources.Count} resources");
+                DebugUtility.LogVerbose<EntityResourceSystem>($"✅ Resources initialized for {entityId}: {_resources.Count} resources");
             }
         }
 
-        // ✅ MÉTODO PRINCIPAL - Cria recurso e faz bind automaticamente
+        // ✅ MÉTODO PRINCIPAL - Cria recurso (SEM ResourceBindEvent)
         public void AddResource(ResourceType type, int initialValue, int maxValue)
         {
             if (_resources.ContainsKey(type))
             {
-                Debug.LogWarning($"Resource {type} already exists for {entityId}");
+                DebugUtility.LogWarning<EntityResourceSystem>($"Resource {type} already exists for {entityId}");
                 return;
             }
 
             var resource = new BasicResourceValue(initialValue, maxValue);
             _resources[type] = resource;
 
-            // ✅ FAZER BIND AUTOMATICAMENTE usando as funções existentes
-            var bindEvent = new ResourceBindEvent(
-                gameObject, 
-                type, 
-                $"{entityId}_{type}", 
-                resource, 
-                entityId
-            );
-
-            EventBus<ResourceBindEvent>.Raise(bindEvent);
+            // 🔥 REMOVIDO o ResourceBindEvent - Agora o EntityResourceBinder cuida do bind
+            // O EntityResourceBinder vai descobrir estes recursos automaticamente
 
             if (showDebugLogs)
             {
-                Debug.Log($"📊 Resource added: {entityId} - {type} = {initialValue}/{maxValue}");
+                DebugUtility.LogVerbose<EntityResourceSystem>($"📊 Resource added: {entityId} - {type} = {initialValue}/{maxValue}");
             }
         }
 
-        // ✅ MÉTODOS DE MODIFICAÇÃO (usam o sistema de bind existente)
+        // ✅ MÉTODOS DE MODIFICAÇÃO (usam o NOVO evento)
         public void ModifyResource(ResourceType type, float delta)
         {
             if (_resources.TryGetValue(type, out var resource))
             {
                 float newValue = Mathf.Clamp(resource.GetCurrentValue() + delta, 0, resource.GetMaxValue());
                 resource.SetCurrentValue(newValue);
-                
-                // ✅ ATUALIZAR VIA SISTEMA EXISTENTE
-                _resourceUpdater?.UpdateResource(entityId, type, resource);
+        
+                // ✅ ATUALIZAR VIA EVENT BUS (novo sistema)
+                var updateEvent = new ResourceUpdateEvent(entityId, type, resource);
+                EventBus<ResourceUpdateEvent>.Raise(updateEvent);
 
                 if (showDebugLogs)
                 {
-                    Debug.Log($"🔄 {entityId} {type}: {delta:+#;-#} = {resource.GetCurrentValue()}/{resource.GetMaxValue()}");
+                    DebugUtility.LogVerbose<EntityResourceSystem>($"🔄 {entityId} {type}: {delta:+#;-#} = {resource.GetCurrentValue()}/{resource.GetMaxValue()}");
                 }
             }
         }
@@ -132,7 +128,10 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
             if (_resources.TryGetValue(type, out var resource))
             {
                 resource.SetCurrentValue(Mathf.Clamp(value, 0, resource.GetMaxValue()));
-                _resourceUpdater?.UpdateResource(entityId, type, resource);
+                
+                // ✅ ATUALIZAR VIA EVENT BUS (novo sistema)
+                var updateEvent = new ResourceUpdateEvent(entityId, type, resource);
+                EventBus<ResourceUpdateEvent>.Raise(updateEvent);
             }
         }
 
@@ -142,7 +141,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         public void RemoveResource(ResourceType type) => _resources.Remove(type);
         public Dictionary<ResourceType, IResourceValue> GetAllResources() => new Dictionary<ResourceType, IResourceValue>(_resources);
 
-        // ✅ MÉTODOS DE CONVENIÊNCIA (agora integrados)
+        // ✅ MÉTODOS DE CONVENIÊNCIA
         [ContextMenu("Take Damage 10")]
         public void TakeDamage() => ModifyResource(ResourceType.Health, -10);
 
@@ -157,22 +156,23 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
                 resource.SetCurrentValue(resource.GetMaxValue());
             }
 
-            // ✅ ATUALIZAR TODAS AS UIs
+            // ✅ ATUALIZAR TODAS AS UIs via NOVO evento
             foreach (var resource in _resources)
             {
-                _resourceUpdater?.UpdateResource(entityId, resource.Key, resource.Value);
+                var updateEvent = new ResourceUpdateEvent(entityId, resource.Key, resource.Value);
+                EventBus<ResourceUpdateEvent>.Raise(updateEvent);
             }
 
-            Debug.Log($"💫 All resources restored for {entityId}");
+            DebugUtility.LogVerbose<EntityResourceSystem>($"💫 All resources restored for {entityId}");
         }
 
         [ContextMenu("Debug Resources")]
         public void DebugResources()
         {
-            Debug.Log($"📊 {entityId} Resources:");
+            DebugUtility.LogVerbose<EntityResourceSystem>($"📊 {entityId} Resources:");
             foreach (var resource in _resources)
             {
-                Debug.Log($"   {resource.Key}: {resource.Value.GetCurrentValue()}/{resource.Value.GetMaxValue()}");
+                DebugUtility.LogVerbose<EntityResourceSystem>($"   {resource.Key}: {resource.Value.GetCurrentValue()}/{resource.Value.GetMaxValue()}");
             }
         }
 

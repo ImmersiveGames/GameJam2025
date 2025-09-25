@@ -6,25 +6,13 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils
 {
-    public class UniqueIdFactory : MonoBehaviour
+    public interface IUniqueIdFactory
     {
-        private static UniqueIdFactory _instance;
-        public static UniqueIdFactory Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    _instance = FindFirstObjectByType<UniqueIdFactory>();
-                    if (_instance == null)
-                    {
-                        _instance = new GameObject("UniqueIdFactory").AddComponent<UniqueIdFactory>();
-                        DontDestroyOnLoad(_instance.gameObject);
-                    }
-                }
-                return _instance;
-            }
-        }
+        string GenerateId(GameObject source, string baseId);
+        int GetInstanceCount(string actorName);
+    }
+    public class UniqueIdFactory : IUniqueIdFactory
+    {
 
         private readonly Dictionary<string, int> _instanceCounts = new Dictionary<string, int>();
 
@@ -47,8 +35,7 @@ namespace _ImmersiveGames.Scripts.Utils
             else
             {
                 string baseActorName = actor.Name;
-                if (!_instanceCounts.ContainsKey(baseActorName))
-                    _instanceCounts[baseActorName] = 0;
+                _instanceCounts.TryAdd(baseActorName, 0);
 
                 int instanceId = _instanceCounts[baseActorName]++;
                 actorId = $"NPC_{baseActorName}_{instanceId}";
@@ -60,16 +47,7 @@ namespace _ImmersiveGames.Scripts.Utils
 
         public int GetInstanceCount(string actorName)
         {
-            return _instanceCounts.TryGetValue(actorName, out int count) ? count : 0;
-        }
-
-        private void OnDestroy()
-        {
-            if (_instance == this)
-            {
-                _instanceCounts.Clear();
-                _instance = null;
-            }
+            return _instanceCounts.GetValueOrDefault(actorName, 0);
         }
     }
 }

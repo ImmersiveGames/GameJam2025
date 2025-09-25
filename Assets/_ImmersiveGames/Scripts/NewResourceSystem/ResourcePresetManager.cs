@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.NewResourceSystem
@@ -43,7 +44,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
             }
             else
             {
-                Debug.LogWarning($"Unknown preset: {presetName}");
+                DebugUtility.LogWarning<EntityResourceSystem>($"Unknown preset: {presetName}");
             }
         }
     }

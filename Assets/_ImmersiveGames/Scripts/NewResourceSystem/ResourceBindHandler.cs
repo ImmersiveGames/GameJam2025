@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.NewResourceSystem.Events;
 using _ImmersiveGames.Scripts.NewResourceSystem.Interfaces;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
@@ -12,7 +13,6 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
     public class ResourceBindHandler : BaseBindHandler<ResourceBindEvent, MonoBehaviour, IResourceValue>,
                                       IActorRegistry, IResourceUpdater
     {
-        public static ResourceBindHandler Instance { get; private set; }
         
         [Inject] private IUIFactory<ResourceBindEvent, IResourceUI> _uiFactory;
         
@@ -21,16 +21,6 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
 
         protected void Awake()
         {
-            // ✅ SINGLETON com segurança
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            
             // ✅ REGISTRAR NO DI SYSTEM (SEM FindObjectOfType)
             if (DependencyManager.Instance != null)
             {
@@ -43,7 +33,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         {
             if (_uiFactory == null || string.IsNullOrEmpty(evt.ActorId)) 
             {
-                Debug.LogError("❌ Factory not injected or invalid ActorId");
+                DebugUtility.LogError<ResourceBindHandler>("❌ Factory not injected or invalid ActorId");
                 return;
             }
 
@@ -52,7 +42,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
             
             if (bindings.ContainsKey(bindingKey)) 
             {
-                Debug.Log($"⚠️ Binding already exists: {bindingKey}");
+                DebugUtility.LogVerbose<ResourceBindHandler>($"⚠️ Binding already exists: {bindingKey}");
                 return;
             }
 
@@ -71,7 +61,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
                 if (uiInstance is IResourceUI resourceUI)
                     resourceUI.SetResourceType(evt.Type);
 
-                Debug.Log($"✅ UI Created for {bindingKey}");
+                DebugUtility.LogVerbose<ResourceBindHandler>($"✅ UI Created for {bindingKey}");
             }
         }
 
@@ -134,7 +124,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         {
             if (_registeredActors.Add(actorId))
             {
-                Debug.Log($"🎮 Actor registered: {actorId}");
+                DebugUtility.LogVerbose<ResourceBindHandler>($"🎮 Actor registered: {actorId}");
             }
         }
 
@@ -143,7 +133,7 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
             if (_registeredActors.Remove(actorId))
             {
                 RemoveActorBindings(actorId);
-                Debug.Log($"🎮 Actor unregistered: {actorId}");
+                DebugUtility.LogVerbose<ResourceBindHandler>($"🎮 Actor unregistered: {actorId}");
             }
         }
 
@@ -169,11 +159,11 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
         [ContextMenu("Debug Registered Actors")]
         public void DebugRegisteredActors()
         {
-            Debug.Log($"🎮 Registered Actors: {_registeredActors.Count}");
+            DebugUtility.LogVerbose<ResourceBindHandler>($"🎮 Registered Actors: {_registeredActors.Count}");
             foreach (var actorId in _registeredActors)
             {
                 var resourceCount = GetResourceCountForActor(actorId);
-                Debug.Log($"   {actorId}: {resourceCount} resources");
+                DebugUtility.LogVerbose<ResourceBindHandler>($"   {actorId}: {resourceCount} resources");
             }
         }
     }

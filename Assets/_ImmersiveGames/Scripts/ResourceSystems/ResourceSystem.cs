@@ -31,6 +31,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public event Action EventDepleted;
         public event Action<float> EventValueChanged;
 
+        private IUniqueIdFactory _uniqueIdFactory;
+
         protected virtual void Awake()
         {
             if (!config)
@@ -40,7 +42,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _actorId = GetActorId();
-            _uniqueId = UniqueIdFactory.Instance.GenerateId(gameObject, config.UniqueId);
+            _uniqueId = _uniqueIdFactory.GenerateId(gameObject, config.UniqueId);
 
             var state = new ResourceState(config.InitialValue, config.MaxValue);
             IAutoChangeStrategy strategy = config.AutoFillEnabled ? new AutoFillStrategy() : (IAutoChangeStrategy)new AutoDrainStrategy();
@@ -213,7 +215,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return getActorId;
             }
 
-            int instanceId = UniqueIdFactory.Instance.GetInstanceCount(actor.Name);
+            int instanceId = _uniqueIdFactory.GetInstanceCount(actor.Name);
             string actorId = $"NPC_{actor.Name}_{instanceId}";
             DebugUtility.LogVerbose<ResourceSystem>($"GetActorId: ActorName={actor.Name}, InstanceId={instanceId}, ActorId={actorId}");
             return actorId;

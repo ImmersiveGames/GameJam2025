@@ -28,7 +28,9 @@ namespace _ImmersiveGames.Scripts.NewResourceSystem
             _actorId = actorId;
             _resourceType = targetResourceType;
             UpdateValue(data);
-            DebugUtility.LogVerbose<ResourceUI>($"🔗 ResourceUI bound to actor: {actorId}");
+            // ✅ Detalhes completos para debugging
+            string resourceInfo = $"{data.GetCurrentValue()}/{data.GetMaxValue()}";
+            DebugUtility.LogVerbose<ResourceUI>($"🔗 [{targetResourceType}] → {actorId} | {resourceInfo} | UI#{GetInstanceID()}");
         }
         public void Unbind()
         {

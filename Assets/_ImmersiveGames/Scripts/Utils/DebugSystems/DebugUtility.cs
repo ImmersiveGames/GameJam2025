@@ -183,16 +183,21 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             var frame = Time.frameCount;
             var trackerKey = (key, frame);
 
-            if (!_callTracker.Add(trackerKey))
+            bool isRepeat = _callTracker.Contains(trackerKey);
+    
+            if (isRepeat)
             {
+                // ✅ REPETIÇÃO: mostra warning se não for para deduplicar
                 if (!deduplicate)
                 {
-                    Debug.LogWarning($"[DebugUtility] Chamada repetida no mesmo frame ({frame}): [{type.Name}] {message}");
+                    Debug.LogWarning($"[DebugUtility] Chamada repetida no frame {frame}: [{type.Name}] {message}");
                 }
-                return false;
+                return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite com warning
             }
 
-            _callTracker.RemoveWhere(k => k.frame < frame);
+            // ✅ PRIMEIRA VEZ: adiciona ao tracker
+            _callTracker.RemoveWhere(k => k.frame < frame); // Limpa antigos
+            _callTracker.Add(trackerKey);
             return true;
         }
         #endregion

@@ -298,7 +298,7 @@ GameObject:
   - component: {fileID: 3943664755038878234}
   - component: {fileID: 3686293603664496150}
   - component: {fileID: 1396024684496290902}
-  - component: {fileID: 8002890748897106056}
+  - component: {fileID: 3194359580829244679}
   m_Layer: 5
   m_Name: TestResourceUI
   m_TagString: Untagged
@@ -364,7 +364,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &8002890748897106056
+--- !u!114 &3194359580829244679
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -373,12 +373,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 5397437800209132775}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 23d473c52b8c49f9a00f69d01b0fb117, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c65eca761a349c18ecd8873c8fb0cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetResourceType: 0
-  resourceBar: {fileID: 1972262815262841387}
-  textMeshProUGUI: {fileID: 3305347094153046376}
+  expectedActorId: player01
+  expectedType: 0
+  fillImage: {fileID: 1972262815262841387}
+  valueText: {fileID: 3305347094153046376}
+  iconImage: {fileID: 0}
+  rootPanel: {fileID: 5397437800209132775}
 --- !u!1 &6827424188893594784
 GameObject:
   m_ObjectHideFlags: 0

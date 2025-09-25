@@ -1,55 +1,44 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿// DependencyBootstrapper.cs (MANTIDO - mas simplificado)
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
+
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    /// <summary>
-    /// Inicializa o sistema de dependências, registrando serviços iniciais no DependencyManager.
-    /// </summary>
-    [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Warning)]
-    public sealed class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
+    [DebugLevel(DebugLevel.Logs)]
+    public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
-        private const string DebugColor = "yellow";
-        private bool _hasBeenBootstrapped;
-        
+        private static bool _initialized;
 
-        /// <summary>
-        /// Executa a inicialização do sistema de dependências, se ainda não foi feita.
-        /// </summary>
-        public void BootstrapOnDemand()
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Initialize()
         {
-            if (_hasBeenBootstrapped)
+            if (_initialized) return;
+            _initialized = true;
+
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
+            
+            // Garantir que DependencyManager existe
+            if (!DependencyManager.HasInstance)
             {
-                DebugUtility.LogVerbose<DependencyBootstrapper>("Já inicializado.", DebugColor, this);
-                return;
+                DependencyManager.Instance.ToString(); // Força criação
             }
-            _hasBeenBootstrapped = true;
-            Bootstrap();
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Inicialização concluída.", DebugColor, this);
+
+            // Registrar serviços ESSENCIAIS (apenas os que precisam existir antes de tudo)
+            Instance.RegisterEssentialServices();
         }
 
-        /// <summary>
-        /// Registra serviços iniciais no DependencyManager. Pode ser sobrescrito para personalização.
-        /// </summary>
-        private void Bootstrap()
+        private void RegisterEssentialServices()
         {
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Registrando serviços iniciais.", DebugColor, this);
-            //REGISTRAR OS SERVIÇOS ARQUI
+            // APENAS serviços que PRECISAM existir antes de qualquer cena
+            DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
             
+            DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
         }
 
 #if UNITY_EDITOR
-        /// <summary>
-        /// Reseta o estado para nova execução no editor.
-        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
-        {
-            if (Instance is null) return;
-            Instance._hasBeenBootstrapped = false;
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Estado resetado no editor.");
-        }
+        private static void ResetStatics() => _initialized = false;
 #endif
     }
 }
