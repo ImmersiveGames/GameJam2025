@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 218360142}
   - component: {fileID: 218360141}
   - component: {fileID: 218360140}
+  - component: {fileID: 218360143}
   m_Layer: 5
   m_Name: Health_Bar_BG (1)
   m_TagString: Untagged
@@ -177,15 +178,9 @@ MonoBehaviour:
   fillImage: {fileID: 486920951}
   pendingFillImage: {fileID: 1071375850}
   valueText: {fileID: 2134439107}
-  iconImage: {fileID: 6877643152372546891}
+  iconImage: {fileID: 0}
   rootPanel: {fileID: 3759759973138828207}
-  quickAnimationDuration: 0.2
-  slowAnimationDuration: 0.8
-  delayBeforeSlowAnimation: 0.3
-  normalColor: {r: 0, g: 1, b: 0, a: 1}
-  damageColor: {r: 1, g: 0, b: 0, a: 1}
-  healColor: {r: 0, g: 0, b: 1, a: 1}
-  pendingColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.8}
+  style: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
   showAnimationDebug: 0
 --- !u!114 &218360141
 MonoBehaviour:
@@ -225,6 +220,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 218360137}
   m_CullTransparentMesh: 1
+--- !u!114 &218360143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 218360137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7987b039f5de4f3f9b62c7c27237f7bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fillImage: {fileID: 486920951}
+  pendingFillImage: {fileID: 1071375850}
 --- !u!1 &355458887
 GameObject:
   m_ObjectHideFlags: 0
@@ -643,6 +652,7 @@ GameObject:
   - component: {fileID: 1173873161}
   - component: {fileID: 1173873160}
   - component: {fileID: 1173873159}
+  - component: {fileID: 1173873162}
   m_Layer: 5
   m_Name: Health_Bar_BG (2)
   m_TagString: Untagged
@@ -689,15 +699,9 @@ MonoBehaviour:
   fillImage: {fileID: 1856971604}
   pendingFillImage: {fileID: 1571367594}
   valueText: {fileID: 1899520682}
-  iconImage: {fileID: 6877643152372546891}
+  iconImage: {fileID: 0}
   rootPanel: {fileID: 3759759973138828207}
-  quickAnimationDuration: 0.2
-  slowAnimationDuration: 0.8
-  delayBeforeSlowAnimation: 0.3
-  normalColor: {r: 0, g: 1, b: 0, a: 1}
-  damageColor: {r: 1, g: 0, b: 0, a: 1}
-  healColor: {r: 0, g: 0, b: 1, a: 1}
-  pendingColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.8}
+  style: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
   showAnimationDebug: 0
 --- !u!114 &1173873160
 MonoBehaviour:
@@ -737,6 +741,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1173873156}
   m_CullTransparentMesh: 1
+--- !u!114 &1173873162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1173873156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7987b039f5de4f3f9b62c7c27237f7bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fillImage: {fileID: 1856971604}
+  pendingFillImage: {fileID: 1571367594}
 --- !u!1 &1571367592
 GameObject:
   m_ObjectHideFlags: 0
@@ -1561,6 +1579,7 @@ GameObject:
   - component: {fileID: 3315516187233535029}
   - component: {fileID: 3565679066980947713}
   - component: {fileID: 9048861698830714787}
+  - component: {fileID: 9048861698830714788}
   m_Layer: 5
   m_Name: Health_Bar_BG
   m_TagString: Untagged
@@ -1786,16 +1805,24 @@ MonoBehaviour:
   fillImage: {fileID: 31645423853148363}
   pendingFillImage: {fileID: 719100095}
   valueText: {fileID: 1672283716}
-  iconImage: {fileID: 6877643152372546891}
+  iconImage: {fileID: 0}
   rootPanel: {fileID: 3759759973138828207}
-  quickAnimationDuration: 0.2
-  slowAnimationDuration: 0.8
-  delayBeforeSlowAnimation: 0.3
-  normalColor: {r: 0, g: 1, b: 0, a: 1}
-  damageColor: {r: 0.9339297, g: 1, b: 0, a: 1}
-  healColor: {r: 0, g: 0, b: 1, a: 1}
-  pendingColor: {r: 0.8, g: 0.2, b: 0.2, a: 0.8}
+  style: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
   showAnimationDebug: 0
+--- !u!114 &9048861698830714788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5005777267658063343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7987b039f5de4f3f9b62c7c27237f7bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fillImage: {fileID: 31645423853148363}
+  pendingFillImage: {fileID: 719100095}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
