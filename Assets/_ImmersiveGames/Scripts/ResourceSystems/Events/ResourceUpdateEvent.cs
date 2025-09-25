@@ -19,4 +19,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public ICanvasResourceBinder Binder { get; }
         public CanvasBinderRegisteredEvent(ICanvasResourceBinder binder) => Binder = binder;
     }
+    // Evento disparado quando um threshold é cruzado
+    public class ResourceThresholdEvent : IEvent
+    {
+        public string ActorId { get; }
+        public ResourceType ResourceType { get; }
+        public float Threshold { get; }         // valor do threshold (0..1)
+        public bool IsAscending { get; }       // true = subindo (ex: 0.20 -> 0.30 cruzou 0.25 subindo)
+        public float CurrentPercentage { get; } // valor atual do recurso (0..1)
+
+        public ResourceThresholdEvent(string actorId, ResourceType resourceType, float threshold, bool isAscending, float currentPercentage)
+        {
+            ActorId = actorId;
+            ResourceType = resourceType;
+            Threshold = threshold;
+            IsAscending = isAscending;
+            CurrentPercentage = currentPercentage;
+        }
+    }
+
 }
