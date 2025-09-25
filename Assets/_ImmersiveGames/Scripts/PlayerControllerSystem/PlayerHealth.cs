@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    public class PlayerHealth : HealthResource
+    /*public class PlayerHealth : HealthResource
     {
         private PlayerMaster _playerMaster;
         protected override void Awake()
@@ -21,5 +21,5 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             base.TakeDamage(damage,byActor);
             _playerMaster.OnEventPlayerTakeDamage(byActor);
         }
-    }
+    }*/
 }

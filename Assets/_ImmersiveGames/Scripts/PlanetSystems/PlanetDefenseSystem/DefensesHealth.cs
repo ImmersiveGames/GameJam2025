@@ -8,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    /*[DebugLevel(DebugLevel.Verbose)]
     public class DefensesHealth : HealthResource
     {
         private DefensesMaster _defensesMaster;
@@ -34,8 +34,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
         }
         public override void OnDeath()
         {
-            base.OnDeath(); 
+            base.OnDeath();
             _defensesMaster.OnDefensesDeath();
         }
-    }
+    }*/
 }

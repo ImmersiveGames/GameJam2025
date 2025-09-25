@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private MeshRenderer[] _planetMaterials;
         private PlanetsMaster _planetMaster; // Referência ao PlanetsMaster associado
-        private PlanetHealth _planetHealth; // Referência ao PlanetHealth
+        //private PlanetHealth _planetHealth; // Referência ao PlanetHealth
         
         private EventBinding<PlanetCreatedEvent> _planetCreateBinding; // Binding para evento de desmarcação
 
@@ -37,10 +37,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnDisable()
         {
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
-            if (_planetHealth != null)
+            /*if (_planetHealth != null)
             {
                 //_planetHealth.onThresholdReached.RemoveListener(OnHealthThresholdReached);
-            }
+            }*/
         }
         
         private void OnPlanetCreated(PlanetCreatedEvent obj)
@@ -50,17 +50,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             ChangeMaterialColor();
             planetRing.SetActive(Random.value < obj.Detected.GetPlanetData().ringChance);
             
-            _planetHealth = _planetMaster.GetComponent<PlanetHealth>();
+            /*_planetHealth = _planetMaster.GetComponent<PlanetHealth>();
             if (_planetHealth == null)
             {
                 DebugUtility.LogWarning<PlanetSkin>($"PlanetHealth não encontrado em {_planetMaster.name}!");
                 return;
-            }
+            }*/
             //_planetHealth.onThresholdReached.AddListener(OnHealthThresholdReached);
             DebugUtility.Log<PlanetSkin>($"Registrado onThresholdReached para planeta {_planetMaster.name}.");
 
             // Inicializa as partes com base na saúde atual
-            UpdatePlanetParts(_planetHealth.GetPercentage());
+            //UpdatePlanetParts(_planetHealth.GetPercentage());
         }
         
         private void OnHealthThresholdReached(float threshold)

@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
     {
         private PlayerInput _playerInput;
         private Camera _mainCamera;
-        private EaterHunger _eaterHunger;
+        //private EaterHunger _eaterHunger;
         
         private SensorController _sensorController;
         [SerializeField]private SensorTypes sensorName = SensorTypes.PlayerRecognizerSensor;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                 DebugUtility.LogError<PlayerMarkPlanet>("Câmera principal não encontrada.", this);
             }
 
-            GameManager.Instance.WorldEater.TryGetComponent(out _eaterHunger);
+            //GameManager.Instance.WorldEater.TryGetComponent(out _eaterHunger);
         }
 
         private void OnEnable()

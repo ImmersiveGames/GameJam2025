@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    /*[DebugLevel(DebugLevel.Verbose)]
     public class PlanetHealth : HealthResource
     {
         private EventBinding<PlanetCreatedEvent> _planetCreateBinding;
@@ -35,5 +35,5 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             Reset();
         }
-    }
+    }*/
 }

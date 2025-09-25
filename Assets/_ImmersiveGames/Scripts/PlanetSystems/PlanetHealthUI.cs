@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    public class PlanetHealthUI : ResourceHealthUI
+    /*public class PlanetHealthUI : ResourceHealthUI
     {
         private EventBinding<PlanetDestroyedEvent> _planetDestroyBinding; // Binding para eventos de recurso
         private PlanetsMaster _planetMaster;
@@ -29,5 +29,5 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             //if (healthBar) healthBar.gameObject.SetActive(false);
             if (backgroundImage) backgroundImage.gameObject.SetActive(false);
         }
-    }
+    }*/
 }

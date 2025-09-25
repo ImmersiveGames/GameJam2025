@@ -129,7 +129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 201913642}
   - component: {fileID: 201913641}
-  - component: {fileID: 201913643}
   m_Layer: 0
   m_Name: LoaderSequencer
   m_TagString: Untagged
@@ -151,7 +150,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameplayScene: NewGame
   uiScene: UI
-  resourceUIFactory: {fileID: 201913643}
 --- !u!4 &201913642
 Transform:
   m_ObjectHideFlags: 0
@@ -167,19 +165,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &201913643
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 201913640}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 469008d1aa0a416c8c71c59a68afd47b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  resourceUIPrefab: {fileID: 5397437800209132775, guid: 3f1fc71061031944f9a6911bd1d6e35d, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

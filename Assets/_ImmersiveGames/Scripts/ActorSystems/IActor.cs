@@ -29,4 +29,8 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         Transform FxTransform { get; }
         void SetFxActive(bool active);
     }
+    public interface IResettable
+    {
+        void Reset(bool resetSkin = false);
+    }
 }

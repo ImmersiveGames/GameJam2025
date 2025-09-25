@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    /*[DebugLevel(DebugLevel.Verbose)]
     public class EaterHealth : HealthResource
     {
         private EaterMaster _eater;
@@ -54,5 +54,5 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent());
             _eater.IsActive = false;
         }
-    }
+    }*/
 }

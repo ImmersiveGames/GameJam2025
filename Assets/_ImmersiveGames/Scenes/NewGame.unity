@@ -387,9 +387,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1432878128}
+  - component: {fileID: 1432878130}
   - component: {fileID: 1432878129}
   - component: {fileID: 1432878131}
-  - component: {fileID: 1432878130}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -426,18 +426,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entityId: player01
   resourceConfigs:
-  - Type: 0
-    InitialValue: 100
-    MaxValue: 100
-    Enabled: 1
-  - Type: 1
-    InitialValue: 50
-    MaxValue: 50
-    Enabled: 1
-  - Type: 3
-    InitialValue: 80
-    MaxValue: 80
-    Enabled: 1
+  - type: 0
+    initialValue: 100
+    maxValue: 100
+    enabled: 1
+  - type: 1
+    initialValue: 50
+    maxValue: 50
+    enabled: 1
+  - type: 3
+    initialValue: 80
+    maxValue: 80
+    enabled: 1
   autoInitialize: 1
   showDebugLogs: 1
 --- !u!114 &1432878130

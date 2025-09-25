@@ -2,13 +2,12 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Warning)]
+    /*[DebugLevel(DebugLevel.Warning)]
     public class EaterHunger : ResourceSystem, IResettable
     {
         private EaterMaster _eater;
@@ -119,5 +118,5 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             DebugUtility.LogVerbose<EaterHunger>("♻️ EaterHunger resetado.");
             //_health.OnEventValueChanged(_lastPercentage); // revalida estado visual, se necessário
         }
-    }
+    }*/
 }

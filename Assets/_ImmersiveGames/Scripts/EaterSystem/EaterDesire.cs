@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -21,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterMaster _eater;
         private PlanetResourcesSo _desiredResource;
         private List<PlanetResourcesSo> _lastDesiredResources;
-        private EventBinding<HungryChangeThresholdDirectionEvent> _hungryChangeThresholdDirectionEventBinding;
+        //private EventBinding<HungryChangeThresholdDirectionEvent> _hungryChangeThresholdDirectionEventBinding;
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedEventBinding;
         private EventBinding<PlanetMarkedEvent> _planetMarkedEventBinding;
         
@@ -36,8 +35,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void OnEnable()
         {
-            _hungryChangeThresholdDirectionEventBinding = new EventBinding<HungryChangeThresholdDirectionEvent>(OnResourceChangeThresholdDirection);
-            EventBus<HungryChangeThresholdDirectionEvent>.Register(_hungryChangeThresholdDirectionEventBinding);
+            /*_hungryChangeThresholdDirectionEventBinding = new EventBinding<HungryChangeThresholdDirectionEvent>(OnResourceChangeThresholdDirection);
+            EventBus<HungryChangeThresholdDirectionEvent>.Register(_hungryChangeThresholdDirectionEventBinding);*/
             _planetUnmarkedEventBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarkedPlanet);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
@@ -48,8 +47,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void OnDisable()
         {
-            if (_hungryChangeThresholdDirectionEventBinding != null)
-                EventBus<HungryChangeThresholdDirectionEvent>.Unregister(_hungryChangeThresholdDirectionEventBinding);
+            /*if (_hungryChangeThresholdDirectionEventBinding != null)
+                EventBus<HungryChangeThresholdDirectionEvent>.Unregister(_hungryChangeThresholdDirectionEventBinding);*/
             if (_planetUnmarkedEventBinding != null)
                 EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedEventBinding);
             if (_planetMarkedEventBinding != null)
@@ -57,7 +56,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         
         //Evento recebido quando um recurso control
-        private void OnResourceChangeThresholdDirection(HungryChangeThresholdDirectionEvent obj)
+        /*private void OnResourceChangeThresholdDirection(HungryChangeThresholdDirectionEvent obj)
         {
             var info = obj.Info;
             string dir = info.IsAscending ? "🔺 Subiu" : "🔻 Desceu";
@@ -75,7 +74,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
             }
             TryChooseDesire();
-        }
+        }*/
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
             TryChooseDesire(obj?.Detected);

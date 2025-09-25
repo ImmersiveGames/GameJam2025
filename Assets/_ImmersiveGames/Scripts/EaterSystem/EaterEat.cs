@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private EaterMaster _eater;
         private EaterConfigSo _config;
-        private PlanetHealth _planetHealth;
+        //private PlanetHealth _planetHealth;
         private Coroutine _damageCoroutine;
         private EventBinding<PlanetDestroyedEvent> _planetDestroyedEventBinding;
 
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _eater.EventStartEatPlanet -= OnEatPlanetEvent;
             }
             EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedEventBinding);
-            _planetHealth = null;
+            //_planetHealth = null;
             StopDamageCoroutine();
             DebugUtility.Log<EaterEat>($"Desativado EaterEat em {gameObject.name}.");
         }
@@ -63,12 +63,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            _planetHealth = obj.GetPlanetsMaster().GetComponent<PlanetHealth>();
+            /*_planetHealth = obj.GetPlanetsMaster().GetComponent<PlanetHealth>();
             if (_planetHealth == null)
             {
                 DebugUtility.LogWarning<EaterEat>($"PlanetHealth não encontrado em {obj.GetPlanetsMaster().name}!");
                 return;
-            }
+            }*/
 
             StopDamageCoroutine();
             _damageCoroutine = StartCoroutine(ApplyDamageOverTime());
@@ -77,16 +77,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnPlanetDeath(PlanetDestroyedEvent evt)
         {
-            if (_planetHealth == null || evt.Detected.GetPlanetsMaster() != _planetHealth.GetComponent<PlanetsMaster>()) return;
+            /*if (_planetHealth == null || evt.Detected.GetPlanetsMaster() != _planetHealth.GetComponent<PlanetsMaster>()) return;
             StopDamageCoroutine();
-            _planetHealth = null;
+            _planetHealth = null;*/
             EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
             DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.Name} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()
         {
-            while (_planetHealth != null)
+            /*while (_planetHealth != null)
             {
                 if (_planetHealth == null || _planetHealth.GetCurrentValue() <= 0 || !_planetHealth.gameObject.activeInHierarchy)
                 {
@@ -110,7 +110,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             StopDamageCoroutine();
             _planetHealth = null;
-            DebugUtility.Log<EaterEat>("Coroutine de dano interrompido: planeta destruído ou inativo.");
+            DebugUtility.Log<EaterEat>("Coroutine de dano interrompido: planeta destruído ou inativo.");*/
+            yield return null;
         }
 
         private void StopDamageCoroutine()
