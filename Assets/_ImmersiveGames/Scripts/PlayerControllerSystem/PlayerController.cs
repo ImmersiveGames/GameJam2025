@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Verbose), DisallowMultipleComponent, RequireComponent(typeof(Rigidbody), typeof(PlayerInput))]
     public class PlayerController3D : MonoBehaviour
     {
         [SerializeField, Tooltip("Câmera principal usada para mirar")]
