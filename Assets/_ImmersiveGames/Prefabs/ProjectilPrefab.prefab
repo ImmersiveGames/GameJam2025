@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: -3191423032800938798}
   - component: {fileID: -3433789961080299914}
   - component: {fileID: -6241042625207907278}
+  - component: {fileID: 8256161226457529094}
   m_Layer: 8
   m_Name: ProjectilPrefab
   m_TagString: Untagged
@@ -73,6 +74,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2513dd39b704579b039af459eb3300f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _collisionLayers:
+    serializedVersion: 2
+    m_Bits: 1536
 --- !u!114 &-6241042625207907278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -86,3 +90,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinCollectionData: {fileID: 11400000, guid: c7bb6616b8c94c84cbcfd48eab9d968b, type: 2}
+--- !u!114 &8256161226457529094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageDeal: 20
+  resourceType: 0
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 1536
+  damageSelf: 0

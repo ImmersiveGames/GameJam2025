@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public bool enabled;
     }
 
-    [DebugLevel(DebugLevel.Logs)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class EntityResourceSystem : MonoBehaviour, IEntityResourceSystem
     {
         [SerializeField] private string entityId;
@@ -97,17 +97,28 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         // ✅ MÉTODOS DE MODIFICAÇÃO (usam o NOVO evento)
         public void ModifyResource(ResourceType type, float delta)
         {
-            if (!_resources.TryGetValue(type, out var resource)) return;
-            float newValue = Mathf.Clamp(resource.GetCurrentValue() + delta, 0, resource.GetMaxValue());
+            // ✅ Cache para performance
+            if (!_resources.TryGetValue(type, out var resource)) 
+                return;
+
+            // ✅ Cálculo otimizado
+            float current = resource.GetCurrentValue();
+            float max = resource.GetMaxValue();
+            float newValue = Mathf.Clamp(current + delta, 0, max);
+    
+            // ✅ Verifica se realmente mudou
+            if (Mathf.Approximately(current, newValue))
+                return;
+
             resource.SetCurrentValue(newValue);
-        
-            if (delta < 0)
-                LastDamageTime = Time.time;
-            
-            // ✅ ATUALIZAR VIA EVENT BUS
+    
+            // ✅ Só dispara evento se houve mudança
             var updateEvent = new ResourceUpdateEvent(entityId, type, resource);
             EventBus<ResourceUpdateEvent>.Raise(updateEvent);
 
+            // ✅ Cache do LastDamageTime
+            if (delta < 0)
+                LastDamageTime = Time.time;
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<EntityResourceSystem>($"🔄 {entityId} {type}: {delta:+#;-#} = {resource.GetCurrentValue()}/{resource.GetMaxValue()}");

@@ -32,8 +32,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             Data = data;
         }
 
-        public void SetAllowMultipleGetsInFrame(bool allow) => _allowMultipleGetsInFrame = allow;
-
         public void Initialize()
         {
             if (!Data)

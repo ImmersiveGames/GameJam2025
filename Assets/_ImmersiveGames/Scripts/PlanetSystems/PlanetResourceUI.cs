@@ -61,8 +61,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             // Processa apenas o evento do planeta associado
             if(evt.Detected.GetPlanetsMaster() != _planetMaster)
                 return; 
-            var planetInfo = evt.Detected.GetPlanetsMaster().GetPlanetInfo();
-            UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
+            //var planetInfo = evt.Detected.GetPlanetsMaster().GetPlanetInfo();
+            //UpdateUIWithResources(planetInfo.Resources, planetInfo.ID);
         }
         
         private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var resources = _planetMaster.GetResource();
+            /*var resources = _planetMaster.GetResource();
             if (resources)
             {
                 UpdateUIWithResources(resources, _planetMaster.GetInstanceID()); // Usa InstanceID como fallback
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 ClearUI();
                 DebugUtility.LogVerbose<PlanetResourceUI>($"Recurso ainda não definido para o planeta {_planetMaster.gameObject.name}. Aguardando PlanetCreatedEvent.");
-            }
+            }*/
         }
 
         // Atualiza a UI com o recurso e ID do planeta

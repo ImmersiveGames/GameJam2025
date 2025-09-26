@@ -1,4 +1,4 @@
-﻿
+﻿// EntityResourceBinder.cs
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Logs)]
@@ -21,7 +22,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             InitializeActorId();
             DiscoverResourceSystem();
             
-            // 🔥 GARANTIR que o ResourceSystem está inicializado
             if (_resourceSystem != null && !_resourceSystem.IsInitialized)
             {
                 _resourceSystem.InitializeResources();
@@ -38,8 +38,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             var actor = GetComponent<IActor>();
             _actorId = actor?.ActorName ?? gameObject.name;
-            
-            // 🔥 FORÇAR lowercase para consistência
             _actorId = _actorId.ToLower().Trim();
         }
 
@@ -52,34 +50,49 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogError<EntityResourceBinder>($"❌ EntityResourceSystem não encontrado em {_actorId}");
             }
         }
-        private void OnBinderRegistered(CanvasBinderRegisteredEvent evt)
-        {
-            _canvasBinders.Add(evt.Binder);
-            BindAllResources();
-        }
         private void DiscoverWorldBinder()
         {
-            _worldBinder = GetComponentInChildren<WorldSpaceResourceBinder>();
+            _worldBinder = GetComponentInChildren<WorldSpaceResourceBinder>(true);
             if (_worldBinder != null)
             {
                 _worldBinder.Initialize(_actorId, _resourceSystem);
+                DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 WorldBinder encontrado para {_actorId}");
+            }
+            else
+            {
+                DebugUtility.LogWarning<EntityResourceBinder>($"⚠️ WorldSpaceResourceBinder não encontrado para {_actorId}");
             }
         }
-        
+
+        private void OnBinderRegistered(CanvasBinderRegisteredEvent evt)
+        {
+            if (!_canvasBinders.Contains(evt.Binder))
+            {
+                _canvasBinders.Add(evt.Binder);
+                DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder adicionado: {evt.Binder.CanvasId}");
+                BindAllResources();
+            }
+        }
+
         private void DiscoverCanvasBinders()
         {
             _canvasBinders.Clear();
-
             if (DependencyManager.Instance != null)
             {
-                foreach (var binder in DependencyManager.Instance.GetAllGlobal<ICanvasResourceBinder>())
+                // Busca binders na cena "UI" (ou outras cenas relevantes)
+                string[] uiScenes = { "UI" }; // Ajuste se houver outras cenas UI
+                foreach (var sceneName in uiScenes)
                 {
-                    _canvasBinders.Add(binder);
-                    DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder global encontrado: {binder.CanvasId}");
+                    var binders = new List<ICanvasResourceBinder>();
+                    if (DependencyManager.Instance.TryGetForScene<ICanvasResourceBinder>(sceneName, out var binder))
+                    {
+                        binders.Add(binder);
+                        DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder encontrado na cena {sceneName}: {binder.CanvasId}");
+                    }
+                    _canvasBinders.AddRange(binders);
                 }
+                DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 Total de CanvasBinders encontrados: {_canvasBinders.Count}");
             }
-
-            DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 Total de CanvasBinders encontrados: {_canvasBinders.Count}");
         }
 
         private void BindAllResources()
@@ -129,6 +142,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void OnDestroy()
         {
             UnbindAll();
+            EventBus<CanvasBinderRegisteredEvent>.Unregister(new EventBinding<CanvasBinderRegisteredEvent>(OnBinderRegistered));
             DebugUtility.LogVerbose<EntityResourceBinder>($"♻️ EntityBinder destruído: {_actorId}");
         }
 

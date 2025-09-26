@@ -12,9 +12,11 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DebugLevel(DebugLevel.Logs)]
-    public sealed class PlanetsMaster : ActorMaster, IDetectable
+    public sealed class PlanetsMaster : ActorMaster
     {
-        public IActor Detectable => this;
+        
+        
+        /*public IActor Detectable => this;
 
         [SerializeField] private PlanetsManager planetsManager; // Injeção via Inspector
         [SerializeField] private bool drawBoundsGizmos = true;
@@ -221,6 +223,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var center = componentInChildren.transform.TransformPoint(componentInChildren.center);
             float radius = componentInChildren.radius * transform.localScale.x;
             Gizmos.DrawWireSphere(center, radius);
-        }
+        }*/
     }
 }

@@ -33,8 +33,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnEnable()
         {
-            _planetMaster.EventPlanetDetected += OnPlanetDetected;
-            _planetMaster.EventPlanetLost += OnPlanetLost;
+            //_planetMaster.EventPlanetDetected += OnPlanetDetected;
+            //_planetMaster.EventPlanetLost += OnPlanetLost;
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
             _planetCreateBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
@@ -52,8 +52,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private void OnDisable()
         {
             _orbitTween?.Kill();
-            _planetMaster.EventPlanetDetected -= OnPlanetDetected;
-            _planetMaster.EventPlanetLost -= OnPlanetLost;
+            //_planetMaster.EventPlanetDetected -= OnPlanetDetected;
+            //_planetMaster.EventPlanetLost -= OnPlanetLost;
             EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
         }
@@ -69,9 +69,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if(obj.Detected.GetPlanetsMaster() != _planetMaster)
                 return;
             var planetData = obj.Detected.GetPlanetData();
-            var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
+            //var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
             _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
-            _orbitRadius = planetInfo.planetDiameter;
+            //_orbitRadius = planetInfo.planetDiameter;
             DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");
        
             

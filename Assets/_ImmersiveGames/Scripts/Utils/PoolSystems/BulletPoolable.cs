@@ -9,6 +9,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         private Rigidbody _rb;
         private BulletObjectData _data;
+        [SerializeField] private LayerMask _collisionLayers = -1;
 
         protected override void OnConfigured(PoolableObjectData config, IActor spawner)
         {
@@ -30,17 +31,53 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         protected override void OnDeactivated()
         {
-            if (_rb != null) _rb.linearVelocity = Vector3.zero;
+            if (_rb != null) 
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+            }
         }
 
         protected override void OnReset()
         {
-            if (_rb != null) _rb.linearVelocity = Vector3.zero;
+            if (_rb != null) 
+            {
+                _rb.linearVelocity = Vector3.zero;
+                _rb.angularVelocity = Vector3.zero;
+            }
         }
 
         protected override void OnReconfigured(PoolableObjectData config)
         {
             _data = config as BulletObjectData;
+        }
+        // Método para configurar a layer mask via código
+        public void SetCollisionLayers(LayerMask layerMask)
+        {
+            _collisionLayers = layerMask;
+        }
+
+        // Detecção de colisão por Trigger
+        private void OnTriggerEnter(Collider other)
+        {
+            HandleCollision(other.gameObject);
+        }
+
+        // Detecção de colisão física
+        private void OnCollisionEnter(Collision collision)
+        {
+            HandleCollision(collision.gameObject);
+        }
+
+        private void HandleCollision(GameObject other)
+        {
+            // Verifica se a layer do objeto colidido está na layer mask
+            if ((_collisionLayers.value & (1 << other.layer)) != 0)
+            {
+                // Usa o método Deactivate() que já existe no PooledObject
+                // Isso fará o objeto retornar ao pool automaticamente
+                Deactivate();
+            }
         }
     }
 }
