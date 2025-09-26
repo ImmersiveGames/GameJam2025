@@ -17,21 +17,21 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         public Transform Player => player;
         public Transform WorldEater => worldEater;
         public GameConfig GameConfig => gameConfig;
-        [SerializeField]
-        private string startGameScene = "Game";
-        public string StartGameScene => startGameScene;
+
         
         private bool _isPlaying;
         private bool _isGameOver;
         private bool _isVictory;
         private bool _isInitialized;
         
+        [SerializeField] bool debugMode = false;
+        
         protected override void Awake()
         {
             base.Awake();
             // Inicializa o gerenciador de estados
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
-            if(!SceneManager.GetSceneByName("UI").isLoaded)
+            if(debugMode && !SceneManager.GetSceneByName("UI").isLoaded)
                 SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
         }
 

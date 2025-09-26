@@ -1,7 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-namespace _ImmersiveGames.Scripts.PlayerControllerSystem
+﻿namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     /*public class PlayerHealth : HealthResource
     {

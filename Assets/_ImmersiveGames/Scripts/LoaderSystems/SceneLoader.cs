@@ -2,21 +2,17 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace _ImmersiveGames.Scripts.GameManagerSystems
+using UnityUtils;
+namespace _ImmersiveGames.Scripts.LoaderSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class SceneLoader : MonoBehaviour
+    public class SceneLoader : Singleton<SceneLoader>
     {
         [SerializeField] private string gameplayScene = "Gameplay";
         [SerializeField] private string uiScene = "UI";
-        // 🔥 REMOVIDO: private ResourceUIFactory resourceUIFactory;
-
         private IEnumerator Start()
         {
             DebugUtility.LogVerbose<SceneLoader>("🚀 Starting scene loading sequence...");
-            
-            // 🔥 REMOVIDO registro da factory antiga
-            // O novo sistema usa UI pré-existente, não factory
 
             // Carregar cenas na ordem correta
             yield return LoadSceneSequence();

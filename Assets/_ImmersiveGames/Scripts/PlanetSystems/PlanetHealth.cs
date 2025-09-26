@@ -1,9 +1,4 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems
+﻿namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     /*[DebugLevel(DebugLevel.Verbose)]
     public class PlanetHealth : HealthResource

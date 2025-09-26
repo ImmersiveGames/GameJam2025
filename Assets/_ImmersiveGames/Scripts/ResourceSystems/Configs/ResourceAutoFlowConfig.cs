@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 {
-    [CreateAssetMenu(menuName = "Resources/Resource Auto Flow Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Auto Flow Config")]
     public class ResourceAutoFlowConfig : ScriptableObject
     {
         [Tooltip("Qual recurso este config controla")]
