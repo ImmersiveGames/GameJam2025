@@ -182,7 +182,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 Gizmos.color = Color.red;
                 Gizmos.DrawLine(Origin.position, planet.Detectable.Transform.position);
 #if UNITY_EDITOR
-                UnityEditor.Handles.Label(planet.Detectable.Transform.position + Vector3.up * 0.5f, $"[{SensorName}] Detectado: {planet.Detectable.Name}");
+                UnityEditor.Handles.Label(planet.Detectable.Transform.position + Vector3.up * 0.5f, $"[{SensorName}] Detectado: {planet.Detectable.ActorName}");
 #endif
             }
         }

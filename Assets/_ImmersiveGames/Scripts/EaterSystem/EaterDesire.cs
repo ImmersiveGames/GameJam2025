@@ -89,7 +89,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var resource = obj.Detected?.GetResource();
             if (resource == null) return;
             
-            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.ByActor?.Name} O desejado é: {_desiredResource?.name ?? "nenhum"}");
+            DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.ByActor?.ActorName} O desejado é: {_desiredResource?.name ?? "nenhum"}");
             _eater.OnEventConsumeResource(obj.Detected, _desiredResource != null && _desiredResource == resource, obj.ByActor);
             EventBus<EaterSatisfactionEvent>.Raise(new EaterSatisfactionEvent(_desiredResource != null && _desiredResource == resource));
         }

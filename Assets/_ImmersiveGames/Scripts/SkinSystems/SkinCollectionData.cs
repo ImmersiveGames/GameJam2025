@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 3)]
     public class SkinCollectionData : ScriptableObject, ISkinCollection
     {
-        [SerializeField] private string collectionName = "Collection Name";
+        [SerializeField] private string collectionName = "Collection ActorName";
         [SerializeField] private SkinConfigData modelRootConfig;
         [SerializeField] private SkinConfigData canvasRootConfig;
         [SerializeField] private SkinConfigData fxRootConfig;

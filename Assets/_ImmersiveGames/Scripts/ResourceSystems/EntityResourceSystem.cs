@@ -30,20 +30,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [Header("Debug")]
         [SerializeField] private bool autoInitialize = true;
         [SerializeField] private bool showDebugLogs = true;
+        
+        public float LastDamageTime { get; private set; } = -999f;
 
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
 
         public string ActorId => entityId;
         public Dictionary<ResourceType, IResourceValue> Resources => new Dictionary<ResourceType, IResourceValue>(_resources);
-        public bool IsInitialized { get; private set; } = false;
+        public bool IsInitialized { get; private set; }
 
         private void Start()
         {
             if (string.IsNullOrEmpty(entityId))
                 entityId = gameObject.name;
-
-            // 🔥 REMOVIDA a injeção de IResourceUpdater
-            // DependencyManager.Instance.InjectDependencies(this);
 
             if (autoInitialize && !IsInitialized)
             {
@@ -85,8 +84,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             var resource = new BasicResourceValue(initialValue, maxValue);
             _resources[type] = resource;
-
-            // 🔥 REMOVIDO o ResourceBindEvent - Agora o EntityResourceBinder cuida do bind
+            
             // O EntityResourceBinder vai descobrir estes recursos automaticamente
 
             if (showDebugLogs)
@@ -102,7 +100,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             float newValue = Mathf.Clamp(resource.GetCurrentValue() + delta, 0, resource.GetMaxValue());
             resource.SetCurrentValue(newValue);
         
-            // ✅ ATUALIZAR VIA EVENT BUS (novo sistema)
+            if (delta < 0)
+                LastDamageTime = Time.time;
+            
+            // ✅ ATUALIZAR VIA EVENT BUS
             var updateEvent = new ResourceUpdateEvent(entityId, type, resource);
             EventBus<ResourceUpdateEvent>.Raise(updateEvent);
 

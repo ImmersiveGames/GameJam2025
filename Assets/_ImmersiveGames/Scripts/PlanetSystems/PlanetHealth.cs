@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             base.OnDeath();
             EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(planet,lastChanger));
             PlanetsManager.Instance.RemovePlanet(planet);
-            DebugUtility.LogVerbose<PlanetHealth>($"Planeta {planet.name} destruído por {lastChanger?.Name ?? "desconhecido"} e removido de PlanetsManager.", "yellow", this);
+            DebugUtility.LogVerbose<PlanetHealth>($"Planeta {planet.name} destruído por {lastChanger?.ActorName ?? "desconhecido"} e removido de PlanetsManager.", "yellow", this);
         }
 
         private void OnPlanetCreated(PlanetCreatedEvent obj)

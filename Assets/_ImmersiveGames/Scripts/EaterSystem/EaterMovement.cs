@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public IDetectable Target {
             get => _target;
             set {
-                Debug.Log($"[Eater] Target {(value == null ? "cleared" : "set to " + value.Detectable.Name)}");
+                Debug.Log($"[Eater] Target {(value == null ? "cleared" : "set to " + value.Detectable.ActorName)}");
                 _target = value;
             }
         }
@@ -116,12 +116,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         
         private void OnPlanetDetected(IDetectable obj, SensorTypes sensor)
         {
-            DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Detectable.Name}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.LogVerbose<EaterMovement>($"Planeta detectado: {obj.Detectable.ActorName}, Sensor: {sensor}, IsOrbiting: {IsOrbiting}");
             if (sensor != SensorTypes.EaterEatSensor || !PlanetsManager.Instance.IsMarkedPlanet(obj)) return;
             _target = obj;
             IsOrbiting = true;
             _eater.OnEventStartEatPlanet(obj);
-            DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {_target.Detectable.Name}, IsOrbiting: {IsOrbiting}");
+            DebugUtility.Log<EaterMovement>($"[{_stateMachine.CurrentState}] Alvo {_target.Detectable.ActorName}, IsOrbiting: {IsOrbiting}");
         }
 
         public void Reset(bool resetSkin = true)

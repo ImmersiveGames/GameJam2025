@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             StopDamageCoroutine();
             _planetHealth = null;*/
             EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
-            DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.Name} destruído. Dano automático interrompido.");
+            DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.ActorName} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()

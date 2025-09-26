@@ -108,7 +108,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 if (sensorName == SensorTypes.EaterEatSensor && obj != null)
                 {
                     DebugUtility.LogVerbose<SensorController>(
-                        $"[{sensorName}] Usando cache: Planeta {obj.Detectable.Name} {(cachedResult ? "está" : "não está")} no alcance.",
+                        $"[{sensorName}] Usando cache: Planeta {obj.Detectable.ActorName} {(cachedResult ? "está" : "não está")} no alcance.",
                         cachedResult ? "green" : "red"
                     );
                 }
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
                 if (sensor.DebugMode)
                 {
                     DebugUtility.LogVerbose<SensorController>(
-                        $"[{sensorName}] Sensor desativado, ignorando verificação de alcance para {(obj != null ? obj.Detectable.Name : "null")}.",
+                        $"[{sensorName}] Sensor desativado, ignorando verificação de alcance para {(obj != null ? obj.Detectable.ActorName : "null")}.",
                         "gray"
                     );
                 }
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
             if (sensor.DebugMode)
             {
                 DebugUtility.LogVerbose<SensorController>(
-                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Detectable.Name : "null")} {(isInRange ? "está" : "não está")} no alcance.",
+                    $"[{sensorName}] Verificação: Planeta {(obj != null ? obj.Detectable.ActorName : "null")} {(isInRange ? "está" : "não está")} no alcance.",
                     isInRange ? "green" : "red"
                 );
             }

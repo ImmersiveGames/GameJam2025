@@ -26,14 +26,14 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
             if (_detectedPlanets[sensorName].Contains(interactable)) return;
             _detectedPlanets[sensorName].Add(interactable);
-            DebugUtility.LogVerbose<DetectorController>($"Planeta detectado por {sensorName}: {interactable.Detectable.Name}", "green");
+            DebugUtility.LogVerbose<DetectorController>($"Planeta detectado por {sensorName}: {interactable.Detectable.ActorName}", "green");
         }
         public void OnPlanetLost(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, Owner)) return;
 
             if (!_detectedPlanets.ContainsKey(sensorName) || !_detectedPlanets[sensorName].Remove(interactable)) return;
-            DebugUtility.LogVerbose<DetectorController>($"Planeta perdido por {sensorName}: {interactable.Detectable.Name}", "red");
+            DebugUtility.LogVerbose<DetectorController>($"Planeta perdido por {sensorName}: {interactable.Detectable.ActorName}", "red");
             if (!_detectedPlanets[sensorName].Any())
             {
                 _detectedPlanets.Remove(sensorName);

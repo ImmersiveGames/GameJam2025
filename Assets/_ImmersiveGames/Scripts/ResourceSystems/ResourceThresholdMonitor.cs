@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private ResourceThresholdConfig thresholdConfig;
 
         [Header("Actor identification (optional)")]
-        [Tooltip("Se vazio, tentamos pegar IActor.Name ou GameObject.name")]
+        [Tooltip("Se vazio, tentamos pegar IActor.ActorName ou GameObject.name")]
         [SerializeField] private string actorId;
 
         [Header("Options")]
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private float[] _thresholds = Array.Empty<float>();
         private EventBinding<ResourceUpdateEvent> _updateBinding;
 
-        private const float EPS = 1e-6f;
+        private const float Eps = 1e-6f;
 
         private void Start()
         {
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (autoDetectActorId)
             {
                 var actor = GetComponent<ActorSystems.IActor>();
-                actorId = actor?.Name ?? gameObject.name;
+                actorId = actor?.ActorName ?? gameObject.name;
             }
 
             actorId = actorId?.Trim();
@@ -49,7 +50,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             else
             {
                 // fallback: só 0 e 1
-                _thresholds = new float[] { 0f, 1f };
+                _thresholds = new[] { 0f, 1f };
                 DebugUtility.LogWarning<ResourceThresholdMonitor>($"⚠️ ThresholdConfig não atribuído em {gameObject.name}. Usando apenas 0% e 100%.");
             }
 
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (ers != null && ers.HasResource(resourceType))
             {
                 var res = ers.GetResource(resourceType);
-                _lastPercentage = res != null ? res.GetPercentage() : 1f;
+                _lastPercentage = res?.GetPercentage() ?? 1f;
             }
             else
             {
@@ -87,11 +88,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (evt.ResourceType != resourceType) return;
 
-            var newPct = evt.NewValue != null ? evt.NewValue.GetPercentage() : 0f;
-            var oldPct = _lastPercentage;
+            float newPct = evt.NewValue?.GetPercentage() ?? 0f;
+            float oldPct = _lastPercentage;
 
             // nada mudou
-            if (Mathf.Abs(newPct - oldPct) <= EPS) 
+            if (Mathf.Abs(newPct - oldPct) <= Eps) 
             {
                 _lastPercentage = newPct;
                 return;
@@ -101,35 +102,25 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             // detectar thresholds cruzados no intervalo (oldPct, newPct] para subida,
             // ou [newPct, oldPct) para descida
-            List<float> crossed = new List<float>();
+            var crossed = new List<float>();
 
             if (ascending)
             {
-                foreach (var t in _thresholds)
-                {
-                    // old < t <= new
-                    if (oldPct + EPS < t && t <= newPct + EPS)
-                        crossed.Add(t);
-                }
+                crossed.AddRange(_thresholds.Where(t => oldPct + Eps < t && t <= newPct + Eps));
 
                 // ordenar em ordem crescente (na ordem em que foram cruzados)
                 crossed.Sort((a, b) => a.CompareTo(b));
             }
             else
             {
-                foreach (var t in _thresholds)
-                {
-                    // new <= t < old
-                    if (newPct - EPS <= t && t < oldPct - EPS)
-                        crossed.Add(t);
-                }
+                crossed.AddRange(_thresholds.Where(t => newPct - Eps <= t && t < oldPct - Eps));
 
                 // ordenar em ordem decrescente (ordem do cruzamento)
                 crossed.Sort((a, b) => b.CompareTo(a));
             }
 
             // disparar evento para cada threshold encontrado
-            foreach (var threshold in crossed)
+            foreach (float threshold in crossed)
             {
                 var evtOut = new ResourceThresholdEvent(evt.ActorId, evt.ResourceType, threshold, ascending, newPct);
                 EventBus<ResourceThresholdEvent>.Raise(evtOut);
@@ -145,7 +136,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [ContextMenu("Simulate 75%")]
         private void Simulate75()
         {
-            var fake = new BasicResourceValue((int)(0.75f * 100), 100);
+            var fake = new BasicResourceValue((int)(0.75f * 100));
             var evt = new ResourceUpdateEvent(actorId, resourceType, fake);
             OnResourceUpdated(evt);
         }

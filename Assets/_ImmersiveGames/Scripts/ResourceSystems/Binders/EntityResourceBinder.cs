@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void InitializeActorId()
         {
             var actor = GetComponent<IActor>();
-            _actorId = actor?.Name ?? gameObject.name;
+            _actorId = actor?.ActorName ?? gameObject.name;
             
             // 🔥 FORÇAR lowercase para consistência
             _actorId = _actorId.ToLower().Trim();

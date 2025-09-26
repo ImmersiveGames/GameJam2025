@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (detector != null && !_detectors.Contains(detector))
             {
                 _detectors.Add(detector);
-                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' adicionado à lista de detectores do planeta '{gameObject.name}'.", "blue", this);
+                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.ActorName}' adicionado à lista de detectores do planeta '{gameObject.name}'.", "blue", this);
             }
         }
 
@@ -146,13 +146,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (detector != null && _detectors.Remove(detector))
             {
-                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.Name}' removido da lista de detectores do planeta '{gameObject.name}'.", "yellow", this);
+                DebugUtility.LogVerbose<PlanetsMaster>($"DetectorController '{detector.Owner.ActorName}' removido da lista de detectores do planeta '{gameObject.name}'.", "yellow", this);
             }
         }
 
         private void OnMarked(PlanetMarkedEvent evt)
         {
-            if (evt.Detected.Detectable.Name != gameObject.name || !IsActive) return;
+            if (evt.Detected.Detectable.ActorName != gameObject.name || !IsActive) return;
             if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(true);
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (evt.Detected.Detectable.Name != gameObject.name || !IsActive) return;
+            if (evt.Detected.Detectable.ActorName != gameObject.name || !IsActive) return;
             if (_targetFlag)
             {
                 _targetFlag.gameObject.SetActive(false);

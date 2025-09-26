@@ -391,6 +391,7 @@ GameObject:
   - component: {fileID: 1432878129}
   - component: {fileID: 1432878131}
   - component: {fileID: 1432878132}
+  - component: {fileID: 1432878133}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -484,6 +485,21 @@ MonoBehaviour:
   thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
   actorId: player01
   autoDetectActorId: 1
+--- !u!114 &1432878133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f19c26e21b74e84a60fdda2244605ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flows:
+  - {fileID: 11400000, guid: e8651aab02560ac45bfdf4dba97f49c7, type: 2}
+  startPaused: 1
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0

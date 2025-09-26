@@ -30,16 +30,16 @@ namespace _ImmersiveGames.Scripts.Utils
             if (playerInput != null)
             {
                 actorId = $"Player_{playerInput.playerIndex}";
-                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.Name}, PlayerIndex={playerInput.playerIndex}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
+                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.ActorName}, PlayerIndex={playerInput.playerIndex}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
             }
             else
             {
-                string baseActorName = actor.Name;
+                string baseActorName = actor.ActorName;
                 _instanceCounts.TryAdd(baseActorName, 0);
 
                 int instanceId = _instanceCounts[baseActorName]++;
                 actorId = $"NPC_{baseActorName}_{instanceId}";
-                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.Name}, InstanceId={instanceId}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
+                DebugUtility.LogVerbose<UniqueIdFactory>($"GenerateId: ActorName={actor.ActorName}, InstanceId={instanceId}, ActorId={actorId}, BaseId={baseId}, UniqueId={actorId}_{baseId}");
             }
 
             return $"{actorId}_{baseId}";

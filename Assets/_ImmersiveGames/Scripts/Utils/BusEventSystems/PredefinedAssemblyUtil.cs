@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         /// <summary>
         /// Maps the assembly name to the corresponding AssemblyType.
         /// </summary>
-        /// <param name="assemblyName">Name of the assembly.</param>
+        /// <param name="assemblyName">ActorName of the assembly.</param>
         /// <returns>AssemblyType corresponding to the assembly name, null if no match.</returns>
         private static AssemblyType? GetAssemblyType(string assemblyName) {
             return assemblyName switch {

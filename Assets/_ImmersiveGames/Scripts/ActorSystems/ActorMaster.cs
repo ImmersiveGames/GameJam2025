@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
     {
         public Transform Transform => transform;
         private ModelRoot _modelRoot;
-        public string Name => gameObject.name;
+        public string ActorName => gameObject.name;
         public bool IsActive { get; set; }
         public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
         public Transform ModelTransform => ModelRoot.transform;
