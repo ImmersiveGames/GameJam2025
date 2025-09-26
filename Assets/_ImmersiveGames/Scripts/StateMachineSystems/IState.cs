@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.StatesMachines
         Move,
         Shoot,
         Interact,
-        // Outros tipos de ações específicas do jogo
+        Navigate,
+        None
     }
 }

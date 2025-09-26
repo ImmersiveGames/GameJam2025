@@ -3,47 +3,46 @@ using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StatesMachines;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
-    /// <summary>
-    /// Componente para spawn de objetos do pool, na direção do Transform.forward do spawner.
-    /// Usa Input System para ação configurável por jogador, compatível com multiplayer local.
-    /// Inclui cooldown e estratégias modulares de posicionamento selecionáveis.
-    /// </summary>
     [RequireComponent(typeof(PlayerInput))]
     [DebugLevel(DebugLevel.Error)]
     public class InputSpawnerComponent : MonoBehaviour
     {
         [Header("Pool Config")]
-        [SerializeField] private PoolData poolData; // Dados do pool, define ObjectConfigs
+        [SerializeField] private PoolData poolData;
 
         [Header("Input Config")]
-        [SerializeField] private string actionName = "Spawn"; // Nome da ação no InputActionMap
+        [SerializeField] private string actionName = "Spawn";
 
         [Header("Cooldown Config")]
-        [SerializeField, Min(0f)] private float cooldown = 0.5f; // Tempo de cooldown em segundos
+        [SerializeField, Min(0f)] private float cooldown = 0.5f;
 
         [Header("Spawn Strategy Config")]
-        [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single; // Tipo de estratégia
+        [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
         [SerializeField] private SingleSpawnStrategy singleStrategy = new SingleSpawnStrategy();
         [SerializeField] private MultipleLinearSpawnStrategy multipleLinearStrategy = new MultipleLinearSpawnStrategy();
         [SerializeField] private CircularSpawnStrategy circularStrategy = new CircularSpawnStrategy();
 
-        private ISpawnStrategy _activeStrategy; // Estratégia ativa
+        private ISpawnStrategy _activeStrategy;
         private ObjectPool _pool;
         private PlayerInput _playerInput;
         private InputAction _spawnAction;
-        private float _lastShotTime = -Mathf.Infinity; // Inicializa para permitir disparo imediato
-        
-        private bool _isGameActive;
+        private float _lastShotTime = -Mathf.Infinity;
+        private IActor _actor;
+
+        [Inject] private IStateDependentService _stateService;
 
         private void Awake()
         {
-            // Inicializa referências
             _playerInput = GetComponent<PlayerInput>();
+            _actor = GetComponent<IActor>();
+            DependencyManager.Instance.InjectDependencies(this);
+
             if (_playerInput == null)
             {
                 DebugUtility.LogError<InputSpawnerComponent>($"PlayerInput não encontrado em '{name}'.", this);
@@ -64,13 +63,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 enabled = false;
                 return;
             }
-            // Subscrição a eventos para desacoplar do GameManager
-            EventBus<GameStartEvent>.Register(new EventBinding<GameStartEvent>(OnGameStart));
-            EventBus<GamePauseEvent>.Register(new EventBinding<GamePauseEvent>(OnGamePause));
-            _isGameActive = false;  // Inicializa como inativo
-            
 
-            // Registra o pool com base no ObjectName do PoolData
             PoolManager.Instance.RegisterPool(poolData);
             _pool = PoolManager.Instance.GetPool(poolData.ObjectName);
 
@@ -81,12 +74,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            // Inicializa estratégias, se necessário
             singleStrategy ??= new SingleSpawnStrategy();
             multipleLinearStrategy ??= new MultipleLinearSpawnStrategy();
             circularStrategy ??= new CircularSpawnStrategy();
 
-            // Configura a estratégia ativa com base no tipo selecionado
             SetStrategy(strategyType);
 
             if (_activeStrategy == null)
@@ -96,7 +87,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            // Configura a ação de input
             _spawnAction = _playerInput.actions.FindAction(actionName);
             if (_spawnAction == null)
             {
@@ -115,42 +105,30 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 _spawnAction.performed -= OnSpawnPerformed;
             }
-            // Desinscrever eventos
-            EventBus<GameStartEvent>.Unregister(new EventBinding<GameStartEvent>(OnGameStart));
-            EventBus<GamePauseEvent>.Unregister(new EventBinding<GamePauseEvent>(OnGamePause));
             DebugUtility.LogVerbose<InputSpawnerComponent>($"InputSpawnerComponent destruído em '{name}'.", "blue", this);
-        }
-        private void OnGameStart(GameStartEvent evt)
-        {
-            _isGameActive = true;
-        }
-
-        private void OnGamePause(GamePauseEvent evt)
-        {
-            _isGameActive = !evt.IsPaused;
         }
 
         private void OnSpawnPerformed(InputAction.CallbackContext context)
         {
-            if (!_isGameActive) return;
+            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Shoot))
+                return;
+
             if (_pool == null)
             {
                 DebugUtility.LogWarning<InputSpawnerComponent>($"Pool nulo em '{name}'.", this);
                 return;
             }
 
-            // Verifica se o cooldown expirou
             if (Time.time < _lastShotTime + cooldown)
             {
                 DebugUtility.LogVerbose<InputSpawnerComponent>($"[{name}] Disparo bloqueado por cooldown. Tempo restante: {(_lastShotTime + cooldown - Time.time):F3}s.", "yellow", this);
                 return;
             }
 
-            var basePosition = transform.position; // Posição base do spawner
-            var baseDirection = transform.forward; // Direção base do Transform.forward
-            var spawner = GetComponent<IActor>(); // Usa IActor como spawner
+            var basePosition = transform.position;
+            var baseDirection = transform.forward;
+            var spawner = _actor;
 
-            // Obtém os dados de spawn da estratégia ativa
             var spawnDataList = _activeStrategy.GetSpawnData(basePosition, baseDirection);
 
             bool success = false;
@@ -170,14 +148,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             if (success)
             {
-                _lastShotTime = Time.time; // Atualiza o tempo do último disparo apenas se pelo menos um spawn sucedeu
+                _lastShotTime = Time.time;
             }
         }
 
-        /// <summary>
-        /// Define a estratégia de spawn ativa com base no tipo fornecido.
-        /// Pode ser chamado em runtime para trocar estratégias dinamicamente.
-        /// </summary>
         public void SetStrategy(SpawnStrategyType type)
         {
             strategyType = type;
@@ -186,11 +160,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 SpawnStrategyType.Single => singleStrategy,
                 SpawnStrategyType.MultipleLinear => multipleLinearStrategy,
                 SpawnStrategyType.Circular => circularStrategy,
-                _ => singleStrategy // Fallback para Single
+                _ => singleStrategy
             };
             DebugUtility.LogVerbose<InputSpawnerComponent>($"Estratégia alterada para '{type}' em '{name}'.", "cyan", this);
         }
-        #if UNITY_EDITOR
+
+#if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
             if (!Application.isPlaying && poolData != null)
@@ -210,21 +185,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
                 foreach (var spawnData in previewList)
                 {
-                    // desenha a posição
                     Gizmos.DrawWireSphere(spawnData.Position, 0.1f);
-
-                    // desenha a direção
                     Gizmos.DrawLine(spawnData.Position, spawnData.Position + spawnData.Direction * 0.5f);
                 }
 
-                // desenha a base do spawner
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawWireSphere(basePosition, 0.15f);
                 Gizmos.DrawLine(basePosition, basePosition + baseDirection * 1f);
             }
         }
 #endif
-
     }
-    
 }

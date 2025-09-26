@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.DetectionsSystems;
+﻿/*using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -46,4 +46,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public bool CanPerformAction(ActionType action) => true; // Bloqueia todas as ações
         public bool IsGameActive() => true;
     }
-}
+}*/

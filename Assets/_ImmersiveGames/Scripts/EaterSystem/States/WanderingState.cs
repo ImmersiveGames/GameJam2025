@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -64,4 +64,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     }
 
 
-}
+}*/

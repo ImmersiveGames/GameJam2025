@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.UI
 
         private void Awake()
         {
-            _player = GameManager.Instance.Player;
+            _player = PlayerManager.Instance.Players[0]; // Assume o primeiro jogador
             _mainCamera = Camera.main;
         }
 

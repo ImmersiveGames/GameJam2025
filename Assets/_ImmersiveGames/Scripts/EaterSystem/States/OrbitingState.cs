@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿/*using System.Collections;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Tags;
@@ -176,4 +176,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public bool CanPerformAction(ActionType action) => true; // Bloqueia todas as ações
         public bool IsGameActive() => true;
     }
-}
+}*/

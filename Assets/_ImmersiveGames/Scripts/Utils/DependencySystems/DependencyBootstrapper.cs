@@ -1,4 +1,4 @@
-﻿// DependencyBootstrapper.cs (MANTIDO - mas simplificado)
+﻿using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
@@ -32,6 +32,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             // APENAS serviços que PRECISAM existir antes de qualquer cena
             DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
+            DependencyManager.Instance.RegisterGlobal<IStateDependentService>(new StateDependentService(GameManagerStateMachine.Instance));
             
             DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
         }

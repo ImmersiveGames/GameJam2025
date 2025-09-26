@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class CanvasResourceBinder : MonoBehaviour, ICanvasResourceBinder
     {
         [SerializeField] private string canvasId;

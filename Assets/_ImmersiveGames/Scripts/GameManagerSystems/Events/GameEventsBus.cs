@@ -51,5 +51,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
             SourceGameObject = source;
         }
     }
-    
+    public class ActorStateChangedEvent : IEvent
+    {
+        public bool IsActive { get; }
+
+        public ActorStateChangedEvent(bool isActive)
+        {
+            IsActive = isActive;
+        }
+    }
 }

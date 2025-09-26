@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems
 
         private void Update()
         {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            //if (!GameManager.Instance.ShouldPlayingGame()) return;
             // Limpa o cache se for um novo frame
             if (Time.frameCount != _lastFrameChecked)
             {

@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
             // 1. UI primeiro (handlers)
             if (!IsSceneLoaded(uiScene))
             {
-                yield return SceneManager.LoadSceneAsync(uiScene, LoadSceneMode.Additive);
+                yield return LoadUISceneAdditive(uiScene);
                 yield return new WaitForEndOfFrame(); // Espera registros
             }
 
@@ -44,6 +44,20 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
                     return true;
             }
             return false;
+        }
+        public IEnumerator LoadUISceneAdditive(string uiSceneName)
+        {
+            if (!SceneManager.GetSceneByName(uiSceneName).isLoaded)
+            {
+                DebugUtility.LogVerbose<SceneLoader>($"Carregando cena de UI {uiSceneName} em modo aditivo.");
+                yield return SceneManager.LoadSceneAsync(uiSceneName, LoadSceneMode.Additive);
+            }
+        }
+        public void ReloadCurrentScene()
+        {
+            var currentScene = SceneManager.GetActiveScene().name;
+            DebugUtility.LogVerbose<SceneLoader>($"Recarregando cena atual {currentScene}.");
+            SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Single);
         }
     }
 }

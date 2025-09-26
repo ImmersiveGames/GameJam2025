@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class ResourceThresholdMonitor : MonoBehaviour
     {
         [Header("Which resource to monitor")]

@@ -96,8 +96,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleTimerComplete()
         {
             DebugUtility.LogVerbose<GameTimer>("Tempo acabou!");
-            _gameManager.SetGameOver(true);
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded());
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
         
         public void PauseTimer()

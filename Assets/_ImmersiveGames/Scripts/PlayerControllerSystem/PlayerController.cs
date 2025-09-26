@@ -1,5 +1,9 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -22,10 +26,15 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private Rigidbody _rb;
         private PlayerInputActions _inputActions;
 
+        private IActor _actor;
+        [Inject] private IStateDependentService _stateService;
+
         private void Awake()
         {
             _rb = GetComponentInChildren<Rigidbody>();
+            _actor = GetComponent<IActor>();
             _inputActions = new PlayerInputActions();
+            DependencyManager.Instance.InjectDependencies(this);
 
             if (mainCamera) return;
             mainCamera = Camera.main;
@@ -61,7 +70,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 
         private void FixedUpdate()
         {
-            if (!GameManager.Instance.ShouldPlayingGame()) return;
+            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Move))
+                return;
 
             var moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
             _rb.linearVelocity = moveDirection * moveSpeed;

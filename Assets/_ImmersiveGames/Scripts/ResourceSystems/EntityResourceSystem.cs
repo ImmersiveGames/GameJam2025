@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public bool enabled;
     }
 
+    [DebugLevel(DebugLevel.Logs)]
     public class EntityResourceSystem : MonoBehaviour, IEntityResourceSystem
     {
         [SerializeField] private string entityId;

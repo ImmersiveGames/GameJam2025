@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Testa troca de skins em runtime, disparada no spawn ou por input, usando SkinConfigData para trocas individuais por ModelType.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class SkinChangeTest : MonoBehaviour
     {
         [SerializeField] private SkinCollectionData alternateSkinCollection; // Para troca coletiva

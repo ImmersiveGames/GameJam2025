@@ -1,3 +1,4 @@
+/*
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
@@ -87,4 +88,5 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         }
     }
 }
+*/
 

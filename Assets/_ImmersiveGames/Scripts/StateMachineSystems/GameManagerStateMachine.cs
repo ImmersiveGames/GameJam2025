@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
+
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public class GameManagerStateMachine : Singleton<GameManagerStateMachine>
@@ -43,36 +44,24 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             builder.At(menuState, playingState, new FuncPredicate(() => Input.GetKeyDown(KeyCode.I)));
             builder.At(playingState, pausedState, new FuncPredicate(() => Input.GetKeyDown(KeyCode.Escape)));
             builder.At(pausedState, playingState, new FuncPredicate(() => Input.GetKeyDown(KeyCode.Escape)));
-            builder.At(playingState, gameOverState, new FuncPredicate(gameManager.CheckGameOver));
-            builder.At(playingState, victoryState, new FuncPredicate(gameManager.CheckVictory));
-            builder.At(gameOverState, menuState, new FuncPredicate(() =>
-            {
-                if (Input.GetKeyDown(KeyCode.R))
-                {
-                    gameManager.ForceReset();
-                    return true;
-                }
-                return false;
-            }));
-            builder.At(victoryState, menuState, new FuncPredicate(() =>
-            {
-                if (Input.GetKeyDown(KeyCode.R))
-                {
-                    gameManager.ForceReset();
-                    return true;
-                }
-                return false;
-            }));
+
+            // Transições baseadas em eventos
+            var gameOverPredicate = new EventTriggeredPredicate<GameOverEvent>(() => { });
+            EventBus<GameOverEvent>.Register(new EventBinding<GameOverEvent>(() => gameOverPredicate.Trigger()));
+            builder.At(playingState, gameOverState, gameOverPredicate);
+
+            var victoryPredicate = new EventTriggeredPredicate<GameVictoryEvent>(() => { });
+            EventBus<GameVictoryEvent>.Register(new EventBinding<GameVictoryEvent>(() => victoryPredicate.Trigger()));
+            builder.At(playingState, victoryState, victoryPredicate);
+
+            // Transições para reset
+            var resetPredicate = new FuncPredicate(() => Input.GetKeyDown(KeyCode.R));
+            builder.At(gameOverState, menuState, resetPredicate);
+            builder.At(victoryState, menuState, resetPredicate);
 
             builder.StateInitial(menuState);
             _stateMachine = builder.Build();
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(menuState.IsGameActive()));
-        }
-
-        public void ChangeState(IState newState, GameManager manager)
-        {
-            _stateMachine?.SetState(newState);
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(newState.IsGameActive()));
         }
     }
 }

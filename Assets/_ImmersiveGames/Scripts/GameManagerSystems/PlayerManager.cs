@@ -1,43 +1,51 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
-    public class PlayerManager : PersistentSingleton<PlayerManager>
+    [DefaultExecutionOrder(-90)]
+    public sealed class PlayerManager : Singleton<PlayerManager>
     {
-        
-        [Inject] private IActorRegistry _actorRegistry; // Atualizado para interface segregada
+        [SerializeField] private List<Transform> players = new List<Transform>();
+        public IReadOnlyList<Transform> Players => players.AsReadOnly();
 
-        public void RegisterPlayer(string playerId, EntityResourceSystem resourceSystem)
+        protected override void Awake()
         {
-            _actorRegistry.RegisterActor(playerId);
-            DebugUtility.LogVerbose<PlayerManager>($"🎮 Player registered: {playerId}");
+            base.Awake();
+            InitializePlayers();
         }
 
-        public void HealAllPlayers(int healAmount)
+        private void InitializePlayers()
         {
-            // Como players são atores registrados, itere via serviço se precisar de lista completa
-            // Para simplicidade, assuma que chamadores conhecem os players; se precisar, adicione GetRegisteredActors() em IActorRegistry
-            DebugUtility.LogVerbose<PlayerManager>($"❤️ All players healed: +{healAmount} (implemente iteração se necessário)");
+            // Lógica para inicializar jogadores (ex.: configurar controles, spawns, etc.)
+            foreach (var player in players)
+            {
+                if (player == null)
+                {
+                    DebugUtility.LogWarning<PlayerManager>("Jogador nulo detectado na lista de jogadores.", this);
+                    continue;
+                }
+                // Exemplo: Configurar controles ou estado inicial
+                DebugUtility.LogVerbose<PlayerManager>($"Jogador {player.name} inicializado.");
+            }
         }
 
-        [ContextMenu("Debug Players")]
-        public void DebugPlayers()
+        public void AddPlayer(Transform player)
         {
-            // Use o serviço para debug, evitando duplicar dicionário
-            DebugUtility.LogVerbose<PlayerManager>($"🎮 Total players: {_actorRegistry.GetResourceCountForActor("all")} (ajuste para listar atores)");
+            if (player != null && !players.Contains(player))
+            {
+                players.Add(player);
+                DebugUtility.LogVerbose<PlayerManager>($"Jogador {player.name} adicionado.");
+            }
         }
-    }
-    
-    // ✅ Interface segregada para gerenciamento de atores (SRP e ISP)
-    public interface IActorRegistry
-    {
-        void RegisterActor(string actorId);
-        void UnregisterActor(string actorId);
-        bool IsActorRegistered(string actorId);
-        void RemoveActorBindings(string actorId);
-        int GetResourceCountForActor(string actorId);
+
+        public void RemovePlayer(Transform player)
+        {
+            if (players.Remove(player))
+            {
+                DebugUtility.LogVerbose<PlayerManager>($"Jogador {player.name} removido.");
+            }
+        }
     }
 }

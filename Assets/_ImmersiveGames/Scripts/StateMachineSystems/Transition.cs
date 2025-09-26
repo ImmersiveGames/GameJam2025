@@ -1,5 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.StatesMachines;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems 
 {
@@ -60,7 +61,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             _action = action ?? throw new ArgumentNullException(nameof(action));
         }
 
-        public bool Evaluate()
+        public virtual bool Evaluate()
         {
             _action?.Invoke();
             bool result = _flag;
@@ -71,5 +72,20 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         // Método para definir a flag (chamado pela lógica da ação)
         public void SetFlag(bool value) => _flag = value;
     }
-    
+    public class EventTriggeredPredicate<T> : ActionPredicate where T : IEvent
+    {
+        private bool _triggered;
+
+        public EventTriggeredPredicate(Action action) : base(action) { }
+
+        public override bool Evaluate()
+        {
+            base.Evaluate(); // Chama action se necessário
+            bool result = _triggered;
+            _triggered = false; // Reset
+            return result;
+        }
+
+        public void Trigger() => _triggered = true; // Chamado por listener de evento
+    }
 }

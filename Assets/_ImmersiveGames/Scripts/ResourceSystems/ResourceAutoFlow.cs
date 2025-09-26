@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class ResourceAutoFlow : MonoBehaviour
     {
         [SerializeField] private List<ResourceAutoFlowConfig> flows = new();

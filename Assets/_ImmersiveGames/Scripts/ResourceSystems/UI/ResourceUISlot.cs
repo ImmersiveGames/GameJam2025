@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class ResourceUISlot : MonoBehaviour, IResourceUISlot
     {
         [SerializeField] private string expectedActorId;

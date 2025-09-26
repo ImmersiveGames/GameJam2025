@@ -2,6 +2,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class BasicResourceValue: IResourceValue
     {
         private float CurrentValue { get; set; }
