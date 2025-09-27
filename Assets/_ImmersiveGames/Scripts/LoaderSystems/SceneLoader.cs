@@ -22,6 +22,11 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
 
         private IEnumerator LoadSceneSequence()
         {
+            // 2. Gameplay depois (emissores de eventos)
+            if (!IsSceneLoaded(gameplayScene))
+            {
+                yield return SceneManager.LoadSceneAsync(gameplayScene, LoadSceneMode.Additive);
+            }
             // 1. UI primeiro (handlers)
             if (!IsSceneLoaded(uiScene))
             {
@@ -29,11 +34,7 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
                 yield return new WaitForEndOfFrame(); // Espera registros
             }
 
-            // 2. Gameplay depois (emissores de eventos)
-            if (!IsSceneLoaded(gameplayScene))
-            {
-                yield return SceneManager.LoadSceneAsync(gameplayScene, LoadSceneMode.Additive);
-            }
+            
         }
 
         private bool IsSceneLoaded(string sceneName)

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IResourceUISlot
@@ -20,9 +22,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         void UnbindActor(string actorId);
         void UpdateResource(string actorId, ResourceType type, IResourceValue data);
     }
-    /// <summary>
-    /// Interface para gerenciamento de valores de recursos (aumentar, diminuir, obter valores).
-    /// </summary>
+
     public interface IResourceValue
     {
         float GetCurrentValue();
@@ -32,6 +32,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         void Decrease(float amount);
         void SetCurrentValue(float value);
     }
+
     public interface IEntityResourceSystem
     {
         string EntityId { get; }
@@ -42,17 +43,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         bool HasResource(ResourceType type);
         Dictionary<ResourceType, IResourceValue> GetAllResources();
 
-        // Canvas targeting (necessário para decidir onde criar a UI)
+        // Canvas targeting
         string GetTargetCanvasId(ResourceType resourceType);
 
-        // Modificadores básicos (opcionais para Orchestrator, mas úteis)
+        // Modificadores
         void ModifyResource(ResourceType type, float delta);
         void SetResourceValue(ResourceType type, float value);
-    }
-    public interface IDynamicCanvasBinder
-    {
-        bool CreateSlotsForActor(IActor actor, EntityResourceSystem resourceSystem);
-        void RemoveSlotsForActor(IActor actor);
-        Transform GetSlotParent();
+        
+        // Novos métodos para instância de recursos
+        ResourceInstanceConfig GetResourceInstanceConfig(ResourceType type);
+        List<ResourceAutoFlowConfig> GetAutoFlowConfigs();
     }
 }

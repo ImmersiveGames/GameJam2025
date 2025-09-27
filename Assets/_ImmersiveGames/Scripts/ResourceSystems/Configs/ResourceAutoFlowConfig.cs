@@ -1,23 +1,22 @@
 ﻿using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Auto Flow Config")]
     public class ResourceAutoFlowConfig : ScriptableObject
     {
-        [Tooltip("Qual recurso este config controla")]
-        public ResourceType resourceType = ResourceType.Health;
-
-        [Tooltip("Se verdadeiro, regenera até 100%")]
+        [Tooltip("Se verdadeiro, regenera automaticamente")]
         public bool autoFill = false;
 
-        [Tooltip("Se verdadeiro, drena até 0%")]
+        [Tooltip("Se verdadeiro, drena automaticamente")]
         public bool autoDrain = false;
 
         [Tooltip("Intervalo entre ticks em segundos")]
-        [Min(0.1f)] public float tickInterval = 1f;
+        [Min(0.1f)] 
+        public float tickInterval = 1f;
 
         [Tooltip("Quantidade adicionada/removida por tick")]
-        public int amountPerTick = 1;
+        public float amountPerTick = 1f;
 
         [Tooltip("Se verdadeiro, usa porcentagem do valor máximo ao invés de valor fixo")]
         public bool usePercentage = false;

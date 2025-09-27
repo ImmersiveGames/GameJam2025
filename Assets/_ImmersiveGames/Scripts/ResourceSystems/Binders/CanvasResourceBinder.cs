@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -27,13 +28,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (string.IsNullOrEmpty(canvasId))
                 canvasId = $"{gameObject.scene.name}_{gameObject.name}";
 
-            // Se for persistente, move para DontDestroyOnLoad
             if (persistAcrossScenes)
             {
                 DontDestroyOnLoad(gameObject);
             }
 
-            // Garante que o orchestrator existe
             if (ActorResourceOrchestrator.Instance == null)
             {
                 new GameObject("ActorResourceOrchestrator").AddComponent<ActorResourceOrchestrator>();
@@ -64,13 +63,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 UpdateResourceForActor(actor, evt.ResourceType, evt.NewValue);
             }
         }
-
         private IActor FindActorById(string actorId)
         {
             return _dynamicSlots.Keys.FirstOrDefault(actor => 
                 actor.ActorName.Equals(actorId, System.StringComparison.OrdinalIgnoreCase));
         }
 
+        // No método CreateSlotForActor
         public void CreateSlotForActor(IActor actor, ResourceType resourceType, IResourceValue data)
         {
             if (actor == null || slotPrefab == null) 
@@ -79,7 +78,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return;
             }
 
-            // Verifica se o slot já existe
             if (_dynamicSlots.TryGetValue(actor, out var actorSlots) && 
                 actorSlots.ContainsKey(resourceType))
             {
@@ -88,7 +86,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             var slot = Instantiate(slotPrefab, dynamicSlotsParent != null ? dynamicSlotsParent : transform);
-            slot.InitializeForActor(actor, resourceType);
+            
+            // Obtém a configuração de instância do resource system
+            ResourceInstanceConfig instanceConfig = GetResourceInstanceConfig(actor, resourceType);
+            slot.InitializeForActor(actor, resourceType, instanceConfig);
+            
             slot.Configure(data);
             
             if (!_dynamicSlots.ContainsKey(actor))
@@ -98,7 +100,20 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             
             DebugUtility.LogVerbose<CanvasResourceBinder>($"🔗 Slot criado: {actor.ActorName}.{resourceType} em {canvasId}");
         }
-
+        private ResourceInstanceConfig GetResourceInstanceConfig(IActor actor, ResourceType resourceType)
+        {
+            if (actor is MonoBehaviour monoActor)
+            {
+                // Tenta encontrar o EntityResourceSystem no mesmo GameObject ou nos pais
+                var resourceSystem = monoActor.GetComponentInParent<EntityResourceSystem>();
+                if (resourceSystem != null)
+                {
+                    return resourceSystem.GetResourceInstanceConfig(resourceType);
+                }
+            }
+            return null;
+        }
+        
         public void UpdateResourceForActor(IActor actor, ResourceType resourceType, IResourceValue data)
         {
             if (_dynamicSlots.TryGetValue(actor, out var actorSlots) && 
@@ -109,7 +124,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             else
             {
-                // Se o slot não existe, cria um novo
                 CreateSlotForActor(actor, resourceType, data);
             }
         }

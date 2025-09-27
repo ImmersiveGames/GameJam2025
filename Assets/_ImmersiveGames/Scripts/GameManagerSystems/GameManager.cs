@@ -5,11 +5,12 @@ using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
-    [DefaultExecutionOrder(-100), DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-101), DebugLevel(DebugLevel.Verbose)]
     public sealed class GameManager : Singleton<GameManager>, IGameManager
     {
         [SerializeField] private GameConfig gameConfig;
@@ -23,6 +24,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         protected override void Awake()
         {
             base.Awake();
+            if (!SceneManager.GetSceneByName("UI").isLoaded)
+            {
+                DebugUtility.LogVerbose<GameManager>($"Carregando cena de UI em modo aditivo.");
+                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
+            }
             Initialize();
         }
 
@@ -30,12 +36,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             // Inicializa a FSM
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
-
-            // Carrega UI para debug, se configurado
-            if (gameConfig.DebugMode)
-            {
-                var loadUISceneAdditive = SceneLoader.Instance.LoadUISceneAdditive("UI");
-            }
 
             // Registra listener para GameStart
             _gameStartEvent = new EventBinding<GameStartEvent>(OnGameStart);

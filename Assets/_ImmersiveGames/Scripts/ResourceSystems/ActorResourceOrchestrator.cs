@@ -26,7 +26,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             _instance = this;
             DontDestroyOnLoad(gameObject);
-
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
         }

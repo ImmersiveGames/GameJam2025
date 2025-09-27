@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         private IActor _expectedActor;
         private ResourceType _expectedType;
+        private ResourceInstanceConfig _instanceConfig;
 
         [Header("UI Components")]
         [SerializeField] private Image fillImage;        
@@ -26,6 +27,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         [Header("Debug")]
         [SerializeField] private bool showAnimationDebug;
+
+        // Animation variables
+        private float _animationTimer;
+        private float _animationStartFill;
+        private float _animationTargetFill;
+        private bool _isAnimating;
 
         public string SlotId => $"{_expectedActor?.ActorName ?? "Unknown"}_{_expectedType}";
         public string ExpectedActorId => _expectedActor?.ActorName ?? string.Empty;
@@ -42,10 +49,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             ResetToFull();
         }
 
-        public void InitializeForActor(IActor actor, ResourceType type)
+        private void Update()
+        {
+            if (!_isAnimating || _instanceConfig == null || !_instanceConfig.enableAnimation || _instanceConfig.animationStyle == null) 
+                return;
+
+            AnimateFill();
+        }
+
+        public void InitializeForActor(IActor actor, ResourceType type, ResourceInstanceConfig instanceConfig = null)
         {
             _expectedActor = actor;
             _expectedType = type;
+            _instanceConfig = instanceConfig;
             
             if (actor is MonoBehaviour monoActor)
             {
@@ -73,7 +89,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (valueText != null)
                 valueText.text = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
-            if (_animator != null)
+            // Se tem configuração de animação e está habilitada, anima
+            if (_instanceConfig != null && _instanceConfig.enableAnimation && _instanceConfig.animationStyle != null)
+            {
+                StartAnimation(targetFill, _instanceConfig.animationStyle);
+            }
+            else if (_animator != null && style != null)
             {
                 _animator.StartAnimation(this, targetFill, style);
             }
@@ -90,6 +111,50 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     $"🎯 Configurado: {data.GetCurrentValue():0}/{data.GetMaxValue():0} (Target: {targetFill:F2})");
             }
         }
+
+        private void StartAnimation(float targetFill, ResourceUIStyle animationStyle)
+        {
+            _animationStartFill = GetCurrentFill();
+            _animationTargetFill = targetFill;
+            _animationTimer = 0f;
+            _isAnimating = true;
+        }
+
+        private void AnimateFill()
+        {
+            var style = _instanceConfig.animationStyle;
+            _animationTimer += Time.deltaTime;
+
+            // Animação rápida
+            if (_animationTimer <= style.quickDuration)
+            {
+                float progress = _animationTimer / style.quickDuration;
+                float eased = EaseOutCubic(progress);
+                float currentFill = Mathf.Lerp(_animationStartFill, _animationTargetFill, eased);
+                SetFillValues(currentFill, _animationTargetFill);
+            }
+            // Delay
+            else if (_animationTimer <= style.quickDuration + style.delayBeforeSlow)
+            {
+                // Aguarda - não faz nada
+            }
+            // Animação lenta
+            else if (_animationTimer <= style.quickDuration + style.delayBeforeSlow + style.slowDuration)
+            {
+                float slowProgress = (_animationTimer - style.quickDuration - style.delayBeforeSlow) / style.slowDuration;
+                float eased = EaseOutCubic(slowProgress);
+                float currentPending = Mathf.Lerp(_animationStartFill, _animationTargetFill, eased);
+                SetFillValues(_animationTargetFill, currentPending);
+            }
+            // Finalizou
+            else
+            {
+                SetFillValues(_animationTargetFill, _animationTargetFill);
+                _isAnimating = false;
+            }
+        }
+
+        private float EaseOutCubic(float x) => 1f - Mathf.Pow(1f - x, 3f);
 
         public void SetFillValues(float currentFill, float pendingFill)
         {
@@ -119,6 +184,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_animator != null)
                 _animator.StopAnimation(this);
 
+            _isAnimating = false;
             SetFillValues(0f, 0f);
 
             if (valueText != null) 
