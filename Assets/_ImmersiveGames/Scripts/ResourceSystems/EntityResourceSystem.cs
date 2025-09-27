@@ -32,6 +32,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (string.IsNullOrEmpty(entityId))
                 entityId = gameObject.name;
 
+            // DIAGNÓSTICO: Verificar se o ResourceThresholdMonitor está presente
+            var thresholdMonitor = GetComponent<ResourceThresholdMonitor>();
+            if (thresholdMonitor == null)
+            {
+                DebugUtility.LogError<EntityResourceSystem>($"❌ ResourceThresholdMonitor não encontrado em {gameObject.name}");
+            }
+            else
+            {
+                DebugUtility.LogVerbose<EntityResourceSystem>($"✅ ResourceThresholdMonitor encontrado e {(thresholdMonitor.enabled ? "habilitado" : "desabilitado")}");
+            }
+
             if (autoInitialize && !IsInitialized)
             {
                 InitializeResources();
@@ -74,7 +85,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogVerbose<EntityResourceSystem>(
                     $"📊 Resource instance added: {entityId} - {def.type} = {def.initialValue}/{def.maxValue}, " +
                     $"Canvas: {instanceConfig.targetCanvasId}, AutoFlow: {instanceConfig.hasAutoFlow}, " +
-                    $"Animation: {instanceConfig.enableAnimation}");
+                    $"Animation: {instanceConfig.enableAnimation}, Thresholds: {instanceConfig.enableThresholdMonitoring}");
             }
         }
 
@@ -91,11 +102,27 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             return _instanceConfigs.GetValueOrDefault(type);
         }
+
         public List<ResourceAutoFlowConfig> GetAutoFlowConfigs()
         {
             return _instanceConfigs.Values
                 .Where(ic => ic.hasAutoFlow && ic.autoFlowConfig != null)
                 .Select(ic => ic.autoFlowConfig)
+                .ToList();
+        }
+
+        // NOVO MÉTODO: Verificar se algum recurso tem threshold monitoring habilitado
+        public bool HasThresholdMonitoring()
+        {
+            return _instanceConfigs.Values.Any(ic => ic.enableThresholdMonitoring);
+        }
+
+        // NOVO MÉTODO: Obter recursos com threshold monitoring
+        public List<ResourceType> GetResourcesWithThresholdMonitoring()
+        {
+            return _instanceConfigs.Values
+                .Where(ic => ic.enableThresholdMonitoring)
+                .Select(ic => ic.resourceDefinition.type)
                 .ToList();
         }
 
@@ -121,7 +148,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<EntityResourceSystem>($"🔄 {entityId} {type}: {delta:+#;-#} = {resource.GetCurrentValue()}/{resource.GetMaxValue()}");
+                DebugUtility.LogVerbose<EntityResourceSystem>($"🔄 {entityId} {type}: {current:F1} → {newValue:F1}/{max:F1} ({delta:+#;-#;0})");
             }
         }
 
@@ -145,7 +172,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         
         public Dictionary<ResourceType, IResourceValue> GetAllResources() => new Dictionary<ResourceType, IResourceValue>(_resources);
 
-        // Métodos de conveniência
         [ContextMenu("Take Damage 10")]
         public void TakeDamage() => ModifyResource(ResourceType.Health, -10);
 
@@ -175,7 +201,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<EntityResourceSystem>($"📊 {entityId} Resources:");
             foreach (var resource in _resources)
             {
-                DebugUtility.LogVerbose<EntityResourceSystem>($"   {resource.Key}: {resource.Value.GetCurrentValue()}/{resource.Value.GetMaxValue()}");
+                DebugUtility.LogVerbose<EntityResourceSystem>($"   {resource.Key}: {resource.Value.GetCurrentValue():F1}/{resource.Value.GetMaxValue():F1}");
             }
         }
 
@@ -188,7 +214,38 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 var def = instanceConfig.resourceDefinition;
                 DebugUtility.LogVerbose<EntityResourceSystem>(
                     $"   - {def.type}: {def.initialValue}/{def.maxValue}, " +
-                    $"Canvas: {instanceConfig.targetCanvasId}, AutoFlow: {instanceConfig.hasAutoFlow}");
+                    $"Canvas: {instanceConfig.targetCanvasId}, " +
+                    $"AutoFlow: {instanceConfig.hasAutoFlow}, " +
+                    $"Thresholds: {instanceConfig.enableThresholdMonitoring}");
+            
+                if (instanceConfig.enableThresholdMonitoring && instanceConfig.thresholdConfig != null)
+                {
+                    var thresholds = instanceConfig.thresholdConfig.GetNormalizedSortedThresholds();
+                    DebugUtility.LogVerbose<EntityResourceSystem>($"     Thresholds: {string.Join(", ", thresholds.Select(t => t.ToString("P0")))}");
+                }
+            }
+        }
+
+        [ContextMenu("Debug Threshold Monitoring")]
+        public void DebugThresholdMonitoring()
+        {
+            DebugUtility.LogVerbose<EntityResourceSystem>($"🎯 Threshold Monitoring for {entityId}:");
+            var monitoredResources = GetResourcesWithThresholdMonitoring();
+            DebugUtility.LogVerbose<EntityResourceSystem>($"   Resources with threshold monitoring: {monitoredResources.Count}");
+            
+            foreach (var resourceType in monitoredResources)
+            {
+                var instanceConfig = GetResourceInstanceConfig(resourceType);
+                if (instanceConfig?.thresholdConfig != null)
+                {
+                    var thresholds = instanceConfig.thresholdConfig.GetNormalizedSortedThresholds();
+                    var resource = GetResource(resourceType);
+                    float currentPct = resource?.GetPercentage() ?? 0f;
+                    
+                    DebugUtility.LogVerbose<EntityResourceSystem>(
+                        $"   - {resourceType}: {currentPct:P2} | " +
+                        $"Thresholds: {string.Join(", ", thresholds.Select(t => t.ToString("P0")))}");
+                }
             }
         }
 

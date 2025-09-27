@@ -163,6 +163,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &691683254
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 691683256}
+  - component: {fileID: 691683255}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &691683255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 691683254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e2eff24baac49b1bc27c4a621f27189, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &691683256
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 691683254}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 241.41666, y: 345.79166, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &885771671
 GameObject:
   m_ObjectHideFlags: 0
@@ -394,7 +438,6 @@ GameObject:
   - component: {fileID: 1318779474}
   - component: {fileID: 1318779473}
   - component: {fileID: 1318779472}
-  - component: {fileID: 1318779471}
   - component: {fileID: 1318779470}
   - component: {fileID: 1318779469}
   m_Layer: 7
@@ -403,7 +446,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1318779469
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -449,19 +492,6 @@ MonoBehaviour:
   mainCamera: {fileID: 0}
   moveSpeed: 10
   rotationSpeed: 10
---- !u!114 &1318779471
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1318779468}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f19c26e21b74e84a60fdda2244605ec, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  startPaused: 1
 --- !u!114 &1318779472
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,10 +504,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6796fb734eab4c86969ec909eb24cd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceType: 0
-  thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
-  actorId: player02
-  autoDetectActorId: 1
+  enableDebugLogs: 1
 --- !u!114 &1318779473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -504,7 +531,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   entityId: player02
-  resourceInstances: []
+  resourceInstances:
+  - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
+    targetCanvasId: MainUI2
+    autoFlowConfig: {fileID: 11400000, guid: e8651aab02560ac45bfdf4dba97f49c7, type: 2}
+    hasAutoFlow: 0
+    animationStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    enableAnimation: 1
+    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
+    enableThresholdMonitoring: 1
   autoInitialize: 1
   showDebugLogs: 1
 --- !u!114 &1318779475
@@ -653,10 +688,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6796fb734eab4c86969ec909eb24cd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceType: 0
-  thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
-  actorId: player02
-  autoDetectActorId: 1
+  enableDebugLogs: 1
 --- !u!114 &1389769976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -844,12 +876,16 @@ MonoBehaviour:
     hasAutoFlow: 1
     animationStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     enableAnimation: 1
+    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
+    enableThresholdMonitoring: 1
   - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
     targetCanvasId: MainUI
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     enableAnimation: 1
+    thresholdConfig: {fileID: 0}
+    enableThresholdMonitoring: 0
   autoInitialize: 1
   showDebugLogs: 1
 --- !u!114 &1432878130
@@ -889,10 +925,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6796fb734eab4c86969ec909eb24cd45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceType: 0
-  thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
-  actorId: 
-  autoDetectActorId: 1
+  enableDebugLogs: 1
 --- !u!114 &1432878133
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1681,3 +1714,4 @@ SceneRoots:
   - {fileID: 1432878128}
   - {fileID: 1318779479}
   - {fileID: 1389769982}
+  - {fileID: 691683256}

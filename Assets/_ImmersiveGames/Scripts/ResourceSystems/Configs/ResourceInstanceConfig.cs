@@ -22,5 +22,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         
         [Tooltip("Se a animação está habilitada para este recurso")]
         public bool enableAnimation = true;
+        [Tooltip("Configuração de thresholds para este recurso")]
+        public ResourceThresholdConfig thresholdConfig;
+        
+        [Tooltip("Se o monitoramento de thresholds está habilitado para este recurso")]
+        public bool enableThresholdMonitoring = true;
     }
 }
