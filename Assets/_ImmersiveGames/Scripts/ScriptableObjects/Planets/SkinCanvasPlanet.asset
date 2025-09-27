@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11b4bd1454444c1486a01758f23664aa, type: 3}
   m_Name: SkinCanvasPlanet
   m_EditorClassIdentifier: 
-  configName: Skin Herold
+  configName: CanvasHealth
   modelPrefabs:
-  - {fileID: 5721289832566106543, guid: 790eeebafdfb71048a4b560081f96ada, type: 3}
+  - {fileID: 5301624455124521149, guid: 62e3c9f0aa8f2e04daf85d17375dd214, type: 3}
   modelType: 1
   instantiationMode: 1
   specificIndex: 0

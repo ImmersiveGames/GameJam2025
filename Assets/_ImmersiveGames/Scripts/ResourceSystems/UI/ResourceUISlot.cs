@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using TMPro;
@@ -10,8 +11,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     [DebugLevel(DebugLevel.Logs)]
     public class ResourceUISlot : MonoBehaviour, IResourceUISlot
     {
-        [SerializeField] private string expectedActorId;
-        [SerializeField] private ResourceType expectedType;
+        private IActor _expectedActor;
+        private ResourceType _expectedType;
 
         [Header("UI Components")]
         [SerializeField] private Image fillImage;        
@@ -26,11 +27,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [Header("Debug")]
         [SerializeField] private bool showAnimationDebug;
 
-        public string SlotId => $"{expectedActorId}_{expectedType}";
-        public string ExpectedActorId => expectedActorId;
-        public ResourceType ExpectedType => expectedType;
+        public string SlotId => $"{_expectedActor?.ActorName ?? "Unknown"}_{_expectedType}";
+        public string ExpectedActorId => _expectedActor?.ActorName ?? string.Empty;
+        public ResourceType ExpectedType => _expectedType;
 
-        // Referência para o animator (pode ser injetado ou encontrado)
         private ResourceBarAnimator _animator;
 
         private void Awake()
@@ -38,9 +38,20 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (fillImage == null) fillImage = GetComponentInChildren<Image>();
             if (rootPanel == null) rootPanel = gameObject;
 
-            // Encontra o animator (alternativa: injetar via código)
             _animator = GetComponentInParent<ResourceBarAnimator>();
             ResetToFull();
+        }
+
+        public void InitializeForActor(IActor actor, ResourceType type)
+        {
+            _expectedActor = actor;
+            _expectedType = type;
+            
+            if (actor is MonoBehaviour monoActor)
+            {
+                gameObject.name = $"{monoActor.gameObject.name}_{type}";
+            }
+            
             DebugUtility.LogVerbose<ResourceUISlot>($"🔧 Slot inicializado: {SlotId}");
         }
 
@@ -50,6 +61,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 && ExpectedType == type;
         }
 
+        public bool Matches(IActor actor, ResourceType type)
+        {
+            return _expectedActor == actor && ExpectedType == type;
+        }
+
         public void Configure(IResourceValue data)
         {
             float targetFill = data.GetPercentage();
@@ -57,14 +73,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (valueText != null)
                 valueText.text = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
-            // Delega a animação para o ResourceBarAnimator
             if (_animator != null)
             {
                 _animator.StartAnimation(this, targetFill, style);
             }
             else
             {
-                // Fallback: aplica imediatamente se não houver animator
                 SetFillValues(targetFill, targetFill);
             }
 
@@ -77,7 +91,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
         }
 
-        // Métodos para o animator controlar os valores
         public void SetFillValues(float currentFill, float pendingFill)
         {
             if (fillImage != null)
@@ -112,33 +125,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 valueText.text = "";
 
             SetVisible(false);
-            DebugUtility.LogVerbose<ResourceUISlot>($"🔓 Slot limpo: {SlotId}");
         }
 
         public void SetVisible(bool visible)
         {
             if (rootPanel != null) 
                 rootPanel.SetActive(visible);
-        }
-
-        // 🔹 Testes rápidos pelo inspector (agora delegam para o animator)
-        [ContextMenu("Test Damage Animation")] 
-        private void TestDamage() { Simulate(1f, 0.9f); }
-        
-        [ContextMenu("Test Big Damage Animation")] 
-        private void TestBigDamage() { Simulate(1f, 0.5f); }
-        
-        [ContextMenu("Test Heal Animation")] 
-        private void TestHeal() { Simulate(0.5f, 0.8f); }
-        
-        [ContextMenu("Test Full Heal Animation")] 
-        private void TestFullHeal() { Simulate(0.3f, 1f); }
-
-        private void Simulate(float from, float to)
-        {
-            SetFillValues(from, from);
-            if (_animator != null)
-                _animator.StartAnimation(this, to, style);
         }
     }
 }

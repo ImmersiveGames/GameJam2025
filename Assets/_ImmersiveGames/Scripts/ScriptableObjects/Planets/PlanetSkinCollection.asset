@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   collectionName: PLanetCollection
   modelRootConfig: {fileID: 11400000, guid: 911a88aecbf8b65408c619efb28a70ac, type: 2}
-  canvasRootConfig: {fileID: 0}
+  canvasRootConfig: {fileID: 11400000, guid: e97445377d9b8be4082e8bd64c768141, type: 2}
   fxRootConfig: {fileID: 0}
   soundRootConfig: {fileID: 0}

@@ -6,6 +6,13 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [System.Serializable]
+    public struct ResourceCanvasTarget
+    {
+        public ResourceType resourceType;
+        public string targetCanvasId;
+    }
+
+    [System.Serializable]
     public struct ResourceConfig
     {
         public string name;
@@ -19,6 +26,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class EntityResourceSystem : MonoBehaviour, IEntityResourceSystem
     {
         [SerializeField] private string entityId;
+
+        [Header("Canvas Targeting")]
+        [SerializeField] private string defaultCanvasId = "MainUI";
+        [SerializeField] private List<ResourceCanvasTarget> canvasOverrides = new();
         
         [Header("Resource Configuration")]
         [SerializeField] private List<ResourceConfig> resourceConfigs = new List<ResourceConfig>
@@ -33,6 +44,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private bool showDebugLogs = true;
         
         public float LastDamageTime { get; private set; } = -999f;
+        
 
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
 
@@ -50,6 +62,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 InitializeResources();
             }
         }
+        
 
         // ✅ INICIALIZAÇÃO ÚNICA COM CONFIG DO INSPECTOR
         [ContextMenu("Initialize Resources")]
@@ -92,6 +105,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 DebugUtility.LogVerbose<EntityResourceSystem>($"📊 Resource added: {entityId} - {type} = {initialValue}/{maxValue}");
             }
+        }
+        
+        public string GetTargetCanvasId(ResourceType resourceType)
+        {
+            var overrideConfig = canvasOverrides.FirstOrDefault(x => x.resourceType == resourceType);
+            return string.IsNullOrEmpty(overrideConfig.targetCanvasId) ? defaultCanvasId : overrideConfig.targetCanvasId;
         }
 
         // ✅ MÉTODOS DE MODIFICAÇÃO (usam o NOVO evento)
@@ -177,7 +196,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogVerbose<EntityResourceSystem>($"   {resource.Key}: {resource.Value.GetCurrentValue()}/{resource.Value.GetMaxValue()}");
             }
         }
-
+        [ContextMenu("Debug Canvas Targeting")]
+        public void DebugCanvasTargeting()
+        {
+            DebugUtility.LogVerbose<EntityResourceSystem>($"🎯 Canvas Targeting for {entityId}:");
+            DebugUtility.LogVerbose<EntityResourceSystem>($"   Default Canvas: {defaultCanvasId}");
+            foreach (var resource in _resources)
+            {
+                string targetCanvas = GetTargetCanvasId(resource.Key);
+                DebugUtility.LogVerbose<EntityResourceSystem>($"   - {resource.Key} → {targetCanvas}");
+            }
+        }
+        public string EntityId => entityId;
         public void ClearResources()
         {
             var keys = new List<ResourceType>(_resources.Keys);

@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IResourceUISlot
     {
         string ExpectedActorId { get; }
         ResourceType ExpectedType { get; }
-        bool Matches(string actorId, ResourceType type);
+        bool Matches(IActor actor, ResourceType type);
         void Configure(IResourceValue data);
         void Clear();
         void SetVisible(bool visible);
@@ -32,13 +34,25 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     }
     public interface IEntityResourceSystem
     {
-        string ActorId { get; }
-        void AddResource(ResourceType type, int initialValue, int maxValue);
-        void RemoveResource(ResourceType type);
+        string EntityId { get; }
+        bool IsInitialized { get; }
+
+        // Consulta
         IResourceValue GetResource(ResourceType type);
         bool HasResource(ResourceType type);
+        Dictionary<ResourceType, IResourceValue> GetAllResources();
+
+        // Canvas targeting (necessário para decidir onde criar a UI)
+        string GetTargetCanvasId(ResourceType resourceType);
+
+        // Modificadores básicos (opcionais para Orchestrator, mas úteis)
         void ModifyResource(ResourceType type, float delta);
         void SetResourceValue(ResourceType type, float value);
-        Dictionary<ResourceType, IResourceValue> GetAllResources();
+    }
+    public interface IDynamicCanvasBinder
+    {
+        bool CreateSlotsForActor(IActor actor, EntityResourceSystem resourceSystem);
+        void RemoveSlotsForActor(IActor actor);
+        Transform GetSlotParent();
     }
 }
