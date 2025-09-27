@@ -1,11 +1,11 @@
-﻿// EntityResourceBinder.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
@@ -50,6 +50,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogError<EntityResourceBinder>($"❌ EntityResourceSystem não encontrado em {_actorId}");
             }
         }
+
         private void DiscoverWorldBinder()
         {
             _worldBinder = GetComponentInChildren<WorldSpaceResourceBinder>(true);
@@ -58,10 +59,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _worldBinder.Initialize(_actorId, _resourceSystem);
                 DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 WorldBinder encontrado para {_actorId}");
             }
-            else
-            {
-                DebugUtility.LogWarning<EntityResourceBinder>($"⚠️ WorldSpaceResourceBinder não encontrado para {_actorId}");
-            }
+            // Removido warning, pois algumas entidades (ex: player01) não têm WorldSpaceResourceBinder
         }
 
         private void OnBinderRegistered(CanvasBinderRegisteredEvent evt)
@@ -69,7 +67,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (!_canvasBinders.Contains(evt.Binder))
             {
                 _canvasBinders.Add(evt.Binder);
-                DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder adicionado: {evt.Binder.CanvasId}");
+                DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder adicionado dinamicamente: {evt.Binder.CanvasId}");
                 BindAllResources();
             }
         }
@@ -79,19 +77,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _canvasBinders.Clear();
             if (DependencyManager.Instance != null)
             {
-                // Busca binders na cena "UI" (ou outras cenas relevantes)
-                string[] uiScenes = { "UI" }; // Ajuste se houver outras cenas UI
-                foreach (var sceneName in uiScenes)
+                // Busca binders em todas as cenas carregadas
+                for (int i = 0; i < SceneManager.sceneCount; i++)
                 {
+                    var scene = SceneManager.GetSceneAt(i);
                     var binders = new List<ICanvasResourceBinder>();
-                    if (DependencyManager.Instance.TryGetForScene<ICanvasResourceBinder>(sceneName, out var binder))
+                    if (DependencyManager.Instance.TryGetForScene<ICanvasResourceBinder>(scene.name, out var binder))
                     {
                         binders.Add(binder);
-                        DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder encontrado na cena {sceneName}: {binder.CanvasId}");
+                        DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 CanvasBinder encontrado na cena {scene.name}: {binder.CanvasId}");
                     }
                     _canvasBinders.AddRange(binders);
                 }
                 DebugUtility.LogVerbose<EntityResourceBinder>($"🔍 Total de CanvasBinders encontrados: {_canvasBinders.Count}");
+                if (_canvasBinders.Count == 0)
+                {
+                    DebugUtility.LogWarning<EntityResourceBinder>($"⚠️ Nenhum CanvasResourceBinder encontrado nas cenas carregadas.");
+                }
             }
         }
 
@@ -110,20 +112,20 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             bool boundToAny = false;
             
-            foreach (var binder in _canvasBinders.Where(binder => binder.TryBindActor(_actorId, type, data)))
+            foreach (var binder in _canvasBinders)
             {
-                boundToAny = true;
+                if (binder.TryBindActor(_actorId, type, data))
+                {
+                    boundToAny = true;
+                    DebugUtility.LogVerbose<EntityResourceBinder>($"✅ Recurso vinculado: {_actorId}.{type} em {binder.CanvasId}");
+                }
             }
             
             _worldBinder?.BindResource(type, data);
 
-            if (!boundToAny)
+            if (!boundToAny && _worldBinder == null)
             {
-                DebugUtility.LogWarning<EntityResourceBinder>($"⚠️ Nenhum canvas binder encontrado para {_actorId}.{type}");
-            }
-            else
-            {
-                DebugUtility.LogVerbose<EntityResourceBinder>($"✅ Recurso vinculado: {_actorId}.{type}");
+                DebugUtility.LogWarning<EntityResourceBinder>($"⚠️ Nenhum slot encontrado para {_actorId}.{type} em nenhuma cena ou WorldSpaceResourceBinder.");
             }
         }
 
@@ -151,6 +153,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             DebugUtility.LogVerbose<EntityResourceBinder>($"🎯 Entity {_actorId}:");
             DebugUtility.LogVerbose<EntityResourceBinder>($"   Canvas Binders: {_canvasBinders.Count}");
+            foreach (var binder in _canvasBinders)
+            {
+                DebugUtility.LogVerbose<EntityResourceBinder>($"     - {binder.CanvasId}");
+            }
             DebugUtility.LogVerbose<EntityResourceBinder>($"   World Binder: {(_worldBinder != null ? "Sim" : "Não")}");
             
             if (_resourceSystem != null)

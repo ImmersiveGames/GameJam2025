@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void RegisterForScene()
         {
-            string sceneName = gameObject.scene.name; // Cena atual (ex: "UI")
+            string sceneName = gameObject.scene.name;
             DependencyManager.Instance.RegisterForScene<ICanvasResourceBinder>(sceneName, this, allowOverride: true);
             EventBus<CanvasBinderRegisteredEvent>.Raise(new CanvasBinderRegisteredEvent(this));
             DebugUtility.LogVerbose<CanvasResourceBinder>($"🌐 Registrado na cena {sceneName}: {canvasId}");
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return true;
             }
 
-            DebugUtility.LogWarning<CanvasResourceBinder>($"❌ Slot não encontrado: {slotId}");
+            DebugUtility.LogVerbose<CanvasResourceBinder>($"🔍 Slot não encontrado para {slotId} no canvas {canvasId}");
             return false;
         }
 
@@ -99,10 +99,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_slots.TryGetValue(slotId, out var slot))
             {
                 slot.Configure(data);
+                DebugUtility.LogVerbose<CanvasResourceBinder>($"🔄 Slot atualizado: {slotId} no canvas {canvasId}");
             }
             else
             {
-                DebugUtility.LogWarning<CanvasResourceBinder>($"❌ Slot não encontrado para atualização: {slotId}");
+                DebugUtility.LogVerbose<CanvasResourceBinder>($"🔍 Slot não encontrado para atualização: {slotId} no canvas {canvasId}");
             }
         }
 
@@ -117,9 +118,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void DebugSlots()
         {
             DebugUtility.LogVerbose<CanvasResourceBinder>($"🎨 Canvas {canvasId} Slots ({_slots.Count}):");
-            foreach (var slot in _slots.Values)
+            foreach (var slot in _slots)
             {
-                DebugUtility.LogVerbose<CanvasResourceBinder>($"   {slot.SlotId} (Actor: {slot.ExpectedActorId}, Type: {slot.ExpectedType})");
+                DebugUtility.LogVerbose<CanvasResourceBinder>($"   {slot.Key} (Actor: {slot.Value.ExpectedActorId}, Type: {slot.Value.ExpectedType})");
             }
         }
     }

@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     public class DependencyInjector
@@ -9,6 +12,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         private readonly ObjectServiceRegistry _objectRegistry;
         private readonly SceneServiceRegistry _sceneRegistry;
         private readonly GlobalServiceRegistry _globalRegistry;
+        private readonly HashSet<object> _injectedObjectsThisFrame = new();
 
         public DependencyInjector(ObjectServiceRegistry objectRegistry, SceneServiceRegistry sceneRegistry, GlobalServiceRegistry globalRegistry)
         {
@@ -25,6 +29,12 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 throw new ArgumentNullException(nameof(target));
             }
 
+            if (!_injectedObjectsThisFrame.Add(target))
+            {
+                DebugUtility.LogVerbose(typeof(DependencyInjector), $"Injeção ignorada para {target.GetType().Name}: já injetado neste frame.");
+                return;
+            }
+
             var type = target.GetType();
             var fields = type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
             foreach (var field in fields)
@@ -38,13 +48,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 object service = null;
                 bool serviceFound = false;
 
-                // Usar reflexão para chamar TryGet<T> com fieldType
                 var tryGetMethod = typeof(ServiceRegistry).GetMethod("TryGet", BindingFlags.Instance | BindingFlags.Public);
                 if (tryGetMethod != null)
                 {
                     var genericTryGet = tryGetMethod.MakeGenericMethod(fieldType);
 
-                    // Tentar escopo objeto
                     if (objectId != null)
                     {
                         var parameters = new object[] { objectId, null };
@@ -56,7 +64,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         }
                     }
 
-                    // Tentar escopo cena
                     if (!serviceFound)
                     {
                         string activeScene = SceneManager.GetActiveScene().name;
@@ -69,7 +76,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         }
                     }
 
-                    // Tentar escopo global
                     if (!serviceFound)
                     {
                         var parameters = new object[] { null, null };
@@ -91,9 +97,19 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     DebugUtility.LogError(typeof(DependencyInjector), 
                         $"Falha ao injetar {fieldType.Name} para {type.Name}: serviço não encontrado. " +
                         "Certifique-se de registrar o serviço no DependencyManager no escopo apropriado (objeto, cena ou global).");
-
                 }
             }
+
+            if (target is MonoBehaviour mb)
+            {
+                mb.StartCoroutine(ClearInjectedObjectsNextFrame());
+            }
+        }
+
+        private System.Collections.IEnumerator ClearInjectedObjectsNextFrame()
+        {
+            yield return null;
+            _injectedObjectsThisFrame.Clear();
         }
     }
 
