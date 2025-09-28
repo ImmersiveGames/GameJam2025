@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   configName: CanvasHealth
   modelPrefabs:
-  - {fileID: 5301624455124521149, guid: 62e3c9f0aa8f2e04daf85d17375dd214, type: 3}
+  - {fileID: 5103549501105814353, guid: 790eeebafdfb71048a4b560081f96ada, type: 3}
   modelType: 1
   instantiationMode: 1
   specificIndex: 0

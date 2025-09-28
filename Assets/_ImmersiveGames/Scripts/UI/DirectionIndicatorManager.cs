@@ -29,7 +29,7 @@ public class DirectionIndicatorManager : MonoBehaviour
     private void SpawnIndicator(Transform targetIndicator, Sprite targetIcon, bool isHidden)
     {
         Transform indicator = Instantiate(indicatorObject, transform.position, Quaternion.identity);
-        indicator.SetParent(this.transform);
+        indicator.SetParent(transform);
         DirectionIndicatorObjectUI directionIndicatorObjectUI = indicator.GetComponent<DirectionIndicatorObjectUI>();
         directionIndicatorObjectUI.Setup(targetIndicator, targetIcon, isHidden);
     }

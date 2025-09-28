@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var newMaterials = new Material[materialCount];
             for (int i = 0; i < materialCount; i++)
             {
-                newMaterials[i] = planetColorMaterials.Random<Material>();
+                newMaterials[i] = planetColorMaterials.Random();
             }
 
             // Aplica nos renderizadores compatíveis

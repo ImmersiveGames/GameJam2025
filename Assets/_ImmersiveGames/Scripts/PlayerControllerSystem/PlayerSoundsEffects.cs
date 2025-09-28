@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             SoundManager.Instance.CreateSound()
                 .WithSoundData(soundData)
                 .WithRandomPitch(soundData.randomPitch)
-                .WithPosition(this.transform.position)
+                .WithPosition(transform.position)
                 .Play();
         }
 

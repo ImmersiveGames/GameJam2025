@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             if (component == null) return false;
 
             // Tenta no Actor atual
-            if (component.TryGetComponent<T>(out result))
+            if (component.TryGetComponent(out result))
             {
                 return true;
             }
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             Transform current = component.transform.parent;
             while (current != null)
             {
-                if (current.TryGetComponent<T>(out result))
+                if (current.TryGetComponent(out result))
                 {
                     return true;
                 }
@@ -49,17 +49,17 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             if (component == null) return false;
 
             // Tenta no Actor atual
-            if (component.TryGetComponent<T>(out result))return true;
+            if (component.TryGetComponent(out result))return true;
 
             // Busca nos filhos
             foreach (Transform child in component.transform)
             {
                 if (!includeInactive && !child.gameObject.activeInHierarchy) continue;
 
-                if (child.TryGetComponent<T>(out result))return true;
+                if (child.TryGetComponent(out result))return true;
 
                 // Busca recursivamente nos filhos dos filhos
-                if (child.TryGetComponentInChildren<T>(out result, includeInactive))
+                if (child.TryGetComponentInChildren(out result, includeInactive))
                 {
                     return true;
                 }

@@ -247,8 +247,7 @@ MonoBehaviour:
   valueText: {fileID: 4422880494650787627}
   iconImage: {fileID: 0}
   rootPanel: {fileID: 0}
-  style: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-  showAnimationDebug: 1
+  defaultStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
 --- !u!114 &2822330515664230844
 MonoBehaviour:
   m_ObjectHideFlags: 0

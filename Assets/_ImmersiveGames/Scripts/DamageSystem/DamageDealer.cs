@@ -18,10 +18,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (!IsInDamageableLayer(other.gameObject)) return;
             
             // Opcional: ainda pode verificar se não é si mesmo (dependendo da configuração)
-            if (!damageSelf && other.gameObject == this.gameObject) return;
-            var resource = other.gameObject.GetComponentInParent<EntityResourceSystem>();
+            if (!damageSelf && other.gameObject == gameObject) return;
+            /*var resource = other.gameObject.GetComponentInParent<EntityResourceSystem>();
             if(!resource) return;
-            resource.ModifyResource(resourceType,damageDeal);
+            resource.ModifyResource(resourceType,damageDeal);*/
             DebugUtility.LogVerbose<DamageDealer>($"Dealt {damageDeal} damage to {other.gameObject.name}", "yellow");
         }
         
