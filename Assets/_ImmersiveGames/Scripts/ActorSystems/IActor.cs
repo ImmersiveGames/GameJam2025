@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
     public interface IActor : IEntity
     {
         string ActorName { get; }
+        string ActorId { get; }
     }
     public interface IHasSkin
     {

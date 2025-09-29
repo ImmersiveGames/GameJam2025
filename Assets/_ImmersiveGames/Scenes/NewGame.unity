@@ -183,7 +183,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &388071191
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,7 +196,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: planet03
 --- !u!114 &388071192
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -209,10 +208,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 326432608c844b57971bdd2fb1fa3d10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entityId: planet03
   resourceInstances:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
-    targetCanvasId: planetcanvas
+    canvasTargetMode: 0
+    customCanvasId: 
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -244,6 +243,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60244ffd351b456d8494a571a02353a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!54 &388071195
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -319,7 +319,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: planet02
 --- !u!114 &449169341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -332,10 +331,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 326432608c844b57971bdd2fb1fa3d10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entityId: planet02
   resourceInstances:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
-    targetCanvasId: planetcanvas
+    canvasTargetMode: 1
+    customCanvasId: planetcanvas
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -367,6 +366,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60244ffd351b456d8494a571a02353a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!54 &449169344
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -675,6 +675,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72a9032b8dde457e96475378c457a7bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!114 &1432878134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -802,7 +803,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: player01
 --- !u!114 &1432878140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -815,10 +815,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 326432608c844b57971bdd2fb1fa3d10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entityId: player01
   resourceInstances:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
-    targetCanvasId: MainUI
+    canvasTargetMode: 0
+    customCanvasId: 
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -1073,7 +1073,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: planet01
 --- !u!114 &1666611554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1086,10 +1085,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 326432608c844b57971bdd2fb1fa3d10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entityId: planet01
   resourceInstances:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
-    targetCanvasId: planetcanvas
+    canvasTargetMode: 1
+    customCanvasId: planetcanvas
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -1121,6 +1120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60244ffd351b456d8494a571a02353a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!54 &1666611557
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1199,7 +1199,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: player02
 --- !u!114 &1667814063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1212,10 +1211,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 326432608c844b57971bdd2fb1fa3d10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entityId: player02
   resourceInstances:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
-    targetCanvasId: MainUI2
+    canvasTargetMode: 2
+    customCanvasId: MainUI2
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -1223,7 +1222,8 @@ MonoBehaviour:
     thresholdConfig: {fileID: 0}
     enableThresholdMonitoring: 0
   - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
-    targetCanvasId: MainUI2
+    canvasTargetMode: 2
+    customCanvasId: MainUI2
     autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
@@ -1300,6 +1300,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72a9032b8dde457e96475378c457a7bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!114 &1667814068
 MonoBehaviour:
   m_ObjectHideFlags: 0

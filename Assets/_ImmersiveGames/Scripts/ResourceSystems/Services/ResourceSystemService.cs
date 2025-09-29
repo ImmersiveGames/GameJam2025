@@ -32,21 +32,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _instanceConfigs[def.type] = cfg;
             }
         }
+        public void Set(ResourceType type, float value)
+        {
+            if (!_resources.TryGetValue(type, out var resource)) return;
 
-        public bool IsInitialized => _resources.Count > 0;
-        public bool HasResource(ResourceType type) => _resources.ContainsKey(type);
+            float current = resource.GetCurrentValue();
+            float newValue = Mathf.Clamp(value, 0, resource.GetMaxValue());
+
+            if (Mathf.Approximately(current, newValue)) return;
+
+            resource.SetCurrentValue(newValue);
+            ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
+        }
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);
         public IReadOnlyDictionary<ResourceType, IResourceValue> GetAll() => _resources;
         public ResourceInstanceConfig GetInstanceConfig(ResourceType type) => _instanceConfigs.GetValueOrDefault(type);
-
-        public List<ResourceAutoFlowConfig> GetAutoFlowConfigs()
-        {
-            return _instanceConfigs.Values
-                .Where(ic => ic.hasAutoFlow && ic.autoFlowConfig != null)
-                .Select(ic => ic.autoFlowConfig)
-                .ToList();
-        }
 
         public void Modify(ResourceType type, float delta)
         {
@@ -58,27 +59,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             if (Mathf.Approximately(current, newValue)) return;
 
-            resource.SetCurrentValue(newValue);
+            switch (delta)
+            {
+                case > 0:
+                    resource.Increase(delta);
+                    break;
+                case < 0:
+                    resource.Decrease(-delta);
+                    break;
+                default:
+                    resource.SetCurrentValue(newValue);
+                    break;
+            }
 
             if (delta < 0) LastDamageTime = Time.time;
 
             ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
-        }
-
-        public void Set(ResourceType type, float value)
-        {
-            if (!_resources.TryGetValue(type, out var resource)) return;
-            resource.SetCurrentValue(Mathf.Clamp(value, 0, resource.GetMaxValue()));
-            ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
-        }
-
-        public void RestoreAll()
-        {
-            foreach (var kv in _resources)
-            {
-                kv.Value.SetCurrentValue(kv.Value.GetMaxValue());
-                ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, kv.Key, kv.Value));
-            }
         }
 
         public void Dispose()

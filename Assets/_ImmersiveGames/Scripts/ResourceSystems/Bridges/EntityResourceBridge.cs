@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -9,20 +10,24 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
     [DefaultExecutionOrder(-5)]
     public class EntityResourceBridge : MonoBehaviour
     {
-        [SerializeField] private string entityId;
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
-
+        
+        private IActor _actor;
         private ResourceSystemService _service;
         private IActorResourceOrchestrator _orchestrator;
 
         private void Awake()
         {
-            if (string.IsNullOrEmpty(entityId))
-                entityId = gameObject.name;
+            _actor = GetComponent<IActor>();
+            if (_actor == null)
+            {
+                Debug.LogWarning($"[EntityResourceBridge] No IActor found on {gameObject.name}. Disabling.");
+                enabled = false;
+                return;
+            }
 
-            _service = new ResourceSystemService(entityId, resourceInstances);
-
-            DependencyManager.Instance.RegisterForObject(entityId, _service);
+            _service = new ResourceSystemService(_actor.ActorId, resourceInstances);
+            DependencyManager.Instance.RegisterForObject(_actor.ActorId, _service);
 
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
@@ -36,10 +41,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 
         private void OnDestroy()
         {
-            if (_orchestrator != null)
-                _orchestrator.UnregisterActor(entityId);
+            _orchestrator?.UnregisterActor(_actor.ActorId);
 
-            DependencyManager.Instance.ClearObjectServices(entityId);
+            DependencyManager.Instance.ClearObjectServices(_actor.ActorId);
             _service?.Dispose();
             _service = null;
         }
@@ -48,7 +52,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
         private void DebugPrintResources()
         {
             var all = _service.GetAll();
-            Debug.Log($"[EntityResourceBridge] {entityId} resources count: {all.Count}");
+            Debug.Log($"[EntityResourceBridge] {_actor.ActorId} resources count: {all.Count}");
             foreach (var kv in all)
                 Debug.Log($"  - {kv.Key}: {kv.Value.GetCurrentValue()}/{kv.Value.GetMaxValue()}");
         }

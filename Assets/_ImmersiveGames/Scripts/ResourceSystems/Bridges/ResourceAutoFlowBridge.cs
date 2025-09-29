@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
@@ -11,10 +13,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 
         private ResourceAutoFlowService _autoFlow;
         private ResourceSystemService _resourceSystem;
+        private IActor _actor;
 
         private void Awake()
         {
-            var actorId = gameObject.name;
+            _actor = GetComponent<IActor>();
+            if (_actor == null)
+            {
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>($"No IActor found on {name}. Disabling.");
+                enabled = false;
+                return;
+            }
+            string actorId = _actor.ActorId;
             if (!DependencyManager.Instance.TryGetForObject(actorId, out _resourceSystem))
             {
                 var bridge = GetComponent<EntityResourceBridge>();

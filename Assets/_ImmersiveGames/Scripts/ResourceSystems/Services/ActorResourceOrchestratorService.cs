@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
@@ -14,16 +16,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public IReadOnlyCollection<string> RegisteredActors => _actors.Keys;
         public IReadOnlyCollection<string> RegisteredCanvases => _canvases.Keys;
+        
+        private const string MainUICanvasId = "MainUI";
 
         public void RegisterActor(ResourceSystemService service)
         {
             if (service == null) return;
-            if (!_actors.TryAdd(service.EntityId, service)) return;
+            string id = service.EntityId;
+            if (!_actors.TryAdd(id, service)) return;
 
             service.ResourceUpdated += OnResourceUpdated;
 
             foreach (var canvas in _canvases.Values)
                 CreateSlotsForActorInCanvas(service, canvas);
+
+            Debug.Log($"[Orchestrator] Registered actor '{id}'");
         }
 
         public void UnregisterActor(string actorId)
@@ -42,6 +49,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             foreach (var actor in _actors.Values)
                 CreateSlotsForActorInCanvas(actor, binder);
+
+            Debug.Log($"[Orchestrator] Registered canvas '{binder.CanvasId}'");
         }
 
         public void UnregisterCanvas(string canvasId)
@@ -57,7 +66,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             if (actorSvc == null) return;
 
             var instanceConfig = actorSvc.GetInstanceConfig(resourceType);
-            string targetCanvasId = instanceConfig != null ? instanceConfig.targetCanvasId : "MainUI";
+            string targetCanvasId = ResolveTargetCanvasId(instanceConfig, actorId);
 
             if (!string.IsNullOrEmpty(targetCanvasId) && _canvases.TryGetValue(targetCanvasId, out var canvas))
             {
@@ -65,9 +74,24 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             }
             else
             {
-                foreach (var c in _canvases.Values)
-                    c.UpdateResourceForActor(actorId, resourceType, evt.NewValue);
+                // Removido fallback "update all" para evitar slots em canvases errados; adicione warning
+                Debug.LogWarning($"[Orchestrator] Target canvas '{targetCanvasId}' not found for actor '{actorId}'. No update applied.");
             }
+        }
+        
+        private string ResolveTargetCanvasId(ResourceInstanceConfig config, string actorId)
+        {
+            if (config == null) return MainUICanvasId;
+
+            string resolved = config.canvasTargetMode switch
+            {
+                CanvasTargetMode.Default => MainUICanvasId,
+                CanvasTargetMode.ActorSpecific => $"{actorId}_Canvas",
+                CanvasTargetMode.Custom => config.customCanvasId,
+                _ => MainUICanvasId
+            };
+            Debug.Log($"[Orchestrator] Resolved target CanvasId: '{resolved}' for actor '{actorId}' (mode: {config.canvasTargetMode})");
+            return resolved;
         }
 
         private void CreateSlotsForActorInCanvas(ResourceSystemService actorSvc, CanvasResourceBinder canvas)
@@ -78,9 +102,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 var resourceType = kv.Key;
                 var instanceConfig = actorSvc.GetInstanceConfig(resourceType);
-                string targetCanvasId = instanceConfig != null ? instanceConfig.targetCanvasId : "MainUI";
+                string resolvedTarget = ResolveTargetCanvasId(instanceConfig, actorSvc.EntityId);
 
-                if (targetCanvasId == canvas.CanvasId)
+                if (resolvedTarget == canvas.CanvasId)
                     canvas.CreateSlotForActor(actorSvc.EntityId, resourceType, kv.Value, instanceConfig);
             }
         }

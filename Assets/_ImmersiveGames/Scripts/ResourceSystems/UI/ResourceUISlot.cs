@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 valueText.text = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
             SetFillValues(pct, pct);
-            SetVisible(true);
+            SetVisible(true); // Force visibilidade inicial, mesmo sem update
         }
 
         public void SetFillValues(float currentFill, float pendingFill)

@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
@@ -11,10 +13,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class CanvasResourceBinder : MonoBehaviour
     {
         [SerializeField] private string canvasId;
+        [SerializeField] private bool autoGenerateCanvasId = false; // Enable to auto-generate ID
         [SerializeField] private ResourceUISlot slotPrefab;
         [SerializeField] private Transform dynamicSlotsParent;
         [SerializeField] private bool persistAcrossScenes;
-        [SerializeField] private int initialPoolSize = 8;
+        [SerializeField] private int initialPoolSize = 5;
 
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceUISlot>> _dynamicSlots = new();
         private readonly Queue<ResourceUISlot> _slotPool = new();
@@ -22,15 +25,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private IActorResourceOrchestrator _orchestrator;
         private ResourceBarAnimator _animator;
 
-        public string CanvasId => string.IsNullOrEmpty(canvasId) ? $"{gameObject.scene.name}_{gameObject.name}" : canvasId;
+        public string CanvasId { get; private set; } // Now set in Awake
 
         private void Awake()
         {
+            SetupCanvasId();
+
             if (persistAcrossScenes) DontDestroyOnLoad(gameObject);
             if (dynamicSlotsParent == null) dynamicSlotsParent = transform;
 
             if (slotPrefab == null)
-                Debug.LogWarning($"CanvasResourceBinder on {name} has no slotPrefab assigned.");
+                Debug.LogWarning($"[CanvasResourceBinder] on {name} has no slotPrefab assigned.");
 
             for (int i = 0; i < initialPoolSize && slotPrefab != null; i++)
             {
@@ -39,7 +44,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _slotPool.Enqueue(s);
             }
 
-            // animator lookup
             _animator = GetComponentInParent<ResourceBarAnimator>() ?? FindFirstObjectByType<ResourceBarAnimator>();
 
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
@@ -50,6 +54,34 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _orchestrator.RegisterCanvas(this);
+            Debug.Log($"[CanvasResourceBinder] Registered with ID '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'."); // Debug para rastrear
+        }
+
+        private void SetupCanvasId()
+        {
+            if (!string.IsNullOrEmpty(canvasId))
+            {
+                CanvasId = canvasId;
+                Debug.Log($"[CanvasResourceBinder] Using manual CanvasId: {CanvasId}");
+                return;
+            }
+
+            if (!DependencyManager.Instance.TryGetGlobal(out IUniqueIdFactory factory))
+            {
+                factory = new UniqueIdFactory();
+                DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(factory);
+            }
+
+            if (autoGenerateCanvasId)
+            {
+                CanvasId = factory.GenerateId(gameObject, "Canvas");
+            }
+            else
+            {
+                CanvasId = $"{gameObject.scene.name}_{gameObject.name}";
+            }
+
+            Debug.Log($"[CanvasResourceBinder] Set CanvasId: {CanvasId} (auto: {autoGenerateCanvasId})");
         }
 
         private ResourceUISlot GetSlotFromPool()

@@ -356,7 +356,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c4cd93fbf7e4c04a9094b2a8edea6a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canvasId: planetcanvas
+  canvasId: 
+  autoGenerateCanvasId: 1
   slotPrefab: {fileID: 2101310795919967380, guid: d816ec07748ef214b93e58a82f57527b, type: 3}
   dynamicSlotsParent: {fileID: 3071241731630620344}
   persistAcrossScenes: 0
