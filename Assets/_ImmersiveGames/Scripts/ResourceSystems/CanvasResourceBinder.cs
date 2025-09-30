@@ -1,10 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
+using UnityEngine.Pool; // Reaproveita pooling nativo da Unity
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bridges;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
@@ -12,40 +15,33 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     [DefaultExecutionOrder(-50)]
     public class CanvasResourceBinder : MonoBehaviour
     {
+        [Header("Identification")]
         [SerializeField] private string canvasId;
-        [SerializeField] private bool autoGenerateCanvasId = false; // Enable to auto-generate ID
+        [SerializeField] private bool autoGenerateCanvasId = false;
+
+        [Header("Pool & Prefab")]
         [SerializeField] private ResourceUISlot slotPrefab;
         [SerializeField] private Transform dynamicSlotsParent;
-        [SerializeField] private bool persistAcrossScenes;
         [SerializeField] private int initialPoolSize = 5;
+        [SerializeField] private bool persistAcrossScenes;
 
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceUISlot>> _dynamicSlots = new();
-        private readonly Queue<ResourceUISlot> _slotPool = new();
-
+        private ObjectPool<ResourceUISlot> _pool;
         private IActorResourceOrchestrator _orchestrator;
-        private ResourceBarAnimator _animator;
-
-        public string CanvasId { get; private set; } // Now set in Awake
+        private string _canvasIdResolved;
+        public string CanvasId => _canvasIdResolved;
 
         private void Awake()
         {
             SetupCanvasId();
-
+            
             if (persistAcrossScenes) DontDestroyOnLoad(gameObject);
             if (dynamicSlotsParent == null) dynamicSlotsParent = transform;
+            if (slotPrefab == null) DebugUtility.LogWarning<CanvasResourceBinder>($"slotPrefab not assigned on {name}");
 
-            if (slotPrefab == null)
-                Debug.LogWarning($"[CanvasResourceBinder] on {name} has no slotPrefab assigned.");
+            InitializePool();
 
-            for (int i = 0; i < initialPoolSize && slotPrefab != null; i++)
-            {
-                var s = Instantiate(slotPrefab, dynamicSlotsParent);
-                s.gameObject.SetActive(false);
-                _slotPool.Enqueue(s);
-            }
-
-            _animator = GetComponentInParent<ResourceBarAnimator>() ?? FindFirstObjectByType<ResourceBarAnimator>();
-
+            // Setup orchestrator
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 var orchestrator = new ActorResourceOrchestratorService();
@@ -54,15 +50,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _orchestrator.RegisterCanvas(this);
-            Debug.Log($"[CanvasResourceBinder] Registered with ID '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'."); // Debug para rastrear
+            DebugUtility.LogVerbose<CanvasResourceBinder>($"Registered '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'.");
         }
-
+        
         private void SetupCanvasId()
         {
             if (!string.IsNullOrEmpty(canvasId))
             {
-                CanvasId = canvasId;
-                Debug.Log($"[CanvasResourceBinder] Using manual CanvasId: {CanvasId}");
+                _canvasIdResolved = canvasId;
                 return;
             }
 
@@ -73,37 +68,34 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             if (autoGenerateCanvasId)
-            {
-                CanvasId = factory.GenerateId(gameObject, "Canvas");
-            }
+                _canvasIdResolved = factory.GenerateId(gameObject, "Canvas");
             else
-            {
-                CanvasId = $"{gameObject.scene.name}_{gameObject.name}";
-            }
-
-            Debug.Log($"[CanvasResourceBinder] Set CanvasId: {CanvasId} (auto: {autoGenerateCanvasId})");
+                _canvasIdResolved = $"{gameObject.scene.name}_{gameObject.name}";
         }
-
-        private ResourceUISlot GetSlotFromPool()
+        
+        private void InitializePool()
         {
-            while (_slotPool.Count > 0)
+            _pool = new ObjectPool<ResourceUISlot>(
+                createFunc: () => Instantiate(slotPrefab, dynamicSlotsParent),
+                actionOnGet: s => s.gameObject.SetActive(true),
+                actionOnRelease: s => { s.Clear(); s.gameObject.SetActive(false); },
+                actionOnDestroy: s => Destroy(s.gameObject),
+                collectionCheck: false,
+                defaultCapacity: initialPoolSize,
+                maxSize: 10
+            );
+
+            // Prewarm
+            for (int i = 0; i < initialPoolSize; i++)
             {
-                var s = _slotPool.Dequeue();
-                if (s != null) { s.gameObject.SetActive(true); return s; }
+                var tmp = _pool.Get();
+                _pool.Release(tmp);
             }
-
-            if (slotPrefab == null) return null;
-            return Instantiate(slotPrefab, dynamicSlotsParent);
         }
-
-        private void ReturnSlotToPool(ResourceUISlot slot)
-        {
-            if (slot == null) return;
-            slot.Clear();
-            slot.gameObject.SetActive(false);
-            _slotPool.Enqueue(slot);
-        }
-
+        
+        private ResourceUISlot GetSlotFromPool() => _pool?.Get();
+        private void ReturnSlotToPool(ResourceUISlot slot) => _pool?.Release(slot);
+        
         public void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
         {
             if (string.IsNullOrEmpty(actorId) || slotPrefab == null) return;
@@ -116,7 +108,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (actorSlots.TryGetValue(resourceType, out var existing) && existing != null)
             {
-                existing.Configure(data);
+                // already exists
                 return;
             }
 
@@ -124,61 +116,45 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (slot == null) return;
 
             slot.InitializeForActorId(actorId, resourceType, instanceConfig);
-
-            // Prefer animator if instance wants animation and animator exists
-            if (instanceConfig is { enableAnimation: true } && _animator != null)
-            {
-                // set immediate values then animate
-                slot.SetFillValues(data.GetPercentage(), data.GetPercentage());
-                _animator.StartAnimation(slot, data.GetPercentage(), instanceConfig.animationStyle ?? slot.DefaultStyle);
-            }
-            else
-            {
-                slot.Configure(data);
-            }
-
             actorSlots[resourceType] = slot;
-        }
 
+            // Configure initial state (delegates to strategy)
+            slot.Configure(data);
+        }
         public void UpdateResourceForActor(string actorId, ResourceType resourceType, IResourceValue data)
         {
             if (_dynamicSlots.TryGetValue(actorId, out var actorSlots) && actorSlots.TryGetValue(resourceType, out var slot) && slot != null)
             {
-                var inst = slot.InstanceConfig;
-                if (inst is { enableAnimation: true } && _animator != null)
-                {
-                    _animator.StartAnimation(slot, data.GetPercentage(), inst.animationStyle ?? slot.DefaultStyle);
-                }
-                else
-                {
-                    slot.Configure(data);
-                }
+                slot.Configure(data); // strategy will animate or snap
                 return;
             }
 
             // create if missing
             CreateSlotForActor(actorId, resourceType, data);
         }
-
         private void RemoveSlotsForActor(string actorId)
         {
             if (!_dynamicSlots.TryGetValue(actorId, out var actorSlots)) return;
-
             foreach (var slot in actorSlots.Values.ToList())
+            {
                 if (slot != null) ReturnSlotToPool(slot);
-
+            }
             _dynamicSlots.Remove(actorId);
         }
-
+        
         private void ClearAllSlots()
         {
             foreach (var actorId in _dynamicSlots.Keys.ToList())
                 RemoveSlotsForActor(actorId);
 
-            while (_slotPool.Count > 0)
+            // clear pool
+            if (_pool == null) return;
+            // Destroy pooled objects
+            while (true)
             {
-                var s = _slotPool.Dequeue();
-                if (s != null) Destroy(s.gameObject);
+                // no direct enumerator on ObjectPool; we assume pool's Clear will destroy items via actionOnDestroy
+                _pool.Clear();
+                break;
             }
         }
 
@@ -191,7 +167,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [ContextMenu("Debug Slots State")]
         private void DebugSlots()
         {
-            Debug.Log($"Canvas {CanvasId} -> dynamic actors: {_dynamicSlots.Count} - poolSize: {_slotPool.Count}");
+            Debug.Log($"Canvas {CanvasId} -> dynamic actors: {_dynamicSlots.Count} - pooled initial capacity: {initialPoolSize}");
             foreach (var kv in _dynamicSlots)
                 Debug.Log($"  Actor {kv.Key}: {kv.Value.Count} slots");
         }

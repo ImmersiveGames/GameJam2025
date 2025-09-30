@@ -1,15 +1,18 @@
 ﻿using System.Collections.Generic;
-namespace _ImmersiveGames.Scripts.ResourceSystems.Services
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IActorResourceOrchestrator
     {
-        void RegisterActor(ResourceSystemService service);
+        void RegisterActor(ResourceSystemService actorService);
         void UnregisterActor(string actorId);
-        void RegisterCanvas(CanvasResourceBinder binder);
+
+        void RegisterCanvas(CanvasResourceBinder canvas);
         void UnregisterCanvas(string canvasId);
-        ResourceSystemService GetActorService(string actorId);
-        
-        IReadOnlyCollection<string> RegisteredActors { get; }
-        IReadOnlyCollection<string> RegisteredCanvases { get; }
+    }
+    public interface ICanvasRoutingStrategy
+    {
+        string ResolveCanvasId(ResourceInstanceConfig config, string actorId);
     }
 }

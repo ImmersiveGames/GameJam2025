@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 var type = kv.Key;
                 var inst = _resourceSystem.GetInstanceConfig(type);
-                if (inst is { enableThresholdMonitoring: true })
+                if (inst is { thresholdConfig: not null })
                 {
                     _thresholds[type] = inst.thresholdConfig != null
                         ? inst.thresholdConfig.GetNormalizedSortedThresholds()

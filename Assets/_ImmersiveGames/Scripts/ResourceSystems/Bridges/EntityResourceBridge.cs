@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
@@ -21,7 +22,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
             _actor = GetComponent<IActor>();
             if (_actor == null)
             {
-                Debug.LogWarning($"[EntityResourceBridge] No IActor found on {gameObject.name}. Disabling.");
+                DebugUtility.LogWarning<ActorResourceOrchestratorService>($"No IActor found on {gameObject.name}. Disabling.");
                 enabled = false;
                 return;
             }
@@ -52,9 +53,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
         private void DebugPrintResources()
         {
             var all = _service.GetAll();
-            Debug.Log($"[EntityResourceBridge] {_actor.ActorId} resources count: {all.Count}");
+            DebugUtility.LogVerbose<EntityResourceBridge>($"{_actor.ActorId} resources count: {all.Count}");
             foreach (var kv in all)
-                Debug.Log($"  - {kv.Key}: {kv.Value.GetCurrentValue()}/{kv.Value.GetMaxValue()}");
+                DebugUtility.LogVerbose<EntityResourceBridge>($"  - {kv.Key}: {kv.Value.GetCurrentValue()}/{kv.Value.GetMaxValue()}");
         }
 
         public ResourceSystemService GetService() => _service;

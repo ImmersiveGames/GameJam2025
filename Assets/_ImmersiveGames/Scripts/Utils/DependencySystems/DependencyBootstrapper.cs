@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Services;
+﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

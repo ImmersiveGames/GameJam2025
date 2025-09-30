@@ -27,8 +27,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
                 Debug.LogWarning("Orchestrador não registrado.");
                 return;
             }
-            Debug.Log($"Atores registrados: {string.Join(", ", arch.RegisteredActors)}");
-            Debug.Log($"Canvases registrados: {string.Join(", ", arch.RegisteredCanvases)}");
+            //Debug.Log($"Atores registrados: {string.Join(", ", arch.RegisteredActors)}");
+            //Debug.Log($"Canvases registrados: {string.Join(", ", arch.RegisteredCanvases)}");
         }
 
         [ContextMenu("Debug: Damage 10")]

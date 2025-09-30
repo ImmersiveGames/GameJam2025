@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     float p = Mathf.Clamp01(d.timer / Mathf.Max(0.0001f, d.quickDuration));
                     float eased = EaseOutCubic(p);
                     float cur = Mathf.Lerp(d.startFill, d.targetFill, eased);
-                    slot.SetFillValues(cur, d.targetFill);
+                    //slot.SetFillValues(cur, d.targetFill);
                     if (p >= 1f) { d.timer = 0f; d.phase = AnimationPhase.Wait; }
                 }
                 else if (d.phase == AnimationPhase.Wait)
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     float p = Mathf.Clamp01(d.timer / Mathf.Max(0.0001f, d.slowDuration));
                     float eased = EaseOutCubic(p);
                     float pending = Mathf.Lerp(d.startFill, d.targetFill, eased);
-                    slot.SetFillValues(d.targetFill, pending);
+                    //slot.SetFillValues(d.targetFill, pending);
                     if (p >= 1f) finished.Add(slot);
                 }
             }
@@ -72,13 +72,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             var st = style ?? defaultStyle;
             if (st == null)
             {
-                slot.SetFillValues(targetFill, targetFill);
+                //slot.SetFillValues(targetFill, targetFill);
                 return;
             }
 
             if (_active.TryGetValue(slot, out var data))
             {
-                data.startFill = slot.GetCurrentFill();
+                //data.startFill = slot.GetCurrentFill();
                 data.targetFill = targetFill;
                 data.timer = 0f;
                 data.phase = AnimationPhase.Quick;
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _active[slot] = new AnimationData
                 {
                     slot = slot,
-                    startFill = slot.GetCurrentFill(),
+                    //startFill = slot.GetCurrentFill(),
                     targetFill = targetFill,
                     timer = 0f,
                     quickDuration = st.quickDuration,

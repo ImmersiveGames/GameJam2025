@@ -4,85 +4,81 @@ using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    /// <summary>
+    /// Representa um slot de recurso no UI. 
+    /// Não aplica lógica de preenchimento — apenas expõe referências visuais.
+    /// </summary>
     public class ResourceUISlot : MonoBehaviour
     {
-        private string _actorId;
-        private ResourceType _type;
-
-        // agora público (somente leitura external)
-        public ResourceInstanceConfig InstanceConfig { get; private set; }
-
         [Header("UI Components")]
         [SerializeField] private Image fillImage;
         [SerializeField] private Image pendingFillImage;
         [SerializeField] private TextMeshProUGUI valueText;
         [SerializeField] private Image iconImage;
         [SerializeField] private GameObject rootPanel;
-
-        [Header("Style fallback")]
-        [SerializeField] private ResourceUIStyle defaultStyle;
-        public ResourceUIStyle DefaultStyle => defaultStyle;
-
-        public string ActorId => _actorId;
+        
+        private ResourceInstanceConfig _config;
+        private ResourceType _type;
+        
         public ResourceType Type => _type;
+        public ResourceInstanceConfig InstanceConfig => _config;
 
         private void Awake()
         {
             if (rootPanel == null) rootPanel = gameObject;
-            if (fillImage == null) fillImage = GetComponentInChildren<Image>();
-            ResetToZero();
         }
 
-        public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig instanceConfig = null)
+        public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig config)
         {
-            _actorId = actorId;
             _type = type;
-            InstanceConfig = instanceConfig;
-            if (instanceConfig?.resourceDefinition != null && iconImage != null)
-                iconImage.sprite = instanceConfig.resourceDefinition.icon;
+            _config = config;
+            if (_config?.resourceDefinition != null && iconImage != null)
+                iconImage.sprite = _config.resourceDefinition.icon;
             gameObject.name = $"{actorId}_{type}";
+            ApplyFillStrategy(0f);
         }
-
         public void Configure(IResourceValue data)
         {
             if (data == null) return;
-            float pct = data.GetPercentage();
 
+            float pct = data.GetPercentage();
             if (valueText != null)
                 valueText.text = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
-            SetFillValues(pct, pct);
-            SetVisible(true); // Force visibilidade inicial, mesmo sem update
+            ApplyFillStrategy(pct);
+            SetVisible(true);
         }
 
-        public void SetFillValues(float currentFill, float pendingFill)
+        private void ApplyFillStrategy(float pct)
         {
-            if (fillImage != null)
-            {
-                fillImage.fillAmount = Mathf.Clamp01(currentFill);
-                if (defaultStyle != null)
-                    fillImage.color = defaultStyle.fillGradient.Evaluate(currentFill);
-            }
+            // Strategy must be the only place that modifies image.fillAmount/color
+            var strat = _config?.animationStrategy;
+            var style = _config?.animationStyle;
 
-            if (pendingFillImage != null)
+            if (strat != null && _config?.enableAnimation == true)
             {
-                pendingFillImage.fillAmount = Mathf.Clamp01(pendingFill);
-                if (defaultStyle != null)
-                    pendingFillImage.color = defaultStyle.pendingColor;
+                strat.ApplyFill(fillImage, pendingFillImage, pct, style);
+            }
+            else
+            {
+                // fallback instant strategy
+                var instant = ScriptableObject.CreateInstance<InstantFillStrategy>();
+                instant.ApplyFill(fillImage, pendingFillImage, pct, style);
+                DestroyImmediate(instant); // avoid leaking transient SO in editor/runtime
             }
         }
-
-        public float GetCurrentFill() => fillImage != null ? fillImage.fillAmount : 0f;
-        public float GetPendingFill() => pendingFillImage != null ? pendingFillImage.fillAmount : 0f;
 
         public void Clear()
         {
-            SetVisible(false);
-            ResetToZero();
-            if (valueText != null) valueText.text = "";
-        }
+            // Clear visual via strategy as well.
+            ApplyFillStrategy(0f);
 
-        private void ResetToZero() => SetFillValues(0f, 0f);
-        public void SetVisible(bool visible) { if (rootPanel != null) rootPanel.SetActive(visible); }
+            if (valueText != null) valueText.text = "";
+            SetVisible(false);
+        }
+        public void SetVisible(bool visible)
+        {
+            if (rootPanel != null) rootPanel.SetActive(visible);
+        }
     }
 }

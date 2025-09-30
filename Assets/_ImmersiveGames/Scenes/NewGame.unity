@@ -212,12 +212,12 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
     canvasTargetMode: 0
     customCanvasId: 
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
 --- !u!114 &388071193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -306,7 +306,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &449169340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,12 +335,12 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
     canvasTargetMode: 1
     customCanvasId: planetcanvas
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
 --- !u!114 &449169342
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -819,12 +819,12 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
     canvasTargetMode: 0
     customCanvasId: 
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1060,7 +1060,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1666611553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1089,12 +1089,12 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
     canvasTargetMode: 1
     customCanvasId: planetcanvas
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
 --- !u!114 &1666611555
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1186,7 +1186,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1667814062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1215,21 +1215,21 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
     canvasTargetMode: 2
     customCanvasId: MainUI2
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
   - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
     canvasTargetMode: 2
     customCanvasId: MainUI2
-    autoFlowConfig: {fileID: 0}
     hasAutoFlow: 0
     animationStyle: {fileID: 0}
+    animationStrategy: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
-    enableThresholdMonitoring: 0
+    autoFlowConfig: {fileID: 0}
 --- !u!114 &1667814064
 MonoBehaviour:
   m_ObjectHideFlags: 0
