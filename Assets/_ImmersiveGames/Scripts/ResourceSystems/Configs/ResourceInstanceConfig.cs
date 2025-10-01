@@ -14,9 +14,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         [Tooltip("Canvas específico para esta instância do recurso")]
         public string customCanvasId;
 
-        [Tooltip("Se esta instância tem auto-flow habilitado")]
-        public bool hasAutoFlow;
-
         [Tooltip("Configuração de animação/visual para este recurso")]
         public ResourceUIStyle slotStyle;
 
@@ -25,7 +22,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Tooltip("Configuração de thresholds para este recurso")]
         public ResourceThresholdConfig thresholdConfig;
-
+        
+        [Tooltip("Se esta instância tem auto-flow habilitado")]
+        public bool hasAutoFlow;
+        
         [Tooltip("Configuração de auto-flow específica para esta instância")]
         public ResourceAutoFlowConfig autoFlowConfig;
     }

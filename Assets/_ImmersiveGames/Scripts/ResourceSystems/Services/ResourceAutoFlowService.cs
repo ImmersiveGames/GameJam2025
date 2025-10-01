@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
@@ -25,6 +26,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             IsPaused = startPaused;
             RefreshConfigsFromResourceSystem();
             _resourceSystem.ResourceUpdated += OnResourceUpdated;
+
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Inicializado com {_configs.Count} recursos com autoflow");
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
@@ -34,7 +37,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 var inst = _resourceSystem.GetInstanceConfig(evt.ResourceType);
                 if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
+                {
                     _timers[evt.ResourceType] = 0f;
+                    _configs[evt.ResourceType] = inst.autoFlowConfig;
+                    DebugUtility.LogVerbose<EntityResourceBridge>($"Novo recurso com autoflow detectado: {evt.ResourceType}");
+                }
             }
         }
 
@@ -51,6 +58,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 {
                     _configs[type] = inst.autoFlowConfig;
                     _timers[type] = 0f;
+                    DebugUtility.LogVerbose<EntityResourceBridge>($"Configurado autoflow para {type}: " +
+                             $"Fill={inst.autoFlowConfig.autoFill}, " +
+                             $"Drain={inst.autoFlowConfig.autoDrain}");
                 }
             }
         }
@@ -64,10 +74,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 var cfg = _configs[resourceType];
                 if (cfg == null) continue;
 
+                // Verificar delay de regeneração após dano
                 if (cfg.autoFill && cfg.regenDelayAfterDamage > 0f)
                 {
                     if (Time.time - _resourceSystem.LastDamageTime < cfg.regenDelayAfterDamage)
+                    {
+                        _timers[resourceType] = 0f; // Reset timer enquanto em delay
                         continue;
+                    }
                 }
 
                 _timers[resourceType] += deltaTime;
@@ -86,18 +100,38 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                     if (cfg.autoFill) totalDelta += Mathf.Abs(perTickAmount) * ticks;
 
                     if (Mathf.Abs(totalDelta) > 0.0001f)
+                    {
                         _resourceSystem.Modify(resourceType, totalDelta);
+                        DebugUtility.LogVerbose<EntityResourceBridge>($"Aplicado {totalDelta:F2} em {resourceType} " +
+                                 $"({ticks} ticks de {perTickAmount:F2})");
+                    }
                 }
             }
         }
 
-        public void Pause() => IsPaused = true;
-        public void Resume() => IsPaused = false;
-        public void Toggle() => IsPaused = !IsPaused;
+        public void Pause() 
+        { 
+            IsPaused = true;
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Pausado");
+        }
+        
+        public void Resume() 
+        { 
+            IsPaused = false;
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Retomado");
+        }
+        
+        public void Toggle() 
+        { 
+            IsPaused = !IsPaused;
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Alternado para {(IsPaused ? "Pausado" : "Executando")}");
+        }
+        
         public void ResetTimers()
         {
             var keys = _timers.Keys.ToList();
             foreach (var k in keys) _timers[k] = 0f;
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Timers resetados para {keys.Count} recursos");
         }
 
         public void Dispose()
@@ -105,6 +139,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _resourceSystem.ResourceUpdated -= OnResourceUpdated;
             _timers.Clear();
             _configs.Clear();
+            DebugUtility.LogVerbose<EntityResourceBridge>($"Dispose realizado");
         }
     }
 }
