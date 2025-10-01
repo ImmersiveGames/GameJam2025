@@ -639,6 +639,7 @@ GameObject:
   - component: {fileID: 1432878138}
   - component: {fileID: 1432878140}
   - component: {fileID: 1432878139}
+  - component: {fileID: 1432878141}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -820,8 +821,20 @@ MonoBehaviour:
     hasAutoFlow: 0
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     fillAnimationType: 1
-    thresholdConfig: {fileID: 0}
+    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
     autoFlowConfig: {fileID: 0}
+--- !u!114 &1432878141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61dfceda261c40b2872b6436f598e390, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0

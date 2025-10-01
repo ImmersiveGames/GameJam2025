@@ -1,55 +1,45 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using DG.Tweening;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 {
     public class BasicAnimatedFillStrategy : IResourceSlotStrategy
     {
         private Tweener _pendingTween;
 
-        public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingPct, ResourceUIStyle style)
+        public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingStart, ResourceUIStyle style)
         {
-            // BARRA CURRENT: SEMPRE instantânea
+            // BARRA CURRENT: Sempre instantânea
             if (slot.FillImage != null)
             {
-                // Para qualquer animação anterior
                 slot.FillImage.DOKill();
-            
-                // Define instantaneamente
                 slot.FillImage.fillAmount = Mathf.Clamp01(currentPct);
-            
-                // Aplica cor do gradiente
+                
+                // Usa o gradient do style - já controla cores automaticamente
                 if (style != null)
                     slot.FillImage.color = style.fillGradient.Evaluate(currentPct);
             }
 
-            // BARRA PENDING: Animação com delay do valor ANTERIOR para o valor ATUAL
+            // BARRA PENDING: Animação básica com delay
             if (slot.PendingFillImage != null)
             {
-                // Para animação anterior
                 _pendingTween?.Kill();
 
                 float duration = style?.slowDuration ?? 0.8f;
                 float delay = style?.delayBeforeSlow ?? 0.3f;
+                Ease ease = style?.basicEase ?? Ease.OutQuad;
 
-                // Configura cor
                 if (style != null)
                     slot.PendingFillImage.color = style.pendingColor;
 
-                // LÓGICA CORRETA: 
-                // A pending começa no valor ANTERIOR (pendingPct) e anima para o valor ATUAL (currentPct)
-                // Isso cria o efeito de "rastro" estilo jogos de luta
-            
-                // Primeiro, define a pending para o valor anterior
-                slot.PendingFillImage.fillAmount = Mathf.Clamp01(pendingPct);
-            
-                // Depois anima para o valor atual
+                slot.PendingFillImage.fillAmount = Mathf.Clamp01(pendingStart);
+                
                 _pendingTween = DOTween.To(
                     () => slot.PendingFillImage.fillAmount,
                     x => slot.PendingFillImage.fillAmount = x,
-                    Mathf.Clamp01(currentPct), // Vai para o valor ATUAL
+                    Mathf.Clamp01(currentPct),
                     duration
-                ).SetDelay(delay).SetEase(Ease.OutQuad);
+                ).SetDelay(delay).SetEase(ease);
             }
         }
 
@@ -69,8 +59,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void ClearVisuals(ResourceUISlot slot)
         {
             _pendingTween?.Kill();
-            slot.FillImage?.DOKill();
-            slot.PendingFillImage?.DOKill();
         }
     }
 }

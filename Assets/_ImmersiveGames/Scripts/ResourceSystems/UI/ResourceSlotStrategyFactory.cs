@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IResourceSlotStrategyFactory
@@ -10,26 +10,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         public IResourceSlotStrategy CreateStrategy(FillAnimationType animationType)
         {
-            switch (animationType)
+            return animationType switch
             {
-                case FillAnimationType.Instant:
-                    return new InstantSlotStrategy();
-                
-                case FillAnimationType.BasicAnimated:
-                    return new BasicAnimatedFillStrategy();
-                
-                case FillAnimationType.AdvancedAnimated:
-                    return new AdvancedAnimatedFillStrategy();
-                
-                case FillAnimationType.SmoothAnimated:
-                    return new SmoothAnimatedFillStrategy();
-                
-                case FillAnimationType.PulseAnimated:
-                    return new PulseAnimatedFillStrategy();
-                
-                default:
-                    return new InstantSlotStrategy();
-            }
+                FillAnimationType.Instant => new InstantSlotStrategy(),
+                FillAnimationType.BasicAnimated => new BasicAnimatedFillStrategy(),
+                FillAnimationType.AdvancedAnimated => new AdvancedAnimatedFillStrategy(),
+                FillAnimationType.SmoothAnimated => new SmoothAnimatedFillStrategy(),
+                FillAnimationType.PulseAnimated => new PulseAnimatedFillStrategy(),
+                _ => new InstantSlotStrategy()
+            };
         }
     }
     public enum FillAnimationType

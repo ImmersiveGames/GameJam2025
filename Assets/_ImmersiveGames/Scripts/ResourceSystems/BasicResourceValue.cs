@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
+﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface IResourceValue
@@ -17,7 +16,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class BasicResourceValue : IResourceValue
     {
         private float _current;
-        private float _max;
+        private readonly float _max;
 
         public BasicResourceValue(float current, float max = 100f)
         {

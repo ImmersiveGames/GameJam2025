@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
@@ -8,11 +9,11 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 {
-    [DefaultExecutionOrder(-5)]
+
     public class EntityResourceBridge : MonoBehaviour
     {
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
-        
+
         private IActor _actor;
         private ResourceSystemService _service;
         private IActorResourceOrchestrator _orchestrator;
@@ -52,9 +53,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
         [ContextMenu("Debug Print Resources")]
         private void DebugPrintResources()
         {
-            var all = _service.GetAll();
+            IReadOnlyDictionary<ResourceType, IResourceValue> all = _service.GetAll();
             DebugUtility.LogVerbose<EntityResourceBridge>($"{_actor.ActorId} resources count: {all.Count}");
-            foreach (var kv in all)
+            foreach (KeyValuePair<ResourceType, IResourceValue> kv in all)
                 DebugUtility.LogVerbose<EntityResourceBridge>($"  - {kv.Key}: {kv.Value.GetCurrentValue()}/{kv.Value.GetMaxValue()}");
         }
 

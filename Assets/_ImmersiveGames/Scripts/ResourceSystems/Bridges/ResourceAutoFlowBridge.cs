@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 {
-    [DefaultExecutionOrder(-2)]
     public class ResourceAutoFlowBridge : MonoBehaviour
     {
         [SerializeField] private bool startPaused = true;
@@ -34,7 +33,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 
             if (_resourceSystem == null)
             {
-                Debug.LogWarning($"ResourceAutoFlowBridge on {name} couldn't find ResourceSystemService. Disabling.");
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>($"ResourceAutoFlowBridge on {name} couldn't find ResourceSystemService. Disabling.");
                 enabled = false;
                 return;
             }

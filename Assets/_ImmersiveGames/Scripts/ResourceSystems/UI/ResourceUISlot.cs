@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using DG.Tweening;
 using TMPro;
@@ -14,18 +15,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private TextMeshProUGUI valueText;
         [SerializeField] private Image iconImage;
         [SerializeField] private GameObject rootPanel;
-    
-        private ResourceInstanceConfig _config;
-        private ResourceType _type;
+
         private IResourceSlotStrategy _slotStrategy;
     
         // ESTADO CORRETO: 
-        private float _currentFill = 0f;
-        private float _previousFill = 0f; // ← VALOR ANTERIOR para a pending
+        private float _currentFill;
+        private float _previousFill; // ← VALOR ANTERIOR para a pending
         private string _currentText = "";
     
-        public ResourceType Type => _type;
-        public ResourceInstanceConfig InstanceConfig => _config;
+        public ResourceType Type { get; private set; }
+        private ResourceInstanceConfig InstanceConfig { get; set; }
         public Image FillImage => fillImage;
         public Image PendingFillImage => pendingFillImage;
         public TextMeshProUGUI ValueText => valueText;
@@ -40,21 +39,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig config)
         {
-            _type = type;
-            _config = config;
+            Type = type;
+            InstanceConfig = config;
         
             // Usa factory se disponível
-            if (DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory))
-            {
-                _slotStrategy = factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant);
-            }
-            else
-            {
-                _slotStrategy = CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
-            }
+            _slotStrategy = DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory) 
+                ? factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant) 
+                : CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
         
-            if (_config?.resourceDefinition != null && iconImage != null)
-                iconImage.sprite = _config.resourceDefinition.icon;
+            if (InstanceConfig?.resourceDefinition != null && iconImage != null)
+                iconImage.sprite = InstanceConfig.resourceDefinition.icon;
             
             gameObject.name = $"{actorId}_{type}";
         
@@ -66,14 +60,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
         {
-            switch (animationType)
+            return animationType switch
             {
-                case FillAnimationType.BasicAnimated: return new BasicAnimatedFillStrategy();
-                case FillAnimationType.AdvancedAnimated: return new AdvancedAnimatedFillStrategy();
-                case FillAnimationType.SmoothAnimated: return new SmoothAnimatedFillStrategy();
-                case FillAnimationType.PulseAnimated: return new PulseAnimatedFillStrategy();
-                default: return new InstantSlotStrategy();
-            }
+                FillAnimationType.BasicAnimated => new BasicAnimatedFillStrategy(),
+                FillAnimationType.AdvancedAnimated => new AdvancedAnimatedFillStrategy(),
+                FillAnimationType.SmoothAnimated => new SmoothAnimatedFillStrategy(),
+                FillAnimationType.PulseAnimated => new PulseAnimatedFillStrategy(),
+                _ => new InstantSlotStrategy()
+            };
         }
 
         public void Configure(IResourceValue data)
@@ -96,7 +90,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void ApplyVisuals()
         {
-            var style = _config?.slotStyle;
+            var style = InstanceConfig?.slotStyle;
         
             // PASSA OS VALORES CORRETOS:
             // - Current: valor ATUAL (novo)
@@ -108,6 +102,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void Clear()
         {
             _slotStrategy.ClearVisuals(this);
+            StopAllCoroutines();
             _currentFill = 0f;
             _previousFill = 0f;
             SetVisible(false);
@@ -120,10 +115,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void OnDestroy()
         {
-            ClearAllTweens();
+            ClearAllTween();
         }
 
-        private void ClearAllTweens()
+        private void ClearAllTween()
         {
             if (FillImage != null) FillImage.DOKill();
             if (PendingFillImage != null) PendingFillImage.DOKill();

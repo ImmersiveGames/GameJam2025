@@ -1,11 +1,18 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.CanvasRouting;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
-    using ResourceSystems;
+    public interface IActorResourceOrchestrator
+    {
+        void RegisterActor(ResourceSystemService actorService);
+        void UnregisterActor(string actorId);
+
+        void RegisterCanvas(CanvasResourceBinder canvas);
+        void UnregisterCanvas(string canvasId);
+    }
 
     /// <summary>
     /// Orchestrator como serviço puro. Registra atores (ResourceSystemService) e canvases (CanvasResourceBinder).
@@ -14,14 +21,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     {
         private readonly Dictionary<string, ResourceSystemService> _actors = new();
         private readonly Dictionary<string, CanvasResourceBinder> _canvases = new();
-        
+
         private readonly ICanvasRoutingStrategy _routingStrategy;
         private const string MainUICanvasId = "MainUI";
-        
-        public IReadOnlyCollection<string> RegisteredActors => _actors.Keys;
-        public IReadOnlyCollection<string> RegisteredCanvases => _canvases.Keys;
-        
-        
+
+
         public ActorResourceOrchestratorService(ICanvasRoutingStrategy routingStrategy = null)
         {
             _routingStrategy = routingStrategy ?? new DefaultCanvasRoutingStrategy();
@@ -83,11 +87,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private string ResolveTargetCanvasId(ResourceInstanceConfig config, string actorId)
         {
             if (config == null) return MainUICanvasId;
-            var resolved = _routingStrategy.ResolveCanvasId(config, actorId);
+            string resolved = _routingStrategy.ResolveCanvasId(config, actorId);
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Resolved target CanvasId '{resolved}' for actor '{actorId}'");
             return resolved;
         }
-        
+
 
         private void CreateSlotsForActorInCanvas(ResourceSystemService actorSvc, CanvasResourceBinder canvas)
         {
@@ -101,20 +105,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 if (resolvedTarget == canvas.CanvasId)
                     canvas.CreateSlotForActor(actorSvc.EntityId, resourceType, resourceValue, instanceConfig);
             }
-        }
-    }
-    public class DefaultCanvasRoutingStrategy : ICanvasRoutingStrategy
-    {
-        private const string MainUICanvasId = "MainUI";
-        public string ResolveCanvasId(ResourceInstanceConfig config, string actorId)
-        {
-            if (config == null) return MainUICanvasId;
-            return config.canvasTargetMode switch
-            {
-                CanvasTargetMode.ActorSpecific => $"{actorId}_Canvas",
-                CanvasTargetMode.Custom => string.IsNullOrEmpty(config.customCanvasId) ? MainUICanvasId : config.customCanvasId,
-                _ => MainUICanvasId
-            };
         }
     }
 }

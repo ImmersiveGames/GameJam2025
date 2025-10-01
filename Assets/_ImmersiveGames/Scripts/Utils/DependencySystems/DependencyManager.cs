@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Warning)]
-    public class DependencyManager : PersistentSingleton<DependencyManager>
+    public class DependencyManager : RegulatorSingleton<DependencyManager>
     {
         [SerializeField] private int maxSceneServices = 2;
         [SerializeField] private bool useDontDestroyOnLoad = true;
@@ -32,47 +32,25 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         public int MaxSceneServices => maxSceneServices;
 
         /// <summary>
-        /// Inicializa os registries e configura o comportamento de persistência.
+        /// Inicializa os registries.
         /// </summary>
-        protected override void Awake()
+        protected override void InitializeSingleton()
         {
-            base.Awake();
+            base.InitializeSingleton();
+            
+            // Só inicializa se esta for a instância ativa
+            if (instance != this) return;
+
             _objectRegistry = new();
             _sceneRegistry = new(maxSceneServices);
             _globalRegistry = new();
             _injector = new(_objectRegistry, _sceneRegistry, _globalRegistry);
 
-            if (useDontDestroyOnLoad)
-            {
-                DontDestroyOnLoad(gameObject);
-                DebugUtility.LogVerbose(typeof(DependencyManager), $"Inicializado com DontDestroyOnLoad ({gameObject.scene.name}).", "yellow");
-            }
-        }
-
-        /// <summary>
-        /// Gera uma identificação única para jogadores.
-        /// </summary>
-        /// <param name="playerIndex">Índice do jogador.</param>
-        public static string GeneratePlayerId(int playerIndex)
-        {
-            var id = $"Player_{playerIndex}";
-            DebugUtility.LogVerbose(typeof(DependencyManager), $"Gerado playerId: {id}.", "yellow");
-            return id;
+            DebugUtility.LogVerbose(typeof(DependencyManager), $"DependencyManager inicializado ({gameObject.scene.name}).", "yellow");
         }
 
         /// <summary> Registra um serviço no escopo global. </summary>
         public void RegisterGlobal<T>(T service) where T : class => _globalRegistry.Register(null, service);
-
-        /// <summary> Recupera um serviço global. </summary>
-        public T GetGlobal<T>() where T : class => _globalRegistry.Get<T>();
-        public IEnumerable<T> GetAllGlobal<T>() where T : class
-        {
-            foreach (var serviceType in _globalRegistry.ListServices(null))
-            {
-                if (_globalRegistry.TryGet(null, out T service))
-                    yield return service;
-            }
-        }
 
         /// <summary> Tenta recuperar um serviço global. </summary>
         public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);
@@ -90,9 +68,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             _objectRegistry.Register(objectId, service);
         }
 
-        /// <summary> Recupera um serviço associado a um objeto. </summary>
-        public T GetForObject<T>(string objectId) where T : class => _objectRegistry.Get<T>(objectId);
-
         /// <summary> Tenta recuperar um serviço associado a um objeto. </summary>
         public bool TryGetForObject<T>(string objectId, out T service) where T : class => _objectRegistry.TryGet(objectId, out service);
 
@@ -101,9 +76,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         /// </summary>
         public void RegisterForScene<T>(string sceneName, T service, bool allowOverride = false) where T : class =>
             _sceneRegistry.Register(sceneName, service, allowOverride);
-
-        /// <summary> Recupera um serviço associado a uma cena. </summary>
-        public T GetForScene<T>(string sceneName) where T : class => _sceneRegistry.Get<T>(sceneName);
 
         /// <summary> Tenta recuperar um serviço associado a uma cena. </summary>
         public bool TryGetForScene<T>(string sceneName, out T service) where T : class => _sceneRegistry.TryGet(sceneName, out service);
@@ -156,5 +128,38 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         /// <summary> Lista os serviços registrados no escopo global. </summary>
         public List<Type> ListGlobalServices() => _globalRegistry.ListServices(null);
+        
+        
+        /// <summary>
+        /// Limpa todos os serviços quando o objeto é destruído.
+        /// </summary>
+        protected void OnDestroy()
+        {
+            // Só limpa se esta for a instância ativa
+            if (instance == this)
+            {
+                ClearAllObjectServices();
+                ClearAllSceneServices();
+                ClearGlobalServices();
+                StopAllCoroutines();
+                
+                DebugUtility.LogVerbose(typeof(DependencyManager), "DependencyManager destruído e serviços limpos.", "yellow");
+            }
+        }
+        /// <summary>
+        /// Chamado quando a aplicação está fechando.
+        /// </summary>
+        private void OnApplicationQuit()
+        {
+            // Limpeza adicional quando o jogo está fechando
+            if (instance == this)
+            {
+                ClearAllObjectServices();
+                ClearAllSceneServices();
+                ClearGlobalServices();
+                
+                DebugUtility.LogVerbose(typeof(DependencyManager), "Serviços limpos no fechamento do jogo.", "yellow");
+            }
+        }
     }
 }

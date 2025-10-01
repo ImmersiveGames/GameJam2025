@@ -6,10 +6,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
     public class ResourceAutoFlowConfig : ScriptableObject
     {
         [Tooltip("Se verdadeiro, regenera automaticamente")]
-        public bool autoFill = false;
+        public bool autoFill;
 
         [Tooltip("Se verdadeiro, drena automaticamente")]
-        public bool autoDrain = false;
+        public bool autoDrain;
 
         [Tooltip("Intervalo entre ticks em segundos")]
         [Min(0.1f)] 
@@ -19,9 +19,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         public float amountPerTick = 1f;
 
         [Tooltip("Se verdadeiro, usa porcentagem do valor máximo ao invés de valor fixo")]
-        public bool usePercentage = false;
+        public bool usePercentage;
 
         [Tooltip("Delay após tomar dano antes de começar a regenerar (apenas para AutoFill)")]
-        public float regenDelayAfterDamage = 0f;
+        public float regenDelayAfterDamage;
     }
 }

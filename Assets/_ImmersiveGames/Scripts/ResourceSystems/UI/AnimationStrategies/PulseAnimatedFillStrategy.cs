@@ -1,65 +1,68 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using DG.Tweening;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 {
-    public class AdvancedAnimatedFillStrategy : IResourceSlotStrategy
+    public class PulseAnimatedFillStrategy : IResourceSlotStrategy
     {
         private Tweener _pendingTween;
-        private float _lastCurrentValue = 0f;
+        private Tweener _pulseTween;
+        private bool _isPulsing;
 
         public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingStart, ResourceUIStyle style)
         {
-            // BARRA CURRENT: Instantânea com efeitos
+            // BARRA CURRENT: Instantânea
             if (slot.FillImage != null)
             {
-                float previousValue = slot.FillImage.fillAmount;
                 slot.FillImage.DOKill();
                 slot.FillImage.fillAmount = Mathf.Clamp01(currentPct);
-            
+                
+                // Gradient controla as cores
                 if (style != null)
                     slot.FillImage.color = style.fillGradient.Evaluate(currentPct);
-
-                // Efeitos baseados na direção
-                if (currentPct > previousValue)
-                {
-                    // Cura - pulso
-                    slot.FillImage.transform.localScale = Vector3.one;
-                    slot.FillImage.transform.DOScale(1.1f, 0.2f)
-                        .SetLoops(2, LoopType.Yoyo)
-                        .SetEase(Ease.OutSine);
-                }
-                else if (currentPct < previousValue)
-                {
-                    // Dano - efeito visual
-                    slot.FillImage.transform.DOScaleX(0.95f, 0.1f)
-                        .SetLoops(2, LoopType.Yoyo)
-                        .SetEase(Ease.InOutSine);
-                }
             }
 
-            // BARRA PENDING: Começa no pendingStart e anima para currentPct
+            // BARRA PENDING: Animação normal
             if (slot.PendingFillImage != null)
             {
                 _pendingTween?.Kill();
 
                 float duration = style?.slowDuration ?? 0.8f;
                 float delay = style?.delayBeforeSlow ?? 0.3f;
+                Ease ease = style?.basicEase ?? Ease.OutQuad;
 
                 if (style != null)
                     slot.PendingFillImage.color = style.pendingColor;
 
-                // Pending COMEÇA no valor anterior
                 slot.PendingFillImage.fillAmount = Mathf.Clamp01(pendingStart);
-            
-                // E anima PARA o valor atual
+                
                 _pendingTween = DOTween.To(
                     () => slot.PendingFillImage.fillAmount,
                     x => slot.PendingFillImage.fillAmount = x,
                     Mathf.Clamp01(currentPct),
                     duration
-                ).SetDelay(delay).SetEase(Ease.OutCubic);
+                ).SetDelay(delay).SetEase(ease);
             }
+
+            // PULSAÇÃO NO PARENT se habilitado
+            if (slot.RootPanel != null && !_isPulsing && style != null && style.enablePulseEffect)
+            {
+                StartParentPulse(slot.RootPanel.transform, style);
+            }
+        }
+
+        private void StartParentPulse(Transform parentTransform, ResourceUIStyle style)
+        {
+            _isPulsing = true;
+            
+            float scale = style.pulseScale;
+            float duration = style.pulseDuration;
+            Ease ease = style.pulseEase;
+
+            _pulseTween = parentTransform.DOScale(scale, duration)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetEase(ease)
+                .OnKill(() => _isPulsing = false);
         }
 
         public void ApplyFill(ResourceUISlot slot, float currentPct, ResourceUIStyle style)
@@ -78,7 +81,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public void ClearVisuals(ResourceUISlot slot)
         {
             _pendingTween?.Kill();
-            slot.FillImage?.transform.DOKill();
+            _pulseTween?.Kill();
+            
+            if (slot.RootPanel != null)
+                slot.RootPanel.transform.DOKill();
+                
+            _isPulsing = false;
+            
+            // Restaura scale normal
+            if (slot.RootPanel != null)
+                slot.RootPanel.transform.localScale = Vector3.one;
         }
     }
 }

@@ -1,16 +1,16 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 {
     public class InstantSlotStrategy : IResourceSlotStrategy
     {
         public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingPct, ResourceUIStyle style)
         {
-            // Ambas as barras são atualizadas instantaneamente
             if (slot.FillImage != null)
             {
                 slot.FillImage.fillAmount = Mathf.Clamp01(currentPct);
-                if (style != null && style.fillGradient != null)
+                // Gradient controla as cores
+                if (style != null)
                     slot.FillImage.color = style.fillGradient.Evaluate(currentPct);
             }
 

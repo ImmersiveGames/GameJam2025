@@ -1,7 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using TMPro;
-using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 {
     public interface IResourceSlotStrategy
     {

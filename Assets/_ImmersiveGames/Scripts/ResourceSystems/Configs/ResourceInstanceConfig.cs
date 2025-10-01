@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         public string customCanvasId;
 
         [Tooltip("Se esta instância tem auto-flow habilitado")]
-        public bool hasAutoFlow = false;
+        public bool hasAutoFlow;
 
         [Tooltip("Configuração de animação/visual para este recurso")]
         public ResourceUIStyle slotStyle;
@@ -30,10 +30,4 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         public ResourceAutoFlowConfig autoFlowConfig;
     }
 
-    public enum CanvasTargetMode
-    {
-        Default,       // "MainUI"
-        ActorSpecific, // "{actorId}_Canvas"
-        Custom         // customCanvasId
-    }
 }

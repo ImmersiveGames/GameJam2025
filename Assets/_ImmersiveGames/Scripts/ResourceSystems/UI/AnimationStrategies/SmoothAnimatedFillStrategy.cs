@@ -1,7 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using DG.Tweening;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 {
     public class SmoothAnimatedFillStrategy : IResourceSlotStrategy
     {
@@ -10,27 +10,30 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingStart, ResourceUIStyle style)
         {
-            float quickDuration = style?.quickDuration ?? 0.3f;
-            float slowDuration = style?.slowDuration ?? 0.8f;
-            float delay = style?.delayBeforeSlow ?? 0.3f;
+            float currentDuration = style?.smoothCurrentDuration ?? 0.4f;
+            float pendingDuration = style?.smoothPendingDuration ?? 1.2f;
+            float delay = style?.delayBeforeSlow ?? 0.5f;
+            Ease currentEase = style?.smoothCurrentEase ?? Ease.InOutCubic;
+            Ease pendingEase = style?.smoothPendingEase ?? Ease.InOutSine;
 
-            // BARRA CURRENT: Animação rápida para o valor atual
+            // BARRA CURRENT: Animação suave
             if (slot.FillImage != null)
             {
                 _currentTween?.Kill();
-            
+                
                 _currentTween = DOTween.To(
                     () => slot.FillImage.fillAmount,
                     x => slot.FillImage.fillAmount = x,
                     Mathf.Clamp01(currentPct),
-                    quickDuration
-                ).SetEase(Ease.OutCubic);
-                
+                    currentDuration
+                ).SetEase(currentEase);
+                    
+                // Gradient controla as cores
                 if (style != null)
                     slot.FillImage.color = style.fillGradient.Evaluate(currentPct);
             }
 
-            // BARRA PENDING: Começa no pendingStart e anima para currentPct
+            // BARRA PENDING: Animação muito suave
             if (slot.PendingFillImage != null)
             {
                 _pendingTween?.Kill();
@@ -38,16 +41,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 if (style != null)
                     slot.PendingFillImage.color = style.pendingColor;
 
-                // Pending COMEÇA no valor anterior
                 slot.PendingFillImage.fillAmount = Mathf.Clamp01(pendingStart);
-            
-                // E anima PARA o valor atual
+                
                 _pendingTween = DOTween.To(
                     () => slot.PendingFillImage.fillAmount,
                     x => slot.PendingFillImage.fillAmount = x,
                     Mathf.Clamp01(currentPct),
-                    slowDuration
-                ).SetDelay(delay).SetEase(Ease.OutCubic);
+                    pendingDuration
+                ).SetDelay(delay).SetEase(pendingEase);
             }
         }
 

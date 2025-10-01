@@ -3,7 +3,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Pool; // Reaproveita pooling nativo da Unity
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Bridges;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
@@ -12,12 +11,11 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DefaultExecutionOrder(-50)]
     public class CanvasResourceBinder : MonoBehaviour
     {
         [Header("Identification")]
         [SerializeField] private string canvasId;
-        [SerializeField] private bool autoGenerateCanvasId = false;
+        [SerializeField] private bool autoGenerateCanvasId;
 
         [Header("Pool & Prefab")]
         [SerializeField] private ResourceUISlot slotPrefab;
@@ -34,6 +32,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void Awake()
         {
+            if (!DependencyManager.HasInstance || DependencyManager.Instance == null)
+            {
+                Debug.LogWarning("DependencyManager não está disponível. CanvasResourceBinder não será inicializado.");
+                return;
+            }
             SetupCanvasId();
             
             if (persistAcrossScenes) DontDestroyOnLoad(gameObject);
@@ -53,7 +56,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 _strategyFactory = new ResourceSlotStrategyFactory();
                 // Opcional: registrar para reuso
-                DependencyManager.Instance.RegisterGlobal<IResourceSlotStrategyFactory>(_strategyFactory);
+                DependencyManager.Instance.RegisterGlobal(_strategyFactory);
             }
             _orchestrator.RegisterCanvas(this);
             DebugUtility.LogVerbose<CanvasResourceBinder>($"Registered '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'.");
@@ -70,13 +73,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (!DependencyManager.Instance.TryGetGlobal(out IUniqueIdFactory factory))
             {
                 factory = new UniqueIdFactory();
-                DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(factory);
+                DependencyManager.Instance.RegisterGlobal(factory);
             }
 
-            if (autoGenerateCanvasId)
-                _canvasIdResolved = factory.GenerateId(gameObject, "Canvas");
-            else
-                _canvasIdResolved = $"{gameObject.scene.name}_{gameObject.name}";
+            _canvasIdResolved = autoGenerateCanvasId ? factory.GenerateId(gameObject, "Canvas") : $"{gameObject.scene.name}_{gameObject.name}";
         }
         
         private void InitializePool()
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (string.IsNullOrEmpty(actorId) || slotPrefab == null) return;
 
-            if (!_dynamicSlots.TryGetValue(actorId, out var actorSlots))
+            if (!_dynamicSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlots))
             {
                 actorSlots = new Dictionary<ResourceType, ResourceUISlot>();
                 _dynamicSlots[actorId] = actorSlots;
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
         public void UpdateResourceForActor(string actorId, ResourceType resourceType, IResourceValue data)
         {
-            if (_dynamicSlots.TryGetValue(actorId, out var actorSlots) && actorSlots.TryGetValue(resourceType, out var slot) && slot != null)
+            if (_dynamicSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlots) && actorSlots.TryGetValue(resourceType, out var slot) && slot != null)
             {
                 slot.Configure(data); // strategy will animate or snap
                 return;
@@ -140,41 +140,57 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
         private void RemoveSlotsForActor(string actorId)
         {
-            if (!_dynamicSlots.TryGetValue(actorId, out var actorSlots)) return;
-            foreach (var slot in actorSlots.Values.ToList())
+            if (!_dynamicSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlots)) return;
+            foreach (var slot in actorSlots.Values.ToList().Where(slot => slot != null))
             {
-                if (slot != null) ReturnSlotToPool(slot);
+                ReturnSlotToPool(slot);
             }
             _dynamicSlots.Remove(actorId);
         }
         
         private void ClearAllSlots()
         {
-            foreach (var actorId in _dynamicSlots.Keys.ToList())
+            // Para todas as coroutines ativas primeiro
+            StopAllCoroutines();
+        
+            foreach (string actorId in _dynamicSlots.Keys.ToList())
                 RemoveSlotsForActor(actorId);
 
-            // clear pool
-            if (_pool == null) return;
-            // Destroy pooled objects
-            while (true)
-            {
-                // no direct enumerator on ObjectPool; we assume pool's Clear will destroy items via actionOnDestroy
-                _pool.Clear();
-                break;
-            }
+            // Limpa o pool
+            _pool?.Clear();
+
+            _dynamicSlots.Clear();
         }
 
         private void OnDestroy()
         {
+            // Verifica se ainda temos instâncias válidas
+            if (!DependencyManager.HasInstance || DependencyManager.Instance == null)
+            {
+                ClearAllSlots();
+                return;
+            }
+
             ClearAllSlots();
-            _orchestrator?.UnregisterCanvas(CanvasId);
+        
+            if (_orchestrator != null)
+            {
+                _orchestrator.UnregisterCanvas(CanvasId);
+            }
+        
+            // Limpeza adicional
+            if (_pool != null)
+            {
+                _pool.Clear();
+                _pool = null;
+            }
         }
 
         [ContextMenu("Debug Slots State")]
         private void DebugSlots()
         {
             Debug.Log($"Canvas {CanvasId} -> dynamic actors: {_dynamicSlots.Count} - pooled initial capacity: {initialPoolSize}");
-            foreach (var kv in _dynamicSlots)
+            foreach (KeyValuePair<string, Dictionary<ResourceType, ResourceUISlot>> kv in _dynamicSlots)
                 Debug.Log($"  Actor {kv.Key}: {kv.Value.Count} slots");
         }
     }

@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
     {
         [Tooltip("Porcentagens (0.0 a 1.0). 0 e 1 serão incluídos automaticamente.")]
         [Range(0f, 1f)]
-        public float[] thresholds = new float[] { 0.25f, 0.5f, 0.75f };
+        public float[] thresholds = { 0.25f, 0.5f, 0.75f };
 
         /// <summary>
         /// Retorna thresholds únicos, válidos (0..1), ordenados, e garante 0 e 1.

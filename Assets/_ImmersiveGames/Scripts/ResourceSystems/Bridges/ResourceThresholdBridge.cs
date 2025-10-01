@@ -1,6 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
             _actor = GetComponent<IActor>();
             if (_actor == null)
             {
-                Debug.LogWarning($"[ResourceThresholdBridge] No IActor found on {name}. Disabling.");
+                DebugUtility.LogWarning<ResourceThresholdBridge>($"No IActor found on {name}. Disabling.");
                 enabled = false;
                 return;
             }
@@ -30,7 +31,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 
             if (_resourceSystem == null)
             {
-                Debug.LogWarning($"ResourceThresholdBridge on {name} couldn't find ResourceSystemService. Disabling.");
+                DebugUtility.LogWarning<ResourceThresholdBridge>($"ResourceThresholdBridge on {name} couldn't find ResourceSystemService. Disabling.");
                 enabled = false;
                 return;
             }

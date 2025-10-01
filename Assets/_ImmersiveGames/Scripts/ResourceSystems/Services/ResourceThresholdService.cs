@@ -25,18 +25,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         private void Initialize()
         {
-            foreach (var kv in _resourceSystem.GetAll())
+            foreach (var (resourceType, resourceValue) in _resourceSystem.GetAll())
             {
-                var type = kv.Key;
-                var inst = _resourceSystem.GetInstanceConfig(type);
-                if (inst is { thresholdConfig: not null })
-                {
-                    _thresholds[type] = inst.thresholdConfig != null
-                        ? inst.thresholdConfig.GetNormalizedSortedThresholds()
-                        : new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
+                var inst = _resourceSystem.GetInstanceConfig(resourceType);
+                if (inst is not { thresholdConfig: not null }) continue;
+                _thresholds[resourceType] = inst.thresholdConfig != null
+                    ? inst.thresholdConfig.GetNormalizedSortedThresholds()
+                    : new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
 
-                    _lastPercentages[type] = kv.Value?.GetPercentage() ?? 1f;
-                }
+                _lastPercentages[resourceType] = resourceValue?.GetPercentage() ?? 1f;
             }
         }
 
@@ -53,8 +50,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 return;
             }
 
-            var crossed = DetectCrossedThresholds(oldPct, newPct, _thresholds[evt.ResourceType]);
-            foreach (var thr in crossed)
+            List<float> crossed = DetectCrossedThresholds(oldPct, newPct, _thresholds[evt.ResourceType]);
+            foreach (float thr in crossed)
             {
                 bool asc = newPct > oldPct;
                 var thrEvent = new ResourceThresholdEvent(evt.ActorId, evt.ResourceType, thr, asc, newPct);
@@ -70,8 +67,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             bool ascending = newVal > oldVal;
             if (ascending)
             {
-                foreach (var t in thresholds)
-                    if (t > oldVal + Epsilon && t <= newVal + Epsilon) crossed.Add(t);
+                foreach (float t in thresholds)
+                    if (t > oldVal + Epsilon && t <= newVal + Epsilon)
+                        crossed.Add(t);
                 crossed.Sort();
             }
             else
@@ -84,13 +82,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public void ForceCheck()
         {
-            foreach (var kv in _thresholds)
+            foreach (KeyValuePair<ResourceType, float[]> kv in _thresholds)
             {
                 var res = _resourceSystem.Get(kv.Key);
                 float newPct = res?.GetPercentage() ?? 0f;
                 float oldPct = _lastPercentages.GetValueOrDefault(kv.Key, 1f);
-                var crossed = DetectCrossedThresholds(oldPct, newPct, kv.Value);
-                foreach (var t in crossed)
+                List<float> crossed = DetectCrossedThresholds(oldPct, newPct, kv.Value);
+                foreach (float t in crossed)
                     EventBus<ResourceThresholdEvent>.Raise(new ResourceThresholdEvent(_resourceSystem.EntityId, kv.Key, t, newPct > oldPct, newPct));
                 _lastPercentages[kv.Key] = newPct;
             }

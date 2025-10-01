@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _timers.Clear();
             _configs.Clear();
 
-            foreach (var kv in _resourceSystem.GetAll())
+            foreach (KeyValuePair<ResourceType, IResourceValue> kv in _resourceSystem.GetAll())
             {
                 var type = kv.Key;
                 var inst = _resourceSystem.GetInstanceConfig(type);

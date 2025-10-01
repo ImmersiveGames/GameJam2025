@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public event Action<ResourceUpdateEvent> ResourceUpdated;
 
         public float LastDamageTime { get; private set; } = -999f;
-        
+
         public ResourceSystemService(string entityId, IEnumerable<ResourceInstanceConfig> configs)
         {
             EntityId = string.IsNullOrEmpty(entityId) ? Guid.NewGuid().ToString() : entityId;
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
         }
-        
+
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);
         public IReadOnlyDictionary<ResourceType, IResourceValue> GetAll() => _resources;
         public ResourceInstanceConfig GetInstanceConfig(ResourceType type) => _instanceConfigs.GetValueOrDefault(type);
