@@ -1,17 +1,16 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public class ResourceAutoFlowBridge : MonoBehaviour
     {
         [SerializeField] private bool startPaused = true;
 
         private ResourceAutoFlowService _autoFlow;
-        private ResourceSystemService _resourceSystem;
+        private ResourceSystem _resourceSystem;
         private IActor _actor;
 
         private void Awake()
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
 
             if (_resourceSystem == null)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>($"ResourceAutoFlowBridge on {name} couldn't find ResourceSystemService. Disabling.");
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>($"ResourceAutoFlowBridge on {name} couldn't find ResourceSystem. Disabling.");
                 enabled = false;
                 return;
             }

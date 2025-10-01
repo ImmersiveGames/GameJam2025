@@ -314,7 +314,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &6594897375414683829
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,8 +360,8 @@ MonoBehaviour:
   autoGenerateCanvasId: 1
   slotPrefab: {fileID: 2101310795919967380, guid: d816ec07748ef214b93e58a82f57527b, type: 3}
   dynamicSlotsParent: {fileID: 3071241731630620344}
-  persistAcrossScenes: 0
   initialPoolSize: 1
+  persistAcrossScenes: 0
 --- !u!1 &7332591706701328815
 GameObject:
   m_ObjectHideFlags: 0

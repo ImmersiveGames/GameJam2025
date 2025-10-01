@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.ResourceSystems.CanvasRouting;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -7,30 +6,39 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     public interface IActorResourceOrchestrator
     {
-        void RegisterActor(ResourceSystemService actorService);
+        void RegisterActor(ResourceSystem actor);
         void UnregisterActor(string actorId);
+
+        // NOVO: Método para obter ResourceSystem de um ator
+        ResourceSystem GetActorResourceSystem(string actorId);
+        
+        // NOVO: Método para verificar se um ator está registrado
+        bool IsActorRegistered(string actorId);
+        
+        // NOVO: Método para obter todos os ActorIds registrados (para debug)
+        IReadOnlyCollection<string> GetRegisteredActorIds();
 
         void RegisterCanvas(CanvasResourceBinder canvas);
         void UnregisterCanvas(string canvasId);
     }
 
     /// <summary>
-    /// Orchestrator como serviço puro. Registra atores (ResourceSystemService) e canvases (CanvasResourceBinder).
+    /// Orchestrator como serviço puro. Registra atores (ResourceSystem) e canvases (CanvasResourceBinder).
     /// </summary>
     public class ActorResourceOrchestratorService : IActorResourceOrchestrator
     {
-        private readonly Dictionary<string, ResourceSystemService> _actors = new();
+        private readonly Dictionary<string, ResourceSystem> _actors = new();
         private readonly Dictionary<string, CanvasResourceBinder> _canvases = new();
 
         private readonly ICanvasRoutingStrategy _routingStrategy;
         private const string MainUICanvasId = "MainUI";
 
-
         public ActorResourceOrchestratorService(ICanvasRoutingStrategy routingStrategy = null)
         {
             _routingStrategy = routingStrategy ?? new DefaultCanvasRoutingStrategy();
         }
-        public void RegisterActor(ResourceSystemService service)
+
+        public void RegisterActor(ResourceSystem service)
         {
             if (service == null) return;
             if (!_actors.TryAdd(service.EntityId, service)) return;
@@ -49,6 +57,26 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _actors.Remove(actorId);
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered actor '{actorId}'");
         }
+
+        // NOVA IMPLEMENTAÇÃO: Obter ResourceSystem de um ator
+        public ResourceSystem GetActorResourceSystem(string actorId)
+        {
+            _actors.TryGetValue(actorId, out var resourceSystem);
+            return resourceSystem;
+        }
+
+        // NOVA IMPLEMENTAÇÃO: Verificar se ator está registrado
+        public bool IsActorRegistered(string actorId)
+        {
+            return _actors.ContainsKey(actorId);
+        }
+
+        // NOVA IMPLEMENTAÇÃO: Obter todos os ActorIds
+        public IReadOnlyCollection<string> GetRegisteredActorIds()
+        {
+            return _actors.Keys;
+        }
+
         public void RegisterCanvas(CanvasResourceBinder binder)
         {
             if (binder == null) return;
@@ -60,13 +88,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Registered canvas '{binder.CanvasId}'");
         }
+
         public void UnregisterCanvas(string canvasId)
         {
             if (_canvases.Remove(canvasId))
                 DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered canvas '{canvasId}'");
         }
 
-        //public ResourceSystemService GetActorService(string actorId) => _actors.GetValueOrDefault(actorId);
         private void OnResourceUpdated(ResourceUpdateEvent evt)
         {
             if (!_actors.TryGetValue(evt.ActorId, out var actorSvc)) return;
@@ -92,8 +120,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             return resolved;
         }
 
-
-        private void CreateSlotsForActorInCanvas(ResourceSystemService actorSvc, CanvasResourceBinder canvas)
+        private void CreateSlotsForActorInCanvas(ResourceSystem actorSvc, CanvasResourceBinder canvas)
         {
             if (actorSvc == null || canvas == null) return;
 

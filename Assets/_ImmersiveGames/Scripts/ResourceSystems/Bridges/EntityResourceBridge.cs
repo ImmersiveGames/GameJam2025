@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
-using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
 
     public class EntityResourceBridge : MonoBehaviour
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
 
         private IActor _actor;
-        private ResourceSystemService _service;
+        private ResourceSystem _service;
         private IActorResourceOrchestrator _orchestrator;
 
         private void Awake()
@@ -28,7 +27,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
                 return;
             }
 
-            _service = new ResourceSystemService(_actor.ActorId, resourceInstances);
+            _service = new ResourceSystem(_actor.ActorId, resourceInstances);
             DependencyManager.Instance.RegisterForObject(_actor.ActorId, _service);
 
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
@@ -59,6 +58,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
                 DebugUtility.LogVerbose<EntityResourceBridge>($"  - {kv.Key}: {kv.Value.GetCurrentValue()}/{kv.Value.GetMaxValue()}");
         }
 
-        public ResourceSystemService GetService() => _service;
+        public ResourceSystem GetService() => _service;
     }
 }

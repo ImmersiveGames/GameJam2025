@@ -1,10 +1,8 @@
-﻿using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
-using _ImmersiveGames.Scripts.ActorSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public class ResourceIntegrationTester : MonoBehaviour
     {
@@ -26,9 +24,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
                 DebugUtility.LogWarning<ResourceIntegrationTester>("IActor não configurado.");
                 return;
             }
-            if (!DependencyManager.Instance.TryGetForObject<ResourceSystemService>(_actor.ActorId, out var svc))
+            if (!DependencyManager.Instance.TryGetForObject<ResourceSystem>(_actor.ActorId, out var svc))
             {
-                DebugUtility.LogWarning<ResourceIntegrationTester>($"Serviço ResourceSystemService não encontrado para ActorId: {_actor.ActorId}");
+                DebugUtility.LogWarning<ResourceIntegrationTester>($"Serviço ResourceSystem não encontrado para ActorId: {_actor.ActorId}");
                 return;
             }
             svc.Modify(ResourceType.Health, -20);
@@ -43,9 +41,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bridges
                 DebugUtility.LogWarning<ResourceIntegrationTester>("IActor não configurado.");
                 return;
             }
-            if (!DependencyManager.Instance.TryGetForObject<ResourceSystemService>(_actor.ActorId, out var svc))
+            if (!DependencyManager.Instance.TryGetForObject<ResourceSystem>(_actor.ActorId, out var svc))
             {
-                DebugUtility.LogWarning<ResourceIntegrationTester>($"Serviço ResourceSystemService não encontrado para ActorId: {_actor.ActorId}");
+                DebugUtility.LogWarning<ResourceIntegrationTester>($"Serviço ResourceSystem não encontrado para ActorId: {_actor.ActorId}");
                 return;
             }
             svc.Modify(ResourceType.Health, 30);

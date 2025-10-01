@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Services
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     /// <summary>
     /// Serviço puro para gerenciar recursos de uma entidade.
     /// </summary>
-    public class ResourceSystemService : IDisposable
+    public class ResourceSystem : IDisposable
     {
         public string EntityId { get; }
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
@@ -19,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public float LastDamageTime { get; private set; } = -999f;
 
-        public ResourceSystemService(string entityId, IEnumerable<ResourceInstanceConfig> configs)
+        public ResourceSystem(string entityId, IEnumerable<ResourceInstanceConfig> configs)
         {
             EntityId = string.IsNullOrEmpty(entityId) ? Guid.NewGuid().ToString() : entityId;
 

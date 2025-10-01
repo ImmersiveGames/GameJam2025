@@ -9,17 +9,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     /// <summary>
     /// Serviço puro para autoflow (regen/drain).
     /// Chamado via Process(deltaTime) pelo bridge.
-    /// Aplica mudanças por ResourceSystemService. Modify(...) para garantir fluxo único de alterações.
+    /// Aplica mudanças por ResourceSystem. Modify(...) para garantir fluxo único de alterações.
     /// </summary>
     public class ResourceAutoFlowService : IDisposable
     {
-        private readonly ResourceSystemService _resourceSystem;
+        private readonly ResourceSystem _resourceSystem;
         private readonly Dictionary<ResourceType, float> _timers = new();
         private readonly Dictionary<ResourceType, ResourceAutoFlowConfig> _configs = new();
 
         public bool IsPaused { get; private set; }
 
-        public ResourceAutoFlowService(ResourceSystemService resourceSystem, bool startPaused = true)
+        public ResourceAutoFlowService(ResourceSystem resourceSystem, bool startPaused = true)
         {
             _resourceSystem = resourceSystem ?? throw new ArgumentNullException(nameof(resourceSystem));
             IsPaused = startPaused;

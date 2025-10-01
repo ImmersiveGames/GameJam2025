@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.Pool; // Reaproveita pooling nativo da Unity
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using UnityEngine;
+using UnityEngine.Pool;
+// Reaproveita pooling nativo da Unity
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
@@ -34,7 +35,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (!DependencyManager.HasInstance || DependencyManager.Instance == null)
             {
-                Debug.LogWarning("DependencyManager não está disponível. CanvasResourceBinder não será inicializado.");
+                DebugUtility.LogWarning<CanvasResourceBinder>("DependencyManager não está disponível. CanvasResourceBinder não será inicializado.");
                 return;
             }
             SetupCanvasId();
@@ -172,26 +173,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             ClearAllSlots();
-        
-            if (_orchestrator != null)
-            {
-                _orchestrator.UnregisterCanvas(CanvasId);
-            }
-        
+
+            _orchestrator?.UnregisterCanvas(CanvasId);
+
             // Limpeza adicional
-            if (_pool != null)
-            {
-                _pool.Clear();
-                _pool = null;
-            }
+            if (_pool == null) return;
+            _pool.Clear();
+            _pool = null;
         }
 
         [ContextMenu("Debug Slots State")]
         private void DebugSlots()
         {
-            Debug.Log($"Canvas {CanvasId} -> dynamic actors: {_dynamicSlots.Count} - pooled initial capacity: {initialPoolSize}");
+            DebugUtility.Log<CanvasResourceBinder>($"Canvas {CanvasId} -> dynamic actors: {_dynamicSlots.Count} - pooled initial capacity: {initialPoolSize}");
             foreach (KeyValuePair<string, Dictionary<ResourceType, ResourceUISlot>> kv in _dynamicSlots)
-                Debug.Log($"  Actor {kv.Key}: {kv.Value.Count} slots");
+                DebugUtility.Log<CanvasResourceBinder>($"  Actor {kv.Key}: {kv.Value.Count} slots");
         }
     }
 }

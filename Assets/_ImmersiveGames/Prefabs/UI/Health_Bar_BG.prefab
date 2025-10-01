@@ -162,7 +162,6 @@ GameObject:
   - component: {fileID: 1123531348396417340}
   - component: {fileID: 6555155055548673734}
   - component: {fileID: 7358706239104322408}
-  - component: {fileID: 2822330515664230844}
   m_Layer: 5
   m_Name: Health_Bar_BG
   m_TagString: Untagged
@@ -247,20 +246,6 @@ MonoBehaviour:
   valueText: {fileID: 4422880494650787627}
   iconImage: {fileID: 0}
   rootPanel: {fileID: 0}
-  defaultStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
---- !u!114 &2822330515664230844
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2714092453672780032}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7987b039f5de4f3f9b62c7c27237f7bc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
 --- !u!1 &7763835589478428796
 GameObject:
   m_ObjectHideFlags: 0
