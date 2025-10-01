@@ -1,13 +1,11 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    /// <summary>
-    /// Representa um slot de recurso no UI. 
-    /// Não aplica lógica de preenchimento — apenas expõe referências visuais.
-    /// </summary>
     public class ResourceUISlot : MonoBehaviour
     {
         [Header("UI Components")]
@@ -16,10 +14,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private TextMeshProUGUI valueText;
         [SerializeField] private Image iconImage;
         [SerializeField] private GameObject rootPanel;
-        
+    
         private ResourceInstanceConfig _config;
         private ResourceType _type;
-        
+        private IResourceSlotStrategy _slotStrategy;
+    
+        // ESTADO CORRETO: 
+        private float _currentFill = 0f;
+        private float _previousFill = 0f; // ← VALOR ANTERIOR para a pending
+        private string _currentText = "";
+    
         public ResourceType Type => _type;
         public ResourceInstanceConfig InstanceConfig => _config;
         public Image FillImage => fillImage;
@@ -27,50 +31,103 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public TextMeshProUGUI ValueText => valueText;
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
-        private IResourceSlotStrategy _slotStrategy;
 
         private void Awake()
         {
             if (rootPanel == null) rootPanel = gameObject;
-            //var instant = new InstantSlotStrategy();
-            _slotStrategy = new AnimatedFillStrategy();
+            _slotStrategy = new InstantSlotStrategy();
         }
 
         public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig config)
         {
             _type = type;
             _config = config;
+        
+            // Usa factory se disponível
+            if (DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory))
+            {
+                _slotStrategy = factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant);
+            }
+            else
+            {
+                _slotStrategy = CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
+            }
+        
             if (_config?.resourceDefinition != null && iconImage != null)
                 iconImage.sprite = _config.resourceDefinition.icon;
+            
             gameObject.name = $"{actorId}_{type}";
-            ApplyFillStrategy(0,0);
+        
+            // Estado inicial
+            _currentFill = 0f;
+            _previousFill = 0f;
+            ApplyVisuals();
         }
+
+        private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
+        {
+            switch (animationType)
+            {
+                case FillAnimationType.BasicAnimated: return new BasicAnimatedFillStrategy();
+                case FillAnimationType.AdvancedAnimated: return new AdvancedAnimatedFillStrategy();
+                case FillAnimationType.SmoothAnimated: return new SmoothAnimatedFillStrategy();
+                case FillAnimationType.PulseAnimated: return new PulseAnimatedFillStrategy();
+                default: return new InstantSlotStrategy();
+            }
+        }
+
         public void Configure(IResourceValue data)
         {
             if (data == null) return;
 
-            ApplyFillStrategy(data.GetPercentage(),data.GetPercentage(),$"{data.GetCurrentValue():0}/{data.GetMaxValue():0}");
+            float newValue = data.GetPercentage();
+        
+            // LÓGICA CORRETA:
+            // 1. Guarda o valor anterior ANTES de atualizar
+            _previousFill = _currentFill;
+            // 2. Atualiza o valor atual
+            _currentFill = newValue;
+
+            _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
+        
+            ApplyVisuals();
             SetVisible(true);
         }
 
-        private void ApplyFillStrategy(float current, float pending, string text = null)
+        private void ApplyVisuals()
         {
-            // Strategy must be the only place that modifies image.fillAmount/color
             var style = _config?.slotStyle;
-            
-            _slotStrategy.ApplyFill(this, current, pending, style);
-            _slotStrategy.ApplyText(this, text,style);
+        
+            // PASSA OS VALORES CORRETOS:
+            // - Current: valor ATUAL (novo)
+            // - Pending: valor ANTERIOR (para criar o efeito de rastro)
+            _slotStrategy.ApplyFill(this, _currentFill, _previousFill, style);
+            _slotStrategy.ApplyText(this, _currentText, style);
         }
 
         public void Clear()
         {
-            // Clear visual via strategy as well.
             _slotStrategy.ClearVisuals(this);
+            _currentFill = 0f;
+            _previousFill = 0f;
             SetVisible(false);
         }
+
         public void SetVisible(bool visible)
         {
             if (rootPanel != null) rootPanel.SetActive(visible);
+        }
+
+        private void OnDestroy()
+        {
+            ClearAllTweens();
+        }
+
+        private void ClearAllTweens()
+        {
+            if (FillImage != null) FillImage.DOKill();
+            if (PendingFillImage != null) PendingFillImage.DOKill();
+            if (ValueText != null) ValueText.transform.DOKill();
         }
     }
 }

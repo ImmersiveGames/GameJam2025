@@ -214,7 +214,7 @@ MonoBehaviour:
     customCanvasId: 
     hasAutoFlow: 0
     slotStyle: {fileID: 0}
-    enableAnimation: 0
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
 --- !u!114 &388071193
@@ -305,7 +305,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &449169340
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -335,8 +335,8 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     hasAutoFlow: 0
-    slotStyle: {fileID: 0}
-    enableAnimation: 0
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
 --- !u!114 &449169342
@@ -819,7 +819,7 @@ MonoBehaviour:
     customCanvasId: 
     hasAutoFlow: 0
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    enableAnimation: 0
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
 --- !u!1 &1467168390
@@ -1057,7 +1057,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1666611553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1087,8 +1087,8 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     hasAutoFlow: 0
-    slotStyle: {fileID: 0}
-    enableAnimation: 0
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
 --- !u!114 &1666611555
@@ -1182,7 +1182,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1667814062
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1212,16 +1212,16 @@ MonoBehaviour:
     canvasTargetMode: 2
     customCanvasId: MainUI2
     hasAutoFlow: 0
-    slotStyle: {fileID: 0}
-    enableAnimation: 0
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
   - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
     canvasTargetMode: 2
     customCanvasId: MainUI2
     hasAutoFlow: 0
-    slotStyle: {fileID: 0}
-    enableAnimation: 0
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
 --- !u!114 &1667814064

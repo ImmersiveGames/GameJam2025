@@ -20,11 +20,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         [Tooltip("Configuração de animação/visual para este recurso")]
         public ResourceUIStyle slotStyle;
 
-        /*[Tooltip("Estratégia de preenchimento (ScriptableObject). Se null, usa InstantSlotStrategy padrão.")]
-        public ResourceFillStrategy animationStrategy;*/
-
-        [Tooltip("Se a animação está habilitada para este recurso")]
-        public bool enableAnimation = true;
+        [Tooltip("Tipo de animação para preenchimento da barra")]
+        public FillAnimationType fillAnimationType = FillAnimationType.BasicAnimated;
 
         [Tooltip("Configuração de thresholds para este recurso")]
         public ResourceThresholdConfig thresholdConfig;

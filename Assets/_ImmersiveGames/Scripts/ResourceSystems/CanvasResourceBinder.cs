@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private IActorResourceOrchestrator _orchestrator;
         private string _canvasIdResolved;
         public string CanvasId => _canvasIdResolved;
+        private IResourceSlotStrategyFactory _strategyFactory;
 
         private void Awake()
         {
@@ -48,7 +49,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(orchestrator);
                 _orchestrator = orchestrator;
             }
-
+            if (!DependencyManager.Instance.TryGetGlobal(out _strategyFactory))
+            {
+                _strategyFactory = new ResourceSlotStrategyFactory();
+                // Opcional: registrar para reuso
+                DependencyManager.Instance.RegisterGlobal<IResourceSlotStrategyFactory>(_strategyFactory);
+            }
             _orchestrator.RegisterCanvas(this);
             DebugUtility.LogVerbose<CanvasResourceBinder>($"Registered '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'.");
         }

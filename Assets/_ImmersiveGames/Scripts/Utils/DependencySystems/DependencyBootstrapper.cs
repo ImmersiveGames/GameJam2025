@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             // APENAS serviços que PRECISAM existir antes de qualquer cena
             DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
             DependencyManager.Instance.RegisterGlobal<IStateDependentService>(new StateDependentService(GameManagerStateMachine.Instance));
+            //DependencyManager.Instance.RegisterGlobal<IResourceSlotStrategyFactory>(new ResourceSlotStrategyFactory());
      
             DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(new ActorResourceOrchestratorService());
 

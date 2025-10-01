@@ -1,78 +1,119 @@
-﻿using System.Collections;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using DG.Tweening;
 using UnityEngine;
-using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    /// <summary>
-    /// Preenche barras de recurso usando animação com DOTween Free.
-    /// </summary>
     public class AnimatedFillStrategy : IResourceSlotStrategy
     {
+        private readonly Dictionary<ResourceUISlot, Sequence> _activeSequences = new();
+
         public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingPct, ResourceUIStyle style)
         {
-            float quickDuration = style != null ? style.quickDuration : 0.2f;
-            float slowDuration = style != null ? style.slowDuration : 0.8f;
-            float delayBeforeSlow = style != null ? style.delayBeforeSlow : 0.3f;
-
+            // BARRA PRINCIPAL: Preenchimento instantâneo (como jogos de luta)
             if (slot.FillImage != null)
             {
-                // Interpolação manual para fillAmount com coroutine ou Update
-                // Para DOTween Free, usaremos uma abordagem mais simples
+                // Kill tween anterior se existir
+                slot.FillImage.DOKill();
+            
                 slot.FillImage.fillAmount = Mathf.Clamp01(currentPct);
-                
+            
                 if (style != null)
                     slot.FillImage.color = style.fillGradient.Evaluate(currentPct);
             }
 
+            // BARRA SECUNDÁRIA: Animação com delay (estilo jogos de luta)
             if (slot.PendingFillImage != null)
             {
-                // Para DOTween Free, podemos usar uma coroutine para a animação lenta
-                slot.StartCoroutine(AnimatePendingFill(slot.PendingFillImage, pendingPct, slowDuration, delayBeforeSlow, style));
-                
+                // Kill sequência anterior se existir
+                if (_activeSequences.TryGetValue(slot, out var oldSequence))
+                {
+                    oldSequence.Kill();
+                    _activeSequences.Remove(slot);
+                }
+
+                float targetFill = Mathf.Clamp01(pendingPct);
+                float duration = style?.slowDuration ?? 0.8f;
+                float delay = style?.delayBeforeSlow ?? 0.3f;
+
+                // Configura cor se houver estilo
                 if (style != null)
                     slot.PendingFillImage.color = style.pendingColor;
+
+                // Cria sequência DOTween
+                Sequence sequence = DOTween.Sequence();
+            
+                // Delay inicial (como jogos de luta)
+                sequence.AppendInterval(delay);
+            
+                // Animação do fillAmount com ease out quad
+                sequence.Append(
+                    DOTween.To(
+                        () => slot.PendingFillImage.fillAmount,
+                        x => slot.PendingFillImage.fillAmount = x,
+                        targetFill,
+                        duration
+                    ).SetEase(Ease.OutQuad)
+                );
+
+                // Guarda referência da sequência
+                _activeSequences[slot] = sequence;
+
+                // Configura callbacks para limpeza
+                sequence.OnComplete(() => 
+                {
+                    if (_activeSequences.ContainsKey(slot))
+                        _activeSequences.Remove(slot);
+                });
+
+                sequence.OnKill(() => 
+                {
+                    if (_activeSequences.ContainsKey(slot))
+                        _activeSequences.Remove(slot);
+                });
             }
         }
+
         public void ApplyFill(ResourceUISlot slot, float currentPct, ResourceUIStyle style)
         {
-            //nope
+            // Para quando não há valor pendente
+            ApplyFill(slot, currentPct, currentPct, style);
         }
 
-        private IEnumerator AnimatePendingFill(Image pendingImage, float targetFill, float duration, float delay, ResourceUIStyle style)
-        {
-            // Aguarda o delay inicial
-            yield return new WaitForSeconds(delay);
-
-            float startFill = pendingImage.fillAmount;
-            float elapsed = 0f;
-
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float progress = Mathf.Clamp01(elapsed / duration);
-                
-                // Ease Out Quad approximation
-                float easedProgress = 1f - (1f - progress) * (1f - progress);
-                
-                pendingImage.fillAmount = Mathf.Lerp(startFill, targetFill, easedProgress);
-                
-                yield return null;
-            }
-
-            // Garante o valor final exato
-            pendingImage.fillAmount = targetFill;
-        }
         public void ApplyText(ResourceUISlot slot, string target, ResourceUIStyle style)
         {
             if (slot.ValueText != null)
             {
                 slot.ValueText.text = target;
+            
+                // Opcional: Adicionar animação de texto se quiser
+                if (style != null && style.enableTextAnimation)
+                {
+                    // Exemplo: efeito de scale no texto
+                    slot.ValueText.transform.localScale = Vector3.one * 1.2f;
+                    slot.ValueText.transform.DOScale(Vector3.one, 0.3f).SetEase(Ease.OutBack);
+                }
             }
         }
+
         public void ClearVisuals(ResourceUISlot slot)
         {
-            slot.StopAllCoroutines();
+            // Mata todos os tweens ativos para este slot
+            if (slot.FillImage != null)
+                slot.FillImage.DOKill();
+            
+            if (slot.PendingFillImage != null)
+                slot.PendingFillImage.DOKill();
+            
+            if (slot.ValueText != null)
+                slot.ValueText.transform.DOKill();
+
+            // Limpa sequências
+            if (_activeSequences.TryGetValue(slot, out var sequence))
+            {
+                sequence.Kill();
+                _activeSequences.Remove(slot);
+            }
         }
     }
 }
