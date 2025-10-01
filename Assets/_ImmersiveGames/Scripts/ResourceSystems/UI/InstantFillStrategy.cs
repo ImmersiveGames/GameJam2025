@@ -1,27 +1,43 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/UI/FillStrategy/Instant")]
-    public class InstantFillStrategy : ResourceFillStrategy
+    public class InstantSlotStrategy : IResourceSlotStrategy
     {
-        public override void ApplyFill(Image fillImage, Image pendingFillImage, float target, ResourceUIStyle style)
+        public void ApplyFill(ResourceUISlot slot, float currentPct, float pendingPct, ResourceUIStyle style)
         {
-            float clamped = Mathf.Clamp01(target);
-            if (fillImage != null)
+            ApplyFill(slot, currentPct, style);
+            float clamped = Mathf.Clamp01(pendingPct);
+            if (slot.PendingFillImage != null)
             {
-                fillImage.fillAmount = clamped;
-                if (style != null && style.fillGradient != null)
-                    fillImage.color = style.fillGradient.Evaluate(clamped);
-            }
-
-            if (pendingFillImage != null)
-            {
-                pendingFillImage.fillAmount = clamped;
+                slot.PendingFillImage.fillAmount = clamped;
                 if (style != null)
-                    pendingFillImage.color = style.pendingColor;
+                    slot.PendingFillImage.color = style.pendingColor;
             }
+        }
+        public void ApplyFill(ResourceUISlot slot, float currentPct, ResourceUIStyle style)
+        {
+            float clamped = Mathf.Clamp01(currentPct);
+            if (slot.FillImage != null)
+            {
+                slot.FillImage.fillAmount = clamped;
+                if (style != null && style.fillGradient != null)
+                    slot.FillImage.color = style.fillGradient.Evaluate(clamped);
+            }
+        }
+
+        public void ApplyText(ResourceUISlot slot, string target, ResourceUIStyle style)
+        {
+            if (slot.ValueText != null)
+            {
+                slot.ValueText.text = target;
+            }
+        }
+        public void ClearVisuals(ResourceUISlot slot)
+        {
+            // No state to clear in instant strategy
         }
     }
 }

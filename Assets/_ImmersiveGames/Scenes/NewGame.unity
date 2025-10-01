@@ -213,8 +213,7 @@ MonoBehaviour:
     canvasTargetMode: 0
     customCanvasId: 
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
@@ -336,8 +335,7 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
@@ -820,8 +818,7 @@ MonoBehaviour:
     canvasTargetMode: 0
     customCanvasId: 
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
@@ -1090,8 +1087,7 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
@@ -1216,8 +1212,7 @@ MonoBehaviour:
     canvasTargetMode: 2
     customCanvasId: MainUI2
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}
@@ -1225,8 +1220,7 @@ MonoBehaviour:
     canvasTargetMode: 2
     customCanvasId: MainUI2
     hasAutoFlow: 0
-    animationStyle: {fileID: 0}
-    animationStrategy: {fileID: 0}
+    slotStyle: {fileID: 0}
     enableAnimation: 0
     thresholdConfig: {fileID: 0}
     autoFlowConfig: {fileID: 0}

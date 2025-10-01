@@ -22,10 +22,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         
         public ResourceType Type => _type;
         public ResourceInstanceConfig InstanceConfig => _config;
+        public Image FillImage => fillImage;
+        public Image PendingFillImage => pendingFillImage;
+        public TextMeshProUGUI ValueText => valueText;
+        public Image IconImage => iconImage;
+        public GameObject RootPanel => rootPanel;
+        private IResourceSlotStrategy _slotStrategy;
 
         private void Awake()
         {
             if (rootPanel == null) rootPanel = gameObject;
+            //var instant = new InstantSlotStrategy();
+            _slotStrategy = new AnimatedFillStrategy();
         }
 
         public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig config)
@@ -35,45 +43,29 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_config?.resourceDefinition != null && iconImage != null)
                 iconImage.sprite = _config.resourceDefinition.icon;
             gameObject.name = $"{actorId}_{type}";
-            ApplyFillStrategy(0f);
+            ApplyFillStrategy(0,0);
         }
         public void Configure(IResourceValue data)
         {
             if (data == null) return;
 
-            float pct = data.GetPercentage();
-            if (valueText != null)
-                valueText.text = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
-
-            ApplyFillStrategy(pct);
+            ApplyFillStrategy(data.GetPercentage(),data.GetPercentage(),$"{data.GetCurrentValue():0}/{data.GetMaxValue():0}");
             SetVisible(true);
         }
 
-        private void ApplyFillStrategy(float pct)
+        private void ApplyFillStrategy(float current, float pending, string text = null)
         {
             // Strategy must be the only place that modifies image.fillAmount/color
-            var strat = _config?.animationStrategy;
-            var style = _config?.animationStyle;
-
-            if (strat != null && _config?.enableAnimation == true)
-            {
-                strat.ApplyFill(fillImage, pendingFillImage, pct, style);
-            }
-            else
-            {
-                // fallback instant strategy
-                var instant = ScriptableObject.CreateInstance<InstantFillStrategy>();
-                instant.ApplyFill(fillImage, pendingFillImage, pct, style);
-                DestroyImmediate(instant); // avoid leaking transient SO in editor/runtime
-            }
+            var style = _config?.slotStyle;
+            
+            _slotStrategy.ApplyFill(this, current, pending, style);
+            _slotStrategy.ApplyText(this, text,style);
         }
 
         public void Clear()
         {
             // Clear visual via strategy as well.
-            ApplyFillStrategy(0f);
-
-            if (valueText != null) valueText.text = "";
+            _slotStrategy.ClearVisuals(this);
             SetVisible(false);
         }
         public void SetVisible(bool visible)

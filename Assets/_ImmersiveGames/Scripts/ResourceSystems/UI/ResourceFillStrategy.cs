@@ -1,11 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    public abstract class ResourceFillStrategy : ScriptableObject
+    public interface IResourceSlotStrategy
     {
         // Implementations MUST be responsible for setting fillImage and pendingFillImage values/colors.
-        public abstract void ApplyFill(Image fillImage, Image pendingFillImage, float target, ResourceUIStyle style);
+        void ApplyFill(ResourceUISlot slot, float currentPct, float pendingPct, ResourceUIStyle style);
+        void ApplyFill(ResourceUISlot slot, float currentPct, ResourceUIStyle style);
+        void ApplyText(ResourceUISlot slot, string target, ResourceUIStyle style);
+        void ClearVisuals(ResourceUISlot slot);
     }
 }

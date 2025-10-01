@@ -18,10 +18,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         public bool hasAutoFlow = false;
 
         [Tooltip("Configuração de animação/visual para este recurso")]
-        public ResourceUIStyle animationStyle;
+        public ResourceUIStyle slotStyle;
 
-        [Tooltip("Estratégia de preenchimento (ScriptableObject). Se null, usa InstantFillStrategy padrão.")]
-        public ResourceFillStrategy animationStrategy;
+        /*[Tooltip("Estratégia de preenchimento (ScriptableObject). Se null, usa InstantSlotStrategy padrão.")]
+        public ResourceFillStrategy animationStrategy;*/
 
         [Tooltip("Se a animação está habilitada para este recurso")]
         public bool enableAnimation = true;
