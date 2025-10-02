@@ -21,6 +21,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         protected ResourceSystem resourceSystem;
         private IActorResourceOrchestrator _orchestrator;
         protected bool initialized = false;
+        
+        protected IActor Actor => _actor;
 
         protected virtual void Awake()
         {

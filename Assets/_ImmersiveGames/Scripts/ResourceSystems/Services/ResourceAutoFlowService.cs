@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
@@ -18,12 +19,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private readonly Dictionary<ResourceType, float> _timers = new();
         private readonly Dictionary<ResourceType, ResourceAutoFlowConfig> _configs = new();
 
+        private IResourceLinkService _linkService;
         public bool IsPaused { get; private set; }
 
         public ResourceAutoFlowService(ResourceSystem resourceSystem, bool startPaused = true)
         {
             _resourceSystem = resourceSystem ?? throw new ArgumentNullException(nameof(resourceSystem));
             IsPaused = startPaused;
+            
+            // Obter serviço de links
+            if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
+            {
+                _linkService = new ResourceLinkService();
+            }
             RefreshConfigsFromResourceSystem();
             _resourceSystem.ResourceUpdated += OnResourceUpdated;
 
@@ -96,7 +104,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                         : cfg.amountPerTick;
 
                     float totalDelta = 0f;
-                    if (cfg.autoDrain) totalDelta -= Mathf.Abs(perTickAmount) * ticks;
+                    // Para drenagem, verificar links
+                    if (cfg.autoDrain) 
+                    {
+                        totalDelta -= ProcessDrainWithLinks(resourceType, Mathf.Abs(perTickAmount) * ticks);
+                    }
                     if (cfg.autoFill) totalDelta += Mathf.Abs(perTickAmount) * ticks;
 
                     if (Mathf.Abs(totalDelta) > 0.0001f)
@@ -108,7 +120,43 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 }
             }
         }
+        private float ProcessDrainWithLinks(ResourceType resourceType, float desiredDrain)
+        {
+            // Verificar se há link para este recurso
+            var linkConfig = _linkService.GetLink(_resourceSystem.EntityId, resourceType);
+            if (linkConfig == null || !linkConfig.affectTargetWithAutoFlow)
+            {
+                // Comportamento normal se não há link ou não afeta auto-flow
+                return desiredDrain;
+            }
 
+            var sourceResource = _resourceSystem.Get(resourceType);
+            var targetResource = _resourceSystem.Get(linkConfig.targetResource);
+
+            if (sourceResource == null || targetResource == null) 
+                return desiredDrain;
+
+            // Verificar condições de transferência
+            if (!linkConfig.ShouldTransfer(sourceResource.GetCurrentValue(), sourceResource.GetMaxValue()))
+            {
+                return desiredDrain;
+            }
+
+            // Calcular drenagem considerando o link
+            float sourceAvailable = sourceResource.GetCurrentValue();
+            float sourceDrain = Mathf.Min(desiredDrain, sourceAvailable);
+            float remainingDrain = desiredDrain - sourceDrain;
+
+            // Aplicar drenagem restante no recurso alvo
+            if (remainingDrain > 0)
+            {
+                _resourceSystem.Modify(linkConfig.targetResource, -remainingDrain);
+            }
+
+            Debug.Log($"AutoFlow link: {resourceType} drained {sourceDrain}, {linkConfig.targetResource} drained {remainingDrain}");
+
+            return sourceDrain;
+        }
         public void Pause() 
         { 
             IsPaused = true;
