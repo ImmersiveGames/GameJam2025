@@ -392,8 +392,10 @@ MonoBehaviour:
   autoGenerateCanvasId: 0
   slotPrefab: {fileID: 7358706239104322408, guid: 37396a5ff026b5147b08fa6933242a5c, type: 3}
   dynamicSlotsParent: {fileID: 1766904432}
-  persistAcrossScenes: 0
   initialPoolSize: 5
+  persistAcrossScenes: 0
+  defaultSlotInstanceConfig: {fileID: 11400000, guid: d614b503971a1874ca5729aadf2aaf48, type: 2}
+  defaultSlotLayoutConfig: {fileID: 11400000, guid: 3f425259af4edbd4a8e340ee50f71151, type: 2}
 --- !u!1 &1914412363
 GameObject:
   m_ObjectHideFlags: 0
@@ -791,8 +793,10 @@ MonoBehaviour:
   autoGenerateCanvasId: 0
   slotPrefab: {fileID: 7358706239104322408, guid: 37396a5ff026b5147b08fa6933242a5c, type: 3}
   dynamicSlotsParent: {fileID: 6969473263955335583}
-  persistAcrossScenes: 0
   initialPoolSize: 5
+  persistAcrossScenes: 0
+  defaultSlotInstanceConfig: {fileID: 11400000, guid: d614b503971a1874ca5729aadf2aaf48, type: 2}
+  defaultSlotLayoutConfig: {fileID: 11400000, guid: 3f425259af4edbd4a8e340ee50f71151, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

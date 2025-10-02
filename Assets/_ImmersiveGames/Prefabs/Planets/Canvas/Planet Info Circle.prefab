@@ -362,6 +362,9 @@ MonoBehaviour:
   dynamicSlotsParent: {fileID: 3071241731630620344}
   initialPoolSize: 1
   persistAcrossScenes: 0
+  canvasPositionOffset: {x: 0, y: -5, z: -5}
+  canvasRotationOffset: {x: -30, y: 0, z: 0}
+  applyOffsetOnStart: 1
 --- !u!1 &7332591706701328815
 GameObject:
   m_ObjectHideFlags: 0

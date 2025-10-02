@@ -28,6 +28,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         
         [Tooltip("Configuração de auto-flow específica para esta instância")]
         public ResourceAutoFlowConfig autoFlowConfig;
-    }
 
+        [Header("Slot Display")]
+        [Tooltip("Ordem de exibição no canvas (quanto maior, mais na frente)")]
+        public int sortOrder = 0;
+    }
 }

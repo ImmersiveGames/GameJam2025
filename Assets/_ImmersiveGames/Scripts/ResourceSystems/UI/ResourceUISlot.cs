@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public TextMeshProUGUI ValueText => valueText;
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
+        
 
         private void Awake()
         {
@@ -87,6 +88,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             ApplyVisuals();
             SetVisible(true);
         }
+        public ResourceInstanceConfig GetInstanceConfig() => InstanceConfig;
 
         private void ApplyVisuals()
         {
