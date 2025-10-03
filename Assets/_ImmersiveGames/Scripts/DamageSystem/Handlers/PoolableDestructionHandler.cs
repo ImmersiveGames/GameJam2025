@@ -1,7 +1,5 @@
-﻿using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     /// <summary>
@@ -35,15 +33,15 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             if (effectPrefab == null) return;
 
-            // Try to use configured pool (PoolManager)
+            // Try to use a configured pool (PoolManager)
             var poolableEffect = effectPrefab.GetComponent<IPoolable>();
             if (poolableEffect != null)
             {
-                var poolName = effectPrefab.name.Replace("(Clone)", "").Trim();
+                string poolName = effectPrefab.name.Replace("(Clone)", "").Trim();
                 var pool = PoolManager.Instance?.GetPool(poolName);
                 if (pool != null)
                 {
-                    var effect = pool.GetObject(position, null, null, true);
+                    var effect = pool.GetObject(position);
                     if (effect != null)
                     {
                         var effectLifetime = effect.GetData<PoolableObjectData>()?.Lifetime ?? 2f;

@@ -16,19 +16,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
         private readonly List<IDamageModifier> _modifiers = new();
         private readonly Dictionary<DamageType, GameObject> _effectPrefabs = new()
         {
-            { DamageType.Physical, Resources.Load<GameObject>("Effects/PhysicalHitEffect") },
-            { DamageType.Magical, Resources.Load<GameObject>("Effects/MagicalHitEffect") },
-            { DamageType.Fire, Resources.Load<GameObject>("Effects/FireHitEffect") },
-            { DamageType.Ice, Resources.Load<GameObject>("Effects/IceHitEffect") },
-            { DamageType.Lightning, Resources.Load<GameObject>("Effects/LightningHitEffect") },
-            { DamageType.Poison, Resources.Load<GameObject>("Effects/PoisonHitEffect") }
+            { DamageType.Physical, Resources.Load<GameObject>($"Effects/PhysicalHitEffect") },
+            { DamageType.Magical, Resources.Load<GameObject>($"Effects/MagicalHitEffect") },
+            { DamageType.Fire, Resources.Load<GameObject>($"Effects/FireHitEffect") },
+            { DamageType.Ice, Resources.Load<GameObject>($"Effects/IceHitEffect") },
+            { DamageType.Lightning, Resources.Load<GameObject>($"Effects/LightningHitEffect") },
+            { DamageType.Poison, Resources.Load<GameObject>($"Effects/PoisonHitEffect") }
         };
 
         public DamageService(EffectService effectService = null, IActorResourceOrchestrator orchestrator = null)
         {
             _effectService = effectService;
             _orchestrator = orchestrator;
-            DependencyManager.Instance.GetAll<IDamageModifier>(_modifiers);
+            DependencyManager.Instance.GetAll(_modifiers);
         }
 
         public float CalculateFinalDamage(DamageContext ctx)
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
         {
             if (ctx?.Target == null) return false;
 
-            var targetId = ctx.Target.ActorId;
+            string targetId = ctx.Target.ActorId;
 
             if (DependencyManager.Instance != null)
             {
@@ -82,13 +82,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
                 }
             }
 
-            if (_orchestrator != null)
+            if (_orchestrator == null) return false;
             {
                 try
                 {
-                    if (_orchestrator.TryGetActorResource(targetId, out var orchRs))
+                    if (_orchestrator.TryGetActorResource(targetId, out var orchestrator))
                     {
-                        orchRs.Modify(ctx.ResourceType, -ctx.Amount);
+                        orchestrator.Modify(ctx.ResourceType, -ctx.Amount);
                         DebugUtility.LogVerbose<DamageService>($"Applied damage via Orchestrator for {targetId}: {ctx.Amount}");
                         return true;
                     }
@@ -101,5 +101,23 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
 
             return false;
         }
+    }
+    public class DamageContext
+    {
+        public IActor Source { get; set; }
+        public IActor Target { get; set; }
+        public float Amount { get; set; }
+        public DamageType DamageType { get; set; }
+        public ResourceType ResourceType { get; set; } = ResourceType.Health;
+        public Vector3 HitPosition { get; set; } = Vector3.zero;
+    }
+    public enum DamageType
+    {
+        Physical,
+        Magical,
+        Fire,
+        Ice,
+        Lightning,
+        Poison
     }
 }

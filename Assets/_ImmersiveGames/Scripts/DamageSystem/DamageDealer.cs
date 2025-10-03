@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private GameObject destructionEffect;
 
         private float _nextAvailableTime;
-        private HashSet<GameObject> _processedTargetsThisFrame = new HashSet<GameObject>();
+        private readonly HashSet<GameObject> _processedTargetsThisFrame = new HashSet<GameObject>();
 
         public event System.Action<float, IDamageable> OnDamageDealt;
         public event System.Action<IDamageable> OnDamageBlocked;
@@ -35,8 +35,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private void OnCollisionEnter(Collision other) => TryDealDamage(other.gameObject, other.contacts[0].point);
         private void OnTriggerEnter(Collider other) => TryDealDamage(other.gameObject, other.ClosestPoint(transform.position));
 
-        private void LateUpdate()
+        protected override void LateUpdate()
         {
+            base.LateUpdate();
             _processedTargetsThisFrame.Clear();
         }
 
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 HitPosition = contactPoint
             };
 
-            float finalDamage = _damageService != null ? _damageService.CalculateFinalDamage(ctx) : damageAmount;
+            float finalDamage = _damageService?.CalculateFinalDamage(ctx) ?? damageAmount;
             ctx.Amount = finalDamage;
 
             damageable.ReceiveDamage(finalDamage, actor, damageResourceType);

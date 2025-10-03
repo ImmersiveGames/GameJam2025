@@ -641,7 +641,7 @@ GameObject:
   - component: {fileID: 1432878138}
   - component: {fileID: 1432878140}
   - component: {fileID: 1432878141}
-  - component: {fileID: 1432878143}
+  - component: {fileID: 1432878142}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -810,9 +810,9 @@ MonoBehaviour:
     customCanvasId: 
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     fillAnimationType: 1
-    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
-    hasAutoFlow: 1
-    autoFlowConfig: {fileID: 11400000, guid: e8651aab02560ac45bfdf4dba97f49c7, type: 2}
+    thresholdConfig: {fileID: 0}
+    hasAutoFlow: 0
+    autoFlowConfig: {fileID: 0}
     sortOrder: 0
 --- !u!114 &1432878141
 MonoBehaviour:
@@ -823,11 +823,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 1432878126}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61dfceda261c40b2872b6436f598e390, type: 3}
+  m_Script: {fileID: 11500000, guid: 0b07cf04275f4e9686f892c95c424df5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableDebugLogs: 1
---- !u!114 &1432878143
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damageSelf: 0
+  canReceiveDamage: 1
+  primaryDamageResource: 0
+  destroyOnDeath: 0
+  deathEffect: {fileID: 0}
+  invokeEvents: 1
+  checkHealthOnStart: 1
+  canRespawn: 1
+  respawnTime: 3
+  respawnPosition: {x: 0, y: 0, z: 0}
+  useInitialPositionAsRespawn: 1
+  deactivateOnDeath: 1
+--- !u!114 &1432878142
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -836,11 +850,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 1432878126}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c6eb46544ff403981a8bd960fb65b82, type: 3}
+  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableDebugLogs: 1
-  startPaused: 1
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damageSelf: 0
+  damageAmount: 20
+  damageResourceType: 0
+  damageType: 0
+  destroyOnDamage: 0
+  useCooldown: 1
+  cooldownTime: 0.5
+  hitEffect: {fileID: 0}
+  destructionEffect: {fileID: 0}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1066,29 +1090,18 @@ GameObject:
   m_Component:
   - component: {fileID: 1666611558}
   - component: {fileID: 1666611557}
-  - component: {fileID: 1666611556}
+  - component: {fileID: 1666611561}
   - component: {fileID: 1666611555}
   - component: {fileID: 1666611554}
-  - component: {fileID: 1666611553}
-  m_Layer: 7
+  - component: {fileID: 1666611559}
+  - component: {fileID: 1666611560}
+  m_Layer: 10
   m_Name: Planet01
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1666611553
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666611552}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1666611554
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1102,7 +1115,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceInstances:
-  - resourceDefinition: {fileID: 11400000, guid: 572cdc4107898e5418f3232473c35253, type: 2}
+  - resourceDefinition: {fileID: 11400000, guid: ecc8574026cc4f547ac4938262109eff, type: 2}
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
@@ -1124,19 +1137,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   skinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
---- !u!114 &1666611556
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1666611552}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60244ffd351b456d8494a571a02353a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  customActorId: 
 --- !u!54 &1666611557
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1162,7 +1162,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 94
   m_CollisionDetection: 0
 --- !u!4 &1666611558
 Transform:
@@ -1179,6 +1179,70 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1666611559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666611552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b07cf04275f4e9686f892c95c424df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 256
+  damageSelf: 0
+  canReceiveDamage: 1
+  primaryDamageResource: 0
+  destroyOnDeath: 0
+  deathEffect: {fileID: 0}
+  invokeEvents: 1
+  checkHealthOnStart: 1
+  canRespawn: 1
+  respawnTime: 3
+  respawnPosition: {x: 0, y: 0, z: 0}
+  useInitialPositionAsRespawn: 1
+  deactivateOnDeath: 1
+--- !u!114 &1666611560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666611552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damageSelf: 0
+  damageAmount: 20
+  damageResourceType: 0
+  damageType: 0
+  destroyOnDamage: 0
+  useCooldown: 1
+  cooldownTime: 0.5
+  hitEffect: {fileID: 0}
+  destructionEffect: {fileID: 0}
+--- !u!114 &1666611561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666611552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72a9032b8dde457e96475378c457a7bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  customActorId: 
 --- !u!1 &1667814061
 GameObject:
   m_ObjectHideFlags: 0
@@ -1195,11 +1259,9 @@ GameObject:
   - component: {fileID: 1667814065}
   - component: {fileID: 1667814064}
   - component: {fileID: 1667814063}
-  - component: {fileID: 1667814071}
   - component: {fileID: 1667814072}
   - component: {fileID: 1667814074}
   - component: {fileID: 1667814075}
-  - component: {fileID: 1667814076}
   m_Layer: 7
   m_Name: Player02
   m_TagString: Player
@@ -1275,7 +1337,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1667814061}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 29d07ded3bdd4d8795fe1b482080587b, type: 3}
   m_Name: 
@@ -1364,7 +1426,7 @@ Rigidbody:
   m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 94
   m_CollisionDetection: 0
 --- !u!4 &1667814070
 Transform:
@@ -1375,27 +1437,12 @@ Transform:
   m_GameObject: {fileID: 1667814061}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 8, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1667814071
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667814061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26cc2f8661864f0cb44cbcfbfb978f7d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  enableDebugLogs: 1
-  resourceLinks:
-  - {fileID: 11400000, guid: 99db89aca24ded0449207c24510cdf11, type: 2}
 --- !u!114 &1667814072
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1445,6 +1492,7 @@ MonoBehaviour:
   destroyOnDamage: 0
   useCooldown: 0
   cooldownTime: 0.5
+  hitEffect: {fileID: 0}
   destructionEffect: {fileID: 0}
 --- !u!114 &1667814075
 MonoBehaviour:
@@ -1470,20 +1518,6 @@ MonoBehaviour:
   testDealerDamage: 25
   testDealerResource: 0
   testDestroyOnDamage: 0
---- !u!114 &1667814076
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667814061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b4e58524b974f40a39490fd044bfa1b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sourceActor: {fileID: 1432878130}
-  targetActor: {fileID: 1667814067}
 --- !u!1 &1849846772
 GameObject:
   m_ObjectHideFlags: 0
@@ -1597,7 +1631,7 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-  m_audioClip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
+  m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 0.01

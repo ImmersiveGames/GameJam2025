@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
         private readonly Dictionary<ResourceType, float> _initialResourceValues = new();
-        private IRespawnStrategy respawnStrategy = new DelayedRespawnStrategy(); // Novo: Strategy injetada
+        private readonly IRespawnStrategy _respawnStrategy = new DelayedRespawnStrategy(); // Novo: Strategy injetada
         
 
         // Eventos
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            ResourceType resourceToDamage = targetResource == ResourceType.None ? primaryDamageResource : targetResource;
+            var resourceToDamage = targetResource == ResourceType.None ? primaryDamageResource : targetResource;
 
             if (_resourceBridge != null)
             {
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 FinalizeDeath();
                 return;
             }
-            respawnStrategy.Execute(this); // Usar strategy
+            _respawnStrategy.Execute(this); // Usar strategy
         }
 
 

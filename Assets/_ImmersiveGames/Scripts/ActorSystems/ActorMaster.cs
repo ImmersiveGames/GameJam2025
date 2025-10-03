@@ -70,7 +70,6 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         private void OnActorStateChanged(ActorStateChangedEvent evt)
         {
             IsActive = evt.IsActive;
-            DebugUtility.LogVerbose<ActorMaster>($"Ator {ActorName} atualizado: IsActive = {IsActive}");
         }
 
         public void SetSkinActive(bool active)

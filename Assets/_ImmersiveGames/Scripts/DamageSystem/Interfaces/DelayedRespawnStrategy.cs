@@ -6,18 +6,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     {
         public void Execute(DamageReceiver receiver)
         {
-            if (receiver.respawnTime == 0f)
+            switch (receiver.respawnTime)
             {
-                receiver.Revive();
-            }
-            else if (receiver.respawnTime > 0f)
-            {
-                if (receiver.deactivateOnDeath && !receiver.destroyOnDeath) receiver.gameObject.SetActive(false);
-                receiver.Invoke(nameof(receiver.ExecuteDelayedRespawn), receiver.respawnTime);
-            }
-            else
-            {
-                receiver.FinalizeDeath();
+                case 0f:
+                    receiver.Revive();
+                    break;
+                case > 0f: {
+                    if (receiver.deactivateOnDeath && !receiver.destroyOnDeath) receiver.gameObject.SetActive(false);
+                    receiver.Invoke(nameof(receiver.ExecuteDelayedRespawn), receiver.respawnTime);
+                    break;
+                }
+                default:
+                    receiver.FinalizeDeath();
+                    break;
             }
         }
     }

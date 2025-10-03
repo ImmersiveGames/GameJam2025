@@ -43,22 +43,5 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     {
         float Modify(DamageContext ctx);
     }
-    public enum DamageType
-    {
-        Physical,
-        Magical,
-        Fire,
-        Ice,
-        Lightning,
-        Poison
-    }
-    public class DamageContext
-    {
-        public IActor Source { get; set; }
-        public IActor Target { get; set; }
-        public float Amount { get; set; }
-        public DamageType DamageType { get; set; }
-        public ResourceType ResourceType { get; set; } = ResourceType.Health;
-        public Vector3 HitPosition { get; set; } = Vector3.zero;
-    }
+    
 }

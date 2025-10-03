@@ -89,7 +89,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: c7bb6616b8c94c84cbcfd48eab9d968b, type: 2}
+  skinCollection: {fileID: 11400000, guid: c7bb6616b8c94c84cbcfd48eab9d968b, type: 2}
 --- !u!114 &8256161226457529094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102,9 +102,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  damageDeal: 20
-  resourceType: 0
   damageableLayers:
     serializedVersion: 2
     m_Bits: 1536
   damageSelf: 0
+  damageAmount: 20
+  damageResourceType: 0
+  damageType: 0
+  destroyOnDamage: 1
+  useCooldown: 0
+  cooldownTime: 0.5
+  destructionEffect: {fileID: 0}
