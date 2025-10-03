@@ -5,6 +5,8 @@
         Health,
         Energy,
         Mana,
-        Stamina
+        Stamina,
+        Hungry,
+        None
     }
 }

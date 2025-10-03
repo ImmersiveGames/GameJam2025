@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+﻿using System;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -9,7 +10,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class ResourceLinkBridge : ResourceBridgeBase
     {
         [Header("Resource Links")]
-        [SerializeField] private ResourceLinkConfig[] resourceLinks = new ResourceLinkConfig[0];
+        [SerializeField] private ResourceLinkConfig[] resourceLinks = Array.Empty<ResourceLinkConfig>();
 
         private IResourceLinkService _linkService;
 
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
-                DependencyManager.Instance.RegisterGlobal<IResourceLinkService>(_linkService);
+                DependencyManager.Instance.RegisterGlobal(_linkService);
             }
 
             // Registrar todos os links configurados
@@ -46,11 +47,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         protected override void OnServiceDispose()
         {
-            if (_linkService != null && Actor != null)
-            {
-                _linkService.UnregisterAllLinks(Actor.ActorId);
-                LogVerbose("Todos os links removidos");
-            }
+            if (_linkService == null || Actor == null) return;
+            _linkService.UnregisterAllLinks(Actor.ActorId);
+            LogVerbose("Todos os links removidos");
         }
 
         protected override void OnInitializationFailed()
@@ -70,11 +69,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             LogVerbose($"Active resource links for {Actor.ActorId}:");
             foreach (var linkConfig in resourceLinks)
             {
-                if (linkConfig != null)
-                {
-                    bool isActive = _linkService.HasLink(Actor.ActorId, linkConfig.sourceResource);
-                    LogVerbose($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "ACTIVE" : "INACTIVE")}");
-                }
+                if (linkConfig == null) continue;
+                bool isActive = _linkService.HasLink(Actor.ActorId, linkConfig.sourceResource);
+                LogVerbose($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "ACTIVE" : "INACTIVE")}");
             }
         }
 

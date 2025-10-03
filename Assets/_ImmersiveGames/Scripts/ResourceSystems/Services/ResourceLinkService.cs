@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
-                DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(_orchestrator);
+                DependencyManager.Instance.RegisterGlobal(_orchestrator);
             }
 
             // Registrar para eventos de modificação de recursos
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             if (string.IsNullOrEmpty(actorId) || linkConfig == null) return;
 
-            if (!_actorLinks.TryGetValue(actorId, out var links))
+            if (!_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links))
             {
                 links = new Dictionary<ResourceType, ResourceLinkConfig>();
                 _actorLinks[actorId] = links;
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public void UnregisterLink(string actorId, ResourceType sourceResource)
         {
-            if (_actorLinks.TryGetValue(actorId, out var links))
+            if (_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links))
             {
                 if (links.Remove(sourceResource))
                 {
@@ -79,12 +79,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public bool HasLink(string actorId, ResourceType sourceResource)
         {
-            return _actorLinks.TryGetValue(actorId, out var links) && links.ContainsKey(sourceResource);
+            return _actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links) && links.ContainsKey(sourceResource);
         }
 
         public ResourceLinkConfig GetLink(string actorId, ResourceType sourceResource)
         {
-            if (_actorLinks.TryGetValue(actorId, out var links) && links.TryGetValue(sourceResource, out var linkConfig))
+            if (_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links) && links.TryGetValue(sourceResource, out var linkConfig))
             {
                 return linkConfig;
             }

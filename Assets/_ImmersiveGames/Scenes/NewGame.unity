@@ -642,8 +642,6 @@ GameObject:
   - component: {fileID: 1432878140}
   - component: {fileID: 1432878141}
   - component: {fileID: 1432878143}
-  - component: {fileID: 1432878142}
-  - component: {fileID: 1432878139}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -794,18 +792,6 @@ MonoBehaviour:
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
---- !u!114 &1432878139
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432878126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1432878140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -841,20 +827,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   enableDebugLogs: 1
---- !u!114 &1432878142
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432878126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ec8af8de29340b79ab3c2cb966554f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  resourceType: 0
-  testValue: 50
 --- !u!114 &1432878143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1223,8 +1195,9 @@ GameObject:
   - component: {fileID: 1667814065}
   - component: {fileID: 1667814064}
   - component: {fileID: 1667814063}
-  - component: {fileID: 1667814062}
   - component: {fileID: 1667814071}
+  - component: {fileID: 1667814072}
+  - component: {fileID: 1667814074}
   m_Layer: 7
   m_Name: Player02
   m_TagString: Player
@@ -1232,18 +1205,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1667814062
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1667814061}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1667814063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1433,6 +1394,55 @@ MonoBehaviour:
   enableDebugLogs: 1
   resourceLinks:
   - {fileID: 11400000, guid: 99db89aca24ded0449207c24510cdf11, type: 2}
+--- !u!114 &1667814072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1667814061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b07cf04275f4e9686f892c95c424df5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damageSelf: 0
+  canReceiveDamage: 1
+  primaryDamageResource: 0
+  destroyOnDeath: 0
+  deathEffect: {fileID: 0}
+  invokeEvents: 1
+  checkHealthOnStart: 1
+  canRespawn: 1
+  respawnTime: 3
+  respawnPosition: {x: 0, y: 0, z: 0}
+  useInitialPositionAsRespawn: 1
+  deactivateOnDeath: 1
+--- !u!114 &1667814074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1667814061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  damageSelf: 0
+  damageAmount: 20
+  damageResourceType: 0
+  damageType: 0
+  destroyOnDamage: 0
+  useCooldown: 0
+  cooldownTime: 0.5
 --- !u!1 &1849846772
 GameObject:
   m_ObjectHideFlags: 0

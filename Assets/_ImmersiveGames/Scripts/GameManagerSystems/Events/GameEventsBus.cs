@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
@@ -38,17 +39,28 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
             IsPaused = isPaused;
         }
     }
-    public class DeathEvent : IEvent
+    public class ActorDeathEvent : IEvent
     {
-        public Vector3? Position { get; }
-        public GameObject SourceGameObject{ get; }
-        public string ActorId { get; set; }
+        public Vector3 Position { get; }
+        public IActor Actor { get; }
 
 
-        public DeathEvent(Vector3 position, GameObject source)
+        public ActorDeathEvent( IActor actor, Vector3 position  )
         {
+            Actor = actor;
             Position = position;
-            SourceGameObject = source;
+        }
+    }
+    public class ActorReviveEvent : IEvent
+    {
+        public Vector3 Position { get; }
+        public IActor Actor { get; }
+
+
+        public ActorReviveEvent( IActor actor, Vector3 position  )
+        {
+            Actor = actor;
+            Position = position;
         }
     }
     public class ActorStateChangedEvent : IEvent
