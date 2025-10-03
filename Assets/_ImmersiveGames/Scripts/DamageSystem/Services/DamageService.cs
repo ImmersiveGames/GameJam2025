@@ -1,75 +1,105 @@
-﻿// _ImmersiveGames/Scripts/DamageSystem/Services/DamageService.cs
-using System;
-using _ImmersiveGames.Scripts.ActorSystems;
+﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Services
 {
-    public class DamageContext
+    public sealed class DamageService
     {
-        public IActor Source { get; set; }
-        public IActor Target { get; set; }
-        public float Amount { get; set; }
-        public DamageType DamageType { get; set; }
-        public ResourceType ResourceType { get; set; } = ResourceType.Health;
-        public Vector3 HitPosition { get; set; } = Vector3.zero;
-    }
-
-    public class DamageService
-    {
-        private readonly IEventBus<DamageDealtEvent> _damageBus;
         private readonly EffectService _effectService;
         private readonly IActorResourceOrchestrator _orchestrator;
-
-        public DamageService(IEventBus<DamageDealtEvent> damageBus,
-                             EffectService effectService,
-                             IActorResourceOrchestrator orchestrator)
+        private readonly List<IDamageModifier> _modifiers = new();
+        private readonly Dictionary<DamageType, GameObject> _effectPrefabs = new()
         {
-            _damageBus = damageBus;
+            { DamageType.Physical, Resources.Load<GameObject>("Effects/PhysicalHitEffect") },
+            { DamageType.Magical, Resources.Load<GameObject>("Effects/MagicalHitEffect") },
+            { DamageType.Fire, Resources.Load<GameObject>("Effects/FireHitEffect") },
+            { DamageType.Ice, Resources.Load<GameObject>("Effects/IceHitEffect") },
+            { DamageType.Lightning, Resources.Load<GameObject>("Effects/LightningHitEffect") },
+            { DamageType.Poison, Resources.Load<GameObject>("Effects/PoisonHitEffect") }
+        };
+
+        public DamageService(EffectService effectService = null, IActorResourceOrchestrator orchestrator = null)
+        {
             _effectService = effectService;
             _orchestrator = orchestrator;
+            DependencyManager.Instance.GetAll<IDamageModifier>(_modifiers);
         }
 
-        public void ApplyDamage(DamageContext ctx)
+        public float CalculateFinalDamage(DamageContext ctx)
         {
-            if (ctx == null || ctx.Target == null) return;
+            if (ctx == null) return 0f;
+            float modified = ctx.Amount;
+            foreach (var mod in _modifiers)
+                modified = mod.Modify(ctx);
+            return Mathf.Max(0f, modified);
+        }
 
-            // 1) compute final damage (hooks for resistances, crits, buffs)
-            float finalDamage = CalculateFinalDamage(ctx);
+        public void ApplyPostDamageEffects(DamageContext ctx)
+        {
+            if (ctx == null) return;
 
-            // 2) Apply to a resource system
-            if (_orchestrator != null)
+            try
             {
-                if (_orchestrator.TryGetActorResource(ctx.Target.ActorId, out var resourceSystem))
+                EventBus<DamageDealtEvent>.Raise(new DamageDealtEvent(ctx.Source, ctx.Target, ctx.Amount, ctx.DamageType, ctx.HitPosition));
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError<DamageService>($"ApplyPostDamageEffects: failed to raise DamageDealtEvent: {ex}");
+            }
+
+            if (_effectService != null && _effectPrefabs.TryGetValue(ctx.DamageType, out var prefab) && prefab != null)
+            {
+                _effectService.SpawnEffect(prefab, ctx.HitPosition, Quaternion.identity);
+            }
+        }
+
+        public bool TryApplyToResourceSystem(DamageContext ctx)
+        {
+            if (ctx?.Target == null) return false;
+
+            var targetId = ctx.Target.ActorId;
+
+            if (DependencyManager.Instance != null)
+            {
+                try
                 {
-                    resourceSystem.Modify(ctx.ResourceType, -finalDamage);
+                    if (DependencyManager.Instance.TryGetForObject(targetId, out ResourceSystem rs))
+                    {
+                        rs.Modify(ctx.ResourceType, -ctx.Amount);
+                        DebugUtility.LogVerbose<DamageService>($"Applied damage via DependencyManager for {targetId}: {ctx.Amount}");
+                        return true;
+                    }
                 }
-                else
+                catch (System.Exception ex)
                 {
-                    // Fallback: try via DependencyManager per-object
-                    if (DependencyManager.Instance.TryGetForObject(ctx.Target.ActorId, out ResourceSystem rs))
-                        rs.Modify(ctx.ResourceType, -finalDamage);
+                    DebugUtility.LogError<DamageService>($"TryApplyToResourceSystem error (DependencyManager) for {targetId}: {ex}");
                 }
             }
 
-            // 3) Fire global damage event
-            _damageBus?.Raise(new DamageDealtEvent(ctx.Source, ctx.Target, finalDamage, ctx.DamageType, ctx.HitPosition));
+            if (_orchestrator != null)
+            {
+                try
+                {
+                    if (_orchestrator.TryGetActorResource(targetId, out var orchRs))
+                    {
+                        orchRs.Modify(ctx.ResourceType, -ctx.Amount);
+                        DebugUtility.LogVerbose<DamageService>($"Applied damage via Orchestrator for {targetId}: {ctx.Amount}");
+                        return true;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    DebugUtility.LogError<DamageService>($"TryApplyToResourceSystem error (Orchestrator) for {targetId}: {ex}");
+                }
+            }
 
-            // 4) Spawn hit effect
-            _effectService?.SpawnHitEffect(ctx.DamageType, ctx.HitPosition);
-
-            // 5) Optionally return value or trigger other flows
-        }
-
-        protected virtual float CalculateFinalDamage(DamageContext ctx)
-        {
-            // TODO: integrate resistances/buffs/shield
-            // By default, just pass-through
-            return Mathf.Max(0f, ctx.Amount);
+            return false;
         }
     }
 }

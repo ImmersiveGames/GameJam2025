@@ -5,8 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     /// <summary>
-    /// A ideia aqui é que o pool de objetos possa ser usado para destruir objetos.
-    /// Então criar uma estratégia para como se deve destruir os objetos.
+    /// Handle de destruição que retorna o objeto ao pool quando possível.
     /// </summary>
     public class PoolableDestructionHandler : IDestructionHandler
     {
@@ -23,11 +22,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             if (_pool != null && _poolable != null)
             {
+                // Return to pool
                 _pool.ReturnObject(_poolable);
             }
             else
             {
-                // Fallback para destruição normal
                 Object.Destroy(target);
             }
         }
@@ -36,7 +35,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             if (effectPrefab == null) return;
 
-            // Tenta usar pool para efeitos também
+            // Try to use configured pool (PoolManager)
             var poolableEffect = effectPrefab.GetComponent<IPoolable>();
             if (poolableEffect != null)
             {
@@ -54,22 +53,25 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 }
             }
 
-            // Fallback para instanciação normal
+            // fallback
             Object.Instantiate(effectPrefab, position, rotation);
         }
     }
-}
 
-public class DefaultDestructionHandler : IDestructionHandler
-{
-    public void HandleDestruction(GameObject target, bool spawnEffects = true)
+    /// <summary>
+    /// Fallback simples que destrói/instancia normalmente.
+    /// </summary>
+    public class DefaultDestructionHandler : IDestructionHandler
     {
-        Object.Destroy(target);
-    }
+        public void HandleDestruction(GameObject target, bool spawnEffects = true)
+        {
+            Object.Destroy(target);
+        }
 
-    public void HandleEffectSpawn(GameObject effectPrefab, Vector3 position, Quaternion rotation)
-    {
-        if (effectPrefab != null)
-            Object.Instantiate(effectPrefab, position, rotation);
+        public void HandleEffectSpawn(GameObject effectPrefab, Vector3 position, Quaternion rotation)
+        {
+            if (effectPrefab != null)
+                Object.Instantiate(effectPrefab, position, rotation);
+        }
     }
 }

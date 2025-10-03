@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEditor;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
@@ -241,35 +242,57 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 
         #region DAMAGE DEALER CONTEXT MENUS
 
+
         [ContextMenu("Dealer/Test Damage in Front")]
         private void TestDamageInFront()
         {
-            if (_currentDealer != null)
+            if (_currentDealer == null)
             {
-                if (Physics.Raycast(transform.position, transform.forward, out var hit, 10f, _currentDealer.DamageableLayers))
-                {
-                    var damageable = hit.collider.GetComponent<IDamageable>();
-                    if (damageable != null)
-                    {
-                        damageable.ReceiveDamage(testDealerDamage, _currentDealer.Actor, testDealerResource);
-                        Debug.Log($"🎯 Dealer dealt {testDealerDamage} to {damageable.Actor?.ActorName ?? hit.collider.name}");
-                    }
-                }
+                Debug.LogWarning("No DamageDealer found on this object.");
+                return;
+            }
+
+            var origin = _currentDealer.transform;
+            if (Physics.Raycast(origin.position, origin.forward, out var hit, 10f, _currentDealer.DamageableLayers.value))
+            {
+                var target = hit.collider.gameObject;
+                _currentDealer.DebugDealDamageTo(target);
             }
             else
             {
-                Debug.LogWarning("No DamageDealer found on selected object");
+                Debug.Log("No target hit in front of dealer.");
             }
         }
+        
+        [ContextMenu("System/Check Receiver Health")]
+        private void CheckReceiverHealth()
+        {
+            if (_currentReceiver == null || _currentReceiver.Actor == null)
+            {
+                Debug.LogWarning("No valid DamageReceiver to inspect.");
+                return;
+            }
+
+            var actorId = _currentReceiver.Actor.ActorId;
+            if (DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem rs))
+            {
+                var health = rs.Get(ResourceType.Health)?.GetCurrentValue();
+                Debug.Log($"[Health Check] ActorId={actorId}, Health={health}");
+            }
+            else
+            {
+                Debug.LogWarning($"No ResourceSystem found for ActorId={actorId}");
+            }
+        }
+
 
         [ContextMenu("Dealer/Set Damage to 50")]
         private void SetDamageTo50()
         {
             if (_currentDealer != null)
             {
-                // Note: Você precisaria adicionar um setter para DamageAmount no DamageDealer
-                // _currentDealer.SetDamage(50f);
-                Debug.Log("⚠️ SetDamage method not implemented in DamageDealer");
+                _currentDealer.SetDamage(50f);
+                Debug.Log($"⚡ Dealer damage set to 50 for {_currentDealer.Actor?.ActorName ?? name}");
             }
         }
 
@@ -288,18 +311,20 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         [ContextMenu("Dealer/Test Area Damage")]
         private void TestAreaDamage()
         {
-            if (_currentDealer != null)
+            if (_currentDealer == null)
             {
-                var hitColliders = new Collider[_currentDealer.DamageableLayers.value];
-                Physics.OverlapSphereNonAlloc(transform.position, 5f, hitColliders, _currentDealer.DamageableLayers);
-                foreach (var hitCollider in hitColliders)
+                Debug.LogWarning("No DamageDealer found.");
+                return;
+            }
+        
+            var hits = Physics.OverlapSphere(_currentDealer.transform.position, 5f, _currentDealer.DamageableLayers.value);
+            foreach (var hit in hits)
+            {
+                var damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
+                if (damageable != null && damageable != (IDamageable)_currentReceiver)
                 {
-                    var damageable = hitCollider.GetComponent<IDamageable>();
-                    if (damageable != null && (DamageReceiver)damageable != _currentReceiver)
-                    {
-                        damageable.ReceiveDamage(testDealerDamage, _currentDealer.Actor, testDealerResource);
-                        Debug.Log($"💥 Area damage to {damageable.Actor?.ActorName ?? hitCollider.name}");
-                    }
+                    damageable.ReceiveDamage(testDealerDamage, _currentDealer.Actor, testDealerResource);
+                    Debug.Log($"💥 Area damage to {damageable.Actor?.ActorName ?? hit.name}");
                 }
             }
         }

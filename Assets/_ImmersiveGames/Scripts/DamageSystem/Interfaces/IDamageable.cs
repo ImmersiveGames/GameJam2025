@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DamageSystem.Services;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -28,12 +29,20 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         bool CanRespawn { get; }
         bool IsDead { get; }
     }
+    public interface IRespawnStrategy // Novo
+    {
+        void Execute(DamageReceiver receiver);
+    }
+    
     public interface IDestructionHandler
     {
         void HandleDestruction(GameObject target, bool spawnEffects = true);
         void HandleEffectSpawn(GameObject effectPrefab, Vector3 position, Quaternion rotation);
     }
-
+    public interface IDamageModifier
+    {
+        float Modify(DamageContext ctx);
+    }
     public enum DamageType
     {
         Physical,
@@ -42,5 +51,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         Ice,
         Lightning,
         Poison
+    }
+    public class DamageContext
+    {
+        public IActor Source { get; set; }
+        public IActor Target { get; set; }
+        public float Amount { get; set; }
+        public DamageType DamageType { get; set; }
+        public ResourceType ResourceType { get; set; } = ResourceType.Health;
+        public Vector3 HitPosition { get; set; } = Vector3.zero;
     }
 }
