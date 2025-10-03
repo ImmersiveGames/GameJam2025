@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 {

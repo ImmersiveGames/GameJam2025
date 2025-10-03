@@ -8,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-
+[DebugLevel(DebugLevel.Verbose)]
     public class EntityResourceBridge : MonoBehaviour
     {
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();

@@ -125,6 +125,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (actorSlots.TryGetValue(resourceType, out var existing) && existing != null)
             {
                 // Já existe, apenas atualizar
+                DebugUtility.LogVerbose<CanvasResourceBinder>($"[Binder] Slot para '{resourceType}' já existe para actor '{actorId}', atualizando");
                 existing.Configure(data);
                 return;
             }
@@ -184,6 +185,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 actorSlots.TryGetValue(resourceType, out var slot) && slot != null)
             {
                 slot.Configure(data);
+                DebugUtility.LogVerbose<CanvasResourceBinder>($"Updated slot for {resourceType} for actor '{actorId}'");
                 return;
             }
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -26,10 +27,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     /// <summary>
     /// Orchestrator como serviço puro. Registra atores (ResourceSystem) e canvases (CanvasResourceBinder).
     /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
     public class ActorResourceOrchestratorService : IActorResourceOrchestrator
     {
         private readonly Dictionary<string, ResourceSystem> _actors = new();
         private readonly Dictionary<string, CanvasResourceBinder> _canvases = new();
+        private readonly Dictionary<string, string> _canvasIdCache = new();
 
         private readonly ICanvasRoutingStrategy _routingStrategy;
         private const string MainUICanvasId = "MainUI";
@@ -56,7 +59,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             if (!_actors.TryGetValue(actorId, out var svc)) return;
             svc.ResourceUpdated -= OnResourceUpdated;
             _actors.Remove(actorId);
+            // Limpar cache para ator
+            var keysToRemove = _canvasIdCache.Keys.Where(k => k.StartsWith(actorId)).ToList();
+            foreach (var key in keysToRemove) _canvasIdCache.Remove(key);
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered actor '{actorId}'");
+        
         }
 
         // NOVA IMPLEMENTAÇÃO: Obter ResourceSystem de um ator
@@ -93,7 +100,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void UnregisterCanvas(string canvasId)
         {
             if (_canvases.Remove(canvasId))
+            {
+                // Limpar cache para canvas
+                var keysToRemove = _canvasIdCache.Keys.Where(k => k.EndsWith(canvasId)).ToList();
+                foreach (var key in keysToRemove) _canvasIdCache.Remove(key);
                 DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered canvas '{canvasId}'");
+            }
         }
         public bool TryGetActorResource(string actorId, out ResourceSystem resourceSystem)
         {
@@ -116,11 +128,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 DebugUtility.LogWarning<ActorResourceOrchestratorService>($"Target canvas '{targetCanvasId}' not found for actor '{evt.ActorId}'.");
             }
         }
-
+        
         private string ResolveTargetCanvasId(ResourceInstanceConfig config, string actorId)
         {
-            if (config == null) return MainUICanvasId;
-            string resolved = _routingStrategy.ResolveCanvasId(config, actorId);
+            string cacheKey = $"{actorId}_{config?.resourceDefinition.type}";
+            if (_canvasIdCache.TryGetValue(cacheKey, out var cachedCanvasId))
+            {
+                DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"[Orchestrator] Cached CanvasId '{cachedCanvasId}' for actor '{actorId}'");
+                return cachedCanvasId;
+            }
+
+            string resolved = config == null ? MainUICanvasId : _routingStrategy.ResolveCanvasId(config, actorId);
+            _canvasIdCache[cacheKey] = resolved;
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Resolved target CanvasId '{resolved}' for actor '{actorId}'");
             return resolved;
         }
