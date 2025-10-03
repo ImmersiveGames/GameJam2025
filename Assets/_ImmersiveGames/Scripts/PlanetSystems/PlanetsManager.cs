@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -97,7 +98,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planetMaster == null) return false;
             if (!_activePlanets.Contains(planetMaster)) return false;
-            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster.Detectable.ActorName ?? "nulo"} está marcado: {_targetToEater == planetMaster}.", "cyan", this);
+            DebugUtility.LogVerbose<PlanetsManager>($"Verificando se {planetMaster.Owner.ActorName ?? "nulo"} está marcado: {_targetToEater == planetMaster}.", "cyan", this);
             return _targetToEater == planetMaster;
         }
 
@@ -105,7 +106,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (planetMaster == null) return;
             if (!_activePlanets.Remove(planetMaster)) return;
-            DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Detectable.ActorName} removido. Planetas ativos: {_activePlanets.Count}.", "yellow", this);
+            DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Owner.ActorName} removido. Planetas ativos: {_activePlanets.Count}.", "yellow", this);
         }
 
         private void MarkPlanet(PlanetMarkedEvent evt)
@@ -117,14 +118,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(_targetToEater));
             }
             _targetToEater = evt.Detected;
-            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.Detected.Detectable.ActorName}", "yellow", this);
+            DebugUtility.Log<PlanetsManager>($"Planeta marcado: {evt.Detected.Owner.ActorName}", "yellow", this);
         }
 
         private void ClearMarkedPlanet(PlanetUnmarkedEvent evt)
         {
             if (evt.Detected == null) return;
             _targetToEater = null;
-            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Detected.Detectable.ActorName}", "cyan", this);
+            DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Detected.Owner.ActorName}", "cyan", this);
         }
 
         public List<IDetectable> GetActivePlanets() => _activePlanets;

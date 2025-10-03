@@ -1,31 +1,32 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
-    public class SensorDetectedEvent : IEvent
+    public struct DetectionEnterEvent : IEvent
     {
-        public SensorTypes SensorName { get; }
-        public IDetectable Planet { get; }
-        public IDetector Owner { get; }
+        public IDetectable Detectable { get; }
+        public IDetector Detector { get; }
+        public DetectionType DetectionType { get; }
 
-        public SensorDetectedEvent(IDetectable planet, IDetector owner, SensorTypes sensorName)
+        public DetectionEnterEvent(IDetectable detectable, IDetector detector, DetectionType detectionType)
         {
-            SensorName = sensorName;
-            Planet = planet;
-            Owner = owner;
+            Detectable = detectable;
+            Detector = detector;
+            DetectionType = detectionType;
         }
     }
 
-    public class SensorLostEvent : IEvent
+    public struct DetectionExitEvent : IEvent
     {
-        public SensorTypes SensorName { get; }
-        public IDetectable Planet { get; }
-        public IDetector Owner { get; }
+        public IDetectable Detectable { get; }
+        public IDetector Detector { get; }
+        public DetectionType DetectionType { get; }
 
-        public SensorLostEvent(IDetectable planet, IDetector owner, SensorTypes sensorName)
+        public DetectionExitEvent(IDetectable detectable, IDetector detector, DetectionType detectionType)
         {
-            SensorName = sensorName;
-            Planet = planet;
-            Owner = owner;
+            Detectable = detectable;
+            Detector = detector;
+            DetectionType = detectionType;
         }
     }
 }

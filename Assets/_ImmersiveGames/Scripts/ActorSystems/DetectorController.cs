@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DebugLevel(DebugLevel.Logs)]
     public sealed class DetectorController
     {
-        private readonly Dictionary<SensorTypes, List<IDetectable>> _detectedPlanets = new();
+        /*private readonly Dictionary<SensorTypes, List<IDetectable>> _detectedPlanets = new();
 
         private IDetector Owner { get; }
 
@@ -26,14 +27,14 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
             if (_detectedPlanets[sensorName].Contains(interactable)) return;
             _detectedPlanets[sensorName].Add(interactable);
-            DebugUtility.LogVerbose<DetectorController>($"Planeta detectado por {sensorName}: {interactable.Detectable.ActorName}", "green");
+            DebugUtility.LogVerbose<DetectorController>($"Planeta detectado por {sensorName}: {interactable.Owner.ActorName}", "green");
         }
         public void OnPlanetLost(IDetectable interactable, IDetector detector, SensorTypes sensorName)
         {
             if (!ReferenceEquals(detector, Owner)) return;
 
             if (!_detectedPlanets.ContainsKey(sensorName) || !_detectedPlanets[sensorName].Remove(interactable)) return;
-            DebugUtility.LogVerbose<DetectorController>($"Planeta perdido por {sensorName}: {interactable.Detectable.ActorName}", "red");
+            DebugUtility.LogVerbose<DetectorController>($"Planeta perdido por {sensorName}: {interactable.Owner.ActorName}", "red");
             if (!_detectedPlanets[sensorName].Any())
             {
                 _detectedPlanets.Remove(sensorName);
@@ -58,6 +59,6 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         public void Reset()
         {
             _detectedPlanets.Clear();
-        }
+        }*/
     }
 }

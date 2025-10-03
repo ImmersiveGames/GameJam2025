@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -56,11 +57,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnEatPlanetEvent(IDetectable obj)
         {
-            if (obj == null || obj.GetPlanetsMaster() == null)
+            /*if (obj == null || obj.GetPlanetsMaster() == null)
             {
                 DebugUtility.LogWarning<EaterEat>("IDetectable ou PlanetsMaster é nulo no evento EventStartEatPlanet!");
                 return;
-            }
+            }*/
 
             /*_planetHealth = obj.GetPlanetsMaster().GetComponent<PlanetHealth>();
             if (_planetHealth == null)
@@ -71,7 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             StopDamageCoroutine();
             _damageCoroutine = StartCoroutine(ApplyDamageOverTime());
-            DebugUtility.Log<EaterEat>($"Iniciado dano automático ao planeta {obj.GetPlanetsMaster().name} a cada {damageInterval} segundos.");
+            //DebugUtility.Log<EaterEat>($"Iniciado dano automático ao planeta {obj.GetPlanetsMaster().name} a cada {damageInterval} segundos.");
         }
 
         private void OnPlanetDeath(PlanetDestroyedEvent evt)
@@ -80,7 +81,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             StopDamageCoroutine();
             _planetHealth = null;*/
             EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
-            DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.ActorName} destruído. Dano automático interrompido.");
+            //DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.ActorName} destruído. Dano automático interrompido.");
         }
 
         private IEnumerator ApplyDamageOverTime()

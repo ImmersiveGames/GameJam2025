@@ -12,7 +12,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     public class DependencyManager : RegulatorSingleton<DependencyManager>
     {
         [SerializeField] private int maxSceneServices = 2;
-        [SerializeField] private bool useDontDestroyOnLoad = true;
 
         private DependencyInjector _injector;
         private ObjectServiceRegistry _objectRegistry;
@@ -20,7 +19,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         private GlobalServiceRegistry _globalRegistry;
 
         public bool IsInTestMode { get; set; }
-        public int MaxSceneServices => maxSceneServices;
 
         protected override void InitializeSingleton()
         {
@@ -96,25 +94,21 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         protected void OnDestroy()
         {
-            if (instance == this)
-            {
-                ClearAllObjectServices();
-                ClearAllSceneServices();
-                ClearGlobalServices();
-                StopAllCoroutines();
-                DebugUtility.LogVerbose(typeof(DependencyManager), "DependencyManager destruído e serviços limpos.", "yellow");
-            }
+            if (instance != this) return;
+            ClearAllObjectServices();
+            ClearAllSceneServices();
+            ClearGlobalServices();
+            StopAllCoroutines();
+            DebugUtility.LogVerbose(typeof(DependencyManager), "DependencyManager destruído e serviços limpos.", "yellow");
         }
 
         private void OnApplicationQuit()
         {
-            if (instance == this)
-            {
-                ClearAllObjectServices();
-                ClearAllSceneServices();
-                ClearGlobalServices();
-                DebugUtility.LogVerbose(typeof(DependencyManager), "Serviços limpos no fechamento do jogo.", "yellow");
-            }
+            if (instance != this) return;
+            ClearAllObjectServices();
+            ClearAllSceneServices();
+            ClearGlobalServices();
+            DebugUtility.LogVerbose(typeof(DependencyManager), "Serviços limpos no fechamento do jogo.", "yellow");
         }
     }
 }

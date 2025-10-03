@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -86,14 +88,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         private void ConsumePlanet(PlanetDestroyedEvent obj)
         {
-            var resource = obj.Detected?.GetResource();
+            //TODO: aqui precisa vir do recursos junto com o detector.
+            var resource = Object.Instantiate<PlanetResourcesSo>(MockResource); //obj.Detected?.GetResource();
             if (resource == null) return;
             
             DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.ByActor?.ActorName} O desejado é: {_desiredResource?.name ?? "nenhum"}");
             _eater.OnEventConsumeResource(obj.Detected, _desiredResource != null && _desiredResource == resource, obj.ByActor);
             EventBus<EaterSatisfactionEvent>.Raise(new EaterSatisfactionEvent(_desiredResource != null && _desiredResource == resource));
         }
-        
+        public PlanetResourcesSo MockResource { get; set; }
+
         private bool ShouldBeDesiring()
         {
             //Verifica se o Eater está comendo
@@ -153,11 +157,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private List<PlanetResourcesSo> GetAvailableResources()
         {
             List<IDetectable> planets = PlanetsManager.Instance.GetActivePlanets();
-            return planets
+            /*return planets
                 .Select(p => p.GetResource())
                 .Where(r => r)
                 .Distinct()
-                .ToList();
+                .ToList();*/
+            //TODO: mock
+            return new List<PlanetResourcesSo>();
         }
         public void Reset(bool skipEvent = false)
         {

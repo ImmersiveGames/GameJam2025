@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
@@ -66,22 +67,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private void OnPlanetCreated(PlanetCreatedEvent obj)
         {
-            if(obj.Detected.GetPlanetsMaster() != _planetMaster)
+            /*if(obj.Detected.GetPlanetsMaster() != _planetMaster)
                 return;
             var planetData = obj.Detected.GetPlanetData();
             //var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
             _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
             //_orbitRadius = planetInfo.planetDiameter;
-            DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");
+            DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");*/
        
             
-            _orbitSpeed = planetData.GetRandomOrbitSpeed();
+            /*_orbitSpeed = planetData.GetRandomOrbitSpeed();
             //planetInfo.SetOrbitSpeed(_orbitSpeed);
             _selfRotationSpeed = planetData.GetRandomRotationSpeed();
             _orbitClockwise = Random.value > planetData.rotationRightChance;
             //_currentAngle = planetInfo.planetAngle;
             UpdateOrbitPosition(_currentAngle);
-            StartOrbit();
+            StartOrbit();*/
         }
         
 
@@ -117,7 +118,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
         }
         
-        private void OnPlanetDetected(IDetector obj, SensorTypes sensor)
+        /*private void OnPlanetDetected(IDetector obj, SensorTypes sensor)
         {
             if (obj is EaterMaster eater)
             {
@@ -132,7 +133,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 DebugUtility.Log<PlanetMotion>($" {gameObject.name} saiu da detecção de {sensor} de {eater.name}.");
                 //ResumeOrbit();
             }
-        }
+        }*/
         
         private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
         {

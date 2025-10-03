@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
         private void OnPlanetConsumed(PlanetDestroyedEvent evt)
         {
-            if (evt.Detected.Detectable != _detectable) return;
+            if (evt.Detected.Owner != _detectable) return;
             EnableParticles();
         }
     }

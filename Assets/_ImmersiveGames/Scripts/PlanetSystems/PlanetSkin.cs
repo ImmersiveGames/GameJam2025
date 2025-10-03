@@ -45,10 +45,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         
         private void OnPlanetCreated(PlanetCreatedEvent obj)
         {
-            if(obj.Detected.GetPlanetsMaster() != _planetMaster)
+            /*if(obj.Detected.GetPlanetsMaster() != _planetMaster)
                 return;
             ChangeMaterialColor();
-            planetRing.SetActive(Random.value < obj.Detected.GetPlanetData().ringChance);
+            planetRing.SetActive(Random.value < obj.Detected.GetPlanetData().ringChance);*/
             
             /*_planetHealth = _planetMaster.GetComponent<PlanetHealth>();
             if (_planetHealth == null)

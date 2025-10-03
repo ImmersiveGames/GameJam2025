@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -13,12 +14,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private Camera _mainCamera;
         //private EaterHunger _eaterHunger;
         
-        private SensorController _sensorController;
-        [SerializeField]private SensorTypes sensorName = SensorTypes.PlayerRecognizerSensor;
+        //private SensorController _sensorController;
+        //[SerializeField]private SensorTypes sensorName = SensorTypes.PlayerRecognizerSensor;
 
         private void Awake()
         {
-            TryGetComponent(out _sensorController);
+            //TryGetComponent(out _sensorController);
             
             TryGetComponent(out _playerInput);
 
@@ -44,10 +45,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         private void OnInteract(InputAction.CallbackContext context)
         {
             if (!Mouse.current.rightButton.wasPressedThisFrame) return;
-            var config = _sensorController.GetSensorConfig(sensorName);
+            //var config = _sensorController.GetSensorConfig(sensorName);
             var ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, config.DetectLayer)) return;
-            var planet = hit.collider.GetComponentInParent<PlanetsMaster>();
+            //if (!Physics.Raycast(ray, out var hit, Mathf.Infinity, config.DetectLayer)) return;
+            //var planet = hit.collider.GetComponentInParent<PlanetsMaster>();
             /*if (!planet || !_sensorController.GetDetectedSensor(sensorName).Contains(planet)) return;
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {

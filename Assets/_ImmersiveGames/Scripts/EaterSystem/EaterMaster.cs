@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
@@ -15,7 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public Transform FxTransform => FxRoot.transform;
 
         private DetectorController _detectorController;
-        private DetectorController DetectorController => _detectorController ??= new DetectorController(this);
+        //private DetectorController DetectorController => _detectorController ??= new DetectorController(this);
         
         [SerializeField] private EaterConfigSo config;
         public EaterConfigSo GetConfig => config;
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public event Action<IActor> EventEaterBite;
         public event Action<IActor> EventEaterTakeDamage;
-        public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
+        //public event Action<IDetectable, SensorTypes> EventPlanetDetected; // Ação para quando um planeta é detectado
         public event Action<IDetectable> EventStartEatPlanet; // Ação para quando o Eater começa a comer um planeta
         public event Action<IDetectable> EventEndEatPlanet; // Ação para quando o Eater começa a comer um planeta
         public event Action<IDetectable, bool, IActor> EventConsumeResource; // Ação para quando um recurso é consumido
@@ -38,7 +39,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
         public IActor Owner => this;
-        public void OnObjectDetected(IDetectable detectable, IDetector detectorContext, SensorTypes sensorName)
+        public void OnDetected(IDetectable detectable, DetectionType type)
+        {
+            throw new NotImplementedException();
+        }
+        public void OnLost(IDetectable detectable, DetectionType type)
+        {
+            throw new NotImplementedException();
+        }
+        /*public void OnObjectDetected(IDetectable detectable, IDetector detectorContext, SensorTypes sensorName)
         {
             _detectorController.OnObjectDetected(detectable, detectorContext, sensorName);
             EventPlanetDetected?.Invoke(detectable, sensorName);
@@ -46,7 +55,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void OnPlanetLost(IDetectable detectable, IDetector detectorContext, SensorTypes sensorName)
         {
             _detectorController.OnPlanetLost(detectable, detectorContext, sensorName);
-        }
+        }*/
         
 
         public override void Reset(bool resetSkin)
@@ -55,7 +64,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IsActive = true;
             IsEating = false;
             InHungry = false;
-            DetectorController.Reset();
+           // DetectorController.Reset();
             _fxRoot = this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
             SetFxActive(false);
         }

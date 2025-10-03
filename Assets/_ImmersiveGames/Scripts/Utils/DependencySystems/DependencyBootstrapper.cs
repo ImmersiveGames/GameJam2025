@@ -76,14 +76,13 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             DependencyManager.Instance.RegisterGlobal(effectService);
 
             // Resolve IEventBus<DamageDealtEvent> from a dependency manager (must exist after bus registration above)
-            IEventBus<DamageDealtEvent> damageBus = null;
             try
             {
-                DependencyManager.Instance.TryGet(out damageBus);
+                DependencyManager.Instance.TryGet(out IEventBus<DamageDealtEvent> _);
             }
             catch
             {
-                damageBus = null;
+                // ignored
             }
 
             DependencyManager.Instance.TryGet<IActorResourceOrchestrator>(out var orchestrator);

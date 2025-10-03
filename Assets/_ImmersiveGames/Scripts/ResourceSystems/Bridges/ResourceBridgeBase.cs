@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private IActor _actor;
         protected ResourceSystem resourceSystem;
         private IActorResourceOrchestrator _orchestrator;
-        protected bool initialized = false;
+        protected bool initialized;
         
         protected IActor Actor => _actor;
 

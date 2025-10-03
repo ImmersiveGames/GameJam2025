@@ -642,6 +642,9 @@ GameObject:
   - component: {fileID: 1432878140}
   - component: {fileID: 1432878141}
   - component: {fileID: 1432878142}
+  - component: {fileID: 1432878143}
+  - component: {fileID: 1432878146}
+  - component: {fileID: 1432878145}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -865,6 +868,50 @@ MonoBehaviour:
   cooldownTime: 0.5
   hitEffect: {fileID: 0}
   destructionEffect: {fileID: 0}
+--- !u!114 &1432878143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee54ac93978a4a4c87c94dab2fbda987, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  collection: {fileID: 11400000, guid: 76b8f9d251c9a2f44897d6a02a6fea72, type: 2}
+--- !u!114 &1432878145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5187d5a35f641c98d8d06972eadcb17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  showGizmos: 1
+  showDebugRays: 1
+  sensorController: {fileID: 1432878143}
+  showDetectionLines: 1
+  showObjectMarkers: 1
+  showLabels: 1
+  coneSegments: 8
+--- !u!114 &1432878146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2cd5e493aa547bc888696c9d0e4a089, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1095,6 +1142,7 @@ GameObject:
   - component: {fileID: 1666611554}
   - component: {fileID: 1666611559}
   - component: {fileID: 1666611560}
+  - component: {fileID: 1666611562}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Player
@@ -1173,7 +1221,7 @@ Transform:
   m_GameObject: {fileID: 1666611552}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 11.7}
+  m_LocalPosition: {x: 0, y: 0, z: 17.6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1243,6 +1291,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
+--- !u!114 &1666611562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666611552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef8167bef3e440289ec6c2a10cb4726, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  myDetectionType: {fileID: 11400000, guid: 7fe3a70e6e2d12f4689fd7da6799b07c, type: 2}
 --- !u!1 &1667814061
 GameObject:
   m_ObjectHideFlags: 0

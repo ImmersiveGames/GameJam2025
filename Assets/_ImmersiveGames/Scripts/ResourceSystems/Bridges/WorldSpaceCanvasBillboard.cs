@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private bool billboardX = true;
         [SerializeField] private bool billboardY = true;
         [SerializeField] private bool billboardZ = true;
-        [SerializeField] private bool invertForward = false;
+        [SerializeField] private bool invertForward;
 
         [Header("Offset Settings")]
         [SerializeField] private Vector3 positionOffset = Vector3.zero;
@@ -22,14 +22,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         [Header("Update Settings")]
         [SerializeField] private UpdateMethod updateMethod = UpdateMethod.LateUpdate;
-        [SerializeField] private float updateInterval = 0f;
+        [SerializeField] private float updateInterval;
 
-        private Transform cameraTransform;
-        private float lastUpdateTime;
-        private Vector3 originalPosition;
-        private Quaternion originalRotation;
+        private Transform _cameraTransform;
+        private float _lastUpdateTime;
+        private Vector3 _originalPosition;
+        private Quaternion _originalRotation;
 
-        public enum UpdateMethod
+        private enum UpdateMethod
         {
             Update,
             LateUpdate,
@@ -38,8 +38,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void Start()
         {
-            originalPosition = transform.position;
-            originalRotation = transform.rotation;
+            _originalPosition = transform.position;
+            _originalRotation = transform.rotation;
             FindCamera();
         }
 
@@ -50,13 +50,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 targetCamera = Camera.main;
                 if (targetCamera == null)
                 {
-                    targetCamera = FindObjectOfType<Camera>();
+                    targetCamera = FindFirstObjectByType<Camera>();
                 }
             }
 
             if (targetCamera != null)
             {
-                cameraTransform = targetCamera.transform;
+                _cameraTransform = targetCamera.transform;
             }
             else
             {
@@ -90,28 +90,28 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private void UpdateBillboard()
         {
-            if (cameraTransform == null)
+            if (_cameraTransform == null)
             {
                 FindCamera();
-                if (cameraTransform == null) return;
+                if (_cameraTransform == null) return;
             }
 
             // Verificar intervalo de update
-            if (updateInterval > 0f && Time.time - lastUpdateTime < updateInterval)
+            if (updateInterval > 0f && Time.time - _lastUpdateTime < updateInterval)
             {
                 return;
             }
-            lastUpdateTime = Time.time;
+            _lastUpdateTime = Time.time;
 
             // Aplicar offset de posição
-            Vector3 finalPosition = originalPosition + positionOffset;
+            var finalPosition = _originalPosition + positionOffset;
             if (positionOffset != Vector3.zero)
             {
                 transform.position = finalPosition;
             }
 
             // Calcular direção para a câmera
-            Vector3 directionToCamera = cameraTransform.position - transform.position;
+            var directionToCamera = _cameraTransform.position - transform.position;
 
             // Aplicar restrições de eixo
             if (!billboardX) directionToCamera.x = 0f;
@@ -122,27 +122,25 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (invertForward) directionToCamera = -directionToCamera;
 
             // Aplicar rotação apenas se a direção for válida
-            if (directionToCamera != Vector3.zero)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(directionToCamera);
+            if (directionToCamera == Vector3.zero) return;
+            var targetRotation = Quaternion.LookRotation(directionToCamera);
                 
-                // Aplicar offset de rotação
-                if (rotationOffset != Vector3.zero)
-                {
-                    targetRotation *= Quaternion.Euler(rotationOffset);
-                }
-
-                transform.rotation = targetRotation;
+            // Aplicar offset de rotação
+            if (rotationOffset != Vector3.zero)
+            {
+                targetRotation *= Quaternion.Euler(rotationOffset);
             }
+
+            transform.rotation = targetRotation;
         }
 
         [ContextMenu("Find Camera Now")]
         private void FindCameraNow()
         {
             FindCamera();
-            if (cameraTransform != null)
+            if (_cameraTransform != null)
             {
-                Debug.Log($"WorldSpaceCanvasBillboard: Found camera {cameraTransform.name}");
+                Debug.Log($"WorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
             }
         }
 
@@ -155,16 +153,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [ContextMenu("Save Current as Original")]
         private void SaveCurrentAsOriginal()
         {
-            originalPosition = transform.position;
-            originalRotation = transform.rotation;
+            _originalPosition = transform.position;
+            _originalRotation = transform.rotation;
             Debug.Log("Saved current position and rotation as original");
         }
 
         [ContextMenu("Reset to Original")]
         private void ResetToOriginal()
         {
-            transform.position = originalPosition;
-            transform.rotation = originalRotation;
+            transform.position = _originalPosition;
+            transform.rotation = _originalRotation;
             Debug.Log("Reset to original position and rotation");
         }
 
@@ -185,7 +183,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             targetCamera = newCamera;
             if (targetCamera != null)
             {
-                cameraTransform = targetCamera.transform;
+                _cameraTransform = targetCamera.transform;
             }
         }
 
