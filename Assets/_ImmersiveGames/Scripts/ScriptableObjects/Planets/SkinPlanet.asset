@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SkinPlanet
   m_EditorClassIdentifier: 
   configName: Skin Planets
-  modelPrefabs:
-  - {fileID: 2677257219484125173, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
   modelType: 0
+  prefabs:
+  - {fileID: 2677257219484125173, guid: d8dc42023473b8a43b1d373250c2124b, type: 3}
   instantiationMode: 1
   specificIndex: 0

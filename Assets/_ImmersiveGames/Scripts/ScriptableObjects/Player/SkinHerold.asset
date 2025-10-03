@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: SkinHerold
   m_EditorClassIdentifier: 
   configName: Skin Herold
-  modelPrefabs:
+  modelType: 0
+  prefabs:
   - {fileID: 7678704797045127535, guid: bcda19af55909a94d8b4af5f6a98f0e6, type: 3}
   - {fileID: 7259181851142265114, guid: ae1516735f2dbf341902e563b72694d4, type: 3}
-  modelType: 0
   instantiationMode: 1
   specificIndex: 0

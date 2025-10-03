@@ -230,7 +230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  skinCollection: {fileID: 0}
 --- !u!114 &388071194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -353,7 +353,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  skinCollection: {fileID: 0}
 --- !u!114 &449169343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -704,7 +704,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
+  skinCollection: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
 --- !u!114 &1432878136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1123,7 +1123,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  skinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
 --- !u!114 &1666611556
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1295,7 +1295,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollectionData: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
+  skinCollection: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
 --- !u!114 &1667814067
 MonoBehaviour:
   m_ObjectHideFlags: 0

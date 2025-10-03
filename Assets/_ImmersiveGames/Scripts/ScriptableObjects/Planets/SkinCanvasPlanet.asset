@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SkinCanvasPlanet
   m_EditorClassIdentifier: 
   configName: CanvasHealth
-  modelPrefabs:
-  - {fileID: 5103549501105814353, guid: 790eeebafdfb71048a4b560081f96ada, type: 3}
   modelType: 1
+  prefabs:
+  - {fileID: 5103549501105814353, guid: 790eeebafdfb71048a4b560081f96ada, type: 3}
   instantiationMode: 1
   specificIndex: 0

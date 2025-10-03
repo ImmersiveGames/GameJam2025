@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
     /// <summary>
