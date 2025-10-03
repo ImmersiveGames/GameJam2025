@@ -1,57 +1,59 @@
-﻿using UnityEditor;
+﻿using _ImmersiveGames.Scripts.SkinSystems.Data;
+using UnityEditor;
 using UnityEngine;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
-
-[CustomEditor(typeof(SkinCollectionData))]
-public class SkinCollectionEditor : Editor
+namespace _ImmersiveGames.Scripts.SkinSystems.Editor
 {
-    private SerializedProperty _configs;
-
-    private void OnEnable()
+    [CustomEditor(typeof(SkinCollectionData))]
+    public class SkinCollectionEditor : UnityEditor.Editor
     {
-        _configs = serializedObject.FindProperty("configs");
-    }
+        private SerializedProperty _configs;
 
-    public override void OnInspectorGUI()
-    {
-        serializedObject.Update();
-
-        EditorGUILayout.LabelField("Skin Collection", EditorStyles.boldLabel);
-        EditorGUILayout.Space();
-
-        for (int i = 0; i < _configs.arraySize; i++)
+        private void OnEnable()
         {
-            var element = _configs.GetArrayElementAtIndex(i);
-            var skinConfig = element.objectReferenceValue as SkinConfigData;
+            _configs = serializedObject.FindProperty("configs");
+        }
 
-            using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+
+            EditorGUILayout.LabelField("Skin Collection", EditorStyles.boldLabel);
+            EditorGUILayout.Space();
+
+            for (int i = 0; i < _configs.arraySize; i++)
             {
-                EditorGUILayout.BeginHorizontal();
-                element.objectReferenceValue = EditorGUILayout.ObjectField("Skin Config", element.objectReferenceValue, typeof(SkinConfigData), false);
+                var element = _configs.GetArrayElementAtIndex(i);
+                var skinConfig = element.objectReferenceValue as SkinConfigData;
 
-                if (GUILayout.Button("X", GUILayout.Width(20)))
+                using (new EditorGUILayout.VerticalScope(GUI.skin.box))
                 {
-                    _configs.DeleteArrayElementAtIndex(i);
-                    break;
-                }
-                EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                    element.objectReferenceValue = EditorGUILayout.ObjectField("Skin Config", element.objectReferenceValue, typeof(SkinConfigData), false);
 
-                if (skinConfig != null)
-                {
-                    EditorGUILayout.LabelField("ModelType", skinConfig.ModelType.ToString());
-                    if (skinConfig.GetSelectedPrefabs().Count == 0)
+                    if (GUILayout.Button("X", GUILayout.Width(20)))
                     {
-                        EditorGUILayout.HelpBox("⚠️ Nenhum prefab configurado!", MessageType.Warning);
+                        _configs.DeleteArrayElementAtIndex(i);
+                        break;
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    if (skinConfig != null)
+                    {
+                        EditorGUILayout.LabelField("ModelType", skinConfig.ModelType.ToString());
+                        if (skinConfig.GetSelectedPrefabs().Count == 0)
+                        {
+                            EditorGUILayout.HelpBox("⚠️ Nenhum prefab configurado!", MessageType.Warning);
+                        }
                     }
                 }
             }
-        }
 
-        if (GUILayout.Button("Adicionar Novo SkinConfig"))
-        {
-            _configs.InsertArrayElementAtIndex(_configs.arraySize);
-        }
+            if (GUILayout.Button("Adicionar Novo SkinConfig"))
+            {
+                _configs.InsertArrayElementAtIndex(_configs.arraySize);
+            }
 
-        serializedObject.ApplyModifiedProperties();
+            serializedObject.ApplyModifiedProperties();
+        }
     }
 }

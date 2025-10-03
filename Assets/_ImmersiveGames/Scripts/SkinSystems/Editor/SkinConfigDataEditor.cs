@@ -1,19 +1,20 @@
-﻿using UnityEditor;
-using UnityEngine;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
-
-[CustomEditor(typeof(SkinConfigData))]
-public class SkinConfigDataEditor : Editor
+﻿using _ImmersiveGames.Scripts.SkinSystems.Data;
+using UnityEditor;
+namespace _ImmersiveGames.Scripts.SkinSystems.Editor
 {
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(SkinConfigData))]
+    public class SkinConfigDataEditor : UnityEditor.Editor
     {
-        base.OnInspectorGUI();
-
-        var skinConfig = (SkinConfigData)target;
-
-        if (skinConfig.GetSelectedPrefabs().Count == 0)
+        public override void OnInspectorGUI()
         {
-            EditorGUILayout.HelpBox("Nenhum prefab configurado para este Skin!", MessageType.Warning);
+            base.OnInspectorGUI();
+
+            var skinConfig = (SkinConfigData)target;
+
+            if (skinConfig.GetSelectedPrefabs().Count == 0)
+            {
+                EditorGUILayout.HelpBox("Nenhum prefab configurado para este Skin!", MessageType.Warning);
+            }
         }
     }
 }

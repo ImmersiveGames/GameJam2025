@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SimpleBulletSkin
   m_EditorClassIdentifier: 
   configName: Simple Bullet
-  modelPrefabs:
+  modelType: 0
+  prefabs:
   - {fileID: 6004305604637168715, guid: 654b85b1e885a6544842aed1ff033e3b, type: 3}
   - {fileID: 1542112267451166134, guid: 1846ee979c1a55b41bbc9ebadc832631, type: 3}
   - {fileID: 5783526897520017423, guid: 5ea5d3582dbcd1b4097aa8714d505492, type: 3}
-  modelType: 0
   instantiationMode: 2
   specificIndex: 0
