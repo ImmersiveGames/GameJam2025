@@ -4,12 +4,13 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         private Action<T> _onEvent = _ => { };
         private Action _onEventNoArgs = () => { };
 
-        Action<T> IEventBinding<T>.OnEvent {
+        //TODO: verificar porque esse é subutilizado
+        public Action<T> OnEvent {
             get => _onEvent;
             set => _onEvent = value;
         }
 
-        Action IEventBinding<T>.OnEventNoArgs {
+        public Action OnEventNoArgs {
             get => _onEventNoArgs;
             set => _onEventNoArgs = value;
         }

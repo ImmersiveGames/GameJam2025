@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
@@ -11,12 +10,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] protected LayerMask damageableLayers = -1;
         [SerializeField] protected bool damageSelf;
         
-        protected IActor _actor;
-        protected IDestructionHandler _destructionHandler;
+        protected IActor actor;
+        protected IDestructionHandler destructionHandler;
 
         protected virtual void Awake()
         {
-            _actor = GetComponent<IActor>();
+            actor = GetComponent<IActor>();
             InitializeDestructionHandler();
         }
         protected virtual void InitializeDestructionHandler()
@@ -28,13 +27,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 var pooledObject = GetComponent<PooledObject>();
                 if (pooledObject?.GetPool != null)
                 {
-                    _destructionHandler = new PoolableDestructionHandler(poolable, pooledObject.GetPool);
+                    destructionHandler = new PoolableDestructionHandler(poolable, pooledObject.GetPool);
                     return;
                 }
             }
 
             // Fallback para handler padrão
-            _destructionHandler = new DefaultDestructionHandler();
+            destructionHandler = new DefaultDestructionHandler();
         }
 
         protected virtual bool IsValidTarget(GameObject target)
@@ -69,7 +68,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         // Getters para interface
         public LayerMask DamageableLayers => damageableLayers;
-        public IActor Actor => _actor;
-        public IDestructionHandler DestructionHandler => _destructionHandler;
+        public IActor Actor => actor;
+        public IDestructionHandler DestructionHandler => destructionHandler;
     }
 }

@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -103,7 +102,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
         {
-            if (evt.ActorId == _actor?.ActorId && 
+            if (evt.ActorId == actor?.ActorId && 
                 (evt.ResourceType == primaryDamageResource || IsLinkedToPrimaryResource(evt.ResourceType)))
             {
                 CheckCurrentHealth();
@@ -115,7 +114,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (!DependencyManager.Instance.TryGetGlobal(out IResourceLinkService linkService))
                 return false;
 
-            var linkConfig = linkService.GetLink(_actor.ActorId, resourceType);
+            var linkConfig = linkService.GetLink(actor.ActorId, resourceType);
             return linkConfig != null && linkConfig.targetResource == primaryDamageResource;
         }
 
@@ -139,13 +138,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _isDead = true;
             canReceiveDamage = false;
 
-            OnDeath?.Invoke(_actor);
-            EventBus<ActorDeathEvent>.Raise(new ActorDeathEvent(_actor, transform.position));
+            OnDeath?.Invoke(actor);
+            EventBus<ActorDeathEvent>.Raise(new ActorDeathEvent(actor, transform.position));
 
             // Usa o destruction handler para spawnar efeitos
             if (deathEffect != null)
             {
-                _destructionHandler.HandleEffectSpawn(deathEffect, transform.position, transform.rotation);
+                destructionHandler.HandleEffectSpawn(deathEffect, transform.position, transform.rotation);
             }
 
             if (canRespawn)
@@ -176,7 +175,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             if (destroyOnDeath)
             {
-                _destructionHandler.HandleDestruction(gameObject, false);
+                destructionHandler.HandleDestruction(gameObject, false);
             }
             else if (deactivateOnDeath)
             {
@@ -209,8 +208,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             float reviveHealth = healthAmount >= 0 ? healthAmount : GetInitialResourceValue(primaryDamageResource);
             _resourceBridge?.GetService().Set(primaryDamageResource, reviveHealth);
 
-            OnRevive?.Invoke(_actor);
-            EventBus<ActorReviveEvent>.Raise(new ActorReviveEvent(_actor, transform.position));
+            OnRevive?.Invoke(actor);
+            EventBus<ActorReviveEvent>.Raise(new ActorReviveEvent(actor, transform.position));
         }
 
         public void ResetToInitialState()
@@ -233,7 +232,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 }
             }
 
-            OnRevive?.Invoke(_actor);
+            OnRevive?.Invoke(actor);
         }
 
         #endregion

@@ -20,6 +20,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         void RegisterCanvas(CanvasResourceBinder canvas);
         void UnregisterCanvas(string canvasId);
+        bool TryGetActorResource(string actorId, out ResourceSystem resourceSystem);
     }
 
     /// <summary>
@@ -93,6 +94,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             if (_canvases.Remove(canvasId))
                 DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered canvas '{canvasId}'");
+        }
+        public bool TryGetActorResource(string actorId, out ResourceSystem resourceSystem)
+        {
+            return _actors.TryGetValue(actorId, out resourceSystem);
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)

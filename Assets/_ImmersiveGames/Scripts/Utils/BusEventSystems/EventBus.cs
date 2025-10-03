@@ -5,26 +5,16 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
     [DebugLevel(DebugLevel.Logs)]
     public static class EventBus<T> where T : IEvent {
-        private static readonly HashSet<IEventBinding<T>> _bindings = new();
+        // fallback internal bus
+        private static readonly InjectableEventBus<T> _internalBus = new();
+        // optional injected bus (registered at bootstrap if desired)
+        public static IEventBus<T> GlobalBus { get; set; } = _internalBus;
     
-        public static void Register(EventBinding<T> binding)
-        {
-            _bindings.Add(binding);
-            //DebugUtility.LogVerbose(typeof(T),$"🔊 Registered listener for {typeof(T).Name}. Total: {_bindings.Count}");
-        }
-        public static void Unregister(EventBinding<T> binding) => _bindings.Remove(binding);
+        public static void Register(EventBinding<T> binding) => GlobalBus.Register(binding);
+        public static void Unregister(EventBinding<T> binding) => GlobalBus.Unregister(binding);
 
-        public static void Raise(T @event) {
-            var snapshot = new HashSet<IEventBinding<T>>(_bindings);
-            foreach (var binding in snapshot.Where(binding => _bindings.Contains(binding))) {
-                binding.OnEvent.Invoke(@event);
-                binding.OnEventNoArgs.Invoke();
-            }
-            //DebugUtility.LogVerbose(typeof(T),$"✅ Event {typeof(T).Name} processed by {_bindings.Count} listeners");
-        }
-        public static void Clear() {
-            _bindings.Clear();
-        }
+        public static void Raise(T @event) => GlobalBus.Raise(@event);
+        public static void Clear() => GlobalBus.Clear();
     }
     
 }

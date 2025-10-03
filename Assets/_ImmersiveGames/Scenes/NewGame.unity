@@ -1198,6 +1198,8 @@ GameObject:
   - component: {fileID: 1667814071}
   - component: {fileID: 1667814072}
   - component: {fileID: 1667814074}
+  - component: {fileID: 1667814075}
+  - component: {fileID: 1667814076}
   m_Layer: 7
   m_Name: Player02
   m_TagString: Player
@@ -1443,6 +1445,45 @@ MonoBehaviour:
   destroyOnDamage: 0
   useCooldown: 0
   cooldownTime: 0.5
+  destructionEffect: {fileID: 0}
+--- !u!114 &1667814075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1667814061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logAllEvents: 1
+  showVisualDebug: 1
+  debugColor: {r: 1, g: 0, b: 0, a: 1}
+  testDamage: 10
+  testResource: 0
+  reviveHealth: 100
+  testRespawnTime: 3
+  testCanRespawn: 1
+  testDeactivateOnDeath: 1
+  testDealerDamage: 25
+  testDealerResource: 0
+  testDestroyOnDamage: 0
+--- !u!114 &1667814076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1667814061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b4e58524b974f40a39490fd044bfa1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceActor: {fileID: 1432878130}
+  targetActor: {fileID: 1667814067}
 --- !u!1 &1849846772
 GameObject:
   m_ObjectHideFlags: 0

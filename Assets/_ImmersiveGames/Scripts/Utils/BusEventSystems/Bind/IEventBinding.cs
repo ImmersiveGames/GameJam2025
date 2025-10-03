@@ -7,10 +7,4 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
         public Action OnEventNoArgs { get; set; }
     }
     
-    public interface IUIFactory<in TEvent, TUI> where TEvent : IEvent
-    {
-        TUI CreateUI(TEvent evt, Transform parent);
-        void ReturnToPool(TUI ui);
-    }
-    
 }
