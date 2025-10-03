@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
+    [DebugLevel(DebugLevel.Error)]
     public class GlobalServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<Type, object> _services = new();
@@ -23,6 +24,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             _services[type] = service;
             DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Serviço {type.Name} registrado no escopo global.", "green");
+        }
+        public IEnumerable<T> GetAll<T>() where T : class
+        {
+            foreach (var svc in _services.Values)
+            {
+                if (svc is T typedService)
+                    yield return typedService;
+            }
         }
 
         public override bool TryGet<T>(string key, out T service)

@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
+    [DebugLevel(DebugLevel.Error)]
     public class SceneServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _sceneServices = new();
@@ -90,7 +91,17 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             return false;
         }
-
+        public IEnumerable<T> GetAll<T>(string sceneName) where T : class
+        {
+            if (_sceneServices.TryGetValue(sceneName, out var sceneServices))
+            {
+                foreach (var svc in sceneServices.Values)
+                {
+                    if (svc is T typedService)
+                        yield return typedService;
+                }
+            }
+        }
         public override void Clear(string key)
         {
             if (string.IsNullOrEmpty(key))

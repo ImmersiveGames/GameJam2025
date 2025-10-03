@@ -2,7 +2,6 @@
 using System.Reflection;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DamageSystem.Services;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -88,7 +87,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             DependencyManager.Instance.TryGet<IActorResourceOrchestrator>(out var orchestrator);
-            var damageService = new DamageService(damageBus, effectService, orchestrator);
+            var damageService = new DamageService(effectService, orchestrator);
             DependencyManager.Instance.RegisterGlobal(damageService);
             
             DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");

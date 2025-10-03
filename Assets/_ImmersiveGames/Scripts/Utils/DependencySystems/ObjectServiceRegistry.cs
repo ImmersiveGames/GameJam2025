@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.None)]
+    [DebugLevel(DebugLevel.Error)]
     public class ObjectServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _objectServices = new();
@@ -62,7 +62,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             return false;
         }
-
+        public IEnumerable<string> GetAllObjectIds()
+        {
+            return _objectServices.Keys;
+        }
         public override void Clear(string key)
         {
             if (string.IsNullOrEmpty(key))
