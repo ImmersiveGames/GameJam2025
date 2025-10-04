@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 container.SetParent(parent);
                 container.localPosition = Vector3.zero;
                 container.localRotation = Quaternion.identity;
+                container.localScale = Vector3.one;
             }
             else
             {

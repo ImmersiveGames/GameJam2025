@@ -1,12 +1,11 @@
-﻿using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
 {
     public class DefensesMovement : MonoBehaviour
     {
         private DefensesMaster _defensesMaster;
-        private ProjectilesData _projectilesData;
+        
         private MovementType _movementType;
         private IMovementStrategy _strategy;
         private Vector3 _direction;
@@ -22,15 +21,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
         }
         public void Initialize(Vector3? direction, float speed, Transform target = null)
         {
-            if (_defensesMaster.ProjectilesData is null)
+            /*if (_defensesMaster.ProjectilesData is null)
             {
                 DebugUtility.LogError<DefensesMovement>($"No ProjectilesData found on {gameObject.name}. Please assign ProjectilesData in the DefensesMaster component.");
                 return;
             }
-            _projectilesData = _defensesMaster.ProjectilesData;
+            _projectilesData = _defensesMaster.ProjectilesData;*/
             _movementType = MovementType.Direct;//_projectilesData.movementType;
-            _strategy = CreateStrategy(_movementType);
-            _strategy.Initialize(transform, target);
+            /*_strategy = CreateStrategy(_movementType);
+            _strategy.Initialize(transform, target);*/
             _direction = direction ?? Vector3.forward;
             if (_direction != Vector3.zero)
             {
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             if (_defensesMaster.IsActive)
                 _strategy?.Tick();
         }
-        private IMovementStrategy CreateStrategy(MovementType tipo)
+        /*private IMovementStrategy CreateStrategy(MovementType tipo)
         {
             switch (tipo)
             {
@@ -57,13 +56,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
                 default:
                     return null;
             }
-        }
+        }*/
         
         public void ChangeStrategy(MovementType newType)
         {
-            if (_strategy == null) return;
-            _strategy = CreateStrategy(newType);
-            _strategy.Initialize(transform, _target);
+            // if (_strategy == null) return;
+            // _strategy = CreateStrategy(newType);
+            // _strategy.Initialize(transform, _target);
         }
         
     }

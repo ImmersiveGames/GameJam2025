@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }*/
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
-            TryChooseDesire(obj?.Detected);
+            //TryChooseDesire(obj?.Detected);
         }
         private void OnUnmarkedPlanet(PlanetUnmarkedEvent obj)
         {

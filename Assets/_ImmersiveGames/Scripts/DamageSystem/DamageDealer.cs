@@ -8,6 +8,7 @@ using System.Collections.Generic;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
+    [DebugLevel(DebugLevel.Logs)]
     public class DamageDealer : DamageSystemBase, IDamageSource
     {
         [Header("Damage Settings")]
@@ -122,7 +123,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (target == null) return;
             var hitPoint = target.transform.position;
             TryDealDamage(target, hitPoint);
-            Debug.Log($"[DamageDealer Debug] Tried to deal {damageAmount} damage to {target.name}");
+            DebugUtility.Log<DamageDealer>($"Tried to deal {damageAmount} damage to {target.name}");
         }
     }
 }

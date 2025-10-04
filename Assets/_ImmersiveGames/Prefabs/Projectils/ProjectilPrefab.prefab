@@ -74,7 +74,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2513dd39b704579b039af459eb3300f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _collisionLayers:
+  collisionLayers:
     serializedVersion: 2
     m_Bits: 1536
 --- !u!114 &-6241042625207907278
@@ -112,4 +112,5 @@ MonoBehaviour:
   destroyOnDamage: 1
   useCooldown: 0
   cooldownTime: 0.5
+  hitEffect: {fileID: 0}
   destructionEffect: {fileID: 0}

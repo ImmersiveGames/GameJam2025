@@ -36,8 +36,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             //_planetMaster.EventPlanetDetected += OnPlanetDetected;
             //_planetMaster.EventPlanetLost += OnPlanetLost;
-            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            /*_planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);*/
             _planetCreateBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
             EventBus<PlanetCreatedEvent>.Register(_planetCreateBinding);
      
@@ -135,10 +135,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }*/
         
-        private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
+        /*private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
         {
             if(!ReferenceEquals(obj.Detected, _planetMaster)) return;
             //ResumeOrbit();
-        }
+        }*/
     }
 }

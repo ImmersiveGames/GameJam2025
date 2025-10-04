@@ -10,10 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 41fdcf2427f7495ebf95865ea69c07d4, type: 3}
-  m_Name: PlanetSkinCollection
+  m_Name: PlayerSkinCollection
   m_EditorClassIdentifier: 
-  collectionName: PLanetCollection
+  collectionName: PlayerCollection
   configs:
-  - {fileID: 11400000, guid: 911a88aecbf8b65408c619efb28a70ac, type: 2}
-  - {fileID: 11400000, guid: e97445377d9b8be4082e8bd64c768141, type: 2}
-  - {fileID: 11400000, guid: 1bdef4eedef8adb43904326d3cfcd7a7, type: 2}
+  - {fileID: 11400000, guid: d8c2f1ac2c7aa0948bbdda0ba6405ae1, type: 2}
+  - {fileID: 11400000, guid: 2b7955de41c660b4ea7a613f3fc8fdfd, type: 2}

@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             /*if (_planetHealth == null || evt.Detected.GetPlanetsMaster() != _planetHealth.GetComponent<PlanetsMaster>()) return;
             StopDamageCoroutine();
             _planetHealth = null;*/
-            EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
+            //EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
             //DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.ActorName} destruído. Dano automático interrompido.");
         }
 

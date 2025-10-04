@@ -4,9 +4,8 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DebugLevel(DebugLevel.Logs)]
-    public sealed class PlanetsMaster : ActorMaster
+    public sealed class PlanetsMaster : ActorMaster, IPlanetActor
     {
-        
         
         /*public IActor Detectable => this;
 
@@ -216,5 +215,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             float radius = componentInChildren.radius * transform.localScale.x;
             Gizmos.DrawWireSphere(center, radius);
         }*/
+        public IActor PlanetActor => this;
+    }
+    public interface IPlanetActor
+    {
+        IActor PlanetActor { get; }
     }
 }

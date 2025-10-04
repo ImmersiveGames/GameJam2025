@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
         private readonly Dictionary<ResourceType, ResourceInstanceConfig> _instanceConfigs = new();
         
-        private IResourceLinkService _linkService;
+        private readonly IResourceLinkService _linkService;
 
         public event Action<ResourceUpdateEvent> ResourceUpdated;
 
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 float newValue = Mathf.Clamp(resource.GetCurrentValue() + delta, 0, resource.GetMaxValue());
                 if (Mathf.Approximately(resource.GetCurrentValue(), newValue)) return;
 
-                ApplyModification(type, delta, resource, newValue);
+                ApplyModification(type, delta, resource);
             }
         }
         private void ModifyWithLink(ResourceType type, float delta, ResourceLinkConfig linkConfig)
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 float newValue = Mathf.Clamp(sourceResource.GetCurrentValue() + delta, 0, sourceResource.GetMaxValue());
                 if (!Mathf.Approximately(sourceResource.GetCurrentValue(), newValue))
                 {
-                    ApplyModification(type, delta, sourceResource, newValue);
+                    ApplyModification(type, delta, sourceResource);
                 }
                 return;
             }
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
         }
 
-        private void ApplyModification(ResourceType type, float delta, IResourceValue resource, float newValue)
+        private void ApplyModification(ResourceType type, float delta, IResourceValue resource)
         {
             switch (delta)
             {
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     LastDamageTime = Time.time;
                     break;
             }
-
+            
             ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
         }
 

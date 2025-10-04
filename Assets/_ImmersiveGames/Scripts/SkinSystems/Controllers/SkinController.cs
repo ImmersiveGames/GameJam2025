@@ -35,9 +35,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 _skinService.Initialize(skinCollection, transform, _pooledObject?.Spawner);
         }
 
-        public void ApplySkin(ISkinConfig config, IActor spawner = null) =>
+        public void ApplySkin(ISkinConfig config, IActor spawner = null)
+        { 
             _skinService.ApplyConfig(config, spawner);
-
+            FilteredEventBus<SkinUpdateEvent>.RaiseFiltered(new SkinUpdateEvent(config, spawner), spawner);
+        }
         public void ApplySkinCollection(SkinCollectionData newCollection, IActor spawner = null) =>
             _skinService.ApplyCollection(newCollection, spawner);
 

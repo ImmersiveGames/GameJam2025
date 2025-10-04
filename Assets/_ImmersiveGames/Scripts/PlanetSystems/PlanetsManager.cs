@@ -24,11 +24,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnEnable()
         {
-            _planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(MarkPlanet);
+            /*_planetMarkedBinding = new EventBinding<PlanetMarkedEvent>(MarkPlanet);
             EventBus<PlanetMarkedEvent>.Register(_planetMarkedBinding);
 
             _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(ClearMarkedPlanet);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);*/
 
             //_orbitsSpawnedBinding = new EventBinding<OrbitsSpawnedEvent>(OnOrbitsSpawned);
             //EventBus<OrbitsSpawnedEvent>.Register(_orbitsSpawnedBinding);
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.Owner.ActorName} removido. Planetas ativos: {_activePlanets.Count}.", "yellow", this);
         }
 
-        private void MarkPlanet(PlanetMarkedEvent evt)
+        /*private void MarkPlanet(PlanetMarkedEvent evt)
         {
             if (evt.Detected == null) return;
             if (_targetToEater == evt.Detected) return;
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (evt.Detected == null) return;
             _targetToEater = null;
             DebugUtility.Log<PlanetsManager>($"Planeta desmarcado: {evt.Detected.Owner.ActorName}", "cyan", this);
-        }
+        }*/
 
         public List<IDetectable> GetActivePlanets() => _activePlanets;
 

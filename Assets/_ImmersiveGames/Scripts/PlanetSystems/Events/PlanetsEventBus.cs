@@ -1,20 +1,52 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Events
 {
-    public class PlanetMarkedEvent : IEvent
+    
+    public struct PlanetMarkedEvent : IEvent
     {
-        public IDetectable Detected { get; }
-        public PlanetMarkedEvent(IDetectable detected) => Detected = detected;
+        public IActor PlanetActor { get; }
+        public GameObject PlanetObject { get; }
+        public MarkPlanet MarkPlanet { get; }
+
+        public PlanetMarkedEvent(IActor planetActor, GameObject planetObject, MarkPlanet markPlanet)
+        {
+            PlanetActor = planetActor;
+            PlanetObject = planetObject;
+            MarkPlanet = markPlanet;
+        }
     }
 
-    public class PlanetUnmarkedEvent : IEvent
+    public struct PlanetUnmarkedEvent : IEvent
     {
-        public IDetectable Detected { get; }
-        public PlanetUnmarkedEvent(IDetectable detected) => Detected = detected;
+        public IActor PlanetActor { get; }
+        public GameObject PlanetObject { get; }
+        public MarkPlanet MarkPlanet { get; }
+
+        public PlanetUnmarkedEvent(IActor planetActor, GameObject planetObject, MarkPlanet markPlanet)
+        {
+            PlanetActor = planetActor;
+            PlanetObject = planetObject;
+            MarkPlanet = markPlanet;
+        }
     }
+
+    public struct PlanetMarkingChangedEvent : IEvent
+    {
+        public IActor NewMarkedPlanet { get; }
+        public IActor PreviousMarkedPlanet { get; }
+
+        public PlanetMarkingChangedEvent(IActor newMarkedPlanet, IActor previousMarkedPlanet)
+        {
+            NewMarkedPlanet = newMarkedPlanet;
+            PreviousMarkedPlanet = previousMarkedPlanet;
+        }
+    }
+    
     public class PlanetCreatedEvent : IEvent
     {
         public IDetectable Detected { get; }

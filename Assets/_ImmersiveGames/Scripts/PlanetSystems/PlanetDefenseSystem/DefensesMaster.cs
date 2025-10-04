@@ -1,6 +1,5 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.ShootingSystem;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
@@ -29,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.PlanetDefenseSystem
             IsActive = true;
         }
         public event Action EventDefensesDeath;
-        public ProjectilesData ProjectilesData => _pooledObject.GetData<ProjectilesData>();
+        //public ProjectilesData ProjectilesData => _pooledObject.GetData<ProjectilesData>();
         public void OnDefensesDeath()
         {
             DebugUtility.LogVerbose<DefensesMaster>($"EventDefensesDeath invoked for {gameObject.name}", "yellow", this);

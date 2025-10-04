@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             if (prefabs == null || prefabs.Count == 0) return;
 
             _instances[config.ModelType] = prefabs
-                .Select(p => _modelFactory.Instantiate(p, container, config.ConfigName, config.ModelType, spawner))
+                .Select(p => _modelFactory.Instantiate(p, container, spawner, config))
                 .Where(i => i != null)
                 .ToList();
         }

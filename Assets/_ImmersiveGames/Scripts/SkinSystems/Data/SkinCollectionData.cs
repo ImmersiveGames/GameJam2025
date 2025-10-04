@@ -4,6 +4,11 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
+    public interface ISkinCollection
+    {
+        string CollectionName { get; }
+        ISkinConfig GetConfig(ModelType modelType);
+    }
     [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 2)]
     public class SkinCollectionData : ScriptableObject, ISkinCollection
     {
