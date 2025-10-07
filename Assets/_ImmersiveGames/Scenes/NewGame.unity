@@ -783,21 +783,56 @@ MonoBehaviour:
   poolData: {fileID: 11400000, guid: 9d078602accb9c441951d4dff96fd684, type: 2}
   actionName: Fire
   cooldown: 0.5
+  enableShootSounds: 1
+  audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
   strategyType: 0
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
+      mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 1
+      randomPitch: 1
+      spatialBlend: 0.6
+      maxDistance: 50
   multipleLinearStrategy:
     count: 3
     offset: 0.5
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 0
+      randomPitch: 0
+      spatialBlend: 0
+      maxDistance: 50
   circularStrategy:
     count: 5
     radius: 1
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 0
+      randomPitch: 0
+      spatialBlend: 0
+      maxDistance: 50
 --- !u!114 &1432878140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1446,21 +1481,56 @@ MonoBehaviour:
   poolData: {fileID: 11400000, guid: 9d078602accb9c441951d4dff96fd684, type: 2}
   actionName: Fire
   cooldown: 0.5
+  enableShootSounds: 1
+  audioConfig: {fileID: 0}
   strategyType: 0
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 0
+      randomPitch: 0
+      spatialBlend: 0
+      maxDistance: 50
   multipleLinearStrategy:
     count: 3
     offset: 0.5
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 0
+      randomPitch: 0
+      spatialBlend: 0
+      maxDistance: 50
   circularStrategy:
     count: 5
     radius: 1
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
+    shootSound:
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
+      volume: 1
+      priority: 128
+      loop: 0
+      playOnAwake: 0
+      frequentSound: 0
+      randomPitch: 0
+      spatialBlend: 0
+      maxDistance: 50
 --- !u!114 &1667814065
 MonoBehaviour:
   m_ObjectHideFlags: 0

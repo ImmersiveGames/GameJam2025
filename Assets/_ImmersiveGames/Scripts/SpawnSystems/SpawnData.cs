@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SpawnSystems
@@ -17,5 +18,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     public interface ISpawnStrategy
     {
         List<SpawnData> GetSpawnData(Vector3 basePosition, Vector3 baseDirection);
+        SoundData ShootSound { get; }
+        bool HasShootSound { get; }
     }
 }

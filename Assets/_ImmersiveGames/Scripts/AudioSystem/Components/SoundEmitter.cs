@@ -20,6 +20,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private PoolableObjectData _config;
         private ObjectPool _pool;
         private IActor _spawner;
+        
+        private float _volumeMultiplier = 1f;
 
         #region IPoolable Implementation
         public void Configure(PoolableObjectData config, ObjectPool pool, IActor spawner = null)
@@ -134,12 +136,21 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             _audioSource.maxDistance = maxDistance;
         }
+        public void SetVolumeMultiplier(float multiplier)
+        {
+            _volumeMultiplier = multiplier;
+            if (_audioSource != null)
+            {
+                _audioSource.volume = Data.volume * _volumeMultiplier;
+            }
+        }
 
         public void ResetEmitter()
         {
             _audioSource.pitch = 1.0f;
             _audioSource.spatialBlend = 0f;
             _audioSource.maxDistance = 500f;
+            _volumeMultiplier = 1f; // Reset do multiplier
             _audioSource.Stop();
             
             if (_playingCoroutine != null)
@@ -153,7 +164,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             _audioSource.clip = data.clip;
             _audioSource.outputAudioMixerGroup = data.mixerGroup;
-            _audioSource.volume = data.volume;
+            _audioSource.volume = data.volume * _volumeMultiplier; // Aplica multiplier aqui
             _audioSource.priority = data.priority;
             _audioSource.loop = data.loop;
             _audioSource.playOnAwake = data.playOnAwake;

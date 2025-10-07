@@ -7,21 +7,21 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class PlayerAudioController : AudioControllerBase
     {
-        private PlayerMaster _playerMaster;
+        private ActorMaster _actorMaster;
         private EventBinding<PlayerDiedEvent> _playerDiedEvent;
 
         protected override void Awake()
         {
             base.Awake();
-            TryGetComponent(out _playerMaster);
+            TryGetComponent(out _actorMaster);
         }
 
         private void OnEnable()
         {
-            if (_playerMaster != null)
+            if (_actorMaster != null)
             {
-                _playerMaster.EventPlayerShoot += PlayShootSound;
-                _playerMaster.EventPlayerTakeDamage += PlayHitSound;
+                // Sons de tiro agora são gerenciados pelo InputSpawnerComponent
+                //_actorMaster.EventPlayerTakeDamage += PlayHitSound;
             }
 
             _playerDiedEvent = new EventBinding<PlayerDiedEvent>(PlayDeathSound);
@@ -30,19 +30,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void OnDisable()
         {
-            if (_playerMaster != null)
+            if (_actorMaster != null)
             {
-                _playerMaster.EventPlayerShoot -= PlayShootSound;
-                _playerMaster.EventPlayerTakeDamage -= PlayHitSound;
+                //_actorMaster.EventPlayerTakeDamage -= PlayHitSound;
             }
 
             EventBus<PlayerDiedEvent>.Unregister(_playerDiedEvent);
-        }
-
-        private void PlayShootSound(IActor byActor) 
-        {
-            if (audioConfig?.shootSound != null)
-                PlaySound(audioConfig.shootSound);
         }
 
         private void PlayHitSound(IActor byActor) 

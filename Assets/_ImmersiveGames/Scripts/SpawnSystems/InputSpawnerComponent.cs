@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -22,11 +24,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [Header("Cooldown Config")]
         [SerializeField, Min(0f)] private float cooldown = 0.5f;
 
+        [Header("Audio Config")]
+        [SerializeField] private bool enableShootSounds = true;
+        [SerializeField] private AudioConfig audioConfig; // Configuração de áudio opcional
+
         [Header("Spawn Strategy Config")]
         [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
-        [SerializeField] private SingleSpawnStrategy singleStrategy = new SingleSpawnStrategy();
-        [SerializeField] private MultipleLinearSpawnStrategy multipleLinearStrategy = new MultipleLinearSpawnStrategy();
-        [SerializeField] private CircularSpawnStrategy circularStrategy = new CircularSpawnStrategy();
+        [SerializeField] private SingleSpawnStrategy singleStrategy = new();
+        [SerializeField] private MultipleLinearSpawnStrategy multipleLinearStrategy = new();
+        [SerializeField] private CircularSpawnStrategy circularStrategy = new();
 
         private ISpawnStrategy _activeStrategy;
         private ObjectPool _pool;
@@ -96,6 +102,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             }
 
             _spawnAction.performed += OnSpawnPerformed;
+
+            // Garante que o sistema de áudio está inicializado
+            if (enableShootSounds)
+            {
+                AudioSystemInitializer.EnsureAudioSystemInitialized();
+            }
             DebugUtility.LogVerbose<InputSpawnerComponent>($"InputSpawnerComponent inicializado em '{name}' com ação '{actionName}', PoolData '{poolData.ObjectName}', cooldown {cooldown}s e estratégia '{strategyType}'.", "cyan", this);
         }
 
@@ -132,12 +144,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var spawnDataList = _activeStrategy.GetSpawnData(basePosition, baseDirection);
 
             bool success = false;
+            int spawnedCount = 0;
             foreach (var spawnData in spawnDataList)
             {
                 var poolable = _pool.GetObject(spawnData.Position, spawner, spawnData.Direction);
                 if (poolable != null)
                 {
                     success = true;
+                    spawnedCount++;
                     DebugUtility.LogVerbose<InputSpawnerComponent>($"[{name}] Spawned '{poolable.GetGameObject().name}' em '{spawnData.Position}' na direção '{spawnData.Direction}'.", "green", this);
                 }
                 else
@@ -149,6 +163,44 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (success)
             {
                 _lastShotTime = Time.time;
+                // Tocar som de tiro se configurado
+                PlayShootSound(spawnedCount);
+            }
+        }
+        private void PlayShootSound(int spawnedCount)
+        {
+            if (!enableShootSounds) return;
+
+            SoundData soundToPlay = null;
+
+            if (_activeStrategy.HasShootSound)
+            {
+                soundToPlay = _activeStrategy.ShootSound;
+            }
+            else if (audioConfig?.shootSound != null)
+            {
+                soundToPlay = audioConfig.shootSound;
+            }
+
+            if (soundToPlay != null)
+            {
+                float volumeMultiplier = 1f;
+                if (spawnedCount > 1 && strategyType != SpawnStrategyType.Single)
+                {
+                    volumeMultiplier = Mathf.Clamp(1f / Mathf.Sqrt(spawnedCount), 0.5f, 1f);
+                }
+
+                // Usar AudioSystem diretamente com volume ajustado
+                AudioSystemHelper.PlaySound(soundToPlay, transform.position);
+        
+                // Ou usar SoundBuilder se quiser mais controle:
+                // _audioManager.CreateSound()
+                //     .WithSoundData(soundToPlay)
+                //     .WithPosition(transform.position)
+                //     .WithVolumeMultiplier(volumeMultiplier)
+                //     .Play();
+
+                DebugUtility.LogVerbose<InputSpawnerComponent>($"Som de tiro tocado: {soundToPlay.clip?.name} (x{spawnedCount}, volume: {volumeMultiplier:F2})", "cyan", this);
             }
         }
 
@@ -163,6 +215,23 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _ => singleStrategy
             };
             DebugUtility.LogVerbose<InputSpawnerComponent>($"Estratégia alterada para '{type}' em '{name}'.", "cyan", this);
+        }
+        // Método para configurar som específico em runtime
+        public void SetShootSound(SoundData newShootSound)
+        {
+            if (_activeStrategy != null)
+            {
+                // Esta é uma limitação - como as estratégias são structs/classes serializáveis,
+                // não podemos modificar diretamente. Precisamos de uma abordagem diferente.
+                DebugUtility.LogWarning<InputSpawnerComponent>("Não é possível modificar o som da estratégia em runtime. Configure no Inspector.", this);
+            }
+        }
+
+        // Método para habilitar/desabilitar sons em runtime
+        public void SetShootSoundsEnabled(bool enabled)
+        {
+            enableShootSounds = enabled;
+            DebugUtility.LogVerbose<InputSpawnerComponent>($"Sons de tiro {(enabled ? "habilitados" : "desabilitados")}", "yellow", this);
         }
 
 #if UNITY_EDITOR
@@ -192,6 +261,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawWireSphere(basePosition, 0.15f);
                 Gizmos.DrawLine(basePosition, basePosition + baseDirection * 1f);
+
+                // Mostrar info de áudio no Gizmo
+                if (_activeStrategy.HasShootSound && enableShootSounds)
+                {
+                    UnityEditor.Handles.Label(basePosition + Vector3.up * 0.3f,
+                        $"Som: {_activeStrategy.ShootSound.clip?.name ?? "Nenhum"}");
+                }
             }
         }
 #endif

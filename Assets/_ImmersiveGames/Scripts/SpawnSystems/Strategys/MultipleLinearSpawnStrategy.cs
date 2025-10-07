@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [System.Serializable]
@@ -10,11 +10,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField] private float offset = 0.5f;
         [SerializeField, Range(0f, 1f)] private float fuzzyPercent = 0f;
         [SerializeField, Range(0f, 30f)] private float fuzzyAngle = 0f;
-        [SerializeField] private int? randomSeed = null;
+        private int? _randomSeed = null;
+        
+        [SerializeField] private SoundData shootSound;
+
+        public SoundData ShootSound => shootSound;
+        public bool HasShootSound => shootSound != null && shootSound.clip != null;
 
         public List<SpawnData> GetSpawnData(Vector3 basePosition, Vector3 baseDirection)
         {
-            SpawnFuzzyUtility.SetSeed(randomSeed);
+            SpawnFuzzyUtility.SetSeed(_randomSeed);
 
             var spawnDataList = new List<SpawnData>();
             for (int i = 0; i < count; i++)

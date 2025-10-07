@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private bool _randomPitch;
         private float _spatialBlend = 0f;
         private float _maxDistance = 50f;
+        private float _volumeMultiplier = 1f;
 
         public SoundBuilder(IAudioService audioManager)
         {
@@ -45,6 +46,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _maxDistance = maxDistance;
             return this;
         }
+        public SoundBuilder WithVolumeMultiplier(float multiplier)
+        {
+            _volumeMultiplier = multiplier;
+            return this;
+        }
 
         public void Play()
         {
@@ -59,13 +65,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             soundEmitter.Initialize(_soundData, _audioManager);
             soundEmitter.SetSpatialBlend(_spatialBlend);
             soundEmitter.SetMaxDistance(_maxDistance);
+        
+            // Aplica o multiplicador de volume
+            soundEmitter.SetVolumeMultiplier(_volumeMultiplier);
 
             if (_randomPitch)
             {
                 soundEmitter.WithRandomPitch();
             }
 
-            // Ativa via a pool system
+            // Ativa via pool system
             soundEmitter.Activate(_position);
 
             // Toca o som
