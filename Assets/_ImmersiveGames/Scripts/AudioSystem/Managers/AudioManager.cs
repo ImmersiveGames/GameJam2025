@@ -8,6 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.Audio;
+
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class AudioManager : MonoBehaviour, IAudioService
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private ObjectPool _soundEmitterPool;
         private readonly Queue<SoundEmitter> _frequentSoundEmitters = new();
-        
+
         private bool _isInitialized = false;
         private Coroutine _bgmFadeCoroutine;
         private SoundData _currentBGM;
@@ -50,12 +51,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DebugUtility.LogError<AudioManager>("DependencyManager não está disponível");
                 return;
             }
+
             if (!InitializePool())
             {
                 DebugUtility.LogError<AudioManager>("Falha na inicialização do pool");
                 return;
             }
-            
+
             RegisterServices();
             InitializeBGM();
 
@@ -71,7 +73,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 return false;
             }
 
-            // Registra o pool no PoolManager
             PoolManager.Instance.RegisterPool(soundEmitterPoolData);
             _soundEmitterPool = PoolManager.Instance.GetPool(soundEmitterPoolData.ObjectName);
 
@@ -103,32 +104,42 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
 
         #region IAudioService Implementation
-        public void PlaySound(SoundData soundData, Vector3 position, AudioConfig config = null)
+        public void PlaySound(SoundData soundData, AudioContext context, AudioConfig config = null)
         {
             if (!_isInitialized)
             {
-                DebugUtility.LogWarning<AudioManager>("AudioManager não inicializado");
+                DebugUtility.LogWarning<AudioManager>("AudioManager não inicializado — PlaySound ignorado");
                 return;
             }
 
             if (soundData == null)
             {
-                DebugUtility.LogWarning<AudioManager>("SoundData é nulo");
+                DebugUtility.LogWarning<AudioManager>("SoundData é nulo — PlaySound ignorado");
                 return;
             }
 
             var soundBuilder = CreateSound()
                 .WithSoundData(soundData)
-                .WithPosition(position);
+                .WithPosition(context.Position)
+                .WithVolumeMultiplier(context.VolumeMultiplier);
 
-            if (config != null)
+            // Spatial decisions: contexto tem prioridade; AudioConfig apenas fornece limites/overrides
+            if (context.UseSpatial)
             {
-                if (config.useSpatialBlend)
-                {
+                // Se o config exigir uso de spatialBlend, aplicamos. Caso contrário, usamos o spatial definido no SoundData.
+                if (config != null && config.useSpatialBlend)
                     soundBuilder.WithSpatialBlend(1.0f);
-                }
-                soundBuilder.WithMaxDistance(config.maxDistance);
+                else
+                    soundBuilder.WithSpatialBlend(soundData.spatialBlend);
             }
+            else
+            {
+                soundBuilder.WithSpatialBlend(0f);
+            }
+
+            // Max distance: prefer config se existir, senão data
+            var maxDistance = config != null ? config.maxDistance : soundData.maxDistance;
+            soundBuilder.WithMaxDistance(maxDistance);
 
             if (soundData.randomPitch)
             {
@@ -136,7 +147,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             soundBuilder.Play();
-            
+
             DebugUtility.LogVerbose<AudioManager>($"Som tocado: {soundData.clip?.name}", "blue");
         }
 
@@ -163,23 +174,23 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void StopAllSounds()
         {
-            // O PoolManager cuida de parar todos os sons ativos
-            // Podemos expandir isso se necessário
+            // Potencial expansão: iterar sobre pool e parar emitters ativos.
+            // Atualmente o PoolManager/Emitters lidam com retorno a pool automaticamente.
+            DebugUtility.LogVerbose<AudioManager>("StopAllSounds chamado", "yellow");
         }
         #endregion
 
-        #region IAudioManager Implementation
+        #region Pool / SoundBuilder helpers
         public SoundBuilder CreateSound() => new SoundBuilder(this);
 
         public bool CanPlaySound(SoundData data)
         {
             if (data == null) return false;
 
-            if (!data.frequentSound) 
+            if (!data.frequentSound)
                 return true;
 
-            // Gerencia sons frequentes
-            if (_frequentSoundEmitters.Count >= MaxSoundInstances  &&
+            if (_frequentSoundEmitters.Count >= MaxSoundInstances &&
                 _frequentSoundEmitters.TryDequeue(out var soundEmitter))
             {
                 try
@@ -207,8 +218,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
         }
 
-        public SoundEmitter Get() 
-        { 
+        public SoundEmitter Get()
+        {
             if (_soundEmitterPool == null)
             {
                 DebugUtility.LogError<AudioManager>("Pool de sound emitters não inicializado");
@@ -382,6 +393,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
     }
 }
+
 /*
 Assets/
 └── Resources/

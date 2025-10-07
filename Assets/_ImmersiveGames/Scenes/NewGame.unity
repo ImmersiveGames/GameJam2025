@@ -648,6 +648,7 @@ GameObject:
   - component: {fileID: 1432878149}
   - component: {fileID: 1432878150}
   - component: {fileID: 1432878151}
+  - component: {fileID: 1432878152}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -991,6 +992,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
+  enableHitSound: 1
+  enableDeathSound: 1
+  enableReviveSound: 1
+  hitSoundVolumeMultiplier: 1
+  deathSoundVolumeMultiplier: 1
+  reviveSoundVolumeMultiplier: 1
+  useSpatialAudio: 1
+--- !u!114 &1432878152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hitVolume: 1
+  deathVolume: 1
+  reviveVolume: 1
+  logAllEvents: 1
+  showVisualDebug: 1
+  debugColor: {r: 1, g: 0, b: 0, a: 1}
+  testDamage: 10
+  testResource: 0
+  reviveHealth: 100
+  testAudio: 1
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,18 +1737,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hitVolume: 1
+  deathVolume: 1
+  reviveVolume: 1
   logAllEvents: 1
   showVisualDebug: 1
   debugColor: {r: 1, g: 0, b: 0, a: 1}
   testDamage: 10
   testResource: 0
   reviveHealth: 100
-  testRespawnTime: 3
-  testCanRespawn: 1
-  testDeactivateOnDeath: 1
-  testDealerDamage: 25
-  testDealerResource: 0
-  testDestroyOnDamage: 0
+  testAudio: 1
 --- !u!1 &1849846772
 GameObject:
   m_ObjectHideFlags: 0

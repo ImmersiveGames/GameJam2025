@@ -17,10 +17,10 @@
             EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
         }
 
-        public override void OnDeath()
+        public override void EventDeath()
         {
             if (!TryGetComponent<PlanetsMaster>(out var planet)) return;
-            base.OnDeath();
+            base.EventDeath();
             EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(planet,lastChanger));
             PlanetsManager.Instance.RemovePlanet(planet);
             DebugUtility.LogVerbose<PlanetHealth>($"Planeta {planet.name} destruído por {lastChanger?.ActorName ?? "desconhecido"} e removido de PlanetsManager.", "yellow", this);

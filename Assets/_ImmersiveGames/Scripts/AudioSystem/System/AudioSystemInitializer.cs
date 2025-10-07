@@ -11,31 +11,27 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void EnsureAudioSystemInitialized()
         {
-            // Se já está inicializado, não faz nada
             if (IsInitialized())
             {
                 return;
             }
 
-            // Tenta encontrar um AudioManager existente na cena
             _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
             if (_cachedAudioManager != null)
             {
-                // AudioManager se autoinicializa no Awake, então só precisamos verificar
                 if (!_cachedAudioManager.IsInitialized)
                 {
-                    DebugUtility.LogWarning(typeof(AudioSystemInitializer), 
-                        "AudioManager encontrado mas não inicializado");
+                    DebugUtility.LogWarning(typeof(AudioSystemInitializer), "AudioManager encontrado mas não inicializado");
                 }
                 return;
             }
 
-            // Se não encontrou, cria um novo a partir de Resources
             CreateAudioManagerFromResources();
         }
 
         private static void CreateAudioManagerFromResources()
         {
+            // Ajuste o caminho conforme seu projeto: Resources/Audio/AudioManager.prefab
             var audioManagerPrefab = Resources.Load<AudioManager>($"Audio/Prefabs/AudioManager");
             if (audioManagerPrefab == null)
             {
@@ -45,10 +41,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _cachedAudioManager = Object.Instantiate(audioManagerPrefab);
-            // Não precisa chamar Initialize() - já é chamado no Awake
-            
-            DebugUtility.LogVerbose(typeof(AudioSystemInitializer),
-                "AudioManager criado a partir de Resources", "green");
+            DebugUtility.LogVerbose(typeof(AudioSystemInitializer), "AudioManager criado a partir de Resources", "green");
         }
 
         public static bool IsInitialized()
@@ -58,6 +51,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public static IAudioService GetAudioService()
         {
+            if (DependencyManager.Instance == null) return null;
             if (DependencyManager.Instance.TryGetGlobal<IAudioService>(out var service))
             {
                 return service;

@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         [Header("Audio Config")]
         [SerializeField] private bool enableShootSounds = true;
-        [SerializeField] private AudioConfig audioConfig; // Configuração de áudio opcional
+        [SerializeField] private AudioConfig audioConfig; // Opcional, preferir PlayerAudioController.AudioConfig
 
         [Header("Spawn Strategy Config")]
         [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
@@ -43,11 +43,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         [Inject] private IStateDependentService _stateService;
 
+        // Referência para o PlayerAudioController (preferível)
+        private PlayerAudioController _playerAudio;
+
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
             DependencyManager.Instance.InjectDependencies(this);
+
+            _playerAudio = GetComponent<PlayerAudioController>();
 
             if (_playerInput == null)
             {
@@ -103,11 +108,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             _spawnAction.performed += OnSpawnPerformed;
 
-            // Garante que o sistema de áudio está inicializado
+            // Garante que o sistema de áudio está inicializado (caso seja usado sem PlayerAudioController)
             if (enableShootSounds)
             {
                 AudioSystemInitializer.EnsureAudioSystemInitialized();
             }
+
             DebugUtility.LogVerbose<InputSpawnerComponent>($"InputSpawnerComponent inicializado em '{name}' com ação '{actionName}', PoolData '{poolData.ObjectName}', cooldown {cooldown}s e estratégia '{strategyType}'.", "cyan", this);
         }
 
@@ -167,6 +173,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 PlayShootSound(spawnedCount);
             }
         }
+
         private void PlayShootSound(int spawnedCount)
         {
             if (!enableShootSounds) return;
@@ -177,8 +184,13 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 soundToPlay = _activeStrategy.ShootSound;
             }
+            else if (_playerAudio != null && _playerAudio.AudioConfig?.shootSound != null)
+            {
+                soundToPlay = _playerAudio.AudioConfig.shootSound;
+            }
             else if (audioConfig?.shootSound != null)
             {
+                // Fallback: AudioConfig local do spawner — prefer PlayerAudioController quando existir
                 soundToPlay = audioConfig.shootSound;
             }
 
@@ -190,15 +202,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     volumeMultiplier = Mathf.Clamp(1f / Mathf.Sqrt(spawnedCount), 0.5f, 1f);
                 }
 
-                // Usar AudioSystem diretamente com volume ajustado
-                AudioSystemHelper.PlaySound(soundToPlay, transform.position);
-        
-                // Ou usar SoundBuilder se quiser mais controle:
-                // _audioManager.CreateSound()
-                //     .WithSoundData(soundToPlay)
-                //     .WithPosition(transform.position)
-                //     .WithVolumeMultiplier(volumeMultiplier)
-                //     .Play();
+                // Preferir tocar via PlayerAudioController para manter coesão
+                if (_playerAudio != null)
+                {
+                    _playerAudio.PlayCustomShootSound(soundToPlay, volumeMultiplier);
+                }
+                else
+                {
+                    // Fallback: tocar via helper global (non-ideal para coesão)
+                    AudioSystemHelper.PlaySound(soundToPlay, transform.position, volumeMultiplier);
+                }
 
                 DebugUtility.LogVerbose<InputSpawnerComponent>($"Som de tiro tocado: {soundToPlay.clip?.name} (x{spawnedCount}, volume: {volumeMultiplier:F2})", "cyan", this);
             }
@@ -215,16 +228,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _ => singleStrategy
             };
             DebugUtility.LogVerbose<InputSpawnerComponent>($"Estratégia alterada para '{type}' em '{name}'.", "cyan", this);
-        }
-        // Método para configurar som específico em runtime
-        public void SetShootSound(SoundData newShootSound)
-        {
-            if (_activeStrategy != null)
-            {
-                // Esta é uma limitação - como as estratégias são structs/classes serializáveis,
-                // não podemos modificar diretamente. Precisamos de uma abordagem diferente.
-                DebugUtility.LogWarning<InputSpawnerComponent>("Não é possível modificar o som da estratégia em runtime. Configure no Inspector.", this);
-            }
         }
 
         // Método para habilitar/desabilitar sons em runtime

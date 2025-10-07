@@ -1,14 +1,22 @@
-﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
+﻿// Path: _ImmersiveGames/Scripts/AudioSystem/Base/AudioControllerBase.cs
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.AudioSystem.Base
 {
+    /// <summary>
+    /// Controlador base de áudio para entidades. Fornece métodos unificados para tocar sons
+    /// com AudioContext respeitando o AudioConfig do objeto.
+    /// </summary>
     public abstract class AudioControllerBase : MonoBehaviour
     {
         [SerializeField] protected AudioConfig audioConfig;
 
         private IAudioService _audioService;
-        private bool _isInitialized;
+        protected bool isInitialized;
+
+        public AudioConfig AudioConfig => audioConfig;
 
         protected virtual void Awake()
         {
@@ -17,49 +25,42 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         private void InitializeAudioController()
         {
-            if (_isInitialized) return;
+            if (isInitialized) return;
 
-            // Garante que o sistema de áudio está inicializado
             AudioSystemInitializer.EnsureAudioSystemInitialized();
             _audioService = AudioSystemInitializer.GetAudioService();
-            
+
             if (_audioService != null)
             {
-                _isInitialized = true;
-                DebugUtility.LogVerbose<AudioControllerBase>($"Controlador de áudio inicializado: {name}", "green");
+                isInitialized = true;
+                DebugUtility.LogVerbose<AudioControllerBase>($"AudioController inicializado: {name}", "green");
             }
             else
             {
-                DebugUtility.LogError<AudioControllerBase>("Falha ao obter AudioService");
+                DebugUtility.LogError<AudioControllerBase>("Falha ao obter IAudioService");
             }
         }
 
-        protected void PlaySound(SoundData soundData)
+        /// <summary>
+        /// Método unificado para tocar SoundData com contexto definido.
+        /// Subclasses devem usar esse método para reproduzir SFX do objeto.
+        /// </summary>
+        protected void Play(SoundData soundData, AudioContext context)
         {
-            if (!_isInitialized || _audioService == null)
-            {
-                DebugUtility.LogWarning<AudioControllerBase>("AudioController não inicializado");
-                return;
-            }
-
-            _audioService.PlaySound(soundData, transform.position, audioConfig);
+            if (!isInitialized || _audioService == null || soundData == null) return;
+            _audioService.PlaySound(soundData, context, audioConfig);
         }
 
-        protected void PlaySound(SoundData soundData, Vector3 position)
+        protected void PlayAtPosition(SoundData soundData, Vector3 position, float volumeMultiplier = 1f)
         {
-            if (!_isInitialized || _audioService == null) return;
-            _audioService.PlaySound(soundData, position, audioConfig);
+            Play(soundData, new AudioContext { Position = position, UseSpatial = true, VolumeMultiplier = volumeMultiplier });
         }
 
-        protected void PlaySoundAtCamera(SoundData soundData)
+        protected void PlayAtCamera(SoundData soundData, float volumeMultiplier = 1f)
         {
-            if (!_isInitialized || _audioService == null) return;
-            
             var mainCamera = Camera.main;
-            if (mainCamera != null)
-            {
-                _audioService.PlaySound(soundData, mainCamera.transform.position, audioConfig);
-            }
+            var pos = mainCamera != null ? mainCamera.transform.position : Vector3.zero;
+            Play(soundData, new AudioContext { Position = pos, UseSpatial = false, VolumeMultiplier = volumeMultiplier });
         }
     }
 }

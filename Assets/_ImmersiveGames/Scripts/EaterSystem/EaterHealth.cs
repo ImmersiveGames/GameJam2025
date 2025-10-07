@@ -42,7 +42,7 @@
             _eater.OnEventEaterTakeDamage(byActor);
         }
 
-        public override void OnDeath()
+        public override void EventDeath()
         {
             EventBus<EaterDeathEvent>.Raise(new EaterDeathEvent());
             _eater.IsActive = false;

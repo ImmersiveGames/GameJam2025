@@ -8,15 +8,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         public static bool IsInitialized => AudioSystemInitializer.IsInitialized();
         public static IAudioService Service => AudioSystemInitializer.GetAudioService();
 
-        // SFX (existente)
-        public static void PlaySound(SoundData soundData, Vector3 position)
+        // SFX - conveniência
+        public static void PlaySound(SoundData soundData, Vector3 position, float volumeMultiplier = 1f)
         {
-            Service?.PlaySound(soundData, position);
+            var ctx = new AudioContext { Position = position, UseSpatial = true, VolumeMultiplier = volumeMultiplier };
+            Service?.PlaySound(soundData, ctx);
         }
 
-        public static void PlaySound(SoundData soundData)
+        public static void PlaySound(SoundData soundData, float volumeMultiplier = 1f)
         {
-            Service?.PlaySound(soundData, Vector3.zero);
+            var ctx = new AudioContext { Position = Vector3.zero, UseSpatial = false, VolumeMultiplier = volumeMultiplier };
+            Service?.PlaySound(soundData, ctx);
         }
 
         public static void SetSfxVolume(float volume)
@@ -29,7 +31,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             Service?.StopAllSounds();
         }
 
-        // BGM (novo)
+        // BGM
         public static void PlayBGM(SoundData bgmData, bool loop = true, float fadeInDuration = 0f)
         {
             Service?.PlayBGM(bgmData, loop, fadeInDuration);

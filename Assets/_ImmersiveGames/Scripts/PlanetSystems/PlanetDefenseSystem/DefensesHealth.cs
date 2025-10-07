@@ -24,9 +24,9 @@
             var destructible = other.GetComponentInParent<IDestructible>();
             destructible?.TakeDamage(_defensesMaster.ProjectilesData.damage, _pooledObject.GetComponentInParent<IActor>());
         }
-        public override void OnDeath()
+        public override void EventDeath()
         {
-            base.OnDeath();
+            base.EventDeath();
             _defensesMaster.OnDefensesDeath();
         }
     }*/

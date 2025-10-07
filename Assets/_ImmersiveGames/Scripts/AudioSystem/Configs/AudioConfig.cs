@@ -6,6 +6,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Configs
     {
         [Header("Sound Effects")]
         public SoundData shootSound;
+        [Header("Damage System Sounds")]
         public SoundData hitSound;
         public SoundData deathSound;
         public SoundData reviveSound;
@@ -13,5 +14,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Configs
         [Header("Configuration")]
         public bool useSpatialBlend = true;
         public float maxDistance = 50f;
+        public float defaultVolume = 1f;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class SoundBuilder
@@ -46,6 +47,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _maxDistance = maxDistance;
             return this;
         }
+
         public SoundBuilder WithVolumeMultiplier(float multiplier)
         {
             _volumeMultiplier = multiplier;
@@ -54,7 +56,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (_soundData == null || !_audioManager.CanPlaySound(_soundData)) 
+            if (_soundData == null || !_audioManager.CanPlaySound(_soundData))
                 return;
 
             SoundEmitter soundEmitter = _audioManager.Get();
@@ -65,7 +67,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             soundEmitter.Initialize(_soundData, _audioManager);
             soundEmitter.SetSpatialBlend(_spatialBlend);
             soundEmitter.SetMaxDistance(_maxDistance);
-        
+
             // Aplica o multiplicador de volume
             soundEmitter.SetVolumeMultiplier(_volumeMultiplier);
 

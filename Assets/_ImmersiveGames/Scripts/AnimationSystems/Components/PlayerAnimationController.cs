@@ -19,9 +19,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             _damageReceiver = GetComponent<DamageReceiver>();
             if (_damageReceiver != null)
             {
-                _damageReceiver.OnDamageReceived += OnHit;
-                _damageReceiver.OnDeath += OnDeath;
-                _damageReceiver.OnRevive += OnRevive;
+                _damageReceiver.EventDamageReceived += EventHit;
+                _damageReceiver.EventDeath += EventDeath;
+                _damageReceiver.EventRevive += EventRevive;
             }
         }
 
@@ -29,16 +29,16 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_damageReceiver != null)
             {
-                _damageReceiver.OnDamageReceived -= OnHit;
-                _damageReceiver.OnDeath -= OnDeath;
-                _damageReceiver.OnRevive -= OnRevive;
+                _damageReceiver.EventDamageReceived -= EventHit;
+                _damageReceiver.EventDeath -= EventDeath;
+                _damageReceiver.EventRevive -= EventRevive;
             }
             base.OnDisable();
         }
 
-        private void OnHit(float dmg, IActor src) => PlayHit();
-        private void OnDeath(IActor _) => PlayDeath();
-        private void OnRevive(IActor _) => PlayRevive();
+        private void EventHit(float dmg, IActor src) => PlayHit();
+        private void EventDeath(IActor _) => PlayDeath();
+        private void EventRevive(IActor _) => PlayRevive();
 
         // Implementação da interface usando as hashs da config
         public void PlayHit() => PlayHash(HitHash);

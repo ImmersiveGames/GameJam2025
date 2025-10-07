@@ -4,13 +4,14 @@ using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityUtils;
+
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     [RequireComponent(typeof(AudioSource))]
     public class SoundEmitter : MonoBehaviour, IPoolable
     {
         public SoundData Data { get; private set; }
-        
+
         private AudioSource _audioSource;
         private Coroutine _playingCoroutine;
         private IAudioService _audioManager;
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private PoolableObjectData _config;
         private ObjectPool _pool;
         private IActor _spawner;
-        
+
         private float _volumeMultiplier = 1f;
 
         #region IPoolable Implementation
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _config = config;
             _pool = pool;
             _spawner = spawner;
-            
+
             _audioSource = gameObject.GetOrAdd<AudioSource>();
             gameObject.SetActive(false);
         }
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             transform.position = position;
             gameObject.SetActive(true);
-            
+
             if (spawner != null)
                 _spawner = spawner;
         }
@@ -73,7 +74,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             Data = data;
             _audioManager = audioManager;
-            
+
+            if (_audioSource == null)
+                _audioSource = gameObject.GetOrAdd<AudioSource>();
+
             ApplySoundData(data);
             _isInitialized = true;
         }
@@ -82,17 +86,20 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             if (!_isInitialized || _audioManager == null)
             {
+                // Evita spam de logs em uso normal — log apenas em situação de debug não esperada
+#if UNITY_EDITOR
                 Debug.LogError("SoundEmitter não inicializado corretamente");
+#endif
                 return;
             }
 
-            if(_playingCoroutine != null) 
+            if (_playingCoroutine != null)
             {
                 StopCoroutine(_playingCoroutine);
             }
 
             _audioSource.Play();
-            
+
             if (!Data.loop)
             {
                 _playingCoroutine = StartCoroutine(WaitForSoundToEnd());
@@ -105,9 +112,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             ReturnToPool();
         }
 
-        public void Stop() 
+        public void Stop()
         {
-            if (_playingCoroutine != null) 
+            if (_playingCoroutine != null)
             {
                 StopCoroutine(_playingCoroutine);
                 _playingCoroutine = null;
@@ -129,17 +136,20 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void SetSpatialBlend(float spatialBlend)
         {
-            _audioSource.spatialBlend = spatialBlend;
+            if (_audioSource != null)
+                _audioSource.spatialBlend = spatialBlend;
         }
 
         public void SetMaxDistance(float maxDistance)
         {
-            _audioSource.maxDistance = maxDistance;
+            if (_audioSource != null)
+                _audioSource.maxDistance = maxDistance;
         }
+
         public void SetVolumeMultiplier(float multiplier)
         {
             _volumeMultiplier = multiplier;
-            if (_audioSource != null)
+            if (_audioSource != null && Data != null)
             {
                 _audioSource.volume = Data.volume * _volumeMultiplier;
             }
@@ -147,12 +157,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void ResetEmitter()
         {
-            _audioSource.pitch = 1.0f;
-            _audioSource.spatialBlend = 0f;
-            _audioSource.maxDistance = 500f;
-            _volumeMultiplier = 1f; // Reset do multiplier
-            _audioSource.Stop();
-            
+            if (_audioSource != null)
+            {
+                _audioSource.pitch = 1.0f;
+                _audioSource.spatialBlend = 0f;
+                _audioSource.maxDistance = 500f;
+                _audioSource.Stop();
+            }
+
+            _volumeMultiplier = 1f;
+
             if (_playingCoroutine != null)
             {
                 StopCoroutine(_playingCoroutine);
@@ -162,9 +176,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void ApplySoundData(SoundData data)
         {
+            if (_audioSource == null) return;
+
             _audioSource.clip = data.clip;
             _audioSource.outputAudioMixerGroup = data.mixerGroup;
-            _audioSource.volume = data.volume * _volumeMultiplier; // Aplica multiplier aqui
+            _audioSource.volume = data.volume * _volumeMultiplier; // aplica multiplier atual
             _audioSource.priority = data.priority;
             _audioSource.loop = data.loop;
             _audioSource.playOnAwake = data.playOnAwake;
