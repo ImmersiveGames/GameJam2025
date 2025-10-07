@@ -645,6 +645,8 @@ GameObject:
   - component: {fileID: 1432878143}
   - component: {fileID: 1432878146}
   - component: {fileID: 1432878147}
+  - component: {fileID: 1432878149}
+  - component: {fileID: 1432878150}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -915,6 +917,31 @@ MonoBehaviour:
   debugRayColor:
     serializedVersion: 2
     rgba: 4294901760
+--- !u!114 &1432878149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2d0a9dc68e540bb8f5f684c39f4df5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1432878150
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e375bd0721940c68e468f8a2788a4da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationConfig: {fileID: 11400000, guid: 03ab8678a8f183e469ba40b8b5bf84a6, type: 2}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1333,8 +1360,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adea1b7d434745998b36714429154445, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flagMark: {fileID: 0}
-  autoFindFlagInChildren: 1
 --- !u!1 &1667814061
 GameObject:
   m_ObjectHideFlags: 0
@@ -1360,7 +1385,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1667814063
 MonoBehaviour:
   m_ObjectHideFlags: 0
