@@ -14,6 +14,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         bool HasLink(string actorId, ResourceType sourceResource);
         ResourceLinkConfig GetLink(string actorId, ResourceType sourceResource);
     }
+    [DebugLevel(DebugLevel.Warning)]
     public class ResourceLinkService : IResourceLinkService, IDisposable
     {
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceLinkConfig>> _actorLinks = new();

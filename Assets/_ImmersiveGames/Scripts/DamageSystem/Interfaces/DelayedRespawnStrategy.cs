@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.DamageSystem
+﻿namespace _ImmersiveGames.Scripts.DamageSystem
 {
     public class DelayedRespawnStrategy : IRespawnStrategy
     {

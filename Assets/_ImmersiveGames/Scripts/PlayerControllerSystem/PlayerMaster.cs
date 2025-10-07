@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.Extensions;

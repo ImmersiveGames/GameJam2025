@@ -12,6 +12,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     /// Gerencia a inicialização comum: IActor, ResourceSystem e ordenação de execução.
     /// </summary>
     [DefaultExecutionOrder(20)] // Ordem comum para todos os bridges
+    [DebugLevel(DebugLevel.Warning)]
     public abstract class ResourceBridgeBase : MonoBehaviour
     {
         [Header("Resource Bridge Base")]

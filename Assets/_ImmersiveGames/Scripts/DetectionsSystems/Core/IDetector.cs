@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using UnityEngine;
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
 {
     // Interface for entities that can detect planets (Player, EaterDetectable)

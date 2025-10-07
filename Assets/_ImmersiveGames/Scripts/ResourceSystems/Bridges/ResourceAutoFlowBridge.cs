@@ -1,8 +1,10 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class ResourceAutoFlowBridge : ResourceBridgeBase
     {
         [SerializeField] private bool startPaused = true;

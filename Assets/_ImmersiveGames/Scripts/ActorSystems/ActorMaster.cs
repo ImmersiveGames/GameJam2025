@@ -9,7 +9,8 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    [DefaultExecutionOrder(-10)]
+    [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Warning)]
+    
     public class ActorMaster : MonoBehaviour, IActor, IHasSkin, IResettable
     {
         [SerializeField] private string customActorId; // Optional manual override for ActorId

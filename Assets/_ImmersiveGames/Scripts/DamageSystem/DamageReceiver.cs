@@ -11,7 +11,7 @@ using _ImmersiveGames.Scripts.ResourceSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class DamageReceiver : DamageSystemBase, IDamageable, IRespawnable
     {
         [Header("Damage Configuration")]
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 float before = _resourceBridge.GetService().Get(resourceToDamage)?.GetCurrentValue() ?? 0f;
                 _resourceBridge.GetService().Modify(resourceToDamage, -damage);
                 float after = _resourceBridge.GetService().Get(resourceToDamage)?.GetCurrentValue() ?? 0f;
-                DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Recurso {resourceToDamage} modificado: {before} -> {after}");
+                DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Recurso {resourceToDamage} modificado: {before} -> {after}");
                 CheckCurrentHealth();
             }
             else
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             _isDead = true;
             canReceiveDamage = false;
-            DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Morte detectada, estado atualizado");
+            DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Morte detectada, estado atualizado");
 
             OnDeath?.Invoke(actor);
             EventBus<ActorDeathEvent>.Raise(new ActorDeathEvent(actor, transform.position));
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             CancelInvoke(nameof(ExecuteDelayedRespawn));
             _isDead = false;
             canReceiveDamage = true;
-            DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Revive iniciado, estado atualizado");
+            DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Revive iniciado, estado atualizado");
 
             if (!gameObject.activeSelf) gameObject.SetActive(true);
 
@@ -230,7 +230,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             OnRevive?.Invoke(actor);
             EventBus<ActorReviveEvent>.Raise(new ActorReviveEvent(actor, transform.position));
-            DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Eventos de revive invocados");
+            DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Eventos de revive invocados");
         }
 
         public void ResetToInitialState()
@@ -243,7 +243,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             transform.position = _initialPosition;
             transform.rotation = _initialRotation;
-            DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Reset posição: {transform.position}");
+            DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Reset posição: {transform.position}");
 
             if (_resourceBridge != null)
             {
@@ -256,7 +256,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
 
             OnRevive?.Invoke(actor);
-            DebugUtility.LogVerbose<DamageReceiver>($"[Receiver {gameObject.name}] Reset concluído");
+            DebugUtility.Log<DamageReceiver>($"[Receiver {gameObject.name}] Reset concluído");
         }
 
         #endregion

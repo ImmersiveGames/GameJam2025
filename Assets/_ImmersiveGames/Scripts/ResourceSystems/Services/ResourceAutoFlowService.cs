@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     /// Chamado via Process(deltaTime) pelo bridge.
     /// Aplica mudanças por ResourceSystem. Modify(...) para garantir fluxo único de alterações.
     /// </summary>
+    [DebugLevel(DebugLevel.Warning)]
     public class ResourceAutoFlowService : IDisposable
     {
         private readonly ResourceSystem _resourceSystem;

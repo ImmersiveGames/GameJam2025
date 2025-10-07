@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DebugLevel(DebugLevel.Logs)]

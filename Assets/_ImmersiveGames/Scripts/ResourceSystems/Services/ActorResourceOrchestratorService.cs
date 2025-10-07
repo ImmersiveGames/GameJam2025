@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
+    
     public interface IActorResourceOrchestrator
     {
         void RegisterActor(ResourceSystem actor);
@@ -27,7 +28,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     /// <summary>
     /// Orchestrator como serviço puro. Registra atores (ResourceSystem) e canvases (CanvasResourceBinder).
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Warning)]
     public class ActorResourceOrchestratorService : IActorResourceOrchestrator
     {
         private readonly Dictionary<string, ResourceSystem> _actors = new();

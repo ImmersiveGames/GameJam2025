@@ -8,6 +8,7 @@ using System.Linq;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
+    [DebugLevel(DebugLevel.Warning)]
     public abstract class AbstractDetector : MonoBehaviour, IDetector
     {
         private IActor _owner;

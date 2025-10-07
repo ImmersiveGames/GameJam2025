@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

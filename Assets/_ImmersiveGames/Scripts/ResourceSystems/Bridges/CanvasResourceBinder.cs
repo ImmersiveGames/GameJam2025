@@ -11,6 +11,7 @@ using UnityEngine.Pool;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class CanvasResourceBinder : MonoBehaviour
     {
         [Header("Identification")]

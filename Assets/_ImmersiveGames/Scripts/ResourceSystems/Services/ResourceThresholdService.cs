@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
     /// Serviço puro que monitora thresholds por resourceType e dispara ResourceThresholdEvent via EventBus.
     /// </summary>
+    [DebugLevel(DebugLevel.Warning)]
     public class ResourceThresholdService : IDisposable
     {
         private readonly ResourceSystem _resourceSystem;
@@ -32,17 +34,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 if (inst?.thresholdConfig != null)
                 {
                     _thresholds[resourceType] = inst.thresholdConfig.GetNormalizedSortedThresholds();
-                    Debug.Log($"[ThresholdService] Thresholds para {resourceType}: {string.Join(", ", _thresholds[resourceType])}");
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Thresholds para {resourceType}: {string.Join(", ", _thresholds[resourceType])}");
                 }
                 else
                 {
                     // Thresholds padrão quando não há configuração específica
                     _thresholds[resourceType] = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
-                    Debug.Log($"[ThresholdService] Usando thresholds padrão para {resourceType}");
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Usando thresholds padrão para {resourceType}");
                 }
 
                 _lastPercentages[resourceType] = resourceValue?.GetPercentage() ?? 0f;
-                Debug.Log($"[ThresholdService] Percentual inicial para {resourceType}: {_lastPercentages[resourceType]}");
+                DebugUtility.LogVerbose<ResourceThresholdService>($"Percentual inicial para {resourceType}: {_lastPercentages[resourceType]}");
             }
         }
 
@@ -50,14 +52,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             if (!_thresholds.ContainsKey(evt.ResourceType)) 
             {
-                Debug.LogWarning($"[ThresholdService] Nenhum threshold configurado para {evt.ResourceType}");
+                DebugUtility.LogWarning<ResourceThresholdService>($"Nenhum threshold configurado para {evt.ResourceType}");
                 return;
             }
 
             float newPct = evt.NewValue?.GetPercentage() ?? 0f;
             float oldPct = _lastPercentages.GetValueOrDefault(evt.ResourceType, 0f);
 
-            Debug.Log($"[ThresholdService] Recurso {evt.ResourceType} atualizado: {oldPct:F3} -> {newPct:F3}");
+            DebugUtility.LogVerbose<ResourceThresholdService>($"Recurso {evt.ResourceType} atualizado: {oldPct:F3} -> {newPct:F3}");
 
             if (Mathf.Abs(newPct - oldPct) < Epsilon)
             {
@@ -69,13 +71,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             
             if (crossed.Count > 0)
             {
-                Debug.Log($"[ThresholdService] {crossed.Count} threshold(s) cruzado(s) para {evt.ResourceType}: {string.Join(", ", crossed)}");
+                DebugUtility.LogVerbose<ResourceThresholdService>($"{crossed.Count} threshold(s) cruzado(s) para {evt.ResourceType}: {string.Join(", ", crossed)}");
                 
                 foreach (float thr in crossed)
                 {
                     bool asc = newPct > oldPct;
                     var thrEvent = new ResourceThresholdEvent(evt.ActorId, evt.ResourceType, thr, asc, newPct);
-                    Debug.Log($"[ThresholdService] Disparando ResourceThresholdEvent: {thrEvent.ResourceType} - Threshold {thr} - {(asc ? "SUBINDO" : "DESCENDO")}");
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Disparando ResourceThresholdEvent: {thrEvent.ResourceType} - Threshold {thr} - {(asc ? "SUBINDO" : "DESCENDO")}");
                     EventBus<ResourceThresholdEvent>.Raise(thrEvent);
                 }
             }
@@ -88,7 +90,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             var crossed = new List<float>();
             bool ascending = newVal > oldVal;
 
-            Debug.Log($"[ThresholdService] Detectando thresholds cruzados: {oldVal:F3} -> {newVal:F3} ({thresholds.Length} thresholds)");
+            DebugUtility.LogVerbose<ResourceThresholdService>($"Detectando thresholds cruzados: {oldVal:F3} -> {newVal:F3} ({thresholds.Length} thresholds)");
 
             foreach (float threshold in thresholds)
             {
@@ -102,13 +104,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 if (ascending && wasBelow && !isBelow)
                 {
                     crossed.Add(threshold);
-                    Debug.Log($"[ThresholdService] Cruzou para CIMA no threshold {threshold}");
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Cruzou para CIMA no threshold {threshold}");
                 }
                 // Cruzou para baixo: estava acima e agora está abaixo ou igual
                 else if (!ascending && wasAbove && !isAbove)
                 {
                     crossed.Add(threshold);
-                    Debug.Log($"[ThresholdService] Cruzou para BAIXO no threshold {threshold}");
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Cruzou para BAIXO no threshold {threshold}");
                 }
             }
 
@@ -117,7 +119,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public void ForceCheck()
         {
-            Debug.Log("[ThresholdService] Forçando verificação de thresholds");
+            DebugUtility.LogVerbose<ResourceThresholdService>($"Forçando verificação de thresholds");
             
             foreach (KeyValuePair<ResourceType, float[]> kv in _thresholds)
             {

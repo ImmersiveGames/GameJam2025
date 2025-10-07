@@ -1,6 +1,3 @@
-using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;

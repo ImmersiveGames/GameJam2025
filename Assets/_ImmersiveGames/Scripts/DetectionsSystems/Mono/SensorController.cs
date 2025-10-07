@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    [DebugLevel(DebugLevel.Logs)]
     public class SensorController : MonoBehaviour
     {
         [SerializeField] private SensorCollection collection;

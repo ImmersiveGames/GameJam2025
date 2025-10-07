@@ -1,5 +1,4 @@
-﻿using System;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Tags

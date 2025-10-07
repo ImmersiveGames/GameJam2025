@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.SkinSystems.Data;
-using UnityEngine;
-namespace _ImmersiveGames.Scripts.SkinSystems
+﻿namespace _ImmersiveGames.Scripts.SkinSystems
 {
     
     

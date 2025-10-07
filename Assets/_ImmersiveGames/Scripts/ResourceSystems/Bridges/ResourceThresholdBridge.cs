@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
+    [DebugLevel(DebugLevel.Warning)]
     public class ResourceThresholdBridge : ResourceBridgeBase
     {
         private ResourceThresholdService _thresholdService;

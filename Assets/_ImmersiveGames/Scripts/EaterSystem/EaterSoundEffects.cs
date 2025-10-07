@@ -2,7 +2,6 @@
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 
