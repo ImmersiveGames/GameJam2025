@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DamageSystem.Services;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -41,8 +42,38 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
             DependencyManager.Instance.RegisterGlobal<IStateDependentService>(new StateDependentService(GameManagerStateMachine.Instance));
             DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(new ActorResourceOrchestratorService());
+            
+            RegisterEventBuses();
 
+            var effectService = RegisterEffectAndDamageServices();
 
+            DependencyManager.Instance.TryGet<IActorResourceOrchestrator>(out var orchestrator);
+            var damageService = new DamageService(effectService, orchestrator);
+            DependencyManager.Instance.RegisterGlobal(damageService);
+            
+            DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
+        }
+        private static EffectService RegisterEffectAndDamageServices()
+        {
+            // -------------------
+            // New: EffectService & DamageService
+            // -------------------
+            var effectService = new EffectService(PoolManager.Instance, LifetimeManager.Instance);
+            DependencyManager.Instance.RegisterGlobal(effectService);
+
+            // Resolve IEventBus<DamageDealtEvent> from a dependency manager (must exist after bus registration above)
+            try
+            {
+                DependencyManager.Instance.TryGet(out IEventBus<DamageDealtEvent> _);
+            }
+            catch
+            {
+                // ignored
+            }
+            return effectService;
+        }
+        private static void RegisterEventBuses()
+        {
             // -------------------
             // NEW: register injectable buses for all event types (uses EventBusUtil.EventTypes)
             // -------------------
@@ -68,28 +99,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 DebugUtility.LogError<DependencyBootstrapper>($"Failed to register injectable EventBuses: {ex}");
             }
-            
-            // -------------------
-            // New: EffectService & DamageService
-            // -------------------
-            var effectService = new EffectService(PoolManager.Instance, LifetimeManager.Instance);
-            DependencyManager.Instance.RegisterGlobal(effectService);
-
-            // Resolve IEventBus<DamageDealtEvent> from a dependency manager (must exist after bus registration above)
-            try
-            {
-                DependencyManager.Instance.TryGet(out IEventBus<DamageDealtEvent> _);
-            }
-            catch
-            {
-                // ignored
-            }
-
-            DependencyManager.Instance.TryGet<IActorResourceOrchestrator>(out var orchestrator);
-            var damageService = new DamageService(effectService, orchestrator);
-            DependencyManager.Instance.RegisterGlobal(damageService);
-            
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
         }
 
 #if UNITY_EDITOR

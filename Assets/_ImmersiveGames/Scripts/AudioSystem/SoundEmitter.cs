@@ -1,64 +1,125 @@
 ﻿using System.Collections;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using UnityEngine;
-using Random = UnityEngine.Random;
-
+using UnityUtils;
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     [RequireComponent(typeof(AudioSource))]
-    public class SoundEmitter: MonoBehaviour
+    public class SoundEmitter : MonoBehaviour
     {
         public SoundData Data { get; private set; }
-        AudioSource audioSource;
-        Coroutine playingCoroutine;
+        
+        private AudioSource _audioSource;
+        private Coroutine _playingCoroutine;
+        private IAudioService _audioService;
+        private bool _isInitialized = false;
 
-        void Awake()
+        private void Awake()
         {
-            audioSource = gameObject.GetOrAdd<AudioSource>();
+            _audioSource = gameObject.GetOrAdd<AudioSource>();
+        }
+
+        public void Initialize(SoundData data, IAudioService audioService)
+        {
+            Data = data;
+            _audioService = audioService;
+            
+            _audioSource.clip = data.clip;
+            _audioSource.outputAudioMixerGroup = data.mixerGroup;
+            _audioSource.volume = data.volume;
+            _audioSource.priority = data.priority;
+            _audioSource.loop = data.loop;
+            _audioSource.playOnAwake = data.playOnAwake;
+            
+            _isInitialized = true;
         }
 
         public void Play()
         {
-            if(playingCoroutine != null) {
-                StopCoroutine(playingCoroutine);
+            if (!_isInitialized || _audioService == null)
+            {
+                Debug.LogError("SoundEmitter não inicializado corretamente");
+                return;
             }
 
-            audioSource.Play();
-            playingCoroutine = StartCoroutine(WaitForSoundToEnd());
+            if(_playingCoroutine != null) 
+            {
+                StopCoroutine(_playingCoroutine);
+            }
+
+            _audioSource.Play();
+            
+            if (!Data.loop)
+            {
+                _playingCoroutine = StartCoroutine(WaitForSoundToEnd());
+            }
         }
 
-        IEnumerator WaitForSoundToEnd()
+        private IEnumerator WaitForSoundToEnd()
         {
-            yield return new WaitWhile(() => audioSource.isPlaying);
-            SoundManager.Instance.ReturnToPool(this);
+            yield return new WaitWhile(() => _audioSource.isPlaying);
+            ReturnToPool();
         }
 
         public void Stop() 
         {
-            if (playingCoroutine != null) 
+            if (_playingCoroutine != null) 
             {
-                StopCoroutine(playingCoroutine);
-                playingCoroutine = null;
+                StopCoroutine(_playingCoroutine);
+                _playingCoroutine = null;
             }
 
-            audioSource.Stop();
-            SoundManager.Instance.ReturnToPool(this);
+            _audioSource.Stop();
+            ReturnToPool();
         }
 
-
-        public void Initialize(SoundData data) 
+        private void ReturnToPool()
         {
-            Data = data;
-            audioSource.clip = data.clip;
-            audioSource.outputAudioMixerGroup = data.mixerGroup;
-            audioSource.volume = data.volume;
-            audioSource.priority = data.priority;
-            audioSource.loop = data.loop;
-            audioSource.playOnAwake = data.playOnAwake;
+            _audioService?.ReturnToPool(this);
         }
 
         public void WithRandomPitch(float min = -0.05f, float max = 0.05f)
         {
-            audioSource.pitch += Random.Range(min, max);
+            _audioSource.pitch += Random.Range(min, max);
+        }
+
+        public void SetSpatialBlend(float spatialBlend)
+        {
+            _audioSource.spatialBlend = spatialBlend;
+        }
+
+        public void SetMaxDistance(float maxDistance)
+        {
+            _audioSource.maxDistance = maxDistance;
+        }
+
+        // Reset do emitter para ser reutilizado
+        public void ResetEmitter()
+        {
+            _audioSource.pitch = 1.0f;
+            _audioSource.spatialBlend = 0f;
+            _audioSource.maxDistance = 500f;
+            _audioSource.Stop();
+            
+            if (_playingCoroutine != null)
+            {
+                StopCoroutine(_playingCoroutine);
+                _playingCoroutine = null;
+            }
         }
     }
 }
+/*
+Assets/
+└── Resources/
+    └── Audio/
+        ├── AudioManager.prefab
+        └── SoundEmitter.prefab
+        
+ Audio/
+        ├── Prefabs/
+        ├── Mixers/
+        ├── SoundData/
+        └── AudioConfigs/
+        */

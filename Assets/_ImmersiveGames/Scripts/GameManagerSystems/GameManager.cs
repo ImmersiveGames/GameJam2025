@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -19,7 +22,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
     {
         [SerializeField] private GameConfig gameConfig;
         [SerializeField] private Transform worldEater;
-
+        
+        [SerializeField] private SoundData mainMenuBGM;
+        [Header("Settings")]
+        [SerializeField] private float bgmFadeDuration = 2f;
         public GameConfig GameConfig => gameConfig;
         public Transform WorldEater => worldEater;
 
@@ -39,6 +45,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
             }
             Initialize();
+        }
+
+        private void Start()
+        {
+            AudioSystemHelper.PlayBGM(mainMenuBGM, loop: true, bgmFadeDuration);
         }
 
         private void Initialize()

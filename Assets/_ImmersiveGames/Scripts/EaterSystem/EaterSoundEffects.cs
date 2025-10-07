@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿/*using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -63,4 +63,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             PlaySoundEffect(isHappy ? happySoundEffect : madSoundEffect);
         }
     }
-}
+}*/

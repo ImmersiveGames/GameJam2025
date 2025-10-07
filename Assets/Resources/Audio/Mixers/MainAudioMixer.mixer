@@ -6,7 +6,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BGM
+  m_Name: BGM_Volume
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 6fcfffa36ea78b140b31e7c73c9b71e9
   m_Children: []
@@ -25,7 +25,7 @@ AudioMixerGroupController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SFX
+  m_Name: SFX_Volume
   m_AudioMixer: {fileID: 24100000}
   m_GroupID: 86dd429152c8b7d4c99c4d6f0af6d2c7
   m_Children: []
@@ -44,7 +44,7 @@ AudioMixerController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AudioMixer
+  m_Name: MainAudioMixer
   m_OutputGroup: {fileID: 0}
   m_MasterGroup: {fileID: 24300002}
   m_Snapshots:
@@ -55,7 +55,7 @@ AudioMixerController:
   m_UpdateMode: 0
   m_ExposedParameters:
   - guid: 458aa7f9897912b4c841cacb9e804618
-    name: BGM_Volume
+    name: MyExposedParam
   - guid: c0fcd412b0c309b4fa4d0ce4777c06cd
     name: SFX_Volume
   m_AudioMixerGroupViews:
@@ -113,7 +113,7 @@ AudioMixerSnapshotController:
   m_FloatValues:
     0ad9eb901ee497047a9d4279973de63a: -9.884522
     c0fcd412b0c309b4fa4d0ce4777c06cd: 0
-    458aa7f9897912b4c841cacb9e804618: -19.928473
+    458aa7f9897912b4c841cacb9e804618: -0.02577656
     f0c75c9a15cffe4408bd0a3853d3f6da: -15
   m_TransitionOverrides: {}
 --- !u!244 &4408406616871410325
