@@ -5,6 +5,9 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
     public class DamageSystemDebugger : MonoBehaviour
@@ -31,6 +34,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 
         private DamageReceiver _currentReceiver;
         private DamageDealer _currentDealer;
+        private List<object> _eventBindings = new List<object>();
 
         private void Start()
         {
@@ -54,9 +58,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             // Eventos de DamageReceiver
             if (_currentReceiver != null)
             {
-                _currentReceiver.OnDamageReceived += OnDamageReceived;
-                _currentReceiver.OnDeath += OnDeath;
-                _currentReceiver.OnRevive += OnRevive;
+                _currentReceiver.EventDamageReceived += OnEventDamageReceived;
+                _currentReceiver.EventDeath += OnEventDeath;
+                _currentReceiver.EventRevive += OnEventRevive;
             }
 
             // Eventos de DamageDealer
@@ -66,15 +70,31 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 _currentDealer.OnDamageBlocked += OnDamageBlocked;
             }
 
-            // Eventos globais
-            var deathBinding = new EventBinding<ActorDeathEvent>(OnActorDeath);
-            EventBus<ActorDeathEvent>.Register(deathBinding);
+            // Eventos globais - Correção: criar métodos auxiliares para registro
+            RegisterGlobalEvent<ResourceUpdateEvent>(OnResourceUpdated);
+            RegisterGlobalEvent<ActorDeathEvent>(OnActorDeath);
+            RegisterGlobalEvent<ActorReviveEvent>(OnActorRevive);
+            RegisterGlobalEvent<DamageDealtEvent>(OnGlobalDamageDealt);
+        }
+        
+        // Correção: Método genérico para registrar eventos globais
+        private void RegisterGlobalEvent<T>(System.Action<T> handler) where T : class, IEvent
+        {
+            var binding = new EventBinding<T>(handler);
+            EventBus<T>.Register(binding);
+            _eventBindings.Add(binding);
+        }
 
-            var reviveBinding = new EventBinding<ActorReviveEvent>(OnActorRevive);
-            EventBus<ActorReviveEvent>.Register(reviveBinding);
-
-            var damageDealtBinding = new EventBinding<DamageDealtEvent>(OnGlobalDamageDealt);
-            EventBus<DamageDealtEvent>.Register(damageDealtBinding);
+        // Correção: Método para desregistrar todos os eventos
+        private void UnregisterAllEvents()
+        {
+            foreach (var binding in _eventBindings)
+            {
+                // Usar reflection para chamar Unregister dinamicamente
+                var method = binding.GetType().GetMethod("Unregister");
+                method?.Invoke(binding, null);
+            }
+            _eventBindings.Clear();
         }
 
         private void LogCurrentComponents()
@@ -87,51 +107,63 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             {
                 Debug.Log($"   - Current Health: {_currentReceiver.CurrentHealth}");
                 Debug.Log($"   - Is Dead: {_currentReceiver.IsDead}");
+                Debug.Log($"   - Can Receive Damage: {_currentReceiver.CanReceiveDamage}");
             }
         }
 
         #region EVENT HANDLERS
 
-        private void OnDamageReceived(float damage, IActor source)
+        private void OnEventDamageReceived(float damage, IActor source)
         {
-            Debug.Log($"🎯 DAMAGE RECEIVED: {damage} from {source?.ActorName ?? "unknown"}");
+            Debug.Log($"🎯 [RECEIVER] DAMAGE RECEIVED: {damage} from {source?.ActorName ?? "unknown"} " +
+                     $"(Health: {_currentReceiver?.CurrentHealth ?? 0f})");
         }
 
-        private void OnDeath(IActor actor)
+        private void OnEventDeath(IActor actor)
         {
-            Debug.Log($"💀 LOCAL DEATH: {actor.ActorName}");
+            Debug.Log($"💀 [RECEIVER] LOCAL DEATH: {actor.ActorName}");
         }
 
-        private void OnRevive(IActor actor)
+        private void OnEventRevive(IActor actor)
         {
-            Debug.Log($"🔁 LOCAL REVIVE: {actor.ActorName}");
+            Debug.Log($"🔁 [RECEIVER] LOCAL REVIVE: {actor.ActorName} " +
+                     $"(Health: {_currentReceiver?.CurrentHealth ?? 0f})");
         }
 
         private void OnDamageDealt(float damage, IDamageable target)
         {
-            Debug.Log($"⚡ DAMAGE DEALT: {damage} to {target.Actor?.ActorName ?? "unknown"}");
+            Debug.Log($"⚡ [DEALER] DAMAGE DEALT: {damage} to {target.Actor?.ActorName ?? "unknown"}");
         }
 
         private void OnDamageBlocked(IDamageable target)
         {
-            Debug.Log($"🛡️ DAMAGE BLOCKED: {target.Actor?.ActorName ?? "unknown"}");
+            Debug.Log($"🛡️ [DEALER] DAMAGE BLOCKED: {target.Actor?.ActorName ?? "unknown"}");
+        }
+
+        private void OnResourceUpdated(ResourceUpdateEvent evt)
+        {
+            if (_currentReceiver?.Actor?.ActorId == evt.ActorId)
+            {
+                Debug.Log($"📊 [RESOURCE] Updated: {evt.ResourceType} = {evt.NewValue.GetCurrentValue()} " +
+                         $"(Max: {evt.NewValue.GetMaxValue()})");
+            }
         }
 
         private void OnActorDeath(ActorDeathEvent evt)
         {
-            Debug.Log($"🌍 GLOBAL DEATH: {evt.Actor.ActorName} at {evt.Position}");
+            Debug.Log($"🌍 [GLOBAL] ACTOR DEATH: {evt.Actor.ActorName} at {evt.Position}");
         }
 
         private void OnActorRevive(ActorReviveEvent evt)
         {
-            Debug.Log($"🌍 GLOBAL REVIVE: {evt.Actor.ActorName} at {evt.Position}");
+            Debug.Log($"🌍 [GLOBAL] ACTOR REVIVE: {evt.Actor.ActorName} at {evt.Position}");
         }
 
         private void OnGlobalDamageDealt(DamageDealtEvent evt)
         {
             if (evt.SourceActor != null && evt.TargetActor != null)
             {
-                Debug.Log($"🌍 GLOBAL DAMAGE: {evt.SourceActor.ActorName} → {evt.TargetActor.ActorName} " +
+                Debug.Log($"🌍 [GLOBAL] DAMAGE: {evt.SourceActor.ActorName} → {evt.TargetActor.ActorName} " +
                          $"(Amount: {evt.DamageAmount}, Type: {evt.DamageType})");
             }
         }
@@ -145,12 +177,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_currentReceiver != null && !_currentReceiver.IsDead)
             {
+                Debug.Log($"🎯 [TEST] Applying {testDamage} {testResource} damage to {GetObjectName()}");
                 _currentReceiver.ReceiveDamage(testDamage, null, testResource);
-                Debug.Log($"🎯 Applied {testDamage} damage to {GetObjectName()}");
             }
             else
             {
-                Debug.LogWarning("No DamageReceiver found or object is already dead");
+                Debug.LogWarning($"[TEST] Cannot apply damage - No DamageReceiver found or {GetObjectName()} is already dead");
             }
         }
 
@@ -163,8 +195,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 _currentReceiver.SetCanRespawn(testCanRespawn);
                 _currentReceiver.SetDeactivateOnDeath(testDeactivateOnDeath);
 
+                Debug.Log($"💀 [TEST] Killing {GetObjectName()} - Respawn: {testRespawnTime}s, " +
+                         $"CanRespawn: {testCanRespawn}, Deactivate: {testDeactivateOnDeath}");
+                
                 _currentReceiver.KillImmediately();
-                Debug.Log($"💀 Killed {GetObjectName()} - Respawn: {testRespawnTime}s");
             }
         }
 
@@ -177,8 +211,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 _currentReceiver.SetCanRespawn(true);
                 _currentReceiver.SetDeactivateOnDeath(false);
                 
+                Debug.Log($"⚡ [TEST] Killing with immediate respawn: {GetObjectName()}");
                 _currentReceiver.KillImmediately();
-                Debug.Log($"⚡ Killed with immediate respawn: {GetObjectName()}");
             }
         }
 
@@ -191,8 +225,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 _currentReceiver.SetCanRespawn(false);
                 _currentReceiver.SetDeactivateOnDeath(true);
                 
+                Debug.Log($"🚫 [TEST] Killing with no respawn: {GetObjectName()}");
                 _currentReceiver.KillImmediately();
-                Debug.Log($"🚫 Killed with no respawn: {GetObjectName()}");
             }
         }
 
@@ -201,12 +235,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_currentReceiver != null && _currentReceiver.IsDead)
             {
+                Debug.Log($"🔁 [TEST] Reviving {GetObjectName()} with {reviveHealth} health");
                 _currentReceiver.Revive(reviveHealth);
-                Debug.Log($"🔁 Revived {GetObjectName()} with {reviveHealth} health");
             }
             else
             {
-                Debug.LogWarning("No DamageReceiver found or object is not dead");
+                Debug.LogWarning($"[TEST] Cannot revive - No DamageReceiver found or {GetObjectName()} is not dead");
             }
         }
 
@@ -215,8 +249,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_currentReceiver != null)
             {
+                Debug.Log($"🔄 [TEST] Resetting {GetObjectName()} to initial state");
                 _currentReceiver.ResetToInitialState();
-                Debug.Log($"🔄 Reset {GetObjectName()} to initial state");
             }
         }
 
@@ -225,16 +259,34 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_currentReceiver != null)
             {
-                _currentReceiver.CheckHealthStatus();
+                Debug.Log($"[HEALTH STATUS] {GetObjectName()}: " +
+                         $"Health = {_currentReceiver.CurrentHealth}, " +
+                         $"IsDead = {_currentReceiver.IsDead}, " +
+                         $"CanRespawn = {_currentReceiver.CanRespawn}, " +
+                         $"CanReceiveDamage = {_currentReceiver.CanReceiveDamage}");
             }
         }
 
-        [ContextMenu("Receiver/Debug Respawn Settings")]
-        private void DebugRespawnSettings()
+        [ContextMenu("Receiver/Debug Initial Values")]
+        private void DebugInitialValues()
         {
             if (_currentReceiver != null)
             {
-                _currentReceiver.DebugInitialValues();
+                var receiver = _currentReceiver;
+                Debug.Log($"[INITIAL VALUES] {GetObjectName()}:");
+                Debug.Log($"   - Position: {receiver.transform.position}");
+                Debug.Log($"   - Respawn: CanRespawn={receiver.CanRespawn}, Time={receiver.RespawnTime}s");
+                Debug.Log($"   - Death: DestroyOnDeath={receiver.DestroyOnDeath}, DeactivateOnDeath={receiver.DeactivateOnDeath}");
+                
+                if (receiver.ResourceBridge != null)
+                {
+                    var resourceSystem = receiver.ResourceBridge.GetService();
+                    Debug.Log("   - Current Resources:");
+                    foreach (var resourceEntry in resourceSystem.GetAll())
+                    {
+                        Debug.Log($"     {resourceEntry.Key}: {resourceEntry.Value.GetCurrentValue()}/{resourceEntry.Value.GetMaxValue()}");
+                    }
+                }
             }
         }
 
@@ -242,13 +294,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 
         #region DAMAGE DEALER CONTEXT MENUS
 
-
         [ContextMenu("Dealer/Test Damage in Front")]
         private void TestDamageInFront()
         {
             if (_currentDealer == null)
             {
-                Debug.LogWarning("No DamageDealer found on this object.");
+                Debug.LogWarning("[TEST] No DamageDealer found on this object.");
                 return;
             }
 
@@ -256,55 +307,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             if (Physics.Raycast(origin.position, origin.forward, out var hit, 10f, _currentDealer.DamageableLayers.value))
             {
                 var target = hit.collider.gameObject;
+                Debug.Log($"🎯 [TEST] Dealing damage to {target.name}");
                 _currentDealer.DebugDealDamageTo(target);
             }
             else
             {
-                Debug.Log("No target hit in front of dealer.");
-            }
-        }
-        
-        [ContextMenu("System/Check Receiver Health")]
-        private void CheckReceiverHealth()
-        {
-            if (_currentReceiver == null || _currentReceiver.Actor == null)
-            {
-                Debug.LogWarning("No valid DamageReceiver to inspect.");
-                return;
-            }
-
-            var actorId = _currentReceiver.Actor.ActorId;
-            if (DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem rs))
-            {
-                var health = rs.Get(ResourceType.Health)?.GetCurrentValue();
-                Debug.Log($"[Health Check] ActorId={actorId}, Health={health}");
-            }
-            else
-            {
-                Debug.LogWarning($"No ResourceSystem found for ActorId={actorId}");
-            }
-        }
-
-
-        [ContextMenu("Dealer/Set Damage to 50")]
-        private void SetDamageTo50()
-        {
-            if (_currentDealer != null)
-            {
-                _currentDealer.SetDamage(50f);
-                Debug.Log($"⚡ Dealer damage set to 50 for {_currentDealer.Actor?.ActorName ?? name}");
-            }
-        }
-
-        [ContextMenu("Dealer/Toggle Destroy On Damage")]
-        private void ToggleDestroyOnDamage()
-        {
-            if (_currentDealer != null)
-            {
-                // Note: Você precisaria adicionar um setter para DestroyOnDamage no DamageDealer
-                // _currentDealer.SetDestroyOnDamage(!testDestroyOnDamage);
-                testDestroyOnDamage = !testDestroyOnDamage;
-                Debug.Log($"🔧 Destroy On Damage: {testDestroyOnDamage}");
+                Debug.Log("[TEST] No target hit in front of dealer.");
             }
         }
 
@@ -313,31 +321,64 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_currentDealer == null)
             {
-                Debug.LogWarning("No DamageDealer found.");
+                Debug.LogWarning("[TEST] No DamageDealer found.");
                 return;
             }
         
             var hits = Physics.OverlapSphere(_currentDealer.transform.position, 5f, _currentDealer.DamageableLayers.value);
+            Debug.Log($"💥 [TEST] Area damage affecting {hits.Length} targets");
+            
             foreach (var hit in hits)
             {
                 var damageable = hit.GetComponent<IDamageable>() ?? hit.GetComponentInParent<IDamageable>();
                 if (damageable != null && damageable != (IDamageable)_currentReceiver)
                 {
                     damageable.ReceiveDamage(testDealerDamage, _currentDealer.Actor, testDealerResource);
-                    Debug.Log($"💥 Area damage to {damageable.Actor?.ActorName ?? hit.name}");
+                    Debug.Log($"   - Hit: {damageable.Actor?.ActorName ?? hit.name}");
                 }
+            }
+        }
+
+        [ContextMenu("Dealer/Set Damage to 50")]
+        private void SetDamageTo50()
+        {
+            if (_currentDealer != null)
+            {
+                _currentDealer.SetDamage(50f);
+                Debug.Log($"⚡ [TEST] Dealer damage set to 50 for {_currentDealer.Actor?.ActorName ?? name}");
             }
         }
 
         #endregion
 
-        #region SYSTEM MANAGEMENT
+        #region SYSTEM DIAGNOSTICS
 
-        [ContextMenu("System/Refresh Components")]
-        private void RefreshComponents()
+        [ContextMenu("System/Check Resource System")]
+        private void CheckResourceSystem()
         {
-            FindCurrentComponents();
-            LogCurrentComponents();
+            if (_currentReceiver == null || _currentReceiver.Actor == null)
+            {
+                Debug.LogWarning("[DIAG] No valid DamageReceiver to inspect.");
+                return;
+            }
+
+            var actorId = _currentReceiver.Actor.ActorId;
+            if (DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem rs))
+            {
+                var health = rs.Get(ResourceType.Health)?.GetCurrentValue() ?? 0f;
+                Debug.Log($"[DIAG] ResourceSystem for {actorId}: Health = {health}");
+                
+                // List all resources
+                Debug.Log("   All Resources:");
+                foreach (var resource in rs.GetAll())
+                {
+                    Debug.Log($"     {resource.Key}: {resource.Value.GetCurrentValue()}/{resource.Value.GetMaxValue()}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[DIAG] No ResourceSystem found for ActorId={actorId}");
+            }
         }
 
         [ContextMenu("System/Print System Status")]
@@ -347,39 +388,50 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             
             if (_currentReceiver != null)
             {
-                Debug.Log($"Receiver: {GetObjectName()}");
-                Debug.Log($"  Health: {_currentReceiver.CurrentHealth}");
-                Debug.Log($"  IsDead: {_currentReceiver.IsDead}");
-                Debug.Log($"  CanReceiveDamage: {_currentReceiver.CanReceiveDamage}");
+                Debug.Log($"📋 RECEIVER: {GetObjectName()}");
+                Debug.Log($"   Health: {_currentReceiver.CurrentHealth}");
+                Debug.Log($"   IsDead: {_currentReceiver.IsDead}");
+                Debug.Log($"   CanReceiveDamage: {_currentReceiver.CanReceiveDamage}");
+                Debug.Log($"   CanRespawn: {_currentReceiver.CanRespawn}");
             }
             else
             {
-                Debug.Log("Receiver: None");
+                Debug.Log("📋 RECEIVER: None");
             }
 
             if (_currentDealer != null)
             {
-                Debug.Log($"Dealer: {GetObjectName()}");
-                Debug.Log($"  Damage: {_currentDealer.DamageAmount}");
-                Debug.Log($"  Resource: {_currentDealer.DamageResourceType}");
-                Debug.Log($"  Type: {_currentDealer.DamageType}");
+                Debug.Log($"⚡ DEALER: {GetObjectName()}");
+                Debug.Log($"   Damage: {_currentDealer.DamageAmount}");
+                Debug.Log($"   Resource: {_currentDealer.DamageResourceType}");
+                Debug.Log($"   Type: {_currentDealer.DamageType}");
             }
             else
             {
-                Debug.Log("Dealer: None");
+                Debug.Log("⚡ DEALER: None");
             }
         }
 
         [ContextMenu("System/Find All Damageable in Scene")]
         private void FindAllDamageable()
         {
-            DamageReceiver[] damageReceivers = FindObjectsByType<DamageReceiver>( FindObjectsSortMode.None);
-            Debug.Log($"🔍 Found {damageReceivers.Length} DamageReceivers in scene:");
-            foreach (var damageable in damageReceivers)
+            var damageReceivers = FindObjectsByType<DamageReceiver>(FindObjectsSortMode.None);
+            Debug.Log($"🔍 [DIAG] Found {damageReceivers.Length} DamageReceivers in scene:");
+            
+            foreach (var receiver in damageReceivers)
             {
-                Debug.Log($"   - {damageable.Actor?.ActorName ?? damageable.name} " +
-                         $"(Health: {damageable.CurrentHealth}, Dead: {damageable.IsDead})");
+                var status = receiver.IsDead ? "💀 DEAD" : "❤️ ALIVE";
+                Debug.Log($"   - {receiver.Actor?.ActorName ?? receiver.name}: " +
+                         $"{status} (Health: {receiver.CurrentHealth})");
             }
+        }
+
+        [ContextMenu("System/Refresh Components")]
+        private void RefreshComponents()
+        {
+            FindCurrentComponents();
+            Debug.Log("🔧 [SYSTEM] Components refreshed");
+            LogCurrentComponents();
         }
 
         #endregion
@@ -396,7 +448,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 Gizmos.color = _currentReceiver.IsDead ? Color.red : Color.green;
                 Gizmos.DrawWireSphere(transform.position + Vector3.up * 2f, 0.5f);
                 
-                // Mostrar health como texto (precisa de Handles, mas não disponível fora do Editor)
                 #if UNITY_EDITOR
                 Handles.Label(transform.position + Vector3.up * 3f, 
                     $"Health: {_currentReceiver.CurrentHealth}\nDead: {_currentReceiver.IsDead}");
@@ -409,6 +460,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 Gizmos.color = debugColor;
                 Gizmos.DrawRay(transform.position, transform.forward * 3f);
                 Gizmos.DrawWireSphere(transform.position, 0.3f);
+                
+                // Mostrar área de dano
+                Gizmos.color = new Color(debugColor.r, debugColor.g, debugColor.b, 0.2f);
+                Gizmos.DrawSphere(transform.position, 5f);
             }
         }
 
@@ -421,23 +476,23 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 
         private void OnDestroy()
         {
-            // Cleanup de eventos
+            // Cleanup de eventos do DamageReceiver
             if (_currentReceiver != null)
             {
-                _currentReceiver.OnDamageReceived -= OnDamageReceived;
-                _currentReceiver.OnDeath -= OnDeath;
-                _currentReceiver.OnRevive -= OnRevive;
+                _currentReceiver.EventDamageReceived -= OnEventDamageReceived;
+                _currentReceiver.EventDeath -= OnEventDeath;
+                _currentReceiver.EventRevive -= OnEventRevive;
             }
 
+            // Cleanup de eventos do DamageDealer
             if (_currentDealer != null)
             {
                 _currentDealer.OnDamageDealt -= OnDamageDealt;
                 _currentDealer.OnDamageBlocked -= OnDamageBlocked;
             }
 
-            EventBus<ActorDeathEvent>.Clear();
-            EventBus<ActorReviveEvent>.Clear();
-            EventBus<DamageDealtEvent>.Clear();
+            // Cleanup de eventos globais
+            UnregisterAllEvents();
         }
     }
 }

@@ -29,10 +29,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         bool CanRespawn { get; }
         bool IsDead { get; }
     }
-    public interface IRespawnStrategy // Novo
-    {
-        void Execute(DamageReceiver receiver);
-    }
     
     public interface IDestructionHandler
     {
