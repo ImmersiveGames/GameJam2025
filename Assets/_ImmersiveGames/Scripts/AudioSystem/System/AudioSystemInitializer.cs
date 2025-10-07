@@ -1,10 +1,8 @@
-﻿using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.AudioSystem.Services;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
-namespace _ImmersiveGames.Scripts.AudioSystem.System
+namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public static class AudioSystemInitializer
     {
@@ -23,7 +21,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.System
             _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
             if (_cachedAudioManager != null)
             {
-                // AudioManager se auto-inicializa no Awake, então só precisamos verificar
+                // AudioManager se autoinicializa no Awake, então só precisamos verificar
                 if (!_cachedAudioManager.IsInitialized)
                 {
                     DebugUtility.LogWarning(typeof(AudioSystemInitializer), 

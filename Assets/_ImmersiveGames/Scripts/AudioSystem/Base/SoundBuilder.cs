@@ -1,7 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class SoundBuilder
@@ -57,10 +55,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (soundEmitter == null)
                 return;
 
-            // Reinicializa o emitter
-            soundEmitter.ResetEmitter();
+            // Configura o SoundEmitter
             soundEmitter.Initialize(_soundData, _audioManager);
-            soundEmitter.transform.position = _position;
             soundEmitter.SetSpatialBlend(_spatialBlend);
             soundEmitter.SetMaxDistance(_maxDistance);
 
@@ -69,13 +65,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 soundEmitter.WithRandomPitch();
             }
 
+            // Ativa via a pool system
+            soundEmitter.Activate(_position);
+
+            // Toca o som
+            soundEmitter.Play();
+
             // Registra emitters de som frequente
             if (_soundData.frequentSound)
             {
                 _audioManager.RegisterFrequentSound(soundEmitter);
             }
-
-            soundEmitter.Play();
         }
     }
 }

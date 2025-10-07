@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.AudioSystem.Base;
 using _ImmersiveGames.Scripts.PlayerControllerSystem;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-namespace _ImmersiveGames.Scripts.AudioSystem.Components
+namespace _ImmersiveGames.Scripts.AudioSystem
 {
     public class PlayerAudioController : AudioControllerBase
     {

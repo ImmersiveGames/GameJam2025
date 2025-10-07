@@ -1747,6 +1747,7 @@ GameObject:
   - component: {fileID: 2009245415}
   - component: {fileID: 2009245418}
   - component: {fileID: 2009245419}
+  - component: {fileID: 2009245420}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1768,18 +1769,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   worldEater: {fileID: 0}
-  mainMenuBGM:
-    clip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
-    mixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 1
-    priority: 128
-    loop: 1
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 0
-    spatialBlend: 1
-    maxDistance: 50
-  bgmFadeDuration: 2
 --- !u!4 &2009245416
 Transform:
   m_ObjectHideFlags: 0
@@ -1820,6 +1809,30 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   players: []
+--- !u!114 &2009245420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2009245414}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34f6f669713c4b89828f2ecb5ac582d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mainMenuBGM:
+    clip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
+    mixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 1
+    priority: 128
+    loop: 1
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+    spatialBlend: 1
+    maxDistance: 50
+  bgmFadeDuration: 2
 --- !u!1 &2013597641
 GameObject:
   m_ObjectHideFlags: 0

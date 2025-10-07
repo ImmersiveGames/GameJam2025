@@ -7,7 +7,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     public class PoolData : ScriptableObject
     {
         [SerializeField] private string objectName;
-        [SerializeField] private int initialPoolSize = 5;
+        [SerializeField]
+        protected int initialPoolSize = 5;
         [SerializeField] private bool canExpand;
         [SerializeField] private PoolableObjectData[] objectConfigs;
         [SerializeField] private bool reconfigureOnReturn = true;

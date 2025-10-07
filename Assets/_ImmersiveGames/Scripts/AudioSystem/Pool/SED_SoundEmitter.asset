@@ -9,7 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bedecb706033483c92a6cb6fe41200a7, type: 3}
-  m_Name: New Factory Asset
+  m_Script: {fileID: 11500000, guid: 47d5a1d6b872400598159a11ab52ee6e, type: 3}
+  m_Name: SED_SoundEmitter
   m_EditorClassIdentifier: 
-  type: 1
+  objectName: SED Sound Emitter
+  prefab: {fileID: 6025242829743331513, guid: 70fa6684af3ff6247b14b47ba229ba73, type: 3}
+  lifetime: 10

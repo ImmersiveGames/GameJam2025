@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -23,9 +22,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [SerializeField] private GameConfig gameConfig;
         [SerializeField] private Transform worldEater;
         
-        [SerializeField] private SoundData mainMenuBGM;
-        [Header("Settings")]
-        [SerializeField] private float bgmFadeDuration = 2f;
+        
         public GameConfig GameConfig => gameConfig;
         public Transform WorldEater => worldEater;
 
@@ -37,7 +34,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
-                DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(_orchestrator);
+                DependencyManager.Instance.RegisterGlobal(_orchestrator);
             }
             if (!SceneManager.GetSceneByName("UI").isLoaded)
             {
@@ -47,10 +44,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             Initialize();
         }
 
-        private void Start()
-        {
-            AudioSystemHelper.PlayBGM(mainMenuBGM, loop: true, bgmFadeDuration);
-        }
+        
 
         private void Initialize()
         {
@@ -63,22 +57,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             DebugUtility.LogVerbose<GameManager>("GameManager inicializado.");
         }
-        // Novo: Centralizar inicialização
-        public void InitializeBindings(IEnumerable<ResourceSystem> actors, IEnumerable<CanvasResourceBinder> canvases)
-        {
-            foreach (var actor in actors)
-            {
-                if (!_orchestrator.IsActorRegistered(actor.EntityId))
-                    _orchestrator.RegisterActor(actor);
-            }
-
-            foreach (var canvas in canvases)
-            {
-                _orchestrator.RegisterCanvas(canvas);
-            }
-
-            DebugUtility.LogVerbose<GameManager>("Inicialização de bindings concluída");
-        }
+        
 
         private void OnDestroy()
         {
