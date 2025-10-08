@@ -1,21 +1,25 @@
-﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
+﻿// Path: _ImmersiveGames/Scripts/AudioSystem/SoundBuilder.cs
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
+    /// <summary>
+    /// Builder fluente para tocar sons dinamicamente via AudioService.
+    /// Ideal para efeitos contextuais ou customizados sem acoplar diretamente à lógica de controllers.
+    /// </summary>
     public class SoundBuilder
     {
-        private readonly IAudioService _audioManager;
+        private readonly IAudioService _audioService;
         private SoundData _soundData;
         private Vector3 _position = Vector3.zero;
+        private bool _useSpatial = true;
         private bool _randomPitch;
-        private float _spatialBlend = 0f;
-        private float _maxDistance = 50f;
         private float _volumeMultiplier = 1f;
 
-        public SoundBuilder(IAudioService audioManager)
+        public SoundBuilder(IAudioService audioService)
         {
-            _audioManager = audioManager;
+            _audioService = audioService;
         }
 
         public SoundBuilder WithSoundData(SoundData soundData)
@@ -24,27 +28,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             return this;
         }
 
-        public SoundBuilder WithPosition(Vector3 position)
+        public SoundBuilder AtPosition(Vector3 position, bool spatial = true)
         {
             _position = position;
+            _useSpatial = spatial;
             return this;
         }
 
-        public SoundBuilder WithRandomPitch(bool randomPitch = true)
+        public SoundBuilder WithRandomPitch(bool enable = true)
         {
-            _randomPitch = randomPitch;
-            return this;
-        }
-
-        public SoundBuilder WithSpatialBlend(float spatialBlend)
-        {
-            _spatialBlend = spatialBlend;
-            return this;
-        }
-
-        public SoundBuilder WithMaxDistance(float maxDistance)
-        {
-            _maxDistance = maxDistance;
+            _randomPitch = enable;
             return this;
         }
 
@@ -56,36 +49,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (_soundData == null || !_audioManager.CanPlaySound(_soundData))
+            if (_soundData == null || _audioService == null)
                 return;
 
-            SoundEmitter soundEmitter = _audioManager.Get();
-            if (soundEmitter == null)
-                return;
-
-            // Configura o SoundEmitter
-            soundEmitter.Initialize(_soundData, _audioManager);
-            soundEmitter.SetSpatialBlend(_spatialBlend);
-            soundEmitter.SetMaxDistance(_maxDistance);
-
-            // Aplica o multiplicador de volume
-            soundEmitter.SetVolumeMultiplier(_volumeMultiplier);
+            var context = AudioContext.Default(_position, _useSpatial, _soundData.GetEffectiveVolume(_volumeMultiplier));
+            _audioService.PlaySound(_soundData, context);
 
             if (_randomPitch)
             {
-                soundEmitter.WithRandomPitch();
-            }
-
-            // Ativa via pool system
-            soundEmitter.Activate(_position);
-
-            // Toca o som
-            soundEmitter.Play();
-
-            // Registra emitters de som frequente
-            if (_soundData.frequentSound)
-            {
-                _audioManager.RegisterFrequentSound(soundEmitter);
+                // A aleatoriedade de pitch já é tratada internamente pelo SoundEmitter.
+                // Esta flag apenas força que a propriedade randomPitch seja respeitada.
+                _soundData.randomPitch = true;
             }
         }
     }

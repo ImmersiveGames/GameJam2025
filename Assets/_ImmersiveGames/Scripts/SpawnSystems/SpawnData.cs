@@ -18,7 +18,5 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     public interface ISpawnStrategy
     {
         List<SpawnData> GetSpawnData(Vector3 basePosition, Vector3 baseDirection);
-        SoundData ShootSound { get; }
-        bool HasShootSound { get; }
     }
 }

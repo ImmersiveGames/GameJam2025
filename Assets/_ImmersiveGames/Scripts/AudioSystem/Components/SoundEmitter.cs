@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private AudioSource _audioSource;
         private Coroutine _playingCoroutine;
         private IAudioService _audioManager;
-        private bool _isInitialized = false;
+        private bool _isInitialized;
 
         // IPoolable fields
         private PoolableObjectData _config;

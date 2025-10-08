@@ -6,10 +6,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
     {
         // SFX
         void PlaySound(SoundData soundData, AudioContext context, AudioConfig config = null);
+
+        // Mixer controls
         void SetSfxVolume(float volume);
         void StopAllSounds();
 
-        // BGM
+        // BGM controls (optional)
         void PlayBGM(SoundData bgmData, bool loop = true, float fadeInDuration = 0f);
         void StopBGM(float fadeOutDuration = 0f);
         void PauseBGM();
@@ -17,12 +19,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         void SetBGMVolume(float volume);
         void CrossfadeBGM(SoundData newBgmData, float fadeDuration = 2f);
 
-        // Estado / Pool
-        bool IsBGMPlaying { get; }
-        SoundData CurrentBGM { get; }
+        // Pool & state
         bool CanPlaySound(SoundData soundData);
-        SoundEmitter Get();
-        void ReturnToPool(SoundEmitter soundEmitter);
-        void RegisterFrequentSound(SoundEmitter soundEmitter);
+        SoundEmitter GetEmitterFromPool();
+        void ReturnEmitterToPool(SoundEmitter emitter);
+        void RegisterFrequentSound(SoundEmitter emitter);
     }
 }

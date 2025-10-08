@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [System.Serializable]
-    public class CircularSpawnStrategy : ISpawnStrategy
+    public class CircularSpawnStrategy : ISpawnStrategy, IProvidesShootSound
     {
         [SerializeField, Min(1)] private int count = 5;
         [SerializeField, Min(0.01f)] private float radius = 1f;
@@ -13,11 +13,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField, Range(0f, 1f)] private float fuzzyPercent = 0f;
         [SerializeField, Range(0f, 30f)] private float fuzzyAngle = 0f;
         private int? _randomSeed = null;
-        
-        [SerializeField] private SoundData shootSound;
 
-        public SoundData ShootSound => shootSound;
-        public bool HasShootSound => shootSound != null && shootSound.clip != null;
+        [SerializeField] private SoundData shootSound;
+        public SoundData GetShootSound() => shootSound;
 
         public List<SpawnData> GetSpawnData(Vector3 basePosition, Vector3 baseDirection)
         {
@@ -32,10 +30,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             if (Vector3.Dot(baseDirection.normalized, up) > 0.99f)
                 up = Vector3.right;
 
-            float step = (count > 1)
-                ? arcAngle / (arcAngle >= 360f ? count : count - 1)
-                : 0f;
-
+            float step = (count > 1) ? arcAngle / (arcAngle >= 360f ? count : count - 1) : 0f;
             float startAngle = -arcAngle / 2f;
 
             for (int i = 0; i < count; i++)

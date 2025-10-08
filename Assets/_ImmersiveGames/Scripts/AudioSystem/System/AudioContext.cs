@@ -10,22 +10,18 @@ namespace _ImmersiveGames.Scripts.AudioSystem
     /// </summary>
     public struct AudioContext
     {
-        public Vector3 Position;
-        public bool UseSpatial;
-        public float VolumeMultiplier;
+        public Vector3 position;
+        public bool useSpatial;
+        public float volumeMultiplier;
 
-        public static AudioContext Default(Vector3 position) => new AudioContext
+        public static AudioContext Default(Vector3 pos, bool useSpatial = true, float volMult = 1f)
         {
-            Position = position,
-            UseSpatial = true,
-            VolumeMultiplier = 1f
-        };
+            return new AudioContext { position = pos, useSpatial = useSpatial, volumeMultiplier = volMult };
+        }
 
-        public static AudioContext NonSpatial(float volumeMultiplier = 1f) => new AudioContext
+        public static AudioContext NonSpatial(float volMult = 1f)
         {
-            Position = Vector3.zero,
-            UseSpatial = false,
-            VolumeMultiplier = volumeMultiplier
-        };
+            return new AudioContext { position = Vector3.zero, useSpatial = false, volumeMultiplier = volMult };
+        }
     }
 }

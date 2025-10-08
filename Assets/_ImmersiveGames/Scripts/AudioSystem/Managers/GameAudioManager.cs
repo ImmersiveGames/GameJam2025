@@ -12,6 +12,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private void Start()
         {
             AudioSystemHelper.PlayBGM(mainMenuBGM, loop: true, bgmFadeDuration);
+            AudioSystemHelper.SetBGMVolume(1f);
+  
         }
     }
 }

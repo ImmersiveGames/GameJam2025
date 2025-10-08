@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// Path: _ImmersiveGames/Scripts/SpawnSystems/InputSpawnerComponent.cs
+using UnityEngine;
 using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -15,18 +16,11 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     [DebugLevel(DebugLevel.Error)]
     public class InputSpawnerComponent : MonoBehaviour
     {
-        [Header("Pool Config")]
-        [SerializeField] private PoolData poolData;
+        [Header("Pool Config")] [SerializeField] private PoolData poolData;
 
-        [Header("Input Config")]
-        [SerializeField] private string actionName = "Spawn";
+        [Header("Input Config")] [SerializeField] private string actionName = "Spawn";
 
-        [Header("Cooldown Config")]
-        [SerializeField, Min(0f)] private float cooldown = 0.5f;
-
-        [Header("Audio Config")]
-        [SerializeField] private bool enableShootSounds = true;
-        [SerializeField] private AudioConfig audioConfig; // Opcional, preferir PlayerAudioController.AudioConfig
+        [Header("Cooldown Config")] [SerializeField, Min(0f)] private float cooldown = 0.5f;
 
         [Header("Spawn Strategy Config")]
         [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
@@ -43,16 +37,15 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
         [Inject] private IStateDependentService _stateService;
 
-        // Referência para o PlayerAudioController (preferível)
         private PlayerAudioController _playerAudio;
 
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
-            DependencyManager.Instance.InjectDependencies(this);
-
             _playerAudio = GetComponent<PlayerAudioController>();
+
+            DependencyManager.Instance.InjectDependencies(this);
 
             if (_playerInput == null)
             {
@@ -68,19 +61,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return;
             }
 
-            if (!PoolData.Validate(poolData, this))
-            {
-                DebugUtility.LogError<InputSpawnerComponent>($"PoolData inválido em '{name}'.", this);
-                enabled = false;
-                return;
-            }
-
             PoolManager.Instance.RegisterPool(poolData);
             _pool = PoolManager.Instance.GetPool(poolData.ObjectName);
 
             if (_pool == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Pool não registrado ou encontrado para '{poolData.ObjectName}' em '{name}'.", this);
+                DebugUtility.LogError<InputSpawnerComponent>($"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.", this);
                 enabled = false;
                 return;
             }
@@ -91,57 +77,28 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             SetStrategy(strategyType);
 
-            if (_activeStrategy == null)
-            {
-                DebugUtility.LogError<InputSpawnerComponent>($"Estratégia de spawn não configurada em '{name}'.", this);
-                enabled = false;
-                return;
-            }
-
             _spawnAction = _playerInput.actions.FindAction(actionName);
             if (_spawnAction == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Ação '{actionName}' não encontrada no InputActionMap de '{name}'.", this);
+                DebugUtility.LogError<InputSpawnerComponent>($"Ação '{actionName}' não encontrada em '{name}'.", this);
                 enabled = false;
                 return;
             }
 
             _spawnAction.performed += OnSpawnPerformed;
-
-            // Garante que o sistema de áudio está inicializado (caso seja usado sem PlayerAudioController)
-            if (enableShootSounds)
-            {
-                AudioSystemInitializer.EnsureAudioSystemInitialized();
-            }
-
-            DebugUtility.LogVerbose<InputSpawnerComponent>($"InputSpawnerComponent inicializado em '{name}' com ação '{actionName}', PoolData '{poolData.ObjectName}', cooldown {cooldown}s e estratégia '{strategyType}'.", "cyan", this);
+            DebugUtility.Log<InputSpawnerComponent>($"InputSpawnerComponent inicializado", "blue");
         }
 
         private void OnDestroy()
         {
-            if (_spawnAction != null)
-            {
-                _spawnAction.performed -= OnSpawnPerformed;
-            }
-            DebugUtility.LogVerbose<InputSpawnerComponent>($"InputSpawnerComponent destruído em '{name}'.", "blue", this);
+            if (_spawnAction != null) _spawnAction.performed -= OnSpawnPerformed;
         }
 
         private void OnSpawnPerformed(InputAction.CallbackContext context)
         {
-            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Shoot))
-                return;
-
-            if (_pool == null)
-            {
-                DebugUtility.LogWarning<InputSpawnerComponent>($"Pool nulo em '{name}'.", this);
-                return;
-            }
-
-            if (Time.time < _lastShotTime + cooldown)
-            {
-                DebugUtility.LogVerbose<InputSpawnerComponent>($"[{name}] Disparo bloqueado por cooldown. Tempo restante: {(_lastShotTime + cooldown - Time.time):F3}s.", "yellow", this);
-                return;
-            }
+            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Shoot)) return;
+            if (_pool == null) return;
+            if (Time.time < _lastShotTime + cooldown) return;
 
             var basePosition = transform.position;
             var baseDirection = transform.forward;
@@ -158,62 +115,21 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 {
                     success = true;
                     spawnedCount++;
-                    DebugUtility.LogVerbose<InputSpawnerComponent>($"[{name}] Spawned '{poolable.GetGameObject().name}' em '{spawnData.Position}' na direção '{spawnData.Direction}'.", "green", this);
-                }
-                else
-                {
-                    DebugUtility.LogWarning<InputSpawnerComponent>($"Falha ao spawnar objeto em '{name}' na posição '{spawnData.Position}'. Pool esgotado?", this);
                 }
             }
 
             if (success)
             {
                 _lastShotTime = Time.time;
-                // Tocar som de tiro se configurado
-                PlayShootSound(spawnedCount);
-            }
-        }
 
-        private void PlayShootSound(int spawnedCount)
-        {
-            if (!enableShootSounds) return;
+                // Decide qual SoundData usar (estratégia > player config)
+                SoundData sound = null;
+                if (_activeStrategy is IProvidesShootSound provider)
+                    sound = provider.GetShootSound();
+                else if (_playerAudio != null)
+                    sound = _playerAudio.AudioConfig?.shootSound;
 
-            SoundData soundToPlay = null;
-
-            if (_activeStrategy.HasShootSound)
-            {
-                soundToPlay = _activeStrategy.ShootSound;
-            }
-            else if (_playerAudio != null && _playerAudio.AudioConfig?.shootSound != null)
-            {
-                soundToPlay = _playerAudio.AudioConfig.shootSound;
-            }
-            else if (audioConfig?.shootSound != null)
-            {
-                // Fallback: AudioConfig local do spawner — prefer PlayerAudioController quando existir
-                soundToPlay = audioConfig.shootSound;
-            }
-
-            if (soundToPlay != null)
-            {
-                float volumeMultiplier = 1f;
-                if (spawnedCount > 1 && strategyType != SpawnStrategyType.Single)
-                {
-                    volumeMultiplier = Mathf.Clamp(1f / Mathf.Sqrt(spawnedCount), 0.5f, 1f);
-                }
-
-                // Preferir tocar via PlayerAudioController para manter coesão
-                if (_playerAudio != null)
-                {
-                    _playerAudio.PlayCustomShootSound(soundToPlay, volumeMultiplier);
-                }
-                else
-                {
-                    // Fallback: tocar via helper global (non-ideal para coesão)
-                    AudioSystemHelper.PlaySound(soundToPlay, transform.position, volumeMultiplier);
-                }
-
-                DebugUtility.LogVerbose<InputSpawnerComponent>($"Som de tiro tocado: {soundToPlay.clip?.name} (x{spawnedCount}, volume: {volumeMultiplier:F2})", "cyan", this);
+                _playerAudio?.PlayShootSound(sound, 1f); // volume multiplier can be adjusted per spawnedCount if needed
             }
         }
 
@@ -227,52 +143,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 SpawnStrategyType.Circular => circularStrategy,
                 _ => singleStrategy
             };
-            DebugUtility.LogVerbose<InputSpawnerComponent>($"Estratégia alterada para '{type}' em '{name}'.", "cyan", this);
         }
+    }
 
-        // Método para habilitar/desabilitar sons em runtime
-        public void SetShootSoundsEnabled(bool enabled)
-        {
-            enableShootSounds = enabled;
-            DebugUtility.LogVerbose<InputSpawnerComponent>($"Sons de tiro {(enabled ? "habilitados" : "desabilitados")}", "yellow", this);
-        }
-
-#if UNITY_EDITOR
-        private void OnDrawGizmosSelected()
-        {
-            if (!Application.isPlaying && poolData != null)
-            {
-                if (_activeStrategy == null)
-                    SetStrategy(strategyType);
-
-                if (_activeStrategy == null)
-                    return;
-
-                var basePosition = transform.position;
-                var baseDirection = transform.forward;
-
-                var previewList = _activeStrategy.GetSpawnData(basePosition, baseDirection);
-
-                Gizmos.color = Color.cyan;
-
-                foreach (var spawnData in previewList)
-                {
-                    Gizmos.DrawWireSphere(spawnData.Position, 0.1f);
-                    Gizmos.DrawLine(spawnData.Position, spawnData.Position + spawnData.Direction * 0.5f);
-                }
-
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawWireSphere(basePosition, 0.15f);
-                Gizmos.DrawLine(basePosition, basePosition + baseDirection * 1f);
-
-                // Mostrar info de áudio no Gizmo
-                if (_activeStrategy.HasShootSound && enableShootSounds)
-                {
-                    UnityEditor.Handles.Label(basePosition + Vector3.up * 0.3f,
-                        $"Som: {_activeStrategy.ShootSound.clip?.name ?? "Nenhum"}");
-                }
-            }
-        }
-#endif
+    // Simple interface to mark strategies that provide a SoundData
+    public interface IProvidesShootSound
+    {
+        SoundData GetShootSound();
     }
 }

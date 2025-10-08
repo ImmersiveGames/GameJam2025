@@ -47,6 +47,5 @@ MonoBehaviour:
   audioMixer: {fileID: 24100000, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   bgmParameter: BGM_Volume
   sfxParameter: SFX_Volume
-  bgmAudioSource: {fileID: 0}
-  defaultFadeDuration: 2
   soundEmitterPoolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
+  settings: {fileID: 11400000, guid: d6c87f67ac3368d47b38639f5644a4ff, type: 2}

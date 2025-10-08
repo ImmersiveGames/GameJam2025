@@ -1,9 +1,15 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
     public partial class DamageSystemDebugger
     {
+        [Header("Debug Test Values")]
+        [SerializeField, Min(0f)] private float testDamage = 10f;
+        [SerializeField, Min(0f)] private float reviveHealth = 50f;
+        [SerializeField] private ResourceType testResource = ResourceType.Health;
+        
         [ContextMenu("Receiver/Test Receive Damage")]
         private void TestReceiveDamage()
         {

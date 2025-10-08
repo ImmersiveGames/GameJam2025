@@ -1,21 +1,15 @@
-﻿// Path: _ImmersiveGames/Scripts/AudioSystem/Base/AudioControllerBase.cs
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
+﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Base
 {
-    /// <summary>
-    /// Controlador base de áudio para entidades. Fornece métodos unificados para tocar sons
-    /// com AudioContext respeitando o AudioConfig do objeto.
-    /// </summary>
     public abstract class AudioControllerBase : MonoBehaviour
     {
         [SerializeField] protected AudioConfig audioConfig;
-
         private IAudioService _audioService;
-        protected bool isInitialized;
-
+        private bool _isInitialized;
+        
         public AudioConfig AudioConfig => audioConfig;
 
         protected virtual void Awake()
@@ -25,42 +19,38 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         private void InitializeAudioController()
         {
-            if (isInitialized) return;
+            if (_isInitialized) return;
 
             AudioSystemInitializer.EnsureAudioSystemInitialized();
             _audioService = AudioSystemInitializer.GetAudioService();
+            _isInitialized = _audioService != null;
 
-            if (_audioService != null)
+            if (!_isInitialized)
             {
-                isInitialized = true;
-                DebugUtility.LogVerbose<AudioControllerBase>($"AudioController inicializado: {name}", "green");
-            }
-            else
-            {
-                DebugUtility.LogError<AudioControllerBase>("Falha ao obter IAudioService");
+                DebugUtility.LogError<AudioControllerBase>("AudioService não encontrado");
             }
         }
 
         /// <summary>
-        /// Método unificado para tocar SoundData com contexto definido.
-        /// Subclasses devem usar esse método para reproduzir SFX do objeto.
+        /// Método genérico e único para tocar som.
         /// </summary>
-        protected void Play(SoundData soundData, AudioContext context)
+        public virtual void PlaySound(SoundData sound, AudioContextMode mode = AudioContextMode.Auto, float volumeMultiplier = 1f)
         {
-            if (!isInitialized || _audioService == null || soundData == null) return;
-            _audioService.PlaySound(soundData, context, audioConfig);
+            if (!_isInitialized || sound == null || sound.clip == null) return;
+
+            bool useSpatial = DecideSpatial(sound, mode);
+            var ctx = AudioContext.Default(transform.position, useSpatial, sound.GetEffectiveVolume(volumeMultiplier) * (audioConfig?.defaultVolume ?? 1f));
+            _audioService.PlaySound(sound, ctx, audioConfig);
         }
 
-        protected void PlayAtPosition(SoundData soundData, Vector3 position, float volumeMultiplier = 1f)
+        private bool DecideSpatial(SoundData sound, AudioContextMode mode)
         {
-            Play(soundData, new AudioContext { Position = position, UseSpatial = true, VolumeMultiplier = volumeMultiplier });
-        }
-
-        protected void PlayAtCamera(SoundData soundData, float volumeMultiplier = 1f)
-        {
-            var mainCamera = Camera.main;
-            var pos = mainCamera != null ? mainCamera.transform.position : Vector3.zero;
-            Play(soundData, new AudioContext { Position = pos, UseSpatial = false, VolumeMultiplier = volumeMultiplier });
+            return mode switch
+            {
+                AudioContextMode.Spatial => true,
+                AudioContextMode.NonSpatial => false,
+                _ => (audioConfig?.useSpatialBlend ?? false) || sound.IsSpatial
+            };
         }
     }
 }

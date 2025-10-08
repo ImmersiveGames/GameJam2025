@@ -1,24 +1,19 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems;
+﻿// Path: _ImmersiveGames/Scripts/DamageSystem/Tests/DamageSystemDebugger.Events.cs
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
-    /// <summary>
-    /// Módulo de integração de eventos globais e locais do DamageSystemDebugger.
-    /// Responsável por capturar e exibir mudanças de dano, morte, revive, e atualizações de recursos.
-    /// </summary>
     public partial class DamageSystemDebugger
     {
-        private EventBinding<ResourceUpdateEvent> _onResourceUpdate;
-        private EventBinding<DamageDealtEvent> _onDamageEvent;
+        private EventBinding<ResourceUpdateEvent> _resourceBinding;
+        private EventBinding<DamageDealtEvent> _damageBinding;
 
-        // --- REGISTRO PRINCIPAL ---
         private void RegisterLocalEvents()
         {
             if (_receiver == null) return;
-
             _receiver.EventDamageReceived += OnLocalDamageReceived;
             _receiver.EventDeath += OnLocalDeath;
             _receiver.EventRevive += OnLocalRevive;
@@ -27,7 +22,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         private void UnregisterLocalEvents()
         {
             if (_receiver == null) return;
-
             _receiver.EventDamageReceived -= OnLocalDamageReceived;
             _receiver.EventDeath -= OnLocalDeath;
             _receiver.EventRevive -= OnLocalRevive;
@@ -35,85 +29,49 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 
         private void RegisterGlobalEvents()
         {
-            _onResourceUpdate = new EventBinding<ResourceUpdateEvent>(OnResourceUpdatedEvent);
-            _onDamageEvent = new EventBinding<DamageDealtEvent>(OnGlobalDamageEvent);
-
-            EventBus<ResourceUpdateEvent>.Register(_onResourceUpdate);
-            EventBus<DamageDealtEvent>.Register(_onDamageEvent);
+            _resourceBinding = new EventBinding<ResourceUpdateEvent>(OnResourceUpdatedEvent);
+            _damageBinding = new EventBinding<DamageDealtEvent>(OnGlobalDamageEvent);
+            EventBus<ResourceUpdateEvent>.Register(_resourceBinding);
+            EventBus<DamageDealtEvent>.Register(_damageBinding);
         }
 
         private void UnregisterGlobalEvents()
         {
-            if (_onResourceUpdate != null)
-                EventBus<ResourceUpdateEvent>.Unregister(_onResourceUpdate);
-
-            if (_onDamageEvent != null)
-                EventBus<DamageDealtEvent>.Unregister(_onDamageEvent);
+            if (_resourceBinding != null) EventBus<ResourceUpdateEvent>.Unregister(_resourceBinding);
+            if (_damageBinding != null) EventBus<DamageDealtEvent>.Unregister(_damageBinding);
         }
 
-        // --- EVENTOS LOCAIS ---
         private void OnLocalDamageReceived(float damage, IActor source)
         {
             if (!IsVerbose) return;
-            Debug.Log($"💥 [{GetObjectName()}] recebeu {damage} de dano. Fonte: {source?.ActorName ?? "Desconhecida"}");
+            Debug.Log($"[Debugger] {GetObjectName()} recebeu {damage} de {source?.ActorName ?? "unknown"}");
         }
 
         private void OnLocalDeath(IActor actor)
         {
-            Debug.Log($"💀 [{actor?.ActorName ?? GetObjectName()}] morreu.");
-
-            if (_audio != null)
-                _audio.PlayCustomShootSound(_audio.AudioConfig?.deathSound, 1f);
+            Debug.Log($"[Debugger] {GetObjectName()} morreu.");
+            _audio?.PlaySound(_audio.AudioConfig?.deathSound);
         }
 
         private void OnLocalRevive(IActor actor)
         {
-            Debug.Log($"✨ [{actor?.ActorName ?? GetObjectName()}] foi revivido.");
-
-            if (_audio != null)
-                _audio.PlayCustomShootSound(_audio.AudioConfig?.reviveSound, 1f);
+            Debug.Log($"[Debugger] {GetObjectName()} reviveu.");
+            _audio?.PlaySound(_audio.AudioConfig?.reviveSound);
         }
 
-        // --- EVENTOS GLOBAIS ---
         private void OnResourceUpdatedEvent(ResourceUpdateEvent evt)
         {
             if (!IsVerbose) return;
-            if (_receiver == null || evt.ActorId != _receiver.Actor?.ActorId)
-                return;
-
-            Debug.Log($"📊 [{GetObjectName()}] Recurso {evt.ResourceType} atualizado: {evt.NewValue}");
+            if (_receiver == null || evt.ActorId != _receiver.Actor?.ActorId) return;
+            Debug.Log($"[Debugger] Resource {evt.ResourceType} updated: {evt.NewValue}");
         }
 
         private void OnGlobalDamageEvent(DamageDealtEvent evt)
         {
             if (!IsVerbose) return;
-
-            var receiverId = _receiver.Actor.ActorId;
-            if (evt.TargetActor.ActorId != receiverId) return;
-
-            Debug.Log($"⚡ Evento global: {evt.SourceActor.ActorName} causou {evt.DamageAmount} de dano a {evt.TargetActor.ActorName}");
-        }
-
-        // --- TESTES DE EVENTOS ---
-        [ContextMenu("Events/Trigger Test Events")]
-        private void TriggerTestEvents()
-        {
-            if (_receiver == null)
-            {
-                Debug.LogWarning("⚠️ Nenhum DamageReceiver para testar eventos.");
-                return;
-            }
-
-            _receiver.ReceiveDamage(5f, null, ResourceType.Health);
-            _receiver.Revive(50f);
-            Debug.Log("🧪 Teste de eventos disparado.");
-        }
-
-        [ContextMenu("Events/Toggle Verbose Mode")]
-        private void ToggleVerbose()
-        {
-            logAllEvents = !logAllEvents;
-            Debug.Log($"🔁 Verbose mode {(logAllEvents ? "ativado" : "desativado")}.");
+            if (_receiver?.Actor == null) return;
+            if (evt.TargetActor.ActorId != _receiver.Actor.ActorId) return;
+            Debug.Log($"[Debugger] Global damage: {evt.SourceActor.ActorName} → {evt.TargetActor.ActorName} ({evt.DamageAmount})");
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.AudioSystem;
+﻿// Path: _ImmersiveGames/Scripts/DamageSystem/Tests/DamageSystemDebugger.Audio.cs
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
@@ -13,55 +15,46 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         [ContextMenu("Audio/Test Hit Sound")]
         private void TestHitSound()
         {
-            if (_audio == null)
-            {
-                Debug.LogWarning("🎧 Nenhum PlayerAudioController encontrado.");
-                return;
-            }
-
-            _audio.PlayCustomShootSound(_audio.AudioConfig?.hitSound, hitVolume);
+            if (!ValidateAudio()) return;
+            _audio.PlaySound(_audio.AudioConfig?.hitSound, AudioContextMode.Auto, hitVolume);
             Debug.Log($"🔊 Hit sound executado ({_audio.AudioConfig?.hitSound?.clip?.name ?? "None"})");
         }
 
         [ContextMenu("Audio/Test Death Sound")]
         private void TestDeathSound()
         {
-            if (_audio == null)
-            {
-                Debug.LogWarning("🎧 Nenhum PlayerAudioController encontrado.");
-                return;
-            }
-
-            _audio.PlayCustomShootSound(_audio.AudioConfig?.deathSound, deathVolume);
+            if (!ValidateAudio()) return;
+            _audio.PlaySound(_audio.AudioConfig?.deathSound, AudioContextMode.Auto, deathVolume);
             Debug.Log($"💀 Death sound executado ({_audio.AudioConfig?.deathSound?.clip?.name ?? "None"})");
         }
 
         [ContextMenu("Audio/Test Revive Sound")]
         private void TestReviveSound()
         {
-            if (_audio == null)
-            {
-                Debug.LogWarning("🎧 Nenhum PlayerAudioController encontrado.");
-                return;
-            }
-
-            _audio.PlayCustomShootSound(_audio.AudioConfig?.reviveSound, reviveVolume);
+            if (!ValidateAudio()) return;
+            _audio.PlaySound(_audio.AudioConfig?.reviveSound, AudioContextMode.Auto, reviveVolume);
             Debug.Log($"✨ Revive sound executado ({_audio.AudioConfig?.reviveSound?.clip?.name ?? "None"})");
         }
 
         [ContextMenu("Audio/Print Audio Status")]
         private void PrintAudioStatus()
         {
+            if (!ValidateAudio()) return;
+
+            Debug.Log("=== AUDIO STATUS ===");
+            Debug.Log($"Hit: {_audio.AudioConfig?.hitSound?.clip?.name ?? "None"}");
+            Debug.Log($"Death: {_audio.AudioConfig?.deathSound?.clip?.name ?? "None"}");
+            Debug.Log($"Revive: {_audio.AudioConfig?.reviveSound?.clip?.name ?? "None"}");
+        }
+
+        private bool ValidateAudio()
+        {
             if (_audio == null)
             {
                 Debug.LogWarning("🎧 Nenhum PlayerAudioController encontrado.");
-                return;
+                return false;
             }
-
-            Debug.Log("=== AUDIO STATUS ===");
-            Debug.Log($"Hit Sound Enabled: {_audio.IsHitSoundEnabled}");
-            Debug.Log($"Death Sound Enabled: {_audio.IsDeathSoundEnabled}");
-            Debug.Log($"Revive Sound Enabled: {_audio.IsReviveSoundEnabled}");
+            return true;
         }
     }
 }
