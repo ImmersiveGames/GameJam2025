@@ -7,10 +7,26 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
     public partial class DamageSystemDebugger
     {
-        [Header("Audio Test Volumes")]
-        [SerializeField] private float hitVolume = 1f;
-        [SerializeField] private float deathVolume = 1f;
-        [SerializeField] private float reviveVolume = 1f;
+        [ContextMenu("Audio/Test Shoot Sound (Simple)")]
+        private void TestShootSoundSimple()
+        {
+            if (!ValidateAudio()) return;
+            _audio.PlayShootSound(null, shootVolume); // Usa PlaySimpleSound internamente
+            Debug.Log($"🔫 Shoot sound simples executado ({_audio.AudioConfig?.shootSound?.clip?.name ?? "None"})");
+        }
+
+        [ContextMenu("Audio/Test Shoot Sound (Advanced with Builder)")]
+        private void TestShootSoundAdvanced()
+        {
+            if (!ValidateAudio()) return;
+            var builder = _audio.CreateSoundBuilder(); // Usa factory protected
+            builder.WithSoundData(_audio.AudioConfig?.shootSound)
+                   .AtPosition(transform.position, true)
+                   .WithRandomPitch(true)
+                   .WithVolumeMultiplier(shootVolume)
+                   .Play(); // Chama Play com config para convergência
+            Debug.Log($"🔫 Shoot sound avançado executado com builder ({_audio.AudioConfig?.shootSound?.clip?.name ?? "None"})");
+        }
 
         [ContextMenu("Audio/Test Hit Sound")]
         private void TestHitSound()
@@ -42,6 +58,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             if (!ValidateAudio()) return;
 
             Debug.Log("=== AUDIO STATUS ===");
+            Debug.Log($"Shoot: {_audio.AudioConfig?.shootSound?.clip?.name ?? "None"}");
             Debug.Log($"Hit: {_audio.AudioConfig?.hitSound?.clip?.name ?? "None"}");
             Debug.Log($"Death: {_audio.AudioConfig?.deathSound?.clip?.name ?? "None"}");
             Debug.Log($"Revive: {_audio.AudioConfig?.reviveSound?.clip?.name ?? "None"}");

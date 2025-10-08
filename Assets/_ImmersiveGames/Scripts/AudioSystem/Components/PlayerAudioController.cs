@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.AudioSystem.Base;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
 using System;
@@ -25,9 +24,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             if (_damageReceiver != null)
             {
-                _onDamageReceived = (damage, source) => PlaySound(audioConfig?.hitSound);
-                _onDeath = actor => PlaySound(audioConfig?.deathSound);
-                _onRevive = actor => PlaySound(audioConfig?.reviveSound);
+                _onDamageReceived = (_, _) => PlaySound(audioConfig?.hitSound);
+                _onDeath = _ => PlaySound(audioConfig?.deathSound);
+                _onRevive = _ => PlaySound(audioConfig?.reviveSound);
 
                 _damageReceiver.EventDamageReceived += _onDamageReceived;
                 _damageReceiver.EventDeath += _onDeath;
@@ -50,7 +49,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             var soundToPlay = strategySound ?? audioConfig?.shootSound;
             if (soundToPlay == null) return;
-            PlaySound(soundToPlay, AudioContextMode.Auto, volumeMultiplier);
+
+            // Uso simples para tiros diretos
+            PlaySimpleSound(soundToPlay, volumeMultiplier);
+
+            // Exemplo avançado com builder (se precisar customizar)
+            // CreateSoundBuilder().WithSoundData(soundToPlay).AtPosition(transform.position).WithRandomPitch().WithVolumeMultiplier(volumeMultiplier).Play();
         }
     }
 }

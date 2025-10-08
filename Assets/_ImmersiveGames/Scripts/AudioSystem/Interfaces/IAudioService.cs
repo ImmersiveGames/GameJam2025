@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Interfaces
 {
     public interface IAudioService
     {
