@@ -1,9 +1,5 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.StateMachineSystems;

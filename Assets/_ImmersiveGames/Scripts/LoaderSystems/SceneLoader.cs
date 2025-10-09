@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         }
         public void ReloadCurrentScene()
         {
-            var currentScene = SceneManager.GetActiveScene().name;
+            string currentScene = SceneManager.GetActiveScene().name;
             DebugUtility.LogVerbose<SceneLoader>($"Recarregando cena atual {currentScene}.");
             SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Single);
         }

@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             {
                 if (!sensor.Config.DebugMode) continue;
 
-                Color color = sensor.IsDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
+                var color = sensor.IsDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
                 if (sensor.Config.DetectionMode == SensorDetectionMode.Spherical)
                 {
                     Debug.DrawRay(sensor.Origin.position, sensor.Origin.forward * sensor.Config.Radius, color, 0.1f);
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                 if (!sensor.Config.DebugMode) continue;
 
                 bool isDetecting = sensor.IsDetecting;
-                Color gizmoColor = isDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
+                var gizmoColor = isDetecting ? sensor.Config.DetectingColor : sensor.Config.IdleColor;
                 DrawSingleSensorGizmo(sensor.Config, gizmoColor, isDetecting, true);
 
                 if (isDetecting && showDetectionLines)
@@ -180,15 +180,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private void DrawConeGizmo(SensorConfig config, Color color)
         {
-            Vector3 coneWorldDirection = sensorController.transform.TransformDirection(config.ConeDirection);
+            var coneWorldDirection = sensorController.transform.TransformDirection(config.ConeDirection);
             float halfAngle = config.ConeAngle * 0.5f;
 
-            Vector3 upAxis = sensorController.transform.up;
-            Quaternion leftRotation = Quaternion.AngleAxis(-halfAngle, upAxis);
-            Quaternion rightRotation = Quaternion.AngleAxis(halfAngle, upAxis);
+            var upAxis = sensorController.transform.up;
+            var leftRotation = Quaternion.AngleAxis(-halfAngle, upAxis);
+            var rightRotation = Quaternion.AngleAxis(halfAngle, upAxis);
 
-            Vector3 leftEdge = leftRotation * coneWorldDirection * config.Radius;
-            Vector3 rightEdge = rightRotation * coneWorldDirection * config.Radius;
+            var leftEdge = leftRotation * coneWorldDirection * config.Radius;
+            var rightEdge = rightRotation * coneWorldDirection * config.Radius;
 
             Gizmos.DrawRay(sensorController.transform.position, leftEdge);
             Gizmos.DrawRay(sensorController.transform.position, rightEdge);
@@ -218,14 +218,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private Vector3[] CalculateConeArcPoints(Vector3 direction, float radius, float angle, Vector3 rotationAxis)
         {
-            Vector3[] points = new Vector3[coneSegments + 1];
+            var points = new Vector3[coneSegments + 1];
             float segmentAngle = angle / coneSegments;
 
             for (int i = 0; i <= coneSegments; i++)
             {
                 float currentAngle = -angle * 0.5f + segmentAngle * i;
-                Quaternion rotation = Quaternion.AngleAxis(currentAngle, rotationAxis);
-                Vector3 rotatedDirection = rotation * direction;
+                var rotation = Quaternion.AngleAxis(currentAngle, rotationAxis);
+                var rotatedDirection = rotation * direction;
                 points[i] = sensorController.transform.position + rotatedDirection * radius;
             }
 
@@ -234,15 +234,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private void DrawDetailedConeGizmo(SensorConfig config)
         {
-            Vector3 coneWorldDirection = sensorController.transform.TransformDirection(config.ConeDirection);
+            var coneWorldDirection = sensorController.transform.TransformDirection(config.ConeDirection);
             float halfAngle = config.ConeAngle * 0.5f;
 
-            Vector3 upAxis = sensorController.transform.up;
-            Quaternion leftRotation = Quaternion.AngleAxis(-halfAngle, upAxis);
-            Quaternion rightRotation = Quaternion.AngleAxis(halfAngle, upAxis);
+            var upAxis = sensorController.transform.up;
+            var leftRotation = Quaternion.AngleAxis(-halfAngle, upAxis);
+            var rightRotation = Quaternion.AngleAxis(halfAngle, upAxis);
 
-            Vector3 leftEdge = leftRotation * coneWorldDirection * config.Radius;
-            Vector3 rightEdge = rightRotation * coneWorldDirection * config.Radius;
+            var leftEdge = leftRotation * coneWorldDirection * config.Radius;
+            var rightEdge = rightRotation * coneWorldDirection * config.Radius;
 
             Gizmos.DrawRay(sensorController.transform.position, leftEdge);
             Gizmos.DrawRay(sensorController.transform.position, rightEdge);

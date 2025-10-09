@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 throw new ArgumentNullException(nameof(service), $"Serviço nulo para o tipo {typeof(T).Name} com chave {key}.");
             }
 
-            if (!_objectServices.TryGetValue(key, out var services))
+            if (!_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 services = GetPooledDictionary();
                 _objectServices[key] = services;
@@ -46,10 +46,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 return false;
             }
 
-            if (_objectServices.TryGetValue(key, out var services))
+            if (_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 var targetType = typeof(T);
-                foreach (var kvp in services)
+                foreach (KeyValuePair<Type, object> kvp in services)
                 {
                     if (targetType.IsAssignableFrom(kvp.Key))
                     {
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (_objectServices.TryGetValue(key, out var services))
+            if (_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 int count = services.Count;
                 _objectServices.Remove(key);
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         public override void ClearAll()
         {
             int totalCount = 0;
-            foreach (var services in _objectServices.Values)
+            foreach (Dictionary<Type, object> services in _objectServices.Values)
             {
                 totalCount += services.Count;
                 ReturnDictionaryToPool(services);
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         public override List<Type> ListServices(string key)
         {
-            if (_objectServices.TryGetValue(key, out var services))
+            if (_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
                 return new List<Type>(services.Keys);
             return new List<Type>();
         }

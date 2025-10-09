@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _actors.Remove(actorId);
             // Limpar cache para ator
             var keysToRemove = _canvasIdCache.Keys.Where(k => k.StartsWith(actorId)).ToList();
-            foreach (var key in keysToRemove) _canvasIdCache.Remove(key);
+            foreach (string key in keysToRemove) _canvasIdCache.Remove(key);
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered actor '{actorId}'");
         
         }
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 // Limpar cache para canvas
                 var keysToRemove = _canvasIdCache.Keys.Where(k => k.EndsWith(canvasId)).ToList();
-                foreach (var key in keysToRemove) _canvasIdCache.Remove(key);
+                foreach (string key in keysToRemove) _canvasIdCache.Remove(key);
                 DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Unregistered canvas '{canvasId}'");
             }
         }
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private string ResolveTargetCanvasId(ResourceInstanceConfig config, string actorId)
         {
             string cacheKey = $"{actorId}_{config?.resourceDefinition.type}";
-            if (_canvasIdCache.TryGetValue(cacheKey, out var cachedCanvasId))
+            if (_canvasIdCache.TryGetValue(cacheKey, out string cachedCanvasId))
             {
                 DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"[Orchestrator] Cached CanvasId '{cachedCanvasId}' for actor '{actorId}'");
                 return cachedCanvasId;

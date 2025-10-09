@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         protected IActor actor;
         protected IDestructionHandler destructionHandler;
-        private readonly Dictionary<GameObject, IDamageable> damageableCache = new();
+        private readonly Dictionary<GameObject, IDamageable> _damageableCache = new();
         private static readonly HashSet<(GameObject, GameObject)> _processedPairsThisFrame = new(); // Novo: Cache de pares
 
         protected virtual void Awake()
@@ -69,10 +69,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         protected virtual IDamageable GetDamageableFromTarget(GameObject target)
         {
             if (target == null) return null;
-            if (damageableCache.TryGetValue(target, out var cached)) return cached;
+            if (_damageableCache.TryGetValue(target, out var cached)) return cached;
 
             var damageable = target.GetComponent<IDamageable>() ?? target.GetComponentInParent<IDamageable>();
-            if (damageable != null) damageableCache[target] = damageable;
+            if (damageable != null) _damageableCache[target] = damageable;
             return damageable;
         }
 

@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                     var effect = pool.GetObject(position);
                     if (effect != null)
                     {
-                        var effectLifetime = effect.GetData<PoolableObjectData>()?.Lifetime ?? 2f;
+                        float effectLifetime = effect.GetData<PoolableObjectData>()?.Lifetime ?? 2f;
                         LifetimeManager.Instance?.Register(effect, effectLifetime);
                         return;
                     }

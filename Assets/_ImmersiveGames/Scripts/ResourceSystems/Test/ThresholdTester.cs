@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Services;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             // Encontrar um ator para testar
-            var actorIds = _orchestrator.GetRegisteredActorIds();
+            IReadOnlyCollection<string> actorIds = _orchestrator.GetRegisteredActorIds();
             if (actorIds.Count == 0)
             {
                 DebugUtility.LogWarning<ThresholdTester>($"Nenhum ator registrado");
@@ -52,7 +53,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             string testActorId = "";
-            foreach (var actorId in actorIds)
+            foreach (string actorId in actorIds)
             {
                 var resourceSystem = _orchestrator.GetActorResourceSystem(actorId);
                 if (resourceSystem?.Get(resourceType) != null)

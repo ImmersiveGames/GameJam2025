@@ -5,13 +5,12 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     [DebugLevel(DebugLevel.Logs)]
-    public class DamageReceiver : DamageSystemBase, IDamageable, IRespawnable
+    public sealed class DamageReceiver : DamageSystemBase, IDamageable, IRespawnable
     {
         [Header("Damage Configuration")]
         [SerializeField] private bool canReceiveDamage = true;
@@ -86,7 +85,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (_resourceBridge == null) return;
 
             var resourceSystem = _resourceBridge.GetService();
-            foreach (var resourceEntry in resourceSystem.GetAll())
+            foreach (KeyValuePair<ResourceType, IResourceValue> resourceEntry in resourceSystem.GetAll())
             {
                 _initialResourceValues[resourceEntry.Key] = resourceEntry.Value.GetCurrentValue();
             }
@@ -174,7 +173,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public float CurrentHealth => _resourceBridge?.GetService().Get(primaryDamageResource)?.GetCurrentValue() ?? 0f;
         #endregion
 
-        protected void OnDestroy()
+        private void OnDestroy()
         {
             _respawnHandler?.CancelRespawn();
             if (_resourceUpdateBinding != null)
@@ -185,7 +184,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         #region Internal Accessors for Modules
         internal EntityResourceBridge ResourceBridge => _resourceBridge;
-        internal IActor Actor => actor;
+        internal new IActor Actor => actor;
         internal Dictionary<ResourceType, float> InitialResourceValues => _initialResourceValues;
         internal Vector3 InitialPosition => _initialPosition;
         internal Quaternion InitialRotation => _initialRotation;
@@ -247,11 +246,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             CheckCurrentHealth();
         }
         #endregion
-        public virtual void OnEventDeath(IActor obj)
+        public void OnEventDeath(IActor obj)
         {
             EventDeath?.Invoke(obj);
         }
-        public virtual void OnEventRevive(IActor obj)
+        public void OnEventRevive(IActor obj)
         {
             EventRevive?.Invoke(obj);
         }

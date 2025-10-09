@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
@@ -19,12 +20,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
                 if (target != null)
                 {
                     target.ReceiveDamage(_dealer.DamageAmount, _dealer.Actor, _dealer.DamageResourceType);
-                    Debug.Log($"⚡ Dano aplicado em {target.Actor?.ActorName ?? hit.collider.name}");
+                    DebugUtility.LogVerbose<DamageSystemDebugger>($"⚡ Dano aplicado em {target.Actor?.ActorName ?? hit.collider.name}");
                 }
             }
             else
             {
-                Debug.Log("🔍 Nenhum alvo atingido à frente.");
+                DebugUtility.LogVerbose<DamageSystemDebugger>("🔍 Nenhum alvo atingido à frente.");
             }
         }
 
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             }
 
             _dealer.SetDamage(50f);
-            Debug.Log($"⚡ Dano configurado para 50 em {_dealer.Actor?.ActorName ?? gameObject.name}");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"⚡ Dano configurado para 50 em {_dealer.Actor?.ActorName ?? gameObject.name}");
         }
     }
 }

@@ -1,15 +1,13 @@
-﻿// Path: _ImmersiveGames/Scripts/AudioSystem/AudioSystemInitializer.cs
-
-using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.AudioSystem.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
-    /// Garante que o AudioManager esteja inicializado e registrado como IAudioService global.
-    /// Pode ser usado por qualquer componente (como AudioControllerBase) antes de tocar sons.
+    /// Garante a existência do AudioManager e registra o AudioMathUtility no DI.
     /// </summary>
     public static class AudioSystemInitializer
     {
@@ -18,6 +16,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void EnsureAudioSystemInitialized()
         {
+            // registra math service se DI disponível e ainda não registrado
+            if (DependencyManager.Instance != null && !DependencyManager.Instance.TryGetGlobal<IAudioMathService>(out _))
+            {
+                DependencyManager.Instance.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
+                DebugUtility.LogVerbose(typeof(AudioSystemInitializer), "AudioMathUtility registrado no DI", "green");
+            }
+
             if (IsInitialized()) return;
 
             _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
@@ -33,7 +38,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private static void CreateAudioManagerFromResources()
         {
-            // Ajuste o caminho conforme seu projeto: Resources/Audio/Prefabs/AudioManager
             var audioManagerPrefab = Resources.Load<AudioManager>("Audio/Prefabs/AudioManager");
             if (audioManagerPrefab == null)
             {
@@ -46,15 +50,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             DebugUtility.LogVerbose(typeof(AudioSystemInitializer), "AudioManager criado a partir de Resources", "green");
         }
 
-        private static bool IsInitialized()
-        {
-            return DependencyManager.Instance?.TryGetGlobal<IAudioService>(out _) ?? false;
-        }
+        public static bool IsInitialized() => DependencyManager.Instance?.TryGetGlobal<IAudioService>(out _) ?? false;
 
         public static IAudioService GetAudioService()
         {
-            if (DependencyManager.Instance == null) return null;
-            return DependencyManager.Instance.TryGetGlobal<IAudioService>(out var service) ? service : null;
+            return DependencyManager.Instance == null ? null : (DependencyManager.Instance.TryGetGlobal<IAudioService>(out var s) ? s : null);
         }
     }
 }

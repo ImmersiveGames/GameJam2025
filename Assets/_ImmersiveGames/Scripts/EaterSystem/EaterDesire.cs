@@ -87,7 +87,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void ConsumePlanet(PlanetDestroyedEvent obj)
         {
             //TODO: aqui precisa vir do recursos junto com o detector.
-            var resource = Object.Instantiate<PlanetResourcesSo>(MockResource); //obj.Detected?.GetResource();
+            var resource = Instantiate(MockResource); //obj.Detected?.GetResource();
             if (resource == null) return;
             
             DebugUtility.Log<EaterDesire>($"Consumindo recurso: {obj.ByActor?.ActorName} O desejado é: {_desiredResource?.name ?? "nenhum"}");

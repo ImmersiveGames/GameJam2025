@@ -6,8 +6,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public struct SpawnData
     {
-        public Vector3 Position;
-        public Vector3 Direction;
+        public Vector3 position;
+        public Vector3 direction;
     }
     public enum SpawnStrategyType
     {
@@ -18,5 +18,6 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
     public interface ISpawnStrategy
     {
         List<SpawnData> GetSpawnData(Vector3 basePosition, Vector3 baseDirection);
+        SoundData GetShootSound();
     }
 }

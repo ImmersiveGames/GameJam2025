@@ -68,7 +68,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             services.Clear();
             services.AddRange(_globalRegistry.GetAll<T>());
             services.AddRange(_sceneRegistry.GetAll<T>(SceneManager.GetActiveScene().name));
-            foreach (var objectId in _objectRegistry.GetAllObjectIds())
+            foreach (string objectId in _objectRegistry.GetAllObjectIds())
             {
                 if (_objectRegistry.TryGet(objectId, out T service))
                     services.Add(service);

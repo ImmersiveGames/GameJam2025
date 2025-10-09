@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             if (!DependencyManager.Instance.TryGetGlobal(out IUniqueIdFactory factory))
             {
                 factory = new UniqueIdFactory();
-                DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(factory);
+                DependencyManager.Instance.RegisterGlobal(factory);
             }
 
             _actorId = factory.GenerateId(gameObject, "");

@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         }
         public IEnumerable<T> GetAll<T>() where T : class
         {
-            foreach (var svc in _services.Values)
+            foreach (object svc in _services.Values)
             {
                 if (svc is T typedService)
                     yield return typedService;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             service = null;
             var targetType = typeof(T);
-            foreach (var kvp in _services)
+            foreach (KeyValuePair<Type, object> kvp in _services)
             {
                 if (targetType.IsAssignableFrom(kvp.Key))
                 {

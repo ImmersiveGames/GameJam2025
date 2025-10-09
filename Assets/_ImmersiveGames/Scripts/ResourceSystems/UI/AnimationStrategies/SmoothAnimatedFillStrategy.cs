@@ -13,8 +13,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
             float currentDuration = style?.smoothCurrentDuration ?? 0.4f;
             float pendingDuration = style?.smoothPendingDuration ?? 1.2f;
             float delay = style?.delayBeforeSlow ?? 0.5f;
-            Ease currentEase = style?.smoothCurrentEase ?? Ease.InOutCubic;
-            Ease pendingEase = style?.smoothPendingEase ?? Ease.InOutSine;
+            var currentEase = style?.smoothCurrentEase ?? Ease.InOutCubic;
+            var pendingEase = style?.smoothPendingEase ?? Ease.InOutSine;
 
             // BARRA CURRENT: Animação suave
             if (slot.FillImage != null)

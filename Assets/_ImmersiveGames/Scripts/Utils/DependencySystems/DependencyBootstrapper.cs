@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DamageSystem.Services;
@@ -78,7 +79,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             // -------------------
             try
             {
-                var eventTypes = EventBusUtil.EventTypes;
+                IReadOnlyList<Type> eventTypes = EventBusUtil.EventTypes;
                 if (eventTypes != null)
                 {
                     foreach (var eventType in eventTypes)
@@ -86,7 +87,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         var busInterfaceType = typeof(IEventBus<>).MakeGenericType(eventType);
                         var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
 
-                        var busInstance = Activator.CreateInstance(busImplType);
+                        object busInstance = Activator.CreateInstance(busImplType);
                         var registerMethod = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
                         var genericRegister = registerMethod?.MakeGenericMethod(busInterfaceType);
                         // register the bus as global

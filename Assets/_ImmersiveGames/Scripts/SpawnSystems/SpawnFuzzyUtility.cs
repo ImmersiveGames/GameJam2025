@@ -4,26 +4,26 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     public static class SpawnFuzzyUtility
     {
-        private static System.Random seededRandom;
-        private static bool useSeed = false;
+        private static System.Random _seededRandom;
+        private static bool _useSeed;
 
         public static void SetSeed(int? seed)
         {
             if (seed.HasValue)
             {
-                seededRandom = new System.Random(seed.Value);
-                useSeed = true;
+                _seededRandom = new System.Random(seed.Value);
+                _useSeed = true;
             }
             else
             {
-                useSeed = false;
+                _useSeed = false;
             }
         }
 
         private static float RandRange(float min, float max)
         {
-            if (useSeed && seededRandom != null)
-                return (float)(seededRandom.NextDouble() * (max - min) + min);
+            if (_useSeed && _seededRandom != null)
+                return (float)(_seededRandom.NextDouble() * (max - min) + min);
             else
                 return Random.Range(min, max);
         }
@@ -36,9 +36,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (fuzzyPercent > 0f)
             {
-                Vector2 circle = Random.insideUnitCircle * radius * fuzzyPercent;
-                Vector3 right = Vector3.Cross(direction, Vector3.up).normalized;
-                Vector3 up = Vector3.Cross(direction, right).normalized;
+                var circle = Random.insideUnitCircle * radius * fuzzyPercent;
+                var right = Vector3.Cross(direction, Vector3.up).normalized;
+                var up = Vector3.Cross(direction, right).normalized;
                 position += right * circle.x + up * circle.y;
             }
 
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             {
                 float angleX = RandRange(-fuzzyAngle, fuzzyAngle);
                 float angleY = RandRange(-fuzzyAngle, fuzzyAngle);
-                Quaternion rot = Quaternion.Euler(angleX, angleY, 0f);
+                var rot = Quaternion.Euler(angleX, angleY, 0f);
                 direction = (rot * direction).normalized;
             }
         }

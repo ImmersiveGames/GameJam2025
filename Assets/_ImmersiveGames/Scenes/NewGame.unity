@@ -648,7 +648,6 @@ GameObject:
   - component: {fileID: 1432878149}
   - component: {fileID: 1432878150}
   - component: {fileID: 1432878151}
-  - component: {fileID: 1432878152}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -788,53 +787,20 @@ MonoBehaviour:
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
   multipleLinearStrategy:
     count: 3
     offset: 0.5
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 0}
   circularStrategy:
     count: 5
     radius: 1
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 0}
 --- !u!114 &1432878140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -979,7 +945,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e375bd0721940c68e468f8a2788a4da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _animationConfig: {fileID: 11400000, guid: 03ab8678a8f183e469ba40b8b5bf84a6, type: 2}
+  animationConfig: {fileID: 0}
 --- !u!114 &1432878151
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -993,43 +959,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
-  soundEmitterPoolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
---- !u!114 &1432878152
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432878126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  logAllEvents: 1
-  showVisualDebug: 1
-  debugColor: {r: 1, g: 0, b: 0, a: 1}
-  shootVolume: 1
-  hitVolume: 1
-  deathVolume: 1
-  reviveVolume: 1
-  testBgmData:
-    clip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
-    mixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 1
-    priority: 128
-    loop: 1
-    playOnAwake: 1
-    frequentSound: 0
-    randomPitch: 0
-    pitchVariation: 0.05
-    spatialBlend: 0
-    maxDistance: 50
-  bgmVolume: 1
-  fadeDuration: 2
-  testDamage: 10
-  reviveHealth: 100
-  testResource: 0
+  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1524,53 +1454,20 @@ MonoBehaviour:
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 0}
   multipleLinearStrategy:
     count: 3
     offset: 0.5
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 0}
   circularStrategy:
     count: 5
     radius: 1
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound:
-      clip: {fileID: 0}
-      mixerGroup: {fileID: 0}
-      volume: 1
-      priority: 128
-      loop: 0
-      playOnAwake: 0
-      frequentSound: 0
-      randomPitch: 0
-      pitchVariation: 0.05
-      spatialBlend: 0
-      maxDistance: 50
+    shootSound: {fileID: 0}
 --- !u!114 &1667814065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1754,18 +1651,7 @@ MonoBehaviour:
   hitVolume: 1
   deathVolume: 1
   reviveVolume: 1
-  testBgmData:
-    clip: {fileID: 0}
-    mixerGroup: {fileID: 0}
-    volume: 1
-    priority: 128
-    loop: 0
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 0
-    pitchVariation: 0.05
-    spatialBlend: 0
-    maxDistance: 50
+  testBgmData: {fileID: 0}
   bgmVolume: 1
   fadeDuration: 2
   testDamage: 10
@@ -1943,18 +1829,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34f6f669713c4b89828f2ecb5ac582d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mainMenuBGM:
-    clip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
-    mixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 1
-    priority: 128
-    loop: 1
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 0
-    pitchVariation: 0.1
-    spatialBlend: 1
-    maxDistance: 50
+  mainMenuBGM: {fileID: 11400000, guid: 8efc58f3de6d2e44e83315ad00e8fd43, type: 2}
   bgmFadeDuration: 2
 --- !u!1 &2013597641
 GameObject:

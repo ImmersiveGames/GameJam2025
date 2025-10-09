@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.UI
         [SerializeField] private TextMeshProUGUI indicatorHideText;
 
         private Transform _player;
-        private Transform indicatorTarget;
+        private Transform _indicatorTarget;
         private Camera _mainCamera;
 
         private void Awake()
@@ -23,9 +23,9 @@ namespace _ImmersiveGames.Scripts.UI
 
         private void Update()
         {
-            if (_player == null || indicatorTarget == null || _mainCamera == null) return;
+            if (_player == null || _indicatorTarget == null || _mainCamera == null) return;
 
-            var screenPos = _mainCamera.WorldToScreenPoint(indicatorTarget.position);
+            var screenPos = _mainCamera.WorldToScreenPoint(_indicatorTarget.position);
 
             bool onScreen = screenPos.z > 0 &&
                 screenPos.x > 0 && screenPos.x < Screen.width &&
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.UI
 
         public void Setup(Transform indicatorTarget, Sprite indicatorIcon, bool isHidden)
         {
-            this.indicatorTarget = indicatorTarget;
+            _indicatorTarget = indicatorTarget;
             this.indicatorIcon.sprite = indicatorIcon;
             if (isHidden) Hide(true);
             else Hide(false);

@@ -1,8 +1,7 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
@@ -88,7 +87,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (_receiver.ResourceBridge != null)
             {
                 var resourceSystem = _receiver.ResourceBridge.GetService();
-                foreach (var resourceEntry in _receiver.InitialResourceValues)
+                foreach (KeyValuePair<ResourceType, float> resourceEntry in _receiver.InitialResourceValues)
                 {
                     resourceSystem.Set(resourceEntry.Key, resourceEntry.Value);
                 }

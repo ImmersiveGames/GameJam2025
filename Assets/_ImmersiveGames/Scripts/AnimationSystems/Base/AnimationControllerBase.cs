@@ -12,26 +12,26 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
     public abstract class AnimationControllerBase : MonoBehaviour
     {
         [Inject] private IUniqueIdFactory _idFactory;
-        [SerializeField] protected AnimationConfig _animationConfig;
+        [SerializeField] protected AnimationConfig animationConfig;
         
-        protected Animator _animator;
-        protected AnimationResolver _animationResolver;
-        protected string _objectId;
+        protected Animator animator;
+        protected AnimationResolver animationResolver;
+        protected string objectId;
 
         // Propriedades para hashs
-        protected int IdleHash => _animationConfig?.IdleHash ?? Animator.StringToHash("Idle");
-        protected int HitHash => _animationConfig?.HitHash ?? Animator.StringToHash("GetHit");
-        protected int DeathHash => _animationConfig?.DeathHash ?? Animator.StringToHash("Die");
-        protected int ReviveHash => _animationConfig?.ReviveHash ?? Animator.StringToHash("Revive");
+        protected int IdleHash => animationConfig?.IdleHash ?? Animator.StringToHash("Idle");
+        protected int HitHash => animationConfig?.HitHash ?? Animator.StringToHash("GetHit");
+        protected int DeathHash => animationConfig?.DeathHash ?? Animator.StringToHash("Die");
+        protected int ReviveHash => animationConfig?.ReviveHash ?? Animator.StringToHash("Revive");
 
         protected virtual void Awake()
         {
             DependencyManager.Instance.InjectDependencies(this);
             
             // Busca o AnimationResolver
-            _animationResolver = GetComponent<AnimationResolver>();
+            animationResolver = GetComponent<AnimationResolver>();
             
-            if (_animationResolver == null)
+            if (animationResolver == null)
             {
                 DebugUtility.LogError<AnimationControllerBase>(
                     $"AnimationResolver não encontrado em {name}. O componente será desativado.");
@@ -40,20 +40,20 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             }
 
             // Tenta obter config via Provider
-            if (_animationConfig == null)
+            if (animationConfig == null)
             {
                 DependencyManager.Instance.TryGetGlobal<AnimationConfigProvider>(out var configProvider);
                 if (configProvider != null)
                 {
                     // Usa o tipo do controller como chave para a config
                     string configKey = GetType().Name;
-                    _animationConfig = configProvider.GetConfig(configKey);
+                    animationConfig = configProvider.GetConfig(configKey);
                 }
             }
             // Fallback para config padrão
-            if (_animationConfig == null)
+            if (animationConfig == null)
             {
-                _animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
+                animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
                 DebugUtility.LogWarning<AnimationControllerBase>(
                     $"Usando AnimationConfig padrão para {name}.");
             }
@@ -68,9 +68,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
         private void InitializeAnimator()
         {
             // Usa o AnimationResolver para obter o Animator
-            _animator = _animationResolver.GetAnimator();
+            animator = animationResolver.GetAnimator();
 
-            if (_animator == null)
+            if (animator == null)
             {
                 DebugUtility.LogError<AnimationControllerBase>(
                     $"Nenhum Animator encontrado via AnimationResolver em {name}. O componente será desativado.");
@@ -91,9 +91,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
                 return;
             }
 
-            _objectId = _idFactory.GenerateId(gameObject);
+            objectId = _idFactory.GenerateId(gameObject);
 
-            if (string.IsNullOrEmpty(_objectId))
+            if (string.IsNullOrEmpty(objectId))
             {
                 DebugUtility.LogWarning<AnimationControllerBase>(
                     $"Falha ao gerar ObjectId para {name}. Dependências não serão registradas.");
@@ -101,33 +101,33 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             }
 
             DebugUtility.LogVerbose<AnimationControllerBase>(
-                $"Registrando controlador de animação para ID: {_objectId}.", "cyan");
+                $"Registrando controlador de animação para ID: {objectId}.", "cyan");
 
-            DependencyManager.Instance.RegisterForObject(_objectId, this);
+            DependencyManager.Instance.RegisterForObject(objectId, this);
         }
 
         protected virtual void OnDisable()
         {
-            if (!string.IsNullOrEmpty(_objectId))
+            if (!string.IsNullOrEmpty(objectId))
             {
-                DependencyManager.Instance.ClearObjectServices(_objectId);
+                DependencyManager.Instance.ClearObjectServices(objectId);
                 DebugUtility.LogVerbose<AnimationControllerBase>(
-                    $"Serviços removidos do objeto {_objectId}.", "yellow");
+                    $"Serviços removidos do objeto {objectId}.", "yellow");
             }
         }
 
         // Método chamado quando o Animator muda (ex: troca de skin)
         public virtual void OnAnimatorChanged(Animator newAnimator)
         {
-            _animator = newAnimator;
+            animator = newAnimator;
             DebugUtility.LogVerbose<AnimationControllerBase>(
-                $"Animator atualizado para {_objectId}", "orange");
+                $"Animator atualizado para {objectId}", "orange");
         }
 
         protected void PlayHash(int hash)
         {
-            if (_animator != null && gameObject.activeInHierarchy)
-                _animator.Play(hash);
+            if (animator != null && gameObject.activeInHierarchy)
+                animator.Play(hash);
         }
     }
 }

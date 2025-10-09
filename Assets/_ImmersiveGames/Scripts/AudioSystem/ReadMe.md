@@ -1,75 +1,287 @@
-﻿# m.md — Guia de Integração do Audio System Consolidado
-
-## 🎯 Objetivo
-Centralizar a reprodução de áudio com coerência: cada entidade (player, NPC, arma, etc.)
-possui seu `AudioControllerBase` e seu próprio pool local de `SoundEmitter`.
-O `AudioManager` é responsável por BGM e controles globais (mixer), não por pools de SFX.
+﻿Perfeito 🎧 — aqui está o **`README_AudioSystem.md`** completo, limpo, bem formatado e pronto para copiar e colar no seu repositório.
+Inclui descrição, hierarquia, exemplos práticos e explicações sobre volumes e multiplicadores.
 
 ---
 
-## 🧭 Arquivos/Componentes principais
-- AudioManager.cs — serviço global (BGM, mixer)
-- AudioControllerBase.cs — controlador base por entidade (dono do pool local)
-- PlayerAudioController.cs — controller de exemplo (player)
-- SoundEmitter.cs — emitter poolable (deriva de `PooledObject`)
-- SoundBuilder.cs — builder fluente (usa pool local quando fornecido)
-- AudioConfig.cs — config de entidade (sound defaults)
-- SoundData.cs — dados do som (clip, volume, spatial, pitchVariation etc.)
-- SoundEmitterPoolData.cs / SoundEmitterPoolableData.cs — configurações de pool
+```markdown
+# 🎧 Immersive Games – Audio System
+
+Sistema modular e extensível de áudio para Unity, com suporte a:
+- **BGM (música ambiente)**
+- **SFX (efeitos sonoros)**
+- **Pooling de emissores**
+- **Serviços globais via DependencyManager**
+- **Fade, crossfade e controle de volume unificado**
 
 ---
 
-## 🔌 Como configurar no inspector (passo a passo)
-1. Coloque o prefab `AudioManager` em `Resources/Audio/Prefabs/AudioManager.prefab` (opcional:
-   `AudioSystemInitializer` cria a partir de Resources se necessário).
-2. No prefab `AudioManager` configure o `AudioMixer` e `BGM AudioSource` (ou deixe o sistema criar).
-3. Crie um `SoundEmitter` prefab que implemente `PooledObject` (já provido). Atribua o `AudioSource`.
-4. Crie `SoundEmitterPoolableData` apontando para o prefab do emitter.
-5. Crie `SoundEmitterPoolData` com `initialPoolSize` adequado e adicione o `SoundEmitterPoolableData`.
-6. Em cada entidade que precise emitir SFX frequentemente:
-    - Adicione `PlayerAudioController` (ou derive de `AudioControllerBase`).
-    - No inspector do controlador, atribua:
-        - `AudioConfig` (defaults de som)
-        - `SoundEmitterPoolData` (pool local para esse controlador)
-7. Em cenários eventuais (sons raros), você pode chamar `AudioManager.PlaySound(...)` via `AudioSystemHelper` ou serviço, que fará fallback criando um `AudioSource` temporário.
+## ⚙️ Arquitetura Geral
+
+| Componente | Função |
+|-------------|--------|
+| **`AudioManager`** | Gerencia BGM (faixas principais), volumes e crossfades. |
+| **`AudioControllerBase`** | Base para controladores de áudio de entidades (Player, NPCs, armas, etc). |
+| **`SoundEmitter`** | Objeto reutilizável (via pool) responsável por tocar SFX. |
+| **`AudioSystemInitializer`** | Garante que o sistema e dependências de áudio estejam prontos no runtime. |
+| **`AudioMathUtility`** | Serviço central de cálculos de volume, dB e pitch. |
+| **`AudioServiceSettings`** | ScriptableObject global com multiplicadores e volumes padrão. |
+| **`AudioConfig`** | Configurações padrão de áudio por entidade. |
+| **`SoundData`** | Asset individual com dados de cada som (clip, mixer, volume, etc). |
+| **`SoundBuilder`** | API fluente para instanciar e tocar sons de forma controlada. |
 
 ---
 
-## 🧠 Fluxo de reprodução (ex.: Player tiro)
-1. `InputSpawnerComponent` ou lógica de tiro chama: `playerAudioController.PlayShootSound(strategySound)`
-2. `PlayerAudioController.PlayShootSound` chama `AudioControllerBase.PlaySound(sound, ...)`.
-3. `AudioControllerBase` cria `AudioContext` e:
-    - tenta `GetObject` do pool local (via `_localPool`) e usar `SoundEmitter` local para tocar.
-    - se pool local não existir ou estiver esgotada, chama `AudioManager.PlaySound(...)` como fallback.
-4. `SoundEmitter` é inicializado com `SoundData`, ajusta `AudioSource` e `Play()`.
-5. Ao fim do som, `SoundEmitter` retorna ao pool via `ObjectPool.ReturnObject(...)`.
+## 🔊 Hierarquia de Volume
+
+O volume final de um som é calculado levando em conta vários níveis de controle:
+
+```
+
+FinalVolume = SoundData.volume
+× AudioConfig.defaultVolume
+× AudioServiceSettings.(bgmMultiplier | sfxMultiplier)
+× AudioServiceSettings.(bgmVolume | sfxVolume)
+× AudioServiceSettings.masterVolume
+× AudioContext.volumeMultiplier
+
+````
+
+Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais.
 
 ---
 
-## 🔁 Regras importantes
-- Pools de `SoundEmitter` são **locais por controlador**. Não centralize pools no `AudioManager`.
-- `AudioManager` **não** deve instanciar/gerenciar `SoundEmitter` fixos — apenas BGM e mixer.
-- `SoundEmitter` usa `PooledObject` para integração com `LifetimeManager` e `ObjectPool`.
+## 🎛️ Configuração no Unity
+
+### 1️⃣ Crie os assets necessários:
+- `Assets/Audio/Configs/AudioServiceSettings.asset`
+- `Assets/Audio/Configs/PlayerAudioConfig.asset`
+- `Assets/Audio/Sounds/ShootSound.asset`
+- `Assets/Audio/Sounds/BGM_MainTheme.asset`
+
+### 2️⃣ Configure os valores:
+
+#### AudioServiceSettings
+| Campo | Descrição | Exemplo |
+|--------|------------|---------|
+| `masterVolume` | Volume geral global | `1.0` |
+| `bgmVolume` | Volume de música ambiente | `0.8` |
+| `sfxVolume` | Volume de efeitos sonoros | `1.0` |
+| `bgmMultiplier` | Fator adicional fixo aplicado em runtime | `0.5` |
+| `sfxMultiplier` | Fator adicional fixo aplicado aos SFX | `1.0` |
+
+#### AudioConfig (por entidade)
+| Campo | Descrição |
+|--------|-----------|
+| `defaultVolume` | Volume base do controlador |
+| `defaultMixerGroup` | MixerGroup padrão dos sons |
+| `maxDistance` | Distância máxima do som 3D |
+| `useSpatialBlend` | Define se o áudio é espacializado |
+| `shootSound`, `hitSound`, etc | Sons específicos da entidade |
 
 ---
 
-## 🛠 Debug e tuning
-- Ative `settings.debugEmitters` (se você adicionou tal flag) no `AudioServiceSettings` para logs.
-- Ajuste `SoundEmitterPoolData.InitialPoolSize` de acordo com a entropia de sons por entidade.
-- Use `AudioMixer` snapshots para controlar BGM/SFX via UI (opções do jogador).
+## 🚀 Exemplos de Uso
+
+### 🎵 Tocando BGM Globalmente
+
+```csharp
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using UnityEngine;
+
+public class MenuMusicStarter : MonoBehaviour
+{
+    [SerializeField] private SoundData mainMenuMusic;
+
+    void Start()
+    {
+        // Toca a música do menu com fade-in de 2s
+        AudioSystemHelper.PlayBGM(mainMenuMusic, true, 2f);
+    }
+
+    void OnDisable()
+    {
+        // Para a música suavemente ao sair do menu
+        AudioSystemHelper.StopBGM(1.5f);
+    }
+}
+````
 
 ---
 
-## ❗ Remover/Alterar (opcional)
-- Remova a referência ao pool global de emitters do `AudioManager` (já removido nessa consolidação).
-- Remova cópias antigas de `SoundEmitter` que não herdarem `PooledObject`.
-- Certifique-se de que `PoolManager` e `ObjectPool` estão compilando com a interface `IPoolable` usada aqui.
+### 💥 Tocando SFX Local (ex: tiro, impacto, passo)
+
+```csharp
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using UnityEngine;
+
+public class Gun : MonoBehaviour
+{
+    [SerializeField] private PlayerAudioController playerAudio;
+
+    void Fire()
+    {
+        // Som direto pelo controller
+        playerAudio.PlayShootSound();
+
+        // Ou via SoundBuilder (forma fluente e mais customizável)
+        playerAudio.CreateSoundBuilderPublic()
+            .WithSoundData(playerAudio.GetAudioConfig().shootSound)
+            .AtPosition(transform.position)
+            .WithRandomPitch()
+            .WithFadeIn(0.15f)
+            .Play();
+    }
+}
+```
 
 ---
 
-## 📌 Boas práticas
-- Sons muito raros (UI clicks, efeitos únicos) podem ser tocados via `AudioManager.PlaySound` (fallback).
-- Sons de alta taxa/frequência (tiros, passos, tiros de arma rápida) devem ser configurados com pool local.
-- Use `SoundData.randomPitch` e `pitchVariation` para reduzir repetição sonora.
+### 🧮 Controle de Volume e Mixers em Runtime
+
+```csharp
+// Reduz o volume geral da música
+AudioSystemHelper.SetBGMVolume(0.5f);
+
+// Pausa e retoma
+AudioSystemHelper.PauseBGM();
+AudioSystemHelper.ResumeBGM();
+
+// Para imediatamente (sem fade)
+AudioSystemHelper.StopBGMImmediate();
+```
 
 ---
+
+### 🎚️ Ajustando o equilíbrio BGM / SFX
+
+Se o **BGM** estiver mais alto que os **SFX**, ajuste os multiplicadores no asset `AudioServiceSettings`:
+
+| Campo           | Descrição                          | Valor sugerido |
+| --------------- | ---------------------------------- | -------------- |
+| `bgmMultiplier` | Reduz todas as músicas globalmente | `0.5`          |
+| `sfxMultiplier` | Mantém o nível dos efeitos         | `1.0`          |
+| `bgmVolume`     | Volume runtime controlável por UI  | `0.8`          |
+| `masterVolume`  | Volume global (master)             | `1.0`          |
+
+💡 **Dica:** É comum deixar `bgmMultiplier` menor que `sfxMultiplier` para dar mais destaque aos efeitos.
+
+---
+
+## 🧰 Depuração
+
+Para ver logs detalhados de áudio (com volumes e dB):
+
+* Ative `debugEmitters = true` em `AudioServiceSettings`.
+
+O sistema exibirá no console:
+
+```
+[SFX Pool] Clip=GunShot | Linear=0.80 | dB=-1.9 | Mixer=SFX
+[BGM] Clip=MainTheme | Linear=0.40 | dB=-7.9 | Mixer=Music
+```
+
+---
+
+## 🧩 Fluxo de Inicialização
+
+1. **`AudioSystemInitializer`** é executado automaticamente (`RuntimeInitializeOnLoad`).
+2. Verifica e instancia o **`AudioManager`** (se necessário, via `Resources/Audio/Prefabs/AudioManager`).
+3. Registra globalmente os serviços:
+
+    * `IAudioService` (gerenciamento de BGM)
+    * `IAudioMathService` (conversões e cálculos)
+4. Controllers e SoundEmitters usam esses serviços automaticamente.
+
+---
+
+## ✅ Boas Práticas
+
+* Use **`SoundData` ScriptableObjects** para todos os sons reutilizáveis.
+* Centralize volumes no **`AudioServiceSettings`** — nunca direto no `AudioSource`.
+* Use **`SoundBuilder`** para criar sons temporários de forma fluida.
+* Prefira **pools locais** (`SoundEmitterPoolData`) para entidades que reproduzem sons frequentemente.
+* Use **mixer groups** (`SFX`, `Music`, `UI`) para maior controle no mixer global.
+
+---
+
+## 🧩 Exemplo de Estrutura no Projeto
+
+```
+Assets/
+ ├── Audio/
+ │   ├── Prefabs/
+ │   │   └── AudioManager.prefab
+ │   ├── Configs/
+ │   │   ├── AudioServiceSettings.asset
+ │   │   └── PlayerAudioConfig.asset
+ │   ├── Sounds/
+ │   │   ├── ShootSound.asset
+ │   │   └── BGM_MainTheme.asset
+ │   └── Mixers/
+ │       ├── MasterMixer.mixer
+ │       ├── Music.mixerGroup
+ │       └── SFX.mixerGroup
+ └── Scripts/
+     └── AudioSystem/
+         ├── AudioManager.cs
+         ├── AudioControllerBase.cs
+         ├── SoundEmitter.cs
+         ├── AudioSystemInitializer.cs
+         ├── AudioMathUtility.cs
+         ├── AudioSystemHelper.cs
+         ├── Configs/
+         │   ├── AudioConfig.cs
+         │   ├── SoundData.cs
+         │   └── AudioServiceSettings.cs
+         └── Services/
+             └── Interfaces/
+```
+
+---
+
+## 🧠 Observação
+
+O sistema foi projetado para ser **escalável e desacoplado**.
+O `AudioMathUtility` centraliza toda a lógica de volume/pitch, permitindo ajustes perceptuais futuros sem alterar controladores.
+
+---
+
+## 🪄 Exemplo de Extensão (novo tipo de som)
+
+```csharp
+public class EnemyAudioController : AudioControllerBase
+{
+    public void PlayAlert()
+    {
+        PlaySoundLocal(audioConfig.hitSound, AudioContext.Default(transform.position));
+    }
+
+    public void PlayDeath()
+    {
+        PlaySoundLocal(audioConfig.deathSound, AudioContext.Default(transform.position));
+    }
+}
+```
+
+---
+
+## 📘 Conclusão
+
+Com este sistema, o áudio fica:
+
+✅ Centralizado
+✅ Controlável por configuração e UI
+✅ Balanceado entre BGM e SFX
+✅ Otimizado com pooling
+✅ Fácil de depurar e expandir
+
+---
+
+> **Autor:** Equipe Immersive Games
+> **Versão:** 1.0
+> **Compatível com:** Unity 2022+
+> **Licença:** Interna / Proprietária
+
+```

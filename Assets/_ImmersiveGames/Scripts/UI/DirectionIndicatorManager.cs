@@ -10,27 +10,27 @@ public class DirectionIndicatorManager : MonoBehaviour
     [SerializeField] Transform indicatorObject;
     [SerializeField] Sprite eaterIcon;
 
-    private Transform eaterTransform;
-    private bool hasSpawnedPlanets = false;
+    private Transform _eaterTransform;
+    private bool _hasSpawnedPlanets;
 
     private void Start()
     {
-        eaterTransform = GameManager.Instance.WorldEater;
-        SpawnIndicator(eaterTransform, eaterIcon, false);
+        _eaterTransform = GameManager.Instance.WorldEater;
+        SpawnIndicator(_eaterTransform, eaterIcon, false);
         SpawnPlanetsIndicators();
     }
 
     void Update()
     {
-        if (hasSpawnedPlanets == false)
+        if (_hasSpawnedPlanets == false)
             SpawnPlanetsIndicators();
     }
 
     private void SpawnIndicator(Transform targetIndicator, Sprite targetIcon, bool isHidden)
     {
-        Transform indicator = Instantiate(indicatorObject, transform.position, Quaternion.identity);
+        var indicator = Instantiate(indicatorObject, transform.position, Quaternion.identity);
         indicator.SetParent(transform);
-        DirectionIndicatorObjectUI directionIndicatorObjectUI = indicator.GetComponent<DirectionIndicatorObjectUI>();
+        var directionIndicatorObjectUI = indicator.GetComponent<DirectionIndicatorObjectUI>();
         directionIndicatorObjectUI.Setup(targetIndicator, targetIcon, isHidden);
     }
 
@@ -40,7 +40,7 @@ public class DirectionIndicatorManager : MonoBehaviour
 
         if (planetList.Count == 0) Debug.Log("NÃO TEM PLANETA SPAWNADO");
 
-        foreach (IDetectable planet in planetList)
+        foreach (var planet in planetList)
         {
             /*SpawnIndicator(
                 planet.GetPlanetsMaster().transform,
@@ -49,6 +49,6 @@ public class DirectionIndicatorManager : MonoBehaviour
             );*/
         }
 
-        if (planetList.Count > 0) hasSpawnedPlanets = true;
+        if (planetList.Count > 0) _hasSpawnedPlanets = true;
     }
 }

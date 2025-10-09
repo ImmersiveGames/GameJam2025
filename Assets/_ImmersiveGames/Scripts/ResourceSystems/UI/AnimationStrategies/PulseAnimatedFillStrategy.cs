@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 
                 float duration = style?.slowDuration ?? 0.8f;
                 float delay = style?.delayBeforeSlow ?? 0.3f;
-                Ease ease = style?.basicEase ?? Ease.OutQuad;
+                var ease = style?.basicEase ?? Ease.OutQuad;
 
                 if (style != null)
                     slot.PendingFillImage.color = style.pendingColor;
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
             
             float scale = style.pulseScale;
             float duration = style.pulseDuration;
-            Ease ease = style.pulseEase;
+            var ease = style.pulseEase;
 
             _pulseTween = parentTransform.DOScale(scale, duration)
                 .SetLoops(-1, LoopType.Yoyo)

@@ -12,8 +12,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
     {
         private FlagMarkPlanet _flagMark;
         private IPlanetActor _planetActor;
-        private bool _isMarked = false;
-        private bool _hasSearchedForFlag = false;
+        private bool _isMarked;
+        private bool _hasSearchedForFlag;
 
         public IActor PlanetActor => _planetActor?.PlanetActor;
         public bool IsMarked => _isMarked;

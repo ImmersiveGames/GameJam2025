@@ -2,7 +2,6 @@
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {

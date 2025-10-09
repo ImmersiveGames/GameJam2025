@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
             if (evt == null) return;
             // snapshot for safety in case a binding set changes during iteration
             var snapshot = new List<EventBinding<T>>(_bindings);
-            foreach (var binding in snapshot)
+            foreach (EventBinding<T> binding in snapshot)
             {
                 if (_bindings.Contains(binding))
                 {

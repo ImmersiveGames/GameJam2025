@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Tooltip("Threshold para transferência (0-1)")]
         [Range(0f, 1f)]
-        public float transferThreshold = 0f;
+        public float transferThreshold;
 
         [Tooltip("Direção da transferência: SourceToTarget, BothWays")]
         public TransferDirection transferDirection = TransferDirection.SourceToTarget;

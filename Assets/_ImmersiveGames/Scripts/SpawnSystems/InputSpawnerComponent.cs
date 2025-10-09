@@ -1,11 +1,12 @@
 ﻿// Path: _ImmersiveGames/Scripts/SpawnSystems/InputSpawnerComponent.cs
+
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -34,17 +35,16 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private InputAction _spawnAction;
         private float _lastShotTime = -Mathf.Infinity;
         private IActor _actor;
+        private PlayerAudioController _audioController;
 
         [Inject] private IStateDependentService _stateService;
-
-        private PlayerAudioController _playerAudio;
 
         private void Awake()
         {
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
-            _playerAudio = GetComponent<PlayerAudioController>();
-
+            _audioController = GetComponent<PlayerAudioController>(); // Adicionado: Obtém controller local
+            
             DependencyManager.Instance.InjectDependencies(this);
 
             if (_playerInput == null)
@@ -104,32 +104,22 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var baseDirection = transform.forward;
             var spawner = _actor;
 
-            var spawnDataList = _activeStrategy.GetSpawnData(basePosition, baseDirection);
+            List<SpawnData> spawnDataList = _activeStrategy.GetSpawnData(basePosition, baseDirection);
 
             bool success = false;
-            int spawnedCount = 0;
             foreach (var spawnData in spawnDataList)
             {
-                var poolable = _pool.GetObject(spawnData.Position, spawner, spawnData.Direction);
+                var poolable = _pool.GetObject(spawnData.position, spawner, spawnData.direction);
                 if (poolable != null)
                 {
                     success = true;
-                    spawnedCount++;
                 }
             }
 
             if (success)
             {
                 _lastShotTime = Time.time;
-
-                // Decide qual SoundData usar (estratégia > player config)
-                SoundData sound = null;
-                if (_activeStrategy is IProvidesShootSound provider)
-                    sound = provider.GetShootSound();
-                else if (_playerAudio != null)
-                    sound = _playerAudio.AudioConfig?.shootSound;
-
-                _playerAudio?.PlayShootSound(sound, 1f); // volume multiplier can be adjusted per spawnedCount if needed
+                PlayShootAudio();
             }
         }
 
@@ -144,11 +134,27 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _ => singleStrategy
             };
         }
-    }
+        private void PlayShootAudio()
+        {
+            if (_audioController == null) 
+            {
+                DebugUtility.LogWarning<InputSpawnerComponent>("PlayerAudioController não encontrado — som de tiro não tocado.");
+                return;
+            }
 
-    // Simple interface to mark strategies that provide a SoundData
-    public interface IProvidesShootSound
-    {
-        SoundData GetShootSound();
+            var strategySound = _activeStrategy.GetShootSound();
+            if (strategySound == null || strategySound.clip == null) // Adicionado: Checa se estratégia tem áudio válido
+            {
+                strategySound = _audioController.GetAudioConfig()?.shootSound; // Fallback para default do controller
+                if (strategySound == null || strategySound.clip == null)
+                {
+                    DebugUtility.LogWarning<InputSpawnerComponent>("Nenhum som de tiro default configurado no controller.");
+                    return;
+                }
+                DebugUtility.LogVerbose<InputSpawnerComponent>("Usando som de tiro default do controller (estratégia sem áudio).", "cyan");
+            }
+
+            _audioController.PlayShootSound(strategySound); // Toca com som resolvido
+        }
     }
 }

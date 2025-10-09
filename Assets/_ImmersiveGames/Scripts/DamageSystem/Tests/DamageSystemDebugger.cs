@@ -1,18 +1,17 @@
 ﻿// Path: _ImmersiveGames/Scripts/DamageSystem/Tests/DamageSystemDebugger.cs
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
 {
     [DisallowMultipleComponent]
+    [DebugLevel(DebugLevel.Verbose)]
     public partial class DamageSystemDebugger : MonoBehaviour
     {
         [Header("General Debug")]
-        [SerializeField] private bool logAllEvents = false;
+        [SerializeField] private bool logAllEvents;
         [SerializeField] private bool showVisualDebug = true;
         [SerializeField] private Color debugColor = Color.red;
 
@@ -25,7 +24,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         
         [Header("BGM Test Settings")]
         [SerializeField] private SoundData testBgmData; // Atribua um SoundData no Inspector para testes
-        [SerializeField] private float bgmVolume = 1f;
         [SerializeField] private float fadeDuration = 2f;
 
         private DamageReceiver _receiver;

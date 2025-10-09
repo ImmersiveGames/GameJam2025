@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Services
                 return false;           
             }
 
-            GameObject hitObject = hit.collider.gameObject;
+            var hitObject = hit.collider.gameObject;
             DebugUtility.LogVerbose<PlanetInteractService>($"Raycast acertou: {hitObject.name}");
 
             return _markingManager.TryMarkPlanet(hitObject);
@@ -37,8 +37,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Services
             markPlanet = null;
             distance = 0f;
 
-            Vector3 rayOrigin = origin.position + origin.TransformDirection(raycastOffset);
-            Vector3 direction = origin.forward;
+            var rayOrigin = origin.position + origin.TransformDirection(raycastOffset);
+            var direction = origin.forward;
 
             if (Physics.Raycast(rayOrigin, direction, out var hit, interactionDistance, planetLayerMask))
             {

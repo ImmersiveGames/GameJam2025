@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         }
 
         private static void ResetActionPredicateFlags(IEnumerable<Transition> transitions) {
-            foreach (var transition in transitions.OfType<Transition<ActionPredicate>>()) {
+            foreach (Transition<ActionPredicate> transition in transitions.OfType<Transition<ActionPredicate>>()) {
                 transition.Condition.SetFlag(false);
             }
         }

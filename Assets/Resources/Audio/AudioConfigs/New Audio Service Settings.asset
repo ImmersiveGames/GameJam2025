@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 636867a7d8824e0083d5467af2cf4c55, type: 3}
   m_Name: New Audio Service Settings
   m_EditorClassIdentifier: 
-  soundEmitterPoolName: SoundEmitterPool
+  masterVolume: 1
+  bgmVolume: 1
+  sfxVolume: 1
+  bgmMultiplier: 0.1
+  sfxMultiplier: 1
   debugEmitters: 1
-  verboseLogs: 1
+  defaultMaxEmitters: 30

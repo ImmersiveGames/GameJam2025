@@ -12,50 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3eb9b13e7d5492392beffee2a107878, type: 3}
   m_Name: PlayerAudioConfig
   m_EditorClassIdentifier: 
-  shootSound:
-    clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
-    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 0.808
-    priority: 128
-    loop: 0
-    playOnAwake: 0
-    frequentSound: 1
-    randomPitch: 1
-    spatialBlend: 0.6
-    maxDistance: 30
-  hitSound:
-    clip: {fileID: 8300000, guid: b151b14532ab2f24db1d4bdab6b96bcf, type: 3}
-    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 1
-    priority: 120
-    loop: 0
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 1
-    spatialBlend: 0.5
-    maxDistance: 50
-  deathSound:
-    clip: {fileID: 8300000, guid: cd7699f7f6672b543b499c0f1d9bfc4e, type: 3}
-    mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
-    volume: 1
-    priority: 125
-    loop: 0
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 0
-    spatialBlend: 0
-    maxDistance: 50
-  reviveSound:
-    clip: {fileID: 8300000, guid: cd7699f7f6672b543b499c0f1d9bfc4e, type: 3}
-    mixerGroup: {fileID: 0}
-    volume: 1
-    priority: 128
-    loop: 0
-    playOnAwake: 0
-    frequentSound: 0
-    randomPitch: 0
-    spatialBlend: 0
-    maxDistance: 50
-  useSpatialBlend: 0
-  maxDistance: 50
   defaultVolume: 1
+  defaultMixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+  maxDistance: 50
+  useSpatialBlend: 0
+  shootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
+  hitSound: {fileID: 11400000, guid: 37cf9a1f0eb3e154f9980bbab4df7f39, type: 2}
+  deathSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
+  reviveSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}

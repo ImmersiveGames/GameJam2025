@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
@@ -44,26 +45,28 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         private void OnLocalDamageReceived(float damage, IActor source)
         {
             if (!IsVerbose) return;
-            Debug.Log($"[Debugger] {GetObjectName()} recebeu {damage} de {source?.ActorName ?? "unknown"}");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"[Debugger] {GetObjectName()} recebeu {damage} de {source?.ActorName ?? "unknown"}");
         }
 
         private void OnLocalDeath(IActor actor)
         {
-            Debug.Log($"[Debugger] {GetObjectName()} morreu.");
-            _audio?.PlaySound(_audio.AudioConfig?.deathSound);
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"[Debugger] {GetObjectName()} morreu.");
+            var config = _audio?.GetAudioConfig();
+            if (config?.deathSound != null) _audio.TestPlaySoundPublic(config.deathSound, deathVolume); // Usa wrapper para validação integrada
         }
 
         private void OnLocalRevive(IActor actor)
         {
-            Debug.Log($"[Debugger] {GetObjectName()} reviveu.");
-            _audio?.PlaySound(_audio.AudioConfig?.reviveSound);
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"[Debugger] {GetObjectName()} reviveu.");
+            var config = _audio?.GetAudioConfig();
+            if (config?.reviveSound != null) _audio.TestPlaySoundPublic(config.reviveSound, reviveVolume);
         }
 
         private void OnResourceUpdatedEvent(ResourceUpdateEvent evt)
         {
             if (!IsVerbose) return;
             if (_receiver == null || evt.ActorId != _receiver.Actor?.ActorId) return;
-            Debug.Log($"[Debugger] Resource {evt.ResourceType} updated: {evt.NewValue}");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"[Debugger] Resource {evt.ResourceType} updated: {evt.NewValue}");
         }
 
         private void OnGlobalDamageEvent(DamageDealtEvent evt)
@@ -71,7 +74,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             if (!IsVerbose) return;
             if (_receiver?.Actor == null) return;
             if (evt.TargetActor.ActorId != _receiver.Actor.ActorId) return;
-            Debug.Log($"[Debugger] Global damage: {evt.SourceActor.ActorName} → {evt.TargetActor.ActorName} ({evt.DamageAmount})");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"[Debugger] Global damage: {evt.SourceActor.ActorName} → {evt.TargetActor.ActorName} ({evt.DamageAmount})");
         }
     }
 }

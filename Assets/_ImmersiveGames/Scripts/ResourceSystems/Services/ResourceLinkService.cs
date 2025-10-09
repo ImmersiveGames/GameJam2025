@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     {
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceLinkConfig>> _actorLinks = new();
         private readonly IActorResourceOrchestrator _orchestrator;
-        private bool _isDisposed = false;
+        private bool _isDisposed;
         private EventBinding<ResourceUpdateEvent> _eventBinding;
 
         public ResourceLinkService()

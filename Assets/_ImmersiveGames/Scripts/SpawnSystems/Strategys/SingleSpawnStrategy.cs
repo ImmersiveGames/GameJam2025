@@ -6,12 +6,12 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [System.Serializable]
-    public class SingleSpawnStrategy : ISpawnStrategy, IProvidesShootSound
+    public class SingleSpawnStrategy : ISpawnStrategy
     {
-        [SerializeField, Range(0f, 1f)] private float fuzzyPercent = 0f;
-        [SerializeField, Range(0f, 30f)] private float fuzzyAngle = 0f;
+        [SerializeField, Range(0f, 1f)] private float fuzzyPercent;
+        [SerializeField, Range(0f, 30f)] private float fuzzyAngle;
         private int? _randomSeed = null;
-
+        
         [SerializeField] private SoundData shootSound;
         public SoundData GetShootSound() => shootSound;
 
@@ -19,14 +19,12 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             SpawnFuzzyUtility.SetSeed(_randomSeed);
 
-            Vector3 pos = basePosition;
-            Vector3 dir = baseDirection;
+            var pos = basePosition;
+            var dir = baseDirection;
 
             SpawnFuzzyUtility.ApplyFuzzy(ref pos, ref dir, fuzzyPercent, fuzzyAngle);
 
-            return new List<SpawnData> { new SpawnData { Position = pos, Direction = dir } };
+            return new List<SpawnData> { new SpawnData { position = pos, direction = dir } };
         }
-        public SoundData ShootSound { get; }
-        public bool HasShootSound { get; }
     }
 }

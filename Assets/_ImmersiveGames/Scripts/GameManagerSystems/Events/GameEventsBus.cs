@@ -5,11 +5,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
     public class StateChangedEvent : IEvent
     {
-        public readonly bool IsGameActive;
+        public readonly bool isGameActive;
 
         public StateChangedEvent(bool isGameActive)
         {
-            IsGameActive = isGameActive;
+            this.isGameActive = isGameActive;
         }
     }
     public class GameStartEvent : IEvent

@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
@@ -187,7 +188,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (orchestratorFound)
             {
-                var actorIds = _orchestrator.GetRegisteredActorIds();
+                IReadOnlyCollection<string> actorIds = _orchestrator.GetRegisteredActorIds();
                 DebugUtility.LogWarning(GetType(), $"Atores registrados: {string.Join(", ", actorIds)}");
             }
         }

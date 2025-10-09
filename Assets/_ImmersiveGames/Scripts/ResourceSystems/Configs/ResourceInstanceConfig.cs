@@ -31,6 +31,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Header("Slot Display")]
         [Tooltip("Ordem de exibição no canvas (quanto maior, mais na frente)")]
-        public int sortOrder = 0;
+        public int sortOrder;
     }
 }

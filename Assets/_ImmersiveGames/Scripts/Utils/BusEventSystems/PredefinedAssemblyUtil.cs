@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
     /// <summary>
     /// A utility class, PredefinedAssemblyUtil, provides methods to interact with predefined assemblies.
@@ -55,7 +56,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         /// <param name="interfaceType">Interface type to get all the Types for.</param>
         /// <returns>List of Types implementing the provided interface type.</returns>    
         public static List<Type> GetTypes(Type interfaceType) {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
         
             var assemblyTypes = new Dictionary<AssemblyType, Type[]>();
             var types = new List<Type>();
@@ -67,10 +68,10 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
                 }
             }
         
-            assemblyTypes.TryGetValue(AssemblyType.AssemblyCSharp, out var assemblyCSharpTypes);
+            assemblyTypes.TryGetValue(AssemblyType.AssemblyCSharp, out Type[] assemblyCSharpTypes);
             AddTypesFromAssembly(assemblyCSharpTypes, interfaceType, types);
 
-            assemblyTypes.TryGetValue(AssemblyType.AssemblyCSharpFirstPass, out var assemblyCSharpFirstPassTypes);
+            assemblyTypes.TryGetValue(AssemblyType.AssemblyCSharpFirstPass, out Type[] assemblyCSharpFirstPassTypes);
             AddTypesFromAssembly(assemblyCSharpFirstPassTypes, interfaceType, types);
         
             return types;

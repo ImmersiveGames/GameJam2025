@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnStateChanged(StateChangedEvent evt)
         {
-            _isGameActive = evt.IsGameActive;
+            _isGameActive = evt.isGameActive;
         }
 
         public bool CanExecuteAction(ActionType action)

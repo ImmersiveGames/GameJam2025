@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             }
 
             // Busca nos pais
-            Transform current = component.transform.parent;
+            var current = component.transform.parent;
             while (current != null)
             {
                 if (current.TryGetComponent(out result))
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static T GetOrCreateComponentInChild<T>(this Component parent, string childName = null) where T : Component
         {
             // Tenta encontrar o componente nos filhos
-            T component = parent.GetComponentInChildren<T>();
+            var component = parent.GetComponentInChildren<T>();
 
             // Se o componente existir, retorna ele
             if (component != null)
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             }
 
             // Cria um novo Actor como filho
-            GameObject childObject = new GameObject(childName);
+            var childObject = new GameObject(childName);
             childObject.transform.SetParent(parent.transform);
             childObject.transform.localPosition = Vector3.zero;
             childObject.transform.localRotation = Quaternion.identity;
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         public static T GetOrCreateComponentInChild<T>(this Transform parentTransform, string childName = null) where T : Component
         {
             // Tenta encontrar o componente nos filhos
-            T component = parentTransform.GetComponentInChildren<T>();
+            var component = parentTransform.GetComponentInChildren<T>();
 
             // Se o componente existir, retorna ele
             if (component != null)
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
             }
 
             // Cria um novo Actor como filho
-            GameObject childObject = new GameObject(childName);
+            var childObject = new GameObject(childName);
             childObject.transform.SetParent(parentTransform);
             childObject.transform.localPosition = Vector3.zero;
             childObject.transform.localRotation = Quaternion.identity;

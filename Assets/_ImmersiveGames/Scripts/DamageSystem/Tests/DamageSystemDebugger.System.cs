@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -10,20 +11,20 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         [ContextMenu("System/Print Status")]
         private void PrintStatus()
         {
-            Debug.Log("=== DAMAGE SYSTEM STATUS ===");
+            DebugUtility.LogVerbose<DamageSystemDebugger>("=== DAMAGE SYSTEM STATUS ===");
 
             if (_receiver != null)
-                Debug.Log($"📋 Receiver: {GetObjectName()} (HP: {_receiver.CurrentHealth}, Dead: {_receiver.IsDead})");
+                DebugUtility.LogVerbose<DamageSystemDebugger>($"📋 Receiver: {GetObjectName()} (HP: {_receiver.CurrentHealth}, Dead: {_receiver.IsDead})");
             else
-                Debug.Log("📋 Receiver: None");
+                DebugUtility.LogVerbose<DamageSystemDebugger>("📋 Receiver: None");
 
             if (_dealer != null)
-                Debug.Log($"⚔️ Dealer: {GetObjectName()} (Damage: {_dealer.DamageAmount})");
+                DebugUtility.LogVerbose<DamageSystemDebugger>($"⚔️ Dealer: {GetObjectName()} (Damage: {_dealer.DamageAmount})");
             else
-                Debug.Log("⚔️ Dealer: None");
+                DebugUtility.LogVerbose<DamageSystemDebugger>("⚔️ Dealer: None");
 
             if (_audio != null)
-                Debug.Log("🔊 AudioController ativo.");
+                DebugUtility.LogVerbose<DamageSystemDebugger>("🔊 AudioController ativo.");
         }
 
         private void OnDrawGizmosSelected()

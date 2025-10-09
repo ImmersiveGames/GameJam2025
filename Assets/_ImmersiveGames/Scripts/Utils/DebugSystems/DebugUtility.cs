@@ -149,8 +149,8 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
 
         private static string GetPooledMessage(Type type, string message, bool isFallback)
         {
-            var key = $"{type.Name}:{message}:{isFallback}";
-            if (!_messagePool.TryGetValue(key, out var baseMessage))
+            string key = $"{type.Name}:{message}:{isFallback}";
+            if (!_messagePool.TryGetValue(key, out string baseMessage))
             {
                 _stringBuilder.Clear();
                 _stringBuilder.Append("[VERBOSE] [").Append(type.Name).Append("] ").Append(message);
@@ -179,8 +179,8 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
 
         private static bool TrackCall(Type type, string message, bool deduplicate)
         {
-            var key = $"{type.Name}:{message}";
-            var frame = Time.frameCount;
+            string key = $"{type.Name}:{message}";
+            int frame = Time.frameCount;
             var trackerKey = (key, frame);
 
             bool isRepeat = _callTracker.Contains(trackerKey);

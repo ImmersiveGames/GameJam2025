@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Tests
@@ -15,18 +16,18 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_receiver == null)
             {
-                Debug.LogWarning("⚠️ Nenhum DamageReceiver encontrado.");
+                DebugUtility.LogWarning<DamageSystemDebugger>("⚠️ Nenhum DamageReceiver encontrado.");
                 return;
             }
 
             if (_receiver.IsDead)
             {
-                Debug.Log($"🚫 {GetObjectName()} está morto. Não é possível aplicar dano.");
+                DebugUtility.LogVerbose<DamageSystemDebugger>($"🚫 {GetObjectName()} está morto. Não é possível aplicar dano.");
                 return;
             }
 
             _receiver.ReceiveDamage(testDamage, null, testResource);
-            Debug.Log($"🎯 Dano aplicado ({testDamage}) em {GetObjectName()}");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"🎯 Dano aplicado ({testDamage}) em {GetObjectName()}");
         }
 
         [ContextMenu("Receiver/Kill Object")]
@@ -34,12 +35,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_receiver == null)
             {
-                Debug.LogWarning("⚠️ Nenhum DamageReceiver encontrado.");
+                DebugUtility.LogWarning<DamageSystemDebugger>("⚠️ Nenhum DamageReceiver encontrado.");
                 return;
             }
 
             _receiver.KillImmediately();
-            Debug.Log($"💀 {GetObjectName()} morto instantaneamente.");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"💀 {GetObjectName()} morto instantaneamente.");
         }
 
         [ContextMenu("Receiver/Revive Object")]
@@ -47,19 +48,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
         {
             if (_receiver == null)
             {
-                Debug.LogWarning("⚠️ Nenhum DamageReceiver encontrado.");
+                DebugUtility.LogWarning<DamageSystemDebugger>("⚠️ Nenhum DamageReceiver encontrado.");
                 return;
             }
 
             _receiver.Revive(reviveHealth);
-            Debug.Log($"✨ {GetObjectName()} revivido com {reviveHealth} HP.");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"✨ {GetObjectName()} revivido com {reviveHealth} HP.");
         }
 
         [ContextMenu("Receiver/Check Health Status")]
         private void CheckHealth()
         {
             if (_receiver == null) return;
-            Debug.Log($"❤️ {GetObjectName()} — HP: {_receiver.CurrentHealth}, Dead: {_receiver.IsDead}");
+            DebugUtility.LogVerbose<DamageSystemDebugger>($"❤️ {GetObjectName()} — HP: {_receiver.CurrentHealth}, Dead: {_receiver.IsDead}");
         }
     }
 }

@@ -249,10 +249,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void DebugSlots()
         {
             DebugUtility.Log<CanvasResourceBinder>($"Canvas {CanvasId} -> {_dynamicSlots.Count} actors");
-            foreach (var actorEntry in _dynamicSlots)
+            foreach (KeyValuePair<string, Dictionary<ResourceType, ResourceUISlot>> actorEntry in _dynamicSlots)
             {
                 DebugUtility.Log<CanvasResourceBinder>($"  Actor {actorEntry.Key}:");
-                foreach (var slotEntry in actorEntry.Value)
+                foreach (KeyValuePair<ResourceType, ResourceUISlot> slotEntry in actorEntry.Value)
                 {
                     var slot = slotEntry.Value;
                     if (slot != null)

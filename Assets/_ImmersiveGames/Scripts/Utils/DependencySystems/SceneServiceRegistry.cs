@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 throw new ArgumentNullException(nameof(service), $"Serviço nulo para o tipo {typeof(T).Name} com chave {key}.");
             }
 
-            if (!_sceneServices.TryGetValue(key, out var services))
+            if (!_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 services = GetPooledDictionary();
                 _sceneServices[key] = services;
@@ -75,10 +75,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 return false;
             }
 
-            if (_sceneServices.TryGetValue(key, out var services))
+            if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 var targetType = typeof(T);
-                foreach (var kvp in services)
+                foreach (KeyValuePair<Type, object> kvp in services)
                 {
                     if (targetType.IsAssignableFrom(kvp.Key))
                     {
@@ -93,9 +93,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         }
         public IEnumerable<T> GetAll<T>(string sceneName) where T : class
         {
-            if (_sceneServices.TryGetValue(sceneName, out var sceneServices))
+            if (_sceneServices.TryGetValue(sceneName, out Dictionary<Type, object> sceneServices))
             {
-                foreach (var svc in sceneServices.Values)
+                foreach (object svc in sceneServices.Values)
                 {
                     if (svc is T typedService)
                         yield return typedService;
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (_sceneServices.TryGetValue(key, out var services))
+            if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
                 int count = services.Count;
                 _sceneServices.Remove(key);
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         public override void ClearAll()
         {
             int totalCount = 0;
-            foreach (var services in _sceneServices.Values)
+            foreach (Dictionary<Type, object> services in _sceneServices.Values)
             {
                 totalCount += services.Count;
                 ReturnDictionaryToPool(services);
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         public override List<Type> ListServices(string key)
         {
-            if (_sceneServices.TryGetValue(key, out var services))
+            if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
                 return new List<Type>(services.Keys);
             return new List<Type>();
         }

@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (!debugRay) return;
 
             Gizmos.color = debugRayColor;
-            Vector3 origin = transform.position + transform.TransformDirection(raycastOffset);
+            var origin = transform.position + transform.TransformDirection(raycastOffset);
             Gizmos.DrawRay(origin, transform.forward * interactionDistance);
             
             // Esfera no final do raycast
