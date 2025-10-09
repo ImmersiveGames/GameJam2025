@@ -789,16 +789,16 @@ MonoBehaviour:
     fuzzyPercent: 0
     fuzzyAngle: 0
     shootSound:
-      clip: {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
-      mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+      clip: {fileID: 0}
+      mixerGroup: {fileID: 0}
       volume: 1
       priority: 128
       loop: 0
       playOnAwake: 0
-      frequentSound: 1
-      randomPitch: 1
-      pitchVariation: 0.1
-      spatialBlend: 0.6
+      frequentSound: 0
+      randomPitch: 0
+      pitchVariation: 0.05
+      spatialBlend: 0
       maxDistance: 50
   multipleLinearStrategy:
     count: 3
@@ -814,7 +814,7 @@ MonoBehaviour:
       playOnAwake: 0
       frequentSound: 0
       randomPitch: 0
-      pitchVariation: 0.1
+      pitchVariation: 0.05
       spatialBlend: 0
       maxDistance: 50
   circularStrategy:
@@ -832,7 +832,7 @@ MonoBehaviour:
       playOnAwake: 0
       frequentSound: 0
       randomPitch: 0
-      pitchVariation: 0.1
+      pitchVariation: 0.05
       spatialBlend: 0
       maxDistance: 50
 --- !u!114 &1432878140
@@ -993,6 +993,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
+  soundEmitterPoolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!114 &1432878152
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1005,12 +1006,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitVolume: 1
-  deathVolume: 1
-  reviveVolume: 1
   logAllEvents: 1
   showVisualDebug: 1
   debugColor: {r: 1, g: 0, b: 0, a: 1}
+  shootVolume: 1
+  hitVolume: 1
+  deathVolume: 1
+  reviveVolume: 1
+  testBgmData:
+    clip: {fileID: 8300000, guid: 44e27acb4463fb4409574c7211937f83, type: 3}
+    mixerGroup: {fileID: -7983509360594917467, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+    volume: 1
+    priority: 128
+    loop: 1
+    playOnAwake: 1
+    frequentSound: 0
+    randomPitch: 0
+    pitchVariation: 0.05
+    spatialBlend: 0
+    maxDistance: 50
+  bgmVolume: 1
+  fadeDuration: 2
   testDamage: 10
   reviveHealth: 100
   testResource: 0
@@ -1517,7 +1533,7 @@ MonoBehaviour:
       playOnAwake: 0
       frequentSound: 0
       randomPitch: 0
-      pitchVariation: 0.1
+      pitchVariation: 0.05
       spatialBlend: 0
       maxDistance: 50
   multipleLinearStrategy:
@@ -1534,7 +1550,7 @@ MonoBehaviour:
       playOnAwake: 0
       frequentSound: 0
       randomPitch: 0
-      pitchVariation: 0.1
+      pitchVariation: 0.05
       spatialBlend: 0
       maxDistance: 50
   circularStrategy:
@@ -1552,7 +1568,7 @@ MonoBehaviour:
       playOnAwake: 0
       frequentSound: 0
       randomPitch: 0
-      pitchVariation: 0.1
+      pitchVariation: 0.05
       spatialBlend: 0
       maxDistance: 50
 --- !u!114 &1667814065
@@ -1731,12 +1747,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b6029a6efb044c38d64e2ed3bdf73a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hitVolume: 1
-  deathVolume: 1
-  reviveVolume: 1
   logAllEvents: 1
   showVisualDebug: 1
   debugColor: {r: 1, g: 0, b: 0, a: 1}
+  shootVolume: 1
+  hitVolume: 1
+  deathVolume: 1
+  reviveVolume: 1
+  testBgmData:
+    clip: {fileID: 0}
+    mixerGroup: {fileID: 0}
+    volume: 1
+    priority: 128
+    loop: 0
+    playOnAwake: 0
+    frequentSound: 0
+    randomPitch: 0
+    pitchVariation: 0.05
+    spatialBlend: 0
+    maxDistance: 50
+  bgmVolume: 1
+  fadeDuration: 2
   testDamage: 10
   reviveHealth: 100
   testResource: 0

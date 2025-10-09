@@ -1,26 +1,28 @@
-﻿// Path: _ImmersiveGames/Scripts/AudioSystem/SoundBuilder.cs
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
+﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
-    /// Builder fluente para tocar sons dinamicamente via AudioService.
-    /// Ideal para efeitos contextuais ou customizados sem acoplar diretamente à lógica de controllers.
+    /// Builder fluente para tocar sons dinamicamente via AudioService ou pool local.
+    /// Agora recebe opcionalmente um ObjectPool (local) para obter emitters diretamente.
     /// </summary>
     public class SoundBuilder
     {
         private readonly IAudioService _audioService;
+        private readonly ObjectPool _localPool;
         private SoundData _soundData;
         private Vector3 _position = Vector3.zero;
         private bool _useSpatial = true;
         private bool _randomPitch;
         private float _volumeMultiplier = 1f;
 
-        public SoundBuilder(IAudioService audioService)
+        public SoundBuilder(IAudioService audioService, ObjectPool localPool = null)
         {
             _audioService = audioService;
+            _localPool = localPool;
         }
 
         public SoundBuilder WithSoundData(SoundData soundData)
@@ -50,18 +52,31 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (_soundData == null || _audioService == null)
-                return;
+            if (_soundData == null) return;
 
-            var context = AudioContext.Default(_position, _useSpatial, _soundData.GetEffectiveVolume(_volumeMultiplier));
-            _audioService.PlaySound(_soundData, context);
+            var ctx = AudioContext.Default(_position, _useSpatial, _soundData.GetEffectiveVolume(_volumeMultiplier));
 
-            if (_randomPitch)
+            // Tentar usar pool local primeiro
+            if (_localPool != null)
             {
-                // A aleatoriedade de pitch já é tratada internamente pelo SoundEmitter.
-                // Esta flag apenas força que a propriedade randomPitch seja respeitada.
-                _soundData.randomPitch = true;
+                var emit = _localPool.GetObject(ctx.position, null, null, false) as SoundEmitter;
+                if (emit != null)
+                {
+                    emit.Initialize(_soundData, _audioService);
+                    emit.SetSpatialBlend(ctx.useSpatial ? _soundData.spatialBlend : 0f);
+                    emit.SetMaxDistance(_soundData.maxDistance);
+                    emit.SetVolumeMultiplier(ctx.volumeMultiplier);
+                    if (_soundData.randomPitch || _randomPitch)
+                        emit.WithRandomPitch(-_soundData.pitchVariation, _soundData.pitchVariation);
+                    emit.Activate(ctx.position);
+                    emit.Play();
+                    if (_soundData.frequentSound) _audioService?.RegisterFrequentSound(emit);
+                    return;
+                }
             }
+
+            // fallback global
+            _audioService?.PlaySound(_soundData, ctx);
         }
     }
 }

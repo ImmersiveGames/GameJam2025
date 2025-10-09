@@ -85,11 +85,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Tests
             }
 
             Debug.Log("=== BGM SOURCE STATUS ===");
-            Debug.Log($"Clip: {manager._bgmSource.clip?.name ?? "None"}");
-            Debug.Log($"Playing: {manager._bgmSource.isPlaying}");
-            Debug.Log($"Volume: {manager._bgmSource.volume}");
-            Debug.Log($"Loop: {manager._bgmSource.loop}");
-            Debug.Log($"MixerGroup: {manager._bgmSource.outputAudioMixerGroup?.name ?? "None"}");
+            Debug.Log($"Clip: {manager.bgmAudioSource.clip?.name ?? "None"}");
+            Debug.Log($"Playing: {manager.bgmAudioSource.isPlaying}");
+            Debug.Log($"Volume: {manager.bgmAudioSource.volume}");
+            Debug.Log($"Loop: {manager.bgmAudioSource.loop}");
+            Debug.Log($"MixerGroup: {manager.bgmAudioSource.outputAudioMixerGroup?.name ?? "None"}");
         }
     }
 }

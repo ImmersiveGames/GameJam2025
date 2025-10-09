@@ -9,7 +9,7 @@ using UnityUtils;
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     [RequireComponent(typeof(AudioSource))]
-    public class SoundEmitter : MonoBehaviour, IPoolable
+    public class SoundEmitter : PooledObject
     {
         public SoundData Data { get; private set; }
 
@@ -18,59 +18,35 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private IAudioService _audioManager;
         private bool _isInitialized;
 
-        // IPoolable fields
-        private PoolableObjectData _config;
-        private ObjectPool _pool;
-        private IActor _spawner;
-
         private float _volumeMultiplier = 1f;
 
-        #region IPoolable Implementation
-        public void Configure(PoolableObjectData config, ObjectPool pool, IActor spawner = null)
+        protected override void OnConfigured(PoolableObjectData config, IActor spawner)
         {
-            _config = config;
-            _pool = pool;
-            _spawner = spawner;
-
+            // Nada especial aqui — PooledObject.Configure já tratou posicionamento/desativação
             _audioSource = gameObject.GetOrAdd<AudioSource>();
-            gameObject.SetActive(false);
+            _audioSource.playOnAwake = false;
         }
 
-        public void Activate(Vector3 position, Vector3? direction = null, IActor spawner = null)
+        protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)
         {
-            transform.position = position;
-            gameObject.SetActive(true);
-
-            if (spawner != null)
-                _spawner = spawner;
+            // Nada extra para ativação — Initialize deve ser chamado externamente antes de Play
         }
 
-        public void Deactivate()
+        protected override void OnDeactivated()
         {
-            ResetEmitter();
-            gameObject.SetActive(false);
+            // Reset já chamado em PoolableReset/Deactivate do base
         }
 
-        public void PoolableReset()
+        protected override void OnReset()
         {
             ResetEmitter();
-            transform.position = Vector3.zero;
-            transform.rotation = Quaternion.identity;
-            gameObject.SetActive(false);
-            _spawner = null;
         }
 
-        public void Reconfigure(PoolableObjectData config)
+        protected override void OnReconfigured(PoolableObjectData config)
         {
-            _config = config;
+            // se precisarmos aplicar novas configs específicas, aqui
         }
 
-        public GameObject GetGameObject() => gameObject;
-
-        public T GetData<T>() where T : PoolableObjectData => _config as T;
-        #endregion
-
-        #region SoundEmitter Specific Methods
         public void Initialize(SoundData data, IAudioService audioManager)
         {
             Data = data;
@@ -85,12 +61,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (!_isInitialized || _audioManager == null)
+            if (!_isInitialized)
             {
-                // Evita spam de logs em uso normal — log apenas em situação de debug não esperada
 #if UNITY_EDITOR
-                Debug.LogError("SoundEmitter não inicializado corretamente");
+                Debug.LogError($"SoundEmitter '{name}' não inicializado corretamente.");
 #endif
+                ReturnToPoolIfPossible();
                 return;
             }
 
@@ -110,7 +86,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private IEnumerator WaitForSoundToEnd()
         {
             yield return new WaitWhile(() => _audioSource.isPlaying);
-            ReturnToPool();
+            ReturnToPoolIfPossible();
         }
 
         public void Stop()
@@ -122,17 +98,28 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _audioSource.Stop();
-            ReturnToPool();
+            ReturnToPoolIfPossible();
         }
 
-        private void ReturnToPool()
+        private void ReturnToPoolIfPossible()
         {
-            _pool?.ReturnObject(this);
+            // Use PooledObject.GetPool from base
+            var pool = GetPool;
+            if (pool != null)
+            {
+                pool.ReturnObject(this);
+            }
+            else
+            {
+                // sem pool: apenas desativa
+                gameObject.SetActive(false);
+            }
         }
 
         public void WithRandomPitch(float min = -0.05f, float max = 0.05f)
         {
-            _audioSource.pitch += Random.Range(min, max);
+            if (_audioSource != null)
+                _audioSource.pitch = 1f + Random.Range(min, max);
         }
 
         public void SetSpatialBlend(float spatialBlend)
@@ -156,6 +143,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
         }
 
+        public void SetMixerGroup(UnityEngine.Audio.AudioMixerGroup mixerGroup)
+        {
+            if (_audioSource != null && mixerGroup != null)
+                _audioSource.outputAudioMixerGroup = mixerGroup;
+        }
+
         public void ResetEmitter()
         {
             if (_audioSource != null)
@@ -177,17 +170,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void ApplySoundData(SoundData data)
         {
-            if (_audioSource == null) return;
+            if (_audioSource == null || data == null) return;
 
             _audioSource.clip = data.clip;
             _audioSource.outputAudioMixerGroup = data.mixerGroup;
-            _audioSource.volume = data.volume * _volumeMultiplier; // aplica multiplier atual
+            _audioSource.volume = data.volume * _volumeMultiplier;
             _audioSource.priority = data.priority;
             _audioSource.loop = data.loop;
             _audioSource.playOnAwake = data.playOnAwake;
             _audioSource.spatialBlend = data.spatialBlend;
             _audioSource.maxDistance = data.maxDistance;
         }
-        #endregion
     }
 }

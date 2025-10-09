@@ -7,6 +7,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
     /// Controller de áudio por entidade (Player/NPC). Centraliza reprodução de sons.
+    /// Agora usa pool local definido em AudioControllerBase (via inspector).
     /// </summary>
     public class PlayerAudioController : AudioControllerBase
     {
@@ -43,18 +44,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
 
         /// <summary>
-        /// Método específico de conveniência para tiros: usa SoundData vindo da estratégia (se tiver) ou do config.
+        /// Método de conveniência para tocar som de tiro.
+        /// Se uma estratégia passar SoundData, o controlador irá tocar respeitando seu pool local e configuração.
         /// </summary>
         public void PlayShootSound(SoundData strategySound = null, float volumeMultiplier = 1f)
         {
-            var soundToPlay = strategySound ?? audioConfig?.shootSound;
-            if (soundToPlay == null) return;
-
-            // Uso simples para tiros diretos
-            PlaySimpleSound(soundToPlay, volumeMultiplier);
-
-            // Exemplo avançado com builder (se precisar customizar)
-            // CreateSoundBuilder().WithSoundData(soundToPlay).AtPosition(transform.position).WithRandomPitch().WithVolumeMultiplier(volumeMultiplier).Play();
+            var sound = strategySound ?? audioConfig?.shootSound;
+            if (sound == null) return;
+            // PlaySound do base já tentará usar pool local
+            PlaySound(sound, AudioContextMode.Auto, volumeMultiplier);
         }
     }
 }
