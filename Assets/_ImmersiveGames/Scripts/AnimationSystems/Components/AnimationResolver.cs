@@ -3,8 +3,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.SkinSystems;
-using _ImmersiveGames.Scripts.Tags;
-using _ImmersiveGames.Scripts.Utils;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -13,16 +12,15 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
     [DefaultExecutionOrder(-50)]
     [DebugLevel(DebugLevel.Verbose)]
-    public class AnimationResolver : MonoBehaviour,IAnimatorProvider
+    public class AnimationResolver : MonoBehaviour, IAnimatorProvider
     {
-        [Inject] private IUniqueIdFactory _idFactory;
-        
         private Animator _cachedAnimator;
-        private ModelRoot _modelRoot;
         private IActor _actor;
-        private EventBinding<SkinUpdateEvent> _skinBinding;
-        private string _objectId;
-
+        private SkinController _skinController;
+        
+        // Event bindings
+        private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
+        private EventBinding<SkinInstancesCreatedEvent> _skinInstancesBinding;
 
         public event System.Action<Animator> OnAnimatorChanged;
 
@@ -30,71 +28,159 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 
         private void Awake()
         {
-            DependencyManager.Instance.InjectDependencies(this);
+            _actor = GetComponent<IActor>();
             InitializeDependencyRegistration();
         }
 
-        private void OnEnable()
+        private void Start()
         {
-            _actor = GetComponent<IActor>();
-            _skinBinding = new EventBinding<SkinUpdateEvent>(OnSkinUpdated);
-            FilteredEventBus<SkinUpdateEvent>.Register(_skinBinding, _actor);
+            FindSkinController();
+            RegisterEventListeners();
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
-            FilteredEventBus<SkinUpdateEvent>.Unregister(_actor);
-            
-            if (!string.IsNullOrEmpty(_objectId))
+            UnregisterEventListeners();
+        }
+
+        private void FindSkinController()
+        {
+            // Tentar encontrar via DependencyManager primeiro
+            if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                DependencyManager.Instance.ClearObjectServices(_objectId);
+                if (DependencyManager.Instance.TryGetForObject<SkinController>(_actor.ActorId, out var controller))
+                {
+                    _skinController = controller;
+                }
+            }
+
+            // Fallback: buscar no mesmo GameObject
+            if (_skinController == null)
+            {
+                _skinController = GetComponent<SkinController>();
+            }
+
+            // Fallback final: buscar em parents
+            if (_skinController == null)
+            {
+                _skinController = GetComponentInParent<SkinController>();
+            }
+
+            if (_skinController != null)
+            {
+                // Registrar para eventos locais do SkinController
+                _skinController.OnSkinInstancesCreated += OnLocalSkinInstancesCreated;
+                _skinController.OnSkinApplied += OnLocalSkinApplied;
+            }
+        }
+
+        private void InitializeDependencyRegistration()
+        {
+            if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
+            {
+                DependencyManager.Instance.RegisterForObject(_actor.ActorId, this);
+            }
+        }
+
+        #region Event Registration
+        private void RegisterEventListeners()
+        {
+            // Eventos globais filtrados por actor
+            if (_actor != null)
+            {
+                _skinUpdateBinding = new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
+                _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
+                
+                FilteredEventBus<SkinUpdateEvent>.Register(_skinUpdateBinding, _actor);
+                FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _actor);
+            }
+
+            // Eventos globais não filtrados (se necessário para sistemas cross-actor)
+            // EventBus<SkinUpdateEvent>.Register(new EventBinding<SkinUpdateEvent>(OnAnySkinUpdate));
+        }
+
+        private void UnregisterEventListeners()
+        {
+            if (_actor != null)
+            {
+                FilteredEventBus<SkinUpdateEvent>.Unregister(_actor);
+                FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_actor);
+            }
+
+            if (_skinController != null)
+            {
+                _skinController.OnSkinInstancesCreated -= OnLocalSkinInstancesCreated;
+                _skinController.OnSkinApplied -= OnLocalSkinApplied;
+            }
+        }
+        #endregion
+
+        #region Event Handlers
+        private void OnGlobalSkinUpdate(SkinUpdateEvent evt)
+        {
+            if (evt.SkinConfig.ModelType == ModelType.ModelRoot)
+            {
+                RefreshAnimator();
+            }
+        }
+
+        private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt)
+        {
+            if (evt.ModelType == ModelType.ModelRoot)
+            {
+                RefreshAnimator();
+            }
+        }
+
+        private void OnLocalSkinApplied(ISkinConfig config)
+        {
+            if (config.ModelType == ModelType.ModelRoot)
+            {
+                RefreshAnimator();
+            }
+        }
+
+        private void OnLocalSkinInstancesCreated(ModelType modelType, System.Collections.Generic.List<GameObject> instances)
+        {
+            if (modelType == ModelType.ModelRoot)
+            {
+                RefreshAnimator();
+            }
+        }
+        #endregion
+
+        private void RefreshAnimator()
+        {
+            _cachedAnimator = null;
+            var newAnimator = ResolveAnimator();
+            
+            // Notificar via evento
+            OnAnimatorChanged?.Invoke(newAnimator);
+            
+            // Notificar via DependencyManager
+            if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
+            {
+                if (DependencyManager.Instance.TryGetForObject<AnimationControllerBase>(_actor.ActorId, out var controller))
+                {
+                    controller.OnAnimatorChanged(newAnimator);
+                }
             }
         }
 
         private Animator ResolveAnimator()
         {
-            _modelRoot ??= GetComponent<ActorMaster>()?.ModelRoot;
-            if (_modelRoot != null)
+            // Tentar obter do SkinController primeiro
+            if (_skinController != null)
             {
-                _cachedAnimator = _modelRoot.GetComponentInChildren<Animator>(true);
-                DebugUtility.LogVerbose<AnimationResolver>(
-                    $"Animator resolvido para {_objectId}: {_cachedAnimator}", "cyan");
-            }
-            return _cachedAnimator;
-        }
-
-        private void InitializeDependencyRegistration()
-        {
-            if (_idFactory == null)
-            {
-                DebugUtility.LogError<AnimationResolver>(
-                    $"IUniqueIdFactory não injetado em {name}.");
-                return;
+                var animators = _skinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
+                if (animators.Count > 0)
+                {
+                    return animators[0];
+                }
             }
 
-            _objectId = _idFactory.GenerateId(gameObject);
-
-            if (!string.IsNullOrEmpty(_objectId))
-            {
-                DependencyManager.Instance.RegisterForObject(_objectId, this);
-                DebugUtility.LogVerbose<AnimationResolver>(
-                    $"AnimationResolver registrado para ID: {_objectId}", "green");
-            }
-        }
-
-        private void OnSkinUpdated(SkinUpdateEvent evt)
-        {
-            _cachedAnimator = null;
-            var newAnimator = ResolveAnimator();
-        
-            // Notifica via evento
-            OnAnimatorChanged?.Invoke(newAnimator);
-        
-            // Notifica via DependencyManager
-            if (DependencyManager.Instance.TryGetForObject<AnimationControllerBase>(_objectId, out var controller))
-            {
-                controller.OnAnimatorChanged(newAnimator);
-            }
+            // Fallback: buscar no GameObject atual
+            return GetComponentInChildren<Animator>(true);
         }
     }
 }

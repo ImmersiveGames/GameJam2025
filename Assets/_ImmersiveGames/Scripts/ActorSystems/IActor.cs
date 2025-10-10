@@ -18,20 +18,8 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         Transform ModelTransform { get; }
         void SetSkinActive(bool active);
     }
-    public interface IHasCanvas
-    {
-        CanvasRoot CanvasRoot { get;  }
-        Transform CanvasTransform { get; }
-    }
-    
-    public interface IHasFx
-    {
-        FxRoot FxRoot { get;  }
-        Transform FxTransform { get; }
-        void SetFxActive(bool active);
-    }
     public interface IResettable
     {
-        void Reset(bool resetSkin = false);
+        void Reset();
     }
 }

@@ -1,7 +1,5 @@
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
@@ -13,32 +11,39 @@ namespace _ImmersiveGames.Scripts.ActorSystems
     
     public class ActorMaster : MonoBehaviour, IActor, IHasSkin, IResettable
     {
-        [SerializeField] private string customActorId; // Optional manual override for ActorId
-
-        private string _actorId;
-        public string ActorId => _actorId ?? customActorId ?? gameObject.name; // Fallback to name if not generated
+        [Header("Actor Identity")]
+        [SerializeField] private string customActorId;
         
-        public Transform Transform => transform;
+        // Componentes base - sem referência a SkinController
         private ModelRoot _modelRoot;
+        private string _actorId;
+
+        // IActor Implementation - apenas identidade
+        public string ActorId => _actorId ?? customActorId ?? gameObject.name;
         public string ActorName => gameObject.name;
+        public Transform Transform => transform;
         public bool IsActive { get; set; }
+        
+        // IHasSkin Implementation - apenas contrato
         public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
         public Transform ModelTransform => ModelRoot.transform;
-
-        private EventBinding<ActorStateChangedEvent> _actorStateChangedEvent;
+        public void SetSkinActive(bool active)
+        {
+            if (_modelRoot != null)
+            {
+                _modelRoot.gameObject.SetActive(active);
+            }
+        }
+        
 
         protected virtual void Awake()
         {
             GenerateActorId();
             Reset();
-            RegisterEventListeners();
-        }
-
-        private void OnDestroy()
-        {
-            UnregisterEventListeners();
+            InitializeBaseComponents();
         }
         
+        // gerador de identidade
         private void GenerateActorId()
         {
             if (!string.IsNullOrEmpty(customActorId))
@@ -56,36 +61,17 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             _actorId = factory.GenerateId(gameObject, "");
             DebugUtility.LogVerbose<ActorMaster>($"Generated ActorId: {_actorId} for {ActorName}");
         }
-
-        private void RegisterEventListeners()
+        private void InitializeBaseComponents()
         {
-            _actorStateChangedEvent = new EventBinding<ActorStateChangedEvent>(OnActorStateChanged);
-            EventBus<ActorStateChangedEvent>.Register(_actorStateChangedEvent);
+            // Garantir apenas os componentes base necessários
+            _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
         }
 
-        private void UnregisterEventListeners()
-        {
-            EventBus<ActorStateChangedEvent>.Unregister(_actorStateChangedEvent);
-        }
-
-        private void OnActorStateChanged(ActorStateChangedEvent evt)
-        {
-            IsActive = evt.IsActive;
-        }
-
-        public void SetSkinActive(bool active)
-        {
-            if (_modelRoot != null)
-            {
-                _modelRoot.gameObject.SetActive(active);
-            }
-        }
-
-        public virtual void Reset(bool resetSkin = false)
+        public virtual void Reset()
         {
             IsActive = true;
             _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
-            SetSkinActive(resetSkin);
+            SetSkinActive(true);
         }
     }
 }

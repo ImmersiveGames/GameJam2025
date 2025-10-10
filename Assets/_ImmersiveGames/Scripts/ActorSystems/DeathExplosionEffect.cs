@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    public abstract class DeathExplosionEffect : MonoBehaviour, IHasFx
+    public abstract class DeathExplosionEffect : MonoBehaviour
     {
         [SerializeField]
         private GameObject explosionPrefab;

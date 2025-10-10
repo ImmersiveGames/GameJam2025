@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             //TODO: mock
             return new List<PlanetResourcesSo>();
         }
-        public void Reset(bool skipEvent = false)
+        public void Reset()
         {
             CancelInvoke();
             _desiredResource = null;

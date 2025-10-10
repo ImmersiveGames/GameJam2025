@@ -8,7 +8,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DebugLevel(DebugLevel.Warning)]
-    public sealed class EaterMaster: ActorMaster, IHasFx, IDetector
+    public sealed class EaterMaster: ActorMaster, IDetector
     {
         private FxRoot _fxRoot;
         public FxRoot FxRoot => _fxRoot ??= this.GetOrCreateComponentInChild<FxRoot>("FxRoot");
@@ -57,9 +57,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }*/
         
 
-        public override void Reset(bool resetSkin)
+        public override void Reset()
         {
-            base.Reset(resetSkin);
+            base.Reset();
             IsActive = true;
             IsEating = false;
             InHungry = false;
