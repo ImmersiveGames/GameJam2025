@@ -1,12 +1,15 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ProjectilesSystems
 {
     [RequireComponent(typeof(Rigidbody)), DebugLevel(DebugLevel.Error)]
-    public class BulletPoolable : PooledObject
+    public class BulletPoolable : PooledObject, IHasSkin
     {
+        private ModelRoot _modelRoot;
         private Rigidbody _rb;
         private BulletObjectData _data;
         [SerializeField] private LayerMask collisionLayers = -1;
@@ -75,6 +78,15 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
                 // Usa o método Deactivate() que já existe no PooledObject
                 // Isso fará o objeto retornar ao pool automaticamente
                 Deactivate();
+            }
+        }
+        public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
+        public Transform ModelTransform => ModelRoot.transform;
+        public void SetSkinActive(bool active)
+        {
+            if (_modelRoot != null)
+            {
+                _modelRoot.gameObject.SetActive(active);
             }
         }
     }

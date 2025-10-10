@@ -54,4 +54,19 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         }
         
     }
+    public enum ModelType
+    {
+        ModelRoot,
+        CanvasRoot,
+        FxRoot,
+        SoundRoot,
+        FlagMark,
+    }
+    public enum InstantiationMode
+    {
+        All,
+        First,
+        Random,
+        Specific
+    }
 }

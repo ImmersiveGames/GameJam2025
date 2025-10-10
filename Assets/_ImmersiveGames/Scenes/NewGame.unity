@@ -230,7 +230,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollection: {fileID: 0}
+  defaultSkinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  autoInitialize: 1
+  enableGlobalEvents: 1
 --- !u!114 &388071194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -299,26 +301,13 @@ GameObject:
   - component: {fileID: 449169343}
   - component: {fileID: 449169342}
   - component: {fileID: 449169341}
-  - component: {fileID: 449169340}
-  m_Layer: 7
+  m_Layer: 10
   m_Name: Planet02
-  m_TagString: Player
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &449169340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 449169339}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f27c0437dab4fcb95427d434539b0bb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_IsActive: 1
 --- !u!114 &449169341
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -353,7 +342,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollection: {fileID: 0}
+  defaultSkinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  autoInitialize: 1
+  enableGlobalEvents: 1
 --- !u!114 &449169343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -648,6 +639,7 @@ GameObject:
   - component: {fileID: 1432878149}
   - component: {fileID: 1432878150}
   - component: {fileID: 1432878151}
+  - component: {fileID: 1432878152}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -710,7 +702,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollection: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
+  defaultSkinCollection: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
+  autoInitialize: 1
+  enableGlobalEvents: 1
 --- !u!114 &1432878136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -960,6 +954,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
   poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
+--- !u!114 &1432878152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9aab28d37cc142a8b96f08d3e4482835, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableDebugFeatures: 1
+  enableEventListening: 1
+  autoInitialize: 1
+  testResourceType: 0
+  testDamageAmount: -20
+  testHealAmount: 30
+  testThresholdValue: 50
+  logThresholdEvents: 1
+  logResourceUpdates: 1
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1188,6 +1203,7 @@ GameObject:
   - component: {fileID: 1666611564}
   - component: {fileID: 1666611555}
   - component: {fileID: 1666611554}
+  - component: {fileID: 1666611566}
   - component: {fileID: 1666611559}
   - component: {fileID: 1666611560}
   - component: {fileID: 1666611562}
@@ -1218,7 +1234,7 @@ MonoBehaviour:
     customCanvasId: planetcanvas
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     fillAnimationType: 1
-    thresholdConfig: {fileID: 0}
+    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
     sortOrder: 0
@@ -1234,7 +1250,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  defaultSkinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
+  autoInitialize: 1
+  enableGlobalEvents: 1
 --- !u!54 &1666611557
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1378,6 +1396,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adea1b7d434745998b36714429154445, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1666611566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1666611552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61dfceda261c40b2872b6436f598e390, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1667814061
 GameObject:
   m_ObjectHideFlags: 0
@@ -1495,7 +1525,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3ee57ba205c410a8617e69167f9a94b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinCollection: {fileID: 11400000, guid: d80355e99060ee247b3eab0c195fd5cd, type: 2}
+  defaultSkinCollection: {fileID: 0}
+  autoInitialize: 1
+  enableGlobalEvents: 1
 --- !u!114 &1667814067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1652,7 +1684,6 @@ MonoBehaviour:
   deathVolume: 1
   reviveVolume: 1
   testBgmData: {fileID: 0}
-  bgmVolume: 1
   fadeDuration: 2
   testDamage: 10
   reviveHealth: 100

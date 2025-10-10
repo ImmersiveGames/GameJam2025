@@ -110,7 +110,12 @@ GameObject:
   m_Component:
   - component: {fileID: 7790425021688631422}
   - component: {fileID: 3047792937553412849}
-  - component: {fileID: 1000788283871329831}
+  - component: {fileID: 7153256321321909511}
+  - component: {fileID: -7696712274100365468}
+  - component: {fileID: 7420330348455882811}
+  - component: {fileID: 1296112839031471060}
+  - component: {fileID: -673386226977165452}
+  - component: {fileID: 101444860475829702}
   m_Layer: 10
   m_Name: PlanetSkin
   m_TagString: Untagged
@@ -159,7 +164,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 1.5
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1000788283871329831
+--- !u!114 &7153256321321909511
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -168,27 +173,197 @@ MonoBehaviour:
   m_GameObject: {fileID: 2677257219484125173}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fcec70a55d8c4b14954294472657d2d9, type: 3}
+  m_Script: {fileID: 11500000, guid: d3c299cbd27c4485a514d953c16a27b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  planetsParts:
+  targetModelType: 0
+  autoRegister: 1
+  useGlobalEvents: 1
+  minScale: {x: 0.8, y: 0.8, z: 0.8}
+  maxScale: {x: 1.2, y: 1.2, z: 1.2}
+  uniformScaling: 1
+  applyScaleOnStart: 1
+  reapplyScaleOnNewSkin: 1
+  preserveOriginalScale: 1
+  applyRandomRotation: 1
+  minRotation: {x: 0, y: 0, z: 0}
+  maxRotation: {x: 360, y: 360, z: 360}
+  uniformRotation: 0
+  applyRotationOnStart: 1
+  reapplyRotationOnNewSkin: 1
+  randomizeOnSkinInstances: 1
+  showDebugLogs: 0
+--- !u!114 &-7696712274100365468
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a10a111854d4f7491ea9ba2fd9cd3d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetModelType: 0
+  autoRegister: 1
+  useGlobalEvents: 1
+  ringObject: {fileID: 1605563657010218955}
+  ringChance: 0.3
+  applyOnSkinChange: 1
+  enableRandomRotation: 1
+  rotationRange: {x: 0, y: 360}
+  randomizeOnStart: 1
+  randomizeOnSkinInstances: 1
+  showDebugLogs: 0
+--- !u!114 &7420330348455882811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b52330ae5f574f71a521d344b1c13d09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetModelType: 0
+  autoRegister: 1
+  useGlobalEvents: 1
+  materialSlots:
+  - targetRenderers:
+    - {fileID: 1851372738638724467}
+    - {fileID: 4254146496083048899}
+    - {fileID: 8773464588414440694}
+    - {fileID: 6921080788206055370}
+    materialIndex: 0
+    materialGroup: {fileID: 11400000, guid: 50e46f570db629044b0b733f87efb77e, type: 2}
+  - targetRenderers:
+    - {fileID: 1851372738638724467}
+    - {fileID: 4254146496083048899}
+    - {fileID: 8773464588414440694}
+    - {fileID: 6921080788206055370}
+    materialIndex: 1
+    materialGroup: {fileID: 11400000, guid: 50e46f570db629044b0b733f87efb77e, type: 2}
+  applyOnSkinChange: 1
+  applyOnStart: 1
+  randomizeOnNewInstances: 1
+  showDebugLogs: 1
+--- !u!114 &1296112839031471060
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fddef64b3c6e4be0aca4d9bc3dcfa5bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parts:
   - {fileID: 8866569787034226207}
   - {fileID: 7116083231258506531}
   - {fileID: 2308446390070482966}
   - {fileID: 194105318929112230}
-  planetRing: {fileID: 1605563657010218955}
-  planetColorMaterials:
-  - {fileID: 2100000, guid: e90e5c9b4f099b140a511fb6ec3db506, type: 2}
-  - {fileID: 2100000, guid: 1bb29fde6a6807344b7d10fc57386b4b, type: 2}
-  - {fileID: 2100000, guid: 96cb15ed3fe8b714ba7be4388cf82cc5, type: 2}
-  - {fileID: 2100000, guid: 593bda2c3d673f648949c381247e0fb3, type: 2}
-  - {fileID: 2100000, guid: 201912bb8a276ef408faa7e9fbe85d0c, type: 2}
-  - {fileID: 2100000, guid: 1b8e4bfd472f0a3419fe2a19f4d3aa57, type: 2}
-  - {fileID: 2100000, guid: 3fd00ef8646693a48a616d5e1dd7e395, type: 2}
-  - {fileID: 2100000, guid: ef4b570201be9ce408206567ab06ce14, type: 2}
-  - {fileID: 2100000, guid: 795bc2a5f7387c8408702f3ac458b969, type: 2}
-  - {fileID: 2100000, guid: db2a79bd5e711424b829b04f84b58385, type: 2}
-  - {fileID: 2100000, guid: 9c6d4162fae88774bab0d0dbc80c4885, type: 2}
+  thresholdListener: {fileID: -673386226977165452}
+  showDebugLogs: 1
+--- !u!114 &-673386226977165452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cc33f5798e149ca9d10ecbe4320fe8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  expectedActorId: 
+  thresholdConfigs:
+  - resourceType: 0
+    threshold: 0.25
+    direction: 1
+    onThresholdCrossed:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1296112839031471060}
+          m_TargetAssemblyTypeName: _ImmersiveGames.Scripts.SkinSystems.Threshold.PartsController,
+            _ImmersiveGames.Scripts
+          m_MethodName: HandleThresholdCrossed
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - resourceType: 0
+    threshold: 0.5
+    direction: 1
+    onThresholdCrossed:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1296112839031471060}
+          m_TargetAssemblyTypeName: _ImmersiveGames.Scripts.SkinSystems.Threshold.PartsController,
+            _ImmersiveGames.Scripts
+          m_MethodName: HandleThresholdCrossed
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  - resourceType: 0
+    threshold: 0.75
+    direction: 1
+    onThresholdCrossed:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 1296112839031471060}
+          m_TargetAssemblyTypeName: _ImmersiveGames.Scripts.SkinSystems.Threshold.PartsController,
+            _ImmersiveGames.Scripts
+          m_MethodName: HandleThresholdCrossed
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+  showDebugLogs: 1
+--- !u!114 &101444860475829702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2677257219484125173}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbda5336283d42378a6bc4b04d888d4a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ringSkin: {fileID: -7696712274100365468}
+  transformSkin: {fileID: 7153256321321909511}
+  materialSkin: {fileID: 7420330348455882811}
+  randomizeAllGroupsKey: 118
+  resetAllMaterialsKey: 98
+  cycleGroupMaterialsKey: 110
+  testDiversityKey: 109
+  randomizeAllKey: 32
+  resetAllKey: 8
+  showDebugMessages: 1
+  logOnStart: 1
 --- !u!1001 &1040595481333703159
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -268,6 +443,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
   m_PrefabInstance: {fileID: 1040595481333703159}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &1851372738638724467 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
+  m_PrefabInstance: {fileID: 1040595481333703159}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &3226923773473203527
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -337,6 +517,11 @@ GameObject:
 --- !u!4 &3117317149121528492 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
+  m_PrefabInstance: {fileID: 3226923773473203527}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4254146496083048899 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
   m_PrefabInstance: {fileID: 3226923773473203527}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7926350938716751986
@@ -410,6 +595,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
   m_PrefabInstance: {fileID: 7926350938716751986}
   m_PrefabAsset: {fileID: 0}
+--- !u!23 &8773464588414440694 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
+  m_PrefabInstance: {fileID: 7926350938716751986}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8632569183482147662
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -471,6 +661,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
+--- !u!23 &6921080788206055370 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}
+  m_PrefabInstance: {fileID: 8632569183482147662}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8090631596246471845 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: faca07347cf7a0b4d92578734ef8b30d, type: 3}

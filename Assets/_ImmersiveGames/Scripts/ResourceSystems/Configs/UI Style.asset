@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 177fd93a6a8f42cebc60e422d1b6d7fd, type: 3}
-  m_Name: New Resource UI Style
+  m_Name: UI Style
   m_EditorClassIdentifier: 
   fillGradient:
     serializedVersion: 2
