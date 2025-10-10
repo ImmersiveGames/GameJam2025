@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     /// <summary>
     /// Serviço puro que monitora thresholds por resourceType e dispara ResourceThresholdEvent via EventBus.
     /// </summary>
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class ResourceThresholdService : IDisposable
     {
         private readonly ResourceSystem _resourceSystem;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 }
                 else
                 {
-                    // Thresholds padrão quando não há configuração específica
+                    // Thresholds padrão, quando não há configuração específica
                     _thresholds[resourceType] = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
                     DebugUtility.LogVerbose<ResourceThresholdService>($"Usando thresholds padrão para {resourceType}");
                 }

@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
         }
 
-        private void ApplyCanvasOffset()
+        public void ApplyCanvasOffset()
         {
             // Aplicar offset de posição ao canvas inteiro
             if (canvasPositionOffset != Vector3.zero)
@@ -230,23 +230,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _pool.Clear();
             _pool = null;
         }
-
-        [ContextMenu("Apply Canvas Offset")]
-        private void ContextApplyCanvasOffset()
+        public void ContextApplyCanvasOffset()
         {
             ApplyCanvasOffset();
         }
-
-        [ContextMenu("Reset Canvas Position")]
-        private void ContextResetCanvasPosition()
+        
+        public void ContextResetCanvasPosition()
         {
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             Debug.Log("Canvas position and rotation reset");
         }
-
-        [ContextMenu("Debug Slots State")]
-        private void DebugSlots()
+        public void DebugStatus()
+        {
+            DebugUtility.LogWarning<CanvasResourceBinder>($"Canvas Status - ID: {CanvasId}, Active Slots: {_dynamicSlots.Count}, Pool: {_pool?.CountAll ?? 0}");
+        }
+        public void DebugSlots()
         {
             DebugUtility.Log<CanvasResourceBinder>($"Canvas {CanvasId} -> {_dynamicSlots.Count} actors");
             foreach (KeyValuePair<string, Dictionary<ResourceType, ResourceUISlot>> actorEntry in _dynamicSlots)

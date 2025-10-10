@@ -48,9 +48,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _service?.Dispose();
             _service = null;
         }
-
-        [ContextMenu("Debug Print Resources")]
-        private void DebugPrintResources()
+        public void DebugPrintResources()
         {
             IReadOnlyDictionary<ResourceType, IResourceValue> all = _service.GetAll();
             DebugUtility.LogVerbose<EntityResourceBridge>($"{_actor.ActorId} resources count: {all.Count}");

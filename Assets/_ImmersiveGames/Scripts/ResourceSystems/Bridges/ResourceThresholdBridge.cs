@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public class ResourceThresholdBridge : ResourceBridgeBase
     {
         private ResourceThresholdService _thresholdService;
@@ -19,12 +19,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             IReadOnlyDictionary<ResourceType, IResourceValue> allResources = resourceSystem.GetAll();
             if (allResources.Count == 0)
             {
-                LogVerbose("ResourceSystem não tem recursos configurados");
+                DebugUtility.LogWarning<ResourceThresholdBridge>("ResourceSystem não tem recursos configurados");
                 return false;
             }
 
             _thresholdService = new ResourceThresholdService(resourceSystem);
-            LogVerbose($"✅ ThresholdService criado com {allResources.Count} recursos");
+            DebugUtility.LogVerbose<ResourceThresholdBridge>($"✅ ThresholdService criado com {allResources.Count} recursos");
 
             OnServiceInitialized();
             return true;
@@ -42,23 +42,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _thresholdService = null;
         }
 
-        [ContextMenu("Force Threshold Check")]
-        private void ContextForce() 
+        public void ContextForce() 
         {
             if (!initialized)
             {
-                LogVerbose("Tentando inicializar via ContextMenu...");
+                DebugUtility.LogVerbose<ResourceThresholdBridge>("Tentando inicializar via ContextMenu...");
                 initialized = TryInitializeService();
             }
             
             if (initialized)
             {
-                LogVerbose("Forçando verificação via ContextMenu");
+                DebugUtility.LogVerbose<ResourceThresholdBridge>("Forçando verificação via ContextMenu");
                 _thresholdService?.ForceCheck();
             }
             else
             {
-                LogWarning("Não foi possível inicializar para forçar verificação");
+                DebugUtility.LogWarning<ResourceThresholdBridge>("Não foi possível inicializar para forçar verificação");
             }
         }
     }

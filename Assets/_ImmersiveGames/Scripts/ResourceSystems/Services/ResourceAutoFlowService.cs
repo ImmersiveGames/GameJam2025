@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private readonly Dictionary<ResourceType, float> _timers = new();
         private readonly Dictionary<ResourceType, ResourceAutoFlowConfig> _configs = new();
 
-        private IResourceLinkService _linkService;
+        private readonly IResourceLinkService _linkService;
         public bool IsPaused { get; private set; }
 
         public ResourceAutoFlowService(ResourceSystem resourceSystem, bool startPaused = true)
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             RefreshConfigsFromResourceSystem();
             _resourceSystem.ResourceUpdated += OnResourceUpdated;
 
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Inicializado com {_configs.Count} recursos com autoflow");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Inicializado com {_configs.Count} recursos com autoflow");
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 {
                     _timers[evt.ResourceType] = 0f;
                     _configs[evt.ResourceType] = inst.autoFlowConfig;
-                    DebugUtility.LogVerbose<EntityResourceBridge>($"Novo recurso com autoflow detectado: {evt.ResourceType}");
+                    DebugUtility.LogVerbose<ResourceAutoFlowService>($"Novo recurso com autoflow detectado: {evt.ResourceType}");
                 }
             }
         }
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 {
                     _configs[type] = inst.autoFlowConfig;
                     _timers[type] = 0f;
-                    DebugUtility.LogVerbose<EntityResourceBridge>($"Configurado autoflow para {type}: " +
+                    DebugUtility.LogVerbose<ResourceAutoFlowService>($"Configurado autoflow para {type}: " +
                              $"Fill={inst.autoFlowConfig.autoFill}, " +
                              $"Drain={inst.autoFlowConfig.autoDrain}");
                 }
@@ -83,43 +83,80 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 var cfg = _configs[resourceType];
                 if (cfg == null) continue;
 
-                // Verificar delay de regeneração após dano
-                if (cfg.autoFill && cfg.regenDelayAfterDamage > 0f)
+                if (IsInRegenDelayAfterDamage(cfg))
                 {
-                    if (Time.time - _resourceSystem.LastDamageTime < cfg.regenDelayAfterDamage)
-                    {
-                        _timers[resourceType] = 0f; // Reset timer enquanto em delay
-                        continue;
-                    }
+                    _timers[resourceType] = 0f;
+                    continue;
                 }
 
-                _timers[resourceType] += deltaTime;
-
-                if (_timers[resourceType] >= cfg.tickInterval)
-                {
-                    int ticks = Mathf.FloorToInt(_timers[resourceType] / cfg.tickInterval);
-                    _timers[resourceType] -= ticks * cfg.tickInterval;
-
-                    float perTickAmount = cfg.usePercentage
-                        ? (_resourceSystem.Get(resourceType)?.GetMaxValue() ?? 0f) * cfg.amountPerTick / 100f
-                        : cfg.amountPerTick;
-
-                    float totalDelta = 0f;
-                    // Para drenagem, verificar links
-                    if (cfg.autoDrain) 
-                    {
-                        totalDelta -= ProcessDrainWithLinks(resourceType, Mathf.Abs(perTickAmount) * ticks);
-                    }
-                    if (cfg.autoFill) totalDelta += Mathf.Abs(perTickAmount) * ticks;
-
-                    if (Mathf.Abs(totalDelta) > 0.0001f)
-                    {
-                        _resourceSystem.Modify(resourceType, totalDelta);
-                        DebugUtility.LogVerbose<EntityResourceBridge>($"Aplicado {totalDelta:F2} em {resourceType} " +
-                                 $"({ticks} ticks de {perTickAmount:F2})");
-                    }
-                }
+                ProcessResourceTick(resourceType, cfg, deltaTime);
             }
+        }
+
+        private bool IsInRegenDelayAfterDamage(ResourceAutoFlowConfig cfg)
+        {
+            return cfg.autoFill && 
+                   cfg.regenDelayAfterDamage > 0f && 
+                   Time.time - _resourceSystem.LastDamageTime < cfg.regenDelayAfterDamage;
+        }
+
+        private void ProcessResourceTick(ResourceType resourceType, ResourceAutoFlowConfig cfg, float deltaTime)
+        {
+            _timers[resourceType] += deltaTime;
+
+            if (_timers[resourceType] < cfg.tickInterval) return;
+
+            int ticks = CalculateTicksAndUpdateTimer(resourceType, cfg);
+            float totalDelta = CalculateTotalDelta(resourceType, cfg, ticks);
+
+            ApplyResourceChange(resourceType, totalDelta, ticks, cfg);
+        }
+
+        private int CalculateTicksAndUpdateTimer(ResourceType resourceType, ResourceAutoFlowConfig cfg)
+        {
+            int ticks = Mathf.FloorToInt(_timers[resourceType] / cfg.tickInterval);
+            _timers[resourceType] -= ticks * cfg.tickInterval;
+            return ticks;
+        }
+
+        private float CalculateTotalDelta(ResourceType resourceType, ResourceAutoFlowConfig cfg, int ticks)
+        {
+            float perTickAmount = CalculatePerTickAmount(resourceType, cfg);
+            float totalDelta = 0f;
+
+            if (cfg.autoDrain)
+            {
+                totalDelta -= ProcessDrainWithLinks(resourceType, Mathf.Abs(perTickAmount) * ticks);
+            }
+
+            if (cfg.autoFill)
+            {
+                totalDelta += Mathf.Abs(perTickAmount) * ticks;
+            }
+
+            return totalDelta;
+        }
+
+        private float CalculatePerTickAmount(ResourceType resourceType, ResourceAutoFlowConfig cfg)
+        {
+            if (cfg.usePercentage)
+            {
+                float maxValue = _resourceSystem.Get(resourceType)?.GetMaxValue() ?? 0f;
+                return maxValue * cfg.amountPerTick / 100f;
+            }
+
+            return cfg.amountPerTick;
+        }
+
+        private void ApplyResourceChange(ResourceType resourceType, float totalDelta, int ticks, ResourceAutoFlowConfig cfg)
+        {
+            if (Mathf.Abs(totalDelta) <= 0.0001f) return;
+
+            _resourceSystem.Modify(resourceType, totalDelta);
+
+            float perTickAmount = CalculatePerTickAmount(resourceType, cfg);
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Aplicado {totalDelta:F2} em {resourceType} " +
+                     $"({ticks} ticks de {perTickAmount:F2})");
         }
         private float ProcessDrainWithLinks(ResourceType resourceType, float desiredDrain)
         {
@@ -154,33 +191,33 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _resourceSystem.Modify(linkConfig.targetResource, -remainingDrain);
             }
 
-            Debug.Log($"AutoFlow link: {resourceType} drained {sourceDrain}, {linkConfig.targetResource} drained {remainingDrain}");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"AutoFlow link: {resourceType} drained {sourceDrain}, {linkConfig.targetResource} drained {remainingDrain}");
 
             return sourceDrain;
         }
         public void Pause() 
         { 
             IsPaused = true;
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Pausado");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Pausado");
         }
         
         public void Resume() 
         { 
             IsPaused = false;
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Retomado");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Retomado");
         }
         
         public void Toggle() 
         { 
             IsPaused = !IsPaused;
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Alternado para {(IsPaused ? "Pausado" : "Executando")}");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Alternado para {(IsPaused ? "Pausado" : "Executando")}");
         }
         
         public void ResetTimers()
         {
             var keys = _timers.Keys.ToList();
             foreach (var k in keys) _timers[k] = 0f;
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Timers resetados para {keys.Count} recursos");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Timers resetados para {keys.Count} recursos");
         }
 
         public void Dispose()
@@ -188,7 +225,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _resourceSystem.ResourceUpdated -= OnResourceUpdated;
             _timers.Clear();
             _configs.Clear();
-            DebugUtility.LogVerbose<EntityResourceBridge>($"Dispose realizado");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Dispose realizado");
         }
     }
 }

@@ -20,13 +20,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             bool hasAutoFlowResources = CheckForAutoFlowResources();
             if (!hasAutoFlowResources)
             {
-                LogVerbose("Nenhum recurso com autoflow configurado. Desativando.");
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Nenhum recurso com autoflow configurado. Desativando.");
                 enabled = false;
                 return false;
             }
 
             _autoFlow = new ResourceAutoFlowService(resourceSystem, startPaused);
-            LogVerbose($"✅ AutoFlowService criado com {CountAutoFlowResources()} recursos com autoflow");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"✅ AutoFlowService criado com {CountAutoFlowResources()} recursos com autoflow");
 
             OnServiceInitialized();
             return true;
@@ -81,59 +81,53 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             return count;
         }
-
-        [ContextMenu("AutoFlow: Pause")]
-        private void ContextPause() 
+        public  void ContextPause() 
         {
             if (!initialized) TryInitializeService();
             _autoFlow?.Pause();
-            LogVerbose("AutoFlow pausado");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>("AutoFlow pausado");
         }
-
-        [ContextMenu("AutoFlow: Resume")]
-        private void ContextResume() 
+        
+        public  void ContextResume() 
         {
             if (!initialized) TryInitializeService();
             _autoFlow?.Resume();
-            LogVerbose("AutoFlow retomado");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>("AutoFlow retomado");
         }
-
-        [ContextMenu("AutoFlow: Toggle")]
-        private void ContextToggle() 
+        
+        public  void ContextToggle() 
         {
             if (!initialized) TryInitializeService();
             _autoFlow?.Toggle();
-            LogVerbose($"AutoFlow alternado. Pausado: {_autoFlow?.IsPaused}");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"AutoFlow alternado. Pausado: {_autoFlow?.IsPaused}");
         }
 
-        [ContextMenu("AutoFlow: Reset Timers")]
-        private void ContextReset() 
+        public void ContextReset() 
         {
             if (!initialized) TryInitializeService();
             _autoFlow?.ResetTimers();
-            LogVerbose("Timers resetados");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Timers resetados");
         }
 
-        [ContextMenu("Debug AutoFlow Status")]
-        private void DebugAutoFlowStatus()
+        public void DebugAutoFlowStatus()
         {
             base.DebugStatus();
             
             if (resourceSystem != null)
             {
                 int autoFlowCount = CountAutoFlowResources();
-                LogVerbose($"Recursos com AutoFlow: {autoFlowCount}");
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"Recursos com AutoFlow: {autoFlowCount}");
                 
                 if (autoFlowCount > 0)
                 {
-                    LogVerbose("Recursos com AutoFlow configurado:");
+                    DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Recursos com AutoFlow configurado:");
                     foreach (var (resourceType, _) in resourceSystem.GetAll())
                     {
                         var inst = resourceSystem.GetInstanceConfig(resourceType);
                         if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
                         {
                             var cfg = inst.autoFlowConfig;
-                            LogVerbose($"   - {resourceType}: " +
+                            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"   - {resourceType}: " +
                                      $"Fill: {cfg.autoFill}, " +
                                      $"Drain: {cfg.autoDrain}, " +
                                      $"Interval: {cfg.tickInterval}s, " +

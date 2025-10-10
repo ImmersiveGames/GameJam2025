@@ -13,12 +13,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     /// Gerencia a inicialização comum: IActor, ResourceSystem e ordenação de execução.
     /// </summary>
     [DefaultExecutionOrder(20)] // Ordem comum para todos os bridges
-    [DebugLevel(DebugLevel.Warning)]
+    [DebugLevel(DebugLevel.Verbose)]
     public abstract class ResourceBridgeBase : MonoBehaviour
     {
-        [Header("Resource Bridge Base")]
-        [SerializeField] private bool enableDebugLogs = true;
-
         private IActor _actor;
         protected ResourceSystem resourceSystem;
         private IActorResourceOrchestrator _orchestrator;
@@ -31,12 +28,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _actor = GetComponent<IActor>();
             if (_actor == null)
             {
-                LogWarning($"No IActor found on {name}. Disabling.");
+                DebugUtility.LogWarning<ResourceBridgeBase>($"No IActor found on {name}. Disabling.");
                 enabled = false;
                 return;
             }
 
-            LogVerbose($"Awake chamado para ActorId: {_actor.ActorId}");
+            DebugUtility.LogVerbose<ResourceBridgeBase>($"Awake chamado para ActorId: {_actor.ActorId}");
         }
 
         protected virtual void Start()
@@ -53,12 +50,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             while (!initialized && attempt < maxAttempts && _actor != null)
             {
                 attempt++;
-                LogVerbose($"Tentativa {attempt} de inicialização para {actorId}");
+                DebugUtility.LogVerbose<ResourceBridgeBase>($"Tentativa {attempt} de inicialização para {actorId}");
 
                 if (TryInitializeService())
                 {
                     initialized = true;
-                    LogVerbose($"✅ Inicializado com sucesso na tentativa {attempt}");
+                    DebugUtility.LogVerbose<ResourceBridgeBase>($"✅ Inicializado com sucesso na tentativa {attempt}");
                     break;
                 }
 
@@ -67,7 +64,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (!initialized && _actor != null)
             {
-                LogWarning($"Falha após {maxAttempts} tentativas. Desativando.");
+                DebugUtility.LogWarning<ResourceBridgeBase>($"Falha após {maxAttempts} tentativas. Desativando.");
                 enabled = false;
             }
         }
@@ -79,7 +76,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             // Obter o orchestrator
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
-                LogVerbose("Orchestrator não encontrado");
+                DebugUtility.LogVerbose<ResourceBridgeBase>("Orchestrator não encontrado");
                 return false;
             }
 
@@ -88,7 +85,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (resourceSystem == null)
             {
-                LogVerbose("ResourceSystem não encontrado via orchestrator");
+                DebugUtility.LogVerbose<ResourceBridgeBase>("ResourceSystem não encontrado via orchestrator");
                 
                 // Fallback: tentar outras formas
                 if (!TryFindResourceSystem(actorId))
@@ -105,7 +102,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             // Tentativa 1: DependencyManager
             if (DependencyManager.Instance.TryGetForObject(actorId, out resourceSystem))
             {
-                LogVerbose("ResourceSystem obtido via DependencyManager");
+                DebugUtility.LogVerbose<ResourceBridgeBase>("ResourceSystem obtido via DependencyManager");
                 return true;
             }
 
@@ -116,7 +113,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 resourceSystem = bridge.GetService();
                 if (resourceSystem != null)
                 {
-                    LogVerbose("ResourceSystem obtido via EntityResourceBridge");
+                    DebugUtility.LogVerbose<ResourceBridgeBase>("ResourceSystem obtido via EntityResourceBridge");
                     return true;
                 }
             }
@@ -128,7 +125,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 resourceSystem = bridge.GetService();
                 if (resourceSystem != null)
                 {
-                    LogVerbose("ResourceSystem obtido via EntityResourceBridge (parent)");
+                    DebugUtility.LogVerbose<ResourceBridgeBase>("ResourceSystem obtido via EntityResourceBridge (parent)");
                     return true;
                 }
             }
@@ -145,25 +142,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
         }
 
-        // Métodos auxiliares para logging
-        protected void LogVerbose(string message)
-        {
-            if (enableDebugLogs)
-            {
-                DebugUtility.LogVerbose(GetType(), message);
-            }
-        }
-
-        protected void LogWarning(string message)
-        {
-            DebugUtility.LogWarning(GetType(), message);
-        }
-
-        protected void LogError(string message)
-        {
-            DebugUtility.LogError(GetType(), message);
-        }
-
         // Métodos abstratos que as classes derivadas devem implementar
         protected abstract void OnServiceInitialized();
         protected abstract void OnServiceDispose();
@@ -173,7 +151,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         protected virtual bool ShouldInitialize() => true;
 
         [ContextMenu("Debug Status")]
-        protected virtual void DebugStatus()
+        public virtual void DebugStatus()
         {
             string actorId = _actor?.ActorId ?? "null";
             bool orchestratorFound = DependencyManager.Instance.TryGetGlobal(out _orchestrator);
@@ -215,7 +193,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return false;
 
             _alertService = new ResourceAlertService(_resourceSystem, lowResourceThreshold, criticalResourceThreshold);
-            LogVerbose("✅ ResourceAlertService criado");
+            DebugUtility.LogVerbose<ResourceBridgeBase>("✅ ResourceAlertService criado");
 
             OnServiceInitialized();
             return true;
