@@ -245,7 +245,7 @@ MonoBehaviour:
   pendingFillImage: {fileID: 7391377973294924866}
   valueText: {fileID: 4422880494650787627}
   iconImage: {fileID: 0}
-  rootPanel: {fileID: 0}
+  rootPanel: {fileID: 2714092453672780032}
 --- !u!1 &7763835589478428796
 GameObject:
   m_ObjectHideFlags: 0

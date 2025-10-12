@@ -1,10 +1,12 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public class ResourceUISlot : MonoBehaviour
@@ -20,8 +22,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     
         // ESTADO CORRETO: 
         private float _currentFill;
-        private float _previousFill; // ← VALOR ANTERIOR para a pending
+        private float _previousFill;
         private string _currentText = "";
+        private bool _isFirstConfigure = true; // NOVO: Flag para primeira configuração
     
         public ResourceType Type { get; private set; }
         private ResourceInstanceConfig InstanceConfig { get; set; }
@@ -53,10 +56,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             
             gameObject.name = $"{actorId}_{type}";
         
-            // Estado inicial
-            _currentFill = 0f;
-            _previousFill = 0f;
-            ApplyVisuals();
+            // Estado inicial - CORREÇÃO: Inicializar com valores realistas
+            _currentFill = 1f; // Começar com 100% (valor real)
+            _previousFill = 1f;
+            
+            // Aplicar visuals imediatamente com valor inicial correto
+            ApplyVisualsImmediate();
+            
+            DebugUtility.LogVerbose<ResourceUISlot>($"✅ Slot initialized for {actorId}.{type} - Initial Fill: {_currentFill}");
         }
 
         private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
@@ -77,26 +84,52 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             float newValue = data.GetPercentage();
         
+            DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, First: {_isFirstConfigure}");
+        
             // LÓGICA CORRETA:
-            // 1. Guarda o valor anterior ANTES de atualizar
             _previousFill = _currentFill;
-            // 2. Atualiza o valor atual
             _currentFill = newValue;
 
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
         
-            ApplyVisuals();
+            // CORREÇÃO: Primeira configuração precisa de tratamento especial
+            if (_isFirstConfigure)
+            {
+                ApplyVisualsImmediate();
+                _isFirstConfigure = false;
+            }
+            else
+            {
+                ApplyVisuals();
+            }
+            
             SetVisible(true);
         }
+
         public ResourceInstanceConfig GetInstanceConfig() => InstanceConfig;
+
+        // NOVO: Método para aplicação imediata (sem animação)
+        private void ApplyVisualsImmediate()
+        {
+            var style = InstanceConfig?.slotStyle;
+        
+            DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}");
+            
+            // Usar estratégia instantânea para primeira aplicação
+            var instantStrategy = new InstantSlotStrategy();
+            instantStrategy.ApplyFill(this, _currentFill, _currentFill, style);
+            instantStrategy.ApplyText(this, _currentText, style);
+            
+            // Limpar qualquer animação pendente
+            ClearAllTween();
+        }
 
         private void ApplyVisuals()
         {
             var style = InstanceConfig?.slotStyle;
         
-            // PASSA OS VALORES CORRETOS:
-            // - Current: valor ATUAL (novo)
-            // - Pending: valor ANTERIOR (para criar o efeito de rastro)
+            DebugUtility.LogVerbose<ResourceUISlot>($"🎨 ApplyVisuals: {Type} - Current: {_currentFill}, Previous: {_previousFill}");
+        
             _slotStrategy.ApplyFill(this, _currentFill, _previousFill, style);
             _slotStrategy.ApplyText(this, _currentText, style);
         }
@@ -107,12 +140,35 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             StopAllCoroutines();
             _currentFill = 0f;
             _previousFill = 0f;
+            _isFirstConfigure = true;
             SetVisible(false);
         }
 
         public void SetVisible(bool visible)
         {
             if (rootPanel != null) rootPanel.SetActive(visible);
+        }
+
+        // NOVO: Método para forçar atualização visual
+        [ContextMenu("Force Visual Update")]
+        public void ForceVisualUpdate()
+        {
+            ApplyVisualsImmediate();
+            DebugUtility.LogVerbose<ResourceUISlot>($"🔧 ForceVisualUpdate: {Type} - Fill: {_currentFill}");
+        }
+
+        // NOVO: Método para debug do estado interno
+        [ContextMenu("Debug Slot State")]
+        public void DebugSlotState()
+        {
+            DebugUtility.LogWarning<ResourceUISlot>(
+                $"🔍 Slot Debug - {Type}:\n" +
+                $"Current Fill: {_currentFill}\n" +
+                $"Previous Fill: {_previousFill}\n" +
+                $"First Configure: {_isFirstConfigure}\n" +
+                $"Fill Image: {fillImage != null} (amount: {fillImage?.fillAmount})\n" +
+                $"Pending Image: {pendingFillImage != null} (amount: {pendingFillImage?.fillAmount})"
+            );
         }
 
         private void OnDestroy()

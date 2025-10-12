@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.ScriptableObjects;
 using _ImmersiveGames.Scripts.StateMachineSystems;

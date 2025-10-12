@@ -312,6 +312,7 @@ GameObject:
   - component: {fileID: 1766904436}
   - component: {fileID: 1766904435}
   - component: {fileID: 1766904437}
+  - component: {fileID: 1766904438}
   m_Layer: 5
   m_Name: Herald Image
   m_TagString: Untagged
@@ -385,17 +386,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 1766904431}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0c4cd93fbf7e4c04a9094b2a8edea6a9, type: 3}
+  m_Script: {fileID: 11500000, guid: 42477f237543410bbf13e92a4264e1ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   canvasId: MainUI2
   autoGenerateCanvasId: 0
   slotPrefab: {fileID: 7358706239104322408, guid: 37396a5ff026b5147b08fa6933242a5c, type: 3}
   dynamicSlotsParent: {fileID: 1766904432}
-  initialPoolSize: 5
-  persistAcrossScenes: 0
-  defaultSlotInstanceConfig: {fileID: 11400000, guid: d614b503971a1874ca5729aadf2aaf48, type: 2}
-  defaultSlotLayoutConfig: {fileID: 11400000, guid: 3f425259af4edbd4a8e340ee50f71151, type: 2}
+  initialPoolSize: 1
+  canvasType: 0
+  canvasPositionOffset: {x: 0, y: 0, z: 0}
+  canvasRotationOffset: {x: 0, y: 0, z: 0}
+  applyOffsetOnStart: 1
+  maxBindWaitSeconds: 2
+  registerInPipeline: 1
+--- !u!114 &1766904438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1766904431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 582ca37f40454723a34a5844f65665ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1914412363
 GameObject:
   m_ObjectHideFlags: 0
@@ -770,6 +786,7 @@ GameObject:
   - component: {fileID: 6931980767795679990}
   - component: {fileID: 3628957077303431504}
   - component: {fileID: 8683001147606837925}
+  - component: {fileID: 8683001147606837926}
   m_Layer: 5
   m_Name: Herald Image
   m_TagString: Untagged
@@ -786,17 +803,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 8683001147606837924}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0c4cd93fbf7e4c04a9094b2a8edea6a9, type: 3}
+  m_Script: {fileID: 11500000, guid: 42477f237543410bbf13e92a4264e1ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   canvasId: MainUI
   autoGenerateCanvasId: 0
   slotPrefab: {fileID: 7358706239104322408, guid: 37396a5ff026b5147b08fa6933242a5c, type: 3}
   dynamicSlotsParent: {fileID: 6969473263955335583}
-  initialPoolSize: 5
-  persistAcrossScenes: 0
-  defaultSlotInstanceConfig: {fileID: 11400000, guid: d614b503971a1874ca5729aadf2aaf48, type: 2}
-  defaultSlotLayoutConfig: {fileID: 11400000, guid: 3f425259af4edbd4a8e340ee50f71151, type: 2}
+  initialPoolSize: 1
+  canvasType: 0
+  canvasPositionOffset: {x: 0, y: 0, z: 0}
+  canvasRotationOffset: {x: 0, y: 0, z: 0}
+  applyOffsetOnStart: 1
+  maxBindWaitSeconds: 2
+  registerInPipeline: 1
+--- !u!114 &8683001147606837926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8683001147606837924}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 582ca37f40454723a34a5844f65665ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

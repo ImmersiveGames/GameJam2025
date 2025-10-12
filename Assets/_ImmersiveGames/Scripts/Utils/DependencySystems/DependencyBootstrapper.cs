@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.DamageSystem.Services;
+using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityUtils;
 
@@ -38,39 +37,38 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         private void RegisterEssentialServices()
         {
+
+            RegisterBindCreations();
+            DebugUtility.LogVerbose<DependencyBootstrapper>("Orchestrator Service Initialized");
             // EXISTENTES (mantenha os que você já tinha)
-            DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
             DependencyManager.Instance.RegisterGlobal<IStateDependentService>(new StateDependentService(GameManagerStateMachine.Instance));
-            DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(new ActorResourceOrchestratorService());
             
             RegisterEventBuses();
-
-            var effectService = RegisterEffectAndDamageServices();
-
-            DependencyManager.Instance.TryGet<IActorResourceOrchestrator>(out var orchestrator);
-            var damageService = new DamageService(effectService, orchestrator);
-            DependencyManager.Instance.RegisterGlobal(damageService);
             
             DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
         }
-        private static EffectService RegisterEffectAndDamageServices()
+        private void RegisterBindCreations()
         {
-            // -------------------
-            // New: EffectService & DamageService
-            // -------------------
-            var effectService = new EffectService(PoolManager.Instance, LifetimeManager.Instance);
-            DependencyManager.Instance.RegisterGlobal(effectService);
+            // PRIMEIRO: Serviços que não dependem de outros
+            DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
+            // Registra o factory de slot de recursos
+            DependencyManager.Instance.RegisterGlobal<IResourceSlotStrategyFactory>(new ResourceSlotStrategyFactory());
 
-            // Resolve IEventBus<DamageDealtEvent> from a dependency manager (must exist after bus registration above)
-            try
-            {
-                DependencyManager.Instance.TryGet(out IEventBus<DamageDealtEvent> _);
-            }
-            catch
-            {
-                // ignored
-            }
-            return effectService;
+    
+            // SEGUNDO: Gerenciadores
+            var initManager = ResourceInitializationManager.Instance;
+            DependencyManager.Instance.RegisterGlobal(initManager);
+
+            var pipelineManager = CanvasPipelineManager.Instance;
+            DependencyManager.Instance.RegisterGlobal(pipelineManager);
+
+            // TERCEIRO: Orchestrator (depende do PipelineManager)
+            var orchestrator = new ActorResourceOrchestratorService();
+            DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(orchestrator);
+
+            // QUARTO: Registrar para injeção dos serviços globais
+            initManager.RegisterForInjection(pipelineManager);
+            initManager.RegisterForInjection(orchestrator);
         }
         private static void RegisterEventBuses()
         {

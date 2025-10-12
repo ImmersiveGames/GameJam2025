@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {

@@ -32,5 +32,20 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             CurrentPercentage = currentPercentage;
         }
     }
-
+    public class ResourceVisualFeedbackEvent : IEvent
+    {
+        public string ActorId { get; }
+        public ResourceType ResourceType { get; }
+        public float Threshold { get; } 
+        public bool IsAscending { get; }
+        public ResourceVisualFeedbackEvent(string actorId, ResourceType resourceType, float threshold, bool isAscending)
+        {
+            ActorId = actorId;
+            ResourceType = resourceType;
+            Threshold = threshold;
+            IsAscending = isAscending;
+            
+        }
+    }
+    
 }

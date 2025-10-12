@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
@@ -12,6 +13,7 @@ using UnityEngine.Pool;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Warning)]
+    [System.Obsolete("Use InjectableCanvasResourceBinder instead - better dependency injection support")]
     public class CanvasResourceBinder : MonoBehaviour
     {
         [Header("Identification")]
@@ -62,7 +64,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _strategyFactory = new ResourceSlotStrategyFactory();
                 DependencyManager.Instance.RegisterGlobal(_strategyFactory);
             }
-            _orchestrator.RegisterCanvas(this);
+            //_orchestrator.RegisterCanvas(this);
             DebugUtility.LogVerbose<CanvasResourceBinder>($"Registered '{CanvasId}' for actor '{GetComponentInParent<IActor>()?.ActorId}'.");
         }
 

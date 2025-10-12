@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,6 +10,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
+    [System.Obsolete("Use InjectableEntityResourceBridge instead - better dependency injection support")]
     public class EntityResourceBridge : MonoBehaviour
     {
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
