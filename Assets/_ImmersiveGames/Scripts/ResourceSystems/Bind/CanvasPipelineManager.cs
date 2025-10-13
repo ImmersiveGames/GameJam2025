@@ -1,6 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
@@ -10,38 +11,60 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
     public class CanvasPipelineManager : PersistentSingleton<CanvasPipelineManager>, IInjectableComponent
     {
         private readonly Dictionary<string, ICanvasBinder> _canvasRegistry = new();
-        
-        // CORREÇÃO: Pending binds organizados por canvas e depois por ator+resourceType
-        private readonly Dictionary<string, Dictionary<(string actorId, ResourceType resourceType), CanvasBindRequest>> _pendingBindsByCanvas = new();
-        
-        public DependencyInjectionState InjectionState { get; set; }
 
+        // bindings registrados no EventBus (para poder desregistrar se necessário)
+        private EventBinding<ResourceEventHub.CanvasBindRequest> _bindRequestBinding;
+        private EventBinding<ResourceEventHub.CanvasRegisteredEvent> _canvasRegisteredBinding;
+
+        public DependencyInjectionState InjectionState { get; set; }
         public string GetObjectId() => "CanvasPipelineManager";
-        
+
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
             DebugUtility.LogVerbose<CanvasPipelineManager>("✅ Pipeline Manager fully initialized with dependencies");
+
+            // registrar listeners no EventBus
+            _bindRequestBinding = new EventBinding<ResourceEventHub.CanvasBindRequest>(OnBindRequestedHandler);
+            EventBus<ResourceEventHub.CanvasBindRequest>.Register(_bindRequestBinding);
+
+            _canvasRegisteredBinding = new EventBinding<ResourceEventHub.CanvasRegisteredEvent>(OnCanvasRegisteredHandler);
+            EventBus<ResourceEventHub.CanvasRegisteredEvent>.Register(_canvasRegisteredBinding);
         }
-    
+
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
             ResourceInitializationManager.Instance.RegisterForInjection(this);
             DebugUtility.LogVerbose<CanvasPipelineManager>("✅ Canvas Pipeline Manager Ready");
         }
-    
+
+        protected void OnDestroy()
+        {
+            try
+            {
+                if (_bindRequestBinding != null) EventBus<ResourceEventHub.CanvasBindRequest>.Unregister(_bindRequestBinding);
+                if (_canvasRegisteredBinding != null) EventBus<ResourceEventHub.CanvasRegisteredEvent>.Unregister(_canvasRegisteredBinding);
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
         public void RegisterCanvas(ICanvasBinder canvas)
         {
             if (canvas == null) return;
-            
-            if (!_canvasRegistry.TryAdd(canvas.CanvasId, canvas)) 
+
+            if (!_canvasRegistry.TryAdd(canvas.CanvasId, canvas))
             {
                 DebugUtility.LogWarning<CanvasPipelineManager>($"Canvas '{canvas.CanvasId}' already registered in pipeline");
                 return;
             }
 
-            ProcessPendingBindsForCanvas(canvas.CanvasId);
+            // notificamos o adapter/hub para reemitir pendentes
+            ResourceEventHub.NotifyCanvasRegistered(canvas.CanvasId);
+
             DebugUtility.LogVerbose<CanvasPipelineManager>($"✅ Canvas '{canvas.CanvasId}' registered in pipeline");
         }
 
@@ -49,129 +72,53 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         {
             if (_canvasRegistry.Remove(canvasId))
             {
-                _pendingBindsByCanvas.Remove(canvasId);
+                ResourceEventHub.NotifyCanvasUnregistered(canvasId);
                 DebugUtility.LogVerbose<CanvasPipelineManager>($"Canvas '{canvasId}' unregistered from pipeline");
             }
         }
-    
+
+        // Compat layer: recebe pedidos de bind e tenta executar imediatamente; caso falhe, o hub (adapter) guarda pendentes
         public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data, string targetCanvasId)
         {
-            var request = new CanvasBindRequest(actorId, resourceType, data, targetCanvasId);
-        
-            // Tentativa imediata
+            var request = new ResourceEventHub.CanvasBindRequest(actorId, resourceType, data, targetCanvasId);
+
             if (TryExecuteBind(request))
             {
                 DebugUtility.LogVerbose<CanvasPipelineManager>($"✅ Immediate bind: {actorId}.{resourceType} -> {targetCanvasId}");
                 return;
             }
-            
-            // Cache para processamento posterior
-            CachePendingBind(request);
-            DebugUtility.LogVerbose<CanvasPipelineManager>($"📦 Cached bind: {actorId}.{resourceType} -> {targetCanvasId}");
 
-            // Agendar cleanup
-            StartCoroutine(CleanupStaleBind(request));
+            // publica no hub que delega pro EventBus e guarda pendentes
+            ResourceEventHub.PublishBindRequest(request);
+            DebugUtility.LogVerbose<CanvasPipelineManager>($"📦 Delegated bind to hub: {actorId}.{resourceType} -> {targetCanvasId}");
         }
 
-        private bool TryExecuteBind(CanvasBindRequest request)
+        private bool TryExecuteBind(ResourceEventHub.CanvasBindRequest request)
         {
-            if (_canvasRegistry.TryGetValue(request.targetCanvasId, out var canvas) && 
-                canvas.CanAcceptBinds())
+            if (_canvasRegistry.TryGetValue(request.targetCanvasId, out var canvas) && canvas.CanAcceptBinds())
             {
                 canvas.ScheduleBind(request.actorId, request.resourceType, request.data);
-                RemovePendingBind(request);
+
+                // se havia pendente, remover do adapter
+                ResourceEventHub.TryRemovePendingBind(request.targetCanvasId, request.actorId, request.resourceType);
                 return true;
             }
             return false;
         }
 
-        private void CachePendingBind(CanvasBindRequest request)
-        {
-            if (!_pendingBindsByCanvas.ContainsKey(request.targetCanvasId))
-            {
-                _pendingBindsByCanvas[request.targetCanvasId] = new Dictionary<(string, ResourceType), CanvasBindRequest>();
-            }
-            
-            var key = (request.actorId, request.resourceType);
-            _pendingBindsByCanvas[request.targetCanvasId][key] = request;
-        }
+        // Handler chamado via EventBus quando um bind é publicado
+        private void OnBindRequestedHandler(ResourceEventHub.CanvasBindRequest request) => TryExecuteBind(request);
 
-        private void RemovePendingBind(CanvasBindRequest request)
+        // Handler para reprocessar pendentes ao registrar canvas (também chamado via ResourceEventHub.NotifyCanvasRegistered)
+        private void OnCanvasRegisteredHandler(ResourceEventHub.CanvasRegisteredEvent evt)
         {
-            var key = (request.actorId, request.resourceType);
-            if (_pendingBindsByCanvas.TryGetValue(request.targetCanvasId, out var canvasBinds))
-            {
-                canvasBinds.Remove(key);
-                if (canvasBinds.Count == 0)
-                {
-                    _pendingBindsByCanvas.Remove(request.targetCanvasId);
-                }
-            }
-        }
-    
-        private void ProcessPendingBindsForCanvas(string canvasId)
-        {
-            if (_pendingBindsByCanvas.TryGetValue(canvasId, out var canvasBinds))
-            {
-                DebugUtility.LogVerbose<CanvasPipelineManager>($"🔄 Processing {canvasBinds.Count} pending binds for canvas '{canvasId}'");
-                
-                foreach (var request in canvasBinds.Values.ToList())
-                {
-                    if (TryExecuteBind(request))
-                    {
-                        DebugUtility.LogVerbose<CanvasPipelineManager>($"✅ Processed cached bind: {request.actorId}.{request.resourceType}");
-                    }
-                }
-            }
-        }
+            string canvasId = evt.canvasId;
+            if (!_canvasRegistry.TryGetValue(canvasId, out var canvas)) return;
 
-        // CORREÇÃO: Novo método para limpar binds de um ator específico
-        public void ClearActorBinds(string actorId)
-        {
-            var canvasesToProcess = _pendingBindsByCanvas.Keys.ToList();
-            int totalRemoved = 0;
-
-            foreach (var canvasId in canvasesToProcess)
+            IReadOnlyDictionary<(string actorId, ResourceType resourceType), ResourceEventHub.CanvasBindRequest> pendings = ResourceEventHub.GetPendingForCanvas(canvasId);
+            foreach (var req in pendings.Values.ToList())
             {
-                var canvasBinds = _pendingBindsByCanvas[canvasId];
-                var keysToRemove = canvasBinds.Keys.Where(key => key.actorId == actorId).ToList();
-                
-                foreach (var key in keysToRemove)
-                {
-                    canvasBinds.Remove(key);
-                    totalRemoved++;
-                }
-
-                if (canvasBinds.Count == 0)
-                {
-                    _pendingBindsByCanvas.Remove(canvasId);
-                }
-            }
-
-            if (totalRemoved > 0)
-            {
-                DebugUtility.LogVerbose<CanvasPipelineManager>($"🧹 Cleared {totalRemoved} pending binds for actor '{actorId}'");
-            }
-        }
-    
-        private IEnumerator CleanupStaleBind(CanvasBindRequest request, float timeout = 10f)
-        {
-            yield return new WaitForSeconds(timeout);
-        
-            // Verificar se o bind ainda está pendente
-            if (_pendingBindsByCanvas.TryGetValue(request.targetCanvasId, out var canvasBinds))
-            {
-                var key = (request.actorId, request.resourceType);
-                if (canvasBinds.ContainsKey(key))
-                {
-                    DebugUtility.LogWarning<CanvasPipelineManager>($"⏰ Stale bind removed: {request.actorId}.{request.resourceType} -> {request.targetCanvasId}");
-                    canvasBinds.Remove(key);
-                    
-                    if (canvasBinds.Count == 0)
-                    {
-                        _pendingBindsByCanvas.Remove(request.targetCanvasId);
-                    }
-                }
+                TryExecuteBind(req);
             }
         }
 
@@ -180,21 +127,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         {
             Debug.Log($"🎯 PIPELINE MANAGER DEBUG:");
             Debug.Log($"- Registered Canvases: {_canvasRegistry.Count}");
-            foreach (var canvasId in _canvasRegistry.Keys)
+            foreach (string canvasId in _canvasRegistry.Keys)
             {
                 var canvas = _canvasRegistry[canvasId];
                 Debug.Log($"  - {canvasId} (State: {canvas.State}, AcceptsBinds: {canvas.CanAcceptBinds()})");
             }
-
-            Debug.Log($"- Pending Binds: {_pendingBindsByCanvas.Sum(c => c.Value.Count)} total");
-            foreach (var (canvasId, binds) in _pendingBindsByCanvas)
-            {
-                Debug.Log($"  - Canvas '{canvasId}': {binds.Count} binds");
-                foreach (var ((actorId, resourceType), request) in binds)
-                {
-                    Debug.Log($"    - {actorId}.{resourceType}: {request.data?.GetCurrentValue():F1}");
-                }
-            }
+            Debug.Log($"- Pending binds: use ResourceEventHub.GetPendingForCanvas(canvasId) para detalhes");
         }
     }
+
 }

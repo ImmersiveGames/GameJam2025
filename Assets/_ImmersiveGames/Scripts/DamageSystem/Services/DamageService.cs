@@ -1,12 +1,12 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Services
 {

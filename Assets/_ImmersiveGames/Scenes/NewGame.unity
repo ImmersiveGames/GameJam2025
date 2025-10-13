@@ -303,8 +303,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoTestOnReady: 0
+  testMode: 2
   testDamage: 10
   initializationDelay: 0.5
+  overallTimeout: 5
+  verboseEvents: 1
 --- !u!114 &862246274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -317,16 +320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7054ab6ffc2547afb8c4e184baa051e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceInstances:
-  - resourceDefinition: {fileID: 11400000, guid: ecc8574026cc4f547ac4938262109eff, type: 2}
-    canvasTargetMode: 1
-    customCanvasId: planetcanvas
-    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    fillAnimationType: 0
-    thresholdConfig: {fileID: 0}
-    hasAutoFlow: 0
-    autoFlowConfig: {fileID: 0}
-    sortOrder: 5
+  resourceInstances: []
 --- !u!114 &862246275
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -501,9 +495,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41ec2dabc2fd46a0a7d28a7f40ae352a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefabPlanet: {fileID: 0}
-  prefabPlayer2: {fileID: 0}
-  quant: 3
+  prefabPlanet: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
+  prefabPlayer2: {fileID: 6539729360946555031, guid: 717dd33d909c0654f8f188dea10d219c, type: 3}
+  quant: 1
 --- !u!114 &1021690758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1037,7 +1031,7 @@ MonoBehaviour:
     thresholdConfig: {fileID: 0}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
-    sortOrder: 5
+    sortOrder: 0
 --- !u!114 &1432878154
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1051,8 +1045,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoTestOnReady: 0
+  testMode: 2
   testDamage: 20
   initializationDelay: 0.5
+  overallTimeout: 5
+  verboseEvents: 1
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1548,6 +1545,10 @@ PrefabInstance:
     - target: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_Name
       value: Planet01
+      objectReference: {fileID: 0}
+    - target: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5834496324894513697, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_LocalPosition.x

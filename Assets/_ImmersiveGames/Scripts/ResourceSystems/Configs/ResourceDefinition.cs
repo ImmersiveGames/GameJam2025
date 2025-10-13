@@ -14,4 +14,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         [Header("UI Settings")]
         public Sprite icon; // Ícone padrão, pode ser sobrescrito por instância se necessário
     }
+    public enum ResourceType
+    {
+        Health,
+        Energy,
+        Mana,
+        Stamina,
+        Hungry,
+        None
+    }
 }

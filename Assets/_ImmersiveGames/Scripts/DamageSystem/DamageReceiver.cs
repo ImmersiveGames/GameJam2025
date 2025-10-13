@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using System.Collections;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {

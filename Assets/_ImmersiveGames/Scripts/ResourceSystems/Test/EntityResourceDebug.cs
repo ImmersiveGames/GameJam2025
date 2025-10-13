@@ -2,7 +2,8 @@
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -12,15 +13,28 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
     [DebugLevel(DebugLevel.Verbose)]
     public class EntityResourceDebug : MonoBehaviour, IInjectableComponent
     {
+        public enum TestMode { Passive, Active, Hybrid }
+
         [Header("Test Settings")]
-        [SerializeField] private bool autoTestOnReady = false;
+        [SerializeField] private bool autoTestOnReady;
+        [SerializeField] private TestMode testMode = TestMode.Hybrid;
         [SerializeField] private float testDamage = 10f;
-        [SerializeField] private float initializationDelay = 0.5f; // CORREÇÃO: Delay para garantir registro
+        [SerializeField] private float initializationDelay = 0.5f;
+        [SerializeField] private float overallTimeout = 5f;
+        [SerializeField] private bool verboseEvents = true;
 
         [Inject] private IActorResourceOrchestrator _orchestrator;
         private IActor _actor;
         private ResourceSystem _resourceSystem;
-        private bool _resourceSystemResolved = false;
+        private bool _resourceSystemResolved;
+
+        private int _resourceUpdateEventsSeen;
+        private int _canvasBindRequestsSeen;
+        private bool _actorRegisteredEventSeen;
+
+        private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
+        private EventBinding<ResourceEventHub.CanvasBindRequest> _canvasBindRequestBinding;
+        private EventBinding<ResourceEventHub.ActorRegisteredEvent> _actorRegisteredBinding;
 
         public DependencyInjectionState InjectionState { get; set; }
         public string GetObjectId() => _actor?.ActorId;
@@ -35,67 +49,103 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            
-            // CORREÇÃO: Não tentar obter ResourceSystem imediatamente
-            // Aguardar o InjectableEntityResourceBridge registrar primeiro
+
+            _resourceUpdateBinding = new EventBinding<ResourceUpdateEvent>(OnResourceUpdateEvent);
+            EventBus<ResourceUpdateEvent>.Register(_resourceUpdateBinding);
+
+            _canvasBindRequestBinding = new EventBinding<ResourceEventHub.CanvasBindRequest>(OnCanvasBindRequest);
+            EventBus<ResourceEventHub.CanvasBindRequest>.Register(_canvasBindRequestBinding);
+
+            _actorRegisteredBinding = new EventBinding<ResourceEventHub.ActorRegisteredEvent>(OnActorRegistered);
+            EventBus<ResourceEventHub.ActorRegisteredEvent>.Register(_actorRegisteredBinding);
+
             if (autoTestOnReady)
                 StartCoroutine(DelayedTestRoutine());
+        }
+
+        private void OnDestroy()
+        {
+            if (_resourceUpdateBinding != null) EventBus<ResourceUpdateEvent>.Unregister(_resourceUpdateBinding);
+            if (_canvasBindRequestBinding != null) EventBus<ResourceEventHub.CanvasBindRequest>.Unregister(_canvasBindRequestBinding);
+            if (_actorRegisteredBinding != null) EventBus<ResourceEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
         }
 
         [ContextMenu("🎯 Run Test Routine")]
         public void RunTestRoutine() => StartCoroutine(DelayedTestRoutine());
 
-        // CORREÇÃO: Nova rotina com delay para garantir que o ResourceSystem está registrado
         private IEnumerator DelayedTestRoutine()
         {
-            Debug.Log($"[EntityResourceDebug] 🔄 Starting delayed test for {_actor.ActorId}");
-            
-            // Tentar resolver o ResourceSystem com retry
-            yield return StartCoroutine(ResolveResourceSystemWithRetry());
-            
+            Debug.Log($"[EntityResourceDebug] 🔄 Starting delayed test for {_actor?.ActorId} (mode={testMode})");
+
+            yield return new WaitForSeconds(initializationDelay);
+
+            yield return StartCoroutine(ResolveResourceSystemWithRetry(overallTimeout));
+
             if (_resourceSystem == null)
             {
-                Debug.LogError($"[EntityResourceDebug] ❌ Failed to resolve ResourceSystem for {_actor.ActorId} after retry");
+                Debug.LogError($"[EntityResourceDebug] ❌ Failed to resolve ResourceSystem for {_actor?.ActorId} within timeout ({overallTimeout}s)");
+                ReportSummary();
                 yield break;
             }
 
-            yield return StartCoroutine(TestRoutine());
+            switch (testMode)
+            {
+                case TestMode.Passive:
+                    yield return StartCoroutine(PassiveObservationRoutine(overallTimeout));
+                    break;
+                case TestMode.Active:
+                    yield return StartCoroutine(ActiveTestRoutine());
+                    break;
+                case TestMode.Hybrid:
+                    yield return StartCoroutine(HybridRoutine());
+                    break;
+            }
+
+            ReportSummary();
         }
 
-        // CORREÇÃO: Método para resolver ResourceSystem com múltiplas tentativas
-        private IEnumerator ResolveResourceSystemWithRetry()
+        private IEnumerator ResolveResourceSystemWithRetry(float timeout)
         {
-            int maxAttempts = 10;
-            float delayBetweenAttempts = 0.1f;
-
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            float start = Time.time;
+            while (Time.time - start < timeout)
             {
                 _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-                
+
                 if (_resourceSystem != null)
                 {
                     _resourceSystemResolved = true;
-                    Debug.Log($"[EntityResourceDebug] ✅ ResourceSystem resolved for {_actor.ActorId} on attempt {attempt}");
+                    Debug.Log($"[EntityResourceDebug] ✅ ResourceSystem resolved for {_actor.ActorId}");
                     yield break;
                 }
 
-                Debug.Log($"[EntityResourceDebug] ⏳ Attempt {attempt}/{maxAttempts} - ResourceSystem not yet available for {_actor.ActorId}");
-                
-                if (attempt < maxAttempts)
-                    yield return new WaitForSeconds(delayBetweenAttempts);
+                yield return new WaitForSeconds(0.05f);
             }
-
-            Debug.LogError($"[EntityResourceDebug] ❌ Failed to resolve ResourceSystem for {_actor.ActorId} after {maxAttempts} attempts");
+            _resourceSystemResolved = false;
         }
 
-        private IEnumerator TestRoutine()
+        private IEnumerator PassiveObservationRoutine(float observationTime)
         {
-            Debug.Log($"=== 🎯 ENTITY RESOURCE DEBUG ({_actor?.ActorId}) ===");
+            Debug.Log($"[EntityResourceDebug] 🕵️ Passive observation for {_actor.ActorId} ({observationTime}s)");
+            _resourceUpdateEventsSeen = 0;
+            _canvasBindRequestsSeen = 0;
+
+            float start = Time.time;
+            while (Time.time - start < observationTime)
+            {
+                yield return null;
+            }
+
+            Debug.Log($"[EntityResourceDebug] 🕵️ Passive observation finished. ResourceUpdates={_resourceUpdateEventsSeen}, CanvasBindRequests={_canvasBindRequestsSeen}");
+        }
+
+        private IEnumerator ActiveTestRoutine()
+        {
+            Debug.Log($"[EntityResourceDebug] 🔨 Active test for {_actor.ActorId}");
             yield return LogState("INITIAL");
 
             if (_resourceSystem == null)
             {
-                Debug.LogError("❌ ResourceSystem is null - cannot proceed with test");
+                Debug.LogError("[EntityResourceDebug] ❌ ResourceSystem is null - aborting active test");
                 yield break;
             }
 
@@ -106,8 +156,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             ApplyDamage(testDamage);
             yield return new WaitForSeconds(0.3f);
             yield return LogState("AFTER SECOND DAMAGE");
+        }
 
-            Debug.Log($"=== ✅ TEST COMPLETE ({_actor?.ActorId}) ===");
+        private IEnumerator HybridRoutine()
+        {
+            float passiveTime = Mathf.Min(1.0f, overallTimeout * 0.4f);
+            float remaining = overallTimeout - passiveTime;
+
+            Debug.Log($"[EntityResourceDebug] Hybrid: passive {passiveTime}s then active (if needed)");
+            yield return StartCoroutine(PassiveObservationRoutine(passiveTime));
+
+            if (_resourceUpdateEventsSeen > 0)
+            {
+                Debug.Log("[EntityResourceDebug] 🔁 Observed natural resource updates — skipping active steps");
+                yield break;
+            }
+
+            yield return StartCoroutine(ActiveTestRoutine());
         }
 
         private IEnumerator LogState(string phase)
@@ -115,9 +180,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             var sb = new StringBuilder();
             sb.AppendLine($"📊 {phase}");
             sb.AppendLine($"Actor: {_actor?.ActorId}");
-            sb.AppendLine($"ResourceSystem: {_resourceSystem != null}");
-            sb.AppendLine($"Orchestrator: {_orchestrator != null}");
+            sb.AppendLine($"ResourceSystem Local: {_resourceSystem != null}");
+            sb.AppendLine($"Orchestrator Available: {_orchestrator != null}");
             sb.AppendLine($"ResourceSystem Resolved: {_resourceSystemResolved}");
+            sb.AppendLine($"ResourceUpdateEventsSeen: {_resourceUpdateEventsSeen}");
+            sb.AppendLine($"CanvasBindRequestsSeen: {_canvasBindRequestsSeen}");
+            sb.AppendLine($"ActorRegisteredEventSeen: {_actorRegisteredEventSeen}");
 
             if (_resourceSystem != null)
             {
@@ -125,14 +193,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 {
                     var value = pair.Value.GetCurrentValue();
                     var max = pair.Value.GetMaxValue();
-                    sb.AppendLine($"  {pair.Key}: {value:F1}/{max:F1} ({(value / max):P1})");
+                    sb.AppendLine($"  {pair.Key}: {value:F1}/{max:F1} ({(value / (max > 0 ? max : 1)):P1})");
                 }
             }
             else
             {
-                // CORREÇÃO: Tentar obter novamente via orchestrator
-                var tempSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-                sb.AppendLine($"  Re-check via Orchestrator: {tempSystem != null}");
+                var temp = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
+                sb.AppendLine($"  Re-check via Orchestrator: {temp != null}");
             }
 
             Debug.Log(sb.ToString());
@@ -143,13 +210,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         {
             if (_resourceSystem == null)
             {
-                Debug.LogError("❌ ResourceSystem is null!");
-                
-                // CORREÇÃO: Tentar obter novamente
                 _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
                 if (_resourceSystem == null)
                 {
-                    Debug.LogError("❌ Still cannot access ResourceSystem after retry!");
+                    Debug.LogError("[EntityResourceDebug] ❌ Still cannot access ResourceSystem after retry! Aborting damage application.");
                     return;
                 }
             }
@@ -157,7 +221,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             var health = _resourceSystem.Get(ResourceType.Health);
             if (health == null)
             {
-                Debug.LogError("❌ Health resource not found!");
+                Debug.LogError("[EntityResourceDebug] ❌ Health resource not found!");
                 return;
             }
 
@@ -167,12 +231,64 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             Debug.Log($"💥 Damage Applied: {before:F1} → {after:F1}");
         }
 
+        private void OnResourceUpdateEvent(ResourceUpdateEvent evt)
+        {
+            if (evt.ActorId != _actor.ActorId) return;
+            _resourceUpdateEventsSeen++;
+
+            if (verboseEvents)
+            {
+                Debug.Log($"[EntityResourceDebug] 🔔 ResourceUpdateEvent observed for {evt.ActorId}.{evt.ResourceType} -> {evt.NewValue?.GetCurrentValue():F1}");
+            }
+        }
+
+        private void OnCanvasBindRequest(ResourceEventHub.CanvasBindRequest req)
+        {
+            if (req.actorId != _actor.ActorId) return;
+            _canvasBindRequestsSeen++;
+
+            if (verboseEvents)
+            {
+                Debug.Log($"[EntityResourceDebug] 🔗 CanvasBindRequest observed for {req.actorId}.{req.resourceType} -> {req.targetCanvasId}");
+            }
+        }
+
+        private void OnActorRegistered(ResourceEventHub.ActorRegisteredEvent evt)
+        {
+            if (evt.actorId != _actor.ActorId) return;
+            _actorRegisteredEventSeen = true;
+            if (verboseEvents) Debug.Log($"[EntityResourceDebug] ➕ ActorRegistered observed for {evt.actorId}");
+        }
+
+        private void ReportSummary()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"=== 📋 TEST SUMMARY for {_actor?.ActorId} ===");
+            sb.AppendLine($"Mode: {testMode}");
+            sb.AppendLine($"ResourceSystemResolved: {_resourceSystemResolved}");
+            sb.AppendLine($"ResourceUpdateEventsSeen: {_resourceUpdateEventsSeen}");
+            sb.AppendLine($"CanvasBindRequestsSeen: {_canvasBindRequestsSeen}");
+            sb.AppendLine($"ActorRegisteredEventSeen: {_actorRegisteredEventSeen}");
+
+            bool suspicious = false;
+            if (_canvasBindRequestsSeen > 0 && _resourceUpdateEventsSeen == 0)
+            {
+                suspicious = true;
+                sb.AppendLine("⚠️ Heuristic: Canvas binds observed but no resource updates - investigate who published those binds.");
+            }
+
+            if (!suspicious)
+                sb.AppendLine("✅ Heuristic: No suspicious forced-bind pattern detected.");
+
+            sb.AppendLine("=== END SUMMARY ===");
+            Debug.Log(sb.ToString());
+        }
+
         [ContextMenu("🔍 Quick Status")]
         public void QuickStatus()
         {
-            // CORREÇÃO: Sempre tentar obter o ResourceSystem atualizado
             _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-            
+
             if (_resourceSystem == null)
             {
                 Debug.Log("❌ ResourceSystem missing");
@@ -190,24 +306,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             Debug.Log($"[EntityResourceDebug] Re-resolved ResourceSystem for {_actor.ActorId}: {_resourceSystem != null}");
         }
 
-        // CORREÇÃO: Novo método para debug detalhado
         [ContextMenu("📋 Debug Orchestrator Access")]
         public void DebugOrchestratorAccess()
         {
             Debug.Log($"[EntityResourceDebug] 📋 ORCHESTRATOR ACCESS DEBUG for {_actor.ActorId}");
             Debug.Log($"- Orchestrator: {_orchestrator != null}");
             Debug.Log($"- Local ResourceSystem: {_resourceSystem != null}");
-            
+
             if (_orchestrator != null)
             {
                 bool isRegistered = _orchestrator.IsActorRegistered(_actor.ActorId);
                 Debug.Log($"- Actor Registered in Orchestrator: {isRegistered}");
-                
+
                 if (isRegistered)
                 {
                     var orchestratorSystem = _orchestrator.GetActorResourceSystem(_actor.ActorId);
                     Debug.Log($"- ResourceSystem from Orchestrator: {orchestratorSystem != null}");
-                    
+
                     if (orchestratorSystem != null)
                     {
                         var health = orchestratorSystem.Get(ResourceType.Health);

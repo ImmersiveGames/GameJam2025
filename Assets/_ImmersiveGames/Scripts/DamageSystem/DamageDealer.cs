@@ -1,10 +1,10 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem.Services;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {

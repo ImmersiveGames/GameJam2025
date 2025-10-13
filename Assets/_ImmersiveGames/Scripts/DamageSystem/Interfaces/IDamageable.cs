@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem.Services;
-using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.DamageSystem
 {

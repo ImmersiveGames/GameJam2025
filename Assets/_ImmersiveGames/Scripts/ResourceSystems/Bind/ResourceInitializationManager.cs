@@ -9,9 +9,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
     public class ResourceInitializationManager : PersistentSingleton<ResourceInitializationManager>
     {
-        public readonly Dictionary<string, IInjectableComponent> pendingComponents = new();
-        private readonly Dictionary<string, List<Action>> _pendingCallbacks = new();
-    
+        public readonly Dictionary<string, IInjectableComponent> _pendingComponents = new();
+
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
@@ -21,7 +20,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         public void RegisterForInjection(IInjectableComponent component)
         {
             string objectId = component.GetObjectId();
-            pendingComponents[objectId] = component;
+            _pendingComponents[objectId] = component;
         
             StartCoroutine(InjectionRetryRoutine(component));
         }
@@ -37,7 +36,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 {
                     DependencyManager.Instance.InjectDependencies(component, objectId);
                     component.OnDependenciesInjected();
-                    pendingComponents.Remove(objectId);
+                    _pendingComponents.Remove(objectId);
                     yield break;
                 }
                 catch (Exception ex)

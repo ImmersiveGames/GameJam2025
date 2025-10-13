@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public class ResourceUpdateEvent : IEvent
@@ -19,8 +20,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         public string ActorId { get; }
         public ResourceType ResourceType { get; }
-        public float Threshold { get; }         // valor do threshold (0..1)
-        public bool IsAscending { get; }       // true = subindo (ex: 0.20 -> 0.30 cruzou 0.25 subindo)
+        public float Threshold { get; } // valor do threshold (0..1)
+        public bool IsAscending { get; } // true = subindo (ex: 0.20 -> 0.30 cruzou 0.25 subindo)
         public float CurrentPercentage { get; } // valor atual do recurso (0..1)
 
         public ResourceThresholdEvent(string actorId, ResourceType resourceType, float threshold, bool isAscending, float currentPercentage)
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     {
         public string ActorId { get; }
         public ResourceType ResourceType { get; }
-        public float Threshold { get; } 
+        public float Threshold { get; }
         public bool IsAscending { get; }
         public ResourceVisualFeedbackEvent(string actorId, ResourceType resourceType, float threshold, bool isAscending)
         {
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             ResourceType = resourceType;
             Threshold = threshold;
             IsAscending = isAscending;
-            
+
         }
     }
     

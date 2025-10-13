@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 

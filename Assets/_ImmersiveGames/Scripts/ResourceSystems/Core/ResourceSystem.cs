@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -138,7 +139,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                     break;
             }
             
-            ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
+            var evt = new ResourceUpdateEvent(EntityId, type, resource);
+            ResourceUpdated?.Invoke(evt);
+
+            // Publicar no EventBus para listeners desacoplados
+            EventBus<ResourceUpdateEvent>.Raise(evt);
         }
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);

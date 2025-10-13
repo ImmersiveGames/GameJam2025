@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
@@ -16,8 +17,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         private IActor _actor;
         private ResourceSystem _service;
-        private bool _isDestroyed = false;
-        
+        private bool _isDestroyed;
+
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => _actor?.ActorId ?? gameObject.name;
@@ -34,21 +35,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             InjectionState = DependencyInjectionState.Pending;
             ResourceInitializationManager.Instance.RegisterForInjection(this);
-            
-            Debug.Log($"[EntityBridge] Awake called for {_actor.ActorId}");
+
+            DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Awake called for {_actor.ActorId}");
         }
 
         public void OnDependenciesInjected()
         {
             if (_isDestroyed) return;
-            
+
             InjectionState = DependencyInjectionState.Injecting;
 
             try
             {
-                // CORREÇÃO: Verificar se já existe um ResourceSystem registrado
-                ResourceSystem existingService = null;
-                if (DependencyManager.Instance.TryGetForObject(_actor.ActorId, out existingService))
+                if (DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem existingService))
                 {
                     Debug.LogWarning($"[EntityBridge] ResourceSystem already exists for {_actor.ActorId}, reusing");
                     _service = existingService;
@@ -57,23 +56,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 {
                     _service = new ResourceSystem(_actor.ActorId, resourceInstances);
                     DependencyManager.Instance.RegisterForObject(_actor.ActorId, _service);
-                    Debug.Log($"[EntityBridge] ✅ Created new ResourceSystem for '{_actor.ActorId}'");
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"✅ Created new ResourceSystem for '{_actor.ActorId}'");
                 }
 
-                // CORREÇÃO: Verificar se já está registrado no orchestrator
                 if (_orchestrator != null && !_orchestrator.IsActorRegistered(_actor.ActorId))
                 {
                     _orchestrator.RegisterActor(_service);
-                    Debug.Log($"[EntityBridge] ✅ Registered actor '{_actor.ActorId}' in orchestrator");
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"✅ Registered actor '{_actor.ActorId}' in orchestrator");
                 }
                 else
                 {
-                    Debug.Log($"[EntityBridge] Actor '{_actor.ActorId}' already registered in orchestrator");
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Actor '{_actor.ActorId}' already registered in orchestrator");
                 }
 
                 InjectionState = DependencyInjectionState.Ready;
-                
-                // DEBUG: Verificar se o ResourceSystem está acessível
+
                 DebugResourceSystemAccess();
             }
             catch (Exception ex)
@@ -83,7 +80,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        // CORREÇÃO: Novo método para verificar acesso ao ResourceSystem
         private void DebugResourceSystemAccess()
         {
             StartCoroutine(DebugResourceSystemCoroutine());
@@ -92,21 +88,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         private System.Collections.IEnumerator DebugResourceSystemCoroutine()
         {
             yield return new WaitForSeconds(1f);
-            
+
             Debug.Log($"[EntityBridge] 🔍 POST-INIT CHECK for {_actor.ActorId}:");
             Debug.Log($"  - Local _service: {_service != null}");
             Debug.Log($"  - InjectionState: {InjectionState}");
-            
-            // Verificar no DependencyManager
-            bool hasInDM = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
-            Debug.Log($"  - In DependencyManager: {hasInDM}, Service: {dmService != null}");
-            
-            // Verificar no Orchestrator
+
+            bool hasInDm = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
+            Debug.Log($"  - In DependencyManager: {hasInDm}, Service: {dmService != null}");
+
             if (_orchestrator != null)
             {
                 bool hasInOrchestrator = _orchestrator.IsActorRegistered(_actor.ActorId);
                 Debug.Log($"  - In Orchestrator: {hasInOrchestrator}");
-                
+
                 if (hasInOrchestrator)
                 {
                     var orchestratorService = _orchestrator.GetActorResourceSystem(_actor.ActorId);
@@ -118,19 +112,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         private void OnDestroy()
         {
             _isDestroyed = true;
-            
-            Debug.Log($"[EntityBridge] OnDestroy called for {_actor?.ActorId}");
+
+            DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"OnDestroy called for {_actor?.ActorId}");
 
             if (_orchestrator != null && _actor != null)
             {
                 _orchestrator.UnregisterActor(_actor.ActorId);
-                Debug.Log($"[EntityBridge] Unregistered actor '{_actor.ActorId}' from orchestrator");
+                DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Unregistered actor '{_actor.ActorId}' from orchestrator");
             }
 
             if (_actor != null)
             {
                 DependencyManager.Instance.ClearObjectServices(_actor.ActorId);
-                Debug.Log($"[EntityBridge] Cleared services for '{_actor.ActorId}' from DependencyManager");
+                DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Cleared services for '{_actor.ActorId}' from DependencyManager");
             }
 
             _service?.Dispose();
@@ -145,29 +139,27 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             Debug.Log($"- Service: {_service != null}");
             Debug.Log($"- Injection: {InjectionState}");
             Debug.Log($"- Destroyed: {_isDestroyed}");
-    
+
             if (_service != null)
             {
                 var health = _service.Get(ResourceType.Health);
                 Debug.Log($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
             }
-    
-            // Verificar se está registrado no orchestrator
+
             if (DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
             {
                 bool isRegistered = orchestrator.IsActorRegistered(_actor?.ActorId);
                 Debug.Log($"- Registered in Orchestrator: {isRegistered}");
-                
+
                 if (isRegistered)
                 {
-                    var orchestratorService = orchestrator.GetActorResourceSystem(_actor.ActorId);
+                    var orchestratorService = orchestrator.GetActorResourceSystem(_actor?.ActorId);
                     Debug.Log($"- Orchestrator Service: {orchestratorService != null}");
                 }
             }
 
-            // Verificar no DependencyManager
-            bool hasInDM = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
-            Debug.Log($"- In DependencyManager: {hasInDM}, Service: {dmService != null}");
+            bool hasInDm = DependencyManager.Instance.TryGetForObject(_actor?.ActorId, out ResourceSystem dmService);
+            Debug.Log($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
         }
 
         [ContextMenu("🔄 TEST RESOURCE ACCESS")]
@@ -179,8 +171,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         private System.Collections.IEnumerator TestResourceAccessCoroutine()
         {
             Debug.Log($"=== 🎯 TESTING RESOURCE ACCESS ({_actor.ActorId}) ===");
-            
-            // Teste 1: Acesso local
+
             Debug.Log("📊 Test 1 - Local Access:");
             Debug.Log($"  - Local _service: {_service != null}");
             if (_service != null)
@@ -191,7 +182,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             yield return null;
 
-            // Teste 2: Acesso via DependencyManager
             Debug.Log("📊 Test 2 - DependencyManager Access:");
             bool dmSuccess = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
             Debug.Log($"  - DM Success: {dmSuccess}");
@@ -204,7 +194,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             yield return null;
 
-            // Teste 3: Acesso via Orchestrator
             Debug.Log("📊 Test 3 - Orchestrator Access:");
             if (_orchestrator != null)
             {
@@ -226,6 +215,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         }
 
         #region Métodos originais (mantidos para compatibilidade)
+
         [ContextMenu("Debug/Print Resources")]
         public void DebugPrintResources()
         {
@@ -235,14 +225,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 return;
             }
 
-            var all = _service.GetAll();
+            IReadOnlyDictionary<ResourceType, IResourceValue> all = _service.GetAll();
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"📊 RESOURCES FOR ACTOR: {_actor.ActorId}");
             sb.AppendLine($"Injection State: {InjectionState}");
             sb.AppendLine($"Total Resources: {all.Count}");
             sb.AppendLine("────────────────────────");
 
-            foreach (var kv in all)
+            foreach (KeyValuePair<ResourceType, IResourceValue> kv in all)
             {
                 var resource = kv.Value;
                 var instanceConfig = _service.GetInstanceConfig(kv.Key);
@@ -267,11 +257,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                     sb.AppendLine($"   AutoFlow: ✅ (Rate: {instanceConfig.autoFlowConfig.tickInterval})");
 
                 if (instanceConfig?.thresholdConfig != null)
-                    sb.AppendLine($"   Thresholds: ✅ ({instanceConfig.thresholdConfig.thresholds.Length} thresholds)");
+                    sb.AppendLine($"   Thresholds: ✅ ({instanceConfig.thresholdConfig?.thresholds.Length ?? 0} thresholds)");
             }
 
             DebugUtility.LogWarning<InjectableEntityResourceBridge>(sb.ToString());
         }
+
         #endregion
     }
+
+
 }

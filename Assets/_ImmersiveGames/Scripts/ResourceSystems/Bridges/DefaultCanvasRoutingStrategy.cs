@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.Bind;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     public interface ICanvasRoutingStrategy

@@ -1,4 +1,7 @@
-﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿// FILE: SceneCanvasBinder.cs
+
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
@@ -7,7 +10,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
     {
         [Header("Scene Canvas Settings")]
         [SerializeField] private bool registerInPipeline = true;
-        
         public override CanvasType Type => CanvasType.Scene;
 
         public override void OnDependenciesInjected()
@@ -18,7 +20,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             try
             {
                 base.OnDependenciesInjected();
-                
+
                 if (CanvasPipelineManager.HasInstance)
                 {
                     CanvasPipelineManager.Instance.RegisterCanvas(this);
@@ -33,17 +35,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        // CORREÇÃO: Sobrescrever corretamente
         public override void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
         {
             if (CanAcceptBinds())
             {
-                // Se está pronto, criar slot imediatamente
                 CreateSlotForActor(actorId, resourceType, data);
             }
             else
             {
-                // CORREÇÃO: Usar fallback para pipeline em vez de tentar criar slot diretamente
                 if (CanvasPipelineManager.HasInstance)
                 {
                     CanvasPipelineManager.Instance.ScheduleBind(actorId, resourceType, data, CanvasId);
@@ -55,7 +54,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 }
             }
         }
-        
 
         [ContextMenu("🔄 Force Scene Ready")]
         public void ForceSceneReady()
@@ -71,7 +69,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             Debug.Log($"- Type: {Type}, State: {State}");
             Debug.Log($"- Injection: {InjectionState}, CanAcceptBinds: {CanAcceptBinds()}");
             Debug.Log($"- RegisterInPipeline: {registerInPipeline}");
-            DebugCanvas(); // Chamar debug da base
+            DebugCanvas();
         }
     }
 }

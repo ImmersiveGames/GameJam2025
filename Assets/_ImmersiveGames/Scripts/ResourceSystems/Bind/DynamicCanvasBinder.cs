@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -10,14 +11,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         [SerializeField] private int initializationDelayFrames = 2;
         [SerializeField] private bool registerInPipeline = true;
 
-        // CORREÇÃO: Usar override em vez de new
         public override CanvasType Type => CanvasType.Dynamic;
 
         public override void OnDependenciesInjected()
         {
             State = CanvasInitializationState.Injecting;
             InjectionState = DependencyInjectionState.Injecting;
-            
+
             StartCoroutine(DynamicInitializationRoutine());
         }
 
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             try
             {
                 base.OnDependenciesInjected();
-                
+
                 if (CanvasPipelineManager.HasInstance)
                 {
                     CanvasPipelineManager.Instance.RegisterCanvas(this);
@@ -44,17 +44,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        // CORREÇÃO: Sobrescrever corretamente em vez de ocultar
         public override void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
         {
             if (CanAcceptBinds())
             {
-                // Se está pronto, criar slot imediatamente
                 CreateSlotForActor(actorId, resourceType, data);
             }
             else
             {
-                // Se não está pronto, usar rotina de bind atrasado
                 StartCoroutine(DelayedBindRoutine(actorId, resourceType, data));
             }
         }
@@ -79,17 +76,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             else
             {
                 DebugUtility.LogWarning<DynamicCanvasBinder>($"⏰ Timeout in delayed bind for {actorId}.{resourceType} on canvas '{CanvasId}'");
-                
-                // Fallback para o pipeline
+
                 if (CanvasPipelineManager.HasInstance)
                 {
                     CanvasPipelineManager.Instance.ScheduleBind(actorId, resourceType, data, CanvasId);
                 }
             }
         }
-
-        // CORREÇÃO: Remover métodos desnecessários - usar implementação base
-        // Os métodos CanAcceptBinds() e ForceReady() da base já são suficientes
 
         [ContextMenu("🔄 Force Dynamic Ready")]
         public void ForceDynamicReady()
@@ -105,7 +98,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             Debug.Log($"- Type: {Type}, State: {State}");
             Debug.Log($"- Injection: {InjectionState}, CanAcceptBinds: {CanAcceptBinds()}");
             Debug.Log($"- Delay Frames: {initializationDelayFrames}, RegisterInPipeline: {registerInPipeline}");
-            DebugCanvas(); // Chamar debug da base
+            DebugCanvas();
         }
     }
+
+
 }
