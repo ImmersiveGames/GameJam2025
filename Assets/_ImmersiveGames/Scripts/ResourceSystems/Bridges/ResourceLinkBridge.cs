@@ -20,68 +20,84 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (!base.TryInitializeService())
                 return false;
 
+            // CORREÇÃO: Verificar se há links para configurar
+            if (resourceLinks.Length == 0)
+            {
+                DebugUtility.LogVerbose<ResourceLinkBridge>("Nenhum link configurado. Desativando.");
+                enabled = false;
+                return true; // Não é um erro, apenas não há trabalho
+            }
+
             // Obter o serviço de links
             if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
                 DependencyManager.Instance.RegisterGlobal(_linkService);
+                DebugUtility.LogVerbose<ResourceLinkBridge>("Criado novo ResourceLinkService global");
             }
 
-            // Registrar todos os links configurados
+            // CORREÇÃO: Registrar links sem verificação IsValid (que não existe)
+            int registeredCount = 0;
             foreach (var linkConfig in resourceLinks)
             {
                 if (linkConfig != null)
                 {
                     _linkService.RegisterLink(Actor.ActorId, linkConfig);
-                    DebugUtility.LogVerbose<ResourceLinkBridge>($"Registered link: {linkConfig.sourceResource} -> {linkConfig.targetResource}");
+                    registeredCount++;
+                    DebugUtility.LogVerbose<ResourceLinkBridge>($"✅ Registered link: {linkConfig.sourceResource} -> {linkConfig.targetResource}");
+                }
+                else
+                {
+                    DebugUtility.LogWarning<ResourceLinkBridge>($"⚠️ Link config é null");
                 }
             }
 
-            OnServiceInitialized();
-            return true;
+            DebugUtility.LogVerbose<ResourceLinkBridge>($"📋 Total de links registrados: {registeredCount}/{resourceLinks.Length}");
+            return registeredCount > 0;
         }
 
         protected override void OnServiceInitialized()
         {
-            DebugUtility.LogVerbose<ResourceLinkBridge>($"ResourceLinkBridge inicializado com {resourceLinks.Length} links");
+            DebugUtility.LogVerbose<ResourceLinkBridge>($"🔗 ResourceLinkBridge inicializado com {resourceLinks.Length} links para {Actor.ActorId}");
         }
 
         protected override void OnServiceDispose()
         {
             if (_linkService == null || Actor == null) return;
+            
             _linkService.UnregisterAllLinks(Actor.ActorId);
-            DebugUtility.LogVerbose<ResourceLinkBridge>("Todos os links removidos");
+            DebugUtility.LogVerbose<ResourceLinkBridge>("🗑️ Todos os links removidos");
         }
 
         protected override void OnInitializationFailed()
         {
-            DebugUtility.LogWarning<ResourceLinkBridge>("Falha na inicialização do ResourceLinkBridge");
+            DebugUtility.LogWarning<ResourceLinkBridge>($"❌ Falha na inicialização do ResourceLinkBridge para {Actor?.ActorId}");
         }
 
-        [ContextMenu("Debug Active Links")]
+        [ContextMenu("🔗 Debug Active Links")]
         public void DebugActiveLinks()
         {
-            if (_linkService == null || Actor == null) 
+            if (_linkService == null || Actor == null || !initialized) 
             {
-                DebugUtility.LogWarning<ResourceLinkBridge>("Serviço de links ou ator não disponível");
+                DebugUtility.LogWarning<ResourceLinkBridge>("Serviço de links não disponível ou não inicializado");
                 return;
             }
 
-            DebugUtility.LogVerbose<ResourceLinkBridge>($"Active resource links for {Actor.ActorId}:");
+            DebugUtility.LogWarning<ResourceLinkBridge>($"🔗 Active resource links for {Actor.ActorId}:");
             foreach (var linkConfig in resourceLinks)
             {
                 if (linkConfig == null) continue;
                 bool isActive = _linkService.HasLink(Actor.ActorId, linkConfig.sourceResource);
-                DebugUtility.LogVerbose<ResourceLinkBridge>($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "ACTIVE" : "INACTIVE")}");
+                DebugUtility.LogWarning<ResourceLinkBridge>($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "✅ ACTIVE" : "❌ INACTIVE")}");
             }
         }
 
-        [ContextMenu("Force Re-register Links")]
+        [ContextMenu("🔄 Force Re-register Links")]
         public void ForceReregisterLinks()
         {
-            if (_linkService == null || Actor == null) 
+            if (_linkService == null || Actor == null || !initialized) 
             {
-                DebugUtility.LogWarning<ResourceLinkBridge>("Serviço de links ou ator não disponível");
+                DebugUtility.LogWarning<ResourceLinkBridge>("Serviço de links não disponível ou não inicializado");
                 return;
             }
 
@@ -97,16 +113,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 }
             }
 
-            DebugUtility.LogVerbose<ResourceLinkBridge>("Links re-registrados com sucesso");
+            DebugUtility.LogWarning<ResourceLinkBridge>("🔄 Links re-registrados com sucesso");
         }
 
-        // Métodos públicos para adicionar/remover links em tempo de execução
+        // CORREÇÃO: Métodos públicos atualizados sem IsValid
         public void AddLink(ResourceLinkConfig linkConfig)
         {
             if (_linkService != null && Actor != null && linkConfig != null)
             {
                 _linkService.RegisterLink(Actor.ActorId, linkConfig);
-                DebugUtility.LogVerbose<ResourceLinkBridge>($"Link adicionado: {linkConfig.sourceResource} -> {linkConfig.targetResource}");
+                DebugUtility.LogVerbose<ResourceLinkBridge>($"➕ Link adicionado: {linkConfig.sourceResource} -> {linkConfig.targetResource}");
             }
         }
 
@@ -115,7 +131,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_linkService != null && Actor != null)
             {
                 _linkService.UnregisterLink(Actor.ActorId, sourceResource);
-                DebugUtility.LogVerbose<ResourceLinkBridge>($"Link removido: {sourceResource}");
+                DebugUtility.LogVerbose<ResourceLinkBridge>($"➖ Link removido: {sourceResource}");
             }
         }
 
@@ -140,9 +156,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             return resourceLinks;
         }
+
+        [ContextMenu("🔧 Debug Link Bridge Status")]
         public new void DebugStatus()
         {
-            DebugUtility.LogWarning<ResourceLinkBridge>($"Link Bridge Status - Actor: {Actor?.ActorId}, Links: {resourceLinks.Length}, Service: {_linkService != null}");
+            base.DebugStatus();
+            
+            if (initialized)
+            {
+                DebugUtility.LogWarning<ResourceLinkBridge>($"🔗 Link Bridge - Links: {resourceLinks.Length}, Service: {_linkService != null}");
+            }
         }
     }
 }

@@ -29,15 +29,48 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
         {
             _effectService = effectService;
             _orchestrator = orchestrator;
-            DependencyManager.Instance.GetAll(_modifiers);
+            if (_orchestrator == null)
+            {
+                DependencyManager.Instance.TryGetGlobal(out _orchestrator);
+            }
+            
+            // CORREÇÃO: Obter modificadores de forma segura
+            try
+            {
+                DependencyManager.Instance.GetAll(_modifiers);
+                DebugUtility.LogVerbose<DamageService>($"Carregados {_modifiers.Count} modificadores de dano");
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogWarning<DamageService>($"Erro ao carregar modificadores de dano: {ex.Message}");
+            }
+
+            // CORREÇÃO: Registrar-se como serviço global
+            if (!DependencyManager.Instance.TryGetGlobal(out DamageService _))
+            {
+                DependencyManager.Instance.RegisterGlobal(this);
+                DebugUtility.LogVerbose<DamageService>("DamageService registrado globalmente");
+            }
         }
 
         public float CalculateFinalDamage(DamageContext ctx)
         {
             if (ctx == null) return 0f;
             float modified = ctx.Amount;
+            
+            // CORREÇÃO: Aplicar modificadores de forma segura
             foreach (var mod in _modifiers)
-                modified = mod.Modify(ctx);
+            {
+                try
+                {
+                    modified = mod.Modify(ctx);
+                }
+                catch (System.Exception ex)
+                {
+                    DebugUtility.LogError<DamageService>($"Erro no modificador {mod.GetType().Name}: {ex.Message}");
+                }
+            }
+            
             return Mathf.Max(0f, modified);
         }
 
@@ -60,6 +93,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
             }
         }
 
+        // CORREÇÃO: Este método não é mais usado pelo DamageReceiver, mas mantido para compatibilidade
         public bool TryApplyToResourceSystem(DamageContext ctx)
         {
             if (ctx?.Target == null) return false;
@@ -84,25 +118,27 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
             }
 
             if (_orchestrator == null) return false;
+            
+            try
             {
-                try
+                var resourceSystem = _orchestrator.GetActorResourceSystem(targetId);
+                if (resourceSystem != null)
                 {
-                    if (_orchestrator.TryGetActorResource(targetId, out var orchestrator))
-                    {
-                        orchestrator.Modify(ctx.ResourceType, -ctx.Amount);
-                        DebugUtility.LogVerbose<DamageService>($"Applied damage via Orchestrator for {targetId}: {ctx.Amount}");
-                        return true;
-                    }
+                    resourceSystem.Modify(ctx.ResourceType, -ctx.Amount);
+                    DebugUtility.LogVerbose<DamageService>($"Applied damage via Orchestrator for {targetId}: {ctx.Amount}");
+                    return true;
                 }
-                catch (System.Exception ex)
-                {
-                    DebugUtility.LogError<DamageService>($"TryApplyToResourceSystem error (Orchestrator) for {targetId}: {ex}");
-                }
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError<DamageService>($"TryApplyToResourceSystem error (Orchestrator) for {targetId}: {ex}");
             }
 
             return false;
         }
     }
+
+    // CORREÇÃO: Manter as classes de contexto e enum no mesmo arquivo para organização
     public class DamageContext
     {
         public IActor Source { get; set; }
@@ -112,6 +148,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Services
         public ResourceType ResourceType { get; set; } = ResourceType.Health;
         public Vector3 HitPosition { get; set; } = Vector3.zero;
     }
+
     public enum DamageType
     {
         Physical,

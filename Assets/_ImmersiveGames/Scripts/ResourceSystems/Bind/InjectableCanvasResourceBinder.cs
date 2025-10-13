@@ -11,7 +11,7 @@ using UnityEngine.Pool;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
-    public class InjectableCanvasResourceBinder : MonoBehaviour, ICanvasBinder 
+    public abstract class InjectableCanvasResourceBinder : MonoBehaviour, ICanvasBinder 
     {
         [Header("Identification")]
         [SerializeField] private string canvasId;
@@ -162,34 +162,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 StartCoroutine(DelayedBind(actorId, resourceType, data, instanceConfig, maxBindWaitSeconds));
             }
         }
-
-        private ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
-        {
-            try
-            {
-                ResourceSystem actorSvc = null;
-                if (_orchestrator != null)
-                {
-                    actorSvc = _orchestrator.GetActorResourceSystem(actorId);
-                }
-                else
-                {
-                    DependencyManager.Instance.TryGetForObject(actorId, out actorSvc);
-                }
-
-                return actorSvc?.GetInstanceConfig(resourceType);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error resolving config for {actorId}.{resourceType}: {ex}");
-                return null;
-            }
-        }
+        
 
         private IEnumerator DelayedBind(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig, float timeoutSeconds)
         {
             float startTime = Time.time;
-            
+    
             while (!CanAcceptBinds() && (Time.time - startTime) < timeoutSeconds)
             {
                 yield return null;
@@ -197,12 +175,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             if (CanAcceptBinds())
             {
+                // CORREÇÃO CRÍTICA: Se instanceConfig for null, resolver novamente
+                if (instanceConfig == null)
+                {
+                    instanceConfig = ResolveInstanceConfig(actorId, resourceType);
+                    Debug.Log($"[CanvasBinder] 🔄 DelayedBind - Retried resolving config: {instanceConfig != null}, Style: {instanceConfig?.slotStyle != null}");
+                }
                 CreateSlotForActor(actorId, resourceType, data, instanceConfig);
             }
             else
             {
                 DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Timeout binding {actorId}.{resourceType} to Canvas '{CanvasId}'");
-                // Fallback: reencaminhar para o pipeline
                 FallbackToPipeline(actorId, resourceType, data);
             }
         }
@@ -244,6 +227,48 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 $"{gameObject.scene.name}_{gameObject.name}";
 
             DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Canvas ID resolved: {_canvasIdResolved}");
+        }
+        public ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
+        {
+            Debug.Log($"[CanvasBinder] 🔍 ResolveInstanceConfig - Actor: {actorId}, Resource: {resourceType}");
+
+            try
+            {
+                ResourceSystem actorSvc = null;
+
+                // Tentar via Orchestrator primeiro
+                if (_orchestrator != null)
+                {
+                    actorSvc = _orchestrator.GetActorResourceSystem(actorId);
+                    Debug.Log($"[CanvasBinder]   - Via Orchestrator: {actorSvc != null}");
+                }
+
+                // Fallback: tentar via DependencyManager
+                if (actorSvc == null)
+                {
+                    DependencyManager.Instance.TryGetForObject(actorId, out actorSvc);
+                    Debug.Log($"[CanvasBinder]   - Via DependencyManager: {actorSvc != null}");
+                }
+
+                if (actorSvc != null)
+                {
+                    var config = actorSvc.GetInstanceConfig(resourceType);
+                    Debug.Log($"[CanvasBinder]   - Config from ResourceSystem: {config != null}");
+                    Debug.Log($"[CanvasBinder]   - Style from Config: {config?.slotStyle != null} ({config?.slotStyle?.name})");
+                    return config;
+                }
+                else
+                {
+                    Debug.LogWarning($"[CanvasBinder]   - ❌ ResourceSystem not found for actor {actorId}");
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ Error resolving instance config for {actorId}.{resourceType}: {ex}");
+                return null;
+            }
         }
         
         private void InitializePool()
@@ -323,15 +348,25 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         
         public void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
         {
+            // CORREÇÃO CRÍTICA: Garantir que instanceConfig seja resolvido se não fornecido
+            if (instanceConfig == null)
+            {
+                instanceConfig = ResolveInstanceConfig(actorId, resourceType);
+                Debug.Log($"[CanvasBinder] 🔄 CreateSlotForActor - Resolved config on demand: {instanceConfig != null}, Style: {instanceConfig?.slotStyle != null}");
+            }
+
+            Debug.Log($"[CanvasBinder] 🎯 CreateSlotForActor - Actor: {actorId}, Resource: {resourceType}");
+            Debug.Log($"[CanvasBinder]   - InstanceConfig provided: {instanceConfig != null}");
+            Debug.Log($"[CanvasBinder]   - Style: {instanceConfig?.slotStyle != null} ({instanceConfig?.slotStyle?.name})");
             if (string.IsNullOrEmpty(actorId))
             {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"CreateSlotForActor called with empty actorId");
+                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ CreateSlotForActor called with null/empty actorId on Canvas '{CanvasId}'");
                 return;
             }
 
             if (slotPrefab == null)
             {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Cannot create slot - slotPrefab is null");
+                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ Cannot create slot for {actorId}.{resourceType} because slotPrefab is null on Canvas '{CanvasId}'");
                 return;
             }
 
@@ -505,6 +540,35 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                         var rect = slot.GetComponent<RectTransform>();
                         var canvas = slot.GetComponent<Canvas>();
                         DebugUtility.Log<InjectableCanvasResourceBinder>($"    - {resourceType}: Pos={rect.anchoredPosition}, Order={canvas?.sortingOrder ?? 0}");
+                    }
+                }
+            }
+        }
+        [ContextMenu("🔍 DEBUG STYLE FLOW")]
+        public void DebugStyleFlow()
+        {
+            Debug.Log($"🎨 STYLE FLOW DEBUG: '{CanvasId}'");
+    
+            DependencyManager.Instance.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator);
+            var actorIds = orchestrator.GetRegisteredActorIds();
+    
+            foreach (var actorId in actorIds)
+            {
+                Debug.Log($"\n👤 Actor: {actorId}");
+                foreach (ResourceType resourceType in System.Enum.GetValues(typeof(ResourceType)))
+                {
+                    var config = ResolveInstanceConfig(actorId, resourceType);
+                    if (config != null)
+                    {
+                        Debug.Log($"   - {resourceType}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
+                
+                        // Verificar se o slot existe e qual estilo está aplicado
+                        if (_actorSlots.TryGetValue(actorId, out var actorSlots) && 
+                            actorSlots.TryGetValue(resourceType, out var slot) && slot != null)
+                        {
+                            var slotConfig = slot.GetInstanceConfig();
+                            Debug.Log($"     Slot Style: {slotConfig?.slotStyle != null} ({slotConfig?.slotStyle?.name})");
+                        }
                     }
                 }
             }

@@ -55,8 +55,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 }
             }
         }
-
-        // CORREÇÃO: Remover métodos desnecessários - usar implementação base
+        
 
         [ContextMenu("🔄 Force Scene Ready")]
         public void ForceSceneReady()

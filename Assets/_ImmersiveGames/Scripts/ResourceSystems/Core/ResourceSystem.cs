@@ -143,13 +143,29 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);
         public IReadOnlyDictionary<ResourceType, IResourceValue> GetAll() => _resources;
-        public ResourceInstanceConfig GetInstanceConfig(ResourceType type) => _instanceConfigs.GetValueOrDefault(type);
+        // E modifique o GetInstanceConfig para debug:
+        public ResourceInstanceConfig GetInstanceConfig(ResourceType resourceType)
+        {
+            _instanceConfigs.TryGetValue(resourceType, out var config);
+            Debug.Log($"[ResourceSystem] GetInstanceConfig - {EntityId}.{resourceType}: Found={config != null}, Style={config?.slotStyle != null}");
+            return config;
+        }
 
         public void Dispose()
         {
             _resources.Clear();
             _instanceConfigs.Clear();
             ResourceUpdated = null;
+        }
+        [ContextMenu("🔍 Debug Instance Configs")]
+        public void DebugInstanceConfigs()
+        {
+            Debug.Log($"[ResourceSystem] 🔍 Instance Configs for {EntityId}:");
+            foreach (var kvp in _instanceConfigs)
+            {
+                var config = kvp.Value;
+                Debug.Log($"  - {kvp.Key}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
+            }
         }
     }
 }

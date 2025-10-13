@@ -111,12 +111,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             if (sourceResource == null || targetResource == null) return;
 
-            // Verificar condições de transferência
+            // CORREÇÃO: Apenas log para debug - a transferência real é feita no AutoFlowService
             if (linkConfig.ShouldTransfer(sourceResource.GetCurrentValue(), sourceResource.GetMaxValue()))
             {
                 DebugUtility.LogVerbose<ResourceLinkService>(
                     $"Link ativado: {evt.ActorId} - {linkConfig.sourceResource} -> {linkConfig.targetResource}");
             }
+    
+            // NOTA: A transferência real de recursos é tratada no ResourceAutoFlowService.ProcessDrainWithLinks()
+            // Este método apenas monitora e loga a ativação dos links
         }
 
         public void Dispose()

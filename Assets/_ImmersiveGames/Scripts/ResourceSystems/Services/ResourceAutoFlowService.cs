@@ -162,9 +162,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             // Verificar se há link para este recurso
             var linkConfig = _linkService.GetLink(_resourceSystem.EntityId, resourceType);
+    
+            // CORREÇÃO: Remover verificação de affectTargetWithAutoFlow se não for necessária
             if (linkConfig == null || !linkConfig.affectTargetWithAutoFlow)
             {
-                // Comportamento normal se não há link ou não afeta auto-flow
+                // Comportamento normal se não há link
                 return desiredDrain;
             }
 

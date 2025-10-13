@@ -20,11 +20,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         private IResourceSlotStrategy _slotStrategy;
     
-        // ESTADO CORRETO: 
         private float _currentFill;
         private float _previousFill;
         private string _currentText = "";
-        private bool _isFirstConfigure = true; // NOVO: Flag para primeira configuração
+        private bool _isFirstConfigure = true;
+        private ResourceUIStyle _currentStyle;
     
         public ResourceType Type { get; private set; }
         private ResourceInstanceConfig InstanceConfig { get; set; }
@@ -33,7 +33,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public TextMeshProUGUI ValueText => valueText;
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
-        
 
         private void Awake()
         {
@@ -45,25 +44,52 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             Type = type;
             InstanceConfig = config;
+            _currentStyle = config?.slotStyle;
+
+            // Aplicar estilo básico imediatamente
+            ApplyBaseStyleImmediate();
         
             // Usa factory se disponível
             _slotStrategy = DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory) 
                 ? factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant) 
                 : CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
+
+            // CORREÇÃO: Log da estratégia criada
+            DebugUtility.LogVerbose<ResourceUISlot>($"🎯 Strategy created: {_slotStrategy.GetType().Name} for {config?.fillAnimationType ?? FillAnimationType.Instant}");
         
             if (InstanceConfig?.resourceDefinition != null && iconImage != null)
                 iconImage.sprite = InstanceConfig.resourceDefinition.icon;
             
             gameObject.name = $"{actorId}_{type}";
         
-            // Estado inicial - CORREÇÃO: Inicializar com valores realistas
-            _currentFill = 1f; // Começar com 100% (valor real)
+            // Estado inicial
+            _currentFill = 1f;
             _previousFill = 1f;
             
-            // Aplicar visuals imediatamente com valor inicial correto
+            // Aplicar visuals imediatamente
             ApplyVisualsImmediate();
             
-            DebugUtility.LogVerbose<ResourceUISlot>($"✅ Slot initialized for {actorId}.{type} - Initial Fill: {_currentFill}");
+            DebugUtility.LogVerbose<ResourceUISlot>($"✅ Slot initialized for {actorId}.{type} - Style: {_currentStyle?.name ?? "None"}");
+        }
+
+        // NOVO: Método melhorado para aplicar estilo base
+        private void ApplyBaseStyleImmediate()
+        {
+            if (_currentStyle == null) return;
+
+            DebugUtility.LogVerbose<ResourceUISlot>($"🎨 Applying base style: {_currentStyle.name}");
+
+            // Aplicar cores básicas apenas se não forem sobrescritas pela estratégia
+            if (pendingFillImage != null && _currentStyle.pendingColor != default)
+            {
+                pendingFillImage.color = _currentStyle.pendingColor;
+            }
+
+            // CORREÇÃO: Garantir que as imagens estão com os valores iniciais corretos
+            if (fillImage != null) 
+                fillImage.fillAmount = 1f;
+            if (pendingFillImage != null) 
+                pendingFillImage.fillAmount = 0f;
         }
 
         private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
@@ -84,15 +110,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             float newValue = data.GetPercentage();
         
-            DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, First: {_isFirstConfigure}");
+            DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
         
-            // LÓGICA CORRETA:
             _previousFill = _currentFill;
             _currentFill = newValue;
-
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
         
-            // CORREÇÃO: Primeira configuração precisa de tratamento especial
+            // CORREÇÃO: Verificar se o estilo mudou
+            if (InstanceConfig?.slotStyle != _currentStyle)
+            {
+                _currentStyle = InstanceConfig?.slotStyle;
+                ApplyBaseStyleImmediate();
+            }
+        
             if (_isFirstConfigure)
             {
                 ApplyVisualsImmediate();
@@ -108,30 +138,32 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public ResourceInstanceConfig GetInstanceConfig() => InstanceConfig;
 
-        // NOVO: Método para aplicação imediata (sem animação)
         private void ApplyVisualsImmediate()
         {
-            var style = InstanceConfig?.slotStyle;
-        
-            DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}");
+            DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
             
-            // Usar estratégia instantânea para primeira aplicação
             var instantStrategy = new InstantSlotStrategy();
-            instantStrategy.ApplyFill(this, _currentFill, _currentFill, style);
-            instantStrategy.ApplyText(this, _currentText, style);
+            instantStrategy.ApplyFill(this, _currentFill, _currentFill, _currentStyle);
+            instantStrategy.ApplyText(this, _currentText, _currentStyle);
             
-            // Limpar qualquer animação pendente
             ClearAllTween();
         }
 
         private void ApplyVisuals()
         {
-            var style = InstanceConfig?.slotStyle;
+            DebugUtility.LogVerbose<ResourceUISlot>($"🎨 ApplyVisuals: {Type} - Current: {_currentFill}, Previous: {_previousFill}, Style: {_currentStyle?.name}");
         
-            DebugUtility.LogVerbose<ResourceUISlot>($"🎨 ApplyVisuals: {Type} - Current: {_currentFill}, Previous: {_previousFill}");
-        
-            _slotStrategy.ApplyFill(this, _currentFill, _previousFill, style);
-            _slotStrategy.ApplyText(this, _currentText, style);
+            _slotStrategy.ApplyFill(this, _currentFill, _previousFill, _currentStyle);
+            _slotStrategy.ApplyText(this, _currentText, _currentStyle);
+        }
+
+        // MÉTODO ADICIONAL: Forçar reaplicação do estilo
+        public void RefreshStyle()
+        {
+            _currentStyle = InstanceConfig?.slotStyle;
+            ApplyBaseStyleImmediate();
+            ApplyVisualsImmediate();
+            DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Style refreshed: {Type} - {_currentStyle?.name}");
         }
 
         public void Clear()
@@ -141,6 +173,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _currentFill = 0f;
             _previousFill = 0f;
             _isFirstConfigure = true;
+            _currentStyle = null;
             SetVisible(false);
         }
 
@@ -149,25 +182,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (rootPanel != null) rootPanel.SetActive(visible);
         }
 
-        // NOVO: Método para forçar atualização visual
         [ContextMenu("Force Visual Update")]
         public void ForceVisualUpdate()
         {
+            ApplyBaseStyleImmediate();
             ApplyVisualsImmediate();
-            DebugUtility.LogVerbose<ResourceUISlot>($"🔧 ForceVisualUpdate: {Type} - Fill: {_currentFill}");
+            DebugUtility.LogVerbose<ResourceUISlot>($"🔧 ForceVisualUpdate: {Type} - Fill: {_currentFill}, Style: {_currentStyle?.name}");
         }
 
-        // NOVO: Método para debug do estado interno
         [ContextMenu("Debug Slot State")]
         public void DebugSlotState()
         {
             DebugUtility.LogWarning<ResourceUISlot>(
                 $"🔍 Slot Debug - {Type}:\n" +
                 $"Current Fill: {_currentFill}\n" +
-                $"Previous Fill: {_previousFill}\n" +
-                $"First Configure: {_isFirstConfigure}\n" +
-                $"Fill Image: {fillImage != null} (amount: {fillImage?.fillAmount})\n" +
-                $"Pending Image: {pendingFillImage != null} (amount: {pendingFillImage?.fillAmount})"
+                $"Style: {_currentStyle?.name ?? "None"}\n" +
+                $"Fill Image: {fillImage != null} (color: {fillImage?.color}, amount: {fillImage?.fillAmount})\n" +
+                $"Pending Image: {pendingFillImage != null} (color: {pendingFillImage?.color}, amount: {pendingFillImage?.fillAmount})"
             );
         }
 

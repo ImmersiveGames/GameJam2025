@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
     public class EntityResourceDebug : MonoBehaviour, IInjectableComponent
     {
         [Header("Test Settings")]
-        [SerializeField] private bool autoTestOnReady = true;
+        [SerializeField] private bool autoTestOnReady = false;
         [SerializeField] private float testDamage = 10f;
         [SerializeField] private float initializationDelay = 0.5f; // CORREÇÃO: Delay para garantir registro
 

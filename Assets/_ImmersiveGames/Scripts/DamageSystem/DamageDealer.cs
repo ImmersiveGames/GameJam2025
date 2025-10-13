@@ -28,10 +28,35 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private float _nextAvailableTime;
         private readonly HashSet<GameObject> _processedTargetsThisFrame = new HashSet<GameObject>();
 
+        // CORREÇÃO: Injeção de dependência melhorada
+        private DamageService _damageService;
+        private bool _serviceInitialized;
+
         public event System.Action<float, IDamageable> OnDamageDealt;
         public event System.Action<IDamageable> OnDamageBlocked;
 
-        [Inject] private DamageService _damageService;
+        protected override void Awake()
+        {
+            base.Awake();
+            InitializeDamageService();
+        }
+
+        // CORREÇÃO: Inicialização do DamageService
+        private void InitializeDamageService()
+        {
+            if (DependencyManager.Instance.TryGetGlobal(out _damageService))
+            {
+                _serviceInitialized = true;
+                DebugUtility.LogVerbose<DamageDealer>("DamageService obtido via DependencyManager");
+            }
+            else
+            {
+                // Fallback: criar serviço local
+                _damageService = new DamageService();
+                _serviceInitialized = true;
+                DebugUtility.LogVerbose<DamageDealer>("DamageService criado localmente");
+            }
+        }
 
         private void OnCollisionEnter(Collision other) => TryDealDamage(other.gameObject, other.contacts[0].point);
         private void OnTriggerEnter(Collider other) => TryDealDamage(other.gameObject, other.ClosestPoint(transform.position));
@@ -44,11 +69,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void TryDealDamage(GameObject target, Vector3 contactPoint)
         {
+            // CORREÇÃO: Verificar se o serviço está inicializado
+            if (!_serviceInitialized)
+            {
+                DebugUtility.LogWarning<DamageDealer>("DamageService não inicializado, pulando dano");
+                return;
+            }
+
             if (_processedTargetsThisFrame.Contains(target) || HasProcessedPair(gameObject, target))
             {
                 DebugUtility.LogVerbose<DamageDealer>($"[Dealer {gameObject.name}] Target {target.name} já processado neste frame, pulando");
                 return;
             }
+            
             _processedTargetsThisFrame.Add(target);
             RegisterProcessedPair(gameObject, target);
 
@@ -118,6 +151,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         public void ForceDealDamage(GameObject target, Vector3 hitPoint) => TryDealDamage(target, hitPoint);
 
+        [ContextMenu("🔧 Debug Deal Damage")]
         public void DebugDealDamageTo(GameObject target)
         {
             if (target == null) return;
