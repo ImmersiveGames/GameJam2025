@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
+namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     public interface IActorResourceOrchestrator
     {
@@ -23,9 +22,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         void UnregisterCanvas(string canvasId);
     
         // NOVOS: Métodos para canvas
-        bool IsCanvasRegistered(string canvasId);
-        IReadOnlyCollection<string> GetRegisteredCanvasIds();
+        //bool IsCanvasRegistered(string canvasId);
+        //IReadOnlyCollection<string> GetRegisteredCanvasIds();
+        bool IsCanvasRegisteredForActor(string actorId);
     }
+
     public class ActorResourceOrchestratorService : IActorResourceOrchestrator, IInjectableComponent
     {
         private readonly Dictionary<string, ResourceSystem> _actors = new();
@@ -131,7 +132,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"📦 Cached initial slot for {actorId}.{resourceType} -> {targetCanvasId}");
         }
 
-
         public void RegisterCanvas(ICanvasBinder canvas)
         {
             if (canvas == null) return;
@@ -142,72 +142,44 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 return;
             }
 
+            DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"✅ Canvas '{canvas.CanvasId}' registered");
+
             ProcessPendingFirstUpdatesForCanvas(canvas.CanvasId);
-            CreateSlotsForCanvas(canvas);
-
-            DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"Registered canvas '{canvas.CanvasId}'");
-        }
-
-        private void CreateSlotsForCanvas(ICanvasBinder canvas)
-        {
-            if (canvas == null) return;
-
-            foreach (var actor in _actors.Values)
-            {
-                foreach (var (resourceType, resourceValue) in actor.GetAll())
-                {
-                    var instanceConfig = actor.GetInstanceConfig(resourceType);
-                    string targetCanvasId = ResolveTargetCanvasId(instanceConfig, actor.EntityId, resourceType);
-
-                    if (targetCanvasId == canvas.CanvasId)
-                    {
-                        ScheduleBindForActor(actor.EntityId, resourceType, resourceValue, targetCanvasId);
-                    }
-                }
-            }
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
         {
-            if (!_actors.TryGetValue(evt.ActorId, out var actorSvc)) return;
-
-            var instCfg = actorSvc.GetInstanceConfig(evt.ResourceType);
-            string targetCanvasId = ResolveTargetCanvasId(instCfg, evt.ActorId, evt.ResourceType);
+            var cacheKey = (evt.ActorId, evt.ResourceType);
+            string targetCanvasId = _canvasIdCache.GetValueOrDefault(cacheKey) ?? ResolveTargetCanvasId(null, evt.ActorId, evt.ResourceType);
 
             if (string.IsNullOrEmpty(targetCanvasId)) return;
 
-            var firstUpdateKey = (evt.ActorId, evt.ResourceType);
-
-            if (_processedFirstUpdates.Add(firstUpdateKey))
+            if (IsCanvasReady(targetCanvasId))
             {
-                DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"🎯 FIRST UPDATE for {evt.ActorId}.{evt.ResourceType}");
-
-                if (!IsCanvasReady(targetCanvasId))
-                {
-                    CacheFirstUpdate(evt, targetCanvasId);
-                    return;
-                }
+                ScheduleBindForActor(evt.ActorId, evt.ResourceType, evt.NewValue, targetCanvasId);
             }
-
-            // Always schedule bind for updates
-            ScheduleBindForActor(evt.ActorId, evt.ResourceType, evt.NewValue, targetCanvasId);
+            else
+            {
+                CachePendingFirstUpdate(evt, targetCanvasId);
+            }
         }
 
-        private void CacheFirstUpdate(ResourceUpdateEvent evt, string targetCanvasId)
+        private void CachePendingFirstUpdate(ResourceUpdateEvent evt, string targetCanvasId)
         {
-            if (!_pendingFirstUpdates.ContainsKey(targetCanvasId))
+            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out var canvasUpdates))
             {
-                _pendingFirstUpdates[targetCanvasId] = new Dictionary<string, ResourceUpdateEvent>();
+                canvasUpdates = new Dictionary<string, ResourceUpdateEvent>();
+                _pendingFirstUpdates[targetCanvasId] = canvasUpdates;
             }
-    
-            _pendingFirstUpdates[targetCanvasId][evt.ActorId] = evt;
 
-            // NOVO: registrar no hub
+            string key = $"{evt.ActorId}_{evt.ResourceType}";
+            canvasUpdates[key] = evt;
+
+            // Registrar no hub para pendentes
             try
             {
-                var request = new ResourceEventHub.CanvasBindRequest(evt.ActorId, evt.ResourceType, evt.NewValue, targetCanvasId);
-                ResourceEventHub.RegisterPendingBind(request);
-                DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"📦 (Hub) Registered pending first update for {evt.ActorId}.{evt.ResourceType} -> {targetCanvasId}");
+                var bindRequest = new ResourceEventHub.CanvasBindRequest(evt.ActorId, evt.ResourceType, evt.NewValue, targetCanvasId);
+                ResourceEventHub.RegisterPendingBind(bindRequest);
             }
             catch (Exception ex)
             {
@@ -216,7 +188,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"📦 Cached first update for {evt.ActorId}.{evt.ResourceType} -> {targetCanvasId}");
         }
-
 
         private void ScheduleBindForActor(string actorId, ResourceType resourceType, IResourceValue data, string targetCanvasId)
         {
@@ -318,6 +289,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         public bool IsActorRegistered(string actorId) => _actors.ContainsKey(actorId);
 
         public IReadOnlyCollection<string> GetRegisteredActorIds() => _actors.Keys;
+        
+        public bool IsCanvasRegisteredForActor(string actorId)
+        {
+            return _canvases.Values.Any(canvas => canvas.GetActorSlots().ContainsKey(actorId));
+        }
 
         public void UnregisterCanvas(string canvasId)
         {
@@ -334,26 +310,5 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         public bool IsCanvasRegistered(string canvasId) => _canvases.ContainsKey(canvasId);
 
         public IReadOnlyCollection<string> GetRegisteredCanvasIds() => _canvases.Keys;
-        public void DebugActorRegistration(string actorId)
-        {
-            Debug.Log($"[Orchestrator] 🎭 DEBUG ACTOR REGISTRATION: {actorId}");
-            Debug.Log($"- Is Registered: {_actors.ContainsKey(actorId)}");
-            Debug.Log($"- Total Actors: {_actors.Count}");
-
-            if (_actors.TryGetValue(actorId, out var resourceSystem))
-            {
-                Debug.Log($"- ResourceSystem: {resourceSystem != null}");
-                Debug.Log($"- EntityId: {resourceSystem?.EntityId}");
-
-                var health = resourceSystem?.Get(ResourceType.Health);
-                Debug.Log($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
-            }
-            else
-            {
-                Debug.Log($"- Actor NOT found in _actors dictionary");
-                Debug.Log($"- Available actors: {string.Join(", ", _actors.Keys)}");
-            }
-        }
     }
-
 }

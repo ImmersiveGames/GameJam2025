@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityUtils;
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
+namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     public class ResourceInitializationManager : PersistentSingleton<ResourceInitializationManager>
     {

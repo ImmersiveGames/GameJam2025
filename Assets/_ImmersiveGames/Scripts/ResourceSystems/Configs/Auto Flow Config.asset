@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14c2176ee76043959b47fbc0ab47eb0b, type: 3}
   m_Name: Auto Flow Config
   m_EditorClassIdentifier: 
-  resourceType: 0
   autoFill: 0
   autoDrain: 1
   tickInterval: 1

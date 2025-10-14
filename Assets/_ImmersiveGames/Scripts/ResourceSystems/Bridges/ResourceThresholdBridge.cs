@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
@@ -11,14 +11,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public class ResourceThresholdBridge : ResourceBridgeBase
     {
         private ResourceThresholdService _thresholdService;
-        private EventBinding<ResourceThresholdEvent>? _thresholdBinding;
+        private EventBinding<ResourceThresholdEvent> _thresholdBinding;
 
         protected override bool TryInitializeService()
         {
             if (!base.TryInitializeService())
                 return false;
 
-            // CORREÇÃO: Verificação mais robusta
             if (resourceSystem == null)
             {
                 DebugUtility.LogWarning<ResourceThresholdBridge>("ResourceSystem é null na inicialização do Threshold");
@@ -35,18 +34,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _thresholdService = new ResourceThresholdService(resourceSystem);
             DebugUtility.LogVerbose<ResourceThresholdBridge>($"✅ ThresholdService criado com {allResources.Count} recursos");
 
-            // CORREÇÃO: Verificar se há thresholds configurados
             bool hasThresholds = CheckForThresholdConfigurations();
             if (!hasThresholds)
             {
                 DebugUtility.LogVerbose<ResourceThresholdBridge>("Nenhum threshold configurado. Serviço criado mas sem trabalho.");
             }
 
-            // Cria binding usando EventBinding
             _thresholdBinding = new EventBinding<ResourceThresholdEvent>(OnThresholdEvent);
-            EventBus<ResourceThresholdEvent>.Register(_thresholdBinding);
+            FilteredEventBus<ResourceThresholdEvent>.Register(_thresholdBinding, Actor.ActorId); // Registrado com scope = actorId
 
-            DebugUtility.LogVerbose<ResourceThresholdBridge>("✅ Threshold event binding registrado");
+            DebugUtility.LogVerbose<ResourceThresholdBridge>("✅ Threshold event binding registrado com scope");
             return true;
         }
 
@@ -64,26 +61,36 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceThresholdBridge>(
                 $"🔔 Threshold cruzado: {evt.ResourceType} -> {evt.Threshold:P0} ({(evt.IsAscending ? "↑" : "↓")})");
 
-            // Emite evento visual opcional para UI
+            // Emite evento visual opcional para UI, integrável com pooling
             EventBus<ResourceVisualFeedbackEvent>.Raise(
                 new ResourceVisualFeedbackEvent(evt.ActorId, evt.ResourceType, evt.Threshold, evt.IsAscending));
         }
 
         protected override void OnServiceDispose()
         {
-            if (_thresholdBinding != null)
-            {
-                EventBus<ResourceThresholdEvent>.Unregister(_thresholdBinding);
-                _thresholdBinding = null;
-                DebugUtility.LogVerbose<ResourceThresholdBridge>("Threshold event binding removido");
-            }
+            FilteredEventBus<ResourceThresholdEvent>.Unregister(Actor.ActorId); // Unregister com scope
 
             _thresholdService?.Dispose();
             _thresholdService = null;
             DebugUtility.LogVerbose<ResourceThresholdBridge>("ThresholdService disposed");
         }
 
-        private bool CheckForThresholdConfigurations()
+        protected override void Update()
+        {
+            base.Update();
+
+            if (initialized && _thresholdService != null && _orchestrator.IsCanvasRegisteredForActor(Actor.ActorId))
+            {
+                // Lógica passiva - já é gerenciada por eventos filtrados
+            }
+        }
+        // Novo método para debug
+        public bool HasThresholdBinding()
+        {
+            return _thresholdBinding != null;
+        }
+
+        internal bool CheckForThresholdConfigurations()
         {
             if (resourceSystem == null) return false;
 
@@ -119,30 +126,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             else
             {
                 DebugUtility.LogWarning<ResourceThresholdBridge>("❌ Não foi possível forçar verificação - serviço não inicializado");
-            }
-        }
-
-        [ContextMenu("📊 Debug Threshold Status")]
-        public void DebugThresholdStatus()
-        {
-            base.DebugStatus();
-            
-            if (initialized && resourceSystem != null)
-            {
-                DebugUtility.LogWarning<ResourceThresholdBridge>($"📊 Threshold Service Status:");
-                DebugUtility.LogWarning<ResourceThresholdBridge>($" - Resources: {resourceSystem.GetAll().Count}");
-                DebugUtility.LogWarning<ResourceThresholdBridge>($" - Has Thresholds: {CheckForThresholdConfigurations()}");
-                DebugUtility.LogWarning<ResourceThresholdBridge>($" - Event Binding: {_thresholdBinding != null}");
-                
-                // Listar recursos com thresholds
-                foreach (var (resourceType, _) in resourceSystem.GetAll())
-                {
-                    var config = resourceSystem.GetInstanceConfig(resourceType);
-                    if (config?.thresholdConfig != null && config.thresholdConfig.thresholds.Length > 0)
-                    {
-                        DebugUtility.LogWarning<ResourceThresholdBridge>($"   - {resourceType}: {config.thresholdConfig.thresholds.Length} thresholds");
-                    }
-                }
             }
         }
     }

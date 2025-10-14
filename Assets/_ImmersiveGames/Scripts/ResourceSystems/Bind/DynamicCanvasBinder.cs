@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -90,17 +91,5 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             ForceReady();
             DebugUtility.LogWarning<DynamicCanvasBinder>($"Dynamic canvas '{CanvasId}' forced to ready state");
         }
-
-        [ContextMenu("🔍 DEBUG DYNAMIC CANVAS")]
-        public void DebugDynamicCanvas()
-        {
-            Debug.Log($"🎭 DYNAMIC CANVAS: '{CanvasId}'");
-            Debug.Log($"- Type: {Type}, State: {State}");
-            Debug.Log($"- Injection: {InjectionState}, CanAcceptBinds: {CanAcceptBinds()}");
-            Debug.Log($"- Delay Frames: {initializationDelayFrames}, RegisterInPipeline: {registerInPipeline}");
-            DebugCanvas();
-        }
     }
-
-
 }

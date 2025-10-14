@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Bind;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 {

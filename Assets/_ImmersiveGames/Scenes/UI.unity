@@ -395,9 +395,6 @@ MonoBehaviour:
   dynamicSlotsParent: {fileID: 1766904432}
   initialPoolSize: 1
   canvasType: 0
-  canvasPositionOffset: {x: 0, y: 0, z: 0}
-  canvasRotationOffset: {x: 0, y: 0, z: 0}
-  applyOffsetOnStart: 1
   maxBindWaitSeconds: 2
   registerInPipeline: 1
 --- !u!114 &1766904438
@@ -793,7 +790,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &8683001147606837925
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -812,9 +809,6 @@ MonoBehaviour:
   dynamicSlotsParent: {fileID: 6969473263955335583}
   initialPoolSize: 1
   canvasType: 0
-  canvasPositionOffset: {x: 0, y: 0, z: 0}
-  canvasRotationOffset: {x: 0, y: 0, z: 0}
-  applyOffsetOnStart: 1
   maxBindWaitSeconds: 2
   registerInPipeline: 1
 --- !u!114 &8683001147606837926

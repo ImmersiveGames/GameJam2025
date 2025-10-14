@@ -3,45 +3,67 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
-    /// Serviço puro para autoflow (regen/drain).
-    /// Chamado via Process(deltaTime) pelo bridge.
-    /// Aplica mudanças por ResourceSystem. Modify(...) para garantir fluxo único de alterações.
+    /// Evento para efeitos visuais de auto flow (ex.: partículas pooled).
+    /// </summary>
+    public class AutoFlowEffectEvent : IEvent
+    {
+        public string ActorId { get; }
+        public ResourceType ResourceType { get; }
+        public float Delta { get; }
+        public Vector3 Position { get; } // Posição para efeito visual (ex.: de SkinSystem)
+
+        public AutoFlowEffectEvent(string actorId, ResourceType resourceType, float delta, Vector3 position)
+        {
+            ActorId = actorId;
+            ResourceType = resourceType;
+            Delta = delta;
+            Position = position;
+        }
+    }
+
+    /// <summary>
+    /// Serviço puro para auto flow (regen/drain), integrado com bind e pooling para efeitos.
     /// </summary>
     [DebugLevel(DebugLevel.Warning)]
     public class ResourceAutoFlowService : IDisposable
     {
         private readonly ResourceSystem _resourceSystem;
+        private readonly IActorResourceOrchestrator _orchestrator;
+        private readonly IResourceLinkService _linkService;
         private readonly Dictionary<ResourceType, float> _timers = new();
         private readonly Dictionary<ResourceType, ResourceAutoFlowConfig> _configs = new();
 
-        private readonly IResourceLinkService _linkService;
         public bool IsPaused { get; private set; }
 
-        public ResourceAutoFlowService(ResourceSystem resourceSystem, bool startPaused = true)
+        public ResourceAutoFlowService(ResourceSystem resourceSystem, IActorResourceOrchestrator orchestrator, bool startPaused = true)
         {
             _resourceSystem = resourceSystem ?? throw new ArgumentNullException(nameof(resourceSystem));
+            _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
             IsPaused = startPaused;
-            
-            // Obter serviço de links
+
             if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
+                DependencyManager.Instance.RegisterGlobal<IResourceLinkService>(_linkService);
             }
+
             RefreshConfigsFromResourceSystem();
             _resourceSystem.ResourceUpdated += OnResourceUpdated;
 
-            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Inicializado com {_configs.Count} recursos com autoflow");
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Inicializado com {_configs.Count} recursos com autoflow para Actor {_resourceSystem.EntityId}");
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
         {
-            // Make sure timer entries exist (keeps in sync if resources were added later)
             if (!_timers.ContainsKey(evt.ResourceType))
             {
                 var inst = _resourceSystem.GetInstanceConfig(evt.ResourceType);
@@ -59,17 +81,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _timers.Clear();
             _configs.Clear();
 
-            foreach (KeyValuePair<ResourceType, IResourceValue> kv in _resourceSystem.GetAll())
+            foreach (var (resourceType, _) in _resourceSystem.GetAll())
             {
-                var type = kv.Key;
-                var inst = _resourceSystem.GetInstanceConfig(type);
+                var inst = _resourceSystem.GetInstanceConfig(resourceType);
                 if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
                 {
-                    _configs[type] = inst.autoFlowConfig;
-                    _timers[type] = 0f;
-                    DebugUtility.LogVerbose<ResourceAutoFlowService>($"Configurado autoflow para {type}: " +
-                             $"Fill={inst.autoFlowConfig.autoFill}, " +
-                             $"Drain={inst.autoFlowConfig.autoDrain}");
+                    _configs[resourceType] = inst.autoFlowConfig;
+                    _timers[resourceType] = 0f;
+                    DebugUtility.LogVerbose<ResourceAutoFlowService>($"Configurado autoflow para {resourceType}: " +
+                        $"Fill={inst.autoFlowConfig.autoFill}, Drain={inst.autoFlowConfig.autoDrain}");
                 }
             }
         }
@@ -77,6 +97,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void Process(float deltaTime)
         {
             if (IsPaused || _configs.Count == 0) return;
+
+            // Sincronização com bind: Pausar se canvas não pronto
+            if (!_orchestrator.IsCanvasRegisteredForActor(_resourceSystem.EntityId))
+            {
+                DebugUtility.LogVerbose<ResourceAutoFlowService>($"Aguardando canvas pronto para {_resourceSystem.EntityId}");
+                return;
+            }
 
             foreach (var resourceType in _configs.Keys.ToList())
             {
@@ -95,8 +122,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         private bool IsInRegenDelayAfterDamage(ResourceAutoFlowConfig cfg)
         {
-            return cfg.autoFill && 
-                   cfg.regenDelayAfterDamage > 0f && 
+            return cfg.autoFill &&
+                   cfg.regenDelayAfterDamage > 0f &&
                    Time.time - _resourceSystem.LastDamageTime < cfg.regenDelayAfterDamage;
         }
 
@@ -126,7 +153,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             if (cfg.autoDrain)
             {
-                totalDelta -= ProcessDrainWithLinks(resourceType, Mathf.Abs(perTickAmount) * ticks);
+                totalDelta -= _linkService.ProcessLinkedDrain(_resourceSystem.EntityId, resourceType, Mathf.Abs(perTickAmount) * ticks, _resourceSystem);
             }
 
             if (cfg.autoFill)
@@ -154,72 +181,40 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             _resourceSystem.Modify(resourceType, totalDelta);
 
+            // Disparar evento para efeitos visuais (integrável com pooling)
+            var effectEvent = new AutoFlowEffectEvent(_resourceSystem.EntityId, resourceType, totalDelta, Vector3.zero); // Posição de SkinSystem
+            EventBus<AutoFlowEffectEvent>.Raise(effectEvent);
+
             float perTickAmount = CalculatePerTickAmount(resourceType, cfg);
             DebugUtility.LogVerbose<ResourceAutoFlowService>($"Aplicado {totalDelta:F2} em {resourceType} " +
-                     $"({ticks} ticks de {perTickAmount:F2})");
+                $"({ticks} ticks de {perTickAmount:F2})");
         }
-        private float ProcessDrainWithLinks(ResourceType resourceType, float desiredDrain)
+
+        public void Pause()
         {
-            // Verificar se há link para este recurso
-            var linkConfig = _linkService.GetLink(_resourceSystem.EntityId, resourceType);
-    
-            // CORREÇÃO: Remover verificação de affectTargetWithAutoFlow se não for necessária
-            if (linkConfig == null || !linkConfig.affectTargetWithAutoFlow)
-            {
-                // Comportamento normal se não há link
-                return desiredDrain;
-            }
-
-            var sourceResource = _resourceSystem.Get(resourceType);
-            var targetResource = _resourceSystem.Get(linkConfig.targetResource);
-
-            if (sourceResource == null || targetResource == null) 
-                return desiredDrain;
-
-            // Verificar condições de transferência
-            if (!linkConfig.ShouldTransfer(sourceResource.GetCurrentValue(), sourceResource.GetMaxValue()))
-            {
-                return desiredDrain;
-            }
-
-            // Calcular drenagem considerando o link
-            float sourceAvailable = sourceResource.GetCurrentValue();
-            float sourceDrain = Mathf.Min(desiredDrain, sourceAvailable);
-            float remainingDrain = desiredDrain - sourceDrain;
-
-            // Aplicar drenagem restante no recurso alvo
-            if (remainingDrain > 0)
-            {
-                _resourceSystem.Modify(linkConfig.targetResource, -remainingDrain);
-            }
-
-            DebugUtility.LogVerbose<ResourceAutoFlowService>($"AutoFlow link: {resourceType} drained {sourceDrain}, {linkConfig.targetResource} drained {remainingDrain}");
-
-            return sourceDrain;
-        }
-        public void Pause() 
-        { 
             IsPaused = true;
             DebugUtility.LogVerbose<ResourceAutoFlowService>($"Pausado");
         }
-        
-        public void Resume() 
-        { 
+
+        public void Resume()
+        {
             IsPaused = false;
             DebugUtility.LogVerbose<ResourceAutoFlowService>($"Retomado");
         }
-        
-        public void Toggle() 
-        { 
+
+        public void Toggle()
+        {
             IsPaused = !IsPaused;
             DebugUtility.LogVerbose<ResourceAutoFlowService>($"Alternado para {(IsPaused ? "Pausado" : "Executando")}");
         }
-        
+
         public void ResetTimers()
         {
-            var keys = _timers.Keys.ToList();
-            foreach (var k in keys) _timers[k] = 0f;
-            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Timers resetados para {keys.Count} recursos");
+            foreach (var key in _timers.Keys.ToList())
+            {
+                _timers[key] = 0f;
+            }
+            DebugUtility.LogVerbose<ResourceAutoFlowService>($"Timers resetados para {_timers.Count} recursos");
         }
 
         public void Dispose()

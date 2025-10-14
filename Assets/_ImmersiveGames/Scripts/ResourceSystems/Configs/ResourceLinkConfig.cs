@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 {
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Header("Transfer Behavior")]
         [Tooltip("Quando transferir: Always, WhenSourceEmpty, WhenSourceBelowThreshold")]
-        public TransferCondition transferCondition = TransferCondition.WhenSourceEmpty;
+        public readonly TransferCondition transferCondition = TransferCondition.WhenSourceEmpty;
 
         [Tooltip("Threshold para transferência (0-1)")]
         [Range(0f, 1f)]
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Header("Auto-flow Integration")]
         [Tooltip("Se o auto-flow do recurso fonte deve afetar o alvo quando linkado")]
-        public bool affectTargetWithAutoFlow = true;
+        public readonly bool affectTargetWithAutoFlow = true;
 
         public enum TransferCondition
         {
@@ -42,7 +43,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         public bool ShouldTransfer(float sourceCurrent, float sourceMax)
         {
-            float percentage = sourceMax > 0 ? sourceCurrent / sourceMax : 0f;
+            if (sourceMax <= 0f)
+            {
+                DebugUtility.LogWarning<ResourceLinkConfig>($"sourceMax é zero para {sourceResource}. Transferência bloqueada.");
+                return false;
+            }
+
+            float percentage = sourceCurrent / sourceMax;
 
             return transferCondition switch
             {

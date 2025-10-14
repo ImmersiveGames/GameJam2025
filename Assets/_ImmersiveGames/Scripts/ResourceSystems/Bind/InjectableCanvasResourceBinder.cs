@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -28,9 +29,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         [Header("Canvas Configuration")]
         [SerializeField] private CanvasType canvasType = CanvasType.Scene;
-        [SerializeField] private Vector3 canvasPositionOffset = Vector3.zero;
-        [SerializeField] private Vector3 canvasRotationOffset = Vector3.zero;
-        [SerializeField] private bool applyOffsetOnStart = true;
 
         [Header("Bind Timing")]
         [SerializeField] private float maxBindWaitSeconds = 2f;
@@ -94,11 +92,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 DebugUtility.LogError<InjectableCanvasResourceBinder>($"Exception registering canvas '{CanvasId}': {ex}");
             }
 
-            if (applyOffsetOnStart)
-            {
-                ApplyCanvasOffset();
-            }
-
             InjectionState = DependencyInjectionState.Ready;
             State = CanvasInitializationState.Ready;
 
@@ -156,246 +149,90 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-
-        private IEnumerator DelayedBind(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig, float timeoutSeconds)
-        {
-            float startTime = Time.time;
-
-            while (!CanAcceptBinds() && (Time.time - startTime) < timeoutSeconds)
-            {
-                yield return null;
-            }
-
-            if (CanAcceptBinds())
-            {
-                if (instanceConfig == null)
-                {
-                    instanceConfig = ResolveInstanceConfig(actorId, resourceType);
-                    Debug.Log($"[CanvasBinder] 🔄 DelayedBind - Retried resolving config: {instanceConfig != null}, Style: {instanceConfig?.slotStyle != null}");
-                }
-                CreateSlotForActor(actorId, resourceType, data, instanceConfig);
-            }
-            else
-            {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Timeout binding {actorId}.{resourceType} to Canvas '{CanvasId}'");
-                FallbackToPipeline(actorId, resourceType, data);
-            }
-        }
-
-        private void FallbackToPipeline(string actorId, ResourceType resourceType, IResourceValue data)
-        {
-            try
-            {
-                if (CanvasPipelineManager.HasInstance)
-                {
-                    CanvasPipelineManager.Instance.ScheduleBind(actorId, resourceType, data, CanvasId);
-                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Fallback to pipeline for {actorId}.{resourceType}");
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Failed fallback for {actorId}.{resourceType}: {ex}");
-            }
-        }
-
-        #region Implementação do Canvas Resource Binder
-
-        private void SetupCanvasId()
-        {
-            if (!string.IsNullOrEmpty(canvasId))
-            {
-                _canvasIdResolved = canvasId;
-                return;
-            }
-
-            if (!DependencyManager.Instance.TryGetGlobal(out IUniqueIdFactory factory) || factory == null)
-            {
-                factory = new UniqueIdFactory();
-                DependencyManager.Instance.RegisterGlobal(factory);
-            }
-
-            _canvasIdResolved = autoGenerateCanvasId ?
-                factory.GenerateId(gameObject, "Canvas") :
-                $"{gameObject.scene.name}_{gameObject.name}";
-
-            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Canvas ID resolved: {_canvasIdResolved}");
-        }
-        private ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
-        {
-            Debug.Log($"[CanvasBinder] 🔍 ResolveInstanceConfig - Actor: {actorId}, Resource: {resourceType}");
-
-            try
-            {
-                ResourceSystem actorSvc = null;
-
-                if (_orchestrator != null)
-                {
-                    actorSvc = _orchestrator.GetActorResourceSystem(actorId);
-                    Debug.Log($"[CanvasBinder]   - Via Orchestrator: {actorSvc != null}");
-                }
-
-                if (actorSvc == null)
-                {
-                    DependencyManager.Instance.TryGetForObject(actorId, out actorSvc);
-                    Debug.Log($"[CanvasBinder]   - Via DependencyManager: {actorSvc != null}");
-                }
-
-                if (actorSvc != null)
-                {
-                    var config = actorSvc.GetInstanceConfig(resourceType);
-                    Debug.Log($"[CanvasBinder]   - Config from ResourceSystem: {config != null}");
-                    Debug.Log($"[CanvasBinder]   - Style from Config: {config?.slotStyle != null} ({config?.slotStyle?.name})");
-                    return config;
-                }
-                else
-                {
-                    Debug.LogWarning($"[CanvasBinder]   - ❌ ResourceSystem not found for actor {actorId}");
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ Error resolving instance config for {actorId}.{resourceType}: {ex}");
-                return null;
-            }
-        }
-
-        private void InitializePool()
-        {
-            if (initialPoolSize < 0) initialPoolSize = 0;
-
-            _pool = new ObjectPool<ResourceUISlot>(
-                createFunc: () => {
-                    if (slotPrefab == null) return null;
-                    var slot = Instantiate(slotPrefab, dynamicSlotsParent);
-                    slot.gameObject.SetActive(false);
-                    return slot;
-                },
-                actionOnGet: slot => {
-                    if (slot != null)
-                    {
-                        slot.gameObject.SetActive(true);
-                        slot.transform.SetAsLastSibling();
-                    }
-                },
-                actionOnRelease: slot => {
-                    if (slot != null)
-                    {
-                        slot.Clear();
-                        slot.gameObject.SetActive(false);
-                    }
-                },
-                actionOnDestroy: slot => {
-                    if (slot != null) Destroy(slot.gameObject);
-                },
-                collectionCheck: false,
-                defaultCapacity: Math.Max(1, initialPoolSize),
-                maxSize: 100
-            );
-
-            for (int i = 0; i < initialPoolSize; i++)
-            {
-                var slot = _pool.Get();
-                if (slot != null) _pool.Release(slot);
-            }
-
-            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Pool initialized for Canvas '{CanvasId}' (Size: {initialPoolSize})");
-        }
-
-        private ResourceUISlot GetSlotFromPool()
-        {
-            try
-            {
-                return _pool?.Get();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error getting slot from pool: {ex}");
-                return null;
-            }
-        }
-
-        private void ReturnSlotToPool(ResourceUISlot slot)
-        {
-            if (slot == null) return;
-
-            try
-            {
-                _pool?.Release(slot);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error returning slot to pool: {ex}");
-                Destroy(slot.gameObject);
-            }
-        }
-
         protected void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
         {
-            if (instanceConfig == null)
+            if (!_actorSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorDict))
             {
-                instanceConfig = ResolveInstanceConfig(actorId, resourceType);
-                Debug.Log($"[CanvasBinder] 🔄 CreateSlotForActor - Resolved config on demand: {instanceConfig != null}, Style: {instanceConfig?.slotStyle != null}");
+                actorDict = new Dictionary<ResourceType, ResourceUISlot>();
+                _actorSlots[actorId] = actorDict;
             }
 
-            Debug.Log($"[CanvasBinder] 🎯 CreateSlotForActor - Actor: {actorId}, Resource: {resourceType}");
-            Debug.Log($"[CanvasBinder]   - InstanceConfig provided: {instanceConfig != null}");
-            Debug.Log($"[CanvasBinder]   - Style: {instanceConfig?.slotStyle != null} ({instanceConfig?.slotStyle?.name})");
-            if (string.IsNullOrEmpty(actorId))
-            {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ CreateSlotForActor called with null/empty actorId on Canvas '{CanvasId}'");
-                return;
-            }
-
-            if (slotPrefab == null)
-            {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"[CanvasBinder] ❌ Cannot create slot for {actorId}.{resourceType} because slotPrefab is null on Canvas '{CanvasId}'");
-                return;
-            }
-
-            if (!_actorSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlotDict))
-            {
-                actorSlotDict = new Dictionary<ResourceType, ResourceUISlot>();
-                _actorSlots[actorId] = actorSlotDict;
-            }
-
-            if (actorSlotDict.TryGetValue(resourceType, out var existingSlot) && existingSlot != null)
+            if (actorDict.TryGetValue(resourceType, out var existingSlot) && existingSlot != null)
             {
                 existingSlot.Configure(data);
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Updated existing slot: {actorId}.{resourceType}");
                 return;
             }
 
             var newSlot = GetSlotFromPool();
-            if (newSlot == null)
-            {
-                DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Failed to get slot from pool for {actorId}.{resourceType}");
-                return;
-            }
 
             try
             {
-                ApplySlotSorting(newSlot, instanceConfig);
+                if (instanceConfig == null)
+                    instanceConfig = ResolveInstanceConfig(actorId, resourceType);
+
+                Debug.Log($"[CreateSlot] {actorId}.{resourceType}: Config={instanceConfig != null}, Style={instanceConfig?.slotStyle != null}");
+
                 newSlot.InitializeForActorId(actorId, resourceType, instanceConfig);
                 newSlot.Configure(data);
+                actorDict[resourceType] = newSlot;
 
-                actorSlotDict[resourceType] = newSlot;
+                ApplySlotSorting(newSlot, instanceConfig);
 
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Created slot: {actorId}.{resourceType} on Canvas '{CanvasId}'");
-
-                if (instanceConfig != null)
-                {
-                    var animType = instanceConfig.fillAnimationType;
-                    string styleName = instanceConfig.slotStyle != null ? instanceConfig.slotStyle.name : "default";
-                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"  Config: Animation={animType}, Style={styleName}, SortOrder={instanceConfig.sortOrder}");
-                }
+                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Slot created: {actorId}.{resourceType}, Anim: {instanceConfig?.fillAnimationType}, Style: {instanceConfig?.slotStyle?.name}");
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error creating slot for {actorId}.{resourceType}: {ex}");
                 ReturnSlotToPool(newSlot);
             }
+        }
+
+        protected ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
+        {
+            if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc)) return null;
+            return svc.GetInstanceConfig(resourceType);
+        }
+
+        private IEnumerator DelayedBind(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig, float maxWait)
+        {
+            float elapsed = 0f;
+            while (elapsed < maxWait)
+            {
+                if (CanAcceptBinds())
+                {
+                    CreateSlotForActor(actorId, resourceType, data, instanceConfig);
+                    yield break;
+                }
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Timeout waiting for bind {actorId}.{resourceType} on '{CanvasId}'");
+        }
+
+        private void InitializePool()
+        {
+            _pool = new ObjectPool<ResourceUISlot>(
+                () => Instantiate(slotPrefab, dynamicSlotsParent),
+                slot => { slot.gameObject.SetActive(true); },
+                slot => { slot.gameObject.SetActive(false); },
+                Destroy, true, initialPoolSize, 20
+            );
+        }
+
+        private ResourceUISlot GetSlotFromPool() => _pool.Get();
+
+        private void ReturnSlotToPool(ResourceUISlot slot)
+        {
+            if (slot == null) return;
+            slot.Clear();
+            _pool.Release(slot);
+        }
+
+        private void SetupCanvasId()
+        {
+            _canvasIdResolved = autoGenerateCanvasId ? _idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString() : canvasId;
+            if (string.IsNullOrEmpty(_canvasIdResolved)) _canvasIdResolved = gameObject.name;
         }
 
         private void ApplySlotSorting(ResourceUISlot slot, ResourceInstanceConfig instanceConfig)
@@ -415,21 +252,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             canvas.sortingOrder = instanceConfig.sortOrder;
 
             slot.transform.SetSiblingIndex(instanceConfig.sortOrder);
-        }
-
-        private void ApplyCanvasOffset()
-        {
-            if (canvasPositionOffset != Vector3.zero)
-            {
-                transform.localPosition += canvasPositionOffset;
-            }
-
-            if (canvasRotationOffset != Vector3.zero)
-            {
-                transform.localRotation *= Quaternion.Euler(canvasRotationOffset);
-            }
-
-            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Applied canvas offset for '{CanvasId}': Pos={canvasPositionOffset}, Rot={canvasRotationOffset}");
         }
 
         private void RemoveActorSlots(string actorId)
@@ -480,69 +302,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error during destruction: {ex}");
             }
         }
-
-        [ContextMenu("🔍 DEBUG CANVAS")]
-        public void DebugCanvas()
+        // Métodos públicos para debug
+        public int GetActorSlotsCount() => _actorSlots.Count;
+        public IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots() => _actorSlots;
+        public int GetPoolCountTotal() => _pool?.CountAll ?? 0;
+        public int GetPoolCountActive() => _pool?.CountActive ?? 0;
+        public bool TryGetSlot(string actorId, ResourceType resourceType, out ResourceUISlot slot)
         {
-            Debug.Log($"🎨 CANVAS DEBUG: '{CanvasId}'");
-            Debug.Log($"- State: {State}, Injection: {InjectionState}");
-            Debug.Log($"- Type: {Type}, CanAcceptBinds: {CanAcceptBinds()}");
-            Debug.Log($"- Actor Slots: {_actorSlots.Count} actors");
-
-            foreach ((string actorId, Dictionary<ResourceType, ResourceUISlot> slots) in _actorSlots)
-            {
-                Debug.Log($"  - Actor '{actorId}': {slots.Count} slots");
-                foreach (var (resourceType, slot) in slots)
-                {
-                    Debug.Log($"    - {resourceType}: {(slot != null ? "Active" : "Null")}");
-                }
-            }
-
-            Debug.Log($"- Pool: {_pool?.CountAll ?? 0} total, {_pool?.CountActive ?? 0} active");
+            slot = null;
+            return _actorSlots.TryGetValue(actorId, out var actorDict) && actorDict.TryGetValue(resourceType, out slot) && slot != null;
         }
-
-        [ContextMenu("Debug/Print Slot Details")]
-        public void DebugSlotDetails()
-        {
-            DebugUtility.Log<InjectableCanvasResourceBinder>($"📊 SLOT DETAILS for Canvas '{CanvasId}':");
-            foreach ((string actorId, Dictionary<ResourceType, ResourceUISlot> slots) in _actorSlots)
-            {
-                DebugUtility.Log<InjectableCanvasResourceBinder>($"  Actor: {actorId}");
-                foreach (var (resourceType, slot) in slots)
-                {
-                    if (slot != null)
-                    {
-                        var rect = slot.GetComponent<RectTransform>();
-                        var canvas = slot.GetComponent<Canvas>();
-                        DebugUtility.Log<InjectableCanvasResourceBinder>($"    - {resourceType}: Pos={rect.anchoredPosition}, Order={canvas?.sortingOrder ?? 0}");
-                    }
-                }
-            }
-        }
-        [ContextMenu("🔍 DEBUG STYLE FLOW")]
-        public void DebugStyleFlow()
-        {
-            Debug.Log($"🎨 STYLE FLOW DEBUG: '{CanvasId}'");
-
-            DependencyManager.Instance.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator);
-            IReadOnlyCollection<string> actorIds = orchestrator.GetRegisteredActorIds();
-
-            foreach (string actorId in actorIds)
-            {
-                Debug.Log($"\n👤 Actor: {actorId}");
-                foreach (ResourceType resourceType in Enum.GetValues(typeof(ResourceType)))
-                {
-                    var config = ResolveInstanceConfig(actorId, resourceType);
-                    Debug.Log($"   - {resourceType}: Config={config != null}, Style={config?.slotStyle != null} ({config?.slotStyle?.name})");
-                    if (config == null) continue;
-                    if (!_actorSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlots) ||
-                        !actorSlots.TryGetValue(resourceType, out var slot) || slot == null) continue;
-                    var slotConfig = slot.GetInstanceConfig();
-                    Debug.Log($"     Slot Style: {slotConfig?.slotStyle != null} ({slotConfig?.slotStyle?.name})");
-                }
-            }
-        }
-
-        #endregion
     }
 }

@@ -1,24 +1,26 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Bind;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using System.Collections;
-using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
     [DefaultExecutionOrder(25)]
-    [DebugLevel(DebugLevel.Verbose)]
     public abstract class ResourceBridgeBase : MonoBehaviour
     {
         private IActor _actor;
         protected ResourceSystem resourceSystem;
-        private IActorResourceOrchestrator _orchestrator;
+        protected IActorResourceOrchestrator _orchestrator;
         protected bool initialized;
         private bool _isDestroyed;
 
         protected IActor Actor => _actor;
+        public IActor GetActor() => _actor;
+        public ResourceSystem GetResourceSystem() => resourceSystem;
+        public bool IsInitialized() => initialized;
+        public bool IsDestroyed() => _isDestroyed;
 
         protected virtual void Awake()
         {
@@ -143,46 +145,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         }
 
         protected virtual bool ShouldInitialize() => true;
-
-        [ContextMenu("🔧 Debug Bridge Status")]
-        public virtual void DebugStatus()
-        {
-            string actorId = _actor?.ActorId ?? "null";
-            bool orchestratorFound = DependencyManager.Instance.TryGetGlobal(out _orchestrator);
-            bool actorRegistered = orchestratorFound && _orchestrator.IsActorRegistered(actorId);
-
-            DebugUtility.LogWarning(GetType(),
-                $"🔧 BRIDGE STATUS - {GetType().Name}:\n" +
-                $" - Actor: {actorId}\n" +
-                $" - Initialized: {initialized}\n" +
-                $" - Destroyed: {_isDestroyed}\n" +
-                $" - Orchestrator: {orchestratorFound}\n" +
-                $" - Actor Registrado: {actorRegistered}\n" +
-                $" - ResourceSystem: {resourceSystem != null}\n" +
-                $" - DependencyManager Ready: {DependencyManager.Instance}");
-
-            if (orchestratorFound)
-            {
-                IReadOnlyCollection<string> actorIds = _orchestrator.GetRegisteredActorIds();
-                DebugUtility.LogWarning(GetType(), $"📋 Atores registrados: {string.Join(", ", actorIds)}");
-            }
-
-            bool inDependencyManager = DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem dmSystem);
-            DebugUtility.LogWarning(GetType(), $" - In DependencyManager: {inDependencyManager}, Service: {dmSystem != null}");
-        }
-
-        [ContextMenu("🔄 Force Reinitialize")]
-        public virtual void ForceReinitialize()
-        {
-            if (_isDestroyed) return;
-
-            DebugUtility.LogWarning<ResourceBridgeBase>($"🔄 Forçando reinicialização para {_actor?.ActorId}");
-            StopAllCoroutines();
-            initialized = false;
-            resourceSystem = null;
-            StartCoroutine(InitializeWithRetry());
-        }
-
+        
         protected virtual void OnDestroy()
         {
             _isDestroyed = true;
@@ -191,5 +154,4 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             resourceSystem = null;
         }
     }
-
 }

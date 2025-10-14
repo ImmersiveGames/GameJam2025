@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
+namespace _ImmersiveGames.Scripts.ResourceSystems.Utils
 {
     /// <summary T=".">
     /// Adapter leve que integra a lógica de pendentes com o EventBus do projeto.

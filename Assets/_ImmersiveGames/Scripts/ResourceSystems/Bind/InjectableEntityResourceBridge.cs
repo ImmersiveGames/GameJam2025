@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -22,6 +21,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => _actor?.ActorId ?? gameObject.name;
+        public ResourceSystem GetResourceSystem() => _service;
+        public bool IsDestroyed() => _isDestroyed;
 
         private void Awake()
         {
@@ -130,141 +131,5 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             _service?.Dispose();
             _service = null;
         }
-
-        [ContextMenu("🔍 DEBUG BRIDGE STATUS")]
-        public void DebugBridgeStatus()
-        {
-            Debug.Log($"🔧 ENTITY BRIDGE STATUS: {_actor?.ActorId}");
-            Debug.Log($"- Actor: {_actor?.ActorId}");
-            Debug.Log($"- Service: {_service != null}");
-            Debug.Log($"- Injection: {InjectionState}");
-            Debug.Log($"- Destroyed: {_isDestroyed}");
-
-            if (_service != null)
-            {
-                var health = _service.Get(ResourceType.Health);
-                Debug.Log($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
-            }
-
-            if (DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
-            {
-                bool isRegistered = orchestrator.IsActorRegistered(_actor?.ActorId);
-                Debug.Log($"- Registered in Orchestrator: {isRegistered}");
-
-                if (isRegistered)
-                {
-                    var orchestratorService = orchestrator.GetActorResourceSystem(_actor?.ActorId);
-                    Debug.Log($"- Orchestrator Service: {orchestratorService != null}");
-                }
-            }
-
-            bool hasInDm = DependencyManager.Instance.TryGetForObject(_actor?.ActorId, out ResourceSystem dmService);
-            Debug.Log($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
-        }
-
-        [ContextMenu("🔄 TEST RESOURCE ACCESS")]
-        public void TestResourceAccess()
-        {
-            StartCoroutine(TestResourceAccessCoroutine());
-        }
-
-        private System.Collections.IEnumerator TestResourceAccessCoroutine()
-        {
-            Debug.Log($"=== 🎯 TESTING RESOURCE ACCESS ({_actor.ActorId}) ===");
-
-            Debug.Log("📊 Test 1 - Local Access:");
-            Debug.Log($"  - Local _service: {_service != null}");
-            if (_service != null)
-            {
-                var health = _service.Get(ResourceType.Health);
-                Debug.Log($"  - Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
-            }
-
-            yield return null;
-
-            Debug.Log("📊 Test 2 - DependencyManager Access:");
-            bool dmSuccess = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
-            Debug.Log($"  - DM Success: {dmSuccess}");
-            Debug.Log($"  - DM Service: {dmService != null}");
-            if (dmService != null)
-            {
-                var health = dmService.Get(ResourceType.Health);
-                Debug.Log($"  - Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
-            }
-
-            yield return null;
-
-            Debug.Log("📊 Test 3 - Orchestrator Access:");
-            if (_orchestrator != null)
-            {
-                bool orchestratorSuccess = _orchestrator.IsActorRegistered(_actor.ActorId);
-                Debug.Log($"  - Orchestrator Registered: {orchestratorSuccess}");
-                if (orchestratorSuccess)
-                {
-                    var orchestratorService = _orchestrator.GetActorResourceSystem(_actor.ActorId);
-                    Debug.Log($"  - Orchestrator Service: {orchestratorService != null}");
-                    if (orchestratorService != null)
-                    {
-                        var health = orchestratorService.Get(ResourceType.Health);
-                        Debug.Log($"  - Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
-                    }
-                }
-            }
-
-            Debug.Log($"=== ✅ TEST COMPLETE ===");
-        }
-
-        #region Métodos originais (mantidos para compatibilidade)
-
-        [ContextMenu("Debug/Print Resources")]
-        public void DebugPrintResources()
-        {
-            if (_service == null)
-            {
-                DebugUtility.LogWarning<InjectableEntityResourceBridge>("ResourceSystem not available");
-                return;
-            }
-
-            IReadOnlyDictionary<ResourceType, IResourceValue> all = _service.GetAll();
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"📊 RESOURCES FOR ACTOR: {_actor.ActorId}");
-            sb.AppendLine($"Injection State: {InjectionState}");
-            sb.AppendLine($"Total Resources: {all.Count}");
-            sb.AppendLine("────────────────────────");
-
-            foreach (KeyValuePair<ResourceType, IResourceValue> kv in all)
-            {
-                var resource = kv.Value;
-                var instanceConfig = _service.GetInstanceConfig(kv.Key);
-                string canvasTarget = "Unknown";
-
-                if (instanceConfig != null)
-                {
-                    canvasTarget = instanceConfig.canvasTargetMode switch
-                    {
-                        CanvasTargetMode.ActorSpecific => $"{_actor.ActorId}_Canvas",
-                        CanvasTargetMode.Custom => instanceConfig.customCanvasId ?? "MainUI",
-                        _ => "MainUI"
-                    };
-                }
-
-                sb.AppendLine($"🔹 {kv.Key}:");
-                sb.AppendLine($"   Value: {resource.GetCurrentValue():F1}/{resource.GetMaxValue():F1}");
-                sb.AppendLine($"   Percentage: {(resource.GetCurrentValue() / resource.GetMaxValue()):P1}");
-                sb.AppendLine($"   Canvas Target: {canvasTarget}");
-
-                if (instanceConfig?.hasAutoFlow ?? false)
-                    sb.AppendLine($"   AutoFlow: ✅ (Rate: {instanceConfig.autoFlowConfig.tickInterval})");
-
-                if (instanceConfig?.thresholdConfig != null)
-                    sb.AppendLine($"   Thresholds: ✅ ({instanceConfig.thresholdConfig?.thresholds.Length ?? 0} thresholds)");
-            }
-
-            DebugUtility.LogWarning<InjectableEntityResourceBridge>(sb.ToString());
-        }
-
-        #endregion
     }
-
-
 }

@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using DG.Tweening;
@@ -33,6 +34,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public TextMeshProUGUI ValueText => valueText;
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
+        
+        public float GetCurrentFill() => _currentFill;
+        public ResourceUIStyle GetCurrentStyle() => _currentStyle;
 
         private void Awake()
         {
@@ -188,18 +192,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             ApplyBaseStyleImmediate();
             ApplyVisualsImmediate();
             DebugUtility.LogVerbose<ResourceUISlot>($"🔧 ForceVisualUpdate: {Type} - Fill: {_currentFill}, Style: {_currentStyle?.name}");
-        }
-
-        [ContextMenu("Debug Slot State")]
-        public void DebugSlotState()
-        {
-            DebugUtility.LogWarning<ResourceUISlot>(
-                $"🔍 Slot Debug - {Type}:\n" +
-                $"Current Fill: {_currentFill}\n" +
-                $"Style: {_currentStyle?.name ?? "None"}\n" +
-                $"Fill Image: {fillImage != null} (color: {fillImage?.color}, amount: {fillImage?.fillAmount})\n" +
-                $"Pending Image: {pendingFillImage != null} (color: {pendingFillImage?.color}, amount: {pendingFillImage?.fillAmount})"
-            );
         }
 
         private void OnDestroy()

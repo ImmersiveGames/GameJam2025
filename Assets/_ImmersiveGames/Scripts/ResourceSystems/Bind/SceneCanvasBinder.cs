@@ -1,6 +1,5 @@
-﻿// FILE: SceneCanvasBinder.cs
-
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -60,16 +59,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         {
             ForceReady();
             DebugUtility.LogWarning<SceneCanvasBinder>($"Scene canvas '{CanvasId}' forced to ready state");
-        }
-
-        [ContextMenu("🔍 DEBUG SCENE CANVAS")]
-        public void DebugSceneCanvas()
-        {
-            Debug.Log($"🏞️ SCENE CANVAS: '{CanvasId}'");
-            Debug.Log($"- Type: {Type}, State: {State}");
-            Debug.Log($"- Injection: {InjectionState}, CanAcceptBinds: {CanAcceptBinds()}");
-            Debug.Log($"- RegisterInPipeline: {registerInPipeline}");
-            DebugCanvas();
         }
     }
 }

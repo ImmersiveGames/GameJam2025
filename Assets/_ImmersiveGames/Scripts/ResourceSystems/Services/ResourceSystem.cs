@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.ResourceSystems
+namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
     /// Serviço puro para gerenciar recursos de uma entidade.
@@ -42,6 +41,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 _instanceConfigs[def.type] = cfg;
             }
         }
+
         public void Set(ResourceType type, float value)
         {
             if (!_resources.TryGetValue(type, out var resource)) return;
@@ -50,6 +50,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             resource.SetCurrentValue(newValue);
             ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
         }
+
         public void Modify(ResourceType type, float delta)
         {
             if (!_resources.TryGetValue(type, out var resource)) return;
@@ -70,6 +71,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 ApplyModification(type, delta, resource);
             }
         }
+
         private void ModifyWithLink(ResourceType type, float delta, ResourceLinkConfig linkConfig)
         {
             var sourceResource = _resources[type];
@@ -162,6 +164,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _instanceConfigs.Clear();
             ResourceUpdated = null;
         }
+
         [ContextMenu("🔍 Debug Instance Configs")]
         public void DebugInstanceConfigs()
         {

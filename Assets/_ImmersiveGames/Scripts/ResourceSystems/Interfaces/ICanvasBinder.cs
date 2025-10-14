@@ -1,36 +1,39 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-namespace _ImmersiveGames.Scripts.ResourceSystems.Bind {
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
+namespace _ImmersiveGames.Scripts.ResourceSystems
+{
     public interface ICanvasBinder : IInjectableComponent
     {
         string CanvasId { get; }
         CanvasType Type { get; }
         CanvasInitializationState State { get; }
-    
+
         void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data);
         bool CanAcceptBinds();
-        void ForceReady(); // Para debugging
+        IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots();
     }
-    public interface IInjectableComponent 
+    public interface IInjectableComponent
     {
         string GetObjectId();
         void OnDependenciesInjected();
         DependencyInjectionState InjectionState { get; set; }
     }
 
-    public enum DependencyInjectionState 
+    public enum DependencyInjectionState
     {
         Pending,
-        Injecting, 
+        Injecting,
         Ready,
         Failed
     }
     public enum CanvasTargetMode
     {
-        Default,       // "MainUI"
+        Default, // "MainUI"
         ActorSpecific, // "{actorId}_Canvas"
-        Custom         // customCanvasId
+        Custom // customCanvasId
     }
-    
+
     public enum CanvasType { Scene, Dynamic }
     public enum CanvasInitializationState { Pending, Injecting, Ready, Failed }
 }

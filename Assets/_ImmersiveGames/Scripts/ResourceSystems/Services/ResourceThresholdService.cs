@@ -8,7 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
-    /// Serviço puro que monitora thresholds por resourceType e dispara ResourceThresholdEvent via EventBus.
+    /// Serviço puro que monitora thresholds por resourceType e dispara ResourceThresholdEvent filtrado via FilteredEventBus.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class ResourceThresholdService : IDisposable
@@ -31,7 +31,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 var inst = _resourceSystem.GetInstanceConfig(resourceType);
                 
-                // CORREÇÃO: Sempre inicializa thresholds, mesmo quando não há config específica
                 if (inst?.thresholdConfig != null)
                 {
                     _thresholds[resourceType] = inst.thresholdConfig.GetNormalizedSortedThresholds();
@@ -39,7 +38,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 }
                 else
                 {
-                    // Thresholds padrão, quando não há configuração específica
                     _thresholds[resourceType] = new[] { 0f, 0.25f, 0.5f, 0.75f, 1f };
                     DebugUtility.LogVerbose<ResourceThresholdService>($"Usando thresholds padrão para {resourceType}");
                 }
@@ -78,8 +76,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 {
                     bool asc = newPct > oldPct;
                     var thrEvent = new ResourceThresholdEvent(evt.ActorId, evt.ResourceType, thr, asc, newPct);
-                    DebugUtility.LogVerbose<ResourceThresholdService>($"Disparando ResourceThresholdEvent: {thrEvent.ResourceType} - Threshold {thr} - {(asc ? "SUBINDO" : "DESCENDO")}");
-                    EventBus<ResourceThresholdEvent>.Raise(thrEvent);
+                    DebugUtility.LogVerbose<ResourceThresholdService>($"Disparando ResourceThresholdEvent filtrado: {thrEvent.ResourceType} - Threshold {thr} - {(asc ? "SUBINDO" : "DESCENDO")}");
+                    FilteredEventBus<ResourceThresholdEvent>.RaiseFiltered(thrEvent, evt.ActorId); // Filtrado por actorId como scope
                 }
             }
 
@@ -95,19 +93,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             foreach (float threshold in thresholds)
             {
-                // Para evitar disparos duplicados no mesmo threshold
                 bool wasBelow = oldVal < threshold - Epsilon;
                 bool wasAbove = oldVal > threshold + Epsilon;
                 bool isBelow = newVal < threshold - Epsilon;
                 bool isAbove = newVal > threshold + Epsilon;
 
-                // Cruzou para cima: estava abaixo e agora está acima ou igual
                 if (ascending && wasBelow && !isBelow)
                 {
                     crossed.Add(threshold);
                     DebugUtility.LogVerbose<ResourceThresholdService>($"Cruzou para CIMA no threshold {threshold}");
                 }
-                // Cruzou para baixo: estava acima e agora está abaixo ou igual
                 else if (!ascending && wasAbove && !isAbove)
                 {
                     crossed.Add(threshold);
@@ -131,8 +126,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 List<float> crossed = DetectCrossedThresholds(oldPct, newPct, kv.Value);
                 foreach (float t in crossed)
                 {
-                    EventBus<ResourceThresholdEvent>.Raise(new ResourceThresholdEvent(
-                        _resourceSystem.EntityId, kv.Key, t, newPct > oldPct, newPct));
+                    FilteredEventBus<ResourceThresholdEvent>.RaiseFiltered(new ResourceThresholdEvent(
+                        _resourceSystem.EntityId, kv.Key, t, newPct > oldPct, newPct), _resourceSystem.EntityId);
                 }
                 
                 _lastPercentages[kv.Key] = newPct;
