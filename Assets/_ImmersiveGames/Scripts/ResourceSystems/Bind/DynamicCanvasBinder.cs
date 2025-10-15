@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.ResourceSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -14,35 +15,36 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         public override CanvasType Type => CanvasType.Dynamic;
 
+        // NOTA: base.OnDependenciesInjected() é chamado pelo ResourceInitializationManager.
+        // Aqui apenas completamos com o registro no pipeline (após estar pronto).
         public override void OnDependenciesInjected()
         {
-            State = CanvasInitializationState.Injecting;
-            InjectionState = DependencyInjectionState.Injecting;
+            base.OnDependenciesInjected();
 
-            StartCoroutine(DynamicInitializationRoutine());
+            if (registerInPipeline && CanvasPipelineManager.HasInstance)
+            {
+                CanvasPipelineManager.Instance.RegisterCanvas(this);
+                DebugUtility.LogVerbose<DynamicCanvasBinder>($"✅ Dynamic Canvas '{CanvasId}' registered in pipeline (post-injection)");
+            }
+
+            // Reemitir pendentes no hub (compat)
+            ResourceEventHub.NotifyCanvasRegistered(CanvasId);
         }
 
-        private IEnumerator DynamicInitializationRoutine()
+        // Método público simples para ser chamado pelo código que instancia o prefab (se necessário).
+        // NÃO chama base.OnDependenciesInjected(); apenas registra e notifica pendentes.
+        public void InitializeDynamicCanvas()
         {
-            for (int i = 0; i < initializationDelayFrames; i++)
-                yield return null;
+            if (State == CanvasInitializationState.Ready) return;
 
-            try
-            {
-                base.OnDependenciesInjected();
+            DebugUtility.LogVerbose<DynamicCanvasBinder>($"🧩 InitializeDynamicCanvas chamado para '{CanvasId}'");
 
-                if (CanvasPipelineManager.HasInstance)
-                {
-                    CanvasPipelineManager.Instance.RegisterCanvas(this);
-                    DebugUtility.LogVerbose<DynamicCanvasBinder>($"✅ Dynamic Canvas '{CanvasId}' registered in pipeline");
-                }
-            }
-            catch (System.Exception ex)
+            if (registerInPipeline && CanvasPipelineManager.HasInstance)
             {
-                DebugUtility.LogError<DynamicCanvasBinder>($"❌ Dynamic canvas '{CanvasId}' initialization failed: {ex}");
-                State = CanvasInitializationState.Failed;
-                InjectionState = DependencyInjectionState.Failed;
+                CanvasPipelineManager.Instance.RegisterCanvas(this);
             }
+
+            ResourceEventHub.NotifyCanvasRegistered(CanvasId);
         }
 
         public override void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
@@ -62,12 +64,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             DebugUtility.LogVerbose<DynamicCanvasBinder>($"⏳ Delayed bind scheduled for {actorId}.{resourceType} on canvas '{CanvasId}'");
 
             float startTime = Time.time;
-            float timeout = 5f; // Timeout reduzido para dynamic canvas
+            float timeout = 5f;
 
             while (!CanAcceptBinds() && (Time.time - startTime) < timeout)
-            {
                 yield return null;
-            }
 
             if (CanAcceptBinds())
             {

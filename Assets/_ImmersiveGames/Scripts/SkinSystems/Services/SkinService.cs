@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 
@@ -52,6 +53,19 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 .Select(p => _modelFactory.Instantiate(p, container, owner, config))
                 .Where(i => i != null)
                 .ToList();
+            // 👇 NOVO BLOCO: pós-instanciação, inicializar DynamicCanvasBinder se houver
+            foreach (var instance in _instances[config.ModelType])
+            {
+                if (instance == null) continue;
+    
+                // Encontrar binders dinâmicos recém-criados
+                var dynamicBinders = instance.GetComponentsInChildren<DynamicCanvasBinder>(true);
+                foreach (var binder in dynamicBinders)
+                {
+                    binder.gameObject.SetActive(true); // garantir que está ativo
+                    binder.InitializeDynamicCanvas(); // novo método que você adicionará
+                }
+            }
         }
 
         private void ClearInstancesOfType(ModelType type)

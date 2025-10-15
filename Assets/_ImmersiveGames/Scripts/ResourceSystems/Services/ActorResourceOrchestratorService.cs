@@ -20,11 +20,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         // CORREÇÃO: Usar ICanvasBinder em vez de CanvasResourceBinder
         void RegisterCanvas(ICanvasBinder canvas);
         void UnregisterCanvas(string canvasId);
-    
+
         // NOVOS: Métodos para canvas
         //bool IsCanvasRegistered(string canvasId);
         //IReadOnlyCollection<string> GetRegisteredCanvasIds();
         bool IsCanvasRegisteredForActor(string actorId);
+        void ProcessPendingFirstUpdatesForCanvas(string canvasId);
     }
 
     public class ActorResourceOrchestratorService : IActorResourceOrchestrator, IInjectableComponent
@@ -113,7 +114,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 _pendingFirstUpdates[targetCanvasId] = new Dictionary<string, ResourceUpdateEvent>();
             }
-    
+
             var evt = new ResourceUpdateEvent(actorId, resourceType, data);
             _pendingFirstUpdates[targetCanvasId][actorId] = evt;
 
@@ -202,7 +203,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             // (o pipeline é listener do EventBus e fará o TryExecuteBind).
         }
 
-        private void ProcessPendingFirstUpdatesForCanvas(string canvasId)
+        public void ProcessPendingFirstUpdatesForCanvas(string canvasId)
         {
             if (_pendingFirstUpdates.TryGetValue(canvasId, out Dictionary<string, ResourceUpdateEvent> actorEvents))
             {
@@ -289,7 +290,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public bool IsActorRegistered(string actorId) => _actors.ContainsKey(actorId);
 
         public IReadOnlyCollection<string> GetRegisteredActorIds() => _actors.Keys;
-        
+
         public bool IsCanvasRegisteredForActor(string actorId)
         {
             return _canvases.Values.Any(canvas => canvas.GetActorSlots().ContainsKey(actorId));

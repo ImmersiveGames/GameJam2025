@@ -269,15 +269,34 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             _pool.Release(slot);
         }
 
+        // Substitua o método privado SetupCanvasId() existente por este:
         private void SetupCanvasId()
         {
-            _canvasIdResolved = autoGenerateCanvasId
-                ? _idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString()
-                : canvasId;
+            // Prioriza ID derivado do Actor se estivermos sob um IActor na hierarquia.
+            if (autoGenerateCanvasId)
+            {
+                // Tenta obter IActor a partir do GameObject (se existir)
+                var actor = GetComponentInParent<_ImmersiveGames.Scripts.ActorSystems.IActor>();
+                if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
+                {
+                    _canvasIdResolved = $"{actor.ActorId}_Canvas";
+                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"CanvasId derived from Actor: {_canvasIdResolved}");
+                }
+                else
+                {
+                    // fallback para UniqueIdFactory / guid
+                    _canvasIdResolved = _idFactory?.GenerateId(gameObject) ?? System.Guid.NewGuid().ToString();
+                }
+            }
+            else
+            {
+                _canvasIdResolved = canvasId;
+            }
 
             if (string.IsNullOrEmpty(_canvasIdResolved))
                 _canvasIdResolved = gameObject.name;
         }
+
 
         private void ApplySlotSorting(ResourceUISlot slot, ResourceInstanceConfig instanceConfig)
         {
