@@ -132,8 +132,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoTestOnReady: 0
+  testMode: 2
   testDamage: 10
+  damageResourceType: 0
   initializationDelay: 0.5
+  overallTimeout: 5
+  verboseEvents: 1
 --- !u!114 &2774738434980984958
 MonoBehaviour:
   m_ObjectHideFlags: 0

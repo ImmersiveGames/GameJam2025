@@ -8,6 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
+    [DefaultExecutionOrder(25)]
     public class InjectableEntityResourceBridge : MonoBehaviour, IInjectableComponent
     {
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
@@ -29,7 +30,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             _actor = GetComponent<IActor>();
             if (_actor == null)
             {
-                DebugUtility.LogWarning<InjectableEntityResourceBridge>($"No IActor found on {gameObject.name}");
+                DebugUtility.LogWarning<InjectableEntityResourceBridge>(
+                    $"No IActor found on {gameObject.name}. Bridge disabled.");
                 enabled = false;
                 return;
             }
@@ -37,7 +39,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             InjectionState = DependencyInjectionState.Pending;
             ResourceInitializationManager.Instance.RegisterForInjection(this);
 
-            DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Awake called for {_actor.ActorId}");
+            DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                $"Awake called for {_actor.ActorId}");
         }
 
         public void OnDependenciesInjected()
@@ -48,88 +51,101 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             try
             {
-                if (DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem existingService))
+                // 🔹 Verifica se já existe um ResourceSystem para este actor
+                if (DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem existingService) && existingService != null)
                 {
-                    Debug.LogWarning($"[EntityBridge] ResourceSystem already exists for {_actor.ActorId}, reusing");
                     _service = existingService;
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                        $"♻️ Reusing existing ResourceSystem for '{_actor.ActorId}'");
                 }
                 else
                 {
+                    // 🔹 Cria um novo se necessário
                     _service = new ResourceSystem(_actor.ActorId, resourceInstances);
                     DependencyManager.Instance.RegisterForObject(_actor.ActorId, _service);
-                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"✅ Created new ResourceSystem for '{_actor.ActorId}'");
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                        $"✅ Created new ResourceSystem for '{_actor.ActorId}'");
                 }
 
-                if (_orchestrator != null && !_orchestrator.IsActorRegistered(_actor.ActorId))
+                // 🔹 Registro no orchestrator se ainda não existir
+                if (_orchestrator != null)
                 {
-                    _orchestrator.RegisterActor(_service);
-                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"✅ Registered actor '{_actor.ActorId}' in orchestrator");
+                    if (!_orchestrator.IsActorRegistered(_actor.ActorId))
+                    {
+                        _orchestrator.RegisterActor(_service);
+                        DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                            $"✅ Registered actor '{_actor.ActorId}' in orchestrator");
+                    }
+                    else
+                    {
+                        DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                            $"Actor '{_actor.ActorId}' already registered in orchestrator");
+                    }
                 }
                 else
                 {
-                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Actor '{_actor.ActorId}' already registered in orchestrator");
+                    DebugUtility.LogWarning<InjectableEntityResourceBridge>(
+                        $"Orchestrator not found during bridge init for '{_actor.ActorId}'");
                 }
 
                 InjectionState = DependencyInjectionState.Ready;
 
-                DebugResourceSystemAccess();
+                // ✅ Emite status de debug após injeção
+                LogPostInitializationStatus();
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableEntityResourceBridge>($"❌ Entity bridge failed for '{_actor.ActorId}': {ex}");
+                DebugUtility.LogError<InjectableEntityResourceBridge>(
+                    $"❌ Entity bridge failed for '{_actor.ActorId}': {ex}");
                 InjectionState = DependencyInjectionState.Failed;
             }
         }
 
-        private void DebugResourceSystemAccess()
+        private void LogPostInitializationStatus()
         {
-            StartCoroutine(DebugResourceSystemCoroutine());
-        }
+            DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"[EntityBridge] 🔍 POST-INIT CHECK for {_actor.ActorId}:");
 
-        private System.Collections.IEnumerator DebugResourceSystemCoroutine()
-        {
-            yield return new WaitForSeconds(1f);
+            bool hasDM = DependencyManager.Instance.TryGetForObject<ResourceSystem>(_actor.ActorId, out var dmSvc);
+            bool inOrchestrator = _orchestrator != null && _orchestrator.IsActorRegistered(_actor.ActorId);
 
-            Debug.Log($"[EntityBridge] 🔍 POST-INIT CHECK for {_actor.ActorId}:");
-            Debug.Log($"  - Local _service: {_service != null}");
-            Debug.Log($"  - InjectionState: {InjectionState}");
-
-            bool hasInDm = DependencyManager.Instance.TryGetForObject(_actor.ActorId, out ResourceSystem dmService);
-            Debug.Log($"  - In DependencyManager: {hasInDm}, Service: {dmService != null}");
-
-            if (_orchestrator != null)
-            {
-                bool hasInOrchestrator = _orchestrator.IsActorRegistered(_actor.ActorId);
-                Debug.Log($"  - In Orchestrator: {hasInOrchestrator}");
-
-                if (hasInOrchestrator)
-                {
-                    var orchestratorService = _orchestrator.GetActorResourceSystem(_actor.ActorId);
-                    Debug.Log($"  - Orchestrator Service: {orchestratorService != null}");
-                }
-            }
+            Debug.Log(
+                $"  - Local _service: {_service != null}\n" +
+                $"  - InjectionState: {InjectionState}\n" +
+                $"  - In DependencyManager: {hasDM}, Service: {dmSvc != null}\n" +
+                $"  - In Orchestrator: {inOrchestrator}");
         }
 
         private void OnDestroy()
         {
             _isDestroyed = true;
 
-            DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"OnDestroy called for {_actor?.ActorId}");
+            DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                $"OnDestroy called for {_actor?.ActorId}");
 
-            if (_orchestrator != null && _actor != null)
+            try
             {
-                _orchestrator.UnregisterActor(_actor.ActorId);
-                DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Unregistered actor '{_actor.ActorId}' from orchestrator");
-            }
+                if (_actor != null && _orchestrator != null)
+                {
+                    _orchestrator.UnregisterActor(_actor.ActorId);
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                        $"Unregistered actor '{_actor.ActorId}' from orchestrator");
+                }
 
-            if (_actor != null)
+                if (_actor != null)
+                {
+                    DependencyManager.Instance.ClearObjectServices(_actor.ActorId);
+                    DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
+                        $"Cleared services for '{_actor.ActorId}' from DependencyManager");
+                }
+
+                _service?.Dispose();
+                _service = null;
+            }
+            catch (Exception ex)
             {
-                DependencyManager.Instance.ClearObjectServices(_actor.ActorId);
-                DebugUtility.LogVerbose<InjectableEntityResourceBridge>($"Cleared services for '{_actor.ActorId}' from DependencyManager");
+                DebugUtility.LogError<InjectableEntityResourceBridge>(
+                    $"Error on destroy for '{_actor?.ActorId}': {ex}");
             }
-
-            _service?.Dispose();
-            _service = null;
         }
     }
 }

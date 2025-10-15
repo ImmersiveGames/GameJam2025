@@ -36,22 +36,35 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceUISlot>> _actorSlots = new();
         private ObjectPool<ResourceUISlot> _pool;
+
+        // NOTE: _canvasIdResolved is what the world sees. It may be provisional in Awake and reconciled at injection.
         private string _canvasIdResolved;
+        private string _provisionalCanvasId;
 
         public string CanvasId => _canvasIdResolved;
         public virtual CanvasType Type => canvasType;
-        public CanvasInitializationState State { get; protected set; }
+        public CanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => CanvasId;
+        public string GetObjectId() => _canvasIdResolved;
 
         private void Awake()
         {
             InjectionState = DependencyInjectionState.Pending;
             State = CanvasInitializationState.Pending;
 
-            SetupCanvasId();
+            // create a provisional id so ResourceInitializationManager can register this object.
+            // IMPORTANT: do not depend on injected services here.
+            _provisionalCanvasId = GenerateProvisionalCanvasId();
+            _canvasIdResolved = _provisionalCanvasId;
+
             ResourceInitializationManager.Instance.RegisterForInjection(this);
+        }
+
+        private string GenerateProvisionalCanvasId()
+        {
+            // Prefer gameObject name (keeps logs readable) plus GUID to avoid collisions
+            return $"{gameObject.name}_{Guid.NewGuid():N}";
         }
 
         public virtual void OnDependenciesInjected()
@@ -59,44 +72,113 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             InjectionState = DependencyInjectionState.Injecting;
             State = CanvasInitializationState.Injecting;
 
-            if (slotPrefab == null)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"❌ Slot prefab not assigned for Canvas '{CanvasId}'. Binds will fail.");
-                State = CanvasInitializationState.Failed;
-                InjectionState = DependencyInjectionState.Failed;
-                return;
-            }
+            ReconcileId();
 
-            if (dynamicSlotsParent == null)
-            {
-                dynamicSlotsParent = transform;
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Dynamic slots parent not assigned for Canvas '{CanvasId}', using self transform.");
-            }
+            if (!ValidatePrefabAndParent())
+                return;
 
             InitializePool();
             EnsureStrategyFactoryRegistered();
 
-            try
-            {
-                if (_orchestrator != null)
-                {
-                    _orchestrator.RegisterCanvas(this);
-                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Canvas '{CanvasId}' registered in orchestrator");
-                }
-                else
-                {
-                    DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Orchestrator not available for Canvas '{CanvasId}'");
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Exception registering canvas '{CanvasId}': {ex}");
-            }
+            RegisterInOrchestrator();
 
             InjectionState = DependencyInjectionState.Ready;
             State = CanvasInitializationState.Ready;
 
-            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Canvas '{CanvasId}' fully initialized as {Type}");
+            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>(
+                $"✅ Canvas '{CanvasId}' fully initialized as {Type}");
+
+            // -------- Local helpers (melhoram legibilidade sem mudar a API) --------
+            void ReconcileId()
+            {
+                string finalCanvasId = ResolveFinalCanvasId();
+                if (string.Equals(finalCanvasId, _canvasIdResolved, StringComparison.Ordinal))
+                    return;
+
+                string oldId = _canvasIdResolved;
+                _canvasIdResolved = finalCanvasId;
+
+                try
+                {
+                    if (_orchestrator != null)
+                    {
+                        // Unregister old if present (silently ignore if not present)
+                        try { _orchestrator.UnregisterCanvas(oldId); } catch { /* ignore */ }
+                    }
+
+                    if (CanvasPipelineManager.HasInstance)
+                    {
+                        // ensure no stale registration remains in pipeline
+                        CanvasPipelineManager.Instance.UnregisterCanvas(oldId);
+                    }
+
+                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Canvas id reconciled: {oldId} -> {_canvasIdResolved}");
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Failed to reconcile canvas id: {ex}");
+                }
+            }
+
+            bool ValidatePrefabAndParent()
+            {
+                if (slotPrefab == null)
+                {
+                    DebugUtility.LogError<InjectableCanvasResourceBinder>(
+                        $"❌ Slot prefab not assigned for Canvas '{CanvasId}'.");
+                    State = CanvasInitializationState.Failed;
+                    InjectionState = DependencyInjectionState.Failed;
+                    return false;
+                }
+
+                if (dynamicSlotsParent == null)
+                    dynamicSlotsParent = transform;
+
+                return true;
+            }
+
+            void RegisterInOrchestrator()
+            {
+                try
+                {
+                    _orchestrator?.RegisterCanvas(this);
+                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>(
+                        $"✅ Canvas '{CanvasId}' registered in orchestrator");
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError<InjectableCanvasResourceBinder>(
+                        $"Exception registering canvas '{CanvasId}': {ex}");
+                }
+            }
+        }
+
+        private string ResolveFinalCanvasId()
+        {
+            if (!autoGenerateCanvasId)
+            {
+                // explicit canvasId set in inspector wins
+                return string.IsNullOrEmpty(canvasId) ? gameObject.name : canvasId;
+            }
+
+            // If there's an IActor in parent, and it has ActorId, prefer actor-specific canvas id
+            var actor = GetComponentInParent<ActorSystems.IActor>();
+            if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
+            {
+                return $"{actor.ActorId}_Canvas";
+            }
+
+            // Otherwise prefer idFactory (now injected) if available; fallback to provisional
+            try
+            {
+                if (_idFactory != null)
+                {
+                    return _idFactory.GenerateId(gameObject);
+                }
+            }
+            catch { /* ignore factory errors and fallthrough to provisional */ }
+
+            return _provisionalCanvasId;
         }
 
         private void EnsureStrategyFactoryRegistered()
@@ -117,12 +199,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         }
 
         public virtual bool CanAcceptBinds() => State == CanvasInitializationState.Ready;
-
-        public virtual void ForceReady()
-        {
-            State = CanvasInitializationState.Ready;
-            DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Canvas '{CanvasId}' forced to ready state");
-        }
+        protected virtual void ForceReady() => State = CanvasInitializationState.Ready;
 
         public virtual void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
         {
@@ -138,16 +215,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 return;
             }
 
-            ResourceInstanceConfig instanceConfig = ResolveInstanceConfig(actorId, resourceType);
+            var instanceConfig = ResolveInstanceConfig(actorId, resourceType);
 
             if (CanAcceptBinds())
-            {
                 CreateSlotForActor(actorId, resourceType, data, instanceConfig);
-            }
             else
-            {
                 StartCoroutine(DelayedBind(actorId, resourceType, data, instanceConfig, maxBindWaitSeconds));
-            }
         }
 
         protected void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
@@ -168,8 +241,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             try
             {
-                if (instanceConfig == null)
-                    instanceConfig = ResolveInstanceConfig(actorId, resourceType);
+                instanceConfig ??= ResolveInstanceConfig(actorId, resourceType);
 
                 newSlot.InitializeForActorId(actorId, resourceType, instanceConfig);
                 newSlot.Configure(data);
@@ -187,7 +259,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        protected ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
+        private ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
         {
             if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc))
                 return null;
@@ -212,52 +284,65 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Timeout waiting for bind {actorId}.{resourceType} on '{CanvasId}'");
         }
 
-        // ✅ Pool corrigido para preservar posição, ordem e hierarquia
         private void InitializePool()
         {
+            // Normaliza tamanho inicial
             if (initialPoolSize < 0) initialPoolSize = 0;
 
+            // Cria o pool com funções nomeadas (melhor legibilidade)
             _pool = new ObjectPool<ResourceUISlot>(
-                createFunc: () =>
-                {
-                    if (slotPrefab == null) return null;
-
-                    var slot = Instantiate(slotPrefab, dynamicSlotsParent);
-                    slot.gameObject.SetActive(false);
-                    return slot;
-                },
-                actionOnGet: slot =>
-                {
-                    if (slot != null)
-                    {
-                        slot.gameObject.SetActive(true);
-                        slot.transform.SetAsLastSibling(); // mantém ordem visual
-                    }
-                },
-                actionOnRelease: slot =>
-                {
-                    if (slot != null)
-                    {
-                        slot.Clear();
-                        slot.gameObject.SetActive(false);
-                    }
-                },
-                actionOnDestroy: slot =>
-                {
-                    if (slot != null) Destroy(slot.gameObject);
-                },
+                createFunc: Create,
+                actionOnGet: OnGet,
+                actionOnRelease: OnRelease,
+                actionOnDestroy: OnDestroySlot,
                 collectionCheck: false,
                 defaultCapacity: Mathf.Max(1, initialPoolSize),
                 maxSize: 100
             );
 
-            for (int i = 0; i < initialPoolSize; i++)
-            {
-                var slot = _pool.Get();
-                if (slot != null) _pool.Release(slot);
-            }
+            // Pré-aquecimento do pool
+            Prewarm(initialPoolSize);
 
             DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Pool initialized for Canvas '{CanvasId}' (Size: {initialPoolSize})");
+
+            // -------- Local helpers --------
+            ResourceUISlot Create()
+            {
+                if (slotPrefab == null) return null;
+
+                var slot = Instantiate(slotPrefab, dynamicSlotsParent);
+                slot.gameObject.SetActive(false);
+                return slot;
+            }
+
+            void OnGet(ResourceUISlot slot)
+            {
+                if (slot == null) return;
+                slot.gameObject.SetActive(true);
+                slot.transform.SetAsLastSibling();
+            }
+
+            void OnRelease(ResourceUISlot slot)
+            {
+                if (slot == null) return;
+                slot.Clear();
+                slot.gameObject.SetActive(false);
+            }
+
+            void OnDestroySlot(ResourceUISlot slot)
+            {
+                if (slot == null) return;
+                Destroy(slot.gameObject);
+            }
+
+            void Prewarm(int count)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var s = _pool.Get();
+                    if (s != null) _pool.Release(s);
+                }
+            }
         }
 
         private ResourceUISlot GetSlotFromPool() => _pool.Get();
@@ -268,35 +353,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             slot.Clear();
             _pool.Release(slot);
         }
-
-        // Substitua o método privado SetupCanvasId() existente por este:
-        private void SetupCanvasId()
-        {
-            // Prioriza ID derivado do Actor se estivermos sob um IActor na hierarquia.
-            if (autoGenerateCanvasId)
-            {
-                // Tenta obter IActor a partir do GameObject (se existir)
-                var actor = GetComponentInParent<_ImmersiveGames.Scripts.ActorSystems.IActor>();
-                if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
-                {
-                    _canvasIdResolved = $"{actor.ActorId}_Canvas";
-                    DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"CanvasId derived from Actor: {_canvasIdResolved}");
-                }
-                else
-                {
-                    // fallback para UniqueIdFactory / guid
-                    _canvasIdResolved = _idFactory?.GenerateId(gameObject) ?? System.Guid.NewGuid().ToString();
-                }
-            }
-            else
-            {
-                _canvasIdResolved = canvasId;
-            }
-
-            if (string.IsNullOrEmpty(_canvasIdResolved))
-                _canvasIdResolved = gameObject.name;
-        }
-
 
         private void ApplySlotSorting(ResourceUISlot slot, ResourceInstanceConfig instanceConfig)
         {

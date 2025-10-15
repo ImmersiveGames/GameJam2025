@@ -161,7 +161,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct SlotInfo
     {
         public int RendererCount;

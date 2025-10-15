@@ -15,24 +15,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         public override CanvasType Type => CanvasType.Dynamic;
 
-        // NOTA: base.OnDependenciesInjected() é chamado pelo ResourceInitializationManager.
-        // Aqui apenas completamos com o registro no pipeline (após estar pronto).
         public override void OnDependenciesInjected()
         {
             base.OnDependenciesInjected();
 
+            // post-injection register in a pipeline (if desired).
             if (registerInPipeline && CanvasPipelineManager.HasInstance)
             {
                 CanvasPipelineManager.Instance.RegisterCanvas(this);
                 DebugUtility.LogVerbose<DynamicCanvasBinder>($"✅ Dynamic Canvas '{CanvasId}' registered in pipeline (post-injection)");
             }
 
-            // Reemitir pendentes no hub (compat)
+            // Re-emit pendentes no hub (compat)
             ResourceEventHub.NotifyCanvasRegistered(CanvasId);
         }
 
-        // Método público simples para ser chamado pelo código que instancia o prefab (se necessário).
-        // NÃO chama base.OnDependenciesInjected(); apenas registra e notifica pendentes.
+        // Public helper used by runtime code that instantiates prefab and immediately wants canvas ready.
         public void InitializeDynamicCanvas()
         {
             if (State == CanvasInitializationState.Ready) return;
