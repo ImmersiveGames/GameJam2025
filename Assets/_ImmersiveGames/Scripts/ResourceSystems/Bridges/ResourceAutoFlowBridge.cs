@@ -18,32 +18,31 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (resourceSystem == null)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>("ResourceSystem é null na inicialização do AutoFlow");
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>(
+                    $"ResourceSystem é null na inicialização do AutoFlow ({Actor.ActorId})");
                 return false;
             }
 
             bool hasAutoFlowResources = CheckForAutoFlowResources();
             if (!hasAutoFlowResources)
             {
-                DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Nenhum recurso com autoflow configurado. Desativando.");
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>(
+                    $"Nenhum recurso com AutoFlow configurado em {Actor.ActorId}. Desativando bridge (sem erro).");
                 enabled = false;
-                return false;
+                return true; // ✅ Nenhum erro, só sem necessidade
             }
 
             _autoFlow = new ResourceAutoFlowService(resourceSystem, _orchestrator, startPaused);
-            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"✅ AutoFlowService criado com {CountAutoFlowResources()} recursos com autoflow");
-
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>(
+                $"✅ AutoFlowService criado com {CountAutoFlowResources()} recursos com autoflow");
             return true;
         }
 
         protected override void OnServiceInitialized()
         {
             DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"🚀 AutoFlowService inicializado para {Actor.ActorId}");
-
             if (!startPaused)
-            {
                 _autoFlow?.Resume();
-            }
         }
 
         protected override void OnServiceDispose()
@@ -53,38 +52,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceAutoFlowBridge>("AutoFlowService disposed");
         }
 
-        protected override void Update()
+        protected void Update()
         {
-            base.Update();
-
             if (initialized && _autoFlow != null)
-            {
                 _autoFlow.Process(Time.deltaTime);
-            }
         }
 
         private bool CheckForAutoFlowResources()
         {
             if (resourceSystem == null) return false;
 
-            var allResources = resourceSystem.GetAll();
-            if (allResources.Count == 0)
+            foreach (var (type, _) in resourceSystem.GetAll())
             {
-                DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Nenhum recurso encontrado no ResourceSystem");
-                return false;
-            }
-
-            foreach (var (resourceType, _) in allResources)
-            {
-                var inst = resourceSystem.GetInstanceConfig(resourceType);
+                var inst = resourceSystem.GetInstanceConfig(type);
                 if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
-                {
-                    DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"✅ Recurso com autoflow encontrado: {resourceType}");
                     return true;
-                }
             }
 
-            DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Nenhum recurso com autoflow configurado encontrado");
             return false;
         }
 
@@ -93,15 +77,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             int count = 0;
             if (resourceSystem == null) return count;
 
-            foreach (var (resourceType, _) in resourceSystem.GetAll())
+            foreach (var (type, _) in resourceSystem.GetAll())
             {
-                var inst = resourceSystem.GetInstanceConfig(resourceType);
+                var inst = resourceSystem.GetInstanceConfig(type);
                 if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
-                {
                     count++;
-                }
             }
-
             return count;
         }
 
@@ -110,11 +91,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (!initialized)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>("Tentando inicializar via ContextMenu...");
-                StartCoroutine(InitializeWithRetry());
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>("AutoFlow ainda não inicializado.");
                 return;
             }
-
             _autoFlow?.Pause();
             DebugUtility.LogVerbose<ResourceAutoFlowBridge>("AutoFlow pausado");
         }
@@ -124,11 +103,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (!initialized)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>("Tentando inicializar via ContextMenu...");
-                StartCoroutine(InitializeWithRetry());
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>("AutoFlow ainda não inicializado.");
                 return;
             }
-
             _autoFlow?.Resume();
             DebugUtility.LogVerbose<ResourceAutoFlowBridge>("AutoFlow retomado");
         }
@@ -138,13 +115,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (!initialized)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>("Tentando inicializar via ContextMenu...");
-                StartCoroutine(InitializeWithRetry());
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>("AutoFlow ainda não inicializado.");
                 return;
             }
-
             _autoFlow?.Toggle();
-            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"AutoFlow alternado. Pausado: {_autoFlow?.IsPaused}");
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>(
+                $"AutoFlow alternado. Pausado: {_autoFlow?.IsPaused}");
         }
 
         [ContextMenu("🔄 Reset AutoFlow Timers")]
@@ -152,11 +128,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (!initialized)
             {
-                DebugUtility.LogWarning<ResourceAutoFlowBridge>("Tentando inicializar via ContextMenu...");
-                StartCoroutine(InitializeWithRetry());
+                DebugUtility.LogWarning<ResourceAutoFlowBridge>("AutoFlow ainda não inicializado.");
                 return;
             }
-
             _autoFlow?.ResetTimers();
             DebugUtility.LogVerbose<ResourceAutoFlowBridge>("Timers resetados");
         }

@@ -109,8 +109,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                     }
                 }
             }
-
-            DebugUtility.Log<CanvasDebugUtility>($"- Pool: {binder.GetPoolCountTotal()} total, {binder.GetPoolCountActive()} active");
         }
 
         private void DebugSlotState(ResourceUISlot slot)

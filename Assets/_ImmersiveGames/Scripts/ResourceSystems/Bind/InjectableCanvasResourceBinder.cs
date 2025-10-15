@@ -17,6 +17,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         [Header("Identification")]
         [SerializeField] private string canvasId;
         [SerializeField] private bool autoGenerateCanvasId = true;
+
         [Header("Dependencies")]
         [Inject] private IActorResourceOrchestrator _orchestrator;
         [Inject] private IResourceSlotStrategyFactory _strategyFactory;
@@ -35,7 +36,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceUISlot>> _actorSlots = new();
         private ObjectPool<ResourceUISlot> _pool;
-
         private string _canvasIdResolved;
 
         public string CanvasId => _canvasIdResolved;
@@ -49,6 +49,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         {
             InjectionState = DependencyInjectionState.Pending;
             State = CanvasInitializationState.Pending;
+
             SetupCanvasId();
             ResourceInitializationManager.Instance.RegisterForInjection(this);
         }
@@ -170,15 +171,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 if (instanceConfig == null)
                     instanceConfig = ResolveInstanceConfig(actorId, resourceType);
 
-                Debug.Log($"[CreateSlot] {actorId}.{resourceType}: Config={instanceConfig != null}, Style={instanceConfig?.slotStyle != null}");
-
                 newSlot.InitializeForActorId(actorId, resourceType, instanceConfig);
                 newSlot.Configure(data);
                 actorDict[resourceType] = newSlot;
 
                 ApplySlotSorting(newSlot, instanceConfig);
 
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Slot created: {actorId}.{resourceType}, Anim: {instanceConfig?.fillAnimationType}, Style: {instanceConfig?.slotStyle?.name}");
+                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>(
+                    $"✅ Slot created: {actorId}.{resourceType}, Anim: {instanceConfig?.fillAnimationType}, Style: {instanceConfig?.slotStyle?.name}");
             }
             catch (Exception ex)
             {
@@ -189,7 +189,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         protected ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
         {
-            if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc)) return null;
+            if (_orchestrator == null || !_orchestrator.TryGetActorResource(actorId, out var svc))
+                return null;
+
             return svc.GetInstanceConfig(resourceType);
         }
 
@@ -210,14 +212,52 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             DebugUtility.LogWarning<InjectableCanvasResourceBinder>($"Timeout waiting for bind {actorId}.{resourceType} on '{CanvasId}'");
         }
 
+        // ✅ Pool corrigido para preservar posição, ordem e hierarquia
         private void InitializePool()
         {
+            if (initialPoolSize < 0) initialPoolSize = 0;
+
             _pool = new ObjectPool<ResourceUISlot>(
-                () => Instantiate(slotPrefab, dynamicSlotsParent),
-                slot => { slot.gameObject.SetActive(true); },
-                slot => { slot.gameObject.SetActive(false); },
-                Destroy, true, initialPoolSize, 20
+                createFunc: () =>
+                {
+                    if (slotPrefab == null) return null;
+
+                    var slot = Instantiate(slotPrefab, dynamicSlotsParent);
+                    slot.gameObject.SetActive(false);
+                    return slot;
+                },
+                actionOnGet: slot =>
+                {
+                    if (slot != null)
+                    {
+                        slot.gameObject.SetActive(true);
+                        slot.transform.SetAsLastSibling(); // mantém ordem visual
+                    }
+                },
+                actionOnRelease: slot =>
+                {
+                    if (slot != null)
+                    {
+                        slot.Clear();
+                        slot.gameObject.SetActive(false);
+                    }
+                },
+                actionOnDestroy: slot =>
+                {
+                    if (slot != null) Destroy(slot.gameObject);
+                },
+                collectionCheck: false,
+                defaultCapacity: Mathf.Max(1, initialPoolSize),
+                maxSize: 100
             );
+
+            for (int i = 0; i < initialPoolSize; i++)
+            {
+                var slot = _pool.Get();
+                if (slot != null) _pool.Release(slot);
+            }
+
+            DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Pool initialized for Canvas '{CanvasId}' (Size: {initialPoolSize})");
         }
 
         private ResourceUISlot GetSlotFromPool() => _pool.Get();
@@ -231,8 +271,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         private void SetupCanvasId()
         {
-            _canvasIdResolved = autoGenerateCanvasId ? _idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString() : canvasId;
-            if (string.IsNullOrEmpty(_canvasIdResolved)) _canvasIdResolved = gameObject.name;
+            _canvasIdResolved = autoGenerateCanvasId
+                ? _idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString()
+                : canvasId;
+
+            if (string.IsNullOrEmpty(_canvasIdResolved))
+                _canvasIdResolved = gameObject.name;
         }
 
         private void ApplySlotSorting(ResourceUISlot slot, ResourceInstanceConfig instanceConfig)
@@ -244,9 +288,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             var canvas = slot.GetComponent<Canvas>();
             if (canvas == null)
-            {
                 canvas = slot.gameObject.AddComponent<Canvas>();
-            }
 
             canvas.overrideSorting = true;
             canvas.sortingOrder = instanceConfig.sortOrder;
@@ -259,9 +301,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             if (_actorSlots.TryGetValue(actorId, out Dictionary<ResourceType, ResourceUISlot> actorSlots))
             {
                 foreach (var slot in actorSlots.Values.Where(slot => slot != null))
-                {
                     ReturnSlotToPool(slot);
-                }
+
                 _actorSlots.Remove(actorId);
                 DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Removed all slots for actor '{actorId}' from Canvas '{CanvasId}'");
             }
@@ -272,9 +313,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             StopAllCoroutines();
 
             foreach (string actorId in _actorSlots.Keys.ToList())
-            {
                 RemoveActorSlots(actorId);
-            }
 
             _pool?.Clear();
             DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"Cleared all slots and pool for Canvas '{CanvasId}'");
@@ -288,21 +327,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             try
             {
                 if (_orchestrator != null && !string.IsNullOrEmpty(CanvasId))
-                {
                     _orchestrator.UnregisterCanvas(CanvasId);
-                }
 
                 if (CanvasPipelineManager.HasInstance)
-                {
                     CanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
-                }
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error during destruction: {ex}");
             }
         }
-        // Métodos públicos para debug
+
+        // Debug helpers
         public int GetActorSlotsCount() => _actorSlots.Count;
         public IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots() => _actorSlots;
         public int GetPoolCountTotal() => _pool?.CountAll ?? 0;
@@ -310,7 +346,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         public bool TryGetSlot(string actorId, ResourceType resourceType, out ResourceUISlot slot)
         {
             slot = null;
-            return _actorSlots.TryGetValue(actorId, out var actorDict) && actorDict.TryGetValue(resourceType, out slot) && slot != null;
+            return _actorSlots.TryGetValue(actorId, out var actorDict) &&
+                   actorDict.TryGetValue(resourceType, out slot) && slot != null;
         }
     }
 }

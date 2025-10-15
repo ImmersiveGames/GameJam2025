@@ -157,7 +157,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             Debug.Log($"[ResourceSystem] GetInstanceConfig - {EntityId}.{resourceType}: Found={config != null}, Style={config?.slotStyle != null}");
             return config;
         }
+        /// <summary>
+        /// Retorna todos os ResourceTypes registrados neste sistema
+        /// </summary>
+        public IEnumerable<ResourceType> GetAllRegisteredTypes()
+        {
+            return _resources.Keys;
+        }
 
+        /// <summary>
+        /// Tenta obter o valor de um recurso específico
+        /// </summary>
+        public bool TryGetValue(ResourceType resourceType, out IResourceValue value)
+        {
+            return _resources.TryGetValue(resourceType, out value);
+        }
         public void Dispose()
         {
             _resources.Clear();
@@ -175,5 +189,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 Debug.Log($"  - {kvp.Key}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
             }
         }
+       
     }
 }

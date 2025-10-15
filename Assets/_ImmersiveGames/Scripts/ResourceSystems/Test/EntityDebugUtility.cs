@@ -426,7 +426,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [ContextMenu("🔧 Debug Resource Bridge Base Status")]
         public void DebugResourceBridgeStatus(ResourceBridgeBase bridge)
         {
-            string actorId = bridge.GetActor()?.ActorId ?? "null";
+            string actorId = bridge.Actor?.ActorId ?? "null";
             bool orchestratorFound = DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator);
             bool actorRegistered = orchestratorFound && orchestrator.IsActorRegistered(actorId);
 
@@ -453,7 +453,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [ContextMenu("🔗 Debug Active Links")]
         public void DebugActiveLinks(ResourceLinkBridge bridge)
         {
-            var actorId = bridge.GetActor()?.ActorId;
+            var actorId = bridge.Actor?.ActorId;
             var resourceLinks = bridge.GetAllLinks();
             if (resourceLinks == null || actorId == null)
             {
@@ -473,7 +473,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [ContextMenu("🔄 Force Re-register Links")]
         public void ForceReregisterLinks(ResourceLinkBridge bridge)
         {
-            var actorId = bridge.GetActor()?.ActorId;
+            var actorId = bridge.Actor?.ActorId;
             if (actorId == null)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
@@ -514,7 +514,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
                 DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
                 DebugUtility.LogWarning<EntityDebugUtility>($" - Has Thresholds: {bridge.CheckForThresholdConfigurations()}");
-                DebugUtility.LogWarning<EntityDebugUtility>($" - Event Binding: {bridge.HasThresholdBinding()}"); // Novo método adicionado ao bridge
 
                 // Listar recursos com thresholds
                 foreach (var (resourceType, _) in resourceSystem.GetAll())
