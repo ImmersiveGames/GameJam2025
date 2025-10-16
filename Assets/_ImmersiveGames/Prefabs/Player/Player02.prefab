@@ -15,8 +15,6 @@ GameObject:
   - component: {fileID: 1734721150042273165}
   - component: {fileID: 6363231816269964278}
   - component: {fileID: 1088995073414132556}
-  - component: {fileID: 5579969325704585538}
-  - component: {fileID: 4962873194972533924}
   - component: {fileID: 1647238950887989297}
   - component: {fileID: 1651844151049576845}
   - component: {fileID: 1220082444329315456}
@@ -180,57 +178,6 @@ MonoBehaviour:
     fuzzyPercent: 0
     fuzzyAngle: 0
     shootSound: {fileID: 0}
---- !u!114 &5579969325704585538
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6539729360946555031}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b07cf04275f4e9686f892c95c424df5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  damageableLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  damageSelf: 0
-  canReceiveDamage: 1
-  primaryDamageResource: 0
-  destroyOnDeath: 0
-  deathEffect: {fileID: 0}
-  invokeEvents: 1
-  checkHealthOnStart: 1
-  canRespawn: 1
-  respawnTime: 3
-  respawnPosition: {x: 0, y: 0, z: 0}
-  useInitialPositionAsRespawn: 1
-  deactivateOnDeath: 1
---- !u!114 &4962873194972533924
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6539729360946555031}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  damageableLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  damageSelf: 0
-  damageAmount: 20
-  damageResourceType: 0
-  damageType: 0
-  destroyOnDamage: 0
-  useCooldown: 1
-  cooldownTime: 0.5
-  hitEffect: {fileID: 0}
-  destructionEffect: {fileID: 0}
 --- !u!114 &1647238950887989297
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -334,7 +281,6 @@ MonoBehaviour:
     canvasTargetMode: 2
     customCanvasId: MainUI2
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
@@ -352,5 +298,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoTestOnReady: 0
+  testMode: 2
   testDamage: 20
+  damageResourceType: 0
   initializationDelay: 0.5
+  overallTimeout: 5
+  verboseEvents: 1

@@ -18,9 +18,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             _damageReceiver = GetComponent<DamageReceiver>();
             if (_damageReceiver != null)
             {
-                _damageReceiver.EventDamageReceived += EventHit;
+                /*_damageReceiver.EventDamageReceived += EventHit;
                 _damageReceiver.EventDeath += EventDeath;
-                _damageReceiver.EventRevive += EventRevive;
+                _damageReceiver.EventRevive += EventRevive;*/
             }
         }
 
@@ -28,9 +28,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_damageReceiver != null)
             {
-                _damageReceiver.EventDamageReceived -= EventHit;
+                /*_damageReceiver.EventDamageReceived -= EventHit;
                 _damageReceiver.EventDeath -= EventDeath;
-                _damageReceiver.EventRevive -= EventRevive;
+                _damageReceiver.EventRevive -= EventRevive;*/
             }
             base.OnDisable();
         }

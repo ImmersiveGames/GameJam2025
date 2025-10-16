@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 475789a763d843959321260184dce82b, type: 3}
   m_Name: HealthCircular
   m_EditorClassIdentifier: 
-  animationType: 0
+  animationType: 1
   mainSpeed: 2
   mainEase: 6
   residualDelay: 0.3

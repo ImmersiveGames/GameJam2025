@@ -1,163 +1,70 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DamageSystem.Services;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
-    [DebugLevel(DebugLevel.Logs)]
-    public class DamageDealer : DamageSystemBase, IDamageSource
+    /// <summary>
+    /// Causa dano em colisão com objetos que tenham DamageReceiver.
+    /// </summary>
+    [RequireComponent(typeof(ActorMaster))]
+    public class DamageDealer : MonoBehaviour, IDamageDealer
     {
-        [Header("Damage Settings")]
-        [SerializeField] private float damageAmount = 20f;
-        [SerializeField] private ResourceType damageResourceType = ResourceType.Health;
+        [Header("Configuração de Dano")]
+        [SerializeField] private float baseDamage = 10f;
+        [SerializeField] private ResourceType targetResource = ResourceType.Health;
         [SerializeField] private DamageType damageType = DamageType.Physical;
-        [SerializeField] private bool destroyOnDamage;
 
-        [Header("Cooldown")]
-        [SerializeField] private bool useCooldown;
-        [SerializeField] private float cooldownTime = 0.5f;
+        [Header("Camadas válidas para causar dano")]
+        [SerializeField] private LayerMask targetLayers;
 
-        [Header("Effects")]
-        [SerializeField] private GameObject hitEffect;
-        [SerializeField] private GameObject destructionEffect;
+        private ActorMaster actor;
 
-        private float _nextAvailableTime;
-        private readonly HashSet<GameObject> _processedTargetsThisFrame = new HashSet<GameObject>();
+        private void Awake() => actor = GetComponent<ActorMaster>();
 
-        // CORREÇÃO: Injeção de dependência melhorada
-        private DamageService _damageService;
-        private bool _serviceInitialized;
-
-        public event System.Action<float, IDamageable> OnDamageDealt;
-        public event System.Action<IDamageable> OnDamageBlocked;
-
-        protected override void Awake()
+        /// <summary>
+        /// Colliders podem estar em filhos — por isso, este método é chamado no pai.
+        /// </summary>
+        /// <param name="collision"></param>
+        public void OnChildCollisionEnter(Collision collision)
         {
-            base.Awake();
-            InitializeDamageService();
+            HandleCollision(collision);
         }
 
-        // CORREÇÃO: Inicialização do DamageService
-        private void InitializeDamageService()
+        private void OnCollisionEnter(Collision collision)
         {
-            if (DependencyManager.Instance.TryGetGlobal(out _damageService))
-            {
-                _serviceInitialized = true;
-                DebugUtility.LogVerbose<DamageDealer>("DamageService obtido via DependencyManager");
-            }
-            else
-            {
-                // Fallback: criar serviço local
-                _damageService = new DamageService();
-                _serviceInitialized = true;
-                DebugUtility.LogVerbose<DamageDealer>("DamageService criado localmente");
-            }
+            HandleCollision(collision);
         }
 
-        private void OnCollisionEnter(Collision other) => TryDealDamage(other.gameObject, other.contacts[0].point);
-        private void OnTriggerEnter(Collider other) => TryDealDamage(other.gameObject, other.ClosestPoint(transform.position));
-
-        protected override void LateUpdate()
+        private void HandleCollision(Collision collision)
         {
-            base.LateUpdate();
-            _processedTargetsThisFrame.Clear();
+            var other = collision.gameObject;
+            if (!IsTargetLayerValid(other.layer)) return;
+
+            var receiver = other.GetComponentInParent<IDamageReceiver>();
+            if (receiver == null) return;
+
+            var ctx = new DamageContext(
+                actor.ActorId,
+                receiver.GetReceiverId(),
+                baseDamage,
+                targetResource,
+                damageType,
+                collision.contacts[0].point,
+                collision.contacts[0].normal
+            );
+
+            DealDamage(receiver, ctx);
         }
 
-        private void TryDealDamage(GameObject target, Vector3 contactPoint)
+        public void DealDamage(IDamageReceiver target, DamageContext ctx)
         {
-            // CORREÇÃO: Verificar se o serviço está inicializado
-            if (!_serviceInitialized)
-            {
-                DebugUtility.LogWarning<DamageDealer>("DamageService não inicializado, pulando dano");
-                return;
-            }
-
-            if (_processedTargetsThisFrame.Contains(target) || HasProcessedPair(gameObject, target))
-            {
-                DebugUtility.LogVerbose<DamageDealer>($"[Dealer {gameObject.name}] Target {target.name} já processado neste frame, pulando");
-                return;
-            }
-            
-            _processedTargetsThisFrame.Add(target);
-            RegisterProcessedPair(gameObject, target);
-
-            DebugUtility.LogVerbose<DamageDealer>($"[Dealer {gameObject.name}] TryDealDamage iniciado para {target.name} em {contactPoint}");
-            if (!IsValidTarget(target)) return;
-
-            if (useCooldown && Time.time < _nextAvailableTime)
-            {
-                DebugUtility.LogVerbose<DamageDealer>($"[Dealer {gameObject.name}] Cooldown ativo, pulando dano");
-                return;
-            }
-            if (useCooldown) _nextAvailableTime = Time.time + cooldownTime;
-
-            var damageable = GetDamageableFromTarget(target);
-            if (damageable == null)
-            {
-                DebugUtility.LogVerbose<DamageDealer>($"[Dealer {gameObject.name}] Nenhum damageable encontrado em {target.name}");
-                return;
-            }
-
-            if (!damageable.CanReceiveDamage)
-            {
-                OnDamageBlocked?.Invoke(damageable);
-                return;
-            }
-
-            var ctx = new DamageContext
-            {
-                Source = actor,
-                Target = damageable.Actor,
-                Amount = damageAmount,
-                DamageType = damageType,
-                ResourceType = damageResourceType,
-                HitPosition = contactPoint
-            };
-
-            float finalDamage = _damageService?.CalculateFinalDamage(ctx) ?? damageAmount;
-            ctx.Amount = finalDamage;
-
-            damageable.ReceiveDamage(finalDamage, actor, damageResourceType);
-
-            if (hitEffect != null)
-                destructionHandler.HandleEffectSpawn(hitEffect, contactPoint, Quaternion.identity);
-
-            _damageService?.ApplyPostDamageEffects(ctx);
-
-            OnDamageDealt?.Invoke(finalDamage, damageable);
-
-            if (destroyOnDamage)
-                HandleDestruction();
+            target.ReceiveDamage(ctx);
         }
 
-        private void HandleDestruction()
+        private bool IsTargetLayerValid(int layer)
         {
-            if (destructionEffect != null)
-                destructionHandler.HandleEffectSpawn(destructionEffect, transform.position, transform.rotation);
-            destructionHandler.HandleDestruction(gameObject, false);
-        }
-
-        public float DamageAmount => damageAmount;
-        public ResourceType DamageResourceType => damageResourceType;
-        public DamageType DamageType => damageType;
-        public IActor DamageSourceActor => actor;
-
-        public void SetDamage(float amount) => damageAmount = Mathf.Max(0f, amount);
-        public void SetDestroyOnDamage(bool destroy) => destroyOnDamage = destroy;
-
-        public void ForceDealDamage(GameObject target, Vector3 hitPoint) => TryDealDamage(target, hitPoint);
-
-        [ContextMenu("🔧 Debug Deal Damage")]
-        public void DebugDealDamageTo(GameObject target)
-        {
-            if (target == null) return;
-            var hitPoint = target.transform.position;
-            TryDealDamage(target, hitPoint);
-            DebugUtility.Log<DamageDealer>($"Tried to deal {damageAmount} damage to {target.name}");
+            return (targetLayers.value & (1 << layer)) != 0;
         }
     }
 }

@@ -15,11 +15,10 @@ GameObject:
   - component: {fileID: 4612188242723959288}
   - component: {fileID: 2902669177486074835}
   - component: {fileID: 2774738434980984958}
-  - component: {fileID: 2547070143887080334}
-  - component: {fileID: 2342669520045563938}
   - component: {fileID: 6005341794915908452}
   - component: {fileID: 5646439767534810260}
   - component: {fileID: 299314230134813839}
+  - component: {fileID: 81636598692984422}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Untagged
@@ -114,7 +113,6 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    fillAnimationType: 1
     thresholdConfig: {fileID: 0}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
@@ -150,57 +148,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61dfceda261c40b2872b6436f598e390, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2547070143887080334
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312295584184867285}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b07cf04275f4e9686f892c95c424df5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  damageableLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  damageSelf: 0
-  canReceiveDamage: 1
-  primaryDamageResource: 0
-  destroyOnDeath: 0
-  deathEffect: {fileID: 0}
-  invokeEvents: 1
-  checkHealthOnStart: 1
-  canRespawn: 1
-  respawnTime: 3
-  respawnPosition: {x: 0, y: 0, z: 0}
-  useInitialPositionAsRespawn: 1
-  deactivateOnDeath: 1
---- !u!114 &2342669520045563938
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312295584184867285}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbe287f658e147cc9e8a755c8df90bbf, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  damageableLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  damageSelf: 0
-  damageAmount: 20
-  damageResourceType: 0
-  damageType: 0
-  destroyOnDamage: 0
-  useCooldown: 1
-  cooldownTime: 0.5
-  hitEffect: {fileID: 0}
-  destructionEffect: {fileID: 0}
 --- !u!114 &6005341794915908452
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,3 +185,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adea1b7d434745998b36714429154445, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &81636598692984422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15eb4ca9f6ea40ecbe9fc496ca7b3c60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetResource: 0

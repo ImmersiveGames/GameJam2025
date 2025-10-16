@@ -25,18 +25,18 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 _onDeath = _ => PlaySoundLocal(audioConfig.deathSound, AudioContext.Default(transform.position, audioConfig.useSpatialBlend));
                 _onRevive = _ => PlaySoundLocal(audioConfig.reviveSound, AudioContext.Default(transform.position, audioConfig.useSpatialBlend));
 
-                _damageReceiver.EventDamageReceived += _onDamageReceived;
+                /*_damageReceiver.EventDamageReceived += _onDamageReceived;
                 _damageReceiver.EventDeath += _onDeath;
-                _damageReceiver.EventRevive += _onRevive;
+                _damageReceiver.EventRevive += _onRevive;*/
             }
         }
 
         private void OnDestroy()
         {
             if (_damageReceiver == null) return;
-            _damageReceiver.EventDamageReceived -= _onDamageReceived;
+            /*_damageReceiver.EventDamageReceived -= _onDamageReceived;
             _damageReceiver.EventDeath -= _onDeath;
-            _damageReceiver.EventRevive -= _onRevive;
+            _damageReceiver.EventRevive -= _onRevive;*/
         }
 
         public void PlayShootSound(SoundData strategySound = null, float volumeMultiplier = 1f)
