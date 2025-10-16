@@ -1,8 +1,8 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
+﻿using _ImmersiveGames.Scripts.ResourceSystems.Animation;
+using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -19,7 +19,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private Image iconImage;
         [SerializeField] private GameObject rootPanel;
 
-        private IResourceSlotStrategy _slotStrategy;
+        [Header("Animation")]
+        [SerializeField] private FillAnimationProfile animationProfile;
+
+        private IFillAnimationStrategy _fillStrategy;
 
         private float _currentFill;
         private float _previousFill;
@@ -28,7 +31,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private ResourceUIStyle _currentStyle;
 
         public ResourceType Type { get; private set; }
-        private ResourceInstanceConfig InstanceConfig { get; set; }
+        public ResourceInstanceConfig InstanceConfig { get; private set; }
+
         public Image FillImage => fillImage;
         public Image PendingFillImage => pendingFillImage;
         public TextMeshProUGUI ValueText => valueText;
@@ -41,7 +45,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void Awake()
         {
             if (rootPanel == null) rootPanel = gameObject;
-            _slotStrategy = new InstantSlotStrategy();
+        }
+
+        private IFillAnimationStrategy CreateStrategyFromProfile(FillAnimationProfile profile)
+        {
+            if (profile == null) return new InstantFillAnimationStrategy();
+
+            return profile.animationType switch
+            {
+                FillAnimationType.BasicReactive => new BasicReactiveFillAnimationStrategy(),
+                _ => new InstantFillAnimationStrategy()
+            };
         }
 
         public void InitializeForActorId(string actorId, ResourceType type, ResourceInstanceConfig config)
@@ -52,24 +66,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             ApplyBaseStyleImmediate();
 
-            // Strategy factory if available
-            if (!DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory))
-            {
-                _slotStrategy = CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
-            }
-            else
-            {
-                _slotStrategy = factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant);
-            }
-
-            DebugUtility.LogVerbose<ResourceUISlot>($"🎯 Strategy created: {_slotStrategy?.GetType().Name ?? "null"} for {config?.fillAnimationType ?? FillAnimationType.Instant}");
+            // Cria estratégia a partir do perfil (ou Instant como fallback)
+            _fillStrategy = CreateStrategyFromProfile(animationProfile);
+            _fillStrategy.Initialize(fillImage, pendingFillImage, animationProfile, this);
 
             if (InstanceConfig?.resourceDefinition != null && iconImage != null)
                 iconImage.sprite = InstanceConfig.resourceDefinition.icon;
 
             gameObject.name = $"{actorId}_{type}";
 
-            // initial state
             _currentFill = 1f;
             _previousFill = 1f;
 
@@ -85,29 +90,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceUISlot>($"🎨 Applying base style: {_currentStyle.name}");
 
             if (pendingFillImage != null && _currentStyle.pendingColor != default)
-            {
                 pendingFillImage.color = _currentStyle.pendingColor;
-            }
 
             if (fillImage != null)
                 fillImage.fillAmount = 1f;
             if (pendingFillImage != null)
-                pendingFillImage.fillAmount = 0f;
-
-            /*if (valueText != null)
-            {
-                valueText.color = _currentStyle.textColor;
-                valueText.fontSize = _currentStyle.textSize;
-            }*/
-        }
-
-        private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
-        {
-            return animationType switch
-            {
-                FillAnimationType.BasicAnimated => new BasicAnimatedFillStrategy(),
-                _ => new InstantSlotStrategy()
-            };
+                pendingFillImage.fillAmount = 1f;
         }
 
         public void Configure(IResourceValue data)
@@ -119,7 +107,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
 
             _previousFill = _currentFill;
-            _currentFill = Mathf.Clamp01(newValue);
+            _currentFill = newValue;
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
             if (InstanceConfig?.slotStyle != _currentStyle)
@@ -130,36 +118,26 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (_isFirstConfigure)
             {
+                _fillStrategy?.SetInstant(_currentFill);
                 ApplyVisualsImmediate();
                 _isFirstConfigure = false;
             }
             else
             {
-                ApplyVisuals();
+                _fillStrategy?.AnimateTo(_currentFill);
             }
+
+            if (valueText != null)
+                valueText.text = _currentText;
 
             SetVisible(true);
         }
 
-        public ResourceInstanceConfig GetInstanceConfig() => InstanceConfig;
-
         private void ApplyVisualsImmediate()
         {
             DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
-
-            var instantStrategy = new InstantSlotStrategy();
-            instantStrategy.ApplyFill(this, _currentFill, _currentFill, _currentStyle);
-            instantStrategy.ApplyText(this, _currentText, _currentStyle);
-
+            _fillStrategy?.SetInstant(_currentFill);
             ClearAllTween();
-        }
-
-        private void ApplyVisuals()
-        {
-            DebugUtility.LogVerbose<ResourceUISlot>($"🎨 ApplyVisuals: {Type} - Current: {_currentFill}, Previous: {_previousFill}, Style: {_currentStyle?.name}");
-
-            _slotStrategy?.ApplyFill(this, _currentFill, _previousFill, _currentStyle);
-            _slotStrategy?.ApplyText(this, _currentText, _currentStyle);
         }
 
         public void RefreshStyle()
@@ -172,7 +150,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void Clear()
         {
-            _slotStrategy?.ClearVisuals(this);
+            try { _fillStrategy?.Cancel(); }
+            catch
+            {
+                // ignored
+            }
             StopAllCoroutines();
             _currentFill = 0f;
             _previousFill = 0f;
@@ -186,7 +168,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (rootPanel != null) rootPanel.SetActive(visible);
         }
 
-        // removido ContextMenu — mantem DebugUtility.Log mas sem menu no inspector
+        [ContextMenu("Force Visual Update")]
         public void ForceVisualUpdate()
         {
             ApplyBaseStyleImmediate();
@@ -197,6 +179,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void OnDestroy()
         {
             ClearAllTween();
+            try { _fillStrategy?.Cancel(); }
+            catch
+            {
+                // ignored
+            }
         }
 
         private void ClearAllTween()

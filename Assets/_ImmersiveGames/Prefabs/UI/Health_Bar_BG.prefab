@@ -246,6 +246,7 @@ MonoBehaviour:
   valueText: {fileID: 4422880494650787627}
   iconImage: {fileID: 0}
   rootPanel: {fileID: 2714092453672780032}
+  animationProfile: {fileID: 11400000, guid: 1408c6b543cb5d6429f659596093120a, type: 2}
 --- !u!1 &7763835589478428796
 GameObject:
   m_ObjectHideFlags: 0

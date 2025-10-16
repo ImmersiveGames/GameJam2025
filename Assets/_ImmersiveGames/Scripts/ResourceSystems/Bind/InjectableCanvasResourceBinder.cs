@@ -18,7 +18,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         [Header("Dependencies")]
         [Inject] protected IActorResourceOrchestrator orchestrator;
-        [Inject] protected IResourceSlotStrategyFactory strategyFactory;
         [Inject] protected IUniqueIdFactory idFactory;
 
         [Header("Pool & Prefab")]

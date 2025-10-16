@@ -80,7 +80,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                     {
                         if (binder.TryGetSlot(actorId, resourceType, out var slot) && slot != null)
                         {
-                            var slotConfig = slot.GetInstanceConfig();
+                            var slotConfig = slot.InstanceConfig;
                             DebugUtility.Log<CanvasDebugUtility>($"     Slot Style in {binder.CanvasId}: {slotConfig?.slotStyle != null} ({slotConfig?.slotStyle?.name})");
                         }
                     }

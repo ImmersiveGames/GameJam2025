@@ -458,3 +458,4 @@ MonoBehaviour:
   valueText: {fileID: 0}
   iconImage: {fileID: 0}
   rootPanel: {fileID: 0}
+  animationProfile: {fileID: 11400000, guid: a7449bc0be2ab9242ba34ee35d79de0c, type: 2}

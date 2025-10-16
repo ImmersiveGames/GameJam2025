@@ -39,7 +39,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 // Serviços "puros" que não dependem de outros
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
-                EnsureGlobal<IResourceSlotStrategyFactory>(() => new ResourceSlotStrategyFactory());
 
                 // ResourceInitializationManager - singleton próprio
                 var initManager = ResourceInitializationManager.Instance;
