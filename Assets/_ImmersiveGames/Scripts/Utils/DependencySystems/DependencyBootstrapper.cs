@@ -23,72 +23,105 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             _initialized = true;
 
             DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
-            
-            // Garantir que DependencyManager existe
+
+            // Garantir criação do DependencyManager
             if (!DependencyManager.HasInstance)
             {
-                DependencyManager.Instance.ToString(); // Força criação
+                var _ = DependencyManager.Instance; // força criação
             }
 
-            // Registrar serviços ESSENCIAIS (apenas os que precisam existir antes de tudo)
             Instance.RegisterEssentialServices();
         }
 
         private void RegisterEssentialServices()
         {
+            try
+            {
+                // Serviços "puros" que não dependem de outros
+                EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
+                EnsureGlobal<IResourceSlotStrategyFactory>(() => new ResourceSlotStrategyFactory());
 
-            RegisterBindCreations();
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Orchestrator Service Initialized");
-            // EXISTENTES (mantenha os que você já tinha)
-            DependencyManager.Instance.RegisterGlobal<IStateDependentService>(new StateDependentService(GameManagerStateMachine.Instance));
-            
-            RegisterEventBuses();
-            
-            DebugUtility.LogVerbose<DependencyBootstrapper>("Serviços essenciais registrados.");
+                // ResourceInitializationManager - singleton próprio
+                var initManager = ResourceInitializationManager.Instance;
+                EnsureGlobal(() => initManager);
+
+                // CanvasPipelineManager - singleton próprio
+                var pipelineManager = CanvasPipelineManager.Instance;
+                EnsureGlobal(() => pipelineManager);
+
+                // Orchestrator - depende do pipeline (mas não forçamos injeção aqui).
+                // Registramos globalmente se ainda não existir.
+                EnsureGlobal<IActorResourceOrchestrator>(() => new ActorResourceOrchestratorService());
+
+                // Registrar injeções para serviços globais no initManager (garante que receberão DI se precisarem)
+                initManager.RegisterForInjection(pipelineManager);
+                if (DependencyManager.Instance.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator))
+                {
+                    initManager.RegisterForInjection((IInjectableComponent)orchestrator);
+                }
+
+                // Registrar EventBuses (dinâmicos) - idempotente
+                RegisterEventBuses();
+
+                // Registrar StateDependentService se não houver
+                EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
+
+                DebugUtility.LogVerbose<DependencyBootstrapper>("✅ Essential dependency services registered");
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<DependencyBootstrapper>($"Exception during bootstrap: {ex}");
+            }
         }
-        private void RegisterBindCreations()
+
+        // Garante registro global idempotente com fábrica
+        private void EnsureGlobal<T>(Func<T> factory) where T : class
         {
-            // PRIMEIRO: Serviços que não dependem de outros
-            DependencyManager.Instance.RegisterGlobal<IUniqueIdFactory>(new UniqueIdFactory());
-            // Registra o factory de slot de recursos
-            DependencyManager.Instance.RegisterGlobal<IResourceSlotStrategyFactory>(new ResourceSlotStrategyFactory());
-
-    
-            // SEGUNDO: Gerenciadores
-            var initManager = ResourceInitializationManager.Instance;
-            DependencyManager.Instance.RegisterGlobal(initManager);
-
-            var pipelineManager = CanvasPipelineManager.Instance;
-            DependencyManager.Instance.RegisterGlobal(pipelineManager);
-
-            // TERCEIRO: Orchestrator (depende do PipelineManager)
-            var orchestrator = new ActorResourceOrchestratorService();
-            DependencyManager.Instance.RegisterGlobal<IActorResourceOrchestrator>(orchestrator);
-
-            // QUARTO: Registrar para injeção dos serviços globais
-            initManager.RegisterForInjection(pipelineManager);
-            initManager.RegisterForInjection(orchestrator);
+            if (!DependencyManager.Instance.TryGetGlobal<T>(out var existing) || existing == null)
+            {
+                var implementation = factory();
+                DependencyManager.Instance.RegisterGlobal<T>(implementation);
+                DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered global service: {typeof(T).Name}");
+            }
+            else
+            {
+                DebugUtility.LogVerbose<DependencyBootstrapper>($"Global service already present: {typeof(T).Name}");
+            }
         }
+        
+
         private static void RegisterEventBuses()
         {
-            // -------------------
-            // NEW: register injectable buses for all event types (uses EventBusUtil.EventTypes)
-            // -------------------
             try
             {
                 IReadOnlyList<Type> eventTypes = EventBusUtil.EventTypes;
-                if (eventTypes != null)
-                {
-                    foreach (var eventType in eventTypes)
-                    {
-                        var busInterfaceType = typeof(IEventBus<>).MakeGenericType(eventType);
-                        var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
+                if (eventTypes == null) return;
 
+                foreach (var eventType in eventTypes)
+                {
+                    var busInterfaceType = typeof(IEventBus<>).MakeGenericType(eventType);
+                    var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
+
+                    // verifica se já existe um registro para esse tipo
+                    var registerMethod = typeof(DependencyManager).GetMethod("TryGetGlobal", BindingFlags.Instance | BindingFlags.Public);
+                    var genericTryGet = registerMethod?.MakeGenericMethod(busInterfaceType);
+
+                    bool exists = false;
+                    if (genericTryGet != null)
+                    {
+                        // invoca TryGetGlobal<T>(out T existing)
+                        var parameters = new object[] { null };
+                        var result = (bool)genericTryGet.Invoke(DependencyManager.Instance, parameters);
+                        exists = result;
+                    }
+
+                    if (!exists)
+                    {
                         object busInstance = Activator.CreateInstance(busImplType);
-                        var registerMethod = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
-                        var genericRegister = registerMethod?.MakeGenericMethod(busInterfaceType);
-                        // register the bus as global
+                        var registerMethodGeneric = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
+                        var genericRegister = registerMethodGeneric?.MakeGenericMethod(busInterfaceType);
                         genericRegister?.Invoke(DependencyManager.Instance, new[] { busInstance });
+                        DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered EventBus for {eventType.Name}");
                     }
                 }
             }

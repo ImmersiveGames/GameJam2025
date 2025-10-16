@@ -347,13 +347,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         {
             var actorId = bridge.GetObjectId();
             var service = bridge.GetResourceSystem();
-            var isDestroyed = bridge.IsDestroyed();
 
             DebugUtility.Log<EntityDebugUtility>($"🔧 ENTITY BRIDGE STATUS: {actorId}");
             DebugUtility.Log<EntityDebugUtility>($"- Actor: {actorId}");
             DebugUtility.Log<EntityDebugUtility>($"- Service: {service != null}");
             DebugUtility.Log<EntityDebugUtility>($"- Injection: {bridge.InjectionState}");
-            DebugUtility.Log<EntityDebugUtility>($"- Destroyed: {isDestroyed}");
 
             if (service != null)
             {

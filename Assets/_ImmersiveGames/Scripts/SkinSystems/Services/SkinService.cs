@@ -63,7 +63,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 foreach (var binder in dynamicBinders)
                 {
                     binder.gameObject.SetActive(true); // garantir que está ativo
-                    binder.InitializeDynamicCanvas(); // novo método que você adicionará
                 }
             }
         }

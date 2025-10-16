@@ -101,9 +101,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             return animationType switch
             {
                 FillAnimationType.BasicAnimated => new BasicAnimatedFillStrategy(),
-                FillAnimationType.AdvancedAnimated => new AdvancedAnimatedFillStrategy(),
-                FillAnimationType.SmoothAnimated => new SmoothAnimatedFillStrategy(),
-                FillAnimationType.PulseAnimated => new PulseAnimatedFillStrategy(),
                 _ => new InstantSlotStrategy()
             };
         }

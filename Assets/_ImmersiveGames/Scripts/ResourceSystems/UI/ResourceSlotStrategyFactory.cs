@@ -14,9 +14,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 FillAnimationType.Instant => new InstantSlotStrategy(),
                 FillAnimationType.BasicAnimated => new BasicAnimatedFillStrategy(),
-                FillAnimationType.AdvancedAnimated => new AdvancedAnimatedFillStrategy(),
-                FillAnimationType.SmoothAnimated => new SmoothAnimatedFillStrategy(),
-                FillAnimationType.PulseAnimated => new PulseAnimatedFillStrategy(),
                 _ => new InstantSlotStrategy()
             };
         }
@@ -24,9 +21,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
     public enum FillAnimationType
     {
         Instant,           // Sem animação
-        BasicAnimated,     // Animação básica estilo jogos de luta
-        AdvancedAnimated,  // Animação com efeitos extras
-        SmoothAnimated,    // Animação suave sem delays
-        PulseAnimated      // Animação com pulsos
+        BasicAnimated     // Animação básica estilo jogos de luta
     }
 }
