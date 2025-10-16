@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     public interface IResourceLinkService
@@ -14,153 +15,99 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         void UnregisterAllLinks(string actorId);
         bool HasLink(string actorId, ResourceType sourceResource);
         ResourceLinkConfig GetLink(string actorId, ResourceType sourceResource);
-        float ProcessLinkedDrain(string resourceSystemEntityId, ResourceType resourceType, float ticks, ResourceSystem resourceSystem);
+        float ProcessLinkedDrain(string actorId, ResourceType resourceType, float desiredDrain, ResourceSystem resourceSystem);
     }
+
     [DebugLevel(DebugLevel.Warning)]
     public class ResourceLinkService : IResourceLinkService, IDisposable
     {
-        private readonly Dictionary<string, Dictionary<ResourceType, ResourceLinkConfig>> _actorLinks = new();
-        private readonly IActorResourceOrchestrator _orchestrator;
-        private bool _isDisposed;
-        private EventBinding<ResourceUpdateEvent> _eventBinding;
+        private readonly Dictionary<string, Dictionary<ResourceType, ResourceLinkConfig>> _links = new();
+        private EventBinding<ResourceUpdateEvent> _binding;
+        private bool _disposed;
 
         public ResourceLinkService()
         {
-            if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
-            {
-                _orchestrator = new ActorResourceOrchestratorService();
-                DependencyManager.Instance.RegisterGlobal(_orchestrator);
-            }
-
-            _eventBinding = new EventBinding<ResourceUpdateEvent>(OnResourceUpdated);
-            EventBus<ResourceUpdateEvent>.Register(_eventBinding);
+            _binding = new EventBinding<ResourceUpdateEvent>(OnResourceUpdated);
+            EventBus<ResourceUpdateEvent>.Register(_binding);
 
             DependencyManager.Instance.RegisterGlobal<IResourceLinkService>(this);
-
-            DebugUtility.LogVerbose<ResourceLinkService>("ResourceLinkService inicializado");
+            DebugUtility.LogVerbose<ResourceLinkService>("ResourceLinkService inicializado e registrado globalmente.");
         }
 
-        public void RegisterLink(string actorId, ResourceLinkConfig linkConfig)
+        public void RegisterLink(string actorId, ResourceLinkConfig cfg)
         {
-            if (string.IsNullOrEmpty(actorId) || linkConfig == null) return;
-
-            if (!_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links))
+            if (string.IsNullOrEmpty(actorId) || cfg == null) return;
+            if (!_links.TryGetValue(actorId, out var dict))
             {
-                links = new Dictionary<ResourceType, ResourceLinkConfig>();
-                _actorLinks[actorId] = links;
+                dict = new Dictionary<ResourceType, ResourceLinkConfig>();
+                _links[actorId] = dict;
             }
-
-            links[linkConfig.sourceResource] = linkConfig;
-            DebugUtility.LogVerbose<ResourceLinkService>($"Link registrado: {actorId} - {linkConfig.sourceResource} -> {linkConfig.targetResource}");
+            dict[cfg.sourceResource] = cfg;
+            DebugUtility.LogVerbose<ResourceLinkService>($"🔗 {actorId}: {cfg.sourceResource} -> {cfg.targetResource}");
         }
 
-        public void UnregisterLink(string actorId, ResourceType sourceResource)
+        public void UnregisterLink(string actorId, ResourceType src)
         {
-            if (_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links))
-            {
-                if (links.Remove(sourceResource))
-                {
-                    DebugUtility.LogVerbose<ResourceLinkService>($"Link removido: {actorId} - {sourceResource}");
-                }
-
-                if (links.Count == 0)
-                {
-                    _actorLinks.Remove(actorId);
-                }
-            }
+            if (_links.TryGetValue(actorId, out var dict) && dict.Remove(src))
+                DebugUtility.LogVerbose<ResourceLinkService>($"Link removido: {actorId} - {src}");
+            if (dict != null && dict.Count == 0) _links.Remove(actorId);
         }
 
         public void UnregisterAllLinks(string actorId)
         {
-            if (_actorLinks.Remove(actorId))
-            {
-                DebugUtility.LogVerbose<ResourceLinkService>($"Todos os links removidos para: {actorId}");
-            }
+            if (_links.Remove(actorId))
+                DebugUtility.LogVerbose<ResourceLinkService>($"Todos os links removidos de {actorId}");
         }
 
-        public bool HasLink(string actorId, ResourceType sourceResource)
+        public bool HasLink(string actorId, ResourceType src) =>
+            _links.TryGetValue(actorId, out var dict) && dict.ContainsKey(src);
+
+        public ResourceLinkConfig GetLink(string actorId, ResourceType src) =>
+            _links.TryGetValue(actorId, out var dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
+
+        public float ProcessLinkedDrain(string actorId, ResourceType type, float desired, ResourceSystem sys)
         {
-            return _actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links) && links.ContainsKey(sourceResource);
-        }
+            var cfg = GetLink(actorId, type);
+            if (cfg == null || !cfg.affectTargetWithAutoFlow) return desired;
 
-        public ResourceLinkConfig GetLink(string actorId, ResourceType sourceResource)
-        {
-            if (_actorLinks.TryGetValue(actorId, out Dictionary<ResourceType, ResourceLinkConfig> links) && links.TryGetValue(sourceResource, out var linkConfig))
-            {
-                return linkConfig;
-            }
-            return null;
-        }
+            var src = sys.Get(type);
+            var tgt = sys.Get(cfg.targetResource);
+            if (src == null || tgt == null) return desired;
 
-        public float ProcessLinkedDrain(string actorId, ResourceType resourceType, float desiredDrain, ResourceSystem resourceSystem)
-        {
-            var linkConfig = GetLink(actorId, resourceType);
-            if (linkConfig == null || !linkConfig.affectTargetWithAutoFlow)
-            {
-                return desiredDrain;
-            }
+            if (!cfg.ShouldTransfer(src.GetCurrentValue(), src.GetMaxValue())) return desired;
 
-            var sourceResource = resourceSystem.Get(resourceType);
-            var targetResource = resourceSystem.Get(linkConfig.targetResource);
+            float available = src.GetCurrentValue();
+            float srcDrain = Mathf.Min(desired, available);
+            float remaining = desired - srcDrain;
+            if (remaining > 0) sys.Modify(cfg.targetResource, -remaining);
 
-            if (sourceResource == null || targetResource == null)
-                return desiredDrain;
-
-            if (!linkConfig.ShouldTransfer(sourceResource.GetCurrentValue(), sourceResource.GetMaxValue()))
-            {
-                return desiredDrain;
-            }
-
-            float sourceAvailable = sourceResource.GetCurrentValue();
-            float sourceDrain = Mathf.Min(desiredDrain, sourceAvailable);
-            float remainingDrain = desiredDrain - sourceDrain;
-
-            if (remainingDrain > 0)
-            {
-                resourceSystem.Modify(linkConfig.targetResource, -remainingDrain);
-            }
-
-            DebugUtility.LogVerbose<ResourceLinkService>($"AutoFlow link: {resourceType} drained {sourceDrain}, {linkConfig.targetResource} drained {remainingDrain}");
-            return sourceDrain;
+            DebugUtility.LogVerbose<ResourceLinkService>(
+                $"AutoFlow link aplicado: {type}↓{srcDrain}, {cfg.targetResource}↓{remaining}");
+            return srcDrain;
         }
 
         private void OnResourceUpdated(ResourceUpdateEvent evt)
         {
-            if (_isDisposed) return;
-
-            var linkConfig = GetLink(evt.ActorId, evt.ResourceType);
-            if (linkConfig == null) return;
-
-            var resourceSystem = _orchestrator.GetActorResourceSystem(evt.ActorId);
-            if (resourceSystem == null) return;
-
-            var sourceResource = resourceSystem.Get(linkConfig.sourceResource);
-            var targetResource = resourceSystem.Get(linkConfig.targetResource);
-
-            if (sourceResource == null || targetResource == null) return;
-
-            if (linkConfig.ShouldTransfer(sourceResource.GetCurrentValue(), sourceResource.GetMaxValue()))
-            {
-                DebugUtility.LogVerbose<ResourceLinkService>(
-                    $"Link ativado: {evt.ActorId} - {linkConfig.sourceResource} -> {linkConfig.targetResource}");
-            }
+            if (_disposed) return;
+            var cfg = GetLink(evt.ActorId, evt.ResourceType);
+            if (cfg == null) return;
+            DebugUtility.LogVerbose<ResourceLinkService>(
+                $"Evento de atualização em link ativo: {evt.ActorId} - {cfg.sourceResource} → {cfg.targetResource}");
         }
 
         public void Dispose()
         {
-            if (_isDisposed) return;
+            if (_disposed) return;
+            _disposed = true;
 
-            _isDisposed = true;
-
-            if (_eventBinding != null)
+            if (_binding != null)
             {
-                EventBus<ResourceUpdateEvent>.Unregister(_eventBinding);
-                _eventBinding = null;
+                EventBus<ResourceUpdateEvent>.Unregister(_binding);
+                _binding = null;
             }
 
-            _actorLinks.Clear();
-
-            DebugUtility.LogVerbose<ResourceLinkService>("ResourceLinkService disposed");
+            _links.Clear();
+            DebugUtility.LogVerbose<ResourceLinkService>("ResourceLinkService disposed.");
         }
     }
 }

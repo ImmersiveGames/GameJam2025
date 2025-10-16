@@ -4,14 +4,13 @@ using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
     /// Gerencia o registro e a comunicação entre canvases e o sistema de recursos.
-    /// Opera em modo event-driven via EventBus, sem polling e sem delays.
+    /// Funciona em modo event-driven via EventBus, sem polling e sem delays.
     /// </summary>
     public class CanvasPipelineManager : PersistentSingleton<CanvasPipelineManager>, IInjectableComponent
     {
@@ -136,10 +135,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         /// </summary>
         private void OnCanvasRegisteredHandler(ResourceEventHub.CanvasRegisteredEvent evt)
         {
-            if (!_canvasRegistry.TryGetValue(evt.canvasId, out var canvas)) return;
+            if (!_canvasRegistry.TryGetValue(evt.canvasId, out _)) return;
 
-            var pendings = ResourceEventHub.GetPendingForCanvas(evt.canvasId);
-            foreach (var req in pendings.Values.ToList())
+            IReadOnlyDictionary<(string actorId, ResourceType resourceType), ResourceEventHub.CanvasBindRequest> pendingRequests = ResourceEventHub.GetPendingForCanvas(evt.canvasId);
+            foreach (var req in pendingRequests.Values.ToList())
                 TryExecuteBind(req);
         }
     }

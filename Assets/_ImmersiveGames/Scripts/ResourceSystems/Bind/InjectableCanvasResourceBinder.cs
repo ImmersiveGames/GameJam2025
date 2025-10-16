@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
@@ -19,9 +17,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         [SerializeField] private bool autoGenerateCanvasId = true;
 
         [Header("Dependencies")]
-        [Inject] protected IActorResourceOrchestrator _orchestrator;
-        [Inject] protected IResourceSlotStrategyFactory _strategyFactory;
-        [Inject] protected IUniqueIdFactory _idFactory;
+        [Inject] protected IActorResourceOrchestrator orchestrator;
+        [Inject] protected IResourceSlotStrategyFactory strategyFactory;
+        [Inject] protected IUniqueIdFactory idFactory;
 
         [Header("Pool & Prefab")]
         [SerializeField] private ResourceUISlot slotPrefab;
@@ -37,7 +35,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
         public string CanvasId => _canvasIdResolved;
         public virtual CanvasType Type => canvasType;
-        public CanvasInitializationState State { get; protected set; }
+        public CanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => CanvasId;
@@ -69,7 +67,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             try
             {
-                _orchestrator?.RegisterCanvas(this);
+                orchestrator?.RegisterCanvas(this);
                 State = CanvasInitializationState.Ready;
                 InjectionState = DependencyInjectionState.Ready;
 
@@ -91,7 +89,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
                     _canvasIdResolved = $"{actor.ActorId}_Canvas";
                 else
-                    _canvasIdResolved = _idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString();
+                    _canvasIdResolved = idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString();
             }
             else
                 _canvasIdResolved = canvasId;
@@ -139,9 +137,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        protected ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
+        private ResourceInstanceConfig ResolveInstanceConfig(string actorId, ResourceType resourceType)
         {
-            return _orchestrator != null && _orchestrator.TryGetActorResource(actorId, out var svc)
+            return orchestrator != null && orchestrator.TryGetActorResource(actorId, out var svc)
                 ? svc.GetInstanceConfig(resourceType)
                 : null;
         }
@@ -173,7 +171,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
         {
             try
             {
-                _orchestrator?.UnregisterCanvas(CanvasId);
+                orchestrator?.UnregisterCanvas(CanvasId);
                 if (CanvasPipelineManager.HasInstance)
                     CanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
             }

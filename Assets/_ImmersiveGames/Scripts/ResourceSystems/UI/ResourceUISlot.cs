@@ -20,13 +20,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private GameObject rootPanel;
 
         private IResourceSlotStrategy _slotStrategy;
-    
+
         private float _currentFill;
         private float _previousFill;
         private string _currentText = "";
         private bool _isFirstConfigure = true;
         private ResourceUIStyle _currentStyle;
-    
+
         public ResourceType Type { get; private set; }
         private ResourceInstanceConfig InstanceConfig { get; set; }
         public Image FillImage => fillImage;
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         public TextMeshProUGUI ValueText => valueText;
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
-        
+
         public float GetCurrentFill() => _currentFill;
         public ResourceUIStyle GetCurrentStyle() => _currentStyle;
 
@@ -50,50 +50,55 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             InstanceConfig = config;
             _currentStyle = config?.slotStyle;
 
-            // Aplicar estilo básico imediatamente
             ApplyBaseStyleImmediate();
-        
-            // Usa factory se disponível
-            _slotStrategy = DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory) 
-                ? factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant) 
-                : CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
 
-            // CORREÇÃO: Log da estratégia criada
-            DebugUtility.LogVerbose<ResourceUISlot>($"🎯 Strategy created: {_slotStrategy.GetType().Name} for {config?.fillAnimationType ?? FillAnimationType.Instant}");
-        
+            // Strategy factory if available
+            if (!DependencyManager.Instance.TryGetGlobal(out IResourceSlotStrategyFactory factory))
+            {
+                _slotStrategy = CreateStrategyDirectly(config?.fillAnimationType ?? FillAnimationType.Instant);
+            }
+            else
+            {
+                _slotStrategy = factory.CreateStrategy(config?.fillAnimationType ?? FillAnimationType.Instant);
+            }
+
+            DebugUtility.LogVerbose<ResourceUISlot>($"🎯 Strategy created: {_slotStrategy?.GetType().Name ?? "null"} for {config?.fillAnimationType ?? FillAnimationType.Instant}");
+
             if (InstanceConfig?.resourceDefinition != null && iconImage != null)
                 iconImage.sprite = InstanceConfig.resourceDefinition.icon;
-            
+
             gameObject.name = $"{actorId}_{type}";
-        
-            // Estado inicial
+
+            // initial state
             _currentFill = 1f;
             _previousFill = 1f;
-            
-            // Aplicar visuals imediatamente
+
             ApplyVisualsImmediate();
-            
+
             DebugUtility.LogVerbose<ResourceUISlot>($"✅ Slot initialized for {actorId}.{type} - Style: {_currentStyle?.name ?? "None"}");
         }
 
-        // NOVO: Método melhorado para aplicar estilo base
         private void ApplyBaseStyleImmediate()
         {
             if (_currentStyle == null) return;
 
             DebugUtility.LogVerbose<ResourceUISlot>($"🎨 Applying base style: {_currentStyle.name}");
 
-            // Aplicar cores básicas apenas se não forem sobrescritas pela estratégia
             if (pendingFillImage != null && _currentStyle.pendingColor != default)
             {
                 pendingFillImage.color = _currentStyle.pendingColor;
             }
 
-            // CORREÇÃO: Garantir que as imagens estão com os valores iniciais corretos
-            if (fillImage != null) 
+            if (fillImage != null)
                 fillImage.fillAmount = 1f;
-            if (pendingFillImage != null) 
+            if (pendingFillImage != null)
                 pendingFillImage.fillAmount = 0f;
+
+            /*if (valueText != null)
+            {
+                valueText.color = _currentStyle.textColor;
+                valueText.fontSize = _currentStyle.textSize;
+            }*/
         }
 
         private IResourceSlotStrategy CreateStrategyDirectly(FillAnimationType animationType)
@@ -110,20 +115,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (data == null) return;
 
             float newValue = data.GetPercentage();
-        
+
             DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
-        
+
             _previousFill = _currentFill;
-            _currentFill = newValue;
+            _currentFill = Mathf.Clamp01(newValue);
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
-        
-            // CORREÇÃO: Verificar se o estilo mudou
+
             if (InstanceConfig?.slotStyle != _currentStyle)
             {
                 _currentStyle = InstanceConfig?.slotStyle;
                 ApplyBaseStyleImmediate();
             }
-        
+
             if (_isFirstConfigure)
             {
                 ApplyVisualsImmediate();
@@ -133,7 +137,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 ApplyVisuals();
             }
-            
+
             SetVisible(true);
         }
 
@@ -142,23 +146,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private void ApplyVisualsImmediate()
         {
             DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
-            
+
             var instantStrategy = new InstantSlotStrategy();
             instantStrategy.ApplyFill(this, _currentFill, _currentFill, _currentStyle);
             instantStrategy.ApplyText(this, _currentText, _currentStyle);
-            
+
             ClearAllTween();
         }
 
         private void ApplyVisuals()
         {
             DebugUtility.LogVerbose<ResourceUISlot>($"🎨 ApplyVisuals: {Type} - Current: {_currentFill}, Previous: {_previousFill}, Style: {_currentStyle?.name}");
-        
-            _slotStrategy.ApplyFill(this, _currentFill, _previousFill, _currentStyle);
-            _slotStrategy.ApplyText(this, _currentText, _currentStyle);
+
+            _slotStrategy?.ApplyFill(this, _currentFill, _previousFill, _currentStyle);
+            _slotStrategy?.ApplyText(this, _currentText, _currentStyle);
         }
 
-        // MÉTODO ADICIONAL: Forçar reaplicação do estilo
         public void RefreshStyle()
         {
             _currentStyle = InstanceConfig?.slotStyle;
@@ -169,7 +172,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
         public void Clear()
         {
-            _slotStrategy.ClearVisuals(this);
+            _slotStrategy?.ClearVisuals(this);
             StopAllCoroutines();
             _currentFill = 0f;
             _previousFill = 0f;
@@ -183,7 +186,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (rootPanel != null) rootPanel.SetActive(visible);
         }
 
-        [ContextMenu("Force Visual Update")]
+        // removido ContextMenu — mantem DebugUtility.Log mas sem menu no inspector
         public void ForceVisualUpdate()
         {
             ApplyBaseStyleImmediate();

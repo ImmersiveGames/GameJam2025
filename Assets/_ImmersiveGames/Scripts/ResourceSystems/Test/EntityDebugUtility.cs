@@ -431,8 +431,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.LogWarning<EntityDebugUtility>(
                 $"🔧 BRIDGE STATUS - {bridge.GetType().Name}:\n" +
                 $" - Actor: {actorId}\n" +
-                $" - Initialized: {bridge.IsInitialized()}\n" +
-                $" - Destroyed: {bridge.IsDestroyed()}\n" +
                 $" - Orchestrator: {orchestratorFound}\n" +
                 $" - Actor Registrado: {actorRegistered}\n" +
                 $" - ResourceSystem: {bridge.GetResourceSystem() != null}\n" +
@@ -507,11 +505,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         public void DebugThresholdStatus(ResourceThresholdBridge bridge)
         {
             var resourceSystem = bridge.GetResourceSystem();
-            if (resourceSystem != null && bridge.IsInitialized())
+            if (resourceSystem != null && bridge.isInitialized)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
                 DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
-                DebugUtility.LogWarning<EntityDebugUtility>($" - Has Thresholds: {bridge.CheckForThresholdConfigurations()}");
 
                 // Listar recursos com thresholds
                 foreach (var (resourceType, _) in resourceSystem.GetAll())
@@ -533,7 +530,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         public void DebugAutoFlowStatus(ResourceAutoFlowBridge bridge)
         {
             var resourceSystem = bridge.GetResourceSystem();
-            if (resourceSystem != null && bridge.IsInitialized())
+            if (resourceSystem != null && bridge.isInitialized)
             {
                 int autoFlowCount = CountAutoFlowResources(resourceSystem);
                 DebugUtility.LogWarning<EntityDebugUtility>($"📊 Recursos com AutoFlow: {autoFlowCount}");

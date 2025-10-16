@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     public interface IActorResourceOrchestrator
@@ -17,13 +19,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         IReadOnlyCollection<string> GetRegisteredActorIds();
         bool TryGetActorResource(string actorId, out ResourceSystem resourceSystem);
 
-        // CORREÇÃO: Usar ICanvasBinder em vez de CanvasResourceBinder
         void RegisterCanvas(ICanvasBinder canvas);
         void UnregisterCanvas(string canvasId);
 
-        // NOVOS: Métodos para canvas
-        //bool IsCanvasRegistered(string canvasId);
-        //IReadOnlyCollection<string> GetRegisteredCanvasIds();
         bool IsCanvasRegisteredForActor(string actorId);
         void ProcessPendingFirstUpdatesForCanvas(string canvasId);
     }
@@ -55,6 +53,24 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             InjectionState = DependencyInjectionState.Ready;
             DebugUtility.LogVerbose<ActorResourceOrchestratorService>("✅ Orchestrator Service fully initialized with dependencies");
+
+            // Se já existirem Canvas Binders na cena, registrar automaticamente.
+            var existingBinders = UnityEngine.Object.FindObjectsByType<InjectableCanvasResourceBinder>(
+                UnityEngine.FindObjectsInactive.Include,
+                UnityEngine.FindObjectsSortMode.None
+            );
+            foreach (var binder in existingBinders)
+            {
+                try
+                {
+                    RegisterCanvas(binder);
+                    DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"🖼️ Auto-registered canvas '{binder.CanvasId}' on orchestrator initialization");
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogWarning<ActorResourceOrchestratorService>($"Failed auto-registering canvas {binder.CanvasId}: {ex}");
+                }
+            }
         }
 
         public void RegisterActor(ResourceSystem service)
@@ -118,7 +134,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             var evt = new ResourceUpdateEvent(actorId, resourceType, data);
             _pendingFirstUpdates[targetCanvasId][actorId] = evt;
 
-            // NOVO: Registrar também no hub para garantir que o pipeline global tenha o bind pendente
+            // Registrar também no hub para compatibilidade global
             try
             {
                 var bindRequest = new ResourceEventHub.CanvasBindRequest(actorId, resourceType, data, targetCanvasId);
@@ -194,13 +210,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             var request = new ResourceEventHub.CanvasBindRequest(actorId, resourceType, data, targetCanvasId);
 
-            // Publicar no EventBus (princípio: event-driven).
-            // O CanvasPipelineManager está registrado como listener no EventBus e irá tentar processar imediatamente,
-            // mantendo compatibilidade com a pipeline sem necessidade de chamada direta duplicada.
+            // Event-driven: publish and let the pipeline handles execution (and hub keeps pendentes)
             EventBus<ResourceEventHub.CanvasBindRequest>.Raise(request);
-
-            // NOTE: Removida a chamada direta a _pipelineManager.ScheduleBind(...) para evitar duplicação
-            // (o pipeline é listener do EventBus e fará o TryExecuteBind).
         }
 
         public void ProcessPendingFirstUpdatesForCanvas(string canvasId)
@@ -250,7 +261,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _routingStrategy.ResolveCanvasId(config, actorId);
 
             _canvasIdCache[cacheKey] = resolved;
-
             return resolved;
         }
 
