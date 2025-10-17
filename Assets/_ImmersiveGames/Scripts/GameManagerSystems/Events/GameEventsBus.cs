@@ -17,6 +17,26 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
         // Não precisa de dados adicionais, mas pode incluir se necessário
     }
 
+    public class GameStartRequestedEvent : IEvent
+    {
+        // Solicitado por UI/controles para iniciar uma sessão
+    }
+
+    public class GamePauseRequestedEvent : IEvent
+    {
+        // Solicitado por UI/controles para pausar a sessão
+    }
+
+    public class GameResumeRequestedEvent : IEvent
+    {
+        // Solicitado por UI/controles para retomar após pausa
+    }
+
+    public class GameResetRequestedEvent : IEvent
+    {
+        // Solicitado por UI/controles para reiniciar a sessão
+    }
+
     // Evento disparado quando o jogo termina com derrota
     public class GameOverEvent : IEvent
     {
