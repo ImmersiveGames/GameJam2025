@@ -4,8 +4,8 @@ using System.Text;
 using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -174,10 +174,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return true;
             }
 
-            var resourceBridge = planetMaster.GetResourceBridge();
-            if (resourceBridge == null)
+            var visualBridge = planetMaster.GetVisualBridge();
+            if (visualBridge == null)
             {
-                DebugUtility.LogError<PlanetsManager>($"Planeta {planetMaster.name} não possui PlanetResourceSystemBridge.", this);
+                DebugUtility.LogError<PlanetsManager>($"Planeta {planetMaster.name} não possui InjectableEntityVisualBridge.", this);
                 return false;
             }
 
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 _spawnedPlanets.Add(planetMaster);
             }
 
-            var currentResource = resourceBridge.CurrentResource;
+            var currentResource = visualBridge.CurrentDefinition as PlanetResourcesSo;
             var resource = resourceOverride ?? GetRandomResource(currentResource);
             if (resource == null)
             {
@@ -202,7 +202,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                     this);
             }
 
-            resourceBridge.AssignResource(resource);
+            bool changed = visualBridge.AssignDefinition(resource);
+
+            if (!changed && visualBridge.CurrentDefinition as PlanetResourcesSo != resource)
+            {
+                DebugUtility.LogWarning<PlanetsManager>($"Falha ao atribuir recurso {resource.ResourceType} ao planeta {planetMaster.name}.", this);
+                _spawnedPlanets.Remove(planetMaster);
+                return false;
+            }
+
+            if (changed)
+            {
+                EventBus<PlanetResourceAssignedEvent>.Raise(new PlanetResourceAssignedEvent(planetMaster, resource));
+            }
+            else if (!_planetResourcesMap.ContainsKey(planetMaster))
+            {
+                _planetResourcesMap[planetMaster] = resource;
+            }
             return true;
         }
 
@@ -213,9 +229,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var resourceBridge = planetMaster.GetResourceBridge();
+            var visualBridge = planetMaster.GetVisualBridge();
+            _planetResourcesMap.TryGetValue(planetMaster, out var previousResource);
+            if (previousResource == null)
+            {
+                previousResource = visualBridge?.CurrentDefinition as PlanetResourcesSo;
+            }
             bool removed = _planetResourcesMap.Remove(planetMaster);
-            resourceBridge?.ClearResource();
+            bool cleared = visualBridge != null && visualBridge.ClearDefinition();
+            if (cleared)
+            {
+                EventBus<PlanetResourceClearedEvent>.Raise(new PlanetResourceClearedEvent(planetMaster, previousResource));
+            }
             _spawnedPlanets.Remove(planetMaster);
 
             if (removed)

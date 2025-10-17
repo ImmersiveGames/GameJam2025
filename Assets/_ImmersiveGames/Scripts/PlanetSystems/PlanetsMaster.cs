@@ -1,44 +1,44 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [RequireComponent(typeof(PlanetResourceSystemBridge))]
+    [RequireComponent(typeof(InjectableEntityVisualBridge))]
     [DebugLevel(DebugLevel.Logs)]
     public sealed class PlanetsMaster : ActorMaster, IPlanetActor
     {
-        private PlanetResourceSystemBridge _resourceBridge;
+        private InjectableEntityVisualBridge _visualBridge;
 
         protected override void Awake()
         {
             base.Awake();
-            InitializeResourceBridge();
+            InitializeVisualBridge();
         }
 
-        public PlanetResourceSystemBridge GetResourceBridge()
+        public InjectableEntityVisualBridge GetVisualBridge()
         {
-            if (_resourceBridge == null)
+            if (_visualBridge == null)
             {
-                TryGetComponent(out _resourceBridge);
+                TryGetComponent(out _visualBridge);
             }
 
-            return _resourceBridge;
+            return _visualBridge;
         }
 
-        public PlanetResourcesSo GetResource() => _resourceBridge?.CurrentResource;
+        public PlanetResourcesSo GetResource() => _visualBridge?.CurrentDefinition as PlanetResourcesSo;
 
         public PlanetsMaster GetPlanetsMaster() => this;
 
         public IActor PlanetActor => this;
 
-        private void InitializeResourceBridge()
+        private void InitializeVisualBridge()
         {
-            if (!TryGetComponent(out _resourceBridge))
+            if (!TryGetComponent(out _visualBridge))
             {
                 DebugUtility.LogError<PlanetsMaster>(
-                    $"PlanetResourceSystemBridge não encontrado em {gameObject.name}.",
+                    $"InjectableEntityVisualBridge não encontrado em {gameObject.name}.",
                     this);
             }
         }
