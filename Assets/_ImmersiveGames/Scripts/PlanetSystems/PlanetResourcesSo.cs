@@ -1,14 +1,31 @@
-﻿using UnityEngine;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [CreateAssetMenu(fileName = "PlanetResourcesData",menuName = "ImmersiveGames/PlanetResources")]
-    public class PlanetResourcesSo : ScriptableObject
+    [CreateAssetMenu(fileName = "PlanetResourcesData", menuName = "ImmersiveGames/PlanetResources")]
+    public class PlanetResourcesSo : VisualResourceDefinition
     {
         [SerializeField] private PlanetResources resourceType;
-        [SerializeField] private Sprite resourceIcon;
-        
-        public Sprite ResourceIcon => resourceIcon;
+
+        public Sprite ResourceIcon => GetIcon();
         public PlanetResources ResourceType => resourceType;
+
+        private void OnValidate()
+        {
+            if (type != ResourceType.PlanetResource)
+            {
+                type = ResourceType.PlanetResource;
+            }
+        }
     }
-    public enum PlanetResources { Metal, Gas, Water, Rocks, Life }
+
+    public enum PlanetResources
+    {
+        Metal,
+        Gas,
+        Water,
+        Rocks,
+        Life
+    }
 }

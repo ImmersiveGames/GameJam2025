@@ -130,7 +130,38 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (valueText != null)
                 valueText.text = _currentText;
 
+            UpdateIcon(data);
+
             SetVisible(true);
+        }
+
+        private void UpdateIcon(IResourceValue data)
+        {
+            if (iconImage == null)
+                return;
+
+            Sprite iconToUse = null;
+
+            if (data is IResourceVisualValue visualValue)
+            {
+                iconToUse = visualValue.GetIcon();
+            }
+
+            if (iconToUse == null && InstanceConfig?.resourceDefinition != null)
+            {
+                iconToUse = InstanceConfig.resourceDefinition.icon;
+            }
+
+            if (iconToUse != null)
+            {
+                iconImage.sprite = iconToUse;
+                iconImage.enabled = true;
+            }
+            else
+            {
+                iconImage.sprite = null;
+                iconImage.enabled = false;
+            }
         }
 
         private void ApplyVisualsImmediate()
@@ -160,6 +191,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _previousFill = 0f;
             _isFirstConfigure = true;
             _currentStyle = null;
+            if (iconImage != null)
+            {
+                iconImage.sprite = null;
+                iconImage.enabled = false;
+            }
             SetVisible(false);
         }
 

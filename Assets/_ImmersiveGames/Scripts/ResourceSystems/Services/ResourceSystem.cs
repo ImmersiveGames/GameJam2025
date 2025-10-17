@@ -37,7 +37,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             foreach (var cfg in configs.Where(c => c != null && c.resourceDefinition != null && c.resourceDefinition.enabled))
             {
                 var def = cfg.resourceDefinition;
-                _resources[def.type] = new BasicResourceValue(def.initialValue, def.maxValue);
+                var value = def.CreateInitialValue() ?? new BasicResourceValue(def.initialValue, def.maxValue);
+                def.ApplyTo(value);
+                _resources[def.type] = value;
                 _instanceConfigs[def.type] = cfg;
             }
         }
@@ -141,11 +143,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                     break;
             }
             
-            var evt = new ResourceUpdateEvent(EntityId, type, resource);
-            ResourceUpdated?.Invoke(evt);
-
-            // Publicar no EventBus para listeners desacoplados
-            EventBus<ResourceUpdateEvent>.Raise(evt);
+            PublishUpdate(type, resource);
         }
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);
@@ -176,6 +174,48 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public bool TryGetValue(ResourceType resourceType, out IResourceValue value)
         {
             return _resources.TryGetValue(resourceType, out value);
+        }
+
+        public bool RegisterOrUpdateResource(ResourceType resourceType, IResourceValue value, ResourceInstanceConfig config = null)
+        {
+            if (value == null) return false;
+
+            if (config?.resourceDefinition != null)
+            {
+                config.resourceDefinition.ApplyTo(value);
+            }
+
+            _resources[resourceType] = value;
+
+            if (config != null)
+            {
+                _instanceConfigs[resourceType] = config;
+            }
+            else if (!_instanceConfigs.ContainsKey(resourceType))
+            {
+                _instanceConfigs[resourceType] = null;
+            }
+
+            PublishUpdate(resourceType, value);
+            return true;
+        }
+
+        public bool NotifyResourceChanged(ResourceType resourceType)
+        {
+            if (!_resources.TryGetValue(resourceType, out var value))
+            {
+                return false;
+            }
+
+            PublishUpdate(resourceType, value);
+            return true;
+        }
+
+        private void PublishUpdate(ResourceType resourceType, IResourceValue value)
+        {
+            var evt = new ResourceUpdateEvent(EntityId, resourceType, value);
+            ResourceUpdated?.Invoke(evt);
+            EventBus<ResourceUpdateEvent>.Raise(evt);
         }
         public void Dispose()
         {
