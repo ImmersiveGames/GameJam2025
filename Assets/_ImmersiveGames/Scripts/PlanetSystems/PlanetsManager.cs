@@ -134,7 +134,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 if (planetMaster != null && !_activePlanets.Contains(planetMaster))
                 {
                     _activePlanets.Add(planetMaster);
-                    DebugUtility.Log<PlanetsManager>($"Planeta {poolable.GetGameObject().name} adicionado à lista de ativos com recurso {planetMaster.GetResource()?.ResourceType }.", "green", this);
+                    DebugUtility.Log<PlanetsManager>($"Planeta {poolable.GetGameObject().name} adicionado à lista de ativos com recurso {planetMaster.GetResource()?.ResourceId }.", "green", this);
                 }
             }
         }*/
@@ -197,7 +197,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             if (currentResource != null && currentResource != resource)
             {
                 DebugUtility.LogVerbose<PlanetsManager>(
-                    $"Substituindo recurso {currentResource.ResourceType} do planeta {planetMaster.name} por {resource.ResourceType}.",
+                    $"Substituindo recurso {currentResource.ResourceId} do planeta {planetMaster.name} por {resource.ResourceId}.",
                     "cyan",
                     this);
             }
@@ -206,7 +206,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             if (!changed && visualBridge.CurrentDefinition as PlanetResourcesSo != resource)
             {
-                DebugUtility.LogWarning<PlanetsManager>($"Falha ao atribuir recurso {resource.ResourceType} ao planeta {planetMaster.name}.", this);
+                DebugUtility.LogWarning<PlanetsManager>($"Falha ao atribuir recurso {resource.ResourceId} ao planeta {planetMaster.name}.", this);
                 _spawnedPlanets.Remove(planetMaster);
                 return false;
             }
@@ -435,7 +435,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             _planetResourcesMap[evt.Planet] = evt.Resource;
-            DebugUtility.LogVerbose<PlanetsManager>($"Mapa de recursos atualizado: {evt.Planet.name} -> {evt.Resource?.ResourceType}", "cyan", this);
+            DebugUtility.LogVerbose<PlanetsManager>($"Mapa de recursos atualizado: {evt.Planet.name} -> {evt.Resource?.ResourceId}", "cyan", this);
         }
 
         private void OnPlanetResourceCleared(PlanetResourceClearedEvent evt)
@@ -471,7 +471,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 }
 
                 _planetResourcesMap.TryGetValue(planet, out var resource);
-                var resourceName = resource != null ? resource.ResourceType.ToString() : "Sem Recurso";
+                var resourceName = resource != null ? resource.ResourceId.ToString() : "Sem Recurso";
                 builder.AppendLine($"- {planet.name}: {resourceName}");
             }
 

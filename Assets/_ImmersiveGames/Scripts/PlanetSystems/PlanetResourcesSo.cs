@@ -1,15 +1,17 @@
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [CreateAssetMenu(fileName = "PlanetResourcesData", menuName = "ImmersiveGames/PlanetResources")]
     public class PlanetResourcesSo : VisualResourceDefinition
     {
-        [SerializeField] private PlanetResources resourceType;
+        [FormerlySerializedAs("resourceType")]
+        [SerializeField] private PlanetResources resourceId;
 
         public Sprite ResourceIcon => GetIcon();
-        public PlanetResources ResourceType => resourceType;
+        public PlanetResources ResourceId => resourceId;
 
         private void OnValidate()
         {
