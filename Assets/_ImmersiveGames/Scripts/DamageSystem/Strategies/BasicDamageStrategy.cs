@@ -1,21 +1,23 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DamageSystem;
+
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 {
     /// <summary>
     /// Estratégia simples — aplica o valor puro sem modificadores.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class BasicDamageStrategy : IDamageStrategy
     {
         public float CalculateDamage(DamageContext ctx) => ctx.DamageValue;
     }
-    
+
     /// <summary>
     /// Adiciona chance de crítico configurável.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class CriticalDamageStrategy : IDamageStrategy
     {
         [Range(0f, 1f)] public float criticalChance = 0.2f;
@@ -23,52 +25,72 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 
         public float CalculateDamage(DamageContext ctx)
         {
-            bool isCritical = Random.value <= criticalChance;
-            return ctx.DamageValue * (isCritical ? criticalMultiplier : 1f);
+            bool isCritical = UnityEngine.Random.value <= Mathf.Clamp01(criticalChance);
+            float multiplier = Mathf.Max(1f, criticalMultiplier);
+            return ctx.DamageValue * (isCritical ? multiplier : 1f);
         }
     }
-    
+
     /// <summary>
     /// Aplica modificadores baseados em resistências e vulnerabilidades.
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class ResistanceDamageStrategy : IDamageStrategy
     {
-        public DamageModifiers modifiers;
+        public DamageModifiers modifiers = new();
 
         public float CalculateDamage(DamageContext ctx)
         {
-            float multiplier = modifiers.GetModifier(ctx.DamageType);
+            var table = modifiers ?? new DamageModifiers();
+            float multiplier = table.GetModifier(ctx.DamageType);
             return ctx.DamageValue * multiplier;
         }
     }
+
     /// <summary>
     /// Permite combinar múltiplas estratégias (executadas em sequência).
     /// </summary>
-    [System.Serializable]
+    [Serializable]
     public class CompositeDamageStrategy : IDamageStrategy
     {
-        [SerializeReference]
-        private List<IDamageStrategy> strategies = new();
+        private readonly List<IDamageStrategy> _strategies;
+
+        public CompositeDamageStrategy(IEnumerable<IDamageStrategy> strategies)
+        {
+            _strategies = new List<IDamageStrategy>();
+
+            if (strategies == null)
+                return;
+
+            foreach (var strategy in strategies)
+            {
+                if (strategy == null)
+                    continue;
+
+                _strategies.Add(strategy);
+            }
+        }
 
         public float CalculateDamage(DamageContext ctx)
         {
+            if (_strategies == null || _strategies.Count == 0)
+                return ctx.DamageValue;
+
             float current = ctx.DamageValue;
 
-            foreach (var s in strategies)
+            foreach (var strategy in _strategies)
             {
-                if (s == null) continue;
-                current = s.CalculateDamage(
-                    new DamageContext(
-                        ctx.AttackerId,
-                        ctx.TargetId,
-                        current,
-                        ctx.TargetResource,
-                        ctx.DamageType,
-                        ctx.HitPosition,
-                        ctx.HitNormal
-                    )
+                var strategyContext = new DamageContext(
+                    ctx.AttackerId,
+                    ctx.TargetId,
+                    current,
+                    ctx.TargetResource,
+                    ctx.DamageType,
+                    ctx.HitPosition,
+                    ctx.HitNormal
                 );
+
+                current = strategy.CalculateDamage(strategyContext);
             }
 
             return current;
