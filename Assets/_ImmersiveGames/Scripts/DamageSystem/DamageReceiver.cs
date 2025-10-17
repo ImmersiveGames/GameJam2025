@@ -15,12 +15,15 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private float damageCooldown = 0.25f;
 
         [Header("Estratégia de Dano")]
-        [SerializeReference] private DamageStrategy strategy = new BasicDamageStrategy();
+        [SerializeField] private DamageStrategyType strategyType = DamageStrategyType.Basic;
+        [SerializeField] private CriticalDamageSettings criticalSettings = new();
+        [SerializeField] private DamageModifiers resistanceModifiers = new();
 
         private ActorMaster _actor;
         private InjectableEntityResourceBridge _bridge;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
+        private DamageStrategy _strategy;
 
         private void Awake()
         {
@@ -28,6 +31,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
+            _strategy = DamageStrategyFactory.Create(strategyType, criticalSettings, resistanceModifiers);
         }
 
         public void ReceiveDamage(DamageContext ctx)
@@ -39,7 +43,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (!_cooldowns.CanDealDamage(ctx.AttackerId, ctx.TargetId))
                 return;
 
-            float finalDamage = strategy?.CalculateDamage(ctx) ?? ctx.DamageValue;
+            float finalDamage = _strategy?.CalculateDamage(ctx) ?? ctx.DamageValue;
             system.Modify(targetResource, -finalDamage);
 
             var damageEvent = new DamageEvent(
