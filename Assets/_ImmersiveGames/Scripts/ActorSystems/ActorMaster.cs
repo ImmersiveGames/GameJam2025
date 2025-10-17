@@ -105,7 +105,6 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             IsActive = true;
             _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
             SetSkinActive(true);
-            DamageLifecycleManager.RaiseReset(ActorId);
         }
 
         public void SetSkinActive(bool active)

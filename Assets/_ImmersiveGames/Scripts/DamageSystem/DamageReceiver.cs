@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.DamageSystem.Strategies;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
@@ -13,9 +14,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private ResourceType targetResource = ResourceType.Health;
         [SerializeField] private float damageCooldown = 0.25f;
 
+        [Header("Estratégia de Dano")]
+        [SerializeReference] private DamageStrategy strategy = new BasicDamageStrategy();
+
         private ActorMaster _actor;
         private InjectableEntityResourceBridge _bridge;
-        private IDamageStrategy _strategy;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
 
@@ -23,8 +26,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             _actor = GetComponent<ActorMaster>();
             _bridge = GetComponent<InjectableEntityResourceBridge>();
-            _strategy = new BasicDamageStrategy();
-
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
         }
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (!_cooldowns.CanDealDamage(ctx.AttackerId, ctx.TargetId))
                 return;
 
-            float finalDamage = _strategy.CalculateDamage(ctx);
+            float finalDamage = strategy?.CalculateDamage(ctx) ?? ctx.DamageValue;
             system.Modify(targetResource, -finalDamage);
 
             var damageEvent = new DamageEvent(
@@ -50,34 +51,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 ctx.HitPosition
             );
 
-            // Enviar para o TARGET (quem recebeu o dano)
             FilteredEventBus<DamageEvent>.RaiseFiltered(damageEvent, ctx.TargetId);
-
-            // Opcional: notificar o atacante
             if (!string.IsNullOrEmpty(ctx.AttackerId))
                 FilteredEventBus<DamageEvent>.RaiseFiltered(damageEvent, ctx.AttackerId);
 
-            // Checar morte ou revive
             _lifecycle.CheckDeath(system, targetResource);
         }
 
         public string GetReceiverId() => _actor.ActorId;
-
-        private void OnEnable()
-        {
-            // Escuta Reset local para limpar cooldowns e ciclo de vida
-            FilteredEventBus<ResetEvent>.Register(new EventBinding<ResetEvent>(_ => OnResetEvent()), _actor.ActorId);
-        }
-
-        private void OnDisable()
-        {
-            FilteredEventBus<ResetEvent>.Unregister(_actor.ActorId);
-        }
-
-        private void OnResetEvent()
-        {
-            _cooldowns.ClearForActor(_actor.ActorId);
-            _lifecycle.Clear();
-        }
     }
 }
