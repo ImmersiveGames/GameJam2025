@@ -13,12 +13,33 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public DamageType DamageType;
         public Vector3 HitPosition;
     
-        public DamageEvent(string attackerId, string targetId, float finalDamage, 
+        public DamageEvent(string attackerId, string targetId, float finalDamage,
             ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
         {
             AttackerId = attackerId;
             TargetId = targetId;
             FinalDamage = finalDamage;
+            ResourceType = resourceType;
+            DamageType = damageType;
+            HitPosition = hitPosition;
+        }
+    }
+
+    public struct DamageEventReverted : IEvent
+    {
+        public string AttackerId;
+        public string TargetId;
+        public float RestoredDamage;
+        public ResourceType ResourceType;
+        public DamageType DamageType;
+        public Vector3 HitPosition;
+
+        public DamageEventReverted(string attackerId, string targetId, float restoredDamage,
+            ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
+        {
+            AttackerId = attackerId;
+            TargetId = targetId;
+            RestoredDamage = restoredDamage;
             ResourceType = resourceType;
             DamageType = damageType;
             HitPosition = hitPosition;

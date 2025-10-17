@@ -19,6 +19,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _isDead = false;
         }
 
+        public bool IsDead => _isDead;
+
         public void CheckDeath(ResourceSystem system, ResourceType resourceType)
         {
             var value = system.Get(resourceType);
@@ -38,6 +40,25 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 _isDead = true;
                 FilteredEventBus<DeathEvent>.RaiseFiltered(new DeathEvent(_entityId, resourceType), _entityId);
+            }
+        }
+
+        public void RevertDeathState(bool previousState, ResourceType resourceType)
+        {
+            if (_isDead == previousState)
+            {
+                return;
+            }
+
+            _isDead = previousState;
+
+            if (_isDead)
+            {
+                FilteredEventBus<DeathEvent>.RaiseFiltered(new DeathEvent(_entityId, resourceType), _entityId);
+            }
+            else
+            {
+                FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
             }
         }
 

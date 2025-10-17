@@ -157,6 +157,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             Debug.Log($"[ResourceSystem] GetInstanceConfig - {EntityId}.{resourceType}: Found={config != null}, Style={config?.slotStyle != null}");
             return config;
         }
+
+        public void RestoreLastDamageTime(float value)
+        {
+            LastDamageTime = value;
+        }
         /// <summary>
         /// Retorna todos os ResourceTypes registrados neste sistema
         /// </summary>

@@ -17,6 +17,7 @@
     public interface IDamageReceiver
     {
         void ReceiveDamage(DamageContext ctx);
+        void UndoLastDamage();
         string GetReceiverId();
     }
 

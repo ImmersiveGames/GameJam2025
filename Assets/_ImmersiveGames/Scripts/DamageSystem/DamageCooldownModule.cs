@@ -33,6 +33,32 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             return true;
         }
 
+        public float? PeekCooldown(string attackerId, string targetId)
+        {
+            if (string.IsNullOrEmpty(attackerId) || string.IsNullOrEmpty(targetId))
+                return null;
+
+            var key = (attackerId, targetId);
+            return _cooldowns.TryGetValue(key, out var value) ? value : null;
+        }
+
+        public void RestoreCooldown(string attackerId, string targetId, float? timestamp)
+        {
+            if (string.IsNullOrEmpty(attackerId) || string.IsNullOrEmpty(targetId))
+                return;
+
+            var key = (attackerId, targetId);
+
+            if (timestamp.HasValue)
+            {
+                _cooldowns[key] = timestamp.Value;
+            }
+            else
+            {
+                _cooldowns.Remove(key);
+            }
+        }
+
         public void ClearForActor(string actorId)
         {
             var keysToRemove = new List<(string, string)>();
