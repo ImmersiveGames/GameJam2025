@@ -1,12 +1,85 @@
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
+    [RequireComponent(typeof(PlanetResourceModule))]
     [DebugLevel(DebugLevel.Logs)]
     public sealed class PlanetsMaster : ActorMaster, IPlanetActor
     {
-        
+        private PlanetResourceModule _resourceModule;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            InitializeResourceModule();
+        }
+
+        public PlanetResourceModule GetResourceModule()
+        {
+            if (_resourceModule == null)
+            {
+                TryGetComponent(out _resourceModule);
+            }
+
+            return _resourceModule;
+        }
+
+        public PlanetResourcesSo GetResource() => _resourceModule?.CurrentResource;
+
+        public PlanetsMaster GetPlanetsMaster() => this;
+
+        private void InitializeResourceModule()
+        {
+            if (!TryGetComponent(out _resourceModule))
+            {
+                DebugUtility.LogError<PlanetsMaster>(
+                    $"PlanetResourceModule não encontrado em {gameObject.name}.",
+                    this);
+                return;
+            }
+
+            _resourceModule.ResourceAssigned += OnResourceAssigned;
+            _resourceModule.ResourceCleared += OnResourceCleared;
+        }
+
+        private void OnResourceAssigned(PlanetResourcesSo resource)
+        {
+            if (resource == null)
+            {
+                DebugUtility.LogWarning<PlanetsMaster>(
+                    $"Recurso nulo recebido ao tentar registrar o planeta {gameObject.name}.",
+                    this);
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlanetsMaster>(
+                $"Planeta {gameObject.name} recebeu o recurso {resource.ResourceType}.",
+                "cyan",
+                this);
+        }
+
+        private void OnResourceCleared()
+        {
+            DebugUtility.LogVerbose<PlanetsMaster>(
+                $"Recurso removido do planeta {gameObject.name}.",
+                "yellow",
+                this);
+        }
+
+        protected override void OnDestroy()
+        {
+            if (_resourceModule != null)
+            {
+                _resourceModule.ResourceAssigned -= OnResourceAssigned;
+                _resourceModule.ResourceCleared -= OnResourceCleared;
+            }
+
+            base.OnDestroy();
+        }
+
         /*public IActor Detectable => this;
 
         [SerializeField] private PlanetsManager planetsManager; // Injeção via Inspector
