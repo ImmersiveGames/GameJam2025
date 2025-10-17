@@ -8,6 +8,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     {
         string CollectionName { get; }
         ISkinConfig GetConfig(ModelType modelType);
+        IEnumerable<ISkinConfig> GetAllConfigs();
     }
     [CreateAssetMenu(fileName = "SkinCollectionData", menuName = "ImmersiveGames/Skin/SkinCollectionData", order = 2)]
     public class SkinCollectionData : ScriptableObject, ISkinCollection
@@ -23,6 +24,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         {
             EnsureMap();
             return _configMap.GetValueOrDefault(type);
+        }
+
+        public IEnumerable<ISkinConfig> GetAllConfigs()
+        {
+            EnsureMap();
+            return _configMap.Values;
         }
 
         private void EnsureMap()

@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         [SerializeField] private bool autoInitialize = true;
         [SerializeField] private bool enableGlobalEvents = true;
         
-        private SkinService _skinService;
+        private ISkinService _skinService;
         private IActor _ownerActor;
         private IHasSkin _skinOwner;
 
@@ -38,12 +38,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void Awake()
         {
             FindDependencies();
-            _skinService = new SkinService();
+            _skinService ??= new SkinService();
 
             if (autoInitialize)
             {
                 Initialize();
             }
+        }
+
+        /// <summary>
+        /// Permite injeção externa de um serviço de skin customizado (útil para testes).
+        /// </summary>
+        public void SetSkinService(ISkinService skinService)
+        {
+            _skinService = skinService ?? throw new ArgumentNullException(nameof(skinService));
         }
 
         private void Start()
@@ -140,78 +148,52 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         public void Initialize()
         {
             if (IsInitialized) return;
-            
+
             if (_skinOwner?.ModelTransform == null)
             {
                 Debug.LogError($"SkinController: No valid ModelTransform found");
                 return;
             }
 
-            if (defaultSkinCollection != null)
+            if (_skinService == null)
             {
-                _skinService.Initialize(defaultSkinCollection, _skinOwner.ModelTransform, _ownerActor);
+                Debug.LogError("SkinController: Nenhum ISkinService configurado.");
+                return;
             }
-            
+
+            _skinService.Initialize(defaultSkinCollection, _skinOwner.ModelTransform, _ownerActor);
+
             IsInitialized = true;
         }
 
         #region Public API
         public void ApplySkin(ISkinConfig config)
-        { 
+        {
             if (!ValidateInitialization()) return;
-            
-            _skinService.ApplyConfig(config, _ownerActor);
-            
-            // Notificação local
-            OnSkinApplied?.Invoke(config);
-            
-            // Notificação global via EventBus
-            if (enableGlobalEvents)
+
+            if (config == null)
             {
-                var skinEvent = new SkinUpdateEvent(config, _ownerActor);
-                EventBus<SkinUpdateEvent>.Raise(skinEvent);
-                
-                // Evento filtrado para este actor específico
-                if (_ownerActor != null)
-                {
-                    FilteredEventBus<SkinUpdateEvent>.RaiseFiltered(skinEvent, _ownerActor);
-                }
+                Debug.LogWarning("SkinController: Config nula fornecida para ApplySkin.");
+                return;
             }
 
-            // Notificar sobre instâncias criadas
-            var instances = GetSkinInstances(config.ModelType);
-            OnSkinInstancesCreated?.Invoke(config.ModelType, instances);
+            var createdInstances = _skinService.ApplyConfig(config, _ownerActor);
+
+            NotifySkinApplied(config);
+            NotifySkinInstancesCreated(config.ModelType, createdInstances);
         }
 
         public void ApplySkinCollection(SkinCollectionData newCollection)
         {
             if (!ValidateInitialization()) return;
-            
-            _skinService.ApplyCollection(newCollection, _ownerActor);
-            
-            // Notificação local
-            OnSkinCollectionApplied?.Invoke(newCollection);
-            
-            // Notificação global via EventBus
-            if (enableGlobalEvents)
-            {
-                var collectionEvent = new SkinCollectionUpdateEvent(newCollection, _ownerActor);
-                EventBus<SkinCollectionUpdateEvent>.Raise(collectionEvent);
-                
-                if (_ownerActor != null)
-                {
-                    FilteredEventBus<SkinCollectionUpdateEvent>.RaiseFiltered(collectionEvent, _ownerActor);
-                }
-            }
 
-            // Notificar sobre todas as instâncias criadas
-            foreach (ModelType type in Enum.GetValues(typeof(ModelType)))
+            var createdByType = _skinService.ApplyCollection(newCollection, _ownerActor);
+
+            NotifySkinCollectionApplied(newCollection);
+
+            foreach (var pair in createdByType)
             {
-                var instances = GetSkinInstances(type);
-                if (instances != null && instances.Count > 0)
-                {
-                    OnSkinInstancesCreated?.Invoke(type, instances);
-                }
+                NotifySkinInstancesCreated(pair.Key, pair.Value);
             }
         }
 
@@ -220,9 +202,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             _skinOwner?.SetSkinActive(active);
         }
 
-        public List<GameObject> GetSkinInstances(ModelType type) 
-        { 
-            return _skinService?.GetInstancesOfType(type) ?? new List<GameObject>();
+        public List<GameObject> GetSkinInstances(ModelType type)
+        {
+            var instances = _skinService?.GetInstancesOfType(type);
+            return ConvertInstances(instances);
         }
 
         public Transform GetSkinContainer(ModelType type) 
@@ -247,6 +230,73 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         #endregion
 
         #region Utility Methods
+        private void NotifySkinApplied(ISkinConfig config)
+        {
+            OnSkinApplied?.Invoke(config);
+
+            if (!enableGlobalEvents) return;
+
+            var skinEvent = new SkinUpdateEvent(config, _ownerActor);
+            EventBus<SkinUpdateEvent>.Raise(skinEvent);
+
+            if (_ownerActor != null)
+            {
+                FilteredEventBus<SkinUpdateEvent>.RaiseFiltered(skinEvent, _ownerActor);
+            }
+        }
+
+        private void NotifySkinCollectionApplied(SkinCollectionData collection)
+        {
+            OnSkinCollectionApplied?.Invoke(collection);
+
+            if (!enableGlobalEvents) return;
+
+            var collectionEvent = new SkinCollectionUpdateEvent(collection, _ownerActor);
+            EventBus<SkinCollectionUpdateEvent>.Raise(collectionEvent);
+
+            if (_ownerActor != null)
+            {
+                FilteredEventBus<SkinCollectionUpdateEvent>.RaiseFiltered(collectionEvent, _ownerActor);
+            }
+        }
+
+        private void NotifySkinInstancesCreated(ModelType modelType, IReadOnlyList<GameObject> createdInstances)
+        {
+            var instances = ConvertInstances(createdInstances);
+            if (instances.Count == 0) return;
+
+            OnSkinInstancesCreated?.Invoke(modelType, instances);
+
+            if (!enableGlobalEvents) return;
+
+            var instancesEvent = new SkinInstancesCreatedEvent(modelType, instances.ToArray(), _ownerActor);
+            EventBus<SkinInstancesCreatedEvent>.Raise(instancesEvent);
+
+            if (_ownerActor != null)
+            {
+                FilteredEventBus<SkinInstancesCreatedEvent>.RaiseFiltered(instancesEvent, _ownerActor);
+            }
+        }
+
+        private static List<GameObject> ConvertInstances(IReadOnlyList<GameObject> instances)
+        {
+            if (instances == null || instances.Count == 0)
+            {
+                return new List<GameObject>();
+            }
+
+            var result = new List<GameObject>(instances.Count);
+            foreach (var instance in instances)
+            {
+                if (instance != null)
+                {
+                    result.Add(instance);
+                }
+            }
+
+            return result;
+        }
+
         private bool ValidateInitialization()
         {
             if (!IsInitialized)
