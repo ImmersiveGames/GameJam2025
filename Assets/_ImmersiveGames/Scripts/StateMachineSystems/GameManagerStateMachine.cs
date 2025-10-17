@@ -180,4 +180,3 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
     }
 
 }
-}

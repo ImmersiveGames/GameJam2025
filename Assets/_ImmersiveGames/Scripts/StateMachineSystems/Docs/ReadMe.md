@@ -160,3 +160,4 @@ Acesse clicando no ícone ☰ do componente `GameManager` no inspetor e selecion
 ---
 
 > Qualquer dúvida ou nova feature no ciclo de jogo, atualizar este documento mantendo o padrão de exemplos em inglês e comentários em português.
+> o Reset não esta funcionando corretamente no jogo, revisar.
