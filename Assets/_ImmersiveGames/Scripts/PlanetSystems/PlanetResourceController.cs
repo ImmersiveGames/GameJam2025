@@ -65,8 +65,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var actorId = _actor?.ActorId;
             var evt = new PlanetResourceChangedEvent(_planetsMaster, resource, actorId);
 
-            _planetsMaster.UpdateResourceCache(resource);
-
             EventBus<PlanetResourceChangedEvent>.Raise(evt);
 
             if (!string.IsNullOrEmpty(actorId))
