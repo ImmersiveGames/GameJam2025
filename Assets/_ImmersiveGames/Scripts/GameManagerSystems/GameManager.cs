@@ -30,6 +30,49 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
         private IActorResourceOrchestrator _orchestrator;
+
+        [ContextMenu("Game Loop/Request Start")]
+        private void ContextRequestStart()
+        {
+            // Facilita testes editoriais disparando o mesmo fluxo usado pelos botões de UI.
+            EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
+        }
+
+        [ContextMenu("Game Loop/Request Pause")]
+        private void ContextRequestPause()
+        {
+            // Usa o pipeline de eventos para respeitar as validações de estado atuais.
+            EventBus<GamePauseRequestedEvent>.Raise(new GamePauseRequestedEvent());
+        }
+
+        [ContextMenu("Game Loop/Request Resume")]
+        private void ContextRequestResume()
+        {
+            // Retoma o jogo seguindo o mesmo mecanismo da UI.
+            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+        }
+
+        [ContextMenu("Game Loop/Request Reset")]
+        private void ContextRequestReset()
+        {
+            // Solicita o reset completo da sessão via FSM.
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+        }
+
+        [ContextMenu("Game Loop/Force Game Over")]
+        private void ContextForceGameOver()
+        {
+            // Dispara diretamente o evento de game over para testes.
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+        }
+
+        [ContextMenu("Game Loop/Force Victory")]
+        private void ContextForceVictory()
+        {
+            // Dispara diretamente o evento de vitória para validar fluxos.
+            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
+        }
+
         protected override void Awake()
         {
             base.Awake();
