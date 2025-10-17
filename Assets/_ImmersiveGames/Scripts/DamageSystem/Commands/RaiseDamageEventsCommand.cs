@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.DamageSystem;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 {
@@ -22,12 +22,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             );
 
             context.RaisedDamageEvent = damageEvent;
-            FilteredEventBus<DamageEvent>.RaiseFiltered(damageEvent, request.TargetId);
-
-            if (!string.IsNullOrEmpty(request.AttackerId))
-            {
-                FilteredEventBus<DamageEvent>.RaiseFiltered(damageEvent, request.AttackerId);
-            }
+            DamageEventDispatcher.RaiseForParticipants(
+                damageEvent,
+                request.AttackerId,
+                request.TargetId);
 
             return true;
         }
@@ -49,12 +47,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 damageEvent.HitPosition
             );
 
-            FilteredEventBus<DamageEventReverted>.RaiseFiltered(revertedEvent, damageEvent.TargetId);
-
-            if (!string.IsNullOrEmpty(damageEvent.AttackerId))
-            {
-                FilteredEventBus<DamageEventReverted>.RaiseFiltered(revertedEvent, damageEvent.AttackerId);
-            }
+            DamageEventDispatcher.RaiseForParticipants(
+                revertedEvent,
+                damageEvent.AttackerId,
+                damageEvent.TargetId);
 
             context.RaisedDamageEvent = null;
         }

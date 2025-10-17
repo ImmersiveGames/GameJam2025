@@ -69,4 +69,84 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public readonly string EntityId;
         public ResetEvent(string id) => EntityId = id;
     }
+
+    public struct DamagePipelineStarted : IEvent
+    {
+        public readonly string AttackerId;
+        public readonly string TargetId;
+        public readonly ResourceType ResourceType;
+        public readonly DamageType DamageType;
+        public readonly float RequestedDamage;
+
+        public DamagePipelineStarted(string attackerId, string targetId, ResourceType resourceType,
+            DamageType damageType, float requestedDamage)
+        {
+            AttackerId = attackerId;
+            TargetId = targetId;
+            ResourceType = resourceType;
+            DamageType = damageType;
+            RequestedDamage = requestedDamage;
+        }
+    }
+
+    public struct DamagePipelineCompleted : IEvent
+    {
+        public readonly string AttackerId;
+        public readonly string TargetId;
+        public readonly ResourceType ResourceType;
+        public readonly DamageType DamageType;
+        public readonly float RequestedDamage;
+        public readonly float FinalDamage;
+
+        public DamagePipelineCompleted(string attackerId, string targetId, ResourceType resourceType,
+            DamageType damageType, float requestedDamage, float finalDamage)
+        {
+            AttackerId = attackerId;
+            TargetId = targetId;
+            ResourceType = resourceType;
+            DamageType = damageType;
+            RequestedDamage = requestedDamage;
+            FinalDamage = finalDamage;
+        }
+    }
+
+    public struct DamagePipelineFailed : IEvent
+    {
+        public readonly string AttackerId;
+        public readonly string TargetId;
+        public readonly ResourceType ResourceType;
+        public readonly DamageType DamageType;
+        public readonly float RequestedDamage;
+        public readonly string FailedCommandName;
+
+        public DamagePipelineFailed(string attackerId, string targetId, ResourceType resourceType,
+            DamageType damageType, float requestedDamage, string failedCommandName)
+        {
+            AttackerId = attackerId;
+            TargetId = targetId;
+            ResourceType = resourceType;
+            DamageType = damageType;
+            RequestedDamage = requestedDamage;
+            FailedCommandName = failedCommandName;
+        }
+    }
+
+    public struct DamagePipelineUndone : IEvent
+    {
+        public readonly string AttackerId;
+        public readonly string TargetId;
+        public readonly ResourceType ResourceType;
+        public readonly DamageType DamageType;
+        public readonly float RestoredDamage;
+
+        public DamagePipelineUndone(string attackerId, string targetId, ResourceType resourceType,
+            DamageType damageType, float restoredDamage)
+        {
+            AttackerId = attackerId;
+            TargetId = targetId;
+            ResourceType = resourceType;
+            DamageType = damageType;
+            RestoredDamage = restoredDamage;
+        }
+    }
 }
