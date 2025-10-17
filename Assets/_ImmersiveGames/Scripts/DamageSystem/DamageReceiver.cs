@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private InjectableEntityResourceBridge _bridge;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
-        private DamageStrategy _strategy;
+        private IDamageStrategy _strategy;
 
         private void Awake()
         {

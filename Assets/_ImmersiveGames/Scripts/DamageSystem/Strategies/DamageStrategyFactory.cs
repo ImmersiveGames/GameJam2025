@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using _ImmersiveGames.Scripts.DamageSystem;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 {
@@ -19,7 +20,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 
     public static class DamageStrategyFactory
     {
-        public static DamageStrategy Create(
+        public static IDamageStrategy Create(
             DamageStrategyType type,
             CriticalDamageSettings criticalSettings,
             DamageModifiers resistanceModifiers

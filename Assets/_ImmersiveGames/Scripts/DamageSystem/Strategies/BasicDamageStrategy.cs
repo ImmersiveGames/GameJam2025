@@ -1,35 +1,27 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using _ImmersiveGames.Scripts.DamageSystem;
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 {
-    /// <summary>
-    /// Classe base serializável para cálculo de dano.
-    /// Permite subclasses aparecerem no Inspector.
-    /// </summary>
-    [System.Serializable]
-    public abstract class DamageStrategy
-    {
-        public abstract float CalculateDamage(DamageContext ctx);
-    }
     /// <summary>
     /// Estratégia simples — aplica o valor puro sem modificadores.
     /// </summary>
     [System.Serializable]
-    public class BasicDamageStrategy : DamageStrategy
+    public class BasicDamageStrategy : IDamageStrategy
     {
-        public override float CalculateDamage(DamageContext ctx) => ctx.DamageValue;
+        public float CalculateDamage(DamageContext ctx) => ctx.DamageValue;
     }
     
     /// <summary>
     /// Adiciona chance de crítico configurável.
     /// </summary>
     [System.Serializable]
-    public class CriticalDamageStrategy : DamageStrategy
+    public class CriticalDamageStrategy : IDamageStrategy
     {
         [Range(0f, 1f)] public float criticalChance = 0.2f;
         [Range(1f, 3f)] public float criticalMultiplier = 2f;
 
-        public override float CalculateDamage(DamageContext ctx)
+        public float CalculateDamage(DamageContext ctx)
         {
             bool isCritical = Random.value <= criticalChance;
             return ctx.DamageValue * (isCritical ? criticalMultiplier : 1f);
@@ -40,11 +32,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
     /// Aplica modificadores baseados em resistências e vulnerabilidades.
     /// </summary>
     [System.Serializable]
-    public class ResistanceDamageStrategy : DamageStrategy
+    public class ResistanceDamageStrategy : IDamageStrategy
     {
         public DamageModifiers modifiers;
 
-        public override float CalculateDamage(DamageContext ctx)
+        public float CalculateDamage(DamageContext ctx)
         {
             float multiplier = modifiers.GetModifier(ctx.DamageType);
             return ctx.DamageValue * multiplier;
@@ -54,12 +46,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
     /// Permite combinar múltiplas estratégias (executadas em sequência).
     /// </summary>
     [System.Serializable]
-    public class CompositeDamageStrategy : DamageStrategy
+    public class CompositeDamageStrategy : IDamageStrategy
     {
         [SerializeReference]
-        private List<DamageStrategy> strategies = new();
+        private List<IDamageStrategy> strategies = new();
 
-        public override float CalculateDamage(DamageContext ctx)
+        public float CalculateDamage(DamageContext ctx)
         {
             float current = ctx.DamageValue;
 
