@@ -27,6 +27,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         // EventBindings para EventBus global
         private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
         private EventBinding<SkinCollectionUpdateEvent> _skinCollectionUpdateBinding;
+        private bool _globalEventsRegistered;
 
         // Registro no DependencyManager
         private string _objectId;
@@ -57,7 +58,16 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void Start()
         {
             RegisterWithDependencyManager();
+        }
+
+        private void OnEnable()
+        {
             RegisterGlobalEventListeners();
+        }
+
+        private void OnDisable()
+        {
+            UnregisterGlobalEventListeners();
         }
 
         private void OnDestroy()
@@ -110,27 +120,34 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         #region Global Event Bus Integration
         private void RegisterGlobalEventListeners()
         {
-            if (!enableGlobalEvents) return;
+            if (!enableGlobalEvents || _globalEventsRegistered) return;
 
-            // Registrar para escutar eventos globais de skin se necessário
-            _skinUpdateBinding = new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
-            _skinCollectionUpdateBinding = new EventBinding<SkinCollectionUpdateEvent>(OnGlobalSkinCollectionUpdate);
-            
-            // Exemplo: escutar eventos globais filtrados por este actor
+            _skinUpdateBinding ??= new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
+            _skinCollectionUpdateBinding ??= new EventBinding<SkinCollectionUpdateEvent>(OnGlobalSkinCollectionUpdate);
+
             if (_ownerActor != null)
             {
                 FilteredEventBus<SkinUpdateEvent>.Register(_skinUpdateBinding, _ownerActor);
                 FilteredEventBus<SkinCollectionUpdateEvent>.Register(_skinCollectionUpdateBinding, _ownerActor);
+                _globalEventsRegistered = true;
             }
         }
 
         private void UnregisterGlobalEventListeners()
         {
-            if (_ownerActor != null)
+            if (!_globalEventsRegistered || _ownerActor == null) return;
+
+            if (_skinUpdateBinding != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.Unregister(_ownerActor);
-                FilteredEventBus<SkinCollectionUpdateEvent>.Unregister(_ownerActor);
+                FilteredEventBus<SkinUpdateEvent>.Unregister(_skinUpdateBinding, _ownerActor);
             }
+
+            if (_skinCollectionUpdateBinding != null)
+            {
+                FilteredEventBus<SkinCollectionUpdateEvent>.Unregister(_skinCollectionUpdateBinding, _ownerActor);
+            }
+
+            _globalEventsRegistered = false;
         }
 
         private void OnGlobalSkinUpdate(SkinUpdateEvent evt)

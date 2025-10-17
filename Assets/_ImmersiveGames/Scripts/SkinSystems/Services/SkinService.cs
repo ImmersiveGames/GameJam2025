@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
@@ -30,8 +30,16 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (postProcessors != null)
             {
-                _postProcessors.AddRange(postProcessors);
+                foreach (var processor in postProcessors)
+                {
+                    if (processor != null)
+                    {
+                        _postProcessors.Add(processor);
+                    }
+                }
             }
+
+            EnsureDefaultPostProcessor();
         }
 
         public void Initialize(SkinCollectionData collection, Transform parent, IActor owner)
@@ -75,17 +83,29 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             ClearInstancesOfType(config.ModelType);
 
-            var prefabs = config.GetSelectedPrefabs()?.Where(prefab => prefab != null).ToList();
+            var prefabs = config.GetSelectedPrefabs();
             if (prefabs == null || prefabs.Count == 0)
             {
                 return Array.Empty<GameObject>();
             }
 
             var actor = owner ?? _ownerActor;
-            var instances = prefabs
-                .Select(prefab => _modelFactory.Instantiate(prefab, container, actor, config))
-                .Where(instance => instance != null)
-                .ToList();
+            var instances = new List<GameObject>(prefabs.Count);
+
+            for (int i = 0; i < prefabs.Count; i++)
+            {
+                var prefab = prefabs[i];
+                if (prefab == null)
+                {
+                    continue;
+                }
+
+                var instance = _modelFactory.Instantiate(prefab, container, actor, config);
+                if (instance != null)
+                {
+                    instances.Add(instance);
+                }
+            }
 
             if (instances.Count == 0)
             {
@@ -114,7 +134,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
         private void RunPostProcessors(IEnumerable<GameObject> instances, ISkinConfig config, IActor owner)
         {
-            if (!_postProcessors.Any()) return;
+            if (_postProcessors.Count == 0) return;
 
             foreach (var instance in instances)
             {
@@ -123,6 +143,19 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                     processor.Process(instance, config, owner);
                 }
             }
+        }
+
+        private void EnsureDefaultPostProcessor()
+        {
+            for (int i = 0; i < _postProcessors.Count; i++)
+            {
+                if (_postProcessors[i] is DynamicCanvasBinderPostProcessor)
+                {
+                    return;
+                }
+            }
+
+            _postProcessors.Add(new DynamicCanvasBinderPostProcessor());
         }
 
         private void ClearInstancesOfType(ModelType type)
@@ -142,9 +175,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
         private void ClearAllInstances()
         {
-            foreach (var type in _instances.Keys.ToList())
+            if (_instances.Count == 0)
             {
-                ClearInstancesOfType(type);
+                return;
+            }
+
+            var keys = new ModelType[_instances.Count];
+            _instances.Keys.CopyTo(keys, 0);
+
+            for (int i = 0; i < keys.Length; i++)
+            {
+                ClearInstancesOfType(keys[i]);
             }
 
             _instances.Clear();
