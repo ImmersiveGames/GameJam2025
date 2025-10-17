@@ -50,29 +50,27 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
         private void OnDeath(DeathEvent e)
         {
-            // Só recebe eventos destinados a este ActorId
             DebugUtility.LogVerbose<ActorMaster>($"💀 {ActorId} morreu por {e.ResourceType}!");
             SetSkinActive(false);
             IsActive = false;
+
+            // Evento global (UI, pontuação, etc.)
+            EventBus<DeathEvent>.Raise(e);
         }
 
         private void OnDamage(DamageEvent e)
         {
-            // Só recebe eventos onde este actor é o alvo
             DebugUtility.LogVerbose<ActorMaster>($"⚔️ {ActorId} recebeu {e.FinalDamage} de {e.AttackerId}");
-        
-            // Aqui você pode adicionar feedback visual:
-            // - Screen shake
-            // - Efeitos de hit
-            // - Sons
-            // - UI damage numbers
+            // Local para feedbacks visuais/áudio (commit futuro)
         }
+
         private void OnRevive(ReviveEvent e)
         {
             DebugUtility.LogVerbose<ActorMaster>($"❤️ {ActorId} reviveu!");
             SetSkinActive(true);
             IsActive = true;
         }
+
         private void OnReset(ResetEvent e)
         {
             DebugUtility.LogVerbose<ActorMaster>($"🔄 {ActorId} foi resetado!");
@@ -115,13 +113,14 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             if (_modelRoot != null)
                 _modelRoot.gameObject.SetActive(active);
         }
+
         protected virtual void OnDestroy()
         {
-            // Limpar registros do FilteredEventBus
-            FilteredEventBus<DeathEvent>.Unregister(ActorId);
-            FilteredEventBus<DamageEvent>.Unregister(ActorId);
-            FilteredEventBus<ReviveEvent>.Unregister(ActorId);
-            FilteredEventBus<ResetEvent>.Unregister(ActorId);
+            // Desregistrar bindings individuais para evitar leaks
+            FilteredEventBus<DeathEvent>.Unregister(_deathBinding, ActorId);
+            FilteredEventBus<DamageEvent>.Unregister(_damageBinding, ActorId);
+            FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, ActorId);
+            FilteredEventBus<ResetEvent>.Unregister(_resetBinding, ActorId);
         }
     }
 }

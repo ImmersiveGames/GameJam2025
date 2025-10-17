@@ -22,16 +22,15 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void Awake() => actor = GetComponent<ActorMaster>();
 
-        /// <summary>
-        /// Colliders podem estar em filhos — por isso, este método é chamado no pai.
-        /// </summary>
-        /// <param name="collision"></param>
-        public void OnChildCollisionEnter(Collision collision)
+        private void OnCollisionEnter(Collision collision)
         {
             HandleCollision(collision);
         }
 
-        private void OnCollisionEnter(Collision collision)
+        /// <summary>
+        /// Chamado por filhos com colliders através de DamageChildCollider.
+        /// </summary>
+        public void OnChildCollisionEnter(Collision collision)
         {
             HandleCollision(collision);
         }
@@ -44,14 +43,15 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             var receiver = other.GetComponentInParent<IDamageReceiver>();
             if (receiver == null) return;
 
+            var contact = collision.contacts.Length > 0 ? collision.contacts[0] : default;
             var ctx = new DamageContext(
                 actor.ActorId,
                 receiver.GetReceiverId(),
                 baseDamage,
                 targetResource,
                 damageType,
-                collision.contacts[0].point,
-                collision.contacts[0].normal
+                contact.point,
+                contact.normal
             );
 
             DealDamage(receiver, ctx);

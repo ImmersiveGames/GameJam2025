@@ -2,41 +2,102 @@
 
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
 {
+    /// <summary>
+    /// Permite registrar e disparar eventos com um "escopo" (ex: ActorId).
+    /// Assim, apenas objetos vinculados ao mesmo escopo recebem o evento.
+    /// </summary>
     public static class FilteredEventBus<T> where T : IEvent
     {
-        private static readonly Dictionary<object, IEventBinding<T>> _bindings = new();
+        // Agora cada escopo pode ter múltiplos bindings (ex: um ActorMaster + um UIListener)
+        private static readonly Dictionary<object, List<IEventBinding<T>>> _bindingsByScope = new();
 
+        /// <summary>
+        /// Registra um binding no escopo especificado.
+        /// </summary>
         public static void Register(IEventBinding<T> binding, object scope)
         {
-            if (!_bindings.TryAdd(scope, binding)) return;
+            if (binding == null || scope == null)
+                return;
 
+            if (!_bindingsByScope.TryGetValue(scope, out var list))
+            {
+                list = new List<IEventBinding<T>>();
+                _bindingsByScope[scope] = list;
+            }
+
+            if (list.Contains(binding))
+                return;
+
+            list.Add(binding);
             EventBus<T>.Register((EventBinding<T>)binding);
         }
 
+        /// <summary>
+        /// Remove um binding específico de um escopo.
+        /// </summary>
+        public static void Unregister(IEventBinding<T> binding, object scope)
+        {
+            if (binding == null || scope == null)
+                return;
+
+            if (_bindingsByScope.TryGetValue(scope, out var list))
+            {
+                if (list.Remove(binding))
+                    EventBus<T>.Unregister((EventBinding<T>)binding);
+
+                if (list.Count == 0)
+                    _bindingsByScope.Remove(scope);
+            }
+        }
+
+        /// <summary>
+        /// Remove todos os bindings de um determinado escopo.
+        /// </summary>
         public static void Unregister(object scope)
         {
-            if (_bindings.TryGetValue(scope, out IEventBinding<T> binding))
+            if (scope == null)
+                return;
+
+            if (_bindingsByScope.TryGetValue(scope, out var list))
             {
-                EventBus<T>.Unregister((EventBinding<T>)binding);
-                _bindings.Remove(scope);
+                foreach (var binding in list)
+                    EventBus<T>.Unregister((EventBinding<T>)binding);
+
+                _bindingsByScope.Remove(scope);
             }
         }
 
+        /// <summary>
+        /// Envia um evento apenas para os bindings registrados sob o escopo alvo.
+        /// </summary>
         public static void RaiseFiltered(T evt, object targetScope)
         {
-            if (_bindings.TryGetValue(targetScope, out IEventBinding<T> binding))
+            if (targetScope == null)
+                return;
+
+            if (_bindingsByScope.TryGetValue(targetScope, out var list))
             {
-                binding.OnEvent?.Invoke(evt);
-                binding.OnEventNoArgs?.Invoke();
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var binding = list[i];
+                    binding.OnEvent?.Invoke(evt);
+                    binding.OnEventNoArgs?.Invoke();
+                }
             }
         }
 
+        /// <summary>
+        /// Limpa todos os escopos e bindings registrados.
+        /// </summary>
         public static void Clear()
         {
-            foreach (IEventBinding<T> binding in _bindings.Values)
-                EventBus<T>.Unregister((EventBinding<T>)binding);
+            foreach (var list in _bindingsByScope.Values)
+            {
+                foreach (var binding in list)
+                    EventBus<T>.Unregister((EventBinding<T>)binding);
+            }
 
-            _bindings.Clear();
+            _bindingsByScope.Clear();
         }
     }
 }
