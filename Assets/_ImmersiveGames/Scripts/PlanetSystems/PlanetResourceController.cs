@@ -1,44 +1,34 @@
-using System;
+using UnityEngine;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    /// <summary>
-    /// Componente responsável por armazenar o recurso do planeta e notificar interessados quando houver mudanças.
-    /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlanetResourceController : MonoBehaviour
+    [RequireComponent(typeof(PlanetsMaster))]
+    public class PlanetResourceController : MonoBehaviour
     {
         [SerializeField] private PlanetResourcesSo defaultResource;
 
-        private PlanetsMaster _master;
-        private PlanetResourcesSo _currentResource;
+        public PlanetResourcesSo CurrentResource { get; private set; }
 
-        public event Action<PlanetResourceController, PlanetResourcesSo> ResourceAssigned;
-        public event Action<PlanetResourceController, PlanetResourcesSo> ResourceCleared;
-
-        public PlanetResourcesSo CurrentResource => _currentResource;
+        private PlanetsMaster _planetsMaster;
+        private IActor _actor;
 
         private void Awake()
         {
-            if (!TryGetComponent(out _master))
-            {
-                DebugUtility.LogError<PlanetResourceController>($"{name} precisa de um {nameof(PlanetsMaster)} no mesmo objeto.", this);
-            }
+            _planetsMaster = GetComponent<PlanetsMaster>();
+            _actor = _planetsMaster;
+            CurrentResource = defaultResource;
         }
 
-        private void OnEnable()
+        private void Start()
         {
-            if (defaultResource != null && _currentResource == null)
+            if (CurrentResource != null)
             {
-                AssignResource(defaultResource);
-            }
-            else
-            {
-                PublishCurrentState();
+                NotifyResourceChanged(CurrentResource);
             }
         }
 
@@ -46,52 +36,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (resource == null)
             {
-                ClearResource();
-                return;
+                DebugUtility.LogWarning<PlanetResourceController>($"Recurso nulo atribuído ao planeta {_planetsMaster?.ActorName ?? name}.", this);
             }
 
-            if (_currentResource == resource)
-            {
-                return;
-            }
-
-            _currentResource = resource;
-
-            ResourceAssigned?.Invoke(this, _currentResource);
-
-            if (_master != null)
-            {
-                EventBus<PlanetResourceAssignedEvent>.Raise(new PlanetResourceAssignedEvent(_master, _currentResource));
-            }
+            CurrentResource = resource;
+            NotifyResourceChanged(resource);
         }
 
         public void ClearResource()
         {
-            if (_currentResource == null)
+            if (CurrentResource == null)
             {
                 return;
             }
 
-            var previous = _currentResource;
-            _currentResource = null;
-
-            ResourceCleared?.Invoke(this, previous);
-
-            if (_master != null)
-            {
-                EventBus<PlanetResourceClearedEvent>.Raise(new PlanetResourceClearedEvent(_master, previous));
-            }
+            CurrentResource = null;
+            NotifyResourceChanged(null);
         }
 
-        private void PublishCurrentState()
+        private void NotifyResourceChanged(PlanetResourcesSo resource)
         {
-            if (_currentResource != null)
+            if (_planetsMaster == null)
             {
-                ResourceAssigned?.Invoke(this, _currentResource);
+                DebugUtility.LogWarning<PlanetResourceController>("PlanetsMaster ausente ao notificar recurso.", this);
+                return;
             }
-            else
+
+            var actorId = _actor?.ActorId;
+            var evt = new PlanetResourceChangedEvent(_planetsMaster, resource, actorId);
+
+            EventBus<PlanetResourceChangedEvent>.Raise(evt);
+
+            if (!string.IsNullOrEmpty(actorId))
             {
-                ResourceCleared?.Invoke(this, null);
+                FilteredEventBus<PlanetResourceChangedEvent>.RaiseFiltered(evt, actorId);
             }
         }
     }

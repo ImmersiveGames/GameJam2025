@@ -8,215 +8,150 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    /// <summary>
-    /// Gerencia o ciclo de vida dos planetas e mantém um dicionário de recursos associados.
-    /// </summary>
     [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Verbose)]
-    public sealed class PlanetsManager : Singleton<PlanetsManager>
+    public class PlanetsManager : Singleton<PlanetsManager>
     {
         [Header("Spawn Settings")]
-        [SerializeField] private PlanetsMaster planetPrefab;
-        [SerializeField, Min(0)] private int initialPlanetCount = 1;
+        [SerializeField] private GameObject planetPrefab;
         [SerializeField] private Transform planetsParent;
-        [SerializeField] private GameObject planetCanvasPrefab;
+        [SerializeField, Min(0)] private int initialPlanetCount = 0;
+        [SerializeField] private bool spawnOnStart = true;
 
         [Header("Resources")]
         [SerializeField] private List<PlanetResourcesSo> planetResources = new();
 
-        private readonly List<PlanetsMaster> _spawnedPlanets = new();
-        private readonly Dictionary<PlanetsMaster, PlanetResourcesSo> _planetResourcesMap = new();
+        private readonly Dictionary<PlanetsMaster, PlanetResourcesSo> _resourceLookup = new();
+        private readonly List<IDetectable> _activePlanets = new();
+        private IDetectable _targetToEater;
 
-        private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
+        private EventBinding<PlanetResourceChangedEvent> _resourceChangedBinding;
         private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
-        private EventBinding<PlanetResourceAssignedEvent> _resourceAssignedBinding;
-        private EventBinding<PlanetResourceClearedEvent> _resourceClearedBinding;
+
+        private void Awake()
+        {
+            ValidateConfiguration();
+        }
 
         private void OnEnable()
         {
-            _planetCreatedBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
-            EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
+            _resourceChangedBinding ??= new EventBinding<PlanetResourceChangedEvent>(OnPlanetResourceChanged);
+            EventBus<PlanetResourceChangedEvent>.Register(_resourceChangedBinding);
 
-            _planetDestroyedBinding = new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
+            _planetDestroyedBinding ??= new EventBinding<PlanetDestroyedEvent>(OnPlanetDestroyed);
             EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedBinding);
-
-            _resourceAssignedBinding = new EventBinding<PlanetResourceAssignedEvent>(OnPlanetResourceAssigned);
-            EventBus<PlanetResourceAssignedEvent>.Register(_resourceAssignedBinding);
-
-            _resourceClearedBinding = new EventBinding<PlanetResourceClearedEvent>(OnPlanetResourceCleared);
-            EventBus<PlanetResourceClearedEvent>.Register(_resourceClearedBinding);
         }
 
         private void Start()
         {
-            if (planetPrefab == null)
+            if (spawnOnStart && initialPlanetCount > 0)
             {
-                DebugUtility.LogError<PlanetsManager>("Prefab de planeta não definido. Configure o PlanetPrefab no inspector.", this);
-                return;
+                SpawnPlanets(initialPlanetCount);
             }
-
-            if (initialPlanetCount <= 0)
-            {
-                DebugUtility.LogVerbose<PlanetsManager>($"Nenhum planeta configurado para spawn inicial ({nameof(initialPlanetCount)} = {initialPlanetCount}).", "yellow", this);
-                return;
-            }
-
-            SpawnPlanets(initialPlanetCount);
         }
 
         private void OnDisable()
         {
-            if (_planetCreatedBinding != null)
+            if (_resourceChangedBinding != null)
             {
-                EventBus<PlanetCreatedEvent>.Unregister(_planetCreatedBinding);
+                EventBus<PlanetResourceChangedEvent>.Unregister(_resourceChangedBinding);
             }
 
             if (_planetDestroyedBinding != null)
             {
                 EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedBinding);
             }
+        }
 
-            if (_resourceAssignedBinding != null)
+        private void OnValidate()
+        {
+            ValidateConfiguration();
+        }
+
+        private void ValidateConfiguration()
+        {
+            if (planetPrefab == null)
             {
-                EventBus<PlanetResourceAssignedEvent>.Unregister(_resourceAssignedBinding);
+                DebugUtility.LogWarning<PlanetsManager>("Prefab de planeta não configurado no PlanetsManager.", this);
             }
 
-            if (_resourceClearedBinding != null)
+            if (planetResources == null || planetResources.Count == 0)
             {
-                EventBus<PlanetResourceClearedEvent>.Unregister(_resourceClearedBinding);
+                DebugUtility.LogWarning<PlanetsManager>("Nenhum PlanetResourcesSo configurado; atribuições aleatórias não serão possíveis.", this);
             }
         }
 
-        private void SpawnPlanets(int count)
+        public void SpawnPlanets(int count)
         {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            if (planetPrefab == null)
+            {
+                DebugUtility.LogError<PlanetsManager>("Prefab de planeta ausente. Não é possível instanciar novos planetas.", this);
+                return;
+            }
+
             var parent = planetsParent != null ? planetsParent : transform;
 
             for (int i = 0; i < count; i++)
             {
-                var planetInstance = Instantiate(planetPrefab, parent);
-                planetInstance.transform.localPosition = Vector3.zero;
-                planetInstance.transform.localRotation = Quaternion.identity;
-                planetInstance.transform.localScale = Vector3.one;
+                var instance = Instantiate(planetPrefab, parent);
+                instance.transform.localPosition = Vector3.zero;
+                instance.transform.localRotation = Quaternion.identity;
+                instance.transform.localScale = Vector3.one;
 
-                EnsureResourceCanvas(planetInstance);
-
-                var detectable = planetInstance.GetComponent<IDetectable>();
-                if (detectable != null)
-                {
-                    EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(detectable));
-                }
-                else
-                {
-                    RegisterPlanet(planetInstance);
-                }
+                RegisterSpawnedPlanet(instance);
             }
         }
 
-        private void EnsureResourceCanvas(PlanetsMaster planet)
+        private void RegisterSpawnedPlanet(GameObject instance)
         {
-            if (planetCanvasPrefab == null)
+            if (instance == null)
             {
                 return;
             }
 
-            var controller = planet.GetResourceController();
-            if (controller == null)
+            if (!instance.TryGetComponent(out PlanetsMaster planetMaster))
             {
+                DebugUtility.LogError<PlanetsManager>($"Prefab {instance.name} não possui PlanetsMaster. A instância será destruída.", this);
+                Destroy(instance);
                 return;
             }
 
-            var existingViews = planet.GetComponentsInChildren<PlanetResourceCanvasView>(true);
-            if (existingViews.Length > 0)
+            var detectable = instance.GetComponent<IDetectable>();
+            if (detectable != null && !_activePlanets.Contains(detectable))
             {
-                foreach (var view in existingViews)
-                {
-                    view.SetController(controller);
-                }
-
-                return;
+                _activePlanets.Add(detectable);
+                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(detectable));
             }
 
-            var canvasInstance = Instantiate(planetCanvasPrefab, planet.transform);
-            canvasInstance.transform.localPosition = Vector3.zero;
-            canvasInstance.transform.localRotation = Quaternion.identity;
-            canvasInstance.transform.localScale = Vector3.one;
-
-            var canvasViews = canvasInstance.GetComponentsInChildren<PlanetResourceCanvasView>(true);
-
-            foreach (var view in canvasViews)
-            {
-                view.SetController(controller);
-            }
+            AssignRandomResource(planetMaster);
         }
 
-        public bool RegisterPlanet(PlanetsMaster planetMaster, PlanetResourcesSo resourceOverride = null)
+        private void AssignRandomResource(PlanetsMaster planet)
         {
-            if (planetMaster == null)
+            if (planet == null)
             {
-                DebugUtility.LogWarning<PlanetsManager>("Tentativa de registrar um planeta nulo.", this);
-                return false;
+                return;
             }
 
-            if (_spawnedPlanets.Contains(planetMaster))
-            {
-                DebugUtility.LogVerbose<PlanetsManager>($"Planeta {planetMaster.name} já está registrado.", "yellow", this);
-                return false;
-            }
-
-            var controller = planetMaster.GetResourceController();
+            var controller = planet.ResourceController;
             if (controller == null)
             {
-                DebugUtility.LogError<PlanetsManager>($"Planeta {planetMaster.name} não possui {nameof(PlanetResourceController)}.", this);
-                return false;
+                DebugUtility.LogWarning<PlanetsManager>($"Planeta {planet.ActorName} não possui PlanetResourceController.", this);
+                return;
             }
 
-            _spawnedPlanets.Add(planetMaster);
-
-            EnsureResourceCanvas(planetMaster);
-
-            var resource = resourceOverride ?? GetRandomResource();
+            var resource = GetRandomResource();
             if (resource == null)
             {
-                DebugUtility.LogWarning<PlanetsManager>($"Nenhum recurso disponível para atribuir ao planeta {planetMaster.name}.", this);
-                return true;
+                controller.ClearResource();
+                return;
             }
 
             controller.AssignResource(resource);
-            return true;
-        }
-
-        public void UnregisterPlanet(PlanetsMaster planetMaster)
-        {
-            if (planetMaster == null)
-            {
-                return;
-            }
-
-            _spawnedPlanets.Remove(planetMaster);
-            _planetResourcesMap.Remove(planetMaster);
-        }
-
-        public IReadOnlyDictionary<PlanetsMaster, PlanetResourcesSo> GetPlanetResources() => _planetResourcesMap;
-
-        public PlanetResourcesSo GetResource(PlanetsMaster planet)
-        {
-            return planet != null && _planetResourcesMap.TryGetValue(planet, out var resource) ? resource : null;
-        }
-
-        [ContextMenu("Log Spawned Planets Resources")]
-        private void LogResources()
-        {
-            if (_planetResourcesMap.Count == 0)
-            {
-                DebugUtility.LogVerbose<PlanetsManager>("Nenhum planeta registrado no momento.", "yellow", this);
-                return;
-            }
-
-            foreach (var pair in _planetResourcesMap)
-            {
-                var planetName = pair.Key != null ? pair.Key.name : "<null>";
-                var resourceName = pair.Value != null ? pair.Value.ResourceId.ToString() : "<none>";
-                DebugUtility.Log<PlanetsManager>($"Planeta {planetName} => Recurso {resourceName}", "cyan", this);
-            }
         }
 
         private PlanetResourcesSo GetRandomResource()
@@ -230,77 +165,72 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             return planetResources[index];
         }
 
-        private void OnPlanetCreated(PlanetCreatedEvent evt)
+        private void OnPlanetResourceChanged(PlanetResourceChangedEvent evt)
         {
-            if (evt?.Detected == null)
+            if (evt.Planet == null)
             {
-                DebugUtility.LogVerbose<PlanetsManager>("PlanetCreatedEvent recebido sem IDetectable válido.", "yellow", this);
                 return;
             }
 
-            if (evt.Detected.Owner == null)
+            if (evt.HasResource)
             {
-                DebugUtility.LogVerbose<PlanetsManager>("PlanetCreatedEvent sem Owner definido.", "yellow", this);
-                return;
+                _resourceLookup[evt.Planet] = evt.Resource;
+                DebugUtility.LogVerbose<PlanetsManager>($"Recurso {evt.Resource.name} associado ao planeta {evt.Planet.ActorName}.", "green", this);
             }
-
-            var ownerTransform = evt.Detected.Owner.Transform;
-            if (ownerTransform == null)
+            else
             {
-                DebugUtility.LogVerbose<PlanetsManager>("Owner sem Transform ao processar PlanetCreatedEvent.", "yellow", this);
-                return;
+                _resourceLookup.Remove(evt.Planet);
+                DebugUtility.LogVerbose<PlanetsManager>($"Recurso removido do planeta {evt.Planet.ActorName}.", "yellow", this);
             }
-
-            var planetMaster = ownerTransform.GetComponent<PlanetsMaster>();
-            if (planetMaster == null)
-            {
-                DebugUtility.LogVerbose<PlanetsManager>("PlanetCreatedEvent recebido sem PlanetsMaster válido.", "yellow", this);
-                return;
-            }
-
-            RegisterPlanet(planetMaster);
         }
 
         private void OnPlanetDestroyed(PlanetDestroyedEvent evt)
         {
-            if (evt?.Detected?.Owner == null)
+            if (evt.Detected != null)
             {
-                return;
-            }
+                _activePlanets.Remove(evt.Detected);
 
-            var ownerTransform = evt.Detected.Owner.Transform;
-            if (ownerTransform == null)
-            {
-                return;
-            }
-
-            var planetMaster = ownerTransform.GetComponent<PlanetsMaster>();
-            if (planetMaster != null)
-            {
-                UnregisterPlanet(planetMaster);
+                if (evt.Detected.Owner is PlanetsMaster master)
+                {
+                    _resourceLookup.Remove(master);
+                }
             }
         }
 
-        private void OnPlanetResourceAssigned(PlanetResourceAssignedEvent evt)
+        public bool TryGetResource(PlanetsMaster planet, out PlanetResourcesSo resource) => _resourceLookup.TryGetValue(planet, out resource);
+
+        public IReadOnlyDictionary<PlanetsMaster, PlanetResourcesSo> GetResourceLookup() => _resourceLookup;
+
+        public List<IDetectable> GetActivePlanets() => _activePlanets;
+
+        public IDetectable GetPlanetMarked() => _targetToEater;
+
+        public void RemovePlanet(IDetectable planet)
         {
-            if (evt.Planet == null)
+            if (planet == null)
             {
                 return;
             }
 
-            _planetResourcesMap[evt.Planet] = evt.Resource;
+            if (_activePlanets.Remove(planet) && planet.Owner is PlanetsMaster master)
+            {
+                _resourceLookup.Remove(master);
+            }
         }
 
-        private void OnPlanetResourceCleared(PlanetResourceClearedEvent evt)
+        [ContextMenu("Log Spawned Planets Resources")]
+        private void LogSpawnedPlanetsResources()
         {
-            if (evt.Planet == null)
+            if (_resourceLookup.Count == 0)
             {
+                DebugUtility.Log<PlanetsManager>("Nenhum planeta com recurso registrado.", "yellow", this);
                 return;
             }
 
-            if (_planetResourcesMap.TryGetValue(evt.Planet, out var currentResource) && currentResource == evt.PreviousResource)
+            foreach (var pair in _resourceLookup)
             {
-                _planetResourcesMap.Remove(evt.Planet);
+                var resourceName = pair.Value != null ? pair.Value.name : "Nenhum";
+                DebugUtility.Log<PlanetsManager>($"Planeta {pair.Key.ActorName} -> Recurso {resourceName}", "cyan", this);
             }
         }
     }

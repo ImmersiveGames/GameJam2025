@@ -1,98 +1,65 @@
 using UnityEngine;
 using UnityEngine.UI;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    /// <summary>
-    /// Responsável por atualizar o ícone do recurso exibido no canvas associado ao planeta.
-    /// </summary>
-    public sealed class PlanetResourceCanvasView : MonoBehaviour
+    [DisallowMultipleComponent]
+    public class PlanetResourceCanvasView : MonoBehaviour
     {
-        [SerializeField] private PlanetResourceController controller;
-        [SerializeField] private Image iconImage;
-        [SerializeField] private bool hideImageWhenEmpty = true;
+        [SerializeField] private Image resourceImage;
+        [SerializeField] private Sprite fallbackIcon;
+
+        private PlanetResourceController _controller;
+        private IActor _actor;
+        private EventBinding<PlanetResourceChangedEvent> _resourceBinding;
 
         private void Awake()
         {
-            if (controller == null)
-            {
-                controller = GetComponentInParent<PlanetResourceController>();
-            }
-
-            if (iconImage == null)
-            {
-                iconImage = GetComponentInChildren<Image>();
-            }
+            _controller = GetComponentInParent<PlanetResourceController>(true);
+            _actor = GetComponentInParent<IActor>(true);
         }
 
         private void OnEnable()
         {
-            Subscribe();
-            Refresh(controller != null ? controller.CurrentResource : null);
+            if (_controller == null || _actor == null)
+            {
+                DebugUtility.LogWarning<PlanetResourceCanvasView>($"Configuração incompleta no canvas {gameObject.name}.", this);
+                return;
+            }
+
+            _resourceBinding ??= new EventBinding<PlanetResourceChangedEvent>(OnPlanetResourceChanged);
+            FilteredEventBus<PlanetResourceChangedEvent>.Register(_resourceBinding, _actor.ActorId);
+
+            ApplyResource(_controller.CurrentResource);
         }
 
         private void OnDisable()
         {
-            Unsubscribe();
+            if (_resourceBinding != null && _actor != null)
+            {
+                FilteredEventBus<PlanetResourceChangedEvent>.Unregister(_resourceBinding, _actor.ActorId);
+            }
         }
 
-        private void OnResourceAssigned(PlanetResourceController _, PlanetResourcesSo resource)
+        private void OnPlanetResourceChanged(PlanetResourceChangedEvent evt)
         {
-            Refresh(resource);
+            ApplyResource(evt.Resource);
         }
 
-        private void OnResourceCleared(PlanetResourceController _, PlanetResourcesSo __)
+        private void ApplyResource(PlanetResourcesSo resource)
         {
-            Refresh(null);
-        }
-
-        public void SetController(PlanetResourceController newController)
-        {
-            if (controller == newController)
+            if (resourceImage == null)
             {
                 return;
             }
 
-            Unsubscribe();
-            controller = newController;
-            Subscribe();
-            Refresh(controller != null ? controller.CurrentResource : null);
-        }
-
-        private void Refresh(PlanetResourcesSo resource)
-        {
-            if (iconImage == null)
-            {
-                return;
-            }
-
-            iconImage.sprite = resource != null ? resource.ResourceIcon : null;
-            if (hideImageWhenEmpty)
-            {
-                iconImage.enabled = resource != null;
-            }
-        }
-
-        private void Subscribe()
-        {
-            if (controller == null)
-            {
-                return;
-            }
-
-            controller.ResourceAssigned += OnResourceAssigned;
-            controller.ResourceCleared += OnResourceCleared;
-        }
-
-        private void Unsubscribe()
-        {
-            if (controller == null)
-            {
-                return;
-            }
-
-            controller.ResourceAssigned -= OnResourceAssigned;
-            controller.ResourceCleared -= OnResourceCleared;
+            var sprite = resource != null ? resource.ResourceIcon : fallbackIcon;
+            resourceImage.sprite = sprite;
+            resourceImage.enabled = sprite != null;
         }
     }
 }

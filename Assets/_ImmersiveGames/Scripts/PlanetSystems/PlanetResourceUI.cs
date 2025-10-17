@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 {
                     planetNameText.text = $"Detected {planetId}";
                 }
-                DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceId} atualizado para o planeta {_planetMaster.gameObject.name} (ID: {planetId}).");
+                DebugUtility.LogVerbose<PlanetResourceUI>($"Ícone do recurso {resources.ResourceType} atualizado para o planeta {_planetMaster.gameObject.name} (ID: {planetId}).");
             }
             else
             {
