@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
@@ -185,20 +186,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 _spawnedPlanets.Add(planetMaster);
             }
 
-            if (resourceModule.HasResource)
-            {
-                DebugUtility.LogVerbose<PlanetsManager>(
-                    $"Planeta {planetMaster.name} já possui recurso atribuído ({resourceModule.CurrentResource?.ResourceType}).",
-                    "yellow",
-                    this);
-                return true;
-            }
-
-            var resource = resourceOverride ?? GetRandomResource();
+            var currentResource = resourceModule.CurrentResource;
+            var resource = resourceOverride ?? GetRandomResource(currentResource);
             if (resource == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>($"Nenhum recurso disponível para atribuir ao planeta {planetMaster.name}.", this);
                 return false;
+            }
+
+            if (currentResource != null && currentResource != resource)
+            {
+                DebugUtility.LogVerbose<PlanetsManager>(
+                    $"Substituindo recurso {currentResource.ResourceType} do planeta {planetMaster.name} por {resource.ResourceType}.",
+                    "cyan",
+                    this);
             }
 
             resourceModule.AssignResource(resource);
@@ -290,12 +291,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             var parent = planetsParent != null ? planetsParent : transform;
+            var spawnPosition = parent.position;
+            var spawnRotation = parent.rotation;
 
             for (int i = 0; i < amount; i++)
             {
-                var instance = Instantiate(planetPrefab, Vector3.zero, Quaternion.identity, parent);
-                instance.transform.position = Vector3.zero;
-                instance.transform.rotation = Quaternion.identity;
+                var instance = Instantiate(planetPrefab, spawnPosition, spawnRotation, parent);
 
                 var spawnIndex = _spawnedPlanets.Count + 1;
                 instance.name = $"{planetPrefab.name}_{spawnIndex}";
@@ -314,7 +315,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        private PlanetResourcesSo GetRandomResource()
+        private PlanetResourcesSo GetRandomResource(PlanetResourcesSo resourceToExclude = null)
         {
             if (planetResources == null || planetResources.Count == 0)
             {
@@ -322,7 +323,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return null;
             }
 
-            return planetResources[Random.Range(0, planetResources.Count)];
+            var validResources = new List<PlanetResourcesSo>();
+            foreach (var resource in planetResources)
+            {
+                if (resource == null)
+                {
+                    continue;
+                }
+
+                if (resourceToExclude != null && planetResources.Count > 1 && resource == resourceToExclude)
+                {
+                    continue;
+                }
+
+                validResources.Add(resource);
+            }
+
+            if (validResources.Count == 0)
+            {
+                foreach (var resource in planetResources)
+                {
+                    if (resource != null)
+                    {
+                        validResources.Add(resource);
+                    }
+                }
+            }
+
+            if (validResources.Count == 0)
+            {
+                DebugUtility.LogWarning<PlanetsManager>("Nenhum PlanetResources válido encontrado para atribuição.", this);
+                return null;
+            }
+
+            return validResources[Random.Range(0, validResources.Count)];
         }
 
         private void OnPlanetCreated(PlanetCreatedEvent evt)
@@ -390,6 +424,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 DebugUtility.LogVerbose<PlanetsManager>($"Recurso removido do planeta {evt.Planet.name}.", "yellow", this);
             }
+        }
+
+        [ContextMenu("Log Spawned Planets Resources")]
+        private void LogSpawnedPlanetsResources()
+        {
+            if (_spawnedPlanets.Count == 0)
+            {
+                DebugUtility.LogVerbose<PlanetsManager>("Nenhum planeta instanciado para registrar.", "yellow", this);
+                return;
+            }
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"[{nameof(PlanetsManager)}] Recursos atribuídos aos planetas instanciados:");
+
+            foreach (var planet in _spawnedPlanets)
+            {
+                if (planet == null)
+                {
+                    continue;
+                }
+
+                _planetResourcesMap.TryGetValue(planet, out var resource);
+                var resourceName = resource != null ? resource.ResourceType.ToString() : "Sem Recurso";
+                builder.AppendLine($"- {planet.name}: {resourceName}");
+            }
+
+            DebugUtility.Log<PlanetsManager>(builder.ToString(), "green", this);
         }
     }
 }
