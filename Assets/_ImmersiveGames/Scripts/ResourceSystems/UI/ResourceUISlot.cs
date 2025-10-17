@@ -140,17 +140,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (iconImage == null)
                 return;
 
-            Sprite iconToUse = null;
-
-            if (data is IResourceVisualValue visualValue)
-            {
-                iconToUse = visualValue.GetIcon();
-            }
-
-            if (iconToUse == null && InstanceConfig?.resourceDefinition != null)
-            {
-                iconToUse = InstanceConfig.resourceDefinition.icon;
-            }
+            Sprite iconToUse = InstanceConfig?.resourceDefinition?.icon;
 
             if (iconToUse != null)
             {

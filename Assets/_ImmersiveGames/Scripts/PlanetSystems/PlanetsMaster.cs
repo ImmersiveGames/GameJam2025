@@ -1,44 +1,43 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [RequireComponent(typeof(InjectableEntityVisualBridge))]
+    [RequireComponent(typeof(PlanetResourceController))]
     [DebugLevel(DebugLevel.Logs)]
     public sealed class PlanetsMaster : ActorMaster, IPlanetActor
     {
-        private InjectableEntityVisualBridge _visualBridge;
+        private PlanetResourceController _resourceController;
 
         protected override void Awake()
         {
             base.Awake();
-            InitializeVisualBridge();
+            InitializeResourceController();
         }
 
-        public InjectableEntityVisualBridge GetVisualBridge()
+        public PlanetResourceController GetResourceController()
         {
-            if (_visualBridge == null)
+            if (_resourceController == null)
             {
-                TryGetComponent(out _visualBridge);
+                TryGetComponent(out _resourceController);
             }
 
-            return _visualBridge;
+            return _resourceController;
         }
 
-        public PlanetResourcesSo GetResource() => _visualBridge?.CurrentDefinition as PlanetResourcesSo;
+        public PlanetResourcesSo GetResource() => _resourceController?.CurrentResource;
 
         public PlanetsMaster GetPlanetsMaster() => this;
 
         public IActor PlanetActor => this;
 
-        private void InitializeVisualBridge()
+        private void InitializeResourceController()
         {
-            if (!TryGetComponent(out _visualBridge))
+            if (!TryGetComponent(out _resourceController))
             {
                 DebugUtility.LogError<PlanetsMaster>(
-                    $"InjectableEntityVisualBridge não encontrado em {gameObject.name}.",
+                    $"{nameof(PlanetResourceController)} não encontrado em {gameObject.name}.",
                     this);
             }
         }
