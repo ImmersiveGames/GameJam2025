@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.StatesMachines;
-namespace _ImmersiveGames.Scripts.StateMachineSystems 
+using _ImmersiveGames.Scripts.Utils.Predicates;
+namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public class StateMachine {
         private StateNode _currentNode;
@@ -16,27 +16,18 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             if (transition != null) {
                 ChangeState(transition.To);
-                foreach (var node in _nodes.Values) {
-                    ResetActionPredicateFlags(node.Transitions);
-                }
-                ResetActionPredicateFlags(_anyTransitions);
             }
 
-            _currentNode.State?.Update();
+            _currentNode?.State?.Update();
         }
 
-        private static void ResetActionPredicateFlags(IEnumerable<Transition> transitions) {
-            foreach (Transition<ActionPredicate> transition in transitions.OfType<Transition<ActionPredicate>>()) {
-                transition.Condition.SetFlag(false);
-            }
-        }
-        
         public void FixedUpdate() {
-            _currentNode.State?.FixedUpdate();
+            _currentNode?.State?.FixedUpdate();
         }
 
         public void SetState(IState state) {
-            _currentNode = _nodes[state.GetType()];
+            var node = GetNodeOrThrow(state.GetType());
+            _currentNode = node;
             _currentNode.State?.OnEnter();
         }
 
@@ -45,11 +36,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
                 return;
 
             var previousState = _currentNode.State;
-            var nextState = _nodes[state.GetType()].State;
+            var nextNode = GetNodeOrThrow(state.GetType());
+            var nextState = nextNode.State;
 
             previousState?.OnExit();
             nextState.OnEnter();
-            _currentNode = _nodes[state.GetType()];
+            _currentNode = nextNode;
         }
 
         public void AddTransition<T>(IState from, IState to, T condition) {
@@ -60,7 +52,15 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             _anyTransitions.Add(new Transition<T>(GetOrAddNode(to).State, condition));
         }
 
+        public void RegisterState(IState state) {
+            Preconditions.CheckNotNull(state, "Estado não pode ser nulo.");
+            GetOrAddNode(state);
+        }
+
         private Transition GetTransition() {
+            if (_currentNode == null)
+                return null;
+
             foreach (var transition in _anyTransitions)
                 if (transition.Evaluate())
                     return transition;
@@ -79,6 +79,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
                 node = new StateNode(state);
                 _nodes[state.GetType()] = node;
             }
+
+            return node;
+        }
+
+        private StateNode GetNodeOrThrow(Type stateType) {
+            if (!_nodes.TryGetValue(stateType, out var node))
+                throw new InvalidOperationException($"Estado {stateType.Name} não foi registrado na StateMachine.");
 
             return node;
         }

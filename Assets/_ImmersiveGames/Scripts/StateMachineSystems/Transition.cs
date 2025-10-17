@@ -49,12 +49,11 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
     }
 
     /// <summary>
-    /// Represents a predicate that encapsulates an action and evaluates to true once the action has been invoked.
+    /// Representa um predicado que garante a execução de uma ação antes de avaliar o resultado concreto.
     /// </summary>
     public abstract class ActionPredicate : IPredicate
     {
         private readonly Action _action;
-        private bool _flag;
 
         protected ActionPredicate(Action action)
         {
@@ -64,13 +63,14 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         public virtual bool Evaluate()
         {
             _action?.Invoke();
-            bool result = _flag;
-            _flag = false; // Reset após avaliação
-            return result;
+            return EvaluateInternal();
         }
 
-        // Método para definir a flag (chamado pela lógica da ação)
-        public void SetFlag(bool value) => _flag = value;
+        /// <summary>
+        /// Avaliação concreta realizada pelas classes derivadas após a execução da ação.
+        /// </summary>
+        /// <returns>Verdadeiro caso a transição deva ocorrer.</returns>
+        protected abstract bool EvaluateInternal();
     }
     public class EventTriggeredPredicate<T> : ActionPredicate where T : IEvent
     {
@@ -78,9 +78,8 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         public EventTriggeredPredicate(Action action) : base(action) { }
 
-        public override bool Evaluate()
+        protected override bool EvaluateInternal()
         {
-            base.Evaluate(); // Chama action se necessário
             bool result = _triggered;
             _triggered = false; // Reset
             return result;

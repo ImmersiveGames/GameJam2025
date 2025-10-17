@@ -11,6 +11,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems {
 
         public StateMachineBuilder AddState(IState state, out IState reference) {
             reference = Preconditions.CheckNotNull(state, "State cannot be null.");
+            _stateMachine.RegisterState(reference);
             return this;
         }
 
