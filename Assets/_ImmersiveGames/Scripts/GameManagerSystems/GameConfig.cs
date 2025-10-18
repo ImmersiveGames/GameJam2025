@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.ScriptableObjects
+namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     [CreateAssetMenu(fileName = "GameConfig", menuName = "ImmersiveGames/GameConfig", order = 0)]
     public class GameConfig : ScriptableObject

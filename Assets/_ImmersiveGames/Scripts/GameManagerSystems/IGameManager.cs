@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ScriptableObjects;
-namespace _ImmersiveGames.Scripts.GameManagerSystems
+﻿namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     public interface IGameManager
     {
