@@ -19,7 +19,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [SerializeField] private GameConfig gameConfig;
         [SerializeField] private Transform worldEater;
         
-        
         public GameConfig GameConfig => gameConfig;
         public Transform WorldEater => worldEater;
 

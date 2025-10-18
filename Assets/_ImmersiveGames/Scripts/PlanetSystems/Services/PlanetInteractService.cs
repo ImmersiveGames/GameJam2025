@@ -6,6 +6,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Services
 {
     [DebugLevel(DebugLevel.Verbose)]
+    
     public class PlanetInteractService
     {
         private readonly PlanetMarkingManager _markingManager = PlanetMarkingManager.Instance;
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Services
 
             if (debugRay)
             {
-                Debug.DrawRay(rayOrigin, direction * interactionDistance, Color.green, 1f);
+                Gizmos.DrawRay(rayOrigin, direction * interactionDistance);
             }
 
             if (!Physics.Raycast(rayOrigin, direction, out var hit, interactionDistance, planetLayerMask))
