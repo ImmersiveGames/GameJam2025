@@ -1,11 +1,13 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Events
 {
-    
+
     public struct PlanetMarkedEvent : IEvent
     {
         public IActor PlanetActor { get; }
@@ -45,7 +47,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Events
             PreviousMarkedPlanet = previousMarkedPlanet;
         }
     }
-    
+
     public class PlanetCreatedEvent : IEvent
     {
         public IDetectable Detected { get; }
@@ -66,5 +68,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Events
             ByActor = byActor;
         }
     }
-    
+
+    public struct PlanetsInitializationCompletedEvent : IEvent
+    {
+        public IReadOnlyList<IPlanetActor> PlanetActors { get; }
+
+        public PlanetsInitializationCompletedEvent(IReadOnlyList<IPlanetActor> planetActors)
+        {
+            PlanetActors = planetActors;
+        }
+    }
+
 }
