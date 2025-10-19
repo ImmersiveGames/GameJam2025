@@ -9,9 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b51257c213d49549206e2e4392a8cb0, type: 3}
-  m_Name: Explosions
+  m_Script: {fileID: 11500000, guid: 2ea8da0e312e4109a23f2ddb65cc3866, type: 3}
+  m_Name: PoolDataExplosion
   m_EditorClassIdentifier: 
-  objectName: PlanetExplosions
-  prefab: {fileID: 1377395519739628775, guid: eafb3facd3156e6419ae72974903aa2f, type: 3}
-  lifetime: 100
+  objectName: Planet Explosion
+  initialPoolSize: 10
+  canExpand: 1
+  objectConfigs:
+  - {fileID: 11400000, guid: 7debedefafb98b641823e667d87a4fe1, type: 2}
+  reconfigureOnReturn: 1

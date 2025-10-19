@@ -4912,6 +4912,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 139078312773059340}
+  - component: {fileID: 2070938468165599009}
   m_Layer: 0
   m_Name: Star Explosion
   m_TagString: Untagged
@@ -4938,6 +4939,23 @@ Transform:
   - {fileID: 2853484361230429855}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!114 &2070938468165599009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377395519739628775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b832e2fb3b87e244e814c8f791a62630, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  particleSystems:
+  - {fileID: 260489193155326988}
+  - {fileID: 6734392101590897982}
+  - {fileID: 577973222367808843}
+  - {fileID: 6754970664761647733}
 --- !u!1 &4055110073338384304
 GameObject:
   m_ObjectHideFlags: 0
