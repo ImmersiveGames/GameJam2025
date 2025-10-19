@@ -1,141 +1,140 @@
-using _ImmersiveGames.Scripts.EaterSystem.Events;
-using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using DG.Tweening;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
-    public class PlanetMotion : MonoBehaviour
+    [DisallowMultipleComponent]
+    [DefaultExecutionOrder(-60)]
+    [DebugLevel(DebugLevel.Logs)]
+    public sealed class PlanetMotion : MonoBehaviour
     {
-        private Vector3 _orbitCenter;
-        private float _orbitRadius;
-        private float _orbitSpeed;
-        private bool _orbitClockwise;
-        private float _selfRotationSpeed;
-        private float _currentAngle;
-        private Tween _orbitTween;
+        [Header("Orbit Configuration")]
+        [Tooltip("Transform utilizado como centro da órbita. Quando vazio, o objeto pai imediato será usado.")]
+        [SerializeField] private Transform orbitCenter;
 
-        private PlanetsMaster _planetMaster;
-        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-        private EventBinding<PlanetCreatedEvent> _planetCreateBinding;
-        private EventBinding<EaterDeathEvent> _planetDeathBinding;
-        
-        
-        private void Awake()
-        {
-            TryGetComponent(out _planetMaster);
-        }
+        [Tooltip("Raio atual da órbita em unidades do mundo.")]
+        [SerializeField, Min(0f)] private float orbitRadius;
 
-        private void OnEnable()
-        {
-            //_planetMaster.EventPlanetDetected += OnPlanetDetected;
-            //_planetMaster.EventPlanetLost += OnPlanetLost;
-            /*_planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);*/
-            _planetCreateBinding = new EventBinding<PlanetCreatedEvent>(OnPlanetCreated);
-            EventBus<PlanetCreatedEvent>.Register(_planetCreateBinding);
-     
-        }
+        [Tooltip("Velocidade angular da órbita em graus por segundo.")]
+        [SerializeField] private float orbitAngularSpeed;
+
+        [Tooltip("Define se a órbita acontece no sentido horário.")]
+        [SerializeField] private bool orbitClockwise;
+
+        [Header("Self Rotation")]
+        [Tooltip("Velocidade de rotação própria do planeta em graus por segundo.")]
+        [SerializeField] private float selfRotationSpeed;
+
+        private float _currentOrbitAngle;
+        private float _heightOffset;
+        private bool _orbitConfigured;
+
+        private Transform OrbitCenter => orbitCenter != null ? orbitCenter : transform.parent;
 
         private void Update()
         {
-            if (_selfRotationSpeed != 0f)
+            if (!_orbitConfigured)
             {
-                transform.Rotate(Vector3.up, _selfRotationSpeed * Time.deltaTime, Space.Self);
-            }
-        }
-        private void OnDisable()
-        {
-            _orbitTween?.Kill();
-            //_planetMaster.EventPlanetDetected -= OnPlanetDetected;
-            //_planetMaster.EventPlanetLost -= OnPlanetLost;
-            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            EventBus<PlanetCreatedEvent>.Unregister(_planetCreateBinding);
-        }
-
-        private void OnDestroy()
-        {
-            _orbitTween?.Kill();
-            DebugUtility.LogVerbose<PlanetMotion>($"PlanetMotion destruído para {gameObject.name}.");
-        }
-        
-        private void OnPlanetCreated(PlanetCreatedEvent obj)
-        {
-            /*if(obj.Detected.GetPlanetsMaster() != _planetMaster)
                 return;
-            var planetData = obj.Detected.GetPlanetData();
-            //var planetInfo = obj.Detected.GetPlanetsMaster().GetPlanetInfo();
-            _orbitCenter = planetData.orbitCenter ?? Vector3.zero;
-            //_orbitRadius = planetInfo.planetDiameter;
-            DebugUtility.LogVerbose<PlanetMotion>($"Center: {_orbitCenter}, Radius: {_orbitRadius}");*/
-       
-            
-            /*_orbitSpeed = planetData.GetRandomOrbitSpeed();
-            //planetInfo.SetOrbitSpeed(_orbitSpeed);
-            _selfRotationSpeed = planetData.GetRandomRotationSpeed();
-            _orbitClockwise = Random.value > planetData.rotationRightChance;
-            //_currentAngle = planetInfo.planetAngle;
-            UpdateOrbitPosition(_currentAngle);
-            StartOrbit();*/
-        }
-        
+            }
 
-        private void StartOrbit()
-        {
-            float direction = _orbitClockwise ? -1f : 1f;
-
-            _orbitTween?.Kill();
-            _orbitTween = DOTween.To(() => _currentAngle, angle => _currentAngle = angle, 360f * direction * Mathf.Deg2Rad, 360f / Mathf.Abs(_orbitSpeed))
-                .SetRelative(true)
-                .SetEase(Ease.Linear)
-                .SetLoops(-1, LoopType.Incremental)
-                .OnUpdate(() => UpdateOrbitPosition(_currentAngle));
+            UpdateOrbitAngle();
+            ApplyOrbitPosition();
+            ApplySelfRotation();
         }
 
-        private void UpdateOrbitPosition(float angle)
+        /// <summary>
+        /// Configura os parâmetros orbitais do planeta.
+        /// </summary>
+        /// <param name="center">Centro da órbita que será acompanhado.</param>
+        /// <param name="radius">Raio desejado para a órbita.</param>
+        /// <param name="startAngle">Ângulo inicial em radianos.</param>
+        /// <param name="angularSpeed">Velocidade de rotação em graus por segundo.</param>
+        /// <param name="selfSpinSpeed">Velocidade de rotação própria.</param>
+        /// <param name="clockwise">Define se a órbita é no sentido horário.</param>
+        public void ConfigureOrbit(Transform center, float radius, float startAngle, float angularSpeed, float selfSpinSpeed, bool clockwise)
         {
-            var offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * _orbitRadius;
-            transform.position = _orbitCenter + offset;
+            orbitCenter = center;
+            orbitRadius = Mathf.Max(0f, radius);
+            orbitAngularSpeed = angularSpeed;
+            selfRotationSpeed = selfSpinSpeed;
+            orbitClockwise = clockwise;
+            _currentOrbitAngle = startAngle;
+
+            var effectiveCenter = OrbitCenter;
+            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+            _heightOffset = transform.position.y - centerPosition.y;
+
+            _orbitConfigured = true;
+            ApplyOrbitPosition();
         }
 
-        public float GetOrbitSpeed() => _orbitSpeed;
-
-        private void PauseOrbit()
+        private void UpdateOrbitAngle()
         {
-            _orbitTween?.Pause();
-            DebugUtility.Log<PlanetMotion>($"Órbita pausada para {gameObject.name}.");
-        }
-
-        private void ResumeOrbit()
-        {
-            _orbitTween?.Play();
-            DebugUtility.Log<PlanetMotion>($"Órbita retomada para {gameObject.name}.");
-        }
-        
-        /*private void OnPlanetDetected(IDetector obj, SensorTypes sensor)
-        {
-            if (obj is EaterMaster eater)
+            if (Mathf.Approximately(orbitAngularSpeed, 0f))
             {
-                DebugUtility.Log<PlanetMotion>($"{gameObject.name} Foi detectado por {eater.name}.");
-                //PauseOrbit();
+                return;
+            }
+
+            float direction = orbitClockwise ? -1f : 1f;
+            _currentOrbitAngle += Mathf.Deg2Rad * orbitAngularSpeed * direction * Time.deltaTime;
+            _currentOrbitAngle = Mathf.Repeat(_currentOrbitAngle, Mathf.PI * 2f);
+        }
+
+        private void ApplyOrbitPosition()
+        {
+            Transform effectiveCenter = OrbitCenter;
+            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+
+            Vector3 orbitOffset = new(Mathf.Cos(_currentOrbitAngle) * orbitRadius, 0f, Mathf.Sin(_currentOrbitAngle) * orbitRadius);
+            Vector3 heightOffset = Vector3.up * _heightOffset;
+            transform.position = centerPosition + orbitOffset + heightOffset;
+        }
+
+        private void ApplySelfRotation()
+        {
+            if (Mathf.Approximately(selfRotationSpeed, 0f))
+            {
+                return;
+            }
+
+            transform.Rotate(Vector3.up, selfRotationSpeed * Time.deltaTime, Space.Self);
+        }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            if (!_orbitConfigured && orbitRadius <= 0f)
+            {
+                return;
+            }
+
+            Transform effectiveCenter = OrbitCenter;
+            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+            float radius = Mathf.Max(orbitRadius, 0f);
+
+            if (radius <= 0f)
+            {
+                return;
+            }
+
+            Gizmos.color = new Color(0.35f, 0.95f, 0.65f, 0.75f);
+            DrawOrbitCircle(centerPosition, radius);
+        }
+
+        private static void DrawOrbitCircle(Vector3 center, float radius, int segments = 64)
+        {
+            Vector3 previousPoint = center + new Vector3(radius, 0f, 0f);
+            float step = Mathf.PI * 2f / segments;
+
+            for (int i = 1; i <= segments; i++)
+            {
+                float angle = step * i;
+                Vector3 nextPoint = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                Gizmos.DrawLine(previousPoint, nextPoint);
+                previousPoint = nextPoint;
             }
         }
-        private void OnPlanetLost(IDetector obj, SensorTypes sensor)
-        {
-            if (obj is EaterMaster eater && sensor == SensorTypes.EaterDetectorSensor)
-            {
-                DebugUtility.Log<PlanetMotion>($" {gameObject.name} saiu da detecção de {sensor} de {eater.name}.");
-                //ResumeOrbit();
-            }
-        }*/
-        
-        /*private void OnPlanetUnmarked(PlanetUnmarkedEvent obj)
-        {
-            if(!ReferenceEquals(obj.Detected, _planetMaster)) return;
-            //ResumeOrbit();
-        }*/
+#endif
     }
 }
