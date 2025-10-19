@@ -86,7 +86,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &6594897375414683829
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -134,8 +134,6 @@ MonoBehaviour:
   dynamicSlotsParent: {fileID: 3071241731630620344}
   initialPoolSize: 1
   canvasType: 1
-  maxBindWaitSeconds: 2
-  initializationDelayFrames: 2
   registerInPipeline: 1
 --- !u!114 &8885016805758757087
 MonoBehaviour:
