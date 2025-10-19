@@ -70,11 +70,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                 return;
 
             _interactService.TryInteractWithPlanet(
-                transform, 
-                interactionDistance, 
-                planetLayerMask, 
-                raycastOffset, 
-                debugRay
+                transform,
+                interactionDistance,
+                planetLayerMask,
+                raycastOffset
             );
         }
 
