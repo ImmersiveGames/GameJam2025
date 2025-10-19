@@ -10,20 +10,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Services
     {
         private readonly PlanetMarkingManager _markingManager = PlanetMarkingManager.Instance;
 
-        public bool TryInteractWithPlanet(Transform origin, float interactionDistance, LayerMask planetLayerMask, Vector3 raycastOffset, bool debugRay = false)
+        public bool TryInteractWithPlanet(Transform origin, float interactionDistance, LayerMask planetLayerMask, Vector3 raycastOffset)
         {
             var rayOrigin = origin.position + origin.TransformDirection(raycastOffset);
             var direction = origin.forward;
 
-            if (debugRay)
-            {
-                Debug.DrawRay(rayOrigin, direction * interactionDistance, Color.green, 1f);
-            }
-
             if (!Physics.Raycast(rayOrigin, direction, out var hit, interactionDistance, planetLayerMask))
             {
                 DebugUtility.LogVerbose<PlanetInteractService>("Raycast não acertou nenhum objeto");
-                return false;           
+                return false;
             }
 
             var hitObject = hit.collider.gameObject;
