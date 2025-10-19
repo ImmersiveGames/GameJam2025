@@ -14,6 +14,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public readonly DamageType DamageType;
         public readonly Vector3 HitPosition;
         public readonly Vector3 HitNormal;
+        public readonly bool HasHitPosition;
         public readonly float Timestamp;
 
         public DamageContext(string attackerId, string targetId, float damageValue, ResourceType targetResource,
@@ -25,7 +26,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             DamageValue = damageValue;
             TargetResource = targetResource;
             DamageType = damageType;
-            HitPosition = hitPosition ?? Vector3.zero;
+            if (hitPosition.HasValue)
+            {
+                HitPosition = hitPosition.Value;
+                HasHitPosition = true;
+            }
+            else
+            {
+                HitPosition = Vector3.zero;
+                HasHitPosition = false;
+            }
+
             HitNormal = hitNormal ?? Vector3.zero;
             Timestamp = Time.time;
         }
