@@ -412,3 +412,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceImage: {fileID: 4668982261829002575}
+  undiscoveredResourceIcon: {fileID: 21300000, guid: ababc00e091d5b646b9c9cf63782e830, type: 3}
