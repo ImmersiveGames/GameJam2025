@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -11,20 +11,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Services
     {
         private readonly PlanetMarkingManager _markingManager = PlanetMarkingManager.Instance;
 
-        public bool TryInteractWithPlanet(Transform origin, float interactionDistance, LayerMask planetLayerMask, Vector3 raycastOffset, bool debugRay = false)
+        public bool TryInteractWithPlanet(Transform origin, float interactionDistance, LayerMask planetLayerMask, Vector3 raycastOffset)
         {
             var rayOrigin = origin.position + origin.TransformDirection(raycastOffset);
             var direction = origin.forward;
 
-            if (debugRay)
-            {
-                Gizmos.DrawRay(rayOrigin, direction * interactionDistance);
-            }
-
             if (!Physics.Raycast(rayOrigin, direction, out var hit, interactionDistance, planetLayerMask))
             {
                 DebugUtility.LogVerbose<PlanetInteractService>("Raycast não acertou nenhum objeto");
-                return false;           
+                return false;
             }
 
             var hitObject = hit.collider.gameObject;

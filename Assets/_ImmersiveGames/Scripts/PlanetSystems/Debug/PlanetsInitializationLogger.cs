@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -32,18 +33,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
 
         private void OnPlanetsInitialized(PlanetsInitializationCompletedEvent evt)
         {
-            var planets = evt.PlanetActors ?? Array.Empty<IPlanetActor>();
-            if (planets.Count == 0)
+            var assignments = evt.PlanetResourcesMap ?? new Dictionary<IPlanetActor, PlanetResources>();
+            if (assignments.Count == 0)
             {
                 DebugUtility.Log<PlanetsInitializationLogger>("Nenhum planeta foi instanciado neste ciclo inicial.");
                 return;
             }
 
-            string planetNames = string.Join(", ", planets
-                .Where(p => p?.PlanetActor != null)
-                .Select(p => p.PlanetActor.ActorName));
+            string planetNames = string.Join(", ", assignments
+                .Where(pair => pair.Key?.PlanetActor != null)
+                .Select(pair => $"{pair.Key.PlanetActor.ActorName} -> {pair.Value}"));
 
-            DebugUtility.Log<PlanetsInitializationLogger>($"Total de planetas: {planets.Count}. Objetos: {planetNames}.");
+            DebugUtility.Log<PlanetsInitializationLogger>($"Total de planetas: {assignments.Count}. Objetos: {planetNames}.");
         }
     }
 }

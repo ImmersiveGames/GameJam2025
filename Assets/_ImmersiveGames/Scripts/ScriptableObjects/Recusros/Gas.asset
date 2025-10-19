@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Gas
   m_EditorClassIdentifier: 
   resourceType: 1
-  resourceIcon: {fileID: 1295195208, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  resourceIcon: {fileID: -1217311619, guid: ea06a3c8fd6d4334a870df67449308ff, type: 3}

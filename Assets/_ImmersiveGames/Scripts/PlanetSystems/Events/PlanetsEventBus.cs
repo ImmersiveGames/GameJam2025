@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
@@ -71,11 +71,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Events
 
     public struct PlanetsInitializationCompletedEvent : IEvent
     {
-        public IReadOnlyList<IPlanetActor> PlanetActors { get; }
+        public IReadOnlyDictionary<IPlanetActor, PlanetResources> PlanetResourcesMap { get; }
 
-        public PlanetsInitializationCompletedEvent(IReadOnlyList<IPlanetActor> planetActors)
+        public PlanetsInitializationCompletedEvent(IReadOnlyDictionary<IPlanetActor, PlanetResources> planetResourcesMap)
         {
-            PlanetActors = planetActors;
+            PlanetResourcesMap = planetResourcesMap;
         }
     }
 

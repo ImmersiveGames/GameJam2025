@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Rock
   m_EditorClassIdentifier: 
   resourceType: 3
-  resourceIcon: {fileID: -1806054556, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
+  resourceIcon: {fileID: 1018452086, guid: ea06a3c8fd6d4334a870df67449308ff, type: 3}

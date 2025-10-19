@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
@@ -21,9 +22,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [Tooltip("Transform que receberá os planetas criados. Quando vazio, usa o próprio manager.")]
         [SerializeField] private Transform planetsRoot;
 
+        [Header("Resources Setup")]
+        [Tooltip("Lista de recursos disponíveis para sortear ao instanciar planetas.")]
+        [SerializeField] private List<PlanetResourcesSo> availableResources = new();
+
         private IDetectable _targetToEater;
         private readonly List<IDetectable> _activePlanets = new();
-        private readonly List<IPlanetActor> _planetActors = new();
+        private readonly Dictionary<IPlanetActor, PlanetResources> _planetResourcesMap = new();
 
         protected override void Awake()
         {
@@ -47,7 +52,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            if (_planetActors.Count > 0)
+            if (_planetResourcesMap.Count > 0)
             {
                 DebugUtility.LogVerbose<PlanetsManager>("Planetas já foram inicializados anteriormente, evitando duplicação.");
                 return;
@@ -62,7 +67,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             EventBus<PlanetsInitializationCompletedEvent>.Raise(
-                new PlanetsInitializationCompletedEvent(_planetActors.AsReadOnly()));
+                new PlanetsInitializationCompletedEvent(new ReadOnlyDictionary<IPlanetActor, PlanetResources>(_planetResourcesMap)));
         }
 
         private void RegisterPlanet(PlanetsMaster planetInstance)
@@ -72,10 +77,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            _planetActors.Add(planetInstance);
+            PlanetResourcesSo resource = DrawPlanetResource();
+            if (resource == null)
+            {
+                DebugUtility.LogWarning<PlanetsManager>("Nenhum recurso disponível para atribuir ao planeta instanciado.");
+            }
+
+            planetInstance.AssignResource(resource);
+
+            PlanetResources resourceType = resource != null ? resource.ResourceType : default;
+            _planetResourcesMap[planetInstance] = resourceType;
         }
 
-        public IReadOnlyList<IPlanetActor> GetPlanetActors() => _planetActors;
+        private PlanetResourcesSo DrawPlanetResource()
+        {
+            if (availableResources == null || availableResources.Count == 0)
+            {
+                return null;
+            }
+
+            int randomIndex = Random.Range(0, availableResources.Count);
+            return availableResources[randomIndex];
+        }
+
+        public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
+        public IReadOnlyCollection<IPlanetActor> GetPlanetActors() => _planetResourcesMap.Keys;
         public List<IDetectable> GetActivePlanets() => _activePlanets;
         public IDetectable GetPlanetMarked() => _targetToEater;
 
