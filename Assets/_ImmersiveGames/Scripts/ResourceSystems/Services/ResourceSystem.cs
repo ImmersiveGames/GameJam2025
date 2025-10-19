@@ -16,7 +16,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public string EntityId { get; }
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
         private readonly Dictionary<ResourceType, ResourceInstanceConfig> _instanceConfigs = new();
-        private readonly Dictionary<ResourceType, float> _initialValues = new();
         
         private readonly IResourceLinkService _linkService;
 
@@ -39,32 +38,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             {
                 var def = cfg.resourceDefinition;
                 _resources[def.type] = new BasicResourceValue(def.initialValue, def.maxValue);
-                _initialValues[def.type] = def.initialValue;
                 _instanceConfigs[def.type] = cfg;
             }
-        }
-
-        public void ResetAllResources(bool raiseEvents = true)
-        {
-            foreach (var (resourceType, resourceValue) in _resources)
-            {
-                float initialValue = _initialValues.TryGetValue(resourceType, out float storedInitial)
-                    ? storedInitial
-                    : resourceValue.GetMaxValue();
-
-                resourceValue.SetCurrentValue(initialValue);
-
-                if (!raiseEvents)
-                {
-                    continue;
-                }
-
-                var evt = new ResourceUpdateEvent(EntityId, resourceType, resourceValue);
-                ResourceUpdated?.Invoke(evt);
-                EventBus<ResourceUpdateEvent>.Raise(evt);
-            }
-
-            LastDamageTime = -999f;
         }
 
         public void Set(ResourceType type, float value)
@@ -206,7 +181,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             _resources.Clear();
             _instanceConfigs.Clear();
-            _initialValues.Clear();
             ResourceUpdated = null;
         }
 
