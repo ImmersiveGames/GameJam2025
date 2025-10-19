@@ -129,11 +129,5 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _commandInvoker?.UndoLast();
         }
 
-        public void ResetDamageState()
-        {
-            _cooldowns?.Clear();
-            _commandInvoker?.ClearHistory();
-            _lifecycle?.Clear();
-        }
     }
 }
