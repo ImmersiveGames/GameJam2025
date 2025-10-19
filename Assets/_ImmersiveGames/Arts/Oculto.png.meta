@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ea06a3c8fd6d4334a870df67449308ff
+guid: 5b3965fe4f61ce84786ccdf3e57ae816
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,13 +110,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Water
+      name: Oculto_1
       rect:
         serializedVersion: 2
-        x: 67
-        y: 595
-        width: 270
-        height: 375
+        x: 99
+        y: 162
+        width: 808
+        height: 1223
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -125,96 +125,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6dd107ea32f68f24a945e733ced96f7a
-      internalID: -763352949
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Metal
-      rect:
-        serializedVersion: 2
-        x: 342
-        y: 585
-        width: 322
-        height: 335
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 4f78bb261eb60de4fba8759f787c64f4
-      internalID: -36394911
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Life
-      rect:
-        serializedVersion: 2
-        x: 670
-        y: 600
-        width: 335
-        height: 304
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 837eb65eb119cfa49b637f6b2c3d2e3f
-      internalID: -1997454460
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Rock
-      rect:
-        serializedVersion: 2
-        x: 40
-        y: 65
-        width: 461
-        height: 489
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: c37b094f89e2dcd4eabe549e4516d2f6
-      internalID: 1018452086
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Gas
-      rect:
-        serializedVersion: 2
-        x: 580
-        y: 73
-        width: 363
-        height: 494
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: e0edb1b874e49b843913ba5cb2edd573
-      internalID: -1217311619
+      spriteID: 38b74f9316bc27b4ba49a4de24a68aae
+      internalID: 1511843875
       vertices: []
       indices: 
       edges: []
@@ -223,7 +135,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 6ce89fb035e7cfa4caf6c478058cba95
+    spriteID: f7559d1d7ccf9a542b39adbab082bde6
     internalID: 0
     vertices: []
     indices: 
@@ -233,11 +145,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Gas: -1217311619
-      Life: -1997454460
-      Metal: -36394911
-      Rock: 1018452086
-      Water: -763352949
+      Oculto_0: 1348528233
+      Oculto_1: 1511843875
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
