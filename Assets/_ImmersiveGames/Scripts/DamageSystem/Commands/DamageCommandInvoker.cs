@@ -156,5 +156,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 
             DamageEventDispatcher.RaiseForParticipants(payload, request.AttackerId, request.TargetId);
         }
+
+        public void ClearHistory() => _history.Clear();
     }
 }

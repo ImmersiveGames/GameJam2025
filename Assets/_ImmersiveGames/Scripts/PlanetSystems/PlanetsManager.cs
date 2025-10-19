@@ -3,11 +3,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityUtils;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.PlanetSystems.Managers;
+using _ImmersiveGames.Scripts.ResourceSystems.Bind;
+using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -61,6 +67,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private readonly Dictionary<IPlanetActor, PlanetResources> _planetResourcesMap = new();
         private readonly List<PlanetsMaster> _spawnedPlanets = new();
         private readonly List<float> _orbitRadii = new();
+        private readonly Dictionary<PlanetsMaster, IDetectable> _planetDetectableMap = new();
+        private readonly Dictionary<string, PlanetsMaster> _planetsByActorId = new();
+        private readonly Dictionary<string, IDetectable> _detectableByActorId = new();
+
+        private EventBinding<GameStartEvent> _gameStartBinding;
+        private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
+        private EventBinding<GameOverEvent> _gameOverBinding;
+        private EventBinding<GameVictoryEvent> _victoryBinding;
+        private EventBinding<PlanetMarkingChangedEvent> _markingChangedBinding;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EventBinding<DeathEvent> _deathBinding;
+
+        private bool _eventsRegistered;
+        private bool _isInitialized;
+        private bool _isResetting;
+        private Coroutine _resetRoutine;
 
         protected override void Awake()
         {
@@ -69,9 +91,115 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 planetsRoot = transform;
             }
+
+            InitializeEventBindings();
+            ResetInternalCaches();
+        }
+
+        private void OnEnable()
+        {
+            RegisterEventHandlers();
+        }
+
+        private void OnDisable()
+        {
+            if (_resetRoutine != null)
+            {
+                StopCoroutine(_resetRoutine);
+                _resetRoutine = null;
+            }
+
+            UnregisterEventHandlers();
         }
 
         private void Start() => StartCoroutine(InitializePlanetsRoutine());
+
+        private void InitializeEventBindings()
+        {
+            _gameStartBinding = new EventBinding<GameStartEvent>(HandleGameStart);
+            _resetRequestedBinding = new EventBinding<GameResetRequestedEvent>(HandleGameResetRequested);
+            _gameOverBinding = new EventBinding<GameOverEvent>(_ => ClearMarkedPlanet());
+            _victoryBinding = new EventBinding<GameVictoryEvent>(_ => ClearMarkedPlanet());
+            _markingChangedBinding = new EventBinding<PlanetMarkingChangedEvent>(OnPlanetMarkingChanged);
+            _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(OnPlanetUnmarked);
+            _deathBinding = new EventBinding<DeathEvent>(OnPlanetDeath);
+        }
+
+        private void ResetInternalCaches()
+        {
+            _targetToEater = null;
+            _activePlanets.Clear();
+            _planetResourcesMap.Clear();
+            _spawnedPlanets.Clear();
+            _orbitRadii.Clear();
+            _planetDetectableMap.Clear();
+            _planetsByActorId.Clear();
+            _detectableByActorId.Clear();
+            _isInitialized = false;
+            _isResetting = false;
+            _resetRoutine = null;
+        }
+
+        private void RegisterEventHandlers()
+        {
+            if (_eventsRegistered)
+            {
+                return;
+            }
+
+            EventBus<GameStartEvent>.Register(_gameStartBinding);
+            EventBus<GameResetRequestedEvent>.Register(_resetRequestedBinding);
+            EventBus<GameOverEvent>.Register(_gameOverBinding);
+            EventBus<GameVictoryEvent>.Register(_victoryBinding);
+            EventBus<PlanetMarkingChangedEvent>.Register(_markingChangedBinding);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            EventBus<DeathEvent>.Register(_deathBinding);
+
+            _eventsRegistered = true;
+        }
+
+        private void UnregisterEventHandlers()
+        {
+            if (!_eventsRegistered)
+            {
+                return;
+            }
+
+            EventBus<GameStartEvent>.Unregister(_gameStartBinding);
+            EventBus<GameResetRequestedEvent>.Unregister(_resetRequestedBinding);
+            EventBus<GameOverEvent>.Unregister(_gameOverBinding);
+            EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
+            EventBus<PlanetMarkingChangedEvent>.Unregister(_markingChangedBinding);
+            EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            EventBus<DeathEvent>.Unregister(_deathBinding);
+
+            _eventsRegistered = false;
+        }
+
+        private void HandleGameStart(GameStartEvent _)
+        {
+            StartResetSequence();
+        }
+
+        private void HandleGameResetRequested(GameResetRequestedEvent _)
+        {
+            StartResetSequence();
+        }
+
+        private void StartResetSequence()
+        {
+            if (!isActiveAndEnabled || _isResetting)
+            {
+                return;
+            }
+
+            if (_resetRoutine != null)
+            {
+                StopCoroutine(_resetRoutine);
+            }
+
+            _resetRoutine = StartCoroutine(ResetPlanetsRoutine());
+        }
 
         private IEnumerator InitializePlanetsRoutine()
         {
@@ -81,7 +209,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 yield break;
             }
 
-            if (_planetResourcesMap.Count > 0)
+            if (_spawnedPlanets.Count > 0)
             {
                 DebugUtility.LogVerbose<PlanetsManager>("Planetas já foram inicializados anteriormente, evitando duplicação.");
                 yield break;
@@ -95,13 +223,61 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 RegisterPlanet(planetInstance);
             }
 
-            // Aguarda um frame para garantir que modificadores de escala/skin tenham aplicado suas transformações.
             yield return null;
 
             ArrangePlanetsInOrbits();
+            RaiseInitializationCompleted();
+            _isInitialized = true;
+        }
 
-            EventBus<PlanetsInitializationCompletedEvent>.Raise(
-                new PlanetsInitializationCompletedEvent(new ReadOnlyDictionary<IPlanetActor, PlanetResources>(_planetResourcesMap)));
+        private IEnumerator ResetPlanetsRoutine()
+        {
+            if (_isResetting)
+            {
+                yield break;
+            }
+
+            _isResetting = true;
+
+            while (!_isInitialized)
+            {
+                yield return null;
+            }
+
+            if (_spawnedPlanets.Count == 0)
+            {
+                _isResetting = false;
+                _resetRoutine = null;
+                yield break;
+            }
+
+            ClearMarkedPlanet();
+            PruneDestroyedPlanets();
+
+            _planetResourcesMap.Clear();
+            _planetDetectableMap.Clear();
+            _detectableByActorId.Clear();
+            _activePlanets.Clear();
+            _planetsByActorId.Clear();
+
+            foreach (PlanetsMaster planet in _spawnedPlanets)
+            {
+                if (planet == null)
+                {
+                    continue;
+                }
+
+                _planetsByActorId[planet.ActorId] = planet;
+                ResetPlanetState(planet);
+            }
+
+            yield return null;
+
+            ArrangePlanetsInOrbits();
+            RaiseInitializationCompleted();
+
+            _isResetting = false;
+            _resetRoutine = null;
         }
 
         private void RegisterPlanet(PlanetsMaster planetInstance)
@@ -112,6 +288,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             _spawnedPlanets.Add(planetInstance);
+            _planetsByActorId[planetInstance.ActorId] = planetInstance;
 
             PlanetResourcesSo resource = DrawPlanetResource();
             if (resource == null)
@@ -120,9 +297,85 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             planetInstance.AssignResource(resource);
+            _planetResourcesMap[planetInstance] = resource != null ? resource.ResourceType : default;
 
-            PlanetResources resourceType = resource != null ? resource.ResourceType : default;
-            _planetResourcesMap[planetInstance] = resourceType;
+            CacheDetectable(planetInstance);
+            NotifyPlanetCreated(planetInstance);
+        }
+
+        private void ResetPlanetState(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            var bridge = planet.GetComponent<InjectableEntityResourceBridge>();
+            bridge?.GetResourceSystem()?.ResetAllResources();
+
+            var damageReceiver = planet.GetComponent<DamageReceiver>();
+            damageReceiver?.ResetDamageState();
+
+            MonoBehaviour[] behaviours = planet.GetComponentsInChildren<MonoBehaviour>(true);
+            foreach (MonoBehaviour behaviour in behaviours)
+            {
+                if (behaviour is IResettable resettable && !ReferenceEquals(resettable, planet))
+                {
+                    resettable.Reset();
+                }
+            }
+
+            PlanetResourcesSo resource = DrawPlanetResource();
+            if (resource == null)
+            {
+                DebugUtility.LogWarning<PlanetsManager>($"Nenhum recurso disponível ao resetar o planeta {planet.ActorName}.");
+            }
+
+            planet.AssignResource(resource);
+            _planetResourcesMap[planet] = resource != null ? resource.ResourceType : default;
+
+            CacheDetectable(planet);
+            NotifyPlanetCreated(planet);
+        }
+
+        private void CacheDetectable(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            AbstractDetectable detectable = planet.GetComponentInChildren<AbstractDetectable>(true);
+            if (detectable == null)
+            {
+                return;
+            }
+
+            _planetDetectableMap[planet] = detectable;
+            _detectableByActorId[planet.ActorId] = detectable;
+
+            if (!_activePlanets.Contains(detectable))
+            {
+                _activePlanets.Add(detectable);
+            }
+        }
+
+        private void NotifyPlanetCreated(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            if (_planetDetectableMap.TryGetValue(planet, out IDetectable detectable) && detectable != null)
+            {
+                EventBus<PlanetCreatedEvent>.Raise(new PlanetCreatedEvent(detectable));
+            }
+        }
+
+        private void PruneDestroyedPlanets()
+        {
+            _spawnedPlanets.RemoveAll(planet => planet == null);
         }
 
         private void ArrangePlanetsInOrbits()
@@ -200,7 +453,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return radius;
             }
 
-            // Fallback para casos onde ainda não há renderizadores válidos (ex.: placeholders).
             Vector3 scale = planetObject.transform.lossyScale;
             radius = Mathf.Max(scale.x, scale.z) * 0.5f;
             return radius > 0f ? radius : 0.5f;
@@ -224,12 +476,75 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             return availableResources[randomIndex];
         }
 
+        private void RaiseInitializationCompleted()
+        {
+            var snapshot = new ReadOnlyDictionary<IPlanetActor, PlanetResources>(_planetResourcesMap);
+            EventBus<PlanetsInitializationCompletedEvent>.Raise(new PlanetsInitializationCompletedEvent(snapshot));
+        }
+
         public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
         public IReadOnlyCollection<IPlanetActor> GetPlanetActors() => _planetResourcesMap.Keys;
         public List<IDetectable> GetActivePlanets() => _activePlanets;
         public IDetectable GetPlanetMarked() => _targetToEater;
 
         public bool IsMarkedPlanet(IDetectable planet) => _targetToEater == planet;
+
+        private void ClearMarkedPlanet()
+        {
+            PlanetMarkingManager.Instance?.ClearAllMarks();
+            _targetToEater = null;
+        }
+
+        private void OnPlanetMarkingChanged(PlanetMarkingChangedEvent evt)
+        {
+            _targetToEater = ResolveDetectable(evt.NewMarkedPlanet);
+        }
+
+        private void OnPlanetUnmarked(PlanetUnmarkedEvent evt)
+        {
+            IDetectable detectable = ResolveDetectable(evt.PlanetActor);
+            if (detectable != null && _targetToEater == detectable)
+            {
+                _targetToEater = null;
+            }
+        }
+
+        private void OnPlanetDeath(DeathEvent evt)
+        {
+            if (string.IsNullOrEmpty(evt.EntityId))
+            {
+                return;
+            }
+
+            if (!_planetsByActorId.TryGetValue(evt.EntityId, out PlanetsMaster planet) || planet == null)
+            {
+                return;
+            }
+
+            if (_detectableByActorId.TryGetValue(evt.EntityId, out IDetectable detectable) && detectable != null)
+            {
+                _activePlanets.Remove(detectable);
+
+                if (_targetToEater == detectable)
+                {
+                    ClearMarkedPlanet();
+                }
+
+                EventBus<PlanetDestroyedEvent>.Raise(new PlanetDestroyedEvent(detectable, null));
+            }
+        }
+
+        private IDetectable ResolveDetectable(IActor actor)
+        {
+            if (actor == null)
+            {
+                return null;
+            }
+
+            return _detectableByActorId.TryGetValue(actor.ActorId, out IDetectable detectable)
+                ? detectable
+                : null;
+        }
 
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
