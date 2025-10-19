@@ -1267,6 +1267,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
+      propertyPath: resourceInstances.Array.data[0].thresholdConfig
+      value: 
+      objectReference: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
     - target: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_Name
       value: Planet01

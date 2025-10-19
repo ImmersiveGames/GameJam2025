@@ -113,7 +113,7 @@ MonoBehaviour:
     canvasTargetMode: 1
     customCanvasId: planetcanvas
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    thresholdConfig: {fileID: 0}
+    thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
     sortOrder: 5
@@ -198,3 +198,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetResource: 0
+  damageCooldown: 0.25
+  strategyPipeline:
+  - type: 0
+    criticalSettings:
+      criticalChance: 0.2
+      criticalMultiplier: 2
+    resistanceModifiers:
+      entries: []
