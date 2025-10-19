@@ -22,6 +22,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
     public class ResourceThresholdListener : MonoBehaviour
     {
         private string _expectedActorId = ""; // Set no inspector para filtrar por ActorId
+        private object _registrationScope;
 
         [Header("Threshold Configurations")]
         [SerializeField] private ThresholdConfig[] thresholdConfigs;
@@ -68,16 +69,40 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private void RegisterThresholdListener()
         {
             _thresholdBinding = new EventBinding<ResourceThresholdEvent>(OnResourceThreshold);
-            EventBus<ResourceThresholdEvent>.Register(_thresholdBinding);
+
+            if (string.IsNullOrEmpty(_expectedActorId))
+            {
+                EventBus<ResourceThresholdEvent>.Register(_thresholdBinding);
+                if (showDebugLogs)
+                    Debug.Log($"[ResourceThresholdListener] Registered globally on EventBus (sem ActorId) em {gameObject.name}");
+                return;
+            }
+
+            _registrationScope = _expectedActorId;
+            FilteredEventBus<ResourceThresholdEvent>.Register(_thresholdBinding, _registrationScope);
             if (showDebugLogs)
-                Debug.Log($"[ResourceThresholdListener] Registered on EventBus on {gameObject.name}");
+                Debug.Log($"[ResourceThresholdListener] Registered on FilteredEventBus para ActorId {_expectedActorId} em {gameObject.name}");
         }
 
         private void UnregisterThresholdListener()
         {
+            if (_thresholdBinding == null)
+                return;
+
+            if (_registrationScope != null)
+            {
+                FilteredEventBus<ResourceThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
+                _registrationScope = null;
+                if (showDebugLogs)
+                    Debug.Log($"[ResourceThresholdListener] Unregistered from FilteredEventBus em {gameObject.name}");
+                _thresholdBinding = null;
+                return;
+            }
+
             EventBus<ResourceThresholdEvent>.Unregister(_thresholdBinding);
             if (showDebugLogs)
                 Debug.Log($"[ResourceThresholdListener] Unregistered from EventBus on {gameObject.name}");
+            _thresholdBinding = null;
         }
 
         private void OnResourceThreshold(ResourceThresholdEvent evt)
