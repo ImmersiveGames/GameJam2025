@@ -29,7 +29,6 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
                 return;
 
             list.Add(binding);
-            EventBus<T>.Register((EventBinding<T>)binding);
         }
 
         /// <summary>
@@ -42,10 +41,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
 
             if (_bindingsByScope.TryGetValue(scope, out var list))
             {
-                if (list.Remove(binding))
-                    EventBus<T>.Unregister((EventBinding<T>)binding);
-
-                if (list.Count == 0)
+                if (list.Remove(binding) && list.Count == 0)
                     _bindingsByScope.Remove(scope);
             }
         }
@@ -58,11 +54,8 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
             if (scope == null)
                 return;
 
-            if (_bindingsByScope.TryGetValue(scope, out var list))
+            if (_bindingsByScope.ContainsKey(scope))
             {
-                foreach (var binding in list)
-                    EventBus<T>.Unregister((EventBinding<T>)binding);
-
                 _bindingsByScope.Remove(scope);
             }
         }
@@ -91,12 +84,6 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
         /// </summary>
         public static void Clear()
         {
-            foreach (var list in _bindingsByScope.Values)
-            {
-                foreach (var binding in list)
-                    EventBus<T>.Unregister((EventBinding<T>)binding);
-            }
-
             _bindingsByScope.Clear();
         }
     }
