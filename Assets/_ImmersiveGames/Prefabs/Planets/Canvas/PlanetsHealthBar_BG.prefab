@@ -163,7 +163,7 @@ GameObject:
   - component: {fileID: 2361881013582368204}
   - component: {fileID: 4668982261829002575}
   m_Layer: 5
-  m_Name: Resourse Hide (1)
+  m_Name: ResourceImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -218,7 +218,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: -1797201407, guid: b420eefa10c3d5b4d807d4e70b652ae3, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
