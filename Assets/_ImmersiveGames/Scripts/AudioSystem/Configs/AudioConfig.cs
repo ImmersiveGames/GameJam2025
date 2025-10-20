@@ -14,11 +14,5 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Configs
         public float maxDistance = 50f;
         public bool useSpatialBlend = true;
 
-        [Header("Category Sounds")]
-        public SoundData shootSound;
-        public SoundData hitSound;
-        public SoundData deathSound;
-        public SoundData reviveSound;
-        
     }
 }

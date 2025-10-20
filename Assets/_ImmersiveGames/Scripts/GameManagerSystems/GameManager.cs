@@ -86,7 +86,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             Initialize();
         }
-
         
 
         private void Initialize()

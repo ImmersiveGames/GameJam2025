@@ -4913,6 +4913,7 @@ GameObject:
   m_Component:
   - component: {fileID: 139078312773059340}
   - component: {fileID: 2070938468165599009}
+  - component: {fileID: 743985210123456789}
   m_Layer: 0
   m_Name: Star Explosion
   m_TagString: Untagged
@@ -4956,6 +4957,22 @@ MonoBehaviour:
   - {fileID: 6734392101590897982}
   - {fileID: 577973222367808843}
   - {fileID: 6754970664761647733}
+  audioEmitter: {fileID: 743985210123456789}
+  explosionSound: {fileID: 11400000, guid: 151529717cd742347ab6e50c2bea47fc, type: 2}
+--- !u!114 &743985210123456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1377395519739628775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a8f5a62f6046a4830a703ef3c460e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaults: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
+  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!1 &4055110073338384304
 GameObject:
   m_ObjectHideFlags: 0

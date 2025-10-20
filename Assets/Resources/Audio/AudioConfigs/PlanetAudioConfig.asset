@@ -9,12 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14c2176ee76043959b47fbc0ab47eb0b, type: 3}
-  m_Name: Auto Flow Config
+  m_Script: {fileID: 11500000, guid: c3eb9b13e7d5492392beffee2a107878, type: 3}
+  m_Name: PlanetAudioConfig
   m_EditorClassIdentifier: 
-  autoFill: 0
-  autoDrain: 1
-  tickInterval: 1
-  amountPerTick: 2
-  usePercentage: 0
-  regenDelayAfterDamage: 0
+  defaultVolume: 1
+  defaultMixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+  maxDistance: 50
+  useSpatialBlend: 0

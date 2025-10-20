@@ -1,10 +1,4 @@
-﻿Perfeito 🎧 — aqui está o **`README_AudioSystem.md`** completo, limpo, bem formatado e pronto para copiar e colar no seu repositório.
-Inclui descrição, hierarquia, exemplos práticos e explicações sobre volumes e multiplicadores.
-
----
-
-```markdown
-# 🎧 Immersive Games – Audio System
+﻿# 🎧 Immersive Games – Audio System
 
 Sistema modular e extensível de áudio para Unity, com suporte a:
 - **BGM (música ambiente)**
@@ -20,7 +14,7 @@ Sistema modular e extensível de áudio para Unity, com suporte a:
 | Componente | Função |
 |-------------|--------|
 | **`AudioManager`** | Gerencia BGM (faixas principais), volumes e crossfades. |
-| **`AudioControllerBase`** | Base para controladores de áudio de entidades (Player, NPCs, armas, etc). |
+| **`EntityAudioEmitter`** | Componente reutilizável por entidade que lida com pools e reprodução de SFX locais. |
 | **`SoundEmitter`** | Objeto reutilizável (via pool) responsável por tocar SFX. |
 | **`AudioSystemInitializer`** | Garante que o sistema e dependências de áudio estejam prontos no runtime. |
 | **`AudioMathUtility`** | Serviço central de cálculos de volume, dB e pitch. |
@@ -76,7 +70,9 @@ Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais.
 | `defaultMixerGroup` | MixerGroup padrão dos sons |
 | `maxDistance` | Distância máxima do som 3D |
 | `useSpatialBlend` | Define se o áudio é espacializado |
-| `shootSound`, `hitSound`, etc | Sons específicos da entidade |
+
+> **Nota:** Sons específicos (tiro, dano, morte, etc.) agora são atribuídos diretamente nos componentes que os disparam,
+sempre usando um `EntityAudioEmitter` compartilhado pela entidade.
 
 ---
 
@@ -87,22 +83,38 @@ Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais.
 ```csharp
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
 public class MenuMusicStarter : MonoBehaviour
 {
     [SerializeField] private SoundData mainMenuMusic;
 
-    void Start()
+    [Inject] private IAudioService _audioService;
+
+    private void Awake()
     {
-        // Toca a música do menu com fade-in de 2s
-        AudioSystemHelper.PlayBGM(mainMenuMusic, true, 2f);
+        // Garante que o AudioManager exista e injeta o serviço global.
+        AudioSystemInitializer.EnsureAudioSystemInitialized();
+        DependencyManager.Instance.InjectDependencies(this);
     }
 
-    void OnDisable()
+    private void Start()
+    {
+        if (_audioService == null || mainMenuMusic == null)
+        {
+            return;
+        }
+
+        // Toca a música do menu com fade-in de 2s
+        _audioService.PlayBGM(mainMenuMusic, true, 2f);
+    }
+
+    private void OnDisable()
     {
         // Para a música suavemente ao sair do menu
-        AudioSystemHelper.StopBGM(1.5f);
+        _audioService?.StopBGM(1.5f);
     }
 }
 ````
@@ -118,16 +130,28 @@ using UnityEngine;
 
 public class Gun : MonoBehaviour
 {
-    [SerializeField] private PlayerAudioController playerAudio;
+    [SerializeField] private EntityAudioEmitter audioEmitter;
+    [SerializeField] private SoundData shootSound;
+
+    private void Awake()
+    {
+        audioEmitter ??= GetComponent<EntityAudioEmitter>();
+    }
 
     void Fire()
     {
-        // Som direto pelo controller
-        playerAudio.PlayShootSound();
+        if (audioEmitter == null || shootSound == null)
+        {
+            return;
+        }
 
-        // Ou via SoundBuilder (forma fluente e mais customizável)
-        playerAudio.CreateSoundBuilderPublic()
-            .WithSoundData(playerAudio.GetAudioConfig().shootSound)
+        // Som direto via emissor configurado para o jogador
+        var context = AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend);
+        audioEmitter.Play(shootSound, context);
+
+        // Ou via SoundBuilder para ajustes avançados (fade, pitch, etc.)
+        audioEmitter.CreateBuilder()
+            ?.WithSoundData(shootSound)
             .AtPosition(transform.position)
             .WithRandomPitch()
             .WithFadeIn(0.15f)
@@ -141,15 +165,32 @@ public class Gun : MonoBehaviour
 ### 🧮 Controle de Volume e Mixers em Runtime
 
 ```csharp
-// Reduz o volume geral da música
-AudioSystemHelper.SetBGMVolume(0.5f);
+[Inject] private IAudioService _audioService;
 
-// Pausa e retoma
-AudioSystemHelper.PauseBGM();
-AudioSystemHelper.ResumeBGM();
+void Awake()
+{
+    AudioSystemInitializer.EnsureAudioSystemInitialized();
+    DependencyManager.Instance.InjectDependencies(this);
+}
 
-// Para imediatamente (sem fade)
-AudioSystemHelper.StopBGMImmediate();
+void ReduzirVolume()
+{
+    // Reduz o volume geral da música
+    _audioService?.SetBGMVolume(0.5f);
+}
+
+void PausarRetomar()
+{
+    // Pausa e retoma
+    _audioService?.PauseBGM();
+    _audioService?.ResumeBGM();
+}
+
+void PararImediato()
+{
+    // Para imediatamente (sem fade)
+    _audioService?.StopBGMImmediate();
+}
 ```
 
 ---
@@ -225,12 +266,12 @@ Assets/
  │       └── SFX.mixerGroup
  └── Scripts/
      └── AudioSystem/
-         ├── AudioManager.cs
-         ├── AudioControllerBase.cs
-         ├── SoundEmitter.cs
-         ├── AudioSystemInitializer.cs
+        ├── AudioManager.cs
+        ├── Components/
+        │   ├── EntityAudioEmitter.cs
+        │   └── SoundEmitter.cs
+        ├── AudioSystemInitializer.cs
          ├── AudioMathUtility.cs
-         ├── AudioSystemHelper.cs
          ├── Configs/
          │   ├── AudioConfig.cs
          │   ├── SoundData.cs
@@ -251,16 +292,27 @@ O `AudioMathUtility` centraliza toda a lógica de volume/pitch, permitindo ajust
 ## 🪄 Exemplo de Extensão (novo tipo de som)
 
 ```csharp
-public class EnemyAudioController : AudioControllerBase
+public class EnemyAudioFeedback : MonoBehaviour
 {
+    [SerializeField] private EntityAudioEmitter emitter;
+    [SerializeField] private SoundData alertSound;
+    [SerializeField] private SoundData deathSound;
+
+    private void Awake()
+    {
+        emitter ??= GetComponent<EntityAudioEmitter>();
+    }
+
     public void PlayAlert()
     {
-        PlaySoundLocal(audioConfig.hitSound, AudioContext.Default(transform.position));
+        if (emitter == null || alertSound == null) return;
+        emitter.Play(alertSound, AudioContext.Default(transform.position, emitter.UsesSpatialBlend));
     }
 
     public void PlayDeath()
     {
-        PlaySoundLocal(audioConfig.deathSound, AudioContext.Default(transform.position));
+        if (emitter == null || deathSound == null) return;
+        emitter.Play(deathSound, AudioContext.Default(transform.position, emitter.UsesSpatialBlend));
     }
 }
 ```
@@ -283,5 +335,3 @@ Com este sistema, o áudio fica:
 > **Versão:** 1.0
 > **Compatível com:** Unity 2022+
 > **Licença:** Interna / Proprietária
-
-```
