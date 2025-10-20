@@ -10,10 +10,17 @@ GameObject:
   m_Component:
   - component: {fileID: 6256545176937765026}
   - component: {fileID: 5613559780465634421}
+  - component: {fileID: 2026182142762072022}
   - component: {fileID: 3116386425379354428}
   - component: {fileID: 4391767132752609887}
   - component: {fileID: 3792857144750339892}
   - component: {fileID: 13957112238197562}
+  - component: {fileID: 7952149840871249308}
+  - component: {fileID: 6850824342457013645}
+  - component: {fileID: 2773140467685650898}
+  - component: {fileID: 452753156535112276}
+  - component: {fileID: 7633387691389220541}
+  - component: {fileID: 3502098637227668626}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -63,6 +70,28 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!95 &2026182142762072022
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: cfaf847a029be7040b7cdf2bfbff84dc, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 1
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &3116386425379354428
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103,7 +132,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee54ac93978a4a4c87c94dab2fbda987, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  collection: {fileID: 0}
+  collection: {fileID: 11400000, guid: 8a4f14adc11d5f9428d7f47855637a4c, type: 2}
 --- !u!114 &13957112238197562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -116,3 +145,101 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ade62e7b435b4078a73ba8f100989b9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &7952149840871249308
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7054ab6ffc2547afb8c4e184baa051e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resourceInstances: []
+--- !u!114 &6850824342457013645
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2d0a9dc68e540bb8f5f684c39f4df5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2773140467685650898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a653283517df4c1f91cf7f0a5bc4ed26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animationConfig: {fileID: 11400000, guid: f18ec5c6946afb24591af75d099fac43, type: 2}
+--- !u!114 &452753156535112276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15eb4ca9f6ea40ecbe9fc496ca7b3c60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetResource: 0
+  damageCooldown: 0.25
+  spawnExplosionOnDeath: 1
+  explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}
+  explosionOffset: {x: 0, y: 0, z: 0}
+  strategyPipeline:
+  - type: 0
+    criticalSettings:
+      criticalChance: 0.2
+      criticalMultiplier: 2
+    resistanceModifiers:
+      entries: []
+  audioEmitter: {fileID: 3502098637227668626}
+  hitSound: {fileID: 11400000, guid: c7474af2ea8e3fc418c6a5f049610d13, type: 2}
+  deathSound: {fileID: 11400000, guid: 611c7b1d7f2d7b0448be25af5712608c, type: 2}
+  reviveSound: {fileID: 11400000, guid: 0816c7a98498b0444af448665935322c, type: 2}
+--- !u!114 &7633387691389220541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c355b7affa1f466e9ef79c315d933615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseDamage: 10
+  targetResource: 0
+  damageType: 0
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 1536
+--- !u!114 &3502098637227668626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a8f5a62f6046a4830a703ef3c460e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
+  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}

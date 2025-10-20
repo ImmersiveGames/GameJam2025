@@ -1,10 +1,4 @@
-﻿Perfeito 🎧 — aqui está o **`README_AudioSystem.md`** completo, limpo, bem formatado e pronto para copiar e colar no seu repositório.
-Inclui descrição, hierarquia, exemplos práticos e explicações sobre volumes e multiplicadores.
-
----
-
-```markdown
-# 🎧 Immersive Games – Audio System
+﻿# 🎧 Immersive Games – Audio System
 
 Sistema modular e extensível de áudio para Unity, com suporte a:
 - **BGM (música ambiente)**
@@ -341,5 +335,3 @@ Com este sistema, o áudio fica:
 > **Versão:** 1.0
 > **Compatível com:** Unity 2022+
 > **Licença:** Interna / Proprietária
-
-```

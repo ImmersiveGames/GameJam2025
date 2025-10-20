@@ -9,13 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a22ecd48e79840b7995511022954cba6, type: 3}
-  m_Name: PlayerStaminia
+  m_Script: {fileID: 11500000, guid: 14c2176ee76043959b47fbc0ab47eb0b, type: 3}
+  m_Name: HungerAutoFlow
   m_EditorClassIdentifier: 
-  type: 3
-  initialValue: 60
-  maxValue: 60
-  enabled: 1
-  targetCanvasId: MainUI
-  hasAutoFlow: 0
-  autoFlowConfig: {fileID: 0}
+  autoFill: 0
+  autoDrain: 1
+  tickInterval: 1
+  amountPerTick: 2
+  usePercentage: 0
+  regenDelayAfterDamage: 0
