@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
@@ -10,12 +12,37 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         [SerializeField] private SoundData mainMenuBGM;
         [Header("Settings")]
         [SerializeField] private float bgmFadeDuration = 2f;
-        
+
+        [Inject] private IAudioService _audioService;
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            // Garantir que o sistema global de áudio esteja pronto antes da injeção.
+            AudioSystemInitializer.EnsureAudioSystemInitialized();
+
+            if (DependencyManager.Instance != null)
+            {
+                DependencyManager.Instance.InjectDependencies(this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<GameAudioManager>("DependencyManager indisponível — áudio global não será injetado.");
+            }
+        }
+
         private void Start()
         {
+            if (_audioService == null)
+            {
+                DebugUtility.LogWarning<GameAudioManager>("IAudioService não injetado — verifique a inicialização do AudioManager.");
+                return;
+            }
+
             if (mainMenuBGM != null && mainMenuBGM.clip != null)
             {
-                AudioSystemHelper.PlayBGM(mainMenuBGM, true, bgmFadeDuration);
+                _audioService.PlayBGM(mainMenuBGM, true, bgmFadeDuration);
             }
             else
             {

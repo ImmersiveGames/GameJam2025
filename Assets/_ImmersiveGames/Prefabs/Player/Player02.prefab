@@ -156,11 +156,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e796535af4c24772882ae8c1aaca9fa1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   poolData: {fileID: 11400000, guid: 9d078602accb9c441951d4dff96fd684, type: 2}
   actionName: Fire
   cooldown: 0.5
   strategyType: 0
+  defaultShootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
@@ -259,10 +260,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 6539729360946555031}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eff674a828ae4bcda276e59c7ec600f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  audioConfig: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
+  m_Script: {fileID: 11500000, guid: a3a8f5a62f6046a4830a703ef3c460e8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  defaults: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
   poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!114 &4348853418725022088
 MonoBehaviour:

@@ -47,7 +47,8 @@ _ImmersiveGames/Scripts/
 │   │   └── DamageSystemDebugger.System.cs     ← [Módulo de Diagnóstico]
 │
 ├── AudioSystem/
-│   ├── PlayerAudioController.cs
+│   ├── Components/
+│   │   └── EntityAudioEmitter.cs
 │   ├── AudioConfig.cs
 │   └── AudioCue.cs
 ```
@@ -74,7 +75,7 @@ Gerencia:
 * Aplicação de dano sobre recursos
 * Eventos de **morte**, **reviver** e **respawn**
 * Integração com o `EntityResourceBridge`
-* Chamada automática de sons via `PlayerAudioController`
+* Emissão de sons diretamente via `EntityAudioEmitter`
 * Handlers internos:
 
     * `DeathHandler`
@@ -98,8 +99,9 @@ Gerencia:
 
 ### Requisitos:
 
-* Componente `PlayerAudioController` no mesmo GameObject do `DamageReceiver`.
-* `AudioConfig` associado com os clips:
+* Componente `EntityAudioEmitter` no mesmo GameObject do `DamageReceiver`.
+* `AudioConfig` apontado no emissor para definir mixer/volume padrão.
+* Campos do `DamageReceiver` preenchidos com os `SoundData` adequados:
 
     * `hitSound`
     * `deathSound`
@@ -114,9 +116,8 @@ Gerencia:
 ### Configuração:
 
 ```csharp
-_playerAudioController.PlayCustomHitSound(config.hitSound);
-_playerAudioController.PlayCustomDeathSound(config.deathSound);
-_playerAudioController.PlayCustomReviveSound(config.reviveSound);
+var context = AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend);
+audioEmitter.Play(hitSound, context);
 ```
 
 ---
@@ -207,7 +208,7 @@ O sistema refatorado agora fornece:
 * Uma arquitetura sólida para dano e respawn.
 * Eventos claros e bem organizados.
 * Debugger modular com menos spam e melhor visibilidade.
-* Integração nativa com o `PlayerAudioController`.
+* Integração nativa com o `EntityAudioEmitter` compartilhado por cada serviço.
 
 ---
 
