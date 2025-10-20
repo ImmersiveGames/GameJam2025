@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: -3191423032800938798}
   - component: {fileID: -3433789961080299914}
   - component: {fileID: -6241042625207907278}
+  - component: {fileID: -8628056866229713421}
   m_Layer: 8
   m_Name: ProjectilPrefab
   m_TagString: Untagged
@@ -91,3 +92,21 @@ MonoBehaviour:
   defaultSkinCollection: {fileID: 11400000, guid: c7bb6616b8c94c84cbcfd48eab9d968b, type: 2}
   autoInitialize: 1
   enableGlobalEvents: 1
+--- !u!114 &-8628056866229713421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c355b7affa1f466e9ef79c315d933615, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseDamage: 1
+  targetResource: 0
+  damageType: 0
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 1024

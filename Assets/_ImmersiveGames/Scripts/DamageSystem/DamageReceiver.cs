@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
-    [RequireComponent(typeof(ActorMaster))]
+    [RequireComponent(typeof(IActor))]
     public class DamageReceiver : MonoBehaviour, IDamageReceiver
     {
         [Header("Recurso alvo (ex: Health)")]
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             new DamageStrategySelection()
         };
 
-        private ActorMaster _actor;
+        private IActor _actor;
         private InjectableEntityResourceBridge _bridge;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void Awake()
         {
-            _actor = GetComponent<ActorMaster>();
+            _actor = GetComponent<IActor>();
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
