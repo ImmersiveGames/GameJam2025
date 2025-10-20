@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -14,6 +15,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         public IDamageStrategy Strategy { get; }
         public DamageCooldownModule CooldownModule { get; }
         public DamageLifecycleModule LifecycleModule { get; }
+        public DamageExplosionModule ExplosionModule { get; }
         public ResourceSystem ResourceSystem { get; set; }
         public float CalculatedDamage { get; set; }
         public float PreviousCalculatedDamage { get; set; }
@@ -33,7 +35,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             InjectableEntityResourceBridge bridge,
             IDamageStrategy strategy,
             DamageCooldownModule cooldownModule,
-            DamageLifecycleModule lifecycleModule)
+            DamageLifecycleModule lifecycleModule,
+            DamageExplosionModule explosionModule)
         {
             Request = request;
             TargetResource = targetResource;
@@ -41,6 +44,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             Strategy = strategy;
             CooldownModule = cooldownModule;
             LifecycleModule = lifecycleModule;
+            ExplosionModule = explosionModule;
             CalculatedDamage = request?.DamageValue ?? 0f;
             PreviousCalculatedDamage = CalculatedDamage;
         }
