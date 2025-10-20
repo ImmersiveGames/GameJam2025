@@ -2,6 +2,7 @@ using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.UI;
+
 namespace _ImmersiveGames.Scripts.AudioSystem.UI
 {
     public class AudioSettingsUI : MonoBehaviour
@@ -9,18 +10,32 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         [SerializeField] private Slider bgmSlider;
         [SerializeField] private Slider sfxSlider;
 
-        private IAudioService _audioService;
+        [Inject] private IAudioService _audioService;
+
+        private void Awake()
+        {
+            // Garante que o AudioManager exista antes de solicitar dependências.
+            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            DependencyManager.Instance.InjectDependencies(this);
+        }
 
         private void Start()
         {
-            if (!DependencyManager.Instance.TryGetGlobal(out _audioService))
+            if (_audioService == null)
             {
-                Debug.LogError("AudioService não encontrado!");
+                Debug.LogError("IAudioService não encontrado após injeção!");
                 return;
             }
 
-            bgmSlider.onValueChanged.AddListener(SetBGMVolume);
-            sfxSlider.onValueChanged.AddListener(SetSfxVolume);
+            if (bgmSlider != null)
+            {
+                bgmSlider.onValueChanged.AddListener(SetBGMVolume);
+            }
+
+            if (sfxSlider != null)
+            {
+                sfxSlider.onValueChanged.AddListener(SetSfxVolume);
+            }
         }
 
         public void SetBGMVolume(float value)

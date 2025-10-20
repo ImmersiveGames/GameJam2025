@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -35,7 +36,9 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private InputAction _spawnAction;
         private float _lastShotTime = -Mathf.Infinity;
         private IActor _actor;
-        private PlayerAudioController _audioController;
+        private EntityAudioEmitter _audioEmitter;
+        [Header("Audio Config")]
+        [SerializeField] private SoundData defaultShootSound;
 
         [Inject] private IStateDependentService _stateService;
 
@@ -43,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
-            _audioController = GetComponent<PlayerAudioController>(); // Adicionado: Obtém controller local
+            _audioEmitter = GetComponent<EntityAudioEmitter>();
             
             DependencyManager.Instance.InjectDependencies(this);
 
@@ -136,25 +139,26 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         }
         private void PlayShootAudio()
         {
-            if (_audioController == null) 
+            if (_audioEmitter == null)
             {
-                DebugUtility.LogWarning<InputSpawnerComponent>("PlayerAudioController não encontrado — som de tiro não tocado.");
+                DebugUtility.LogWarning<InputSpawnerComponent>("EntityAudioEmitter não encontrado — som de tiro não tocado.");
                 return;
             }
 
             var strategySound = _activeStrategy.GetShootSound();
-            if (strategySound == null || strategySound.clip == null) // Adicionado: Checa se estratégia tem áudio válido
+            if (strategySound == null || strategySound.clip == null)
             {
-                strategySound = _audioController.GetAudioConfig()?.shootSound; // Fallback para default do controller
+                strategySound = defaultShootSound;
                 if (strategySound == null || strategySound.clip == null)
                 {
-                    DebugUtility.LogWarning<InputSpawnerComponent>("Nenhum som de tiro default configurado no controller.");
+                    DebugUtility.LogWarning<InputSpawnerComponent>("Nenhum som de tiro configurado para o spawner.");
                     return;
                 }
-                DebugUtility.LogVerbose<InputSpawnerComponent>("Usando som de tiro default do controller (estratégia sem áudio).", "cyan");
+                DebugUtility.LogVerbose<InputSpawnerComponent>("Usando som de tiro default do componente.", "cyan");
             }
 
-            _audioController.PlayShootSound(strategySound); // Toca com som resolvido
+            var context = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);
+            _audioEmitter.Play(strategySound, context);
         }
     }
 }

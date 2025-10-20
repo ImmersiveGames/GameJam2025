@@ -16,7 +16,3 @@ MonoBehaviour:
   defaultMixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   maxDistance: 50
   useSpatialBlend: 0
-  shootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
-  hitSound: {fileID: 11400000, guid: 37cf9a1f0eb3e154f9980bbab4df7f39, type: 2}
-  deathSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
-  reviveSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
