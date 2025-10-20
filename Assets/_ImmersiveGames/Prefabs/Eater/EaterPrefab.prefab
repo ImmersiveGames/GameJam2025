@@ -16,6 +16,8 @@ GameObject:
   - component: {fileID: 3792857144750339892}
   - component: {fileID: 13957112238197562}
   - component: {fileID: 7952149840871249308}
+  - component: {fileID: 794571938524048265}
+  - component: {fileID: 5311924979779348153}
   - component: {fileID: 6850824342457013645}
   - component: {fileID: 2773140467685650898}
   - component: {fileID: 452753156535112276}
@@ -132,7 +134,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee54ac93978a4a4c87c94dab2fbda987, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  collection: {fileID: 11400000, guid: 8a4f14adc11d5f9428d7f47855637a4c, type: 2}
+  collection: {fileID: 11400000, guid: a0d4bc25f3d4e22458277497c00a9479, type: 2}
 --- !u!114 &13957112238197562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -157,7 +159,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7054ab6ffc2547afb8c4e184baa051e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourceInstances: []
+  resourceInstances:
+  - resourceDefinition: {fileID: 11400000, guid: 50644bcc4e6b2f74b8c912b2d9cec364, type: 2}
+    canvasTargetMode: 2
+    customCanvasId: MainUI2
+    slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
+    thresholdConfig: {fileID: 0}
+    hasAutoFlow: 0
+    autoFlowConfig: {fileID: 0}
+    sortOrder: 0
+  - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
+    canvasTargetMode: 2
+    customCanvasId: MainUI2
+    slotStyle: {fileID: 0}
+    thresholdConfig: {fileID: 0}
+    hasAutoFlow: 1
+    autoFlowConfig: {fileID: 11400000, guid: e8651aab02560ac45bfdf4dba97f49c7, type: 2}
+    sortOrder: 0
+--- !u!114 &794571938524048265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c6eb46544ff403981a8bd960fb65b82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startPaused: 1
+--- !u!114 &5311924979779348153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26cc2f8661864f0cb44cbcfbfb978f7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resourceLinks:
+  - {fileID: 11400000, guid: 99db89aca24ded0449207c24510cdf11, type: 2}
 --- !u!114 &6850824342457013645
 MonoBehaviour:
   m_ObjectHideFlags: 0
