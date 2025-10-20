@@ -9,8 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e9da6be1e696469f9c32730737cc1740, type: 3}
-  m_Name: Rock
+  m_Script: {fileID: 11500000, guid: fbe03c4b31f64435813475d7894ace38, type: 3}
+  m_Name: EaterSensorCollation
   m_EditorClassIdentifier: 
-  resourceType: 3
-  resourceIcon: {fileID: 1018452086, guid: ea06a3c8fd6d4334a870df67449308ff, type: 3}
+  sensors:
+  - {fileID: 11400000, guid: d02ff29847774754c854b46c5f60acbc, type: 2}

@@ -113,10 +113,10 @@ TextureImporter:
       name: Water
       rect:
         serializedVersion: 2
-        x: 67
-        y: 595
-        width: 270
-        height: 375
+        x: 56
+        y: 1065
+        width: 259
+        height: 359
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -125,7 +125,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6dd107ea32f68f24a945e733ced96f7a
+      spriteID: 68210edebd5c909478e833e39255fdde
       internalID: -763352949
       vertices: []
       indices: 
@@ -135,10 +135,10 @@ TextureImporter:
       name: Metal
       rect:
         serializedVersion: 2
-        x: 342
-        y: 585
-        width: 322
-        height: 335
+        x: 332
+        y: 1052
+        width: 299
+        height: 319
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -147,7 +147,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4f78bb261eb60de4fba8759f787c64f4
+      spriteID: 025b1e16ffa65244790e47a09ebda44b
       internalID: -36394911
       vertices: []
       indices: 
@@ -157,10 +157,10 @@ TextureImporter:
       name: Life
       rect:
         serializedVersion: 2
-        x: 670
-        y: 600
-        width: 335
-        height: 304
+        x: 651
+        y: 1063
+        width: 310
+        height: 289
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -169,30 +169,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 837eb65eb119cfa49b637f6b2c3d2e3f
+      spriteID: 256783ab46e62654e9652833ea998726
       internalID: -1997454460
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Rock
-      rect:
-        serializedVersion: 2
-        x: 40
-        y: 65
-        width: 461
-        height: 489
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: c37b094f89e2dcd4eabe549e4516d2f6
-      internalID: 1018452086
       vertices: []
       indices: 
       edges: []
@@ -201,10 +179,10 @@ TextureImporter:
       name: Gas
       rect:
         serializedVersion: 2
-        x: 580
-        y: 73
-        width: 363
-        height: 494
+        x: 686
+        y: 587
+        width: 230
+        height: 364
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -213,8 +191,74 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: e0edb1b874e49b843913ba5cb2edd573
+      spriteID: 2fba609656f783a419ecf4127d6534a8
       internalID: -1217311619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Earth
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 537
+        width: 327
+        height: 391
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2331b4fee0638a147a07e623753147ba
+      internalID: -1211344864
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Technology
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 127
+        width: 296
+        height: 312
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 320494e35cc1dbf4bb0d6ca3238de459
+      internalID: 101427743
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rock
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 103
+        width: 380
+        height: 333
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 29a4dd489bbb1c541817c7e22a62e213
+      internalID: 1018452086
       vertices: []
       indices: 
       edges: []
@@ -233,10 +277,19 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
+      Earth: -1211344864
       Gas: -1217311619
       Life: -1997454460
       Metal: -36394911
+      PlanetsResources_10: 124850479
+      PlanetsResources_11: 1643538251
+      PlanetsResources_12: -1138780997
+      PlanetsResources_13: -1485684315
+      PlanetsResources_7: 1673922403
+      PlanetsResources_8: 26339704
+      PlanetsResources_9: -1261137325
       Rock: 1018452086
+      Technology: 101427743
       Water: -763352949
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0

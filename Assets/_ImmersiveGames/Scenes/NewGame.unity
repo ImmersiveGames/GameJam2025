@@ -1415,6 +1415,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: EaterPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3792857144750339892, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
+      propertyPath: collection
+      value: 
+      objectReference: {fileID: 11400000, guid: a0d4bc25f3d4e22458277497c00a9479, type: 2}
     - target: {fileID: 6256545176937765026, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
