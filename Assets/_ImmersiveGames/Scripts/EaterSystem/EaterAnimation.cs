@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.ActorSystems;
+/*using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -76,4 +76,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _animator.CrossFadeInFixedTime(_isDead, TransitionDuration);
         }
     }
-}
+}*/

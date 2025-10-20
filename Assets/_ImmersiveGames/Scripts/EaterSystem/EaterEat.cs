@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿/*using System.Collections;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -60,14 +60,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogWarning<EaterEat>("IDetectable ou PlanetsMaster é nulo no evento EventStartEatPlanet!");
                 return;
-            }*/
+            }#1#
 
             /*_planetHealth = obj.GetPlanetsMaster().GetComponent<PlanetHealth>();
             if (_planetHealth == null)
             {
                 DebugUtility.LogWarning<EaterEat>($"PlanetHealth não encontrado em {obj.GetPlanetsMaster().name}!");
                 return;
-            }*/
+            }#1#
 
             StopDamageCoroutine();
             _damageCoroutine = StartCoroutine(ApplyDamageOverTime());
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             /*if (_planetHealth == null || evt.Detected.GetPlanetsMaster() != _planetHealth.GetComponent<PlanetsMaster>()) return;
             StopDamageCoroutine();
-            _planetHealth = null;*/
+            _planetHealth = null;#1#
             //EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(evt.Detected));
             //DebugUtility.Log<EaterEat>($"Planeta {evt.Detected.Detectable.ActorName} destruído. Dano automático interrompido.");
         }
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             StopDamageCoroutine();
             _planetHealth = null;
-            DebugUtility.Log<EaterEat>("Coroutine de dano interrompido: planeta destruído ou inativo.");*/
+            DebugUtility.Log<EaterEat>("Coroutine de dano interrompido: planeta destruído ou inativo.");#1#
             yield return null;
         }
 
@@ -123,4 +123,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
     }
-}
+}*/

@@ -1,6 +1,4 @@
-﻿// AnimationConfigProvider.cs
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 

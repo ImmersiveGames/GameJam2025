@@ -2,8 +2,7 @@
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
-
-namespace _ImmersiveGames.Scripts.AnimationSystems.Components
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
     public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
     {

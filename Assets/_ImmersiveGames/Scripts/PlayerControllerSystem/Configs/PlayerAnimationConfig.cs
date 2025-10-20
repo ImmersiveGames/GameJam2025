@@ -1,7 +1,6 @@
-﻿// PlayerAnimationConfig.cs
-
+﻿using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.AnimationSystems.Config
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Animation/Player Animation Config")]
     public class PlayerAnimationConfig : AnimationConfig

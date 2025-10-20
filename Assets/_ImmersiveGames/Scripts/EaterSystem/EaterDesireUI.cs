@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.EaterSystem.Events;
+﻿/*using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -59,4 +59,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
     }
-}
+}*/

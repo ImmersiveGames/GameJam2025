@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+/*using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnEnable()
         {
             /*_hungryChangeThresholdDirectionEventBinding = new EventBinding<HungryChangeThresholdDirectionEvent>(OnResourceChangeThresholdDirection);
-            EventBus<HungryChangeThresholdDirectionEvent>.Register(_hungryChangeThresholdDirectionEventBinding);*/
+            EventBus<HungryChangeThresholdDirectionEvent>.Register(_hungryChangeThresholdDirectionEventBinding);#1#
             _planetUnmarkedEventBinding = new EventBinding<PlanetUnmarkedEvent>(OnUnmarkedPlanet);
             EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedEventBinding);
             _planetMarkedEventBinding = new EventBinding<PlanetMarkedEvent>(OnMarkedPlanet);
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDisable()
         {
             /*if (_hungryChangeThresholdDirectionEventBinding != null)
-                EventBus<HungryChangeThresholdDirectionEvent>.Unregister(_hungryChangeThresholdDirectionEventBinding);*/
+                EventBus<HungryChangeThresholdDirectionEvent>.Unregister(_hungryChangeThresholdDirectionEventBinding);#1#
             if (_planetUnmarkedEventBinding != null)
                 EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedEventBinding);
             if (_planetMarkedEventBinding != null)
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
             }
             TryChooseDesire();
-        }*/
+        }#1#
         private void OnMarkedPlanet(PlanetMarkedEvent obj)
         {
             //TryChooseDesire(obj?.Detected);
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 .Select(p => p.GetResource())
                 .Where(r => r)
                 .Distinct()
-                .ToList();*/
+                .ToList();#1#
             //TODO: mock
             return new List<PlanetResourcesSo>();
         }
@@ -174,4 +174,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
         public PlanetResourcesSo GetDesiredResource() => _desiredResource;
     }
-}
+}*/
