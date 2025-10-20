@@ -162,7 +162,11 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             {
                 if (DependencyManager.Instance.TryGetForObject<AnimationControllerBase>(_actor.ActorId, out var controller))
                 {
-                    controller.OnAnimatorChanged(newAnimator);
+                    var localController = GetComponent<AnimationControllerBase>();
+                    if (controller != null && controller != localController)
+                    {
+                        controller.OnAnimatorChanged(newAnimator);
+                    }
                 }
             }
         }
