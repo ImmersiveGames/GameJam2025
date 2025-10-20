@@ -1,45 +1,133 @@
-﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
     {
-        private DamageReceiver _damageReceiver;
-        
-        // Agora as hashs vêm da AnimationConfig através das propriedades herdadas
+        private EventBinding<DamageEvent> _damageBinding;
+        private EventBinding<DeathEvent> _deathBinding;
+        private EventBinding<ReviveEvent> _reviveBinding;
+        private bool _listenersRegistered;
 
-        protected override void Start()
+        protected override void Awake()
         {
-            base.Start();
+            base.Awake();
 
-            _damageReceiver = GetComponent<DamageReceiver>();
-            if (_damageReceiver != null)
+            if (!enabled || Actor == null)
             {
-                /*_damageReceiver.EventDamageReceived += EventHit;
-                _damageReceiver.EventDeath += EventDeath;
-                _damageReceiver.EventRevive += EventRevive;*/
+                return;
             }
+
+            _damageBinding = new EventBinding<DamageEvent>(OnDamageEvent);
+            _deathBinding = new EventBinding<DeathEvent>(OnDeathEvent);
+            _reviveBinding = new EventBinding<ReviveEvent>(OnReviveEvent);
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            RegisterDamageListeners();
         }
 
         protected override void OnDisable()
         {
-            if (_damageReceiver != null)
-            {
-                /*_damageReceiver.EventDamageReceived -= EventHit;
-                _damageReceiver.EventDeath -= EventDeath;
-                _damageReceiver.EventRevive -= EventRevive;*/
-            }
+            UnregisterDamageListeners();
             base.OnDisable();
         }
 
-        private void EventHit(float dmg, IActor src) => PlayHit();
-        private void EventDeath(IActor _) => PlayDeath();
-        private void EventRevive(IActor _) => PlayRevive();
+        private void RegisterDamageListeners()
+        {
+            if (_listenersRegistered)
+            {
+                return;
+            }
 
-        // Implementação da interface usando as hashs da config
+            if (Actor == null || string.IsNullOrEmpty(Actor.ActorId))
+            {
+                DebugUtility.LogWarning<PlayerAnimationController>(
+                    "ActorId inválido. Eventos de animação não serão registrados.");
+                return;
+            }
+
+            if (_damageBinding == null || _deathBinding == null || _reviveBinding == null)
+            {
+                DebugUtility.LogWarning<PlayerAnimationController>(
+                    "Bindings de animação não foram inicializados corretamente.");
+                return;
+            }
+
+            FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
+            FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
+            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
+            _listenersRegistered = true;
+
+            DebugUtility.LogVerbose<PlayerAnimationController>(
+                $"Eventos de dano registrados para {Actor.ActorId}.", "cyan");
+        }
+
+        private void UnregisterDamageListeners()
+        {
+            if (!_listenersRegistered || Actor == null || string.IsNullOrEmpty(Actor.ActorId))
+            {
+                _listenersRegistered = false;
+                return;
+            }
+
+            if (_damageBinding != null)
+            {
+                FilteredEventBus<DamageEvent>.Unregister(_damageBinding, Actor.ActorId);
+            }
+
+            if (_deathBinding != null)
+            {
+                FilteredEventBus<DeathEvent>.Unregister(_deathBinding, Actor.ActorId);
+            }
+
+            if (_reviveBinding != null)
+            {
+                FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, Actor.ActorId);
+            }
+            _listenersRegistered = false;
+        }
+
+        private void OnDamageEvent(DamageEvent evt)
+        {
+            if (evt.TargetId != Actor?.ActorId)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido DamageEvent. Executando animação de Hit.");
+            PlayHit();
+        }
+
+        private void OnDeathEvent(DeathEvent evt)
+        {
+            if (evt.EntityId != Actor?.ActorId)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido DeathEvent. Executando animação de Death.");
+            PlayDeath();
+        }
+
+        private void OnReviveEvent(ReviveEvent evt)
+        {
+            if (evt.EntityId != Actor?.ActorId)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido ReviveEvent. Executando animação de Revive.");
+            PlayRevive();
+        }
+
         public void PlayHit() => PlayHash(HitHash);
         public void PlayDeath() => PlayHash(DeathHash);
         public void PlayRevive() => PlayHash(ReviveHash);

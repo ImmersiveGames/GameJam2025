@@ -12,9 +12,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public ResourceType ResourceType;
         public DamageType DamageType;
         public Vector3 HitPosition;
-    
+        public bool HasHitPosition;
+
         public DamageEvent(string attackerId, string targetId, float finalDamage,
-            ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
+            ResourceType resourceType, DamageType damageType, Vector3 hitPosition, bool hasHitPosition)
         {
             AttackerId = attackerId;
             TargetId = targetId;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             ResourceType = resourceType;
             DamageType = damageType;
             HitPosition = hitPosition;
+            HasHitPosition = hasHitPosition;
         }
     }
 
@@ -33,9 +35,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public ResourceType ResourceType;
         public DamageType DamageType;
         public Vector3 HitPosition;
+        public bool HadHitPosition;
 
         public DamageEventReverted(string attackerId, string targetId, float restoredDamage,
-            ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
+            ResourceType resourceType, DamageType damageType, Vector3 hitPosition, bool hadHitPosition)
         {
             AttackerId = attackerId;
             TargetId = targetId;
@@ -43,6 +46,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             ResourceType = resourceType;
             DamageType = damageType;
             HitPosition = hitPosition;
+            HadHitPosition = hadHitPosition;
         }
     }
 

@@ -18,7 +18,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 context.CalculatedDamage,
                 context.TargetResource,
                 request.DamageType,
-                request.HitPosition
+                request.HitPosition,
+                request.HasHitPosition
             );
 
             context.RaisedDamageEvent = damageEvent;
@@ -44,7 +45,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 damageEvent.FinalDamage,
                 damageEvent.ResourceType,
                 damageEvent.DamageType,
-                damageEvent.HitPosition
+                damageEvent.HitPosition,
+                damageEvent.HasHitPosition
             );
 
             DamageEventDispatcher.RaiseForParticipants(

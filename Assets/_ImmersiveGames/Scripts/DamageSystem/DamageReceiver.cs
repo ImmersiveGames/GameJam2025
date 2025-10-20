@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DamageSystem.Commands;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
@@ -14,6 +16,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [Header("Recurso alvo (ex: Health)")]
         [SerializeField] private ResourceType targetResource = ResourceType.Health;
         [SerializeField] private float damageCooldown = 0.25f;
+
+        [Header("Explosão ao morrer")]
+        [SerializeField] private bool spawnExplosionOnDeath = true;
+        [SerializeField] private PoolData explosionPoolData;
+        [SerializeField] private Vector3 explosionOffset = Vector3.zero;
+        [SerializeField] private SoundData explosionSoundOverride;
 
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
@@ -25,6 +33,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private InjectableEntityResourceBridge _bridge;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
+        private DamageExplosionModule _explosion;
         private IDamageStrategy _strategy;
         private DamageCommandInvoker _commandInvoker;
 
@@ -34,6 +43,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
+            _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
+            _explosion.SetExplosionSound(explosionSoundOverride);
+            if (Application.isPlaying && spawnExplosionOnDeath)
+            {
+                _explosion.Initialize();
+            }
 
             EnsureStrategyConfiguration();
             BuildStrategy();
@@ -46,6 +61,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             EnsureStrategyConfiguration();
             BuildStrategy();
             BuildCommandPipeline();
+            _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
+            _explosion.SetExplosionSound(explosionSoundOverride);
+            if (Application.isPlaying && spawnExplosionOnDeath)
+            {
+                _explosion.Initialize();
+            }
         }
 #endif
 
@@ -81,7 +102,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 new CalculateDamageCommand(),
                 new ApplyDamageCommand(),
                 new RaiseDamageEventsCommand(),
-                new CheckDeathCommand()
+                new CheckDeathCommand(),
+                new SpawnExplosionCommand()
             });
         }
 
@@ -98,7 +120,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 _bridge,
                 _strategy,
                 _cooldowns,
-                _lifecycle);
+                _lifecycle,
+                spawnExplosionOnDeath ? _explosion : null);
 
             _commandInvoker.Execute(context);
         }
@@ -109,5 +132,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             _commandInvoker?.UndoLast();
         }
+
     }
 }
