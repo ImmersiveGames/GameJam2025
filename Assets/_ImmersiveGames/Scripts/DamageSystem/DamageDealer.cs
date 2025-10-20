@@ -21,6 +21,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private IActor actor;
         private PooledObject pooledObject;
+        private int lastProcessedFrame = -1;
+        private GameObject lastProcessedTarget;
 
         private void Awake()
         {
@@ -36,7 +38,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void OnCollisionEnter(Collision collision)
         {
-            HandleCollision(collision);
+            var contact = collision.contactCount > 0 ? collision.GetContact(0) : default;
+            TryDealDamage(
+                collision.gameObject,
+                contact.point,
+                contact.normal
+            );
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            HandleTriggerCollision(other);
         }
 
         /// <summary>
@@ -44,30 +56,30 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         /// </summary>
         public void OnChildCollisionEnter(Collision collision)
         {
-            HandleCollision(collision);
+            OnCollisionEnter(collision);
         }
 
-        private void HandleCollision(Collision collision)
+        /// <summary>
+        /// Chamado por filhos com colliders através de DamageChildCollider.
+        /// </summary>
+        public void OnChildTriggerEnter(Collider other)
         {
-            var other = collision.gameObject;
-            if (!IsTargetLayerValid(other.layer)) return;
+            HandleTriggerCollision(other);
+        }
 
-            var receiver = other.GetComponentInParent<IDamageReceiver>();
-            if (receiver == null) return;
+        private void HandleTriggerCollision(Collider other)
+        {
+            if (other == null) return;
+            var hitPoint = other.ClosestPoint(transform.position);
+            Vector3? normal = null;
 
-            var contact = collision.contacts.Length > 0 ? collision.contacts[0] : default;
-            var sourceActor = ResolveActor();
-            var ctx = new DamageContext(
-                sourceActor?.ActorId,
-                receiver.GetReceiverId(),
-                baseDamage,
-                targetResource,
-                damageType,
-                contact.point,
-                contact.normal
-            );
+            var direction = transform.position - hitPoint;
+            if (direction.sqrMagnitude > Mathf.Epsilon)
+            {
+                normal = direction.normalized;
+            }
 
-            DealDamage(receiver, ctx);
+            TryDealDamage(other.gameObject, hitPoint, normal);
         }
 
         private IActor ResolveActor()
@@ -80,6 +92,38 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             return null;
         }
+
+        public bool TryDealDamage(GameObject other, Vector3? hitPoint = null, Vector3? hitNormal = null)
+        {
+            if (other == null) return false;
+            if (!IsTargetLayerValid(other.layer)) return false;
+
+            if (lastProcessedFrame == Time.frameCount && lastProcessedTarget == other)
+                return false;
+
+            var receiver = other.GetComponentInParent<IDamageReceiver>();
+            if (receiver == null) return false;
+
+            var sourceActor = ResolveActor();
+            var ctx = new DamageContext(
+                sourceActor?.ActorId,
+                receiver.GetReceiverId(),
+                baseDamage,
+                targetResource,
+                damageType,
+                hitPoint,
+                hitNormal
+            );
+
+            DealDamage(receiver, ctx);
+
+            lastProcessedFrame = Time.frameCount;
+            lastProcessedTarget = other;
+
+            return true;
+        }
+
+
 
         public void DealDamage(IDamageReceiver target, DamageContext ctx)
         {
