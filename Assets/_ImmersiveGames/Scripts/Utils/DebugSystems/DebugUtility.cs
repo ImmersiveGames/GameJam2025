@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static bool _globalDebugEnabled = true;
         private static bool _verboseLoggingEnabled = true;
         private static bool _logFallbacks = true;
+        private static bool _repeatedCallVerboseEnabled = true;
         private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
             _logFallbacks = Application.isEditor;
+            _repeatedCallVerboseEnabled = true;
             _defaultDebugLevel = DebugLevel.Logs;
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
@@ -51,6 +53,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         public static void SetGlobalDebugState(bool enabled) => _globalDebugEnabled = enabled;
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
+        public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
         public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
@@ -190,7 +193,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             if (isRepeat)
             {
                 // ✅ REPETIÇÃO: registra como verbose colorido quando não houver deduplicação
-                if (!deduplicate)
+                if (!deduplicate && _repeatedCallVerboseEnabled)
                     LogRepeatedCallVerbose(type, message, frame);
                 return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite novo log após registrar verbose
             }
@@ -204,7 +207,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static void LogRepeatedCallVerbose(Type type, string message, int frame)
         {
             // Verbose respeita as configurações globais e por tipo
-            if (!_verboseLoggingEnabled) return;
+            if (!_verboseLoggingEnabled || !_repeatedCallVerboseEnabled) return;
             if (type != null && _disabledVerboseTypes.Contains(type)) return;
             if (!ShouldLog(type, null, DebugLevel.Verbose)) return;
 
