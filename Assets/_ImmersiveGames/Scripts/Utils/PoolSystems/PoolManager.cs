@@ -16,22 +16,22 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             DebugUtility.Log<PoolManager>("PoolManager initialized.", "cyan", this);
         }
 
-        public void RegisterPool(PoolData data)
+        public ObjectPool RegisterPool(PoolData data)
         {
             if (data == null || string.IsNullOrEmpty(data.ObjectName))
             {
                 DebugUtility.LogError<PoolManager>("PoolData is null or ObjectName is empty.", this);
-                return;
+                return null;
             }
 
-            if (_pools.ContainsKey(data.ObjectName))
+            if (_pools.TryGetValue(data.ObjectName, out var existingPool))
             {
-                DebugUtility.LogWarning<PoolManager>($"Pool '{data.ObjectName}' already registered.", this);
-                return;
+                DebugUtility.LogVerbose<PoolManager>($"Pool '{data.ObjectName}' já estava registrado. Reutilizando instância existente.", "yellow", this);
+                return existingPool;
             }
 
             var poolObject = new GameObject($"Pool_{data.ObjectName}");
-            poolObject.transform.SetParent(transform);
+            poolObject.transform.SetParent(transform, false);
             var pool = poolObject.AddComponent<ObjectPool>();
             pool.SetData(data);
             pool.Initialize();
@@ -39,10 +39,11 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 DebugUtility.LogError<PoolManager>($"Failed to initialize pool '{data.ObjectName}'. Check PoolData and prefab.", this);
                 Destroy(poolObject);
-                return;
+                return null;
             }
             _pools.Add(data.ObjectName, pool);
             DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registered successfully.", "green", this);
+            return pool;
         }
 
         public ObjectPool GetPool(string poolName)

@@ -51,8 +51,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            poolManager.RegisterPool(_explosionPoolData);
-            _pool = poolManager.GetPool(_explosionPoolData.ObjectName);
+            _pool = poolManager.RegisterPool(_explosionPoolData);
             _poolInitialized = _pool != null;
 
             if (!_poolInitialized)

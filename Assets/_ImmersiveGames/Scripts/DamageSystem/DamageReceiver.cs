@@ -51,10 +51,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
-            if (Application.isPlaying && spawnExplosionOnDeath)
-            {
-                _explosion.Initialize();
-            }
 
             EnsureStrategyConfiguration();
             BuildStrategy();
@@ -69,12 +65,16 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             BuildCommandPipeline();
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
+        }
+#endif
+
+        private void Start()
+        {
             if (Application.isPlaying && spawnExplosionOnDeath)
             {
                 _explosion.Initialize();
             }
         }
-#endif
 
         private void EnsureStrategyConfiguration()
         {
