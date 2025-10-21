@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [RequireComponent(typeof(PlayerInput)), DebugLevel(DebugLevel.Verbose)]
+    [RequireComponent(typeof(PlayerInput))]
     public class InputInteractComponent : MonoBehaviour
     {
         [Header("Input Config")]

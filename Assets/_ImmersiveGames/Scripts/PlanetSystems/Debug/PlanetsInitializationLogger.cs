@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
     /// <summary>
     /// Listener simples que apenas registra o término da geração inicial de planetas.
     /// </summary>
-    [DefaultExecutionOrder(-79), DebugLevel(DebugLevel.Logs)]
+    [DefaultExecutionOrder(-79)]
     public class PlanetsInitializationLogger : MonoBehaviour
     {
         private EventBinding<PlanetsInitializationCompletedEvent> _initializationBinding;

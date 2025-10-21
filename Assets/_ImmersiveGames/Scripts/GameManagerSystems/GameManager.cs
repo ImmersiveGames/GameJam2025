@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -13,7 +13,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
-    [DefaultExecutionOrder(-101), DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-101)]
     public sealed class GameManager : Singleton<GameManager>, IGameManager
     {
         [SerializeField] private GameConfig gameConfig;
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         protected override void Awake()
         {
             base.Awake();
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
