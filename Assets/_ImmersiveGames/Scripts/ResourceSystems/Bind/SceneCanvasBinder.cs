@@ -16,7 +16,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             if (registerInPipeline && CanvasPipelineManager.HasInstance)
             {
                 CanvasPipelineManager.Instance.RegisterCanvas(this);
-                DebugUtility.LogVerbose<SceneCanvasBinder>($"✅ Scene Canvas '{CanvasId}' registered in pipeline");
+                DebugUtility.Log<SceneCanvasBinder>(
+                    $"✅ Scene Canvas '{CanvasId}' registered in pipeline",
+                    DebugUtility.Colors.Success);
             }
         }
     }

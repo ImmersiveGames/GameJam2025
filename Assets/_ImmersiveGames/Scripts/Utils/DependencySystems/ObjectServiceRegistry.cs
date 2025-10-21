@@ -34,7 +34,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             services[type] = service;
-            DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Serviço {type.Name} registrado para o ID {key}.", "green");
+            DebugUtility.Log(
+                typeof(ObjectServiceRegistry),
+                $"Serviço {type.Name} registrado para o ID {key}.",
+                DebugUtility.Colors.Success);
         }
 
         public override bool TryGet<T>(string key, out T service)
@@ -54,7 +57,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     if (targetType.IsAssignableFrom(kvp.Key))
                     {
                         service = (T)kvp.Value;
-                        DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Serviço {targetType.Name} encontrado para o ID {key} (tipo registrado: {kvp.Key.Name}).", "cyan");
+                        DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Serviço {targetType.Name} encontrado para o ID {key} (tipo registrado: {kvp.Key.Name}).");
                         return true;
                     }
                 }
@@ -79,9 +82,12 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 int count = services.Count;
                 _objectServices.Remove(key);
                 ReturnDictionaryToPool(services);
-                DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Removidos {count} serviços para o ID {key}.", "yellow");
+                DebugUtility.Log(
+                    typeof(ObjectServiceRegistry),
+                    $"Removidos {count} serviços para o ID {key}.",
+                    DebugUtility.Colors.Success);
             }
-            DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Removidos serviços para o ID {key}.", "yellow");
+            DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Removidos serviços para o ID {key}.");
         }
 
         public override void ClearAll()
@@ -93,7 +99,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 ReturnDictionaryToPool(services);
             }
             _objectServices.Clear();
-            DebugUtility.LogVerbose(typeof(ObjectServiceRegistry), $"Removidos {totalCount} serviços de todos os objetos.", "yellow");
+            DebugUtility.Log(
+                typeof(ObjectServiceRegistry),
+                $"Removidos {totalCount} serviços de todos os objetos.",
+                DebugUtility.Colors.Success);
         }
 
         public override List<Type> ListServices(string key)

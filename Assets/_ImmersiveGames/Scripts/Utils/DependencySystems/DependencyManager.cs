@@ -30,7 +30,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             _globalRegistry = new();
             _injector = new(_objectRegistry, _sceneRegistry, _globalRegistry);
 
-            DebugUtility.LogVerbose(typeof(DependencyManager), $"DependencyManager inicializado ({gameObject.scene.name}).", "yellow");
+            DebugUtility.Log(
+                typeof(DependencyManager),
+                $"DependencyManager inicializado ({gameObject.scene.name}).",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         public void RegisterGlobal<T>(T service) where T : class => _globalRegistry.Register(null, service);
@@ -57,7 +60,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 _sceneRegistry.TryGet(SceneManager.GetActiveScene().name, out service) ||
                 (objectId == null && _globalRegistry.TryGet(null, out service)))
             {
-                DebugUtility.LogVerbose(typeof(DependencyManager), $"Serviço {typeof(T).Name} encontrado.", "cyan");
+                DebugUtility.LogVerbose(typeof(DependencyManager), $"Serviço {typeof(T).Name} encontrado.");
                 return true;
             }
             return false;
@@ -73,7 +76,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 if (_objectRegistry.TryGet(objectId, out T service))
                     services.Add(service);
             }
-            DebugUtility.LogVerbose(typeof(DependencyManager), $"Recuperados {services.Count} serviços do tipo {typeof(T).Name}.", "cyan");
+            DebugUtility.LogVerbose(typeof(DependencyManager), $"Recuperados {services.Count} serviços do tipo {typeof(T).Name}.");
         }
 
         public void InjectDependencies(object target, string objectId = null)
@@ -99,7 +102,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             ClearAllSceneServices();
             ClearGlobalServices();
             StopAllCoroutines();
-            DebugUtility.LogVerbose(typeof(DependencyManager), "DependencyManager destruído e serviços limpos.", "yellow");
+            DebugUtility.Log(
+                typeof(DependencyManager),
+                "DependencyManager destruído e serviços limpos.",
+                DebugUtility.Colors.Success);
         }
 
         private void OnApplicationQuit()
@@ -108,7 +114,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             ClearAllObjectServices();
             ClearAllSceneServices();
             ClearGlobalServices();
-            DebugUtility.LogVerbose(typeof(DependencyManager), "Serviços limpos no fechamento do jogo.", "yellow");
+            DebugUtility.Log(
+                typeof(DependencyManager),
+                "Serviços limpos no fechamento do jogo.",
+                DebugUtility.Colors.Success);
         }
     }
 }

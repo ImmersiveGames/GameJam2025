@@ -23,7 +23,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
-            DebugUtility.LogVerbose<ResourceInitializationManager>("✅ Initialization Manager Ready");
+            DebugUtility.Log<ResourceInitializationManager>(
+                "✅ Initialization Manager Ready",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         /// <summary>
@@ -60,7 +62,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.LogVerbose<ResourceInitializationManager>($"✅ Dependencies injected for {component.GetType().Name} ({objectId})");
+                DebugUtility.Log<ResourceInitializationManager>(
+                    $"✅ Dependências injetadas para {component.GetType().Name} ({objectId})",
+                    DebugUtility.Colors.Success);
             }
             catch (Exception)
             {
@@ -99,7 +103,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.LogVerbose<ResourceInitializationManager>($"✅ (Retry) Dependencies injected for {component.GetType().Name} ({objectId}) on attempt {attemptIndex}");
+                DebugUtility.Log<ResourceInitializationManager>(
+                    $"✅ (Retry) Dependências injetadas para {component.GetType().Name} ({objectId}) on attempt {attemptIndex}",
+                    DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {

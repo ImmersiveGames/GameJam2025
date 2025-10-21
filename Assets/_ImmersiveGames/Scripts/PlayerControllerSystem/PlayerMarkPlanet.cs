@@ -50,7 +50,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             if (PlanetsManager.Instance.IsMarkedPlanet(planet))
             {
                 EventBus<PlanetUnmarkedEvent>.Raise(new PlanetUnmarkedEvent(planet));
-                DebugUtility.LogVerbose<PlayerMarkPlanet>($"Planeta desmarcado: {planet.ActorName}", "yellow", this);
+                DebugUtility.LogVerbose<PlayerMarkPlanet>(
+                    $"Planeta desmarcado: {planet.ActorName}",
+                    context: this);
                 return;
             }
             EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet))*/;

@@ -60,7 +60,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             IsInitialized = true;
-            DebugUtility.LogVerbose<AudioManager>("AudioManager (BGM) inicializado", "green");
+            DebugUtility.Log<AudioManager>(
+                "AudioManager (BGM) inicializado",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         #region BGM
@@ -96,7 +98,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _currentBgm = bgmData;
-            DebugUtility.LogVerbose<AudioManager>($"BGM iniciado: {bgmData.clip?.name} (targetVolume={targetVolume:F3})", "cyan");
+            DebugUtility.Log<AudioManager>(
+                $"BGM iniciado: {bgmData.clip?.name} (targetVolume={targetVolume:F3})",
+                DebugUtility.Colors.Success);
         }
 
         public void StopBGM(float fadeOutDuration = 0f)
@@ -111,12 +115,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 bgmAudioSource.Stop();
 
             _currentBgm = null;
-            DebugUtility.LogVerbose<AudioManager>("BGM parado", "yellow");
+            DebugUtility.Log<AudioManager>(
+                "BGM parado",
+                DebugUtility.Colors.Success);
         }
         public void StopBGMImmediate()
         {
             bgmAudioSource.Stop();
-            DebugUtility.LogVerbose<AudioManager>("BGM parado", "yellow");
+            DebugUtility.Log<AudioManager>(
+                "BGM parado",
+                DebugUtility.Colors.Success);
         }
 
         public void PauseBGM() { if (bgmAudioSource != null && bgmAudioSource.isPlaying) bgmAudioSource.Pause(); }

@@ -180,7 +180,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             var poolable = instance.GetComponent<IPoolable>();
             poolable.Configure(config, this, spawner);
 
-            DebugUtility.LogVerbose<ObjectPool>($"Created pooled object '{instance.name}' with config '{config.ObjectName}'.", "cyan", this);
+            DebugUtility.LogVerbose<ObjectPool>(
+                $"Created pooled object '{instance.name}' with config '{config.ObjectName}'.",
+                context: this);
 
             return poolable;
         }

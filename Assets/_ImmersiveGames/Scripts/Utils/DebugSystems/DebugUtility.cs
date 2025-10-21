@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static bool _globalDebugEnabled = true;
         private static bool _verboseLoggingEnabled = true;
         private static bool _logFallbacks = true;
+        private static bool _repeatedCallVerboseEnabled = true;
         private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
@@ -27,6 +28,14 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
+        private const string RepeatedCallColor = "#FFD54F";
+        private const string AlertIcon = "⚠️";
+
+        public static class Colors
+        {
+            public const string CrucialInfo = "#00BCD4";
+            public const string Success = "#4CAF50";
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
@@ -34,6 +43,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
             _logFallbacks = Application.isEditor;
+            _repeatedCallVerboseEnabled = true;
             _defaultDebugLevel = DebugLevel.Logs;
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
@@ -49,6 +59,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         public static void SetGlobalDebugState(bool enabled) => _globalDebugEnabled = enabled;
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
+        public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
         public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
@@ -187,12 +198,10 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
     
             if (isRepeat)
             {
-                // ✅ REPETIÇÃO: mostra warning se não for para deduplicar
-                if (!deduplicate)
-                {
-                    Debug.LogWarning($"[DebugUtility] Chamada repetida no frame {frame}: [{type.Name}] {message}");
-                }
-                return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite com warning
+                // ✅ REPETIÇÃO: registra como verbose colorido quando não houver deduplicação
+                if (!deduplicate && _repeatedCallVerboseEnabled)
+                    LogRepeatedCallVerbose(type, message, frame);
+                return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite novo log após registrar verbose
             }
 
             // ✅ PRIMEIRA VEZ: adiciona ao tracker
@@ -200,7 +209,26 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _callTracker.Add(trackerKey);
             return true;
         }
+
+        private static void LogRepeatedCallVerbose(Type type, string message, int frame)
+        {
+            // Verbose respeita as configurações globais e por tipo
+            if (!_verboseLoggingEnabled || !_repeatedCallVerboseEnabled) return;
+            if (type != null && _disabledVerboseTypes.Contains(type)) return;
+            if (!ShouldLog(type, null, DebugLevel.Verbose)) return;
+
+            _stringBuilder.Clear();
+            _stringBuilder.Append("[DebugUtility] ")
+                          .Append(AlertIcon)
+                          .Append(" Chamada repetida no frame ")
+                          .Append(frame)
+                          .Append(": [")
+                          .Append(type?.Name ?? nameof(DebugUtility))
+                          .Append("] ")
+                          .Append(message);
+
+            Debug.Log(ApplyColor(_stringBuilder.ToString(), RepeatedCallColor));
+        }
         #endregion
     }
-    
 }

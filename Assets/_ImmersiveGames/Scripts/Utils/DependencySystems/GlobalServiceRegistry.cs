@@ -23,7 +23,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             _services[type] = service;
-            DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Serviço {type.Name} registrado no escopo global.", "green");
+            DebugUtility.Log(
+                typeof(GlobalServiceRegistry),
+                $"Serviço {type.Name} registrado no escopo global.",
+                DebugUtility.Colors.Success);
         }
         public IEnumerable<T> GetAll<T>() where T : class
         {
@@ -43,7 +46,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 if (targetType.IsAssignableFrom(kvp.Key))
                 {
                     service = (T)kvp.Value;
-                    DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Serviço {targetType.Name} encontrado no escopo global (tipo registrado: {kvp.Key.Name}).", "cyan");
+                    DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Serviço {targetType.Name} encontrado no escopo global (tipo registrado: {kvp.Key.Name}).");
                     return true;
                 }
             }
@@ -54,7 +57,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             int count = _services.Count;
             _services.Clear();
-            DebugUtility.LogVerbose(typeof(GlobalServiceRegistry), $"Removidos {count} serviços do escopo global.", "yellow");
+            DebugUtility.Log(
+                typeof(GlobalServiceRegistry),
+                $"Removidos {count} serviços do escopo global.",
+                DebugUtility.Colors.Success);
         }
 
         public override void ClearAll()

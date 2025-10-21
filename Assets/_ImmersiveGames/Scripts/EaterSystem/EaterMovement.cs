@@ -93,11 +93,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (IsOrbiting)
             {
                 _eater.OnEventStartEatPlanet(obj.Detected);
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {_target.Detectable.Transform} está na área do EaterEatSensor, ativando órbita.", "green");
+                DebugUtility.LogVerbose<EaterMovement>(
+                    $"Planeta marcado: {_target.Detectable.Transform} está na área do EaterEatSensor, ativando órbita.");
             }
             else
             {
-                DebugUtility.LogVerbose<EaterMovement>($"Planeta marcado: {_target.Detectable.Transform}, fora da área do EaterEatSensor.", "yellow");
+                DebugUtility.LogVerbose<EaterMovement>(
+                    $"Planeta marcado: {_target.Detectable.Transform}, fora da área do EaterEatSensor.");
             }
             // Forçar verificação imediata da máquina de estados
             _stateMachine.Update();

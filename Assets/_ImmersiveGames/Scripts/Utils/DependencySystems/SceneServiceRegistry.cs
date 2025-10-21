@@ -63,7 +63,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             services[type] = service;
-            DebugUtility.LogVerbose(typeof(SceneServiceRegistry), $"Serviço {type.Name} registrado para a cena {key}.", "green");
+            DebugUtility.Log(
+                typeof(SceneServiceRegistry),
+                $"Serviço {type.Name} registrado para a cena {key}.",
+                DebugUtility.Colors.Success);
         }
 
         public override bool TryGet<T>(string key, out T service)
@@ -83,7 +86,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     if (targetType.IsAssignableFrom(kvp.Key))
                     {
                         service = (T)kvp.Value;
-                        DebugUtility.LogVerbose(typeof(SceneServiceRegistry), $"Serviço {targetType.Name} encontrado para a cena {key} (tipo registrado: {kvp.Key.Name}).", "cyan");
+                        DebugUtility.LogVerbose(typeof(SceneServiceRegistry), $"Serviço {targetType.Name} encontrado para a cena {key} (tipo registrado: {kvp.Key.Name}).");
                         return true;
                     }
                 }
@@ -115,7 +118,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 int count = services.Count;
                 _sceneServices.Remove(key);
                 ReturnDictionaryToPool(services);
-                DebugUtility.LogVerbose(typeof(SceneServiceRegistry), $"Removidos {count} serviços para a cena {key}.", "yellow");
+                DebugUtility.Log(
+                    typeof(SceneServiceRegistry),
+                    $"Removidos {count} serviços para a cena {key}.",
+                    DebugUtility.Colors.Success);
                 OnSceneServicesCleared?.Invoke(key);
             }
         }
@@ -129,7 +135,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 ReturnDictionaryToPool(services);
             }
             _sceneServices.Clear();
-            DebugUtility.LogVerbose(typeof(SceneServiceRegistry), $"Removidos {totalCount} serviços de todas as cenas.", "yellow");
+            DebugUtility.Log(
+                typeof(SceneServiceRegistry),
+                $"Removidos {totalCount} serviços de todas as cenas.",
+                DebugUtility.Colors.Success);
             OnSceneServicesCleared?.Invoke(null);
         }
 

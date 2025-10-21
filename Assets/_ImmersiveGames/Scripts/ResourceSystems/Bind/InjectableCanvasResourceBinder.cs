@@ -70,7 +70,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 State = CanvasInitializationState.Ready;
                 InjectionState = DependencyInjectionState.Ready;
 
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"✅ Canvas '{CanvasId}' Ready ({Type})");
+                DebugUtility.Log<InjectableCanvasResourceBinder>(
+                    $"✅ Canvas '{CanvasId}' Ready ({Type})",
+                    DebugUtility.Colors.CrucialInfo);
             }
             catch (Exception ex)
             {

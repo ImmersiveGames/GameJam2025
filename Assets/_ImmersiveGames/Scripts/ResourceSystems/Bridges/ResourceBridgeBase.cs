@@ -55,7 +55,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _initialized = true;
-            DebugUtility.LogVerbose<ResourceBridgeBase>($"✅ Bridge inicializado para {actor.ActorId}");
+            DebugUtility.Log<ResourceBridgeBase>(
+                $"✅ Bridge inicializado para {actor.ActorId}",
+                DebugUtility.Colors.CrucialInfo);
             OnServiceInitialized();
         }
 

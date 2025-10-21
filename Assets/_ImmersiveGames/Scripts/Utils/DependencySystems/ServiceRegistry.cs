@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             if (_dictionaryPool.Count > 0)
             {
-                DebugUtility.LogVerbose(typeof(ServiceRegistry), "Dicionário obtido do pool para serviços.", "yellow");
+                DebugUtility.LogVerbose(typeof(ServiceRegistry), "Dicionário obtido do pool para serviços.");
                 return _dictionaryPool.Pop();
             }
             return new Dictionary<Type, object>();
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             dictionary.Clear();
             _dictionaryPool.Push(dictionary);
-            DebugUtility.LogVerbose(typeof(ServiceRegistry), $"Dicionário retornado ao pool. Tamanho do pool: {_dictionaryPool.Count}.", "yellow");
+            DebugUtility.LogVerbose(typeof(ServiceRegistry), $"Dicionário retornado ao pool. Tamanho do pool: {_dictionaryPool.Count}.");
         }
 
         protected bool ValidateService(Type type, object service, string method, string key)

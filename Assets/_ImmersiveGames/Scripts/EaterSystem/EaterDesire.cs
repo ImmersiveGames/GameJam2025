@@ -69,7 +69,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 case false when _config.DesireThreshold > info.CurrentValue: {
                     if (_eater.InHungry) return;
                     _eater.InHungry = true;
-                    DebugUtility.Log<EaterDesire>($"{dir} limiar {info.Threshold:P0} → {info.CurrentValue:P1}, Posso ter um desejo", "cyan");
+                    DebugUtility.Log<EaterDesire>($"{dir} limiar {info.Threshold:P0} → {info.CurrentValue:P1}, Posso ter um desejo", DebugUtility.Colors.CrucialInfo);
                     break;
                 }
             }

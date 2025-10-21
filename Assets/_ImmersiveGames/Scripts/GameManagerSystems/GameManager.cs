@@ -110,7 +110,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _resetRequestedBinding = new EventBinding<GameResetRequestedEvent>(OnResetRequested);
             EventBus<GameResetRequestedEvent>.Register(_resetRequestedBinding);
 
-            DebugUtility.LogVerbose<GameManager>("GameManager inicializado.");
+            DebugUtility.Log<GameManager>(
+                "GameManager inicializado.",
+                DebugUtility.Colors.CrucialInfo);
         }
         
 

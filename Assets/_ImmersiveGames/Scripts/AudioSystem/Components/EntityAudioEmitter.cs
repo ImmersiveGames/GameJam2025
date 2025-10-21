@@ -46,8 +46,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             {
                 DebugUtility.LogVerbose<EntityAudioEmitter>(
                     $"{name} sem pool configurado — utilizando fontes temporárias para SFX locais.",
-                    "yellow",
-                    this);
+                    context: this);
             }
         }
 
@@ -61,9 +60,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             pool.SetData(poolData);
             pool.Initialize();
             _localPool = pool;
-            DebugUtility.LogVerbose<EntityAudioEmitter>(
+            DebugUtility.Log<EntityAudioEmitter>(
                 $"Pool local '{poolData.ObjectName}' criado para {name}",
-                "cyan",
+                DebugUtility.Colors.Success,
                 this);
         }
 
@@ -120,8 +119,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             DebugUtility.LogVerbose<EntityAudioEmitter>(
                 $"[SFX Pool] {soundData.clip?.name} finalVol={finalVol:F3} mult={multiplier:F3} (DataVol={soundData.volume:F2})",
-                "cyan",
-                this);
+                context: this);
 
             if (soundData.randomPitch)
                 emitter.WithRandomPitch(-soundData.pitchVariation, soundData.pitchVariation);

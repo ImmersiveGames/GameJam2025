@@ -13,7 +13,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         protected override void Awake()
         {
             base.Awake();
-            DebugUtility.Log<PoolManager>("PoolManager initialized.", "cyan", this);
+            DebugUtility.Log<PoolManager>(
+                "PoolManager initialized.",
+                DebugUtility.Colors.CrucialInfo,
+                this);
         }
 
         public void RegisterPool(PoolData data)
@@ -42,14 +45,19 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
             _pools.Add(data.ObjectName, pool);
-            DebugUtility.Log<PoolManager>($"Pool '{data.ObjectName}' registered successfully.", "green", this);
+            DebugUtility.Log<PoolManager>(
+                $"Pool '{data.ObjectName}' registered successfully.",
+                DebugUtility.Colors.Success,
+                this);
         }
 
         public ObjectPool GetPool(string poolName)
         {
             if (_pools.TryGetValue(poolName, out var pool))
             {
-                DebugUtility.LogVerbose<PoolManager>($"Pool '{poolName}' found.", "green", this);
+                DebugUtility.LogVerbose<PoolManager>(
+                    $"Pool '{poolName}' found.",
+                    context: this);
                 return pool;
             }
 
@@ -68,7 +76,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 }
             }
             _pools.Clear();
-            DebugUtility.Log<PoolManager>("All pools cleared.", "cyan", this);
+            DebugUtility.Log<PoolManager>(
+                "All pools cleared.",
+                DebugUtility.Colors.Success,
+                this);
         }
     }
 }

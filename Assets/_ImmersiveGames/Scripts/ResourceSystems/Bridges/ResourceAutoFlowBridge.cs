@@ -27,7 +27,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _autoFlow = new ResourceAutoFlowService(resourceSystem, startPaused);
-            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"🚀 AutoFlow inicializado para {actor.ActorId}");
+            DebugUtility.Log<ResourceAutoFlowBridge>(
+                $"🚀 AutoFlow inicializado para {actor.ActorId}",
+                DebugUtility.Colors.Success);
 
             if (!startPaused) _autoFlow.Resume();
         }

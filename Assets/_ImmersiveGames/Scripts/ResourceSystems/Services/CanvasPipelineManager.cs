@@ -26,7 +26,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             base.InitializeSingleton();
             ResourceInitializationManager.Instance.RegisterForInjection(this);
-            DebugUtility.LogVerbose<CanvasPipelineManager>("✅ Canvas Pipeline Manager initialized");
+            DebugUtility.Log<CanvasPipelineManager>(
+                "✅ Canvas Pipeline Manager initialized",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         public void OnDependenciesInjected()
@@ -40,7 +42,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _canvasRegisteredBinding = new EventBinding<ResourceEventHub.CanvasRegisteredEvent>(OnCanvasRegisteredHandler);
             EventBus<ResourceEventHub.CanvasRegisteredEvent>.Register(_canvasRegisteredBinding);
 
-            DebugUtility.LogVerbose<CanvasPipelineManager>("✅ Dependencies injected and event bindings registered");
+            DebugUtility.Log<CanvasPipelineManager>(
+                "✅ Dependencies injected and event bindings registered",
+                DebugUtility.Colors.Success);
         }
 
         protected void OnDestroy()
@@ -70,7 +74,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             // Notificar o hub para reemitir binds pendentes
             ResourceEventHub.NotifyCanvasRegistered(canvas.CanvasId);
 
-            DebugUtility.LogVerbose<CanvasPipelineManager>($"✅ Canvas '{canvas.CanvasId}' registrado no pipeline");
+            DebugUtility.Log<CanvasPipelineManager>(
+                $"✅ Canvas '{canvas.CanvasId}' registrado no pipeline",
+                DebugUtility.Colors.Success);
         }
 
         /// <summary>
@@ -83,7 +89,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             if (_canvasRegistry.Remove(canvasId))
             {
                 ResourceEventHub.NotifyCanvasUnregistered(canvasId);
-                DebugUtility.LogVerbose<CanvasPipelineManager>($"Canvas '{canvasId}' removido do pipeline");
+                DebugUtility.Log<CanvasPipelineManager>(
+                    $"Canvas '{canvasId}' removido do pipeline",
+                    DebugUtility.Colors.Success);
             }
         }
 

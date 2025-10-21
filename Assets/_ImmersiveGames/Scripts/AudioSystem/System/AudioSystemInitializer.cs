@@ -20,7 +20,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (DependencyManager.Instance != null && !DependencyManager.Instance.TryGetGlobal<IAudioMathService>(out _))
             {
                 DependencyManager.Instance.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
-                DebugUtility.LogVerbose(typeof(AudioSystemInitializer), "AudioMathUtility registrado no DI", "green");
+                DebugUtility.Log(
+                    typeof(AudioSystemInitializer),
+                    "AudioMathUtility registrado no DI",
+                    DebugUtility.Colors.CrucialInfo);
             }
 
             if (IsInitialized()) return;
@@ -47,7 +50,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _cachedAudioManager = Object.Instantiate(audioManagerPrefab);
-            DebugUtility.LogVerbose(typeof(AudioSystemInitializer), "AudioManager criado a partir de Resources", "green");
+            DebugUtility.Log(
+                typeof(AudioSystemInitializer),
+                "AudioManager criado a partir de Resources",
+                DebugUtility.Colors.Success);
         }
 
         public static bool IsInitialized() => DependencyManager.Instance?.TryGetGlobal<IAudioService>(out _) ?? false;

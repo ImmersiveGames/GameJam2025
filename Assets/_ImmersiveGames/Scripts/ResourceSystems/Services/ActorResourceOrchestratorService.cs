@@ -52,7 +52,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            DebugUtility.LogVerbose<ActorResourceOrchestratorService>("✅ Orchestrator Service fully initialized with dependencies");
+            DebugUtility.Log<ActorResourceOrchestratorService>(
+                "✅ Orchestrator Service fully initialized with dependencies",
+                DebugUtility.Colors.CrucialInfo);
 
             // Se já existirem Canvas Binders na cena, registrar automaticamente.
             var existingBinders = UnityEngine.Object.FindObjectsByType<InjectableCanvasResourceBinder>(
@@ -159,7 +161,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 return;
             }
 
-            DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"✅ Canvas '{canvas.CanvasId}' registered");
+            DebugUtility.Log<ActorResourceOrchestratorService>(
+                $"✅ Canvas '{canvas.CanvasId}' registered",
+                DebugUtility.Colors.Success);
 
             ProcessPendingFirstUpdatesForCanvas(canvas.CanvasId);
         }
