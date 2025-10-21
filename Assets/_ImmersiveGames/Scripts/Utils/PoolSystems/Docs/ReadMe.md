@@ -52,7 +52,7 @@ IPoolable (contrato)
 
 ## 🔁 Fluxo de Execução
 
-1. **Registro** — `PoolManager.RegisterPool(poolData)` cria um `GameObject` com `ObjectPool`, injeta `PoolData` e chama `Initialize()`.
+1. **Registro** — `PoolManager.RegisterPool(poolData)` cria (ou reutiliza) um `ObjectPool` como filho do manager, injeta `PoolData`, chama `Initialize()` e retorna a instância pronta para uso.
 2. **Inicialização** — `ObjectPool.Initialize()` instância `InitialPoolSize` objetos (`CreatePoolable`).
 3. **Aquisição** — `GetObject(position, spawner, direction)` retorna `IPoolable` preparado (`PoolableReset`) e opcionalmente ativa.
 4. **Ativação** — `ActivatePoolable` chama `IPoolable.Activate`, adiciona à lista de ativos e dispara `OnObjectActivated`.
@@ -81,16 +81,17 @@ IPoolable (contrato)
    ```csharp
    [SerializeField] private PoolData enemyPool;
 
-   private void Awake()
+   private ObjectPool _enemyPool;
+
+   private void Start()
    {
-       PoolManager.Instance.RegisterPool(enemyPool);
+       _enemyPool = PoolManager.Instance.RegisterPool(enemyPool);
    }
    ```
 
 3. **Consumir o Pool**
    ```csharp
-   var pool = PoolManager.Instance.GetPool(enemyPool.ObjectName);
-   var enemy = pool.GetObject(spawnPoint, spawner: _actor);
+   var enemy = _enemyPool.GetObject(spawnPoint, spawner: _actor);
    ```
 
 4. **Devolver ao Pool**

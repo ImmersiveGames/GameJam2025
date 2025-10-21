@@ -37,6 +37,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         private float _lastShotTime = -Mathf.Infinity;
         private IActor _actor;
         private EntityAudioEmitter _audioEmitter;
+        private bool _isInitialized;
         [Header("Audio Config")]
         [SerializeField] private SoundData defaultShootSound;
 
@@ -47,54 +48,136 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
             _audioEmitter = GetComponent<EntityAudioEmitter>();
-            
+
             DependencyManager.Instance.InjectDependencies(this);
+        }
 
-            if (_playerInput == null)
+        private void OnEnable()
+        {
+            if (_isInitialized)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"PlayerInput não encontrado em '{name}'.", this);
+                SubscribeToSpawnAction();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_spawnAction != null)
+            {
+                _spawnAction.performed -= OnSpawnPerformed;
+            }
+        }
+
+        private void Start()
+        {
+            if (!ValidateConfiguration())
+            {
                 enabled = false;
                 return;
             }
 
-            if (poolData == null)
+            InitializeStrategies();
+
+            if (!TryInitializePool())
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"PoolData não configurado em '{name}'.", this);
                 enabled = false;
                 return;
             }
 
-            PoolManager.Instance.RegisterPool(poolData);
-            _pool = PoolManager.Instance.GetPool(poolData.ObjectName);
-
-            if (_pool == null)
+            if (!TryBindInputAction())
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.", this);
                 enabled = false;
                 return;
             }
 
-            singleStrategy ??= new SingleSpawnStrategy();
-            multipleLinearStrategy ??= new MultipleLinearSpawnStrategy();
-            circularStrategy ??= new CircularSpawnStrategy();
-
-            SetStrategy(strategyType);
-
-            _spawnAction = _playerInput.actions.FindAction(actionName);
-            if (_spawnAction == null)
-            {
-                DebugUtility.LogError<InputSpawnerComponent>($"Ação '{actionName}' não encontrada em '{name}'.", this);
-                enabled = false;
-                return;
-            }
-
-            _spawnAction.performed += OnSpawnPerformed;
-            DebugUtility.Log<InputSpawnerComponent>($"InputSpawnerComponent inicializado", "blue");
+            _isInitialized = true;
+            SubscribeToSpawnAction();
+            DebugUtility.Log<InputSpawnerComponent>("InputSpawnerComponent inicializado", "blue", this);
         }
 
         private void OnDestroy()
         {
             if (_spawnAction != null) _spawnAction.performed -= OnSpawnPerformed;
+        }
+
+        private bool ValidateConfiguration()
+        {
+            if (_playerInput == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"PlayerInput não encontrado em '{name}'.", this);
+                return false;
+            }
+
+            if (_actor == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"IActor não encontrado em '{name}'.", this);
+                return false;
+            }
+
+            if (poolData == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"PoolData não configurado em '{name}'.", this);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void InitializeStrategies()
+        {
+            singleStrategy ??= new SingleSpawnStrategy();
+            multipleLinearStrategy ??= new MultipleLinearSpawnStrategy();
+            circularStrategy ??= new CircularSpawnStrategy();
+
+            SetStrategy(strategyType);
+        }
+
+        private bool TryInitializePool()
+        {
+            var manager = PoolManager.Instance;
+            if (manager == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>("PoolManager não encontrado na cena.", this);
+                return false;
+            }
+
+            _pool = manager.RegisterPool(poolData);
+            if (_pool == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.", this);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryBindInputAction()
+        {
+            if (_playerInput.actions == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"Mapa de ações não encontrado em '{name}'.", this);
+                return false;
+            }
+
+            _spawnAction = _playerInput.actions.FindAction(actionName);
+            if (_spawnAction == null)
+            {
+                DebugUtility.LogError<InputSpawnerComponent>($"Ação '{actionName}' não encontrada em '{name}'.", this);
+                return false;
+            }
+
+            return true;
+        }
+
+        private void SubscribeToSpawnAction()
+        {
+            if (_spawnAction == null)
+            {
+                return;
+            }
+
+            _spawnAction.performed -= OnSpawnPerformed;
+            _spawnAction.performed += OnSpawnPerformed;
         }
 
         private void OnSpawnPerformed(InputAction.CallbackContext context)
