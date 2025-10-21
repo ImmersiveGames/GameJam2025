@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
     {
         private EaterAnimationConfig EaterAnimationConfig => animationConfig as EaterAnimationConfig;

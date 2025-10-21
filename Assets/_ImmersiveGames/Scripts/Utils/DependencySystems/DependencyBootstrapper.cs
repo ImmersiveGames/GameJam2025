@@ -11,7 +11,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    
     public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private static bool _initialized;
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             if (_initialized) return;
             _initialized = true;
 
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
 
             // Garantir criação do DependencyManager
             if (!DependencyManager.HasInstance)

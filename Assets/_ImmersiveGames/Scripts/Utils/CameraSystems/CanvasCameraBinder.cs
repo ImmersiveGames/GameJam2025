@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 {
     [RequireComponent(typeof(Canvas))]
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 
             if (Camera.main == null)
             {
-                Debug.LogWarning($"[{name}] Nenhuma câmera com tag 'MainCamera' foi encontrada.");
+                DebugUtility.LogWarning<CanvasCameraBinder>($"[{name}] Nenhuma câmera com tag 'MainCamera' foi encontrada.");
                 return;
             }
 

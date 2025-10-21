@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 {
-    public class AnimationBootstrapper
+    public abstract class AnimationBootstrapper
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()

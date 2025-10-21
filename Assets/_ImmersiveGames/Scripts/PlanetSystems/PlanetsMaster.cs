@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DebugLevel(DebugLevel.Logs)]
+    
     public sealed class PlanetsMaster : ActorMaster, IPlanetActor
     {
         private PlanetResourcesSo _resourceData;

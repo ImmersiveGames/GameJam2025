@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         }
     }
 
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class ResourceAutoFlowService : IDisposable
     {
         private readonly ResourceSystem _resourceSystem;

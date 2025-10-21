@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class PlayerMarkPlanet : MonoBehaviour
     {
         private PlayerInput _playerInput;

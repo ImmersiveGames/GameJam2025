@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class DetectorService
     {
         private readonly List<Sensor> _sensors = new();

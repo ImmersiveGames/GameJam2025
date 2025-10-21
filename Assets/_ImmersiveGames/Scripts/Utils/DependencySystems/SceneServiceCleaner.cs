@@ -2,7 +2,7 @@
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.Error)]
+    
     public class SceneServiceCleaner
     {
         private readonly SceneServiceRegistry _sceneRegistry;

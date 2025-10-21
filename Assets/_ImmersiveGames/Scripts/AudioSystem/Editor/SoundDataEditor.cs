@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEditor;
 using UnityEngine;
 
@@ -37,7 +38,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
 
                     if (data?.clip == null)
                     {
-                        Debug.LogWarning("Nenhum clip configurado no SoundData para teste.");
+                        DebugUtility.LogWarning<SoundDataEditor>("Nenhum clip configurado no SoundData para teste.");
                         return;
                     }
 
@@ -72,7 +73,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
 
             EditorApplication.update += EditorUpdate;
 
-            Debug.Log($"Preview iniciado: {data.clip.name} (Vol: {source.volume:F2}, Pitch: {source.pitch:F2}, SpatialBlend: {source.spatialBlend:F2})");
+            DebugUtility.LogVerbose<SoundDataEditor>($"Preview iniciado: {data.clip.name} (Vol: {source.volume:F2}, Pitch: {source.pitch:F2}, SpatialBlend: {source.spatialBlend:F2})");
         }
 
         private static void StopPreview()

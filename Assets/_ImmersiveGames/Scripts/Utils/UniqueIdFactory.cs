@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.Utils
         string GenerateId(GameObject owner, string prefix = null);
         int GetInstanceCount(string actorName);
     }
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class UniqueIdFactory : IUniqueIdFactory
     {
         private readonly Dictionary<string, int> _instanceCounts = new Dictionary<string, int>();

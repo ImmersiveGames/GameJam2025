@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner == null)
             {
-                Debug.LogError($"SkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogError<SkinController>($"SkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
             }
         }
 
@@ -99,11 +100,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 DependencyManager.Instance.RegisterForObject(_objectId, this);
                 _isRegistered = true;
                 
-                Debug.Log($"SkinController registered in DependencyManager with ID: {_objectId}");
+                DebugUtility.LogVerbose<SkinController>($"SkinController registered in DependencyManager with ID: {_objectId}");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"Failed to register SkinController in DependencyManager: {e.Message}");
+                DebugUtility.LogWarning<SkinController>($"Failed to register SkinController in DependencyManager: {e.Message}");
             }
         }
 
@@ -168,13 +169,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner?.ModelTransform == null)
             {
-                Debug.LogError($"SkinController: No valid ModelTransform found");
+                DebugUtility.LogError<SkinController>($"SkinController: No valid ModelTransform found");
                 return;
             }
 
             if (_skinService == null)
             {
-                Debug.LogError("SkinController: Nenhum ISkinService configurado.");
+                DebugUtility.LogError<SkinController>("SkinController: Nenhum ISkinService configurado.");
                 return;
             }
 
@@ -190,7 +191,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (config == null)
             {
-                Debug.LogWarning("SkinController: Config nula fornecida para ApplySkin.");
+                DebugUtility.LogWarning<SkinController>("SkinController: Config nula fornecida para ApplySkin.");
                 return;
             }
 
@@ -318,7 +319,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!IsInitialized)
             {
-                Debug.LogWarning($"SkinController not initialized. Call Initialize() first.");
+                DebugUtility.LogWarning<SkinController>($"SkinController not initialized. Call Initialize() first.");
                 return false;
             }
             return true;

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
@@ -60,7 +61,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             else
             {
-                Debug.LogWarning("WorldSpaceCanvasBillboard: No target camera found.");
+                DebugUtility.LogWarning<WorldSpaceCanvasBillboard>("WorldSpaceCanvasBillboard: No target camera found.");
             }
         }
 
@@ -140,7 +141,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             FindCamera();
             if (_cameraTransform != null)
             {
-                Debug.Log($"WorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
+                DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>($"WorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
             }
         }
 
@@ -155,7 +156,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             _originalPosition = transform.position;
             _originalRotation = transform.rotation;
-            Debug.Log("Saved current position and rotation as original");
+            DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>("Saved current position and rotation as original");
         }
 
         [ContextMenu("Reset to Original")]
@@ -163,7 +164,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             transform.position = _originalPosition;
             transform.rotation = _originalRotation;
-            Debug.Log("Reset to original position and rotation");
+            DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>("Reset to original position and rotation");
         }
 
         public void SetPositionOffset(Vector3 newOffset)

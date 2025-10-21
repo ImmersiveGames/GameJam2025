@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.LoaderSystems
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class SceneLoader : Singleton<SceneLoader>
     {
         [SerializeField] private string gameplayScene = "Gameplay";

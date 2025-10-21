@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.SkinSystems.Configurable;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Examples
 {
@@ -30,9 +31,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (logOnStart)
             {
                 LogAllStates();
-                Debug.Log("🎮 SkinDemo Started - Check controls in Inspector");
-                Debug.Log("SPACE: Randomize All | BACKSPACE: Reset All");
-                Debug.Log("V: Randomize Material Groups | B: Reset Materials | N: Cycle Group Materials | M: Test Diversity");
+                DebugUtility.LogVerbose<SkinDemo>("🎮 SkinDemo Started - Check controls in Inspector");
+                DebugUtility.LogVerbose<SkinDemo>("SPACE: Randomize All | BACKSPACE: Reset All");
+                DebugUtility.LogVerbose<SkinDemo>("V: Randomize Material Groups | B: Reset Materials | N: Cycle Group Materials | M: Test Diversity");
             }
         }
 
@@ -76,7 +77,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (Input.GetKeyDown(KeyCode.G))
             {
                 transformSkin?.ResetToOriginalTransform();
-                if (showDebugMessages) Debug.Log("🔄 Transform reset to original");
+                if (showDebugMessages) DebugUtility.LogVerbose<SkinDemo>("🔄 Transform reset to original");
             }
         }
 
@@ -95,7 +96,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (Input.GetKeyDown(resetAllMaterialsKey))
             {
                 materialSkin?.ResetAllMaterials();
-                if (showDebugMessages) Debug.Log("🎨 All materials reset to original");
+                if (showDebugMessages) DebugUtility.LogVerbose<SkinDemo>("🎨 All materials reset to original");
             }
 
             if (Input.GetKeyDown(cycleGroupMaterialsKey))
@@ -133,7 +134,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
         
             if (showDebugMessages)
             {
-                Debug.Log($"🎨 Applied material progression index: {_currentMaterialIndex}");
+                DebugUtility.LogVerbose<SkinDemo>($"🎨 Applied material progression index: {_currentMaterialIndex}");
                 LogMaterialState();
             }
         }
@@ -143,17 +144,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (materialSkin == null) return;
 
             // Testa várias randomizações para mostrar a diversidade
-            Debug.Log("🧪 Testing Material Diversity (3 randomizations):");
+            DebugUtility.LogVerbose<SkinDemo>("🧪 Testing Material Diversity (3 randomizations):");
         
             for (int i = 0; i < 3; i++)
             {
                 materialSkin.RandomizeAllGroups();
                 var state = materialSkin.GetGroupedMaterialState();
-                Debug.Log($"  Run {i + 1}: {state}");
+                DebugUtility.LogVerbose<SkinDemo>($"  Run {i + 1}: {state}");
             
                 foreach (var groupState in state.GroupStates)
                 {
-                    Debug.Log($"    - {groupState.Group.GroupName}: {groupState.UniqueMaterialsCount} unique materials");
+                    DebugUtility.LogVerbose<SkinDemo>($"    - {groupState.Group.GroupName}: {groupState.UniqueMaterialsCount} unique materials");
                 }
             }
         }
@@ -163,13 +164,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (materialSkin == null) return;
 
             var state = materialSkin.GetGroupedMaterialState();
-            Debug.Log($"🎲 Material Diversity: {state}");
+            DebugUtility.LogVerbose<SkinDemo>($"🎲 Material Diversity: {state}");
         
             foreach (var groupState in state.GroupStates)
             {
                 if (groupState.UniqueMaterialsCount > 1)
                 {
-                    Debug.Log($"   - {groupState.Group.GroupName}: {groupState.UniqueMaterialsCount} different materials!");
+                    DebugUtility.LogVerbose<SkinDemo>($"   - {groupState.Group.GroupName}: {groupState.UniqueMaterialsCount} different materials!");
                 }
             }
         }
@@ -192,7 +193,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
         public void UIResetAllMaterials()
         {
             materialSkin?.ResetAllMaterials();
-            Debug.Log("🎨 All materials reset to original");
+            DebugUtility.LogVerbose<SkinDemo>("🎨 All materials reset to original");
         }
 
         [ContextMenu("Test Material Diversity")]
@@ -212,7 +213,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
         
             if (showDebugMessages)
             {
-                Debug.Log("🎲 ALL SYSTEMS RANDOMIZED");
+                DebugUtility.LogVerbose<SkinDemo>("🎲 ALL SYSTEMS RANDOMIZED");
                 LogAllStates();
                 LogMaterialDiversity();
             }
@@ -229,7 +230,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
         
             if (showDebugMessages)
             {
-                Debug.Log("🔄 ALL SYSTEMS RESET");
+                DebugUtility.LogVerbose<SkinDemo>("🔄 ALL SYSTEMS RESET");
                 LogAllStates();
             }
         }
@@ -241,7 +242,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (ringSkin != null)
             {
                 var state = ringSkin.GetRingState();
-                Debug.Log($"🎯 Ring: {state}");
+                DebugUtility.LogVerbose<SkinDemo>($"🎯 Ring: {state}");
             }
         }
 
@@ -250,7 +251,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (transformSkin != null)
             {
                 var state = transformSkin.GetCurrentTransformState();
-                Debug.Log($"🔄 Transform: {state}");
+                DebugUtility.LogVerbose<SkinDemo>($"🔄 Transform: {state}");
             }
         }
 
@@ -259,7 +260,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
             if (materialSkin != null)
             {
                 var state = materialSkin.GetGroupedMaterialState();
-                Debug.Log($"🎨 Materials: {state}");
+                DebugUtility.LogVerbose<SkinDemo>($"🎨 Materials: {state}");
             }
         }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
-    [DebugLevel(DebugLevel.Warning)]
+    
     internal class WanderingState : IState
     {
         private float _timer;

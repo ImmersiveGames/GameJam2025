@@ -4,7 +4,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems {
     /// This class is used to set the target frame rate of the application based on keyboard input,
     /// useful for catching performance issues in the game.
     /// </summary>
-    [DebugLevel(DebugLevel.Logs)]
+    
     public class FrameRateLimiter : MonoBehaviour {
         private void Update() {
             if (!Input.GetKey(KeyCode.LeftShift)) return;

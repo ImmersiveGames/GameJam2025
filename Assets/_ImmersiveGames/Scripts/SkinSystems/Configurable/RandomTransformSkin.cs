@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
             
             _isInitialized = true;
-            if (showDebugLogs) Debug.Log($"[RandomTransformSkin] Initialized");
+            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>($"Initialized");
         }
         #endregion
 
@@ -106,7 +107,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             GenerateRandomRotation();
             ApplyTransformToInstances();
             
-            if (showDebugLogs) Debug.Log($"[RandomTransformSkin] Applied transform - Scale: {_currentRandomScale}, Rotation: {_currentRandomRotation}");
+            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>($"Applied transform - Scale: {_currentRandomScale}, Rotation: {_currentRandomRotation}");
         }
 
         private void GenerateRandomScale()
@@ -154,7 +155,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             var instances = GetSkinInstances();
             if (instances == null) 
             {
-                if (showDebugLogs) Debug.LogWarning("[RandomTransformSkin] No instances found");
+                if (showDebugLogs) DebugUtility.LogWarning<RandomTransformSkin>("[RandomTransformSkin] No instances found");
                 return;
             }
 
@@ -280,7 +281,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
             
-            if (showDebugLogs) Debug.Log("[RandomTransformSkin] Reset to original transform");
+            if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>("[Reset to original transform");
         }
 
         /// <summary>
@@ -326,7 +327,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void EditorLogState()
         {
             var state = GetCurrentTransformState();
-            Debug.Log($"Scale: {state.Scale}, Rotation: {state.Rotation}");
+            DebugUtility.LogVerbose<RandomTransformSkin>($"Scale: {state.Scale}, Rotation: {state.Rotation}");
         }
         #endif
         #endregion

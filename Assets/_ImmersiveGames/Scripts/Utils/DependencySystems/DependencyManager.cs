@@ -8,7 +8,7 @@ using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class DependencyManager : RegulatorSingleton<DependencyManager>
     {
         [SerializeField] private int maxSceneServices = 2;

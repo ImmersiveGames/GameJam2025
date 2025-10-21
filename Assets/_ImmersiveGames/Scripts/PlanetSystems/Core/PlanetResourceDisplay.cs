@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core

@@ -1,5 +1,3 @@
-using _ImmersiveGames.Scripts.DamageSystem;
-
 namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 {
     public class RaiseDamageEventsCommand : IDamageCommand

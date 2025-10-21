@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [DebugLevel(DebugLevel.Error)]
+    
     public class LifetimeManager : PersistentSingleton<LifetimeManager>
     {
         private readonly Dictionary<IPoolable, float> _objectLifetimes = new();

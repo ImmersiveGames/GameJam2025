@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
-    [DebugLevel(DebugLevel.Warning)]
+    
     internal class OrbitingState : IState
     {
         private readonly EaterMovement _eaterMovement;

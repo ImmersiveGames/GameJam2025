@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-60)]
-    [DebugLevel(DebugLevel.Logs)]
+    
     public sealed class PlanetMotion : MonoBehaviour
     {
         [Header("Orbit Configuration")]

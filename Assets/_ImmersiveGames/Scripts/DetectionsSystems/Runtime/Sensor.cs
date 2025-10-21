@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class Sensor
     {
         private readonly Collider[] _results = new Collider[5];

@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             base.OnValidate();
             if (!string.IsNullOrEmpty(initialAIState)) return;
-            Debug.LogWarning($"InitialAIState not set in {name}. Setting to 'Idle'.", this);
             initialAIState = "Idle";
         }
     #endif

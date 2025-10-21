@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.DamageSystem.Strategies;
-using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;

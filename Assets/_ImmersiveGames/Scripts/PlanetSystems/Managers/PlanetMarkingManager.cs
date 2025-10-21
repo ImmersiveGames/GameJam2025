@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class PlanetMarkingManager
     {
         private static PlanetMarkingManager _instance;

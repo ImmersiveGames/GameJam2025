@@ -15,7 +15,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 namespace _ImmersiveGames.Scripts.SpawnSystems
 {
     [RequireComponent(typeof(PlayerInput))]
-    [DebugLevel(DebugLevel.Error)]
+    
     public class InputSpawnerComponent : MonoBehaviour
     {
         [Header("Pool Config")] [SerializeField] private PoolData poolData;

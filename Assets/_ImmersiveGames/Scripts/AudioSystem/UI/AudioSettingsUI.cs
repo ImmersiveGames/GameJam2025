@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         {
             if (_audioService == null)
             {
-                Debug.LogError("IAudioService não encontrado após injeção!");
+                DebugUtility.LogError<AudioSettingsUI>("IAudioService não encontrado após injeção!");
                 return;
             }
 

@@ -81,16 +81,16 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                Debug.LogWarning($"ObjectName não configurado em {name}.", this);
+                DebugUtility.LogWarning<ObjectPool>($"ObjectName não configurado em {name}.", this);
             }
             if (initialPoolSize < 0)
             {
-                Debug.LogWarning($"InitialPoolSize não pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<ObjectPool>($"InitialPoolSize não pode ser negativo em {name}. Definindo como 0.", this);
                 initialPoolSize = 0;
             }
             if (objectConfigs == null || objectConfigs.Length == 0)
             {
-                Debug.LogWarning($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
+                DebugUtility.LogWarning<ObjectPool>($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
             }
         }
 #endif

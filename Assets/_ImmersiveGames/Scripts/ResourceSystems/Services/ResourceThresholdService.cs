@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class ResourceThresholdService : IDisposable
     {
         private readonly ResourceSystem _system;

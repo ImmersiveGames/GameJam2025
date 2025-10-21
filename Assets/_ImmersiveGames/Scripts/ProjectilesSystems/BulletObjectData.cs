@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ProjectilesSystems
 {
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
         {
             base.OnValidate();
             if (!(speed < 0)) return;
-            Debug.LogWarning($"Speed cannot be negative in {name}. Setting to 0.", this);
+            DebugUtility.LogWarning<BulletObjectData>($"Speed cannot be negative in {name}. Setting to 0.", this);
             speed = 0;
         }
 #endif

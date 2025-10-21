@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
@@ -53,7 +54,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             {
                 // Como não temos acesso ao CountdownTimer diretamente, 
                 // vamos detectar eventos por mudanças no estado
-                Debug.Log("UI: Timer inicializado!");
+                DebugUtility.LogVerbose<TimerDisplay>("UI: Timer inicializado!");
             }
         }
         
@@ -96,7 +97,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             // Verificar quando o timer chega a 0 para mostrar mensagem
             if (remainingTime <= 0)
             {
-                Debug.Log("UI: Tempo esgotado!");
+                DebugUtility.LogVerbose<TimerDisplay>("UI: Tempo esgotado!");
             }
         }
     }

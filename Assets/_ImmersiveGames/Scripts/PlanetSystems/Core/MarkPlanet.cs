@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class MarkPlanet : MonoBehaviour
     {
         private FlagMarkPlanet _flagMark;

@@ -12,7 +12,7 @@ using _ImmersiveGames.Scripts.StatesMachines;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [RequireComponent(typeof(EaterMaster))]
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class EaterMovement : MonoBehaviour, IResettable
     {
         private StateMachine _stateMachine;
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public IDetectable Target {
             get => _target;
             set {
-                Debug.Log($"[Eater] Target {(value == null ? "cleared" : "set to " + value.Detectable.ActorName)}");
+                DebugUtility.LogVerbose<>($"[Eater] Target {(value == null ? "cleared" : "set to " + value.Detectable.ActorName)}");
                 _target = value;
             }
         }

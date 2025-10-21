@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,7 +47,7 @@ namespace _ImmersiveGames.Scripts.UI.GameLoop
                     EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
                     break;
                 default:
-                    Debug.LogWarning($"Unhandled request type: {requestType}");
+                    DebugUtility.LogWarning<GameLoopRequestButton>($"Unhandled request type: {requestType}");
                     break;
             }
         }

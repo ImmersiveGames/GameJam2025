@@ -1,7 +1,7 @@
 ﻿#nullable enable
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
-    [DebugLevel(DebugLevel.Logs)]
+    
     public static class EventBus<T> where T : IEvent {
         // fallback internal bus
         private static readonly InjectableEventBus<T> _internalBus = new();

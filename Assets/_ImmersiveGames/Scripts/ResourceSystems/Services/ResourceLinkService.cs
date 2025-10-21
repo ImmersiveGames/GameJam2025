@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         float ProcessLinkedDrain(string actorId, ResourceType resourceType, float desiredDrain, ResourceSystem resourceSystem);
     }
 
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class ResourceLinkService : IResourceLinkService, IDisposable
     {
         private readonly Dictionary<string, Dictionary<ResourceType, ResourceLinkConfig>> _links = new();

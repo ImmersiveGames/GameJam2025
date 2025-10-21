@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems
 {
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class ResourceLinkBridge : ResourceBridgeBase
     {
         [Header("Resource Links")]

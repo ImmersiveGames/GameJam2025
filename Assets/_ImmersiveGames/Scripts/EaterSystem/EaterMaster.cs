@@ -2,7 +2,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public sealed class EaterMaster: ActorMaster, IEaterActor
     {
         public IActor EaterActor => this;

@@ -12,7 +12,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class EntityDebugUtility : MonoBehaviour, IInjectableComponent
     {
         public enum TestMode { Passive, Active, Hybrid }

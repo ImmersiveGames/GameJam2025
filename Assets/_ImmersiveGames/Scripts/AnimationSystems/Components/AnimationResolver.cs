@@ -11,7 +11,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
     [DefaultExecutionOrder(-50)]
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class AnimationResolver : MonoBehaviour, IAnimatorProvider
     {
         private Animator _cachedAnimator;

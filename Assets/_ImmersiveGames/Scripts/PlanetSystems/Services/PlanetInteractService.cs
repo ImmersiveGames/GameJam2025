@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Services
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     
     public class PlanetInteractService
     {

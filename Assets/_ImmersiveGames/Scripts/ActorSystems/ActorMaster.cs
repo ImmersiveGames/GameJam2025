@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Warning)]
     public class ActorMaster : MonoBehaviour, IActor, IHasSkin, IResettable
     {
         [Header("Actor Identity")]

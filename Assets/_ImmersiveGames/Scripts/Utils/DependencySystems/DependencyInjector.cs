@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.Error)]
+    
     public class DependencyInjector
     {
         private readonly ObjectServiceRegistry _objectRegistry;

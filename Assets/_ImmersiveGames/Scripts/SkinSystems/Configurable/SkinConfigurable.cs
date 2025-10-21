@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -49,7 +50,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             
             if (skinController == null)
             {
-                Debug.LogWarning($"SkinConfigurable: No SkinController found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogWarning<SkinConfigurable>($"SkinConfigurable: No SkinController found in parent hierarchy of {gameObject.name}");
                 return;
             }
 

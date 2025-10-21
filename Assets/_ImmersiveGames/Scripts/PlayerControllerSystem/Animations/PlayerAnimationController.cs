@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
     {
         private EventBinding<DamageEvent> _damageBinding;

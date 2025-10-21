@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Warning)]
+    
     public class EaterEat : MonoBehaviour
     {
         [SerializeField]

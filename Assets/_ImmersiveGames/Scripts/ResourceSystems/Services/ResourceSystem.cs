@@ -154,7 +154,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public ResourceInstanceConfig GetInstanceConfig(ResourceType resourceType)
         {
             _instanceConfigs.TryGetValue(resourceType, out var config);
-            Debug.Log($"[ResourceSystem] GetInstanceConfig - {EntityId}.{resourceType}: Found={config != null}, Style={config?.slotStyle != null}");
+            DebugUtility.LogVerbose<ResourceSystem>($"GetInstanceConfig - {EntityId}.{resourceType}: Found={config != null}, Style={config?.slotStyle != null}");
             return config;
         }
 
@@ -187,11 +187,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         [ContextMenu("🔍 Debug Instance Configs")]
         public void DebugInstanceConfigs()
         {
-            Debug.Log($"[ResourceSystem] 🔍 Instance Configs for {EntityId}:");
+            DebugUtility.LogVerbose<ResourceSystem>($"🔍 Instance Configs for {EntityId}:");
             foreach (var kvp in _instanceConfigs)
             {
                 var config = kvp.Value;
-                Debug.Log($"  - {kvp.Key}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
+                DebugUtility.LogVerbose<ResourceSystem>($"  - {kvp.Key}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
             }
         }
        

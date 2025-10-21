@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
             foreach (var eventType in EventTypes) {
                 var busType = typedef.MakeGenericType(eventType);
                 eventBusTypes.Add(busType);
-                //Debug.Log($"Initialized EventBus<{eventType.ActorName}>");
+                //DebugUtility.LogVerbose<>($"Initialized EventBus<{eventType.ActorName}>");
             }
         
             return eventBusTypes;
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         /// Clears (removes all listeners from) all event buses in the application.
         /// </summary>
         public static void ClearAllBuses() {
-            //Debug.Log("Clearing all buses...");
+            //DebugUtility.LogVerbose<>("Clearing all buses...");
             foreach (var busType in EventBusTypes) {
                 var clearMethod = busType.GetMethod("Clear", BindingFlags.Static | BindingFlags.NonPublic);
                 clearMethod?.Invoke(null, null);

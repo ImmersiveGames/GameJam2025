@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.Error)]
+    
     public class ObjectServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _objectServices = new();

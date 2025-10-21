@@ -74,6 +74,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         protected override void Awake()
         {
             base.Awake();
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();

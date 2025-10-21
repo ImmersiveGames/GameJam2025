@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    [DebugLevel(DebugLevel.Error)]
+    
     public class SceneServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _sceneServices = new();

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 {
@@ -29,11 +30,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 
             SetAllParts(true);
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Initial state set to all active on {gameObject.name} for 100% health");
+                DebugUtility.LogVerbose<PartsController>($"Initial state set to all active on {gameObject.name} for 100% health");
 
             _isInitialized = true;
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Initialized with {parts.Length} parts on {gameObject.name}");
+                DebugUtility.LogVerbose<PartsController>($"Initialized with {parts.Length} parts on {gameObject.name}");
         }
         #endregion
 
@@ -42,12 +43,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         public void HandleThresholdCrossed(float threshold, float percentage, bool ascending)
         {
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Entering HandleThresholdCrossed on {gameObject.name}: Threshold={threshold}, Percentage={percentage:P0}, Ascending={ascending}");
+                DebugUtility.LogVerbose<PartsController>($"Entering HandleThresholdCrossed on {gameObject.name}: Threshold={threshold}, Percentage={percentage:P0}, Ascending={ascending}");
             
             UpdatePartsState(percentage, ascending); // Roteia baseado em direção
 
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Handled threshold at {threshold} (Ascending={ascending}) on {gameObject.name}");
+                DebugUtility.LogVerbose<PartsController>($"Handled threshold at {threshold} (Ascending={ascending}) on {gameObject.name}");
         }
         #endregion
 
@@ -55,7 +56,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private void UpdatePartsState(float healthPercentage, bool isAscending)
         {
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Updating parts state on {gameObject.name}: Percentage={healthPercentage:P0}, IsAscending={isAscending}");
+                DebugUtility.LogVerbose<PartsController>($"Updating parts state on {gameObject.name}: Percentage={healthPercentage:P0}, IsAscending={isAscending}");
 
             if (!isAscending)
             {
@@ -67,7 +68,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
 
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Parts state updated on {gameObject.name}");
+                DebugUtility.LogVerbose<PartsController>($"Parts state updated on {gameObject.name}");
         }
 
         private void UpdatePartsDeactivation(float healthPercentage)
@@ -79,7 +80,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                     float partThreshold = 1f - ((i + 1f) / parts.Length);
                     parts[i].SetActive(healthPercentage > partThreshold);
                     if (showDebugLogs)
-                        Debug.Log($"[PartsController] Deactivation: Part {i} ({parts[i].name}) set to {parts[i].activeSelf} (threshold={partThreshold}) on {gameObject.name}");
+                        DebugUtility.LogVerbose<PartsController>($"Deactivation: Part {i} ({parts[i].name}) set to {parts[i].activeSelf} (threshold={partThreshold}) on {gameObject.name}");
                 }
             }
         }
@@ -93,7 +94,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                     float partThreshold = 1f - ((i + 1f) / parts.Length);
                     parts[i].SetActive(healthPercentage > partThreshold); // Mantido para consistência em reativação quando high
                     if (showDebugLogs)
-                        Debug.Log($"[PartsController] Activation: Part {i} ({parts[i].name}) set to {parts[i].activeSelf} (threshold={partThreshold}) on {gameObject.name}");
+                        DebugUtility.LogVerbose<PartsController>($"Activation: Part {i} ({parts[i].name}) set to {parts[i].activeSelf} (threshold={partThreshold}) on {gameObject.name}");
                 }
             }
         }
@@ -104,7 +105,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             {
                 parts[partIndex].SetActive(active);
                 if (showDebugLogs)
-                    Debug.Log($"[PartsController] Set part {partIndex} to {active} on {gameObject.name}");
+                    DebugUtility.LogVerbose<PartsController>($"Set part {partIndex} to {active} on {gameObject.name}");
             }
         }
 
@@ -116,7 +117,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 {
                     part.SetActive(active);
                     if (showDebugLogs)
-                        Debug.Log($"[PartsController] Set part {part.name} to {active} on {gameObject.name}");
+                        DebugUtility.LogVerbose<PartsController>($"Set part {part.name} to {active} on {gameObject.name}");
                 }
             }
         }
@@ -132,7 +133,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         {
             SetAllParts(true);
             if (showDebugLogs)
-                Debug.Log($"[PartsController] Reset to initial state (all active, health=100%) on {gameObject.name}");
+                DebugUtility.LogVerbose<PartsController>($"Reset to initial state (all active, health=100%) on {gameObject.name}");
         }
         #endregion
     }

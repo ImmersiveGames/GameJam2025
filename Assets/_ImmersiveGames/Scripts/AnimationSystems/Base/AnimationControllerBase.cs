@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 {
-    [DebugLevel(DebugLevel.Verbose)]
+    
     public abstract class AnimationControllerBase : MonoBehaviour
     {
         [SerializeField] protected AnimationConfig animationConfig;
