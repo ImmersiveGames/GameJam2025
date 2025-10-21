@@ -44,6 +44,6 @@ int spawnedCount = _idFactory.GetInstanceCount("NPC_Slime");
 | Atores controlados pelo jogador | Certifique-se de adicionar `PlayerInput` para que o ID seja `Player_{index}`. |
 | Objetos compartilhados entre jogadores | Utilize `prefix` para diferenciar (`ActorId_UI`, `ActorId_FX`). |
 | Testes automatizados | Limpe o singleton (`DependencyManager.ClearGlobalServices`) entre cenários para resetar contadores. |
-| Logs excessivos | Ajuste `DebugUtility.SetVerboseLogging(false)` em builds se necessário. |
+| Logs excessivos | Use o `DebugManager` para reduzir o nível padrão ou desligar Verbose no Player. |
 
 A `UniqueIdFactory` segue SRP e facilita rastreamento de entidades, reduzindo riscos de colisões de ID em cenários de coop local.

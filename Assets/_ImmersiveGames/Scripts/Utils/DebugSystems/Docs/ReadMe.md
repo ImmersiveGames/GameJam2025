@@ -23,6 +23,15 @@ Principais vantagens:
 
 ## 🧩 Componentes Principais
 
+### `DebugManager`
+Componente `MonoBehaviour` que aplica as preferências globais do sistema de debug.
+Adicione-o ao mesmo GameObject do `GameManager` para centralizar as decisões de log.
+
+* **Execução antecipada** — `DefaultExecutionOrder(-200)` garante que as flags sejam aplicadas antes dos demais gerenciadores.
+* **Perfis por ambiente** — Permite níveis distintos para Editor e Player, além de respeitar `GameConfig.DebugMode` e forçar
+  `Verbose` quando necessário.
+* **Ferramentas em runtime** — Context menu `Debug/Apply Configuration` reaplica as configurações sem reiniciar a cena.
+
 ### `DebugUtility`
 Classe estática com responsabilidade única de orquestrar logs. Principais áreas:
 * **Inicialização** — `RuntimeInitializeOnLoadMethod` redefine estados em cada boot.
@@ -59,11 +68,10 @@ Cada mensagem avalia se o nível desejado é permitido no escopo atual. Logs Ver
 
 ## 🚀 Integração no Fluxo de Desenvolvimento
 
-1. **Configurar em Bootstrap**
-   ```csharp
-   DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
-   DebugUtility.SetVerboseLogging(Application.isEditor);
-   ```
+1. **Configurar via DebugManager**
+   * Coloque `DebugManager` no mesmo GameObject do `GameManager` ou no bootstrap global.
+   * Ajuste os níveis padrão para Editor/Player diretamente no inspetor.
+   * Certifique-se de que o `GameManager` chame `debugManager.ApplyConfiguration(gameConfig)` no `Awake`.
 2. **Anotar Sistemas**
    ```csharp
    [DebugLevel(DebugLevel.Logs)]
@@ -104,6 +112,7 @@ Cada mensagem avalia se o nível desejado é permitido no escopo atual. Logs Ver
 | --- | --- | --- |
 | Nenhum log aparece | `SetGlobalDebugState(false)` foi chamado | Reativar ou verificar inicialização do `DependencyBootstrapper` |
 | Verbose ignorado | Tipo está em `_disabledVerboseTypes` | Chame `EnableVerboseForType(type)` antes de logar |
+| Logs excessivos em build | Flags de Player configuradas para Verbose | Ajuste o `DebugManager` para reduzir nível ou desativar Verbose no Player |
 | Spam de logs repetidos | Faltou usar `deduplicate` ou notificação dedicada está ativa | Ative `deduplicate: true`, ajuste condições de disparo ou desligue com `SetRepeatedCallVerbose(false)` |
 | FPS preso após testes | `FrameRateLimiter` ativo em cena de produção | Remover componente ou ajustar target manualmente |
 
