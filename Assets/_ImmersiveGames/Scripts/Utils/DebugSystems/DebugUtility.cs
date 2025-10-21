@@ -31,6 +31,12 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private const string RepeatedCallColor = "#FFD54F";
         private const string AlertIcon = "⚠️";
 
+        public static class Colors
+        {
+            public const string CrucialInfo = "#00BCD4";
+            public const string Success = "#4CAF50";
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
         {

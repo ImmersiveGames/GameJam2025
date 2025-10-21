@@ -68,8 +68,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
-            DebugUtility.LogVerbose<PlayerAnimationController>(
-                $"Eventos de dano registrados para {Actor.ActorId}.", "cyan");
+            DebugUtility.Log<PlayerAnimationController>(
+                $"Eventos de dano registrados para {Actor.ActorId}.",
+                DebugUtility.Colors.CrucialInfo);
         }
         protected new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
         protected int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");

@@ -68,7 +68,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return;
             }
 
-            DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.", "cyan", this);
+            DebugUtility.Log<LifetimeManager>(
+                $"Object '{poolable.GetGameObject().name}' registered with lifetime {lifetime}.",
+                DebugUtility.Colors.Success,
+                this);
         }
 
         public void Unregister(IPoolable poolable)
@@ -81,7 +84,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
             if (_objectLifetimes.Remove(poolable))
             {
-                DebugUtility.Log<LifetimeManager>($"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.", "cyan", this);
+                DebugUtility.Log<LifetimeManager>(
+                    $"Object '{poolable.GetGameObject().name}' unregistered from LifetimeManager.",
+                    DebugUtility.Colors.Success,
+                    this);
             }
         }
 
@@ -104,7 +110,9 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             if (pooledObject != null && pooledObject.GetPool != null)
             {
                 pooledObject.GetPool.ReturnObject(poolable);
-                DebugUtility.LogVerbose<LifetimeManager>($"Object '{poolable.GetGameObject().name}' returned to pool.", "blue", this);
+                DebugUtility.LogVerbose<LifetimeManager>(
+                    $"Object '{poolable.GetGameObject().name}' returned to pool.",
+                    context: this);
             }
             else
             {

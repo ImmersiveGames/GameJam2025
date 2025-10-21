@@ -97,8 +97,8 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             object service = _objectRegistry.TryGet(serviceType, objectId);
             if (service != null)
             {
-                DebugUtility.LogVerbose(typeof(DependencyInjector), 
-                    $"Injetando {serviceType.Name} do escopo objeto {objectId} para {targetType.Name}.", "green");
+                DebugUtility.LogVerbose(typeof(DependencyInjector),
+                    $"Injetando {serviceType.Name} do escopo objeto {objectId} para {targetType.Name}.");
             }
             return service;
         }
@@ -110,8 +110,8 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             
             if (service != null)
             {
-                DebugUtility.LogVerbose(typeof(DependencyInjector), 
-                    $"Injetando {serviceType.Name} do escopo cena {activeScene} para {targetType.Name}.", "cyan");
+                DebugUtility.LogVerbose(typeof(DependencyInjector),
+                    $"Injetando {serviceType.Name} do escopo cena {activeScene} para {targetType.Name}.");
             }
             return service;
         }
@@ -122,16 +122,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             
             if (service != null)
             {
-                DebugUtility.LogVerbose(typeof(DependencyInjector), 
-                    $"Injetando {serviceType.Name} do escopo global para {targetType.Name}.", "cyan");
+                DebugUtility.LogVerbose(typeof(DependencyInjector),
+                    $"Injetando {serviceType.Name} do escopo global para {targetType.Name}.");
             }
             return service;
         }
 
         private void LogInjectionSuccess(Type fieldType, Type targetType, Type serviceType)
         {
-            DebugUtility.LogVerbose(typeof(DependencyInjector), 
-                $"Injeção bem-sucedida: {fieldType.Name} -> {targetType.Name} (implementação: {serviceType.Name})", "green");
+            DebugUtility.LogVerbose(typeof(DependencyInjector),
+                $"Injeção bem-sucedida: {fieldType.Name} -> {targetType.Name} (implementação: {serviceType.Name})");
         }
 
         private void LogInjectionError(Type fieldType, Type targetType)

@@ -48,7 +48,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 }
             }
 
-            DebugUtility.LogVerbose<ObjectPool>($"PoolData '{data.ObjectName}' validated successfully in '{caller?.name ?? "Unknown"}'.", "green", caller);
+            DebugUtility.Log<ObjectPool>(
+                $"PoolData '{data.ObjectName}' validated successfully in '{caller?.name ?? "Unknown"}'.",
+                DebugUtility.Colors.Success,
+                caller);
             return true;
         }
 
@@ -72,7 +75,10 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return false;
             }
 
-            DebugUtility.LogVerbose<ObjectPool>($"PoolableObjectData '{data.name}' validated successfully in '{caller?.name ?? "Unknown"}'.", "green", caller);
+            DebugUtility.Log<ObjectPool>(
+                $"PoolableObjectData '{data.name}' validated successfully in '{caller?.name ?? "Unknown"}'.",
+                DebugUtility.Colors.Success,
+                caller);
             return true;
         }
 

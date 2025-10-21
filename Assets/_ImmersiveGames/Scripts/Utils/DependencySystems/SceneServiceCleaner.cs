@@ -11,19 +11,28 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             _sceneRegistry = sceneRegistry;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-            DebugUtility.LogVerbose(typeof(SceneServiceCleaner), "SceneServiceCleaner inicializado.", "yellow");
+            DebugUtility.Log(
+                typeof(SceneServiceCleaner),
+                "SceneServiceCleaner inicializado.",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         private void OnSceneUnloaded(Scene scene)
         {
             _sceneRegistry.Clear(scene.name);
-            DebugUtility.LogVerbose(typeof(SceneServiceCleaner), $"Cena {scene.name} descarregada, serviços limpos.", "yellow");
+            DebugUtility.Log(
+                typeof(SceneServiceCleaner),
+                $"Cena {scene.name} descarregada, serviços limpos.",
+                DebugUtility.Colors.Success);
         }
 
         public void Dispose()
         {
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-            DebugUtility.LogVerbose(typeof(SceneServiceCleaner), "SceneServiceCleaner finalizado.", "yellow");
+            DebugUtility.Log(
+                typeof(SceneServiceCleaner),
+                "SceneServiceCleaner finalizado.",
+                DebugUtility.Colors.Success);
         }
     }
 }

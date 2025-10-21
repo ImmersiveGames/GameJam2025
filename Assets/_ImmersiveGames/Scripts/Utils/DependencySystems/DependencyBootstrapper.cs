@@ -65,7 +65,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                DebugUtility.LogVerbose<DependencyBootstrapper>("✅ Essential dependency services registered");
+                DebugUtility.Log<DependencyBootstrapper>(
+                    "✅ Essential dependency services registered",
+                    DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {

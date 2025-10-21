@@ -166,6 +166,10 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 return false;
             }
 
+            _spawnAction.performed += OnSpawnPerformed;
+            DebugUtility.Log<InputSpawnerComponent>(
+                $"InputSpawnerComponent inicializado",
+                DebugUtility.Colors.CrucialInfo);
             return true;
         }
 
@@ -237,7 +241,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                     DebugUtility.LogWarning<InputSpawnerComponent>("Nenhum som de tiro configurado para o spawner.");
                     return;
                 }
-                DebugUtility.LogVerbose<InputSpawnerComponent>("Usando som de tiro default do componente.", "cyan");
+                DebugUtility.LogVerbose<InputSpawnerComponent>(
+                    "Usando som de tiro default do componente.");
             }
 
             var context = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);

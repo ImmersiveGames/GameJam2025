@@ -74,7 +74,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         protected override void Awake()
         {
             base.Awake();
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Logs);
+            DebugUtility.SetRepeatedCallVerbose(false);
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
@@ -110,7 +111,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _resetRequestedBinding = new EventBinding<GameResetRequestedEvent>(OnResetRequested);
             EventBus<GameResetRequestedEvent>.Register(_resetRequestedBinding);
 
-            DebugUtility.LogVerbose<GameManager>("GameManager inicializado.");
+            DebugUtility.Log<GameManager>(
+                "GameManager inicializado.",
+                DebugUtility.Colors.CrucialInfo);
         }
         
 

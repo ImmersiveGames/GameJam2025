@@ -12,12 +12,16 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         [SerializeField] private string uiScene = "UI";
         private IEnumerator Start()
         {
-            DebugUtility.LogVerbose<SceneLoader>("🚀 Starting scene loading sequence...");
+            DebugUtility.Log<SceneLoader>(
+                "🚀 Starting scene loading sequence...",
+                DebugUtility.Colors.CrucialInfo);
 
             // Carregar cenas na ordem correta
             yield return LoadSceneSequence();
             
-            DebugUtility.LogVerbose<SceneLoader>("🎮 All scenes loaded!");
+            DebugUtility.Log<SceneLoader>(
+                "🎮 All scenes loaded!",
+                DebugUtility.Colors.Success);
         }
 
         private IEnumerator LoadSceneSequence()

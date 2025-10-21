@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             }
 
             DebugUtility.LogVerbose<AnimationControllerBase>(
-                $"Animator obtido via AnimationResolver em {name}.", "green");
+                $"Animator obtido via AnimationResolver em {name}.");
         }
 
         private void RegisterDependencies()
@@ -119,8 +119,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
                 return;
             }
 
-            DebugUtility.LogVerbose<AnimationControllerBase>(
-                $"Registrando controlador de animação para ID: {Actor.ActorId}.", "cyan");
+            DebugUtility.Log<AnimationControllerBase>(
+                $"Registrando controlador de animação para ID: {Actor.ActorId}.",
+                DebugUtility.Colors.CrucialInfo);
 
             DependencyManager.Instance.RegisterForObject(Actor.ActorId, this);
             _dependencyRegistered = true;
@@ -131,8 +132,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             if (_dependencyRegistered && Actor != null && !string.IsNullOrEmpty(Actor.ActorId))
             {
                 DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
-                DebugUtility.LogVerbose<AnimationControllerBase>(
-                    $"Serviços removidos do objeto {Actor.ActorId}.", "yellow");
+                DebugUtility.Log<AnimationControllerBase>(
+                    $"Serviços removidos do objeto {Actor.ActorId}.",
+                    DebugUtility.Colors.Success);
             }
 
             _dependencyRegistered = false;
@@ -144,8 +146,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             DebugUtility.LogVerbose<AnimationControllerBase>(
                 Actor != null
                     ? $"Animator atualizado para {Actor.ActorId}"
-                    : "Animator atualizado para objeto desconhecido",
-                "orange");
+                    : "Animator atualizado para objeto desconhecido");
         }
 
         protected virtual void OnDestroy()

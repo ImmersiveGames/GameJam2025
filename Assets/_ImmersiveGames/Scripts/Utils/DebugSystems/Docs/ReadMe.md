@@ -28,8 +28,9 @@ Classe estática com responsabilidade única de orquestrar logs. Principais áre
 * **Inicialização** — `RuntimeInitializeOnLoadMethod` redefine estados em cada boot.
 * **Configurações** — Métodos `SetGlobalDebugState`, `SetVerboseLogging`, `SetDefaultDebugLevel`, entre outros.
 * **Logs Baseados em Tipo** — Métodos `Log`, `LogWarning`, `LogError`, `LogVerbose` (genéricos e não genéricos).
+* **Convenções Visuais** — Use `DebugUtility.Colors.CrucialInfo` para inicializações e `DebugUtility.Colors.Success` para operações confirmadas.
 * **Deduplicação** — `_callTracker` e `_messagePool` evitam spam em logs repetidos.
-* **Verbose Seletivo** — `_disabledVerboseTypes` permite desativar detalhamento por tipo.
+* **Verbose Seletivo** — `_disabledVerboseTypes` permite desativar detalhamento por tipo e `SetRepeatedCallVerbose(false)` desliga apenas alertas de chamadas repetidas.
 
 ### `DebugLevelAttribute`
 Atributo aplicado em classes para definir o `DebugLevel` padrão sem modificar código de inicialização.
@@ -70,15 +71,20 @@ Cada mensagem avalia se o nível desejado é permitido no escopo atual. Logs Ver
    ```
 3. **Logar com Contexto**
    ```csharp
-   DebugUtility.LogVerbose<ResourceSystem>(
+   DebugUtility.Log<ResourceSystem>(
        "Resource applied via DamageSystem",
-       color: "green",
-       context: this,
-       deduplicate: true);
+       DebugUtility.Colors.Success,
+       context: this);
    ```
+   Utilize `LogVerbose` sem cor para detalhes ricos que podem ser silenciados.
+   Prefira `Log` com `DebugUtility.Colors.CrucialInfo` para inicializações confirmadas e `DebugUtility.Colors.Success` quando uma operação crítica concluir corretamente.
 4. **Controlar Verbose Dinâmico**
    ```csharp
    DebugUtility.DisableVerboseForType(typeof(ResourceLinkService));
+   ```
+5. **Isolar Chamadas Repetidas**
+   ```csharp
+   DebugUtility.SetRepeatedCallVerbose(false);
    ```
 
 ---
@@ -98,7 +104,7 @@ Cada mensagem avalia se o nível desejado é permitido no escopo atual. Logs Ver
 | --- | --- | --- |
 | Nenhum log aparece | `SetGlobalDebugState(false)` foi chamado | Reativar ou verificar inicialização do `DependencyBootstrapper` |
 | Verbose ignorado | Tipo está em `_disabledVerboseTypes` | Chame `EnableVerboseForType(type)` antes de logar |
-| Spam de logs repetidos | Faltou usar `deduplicate` | Ative `deduplicate: true` ou ajuste condições de disparo |
+| Spam de logs repetidos | Faltou usar `deduplicate` ou notificação dedicada está ativa | Ative `deduplicate: true`, ajuste condições de disparo ou desligue com `SetRepeatedCallVerbose(false)` |
 | FPS preso após testes | `FrameRateLimiter` ativo em cena de produção | Remover componente ou ajustar target manualmente |
 
 Este módulo segue SRP ao separar logging, atributos e ferramentas auxiliares, permitindo substituição futura por outro provider sem quebrar consumidores.

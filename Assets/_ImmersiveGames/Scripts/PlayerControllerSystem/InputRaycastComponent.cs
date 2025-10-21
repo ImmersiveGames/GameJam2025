@@ -52,7 +52,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             }
 
             _interactAction.performed += OnInteractPerformed;
-            DebugUtility.LogVerbose<InputInteractComponent>($"InputInteractComponent inicializado em '{name}' com ação '{actionName}'.", "cyan", this);
+            DebugUtility.Log<InputInteractComponent>(
+                $"InputInteractComponent inicializado em '{name}' com ação '{actionName}'.",
+                DebugUtility.Colors.CrucialInfo,
+                this);
         }
 
         private void OnDestroy()
@@ -61,7 +64,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             {
                 _interactAction.performed -= OnInteractPerformed;
             }
-            DebugUtility.LogVerbose<InputInteractComponent>($"InputInteractComponent destruído em '{name}'.", "blue", this);
+            DebugUtility.LogVerbose<InputInteractComponent>(
+                $"InputInteractComponent destruído em '{name}'.",
+                context: this);
         }
 
         private void OnInteractPerformed(InputAction.CallbackContext obj)
