@@ -27,6 +27,8 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
+        private const string RepeatedCallColor = "#FFD54F";
+        private const string AlertIcon = "⚠️";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
@@ -187,12 +189,10 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
     
             if (isRepeat)
             {
-                // ✅ REPETIÇÃO: mostra warning se não for para deduplicar
+                // ✅ REPETIÇÃO: registra como verbose colorido quando não houver deduplicação
                 if (!deduplicate)
-                {
-                    Debug.LogWarning($"[DebugUtility] Chamada repetida no frame {frame}: [{type.Name}] {message}");
-                }
-                return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite com warning
+                    LogRepeatedCallVerbose(type, message, frame);
+                return !deduplicate; // Se deduplicate=true, bloqueia; se false, permite novo log após registrar verbose
             }
 
             // ✅ PRIMEIRA VEZ: adiciona ao tracker
@@ -200,7 +200,26 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             _callTracker.Add(trackerKey);
             return true;
         }
+
+        private static void LogRepeatedCallVerbose(Type type, string message, int frame)
+        {
+            // Verbose respeita as configurações globais e por tipo
+            if (!_verboseLoggingEnabled) return;
+            if (type != null && _disabledVerboseTypes.Contains(type)) return;
+            if (!ShouldLog(type, null, DebugLevel.Verbose)) return;
+
+            _stringBuilder.Clear();
+            _stringBuilder.Append("[DebugUtility] ")
+                          .Append(AlertIcon)
+                          .Append(" Chamada repetida no frame ")
+                          .Append(frame)
+                          .Append(": [")
+                          .Append(type?.Name ?? nameof(DebugUtility))
+                          .Append("] ")
+                          .Append(message);
+
+            Debug.Log(ApplyColor(_stringBuilder.ToString(), RepeatedCallColor));
+        }
         #endregion
     }
-    
 }
