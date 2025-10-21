@@ -17,6 +17,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
     public sealed class GameManager : Singleton<GameManager>, IGameManager
     {
         [SerializeField] private GameConfig gameConfig;
+        [SerializeField] private DebugManager debugManager;
         [SerializeField] private Transform worldEater;
         
         public GameConfig GameConfig => gameConfig;
@@ -74,8 +75,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         protected override void Awake()
         {
             base.Awake();
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Logs);
-            DebugUtility.SetRepeatedCallVerbose(false);
+            ConfigureDebug();
             if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
             Initialize();
         }
-        
+
 
         private void Initialize()
         {
@@ -186,6 +186,37 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
             ResetGame();
+        }
+
+        private void ConfigureDebug()
+        {
+            var manager = ResolveDebugManager();
+            if (manager != null)
+            {
+                manager.ApplyConfiguration(gameConfig);
+            }
+            else
+            {
+                DebugUtility.LogWarning<GameManager>(
+                    "DebugManager não encontrado; aplicando configuração padrão do DebugUtility.");
+            }
+        }
+
+        private DebugManager ResolveDebugManager()
+        {
+            if (debugManager != null)
+            {
+                return debugManager;
+            }
+
+            if (TryGetComponent(out DebugManager localManager))
+            {
+                debugManager = localManager;
+                return debugManager;
+            }
+
+            debugManager = FindObjectOfType<DebugManager>();
+            return debugManager;
         }
     }
 }
