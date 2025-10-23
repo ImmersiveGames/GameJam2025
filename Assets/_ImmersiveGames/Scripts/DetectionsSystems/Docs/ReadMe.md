@@ -189,3 +189,12 @@ MonoBehaviour opcional (`Mono/SensorDebugVisualizer.cs`):
 
 > 📌 **Checklist rápido antes de commitar prefabs**: validar `DetectionType`, layers, `MaxFrequency`, cone direcional e se o objeto possui
 `IActor` compatível.
+
+---
+
+## 🚀 Sugestões de Evolução
+
+- **Buffers reutilizáveis em sensores** — Padronize o uso de listas e caches reaproveitados para remover alocações por frame, especialmente em sensores com alta frequência. A classe `Sensor` já utiliza padrões de reuso e pode servir de referência para outros sistemas.
+- **Dimensionamento adaptativo do array de colisores** — Extraia para configuração global a capacidade do array interno (`Collider[5]`). Dessa forma é possível ajustar conforme o número médio de alvos, evitando perder detecções quando mais de cinco objetos estiverem elegíveis.
+- **Pipeline paralelo para sensores não críticos** — Considere mover sensores auxiliares (ex.: decoração, feedback visual) para um `JobHandle` dedicado ou execução alternada a cada `FixedUpdate`. Reduz a contenda pelo thread principal em cenas com muitos atores.
+- **Métricas em runtime** — Instrumente o `DetectorService` com contadores simples (tempo médio de varredura, quantidade máxima de detecções simultâneas). Esses dados ajudam a calibrar frequências e a identificar gargalos em mapas complexos.

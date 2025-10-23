@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -14,6 +13,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
     {
         private readonly Collider[] _results = new Collider[5];
         private readonly List<IDetectable> _detected = new();
+        private readonly List<IDetectable> _currentDetections = new(); // Lista temporária reutilizada para armazenar detecções no frame atual
+        private readonly List<IDetectable> _cleanupBuffer = new(); // Buffer reaproveitado para evitar GC por frame
         private readonly Transform _origin;
         private readonly IDetector _detector;
         
@@ -44,14 +45,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             _timer += deltaTime;
             if (_timer < Config.MaxFrequency) return;
 
-            List<IDetectable> currentDetections = DetectObjects();
-            ProcessDetections(currentDetections);
+            DetectObjects();
+            ProcessDetections(_currentDetections);
             _timer = 0f;
         }
 
-        private List<IDetectable> DetectObjects()
+        private void DetectObjects()
         {
-            var detected = new List<IDetectable>();
+            _currentDetections.Clear();
             int hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
 
             for (int i = 0; i < hits; i++)
@@ -63,13 +64,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 if (IsSelfOrChild(detectable, _detector)) continue;
                 if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(collider.transform.position)) continue;
 
-                if (!detected.Contains(detectable))
+                if (!_currentDetections.Contains(detectable))
                 {
-                    detected.Add(detectable);
+                    _currentDetections.Add(detectable);
                 }
             }
-
-            return detected;
         }
 
         private bool IsInCone(Vector3 targetPosition)
@@ -102,8 +101,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             int currentFrame = Time.frameCount;
 
             // Novas detecções
-            foreach (var detectable in current.Where(detectable => !_detected.Contains(detectable)))
+            for (int i = 0; i < current.Count; i++)
             {
+                var detectable = current[i];
+                if (_detected.Contains(detectable)) continue;
+
                 // Verificar se já processamos este detectable neste frame
                 if (_enterEventFrameCache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame)
                     continue;
@@ -143,15 +145,30 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private void CleanupFrameCaches(int currentFrame)
         {
             // Remove entradas com mais de 1 frame de idade
-            var oldEnterKeys = _enterEventFrameCache.Where(kvp => kvp.Value < currentFrame - 1)
-                                                   .Select(kvp => kvp.Key).ToList();
-            var oldExitKeys = _exitEventFrameCache.Where(kvp => kvp.Value < currentFrame - 1)
-                                                 .Select(kvp => kvp.Key).ToList();
+            _cleanupBuffer.Clear();
 
-            foreach (var key in oldEnterKeys)
+            foreach (var kvp in _enterEventFrameCache)
+            {
+                if (kvp.Value < currentFrame - 1)
+                {
+                    _cleanupBuffer.Add(kvp.Key);
+                }
+            }
+
+            foreach (var key in _cleanupBuffer)
                 _enterEventFrameCache.Remove(key);
-            
-            foreach (var key in oldExitKeys)
+
+            _cleanupBuffer.Clear();
+
+            foreach (var kvp in _exitEventFrameCache)
+            {
+                if (kvp.Value < currentFrame - 1)
+                {
+                    _cleanupBuffer.Add(kvp.Key);
+                }
+            }
+
+            foreach (var key in _cleanupBuffer)
                 _exitEventFrameCache.Remove(key);
         }
 
