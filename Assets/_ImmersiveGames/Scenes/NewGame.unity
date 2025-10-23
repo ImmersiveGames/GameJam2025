@@ -1498,6 +1498,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7952149840871249308, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
+      propertyPath: resourceInstances.Array.data[1].slotStyle
+      value: 
+      objectReference: {fileID: 11400000, guid: 473ed2f8373b93843b19bbdfa5ab3f6e, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
