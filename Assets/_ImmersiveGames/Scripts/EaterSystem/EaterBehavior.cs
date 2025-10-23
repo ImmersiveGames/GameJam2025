@@ -35,11 +35,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private IState _lastKnownState;
         private readonly StringBuilder _summaryBuilder = new StringBuilder(256);
 
+        [Header("Execução")]
+        [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
+        private bool updateWhileGameInactive = true;
+        [SerializeField, HideInInspector]
+        private bool executionToggleInitialized;
+
         [Header("Debug")]
         [SerializeField, Tooltip("Exibe logs automáticos quando o estado do comportamento muda.")]
         private bool logStateTransitions = true;
         [SerializeField, Tooltip("Inclui um resumo básico do estado atual no log de transição.")]
         private bool logStateSummaries;
+
+        private bool _hasWarnedAboutInactiveGameState;
 
         public event Action<IState, IState> EventStateChanged;
 
@@ -48,6 +56,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Awake()
         {
+            EnsureExecutionToggleInitialized();
+
             _master = GetComponent<EaterMaster>();
             var config = overrideConfig != null ? overrideConfig : _master.Config;
 
@@ -79,10 +89,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (GameManager.Instance != null && !GameManager.Instance.IsGameActive())
+            GameManager gameManager = GameManager.Instance;
+            bool isGameActive = gameManager == null || gameManager.IsGameActive();
+            bool canUpdate = isGameActive || updateWhileGameInactive;
+            if (!canUpdate)
             {
+                if (!_hasWarnedAboutInactiveGameState)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>(
+                        "GameManager está inativo e a execução fora da sessão está desabilitada. Ative 'updateWhileGameInactive' para testar o comportamento.",
+                        this);
+                    _hasWarnedAboutInactiveGameState = true;
+                }
                 return;
             }
+
+            _hasWarnedAboutInactiveGameState = false;
 
             _stateMachine.Update();
             TrackStateChange("Update");
@@ -441,5 +463,31 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             return state?.GetType().Name ?? "None";
         }
+
+        /// <summary>
+        /// Garante que o toggle de execução fora da sessão seja inicializado com o valor padrão seguro.
+        /// </summary>
+        private void EnsureExecutionToggleInitialized()
+        {
+            if (executionToggleInitialized)
+            {
+                return;
+            }
+
+            updateWhileGameInactive = true;
+            executionToggleInitialized = true;
+        }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            EnsureExecutionToggleInitialized();
+        }
+#endif
     }
 }

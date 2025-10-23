@@ -16,11 +16,14 @@ MonoBehaviour:
   desireThreshold: 0.9
   delayTimer: 2
   desireChangeInterval: 10
-  directionChangeInterval: 3
-  minSpeed: 10
-  maxSpeed: 15
+  directionChangeInterval: 4
+  minSpeed: 2.5
+  maxSpeed: 7
   multiplierChase: 2
   rotationSpeed: 5
+  wanderingDuration: 15
+  wanderingMaxDistanceFromPlayer: 25
+  wanderingReturnBias: 0.35
   desiredHungerRestored: 50
   nonDesiredHungerRestored: 25
   desiredHealthRestored: 30
