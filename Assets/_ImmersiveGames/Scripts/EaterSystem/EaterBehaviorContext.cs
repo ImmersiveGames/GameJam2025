@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
@@ -23,8 +24,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _stateTimer;
         private Vector3 _lastKnownPlayerAnchor;
         private bool _hasCachedPlayerAnchor;
-        private bool _desiresActive;
         private bool _pendingHungryEffects;
+        private readonly EaterDesireService _desireService;
+        private bool _hasMovementSample;
+        private Vector3 _lastMovementDirection;
+        private float _lastMovementSpeed;
+        private bool _hasHungryMetrics;
+        private float _lastAnchorDistance;
+        private float _lastAnchorAlignment;
 
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
@@ -36,6 +43,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _autoFlowBridge = autoFlowBridge;
             }
+            _desireService = new EaterDesireService(master, config);
             if (config.WanderingDuration > 0f)
             {
                 _wanderingTimer = new CountdownTimer(config.WanderingDuration);
@@ -61,8 +69,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool IsWanderingTimerRunning => _wanderingTimer != null && _wanderingTimer.IsRunning;
         public bool HasAutoFlowService => _autoFlowBridge != null && _autoFlowBridge.HasAutoFlowService;
         public bool IsAutoFlowActive => _autoFlowBridge != null && _autoFlowBridge.IsAutoFlowActive;
-        public bool AreDesiresActive => _desiresActive;
+        public bool AreDesiresActive => _desireService != null && _desireService.IsActive;
         public bool HasPendingHungryEffects => _pendingHungryEffects;
+        public bool HasMovementSample => _hasMovementSample;
+        public Vector3 LastMovementDirection => _lastMovementDirection;
+        public float LastMovementSpeed => _lastMovementSpeed;
+        public bool HasHungryMetrics => _hasHungryMetrics;
+        public float LastAnchorDistance => _lastAnchorDistance;
+        public float LastAnchorAlignment => _lastAnchorAlignment;
+        public bool HasCurrentDesire => _desireService != null && _desireService.HasActiveDesire;
+        public PlanetResources? CurrentDesire => _desireService?.CurrentDesire;
+        public bool CurrentDesireAvailable => _desireService != null && _desireService.CurrentDesireAvailable;
+        public float CurrentDesireDuration => _desireService != null ? _desireService.CurrentDesireDuration : 0f;
+        public float CurrentDesireRemainingTime => _desireService != null ? _desireService.CurrentDesireRemainingTime : 0f;
+        public int CurrentDesireAvailableCount => _desireService != null ? _desireService.CurrentDesireAvailableCount : 0;
+        public float CurrentDesireWeight => _desireService != null ? _desireService.CurrentDesireWeight : 0f;
 
         public void ResetStateTimer()
         {
@@ -257,26 +278,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool BeginDesires()
         {
-            if (_desiresActive)
+            if (_desireService == null)
             {
                 return false;
             }
 
-            _desiresActive = true;
-            DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos iniciados para {_master.ActorId}.");
-            return true;
+            bool started = _desireService.Start();
+            if (started)
+            {
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos iniciados para {_master.ActorId}.");
+            }
+
+            return started;
         }
 
         public bool EndDesires()
         {
-            if (!_desiresActive)
+            if (_desireService == null)
             {
                 return false;
             }
 
-            _desiresActive = false;
-            DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos pausados para {_master.ActorId}.");
-            return true;
+            bool stopped = _desireService.Stop();
+            if (stopped)
+            {
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos pausados para {_master.ActorId}.");
+            }
+
+            return stopped;
         }
 
         public void EnsureHungryEffects()
@@ -291,6 +320,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _pendingHungryEffects = false;
             }
+        }
+
+        public void UpdateServices()
+        {
+            _desireService?.Update();
+        }
+
+        public void ReportMovementSample(Vector3 direction, float speed, bool clearHungryMetrics = true)
+        {
+            _lastMovementDirection = direction;
+            _lastMovementSpeed = speed;
+            _hasMovementSample = direction.sqrMagnitude > 0f || speed > 0f;
+            if (clearHungryMetrics)
+            {
+                _hasHungryMetrics = false;
+            }
+        }
+
+        public void ReportHungryMetrics(float distanceToAnchor, float alignmentWithAnchor)
+        {
+            _lastAnchorDistance = Mathf.Max(distanceToAnchor, 0f);
+            _lastAnchorAlignment = Mathf.Clamp(alignmentWithAnchor, -1f, 1f);
+            _hasHungryMetrics = true;
         }
     }
 }

@@ -28,6 +28,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         public bool AutoFlowActive { get; }
         public bool DesiresActive { get; }
         public bool PendingHungryEffects { get; }
+        public bool HasMovementSample { get; }
+        public Vector3 MovementDirection { get; }
+        public float MovementSpeed { get; }
+        public bool HasHungryMetrics { get; }
+        public float PlayerAnchorDistance { get; }
+        public float PlayerAnchorAlignment { get; }
+        public bool HasCurrentDesire { get; }
+        public string CurrentDesireName { get; }
+        public bool CurrentDesireAvailable { get; }
+        public float CurrentDesireRemaining { get; }
+        public float CurrentDesireDuration { get; }
+        public int CurrentDesireAvailableCount { get; }
+        public float CurrentDesireWeight { get; }
 
         public EaterBehaviorDebugSnapshot(
             bool isValid,
@@ -48,7 +61,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             bool hasAutoFlow,
             bool autoFlowActive,
             bool desiresActive,
-            bool pendingHungryEffects)
+            bool pendingHungryEffects,
+            bool hasMovementSample,
+            Vector3 movementDirection,
+            float movementSpeed,
+            bool hasHungryMetrics,
+            float playerAnchorDistance,
+            float playerAnchorAlignment,
+            bool hasCurrentDesire,
+            string currentDesireName,
+            bool currentDesireAvailable,
+            float currentDesireRemaining,
+            float currentDesireDuration,
+            int currentDesireAvailableCount,
+            float currentDesireWeight)
         {
             IsValid = isValid;
             CurrentState = currentState;
@@ -69,6 +95,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             AutoFlowActive = autoFlowActive;
             DesiresActive = desiresActive;
             PendingHungryEffects = pendingHungryEffects;
+            HasMovementSample = hasMovementSample;
+            MovementDirection = movementDirection;
+            MovementSpeed = movementSpeed;
+            HasHungryMetrics = hasHungryMetrics;
+            PlayerAnchorDistance = playerAnchorDistance;
+            PlayerAnchorAlignment = playerAnchorAlignment;
+            HasCurrentDesire = hasCurrentDesire;
+            CurrentDesireName = currentDesireName;
+            CurrentDesireAvailable = currentDesireAvailable;
+            CurrentDesireRemaining = currentDesireRemaining;
+            CurrentDesireDuration = currentDesireDuration;
+            CurrentDesireAvailableCount = currentDesireAvailableCount;
+            CurrentDesireWeight = currentDesireWeight;
         }
     }
 }

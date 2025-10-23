@@ -38,10 +38,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             direction.Normalize();
 
+            float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
+            Context.ReportMovementSample(direction, chaseSpeed);
+
             Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
             Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
 
-            float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
             Transform.position = Vector3.MoveTowards(currentPosition, targetPosition, chaseSpeed * Time.deltaTime);
 
             if (distance <= Config.MinimumChaseDistance)

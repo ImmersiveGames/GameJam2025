@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -108,6 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _stateMachine.Update();
             TrackStateChange("Update");
+            _context.UpdateServices();
             _context.EnsureHungryEffects();
         }
 
@@ -429,7 +431,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _summaryBuilder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
             }
 
-            _summaryBuilder.AppendLine($"- Desejos ativos: {snapshot.DesiresActive}");
+            if (snapshot.HasMovementSample)
+            {
+                _summaryBuilder.AppendLine($"- Movimento: direção={snapshot.MovementDirection}, velocidade={snapshot.MovementSpeed:F2}");
+            }
+
+            if (snapshot.HasHungryMetrics)
+            {
+                _summaryBuilder.AppendLine($"- Métricas de fome: distânciaJogadores={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2}");
+            }
+
+            if (snapshot.DesiresActive)
+            {
+                string desireInfo = snapshot.HasCurrentDesire
+                    ? $"{snapshot.CurrentDesireName} (disp={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s de {snapshot.CurrentDesireDuration:F2}s)"
+                    : "Aguardando sorteio";
+                _summaryBuilder.AppendLine($"- Desejos: ativo=True, atual={desireInfo}");
+            }
+            else
+            {
+                _summaryBuilder.AppendLine("- Desejos: ativo=False");
+            }
+
             _summaryBuilder.AppendLine($"- Posição: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehavior>(_summaryBuilder.ToString(), instance: this);
@@ -446,6 +469,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool hasAnchor = _context.TryGetCachedPlayerAnchor(out anchor);
             var target = _context.Target;
             string targetName = target?.Owner?.ActorName ?? target?.Owner?.Transform?.name ?? string.Empty;
+
+            PlanetResources? currentDesire = _context.CurrentDesire;
+            string currentDesireName = currentDesire.HasValue ? currentDesire.Value.ToString() : string.Empty;
 
             return new EaterBehaviorDebugSnapshot(
                 true,
@@ -466,7 +492,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _context.HasAutoFlowService,
                 _context.IsAutoFlowActive,
                 _context.AreDesiresActive,
-                _context.HasPendingHungryEffects
+                _context.HasPendingHungryEffects,
+                _context.HasMovementSample,
+                _context.LastMovementDirection,
+                _context.LastMovementSpeed,
+                _context.HasHungryMetrics,
+                _context.HasHungryMetrics ? _context.LastAnchorDistance : 0f,
+                _context.HasHungryMetrics ? _context.LastAnchorAlignment : 0f,
+                _context.HasCurrentDesire,
+                currentDesireName,
+                _context.CurrentDesireAvailable,
+                _context.CurrentDesireRemainingTime,
+                _context.CurrentDesireDuration,
+                _context.CurrentDesireAvailableCount,
+                _context.CurrentDesireWeight
             );
         }
 

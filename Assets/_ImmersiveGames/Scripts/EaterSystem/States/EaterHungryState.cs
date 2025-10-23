@@ -68,5 +68,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Vector3 blendedDirection = Vector3.Slerp(randomDirection, directionToAnchor, attraction);
             return blendedDirection.sqrMagnitude > 0f ? blendedDirection.normalized : directionToAnchor;
         }
+
+        protected override void OnDirectionChosen(Vector3 direction, float speed)
+        {
+            base.OnDirectionChosen(direction, speed);
+
+            if (!Context.TryGetPlayerAnchor(out Vector3 anchor))
+            {
+                DebugUtility.LogVerbose<EaterHungryState>(
+                    $"Direção escolhida em fome sem âncora de players | velocidade={speed:F2}");
+                return;
+            }
+
+            Vector3 toAnchor = anchor - Transform.position;
+            float distance = toAnchor.magnitude;
+            float alignment = 0f;
+            if (direction.sqrMagnitude > Mathf.Epsilon && toAnchor.sqrMagnitude > Mathf.Epsilon)
+            {
+                alignment = Vector3.Dot(direction.normalized, toAnchor.normalized);
+            }
+
+            DebugUtility.LogVerbose<EaterHungryState>(
+                $"Nova direção em fome | velocidade={speed:F2} | distânciaJogador={distance:F2} | alinhamento={alignment:F2}");
+            Context.ReportHungryMetrics(distance, alignment);
+        }
     }
 }

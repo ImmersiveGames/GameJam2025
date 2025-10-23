@@ -60,8 +60,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 
             if (master != null)
             {
-                master.EventStartEatPlanet += OnStartEatPlanet;
-                master.EventEndEatPlanet += OnEndEatPlanet;
+                master.EventStartEatPlanet += OnStartEat;
+                master.EventEndEatPlanet += OnEndEat;
                 master.EventEaterBite += OnBite;
                 master.EventConsumeResource += OnConsumeResource;
                 master.EventEaterTakeDamage += OnTakeDamage;
@@ -77,8 +77,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 
             if (master != null)
             {
-                master.EventStartEatPlanet -= OnStartEatPlanet;
-                master.EventEndEatPlanet -= OnEndEatPlanet;
+                master.EventStartEatPlanet -= OnStartEat;
+                master.EventEndEatPlanet -= OnEndEat;
                 master.EventEaterBite -= OnBite;
                 master.EventConsumeResource -= OnConsumeResource;
                 master.EventEaterTakeDamage -= OnTakeDamage;
@@ -205,7 +205,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
                 _builder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
             }
 
-            _builder.AppendLine($"- Desejos ativos: {snapshot.DesiresActive}");
+            if (snapshot.HasMovementSample)
+            {
+                _builder.AppendLine($"- Movimento: direção={snapshot.MovementDirection}, velocidade={snapshot.MovementSpeed:F2}");
+            }
+
+            if (snapshot.HasHungryMetrics)
+            {
+                _builder.AppendLine($"- Métricas de fome: distânciaJogadores={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2}");
+            }
+
+            if (snapshot.DesiresActive)
+            {
+                string desireInfo = snapshot.HasCurrentDesire
+                    ? $"{snapshot.CurrentDesireName} (disp={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s/{snapshot.CurrentDesireDuration:F2}s)"
+                    : "Aguardando sorteio";
+                _builder.AppendLine($"- Desejos: ativo=True, atual={desireInfo}");
+            }
+            else
+            {
+                _builder.AppendLine("- Desejos: ativo=False");
+            }
+
             _builder.AppendLine($"- Posição atual: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);

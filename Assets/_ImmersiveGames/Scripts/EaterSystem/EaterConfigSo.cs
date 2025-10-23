@@ -8,13 +8,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Configurações de Desejos do Eater")]
         [SerializeField, Tooltip("Número máximo de recursos recentes a evitar repetição")]
         private int maxRecentDesires = 3;
+        [SerializeField, Tooltip("Tempo base (segundos) que cada desejo permanece ativo antes de ser trocado.")]
+        private float desireChangeInterval = 10f;
+        [SerializeField, Tooltip("Fator aplicado à duração do desejo quando nenhum planeta possui o recurso sorteado.")]
+        private float unavailableDesireDurationMultiplier = 0.5f;
+        [SerializeField, Tooltip("Peso base usado ao sortear desejos com recursos disponíveis em planetas ativos.")]
+        private float availableDesireWeight = 3f;
+        [SerializeField, Tooltip("Peso adicional aplicado por planeta ativo que possui o recurso desejado.")]
+        private float perPlanetAvailableWeight = 1f;
+        [SerializeField, Tooltip("Peso base usado ao sortear desejos sem planetas ativos correspondentes.")]
+        private float unavailableDesireWeight = 0.5f;
+        [SerializeField, Range(0f, 1f), Tooltip("Multiplicador aplicado ao peso de desejos recentes quando existem novas opções.")]
+        private float recentDesireWeightMultiplier = 0.35f;
         [SerializeField, Tooltip("Limiar para iniciar os desejos (0-1)")]
         private float desireThreshold = 0.9f;
         [SerializeField, Tooltip("Atraso para iniciar a escolha de desejos (segundos)")]
         private float delayTimer = 2;
-        [SerializeField, Tooltip("Intervalo normal para mudança de vontade (segundos)")]
-        private float desireChangeInterval = 10f;
-        
+
         [Header("Configuração de Movimento")]
         [SerializeField, Tooltip("Intervalo para mudar de direção (segundos)")]
         private float directionChangeInterval = 1f;
@@ -49,6 +59,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float DesireThreshold => desireThreshold;
         public float DelayTimer => delayTimer;
         public float DesireChangeInterval => desireChangeInterval;
+        public float DesireDuration => desireChangeInterval;
+        public float UnavailableDesireDurationMultiplier => unavailableDesireDurationMultiplier;
+        public float AvailableDesireWeight => availableDesireWeight;
+        public float PerPlanetAvailableWeight => perPlanetAvailableWeight;
+        public float UnavailableDesireWeight => unavailableDesireWeight;
+        public float RecentDesireWeightMultiplier => recentDesireWeightMultiplier;
         public float DirectionChangeInterval => directionChangeInterval;
         public float MinSpeed => minSpeed;
         public float MaxSpeed => maxSpeed;

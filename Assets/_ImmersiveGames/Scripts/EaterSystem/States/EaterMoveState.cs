@@ -53,6 +53,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             _direction = EvaluateDirection();
             _currentSpeed = Mathf.Max(EvaluateSpeed(), 0f);
+            Context.ReportMovementSample(_direction, _currentSpeed);
+            OnDirectionChosen(_direction, _currentSpeed);
+        }
+
+        protected virtual void OnDirectionChosen(Vector3 direction, float speed)
+        {
         }
 
         private void RotateTowardsDirection()
