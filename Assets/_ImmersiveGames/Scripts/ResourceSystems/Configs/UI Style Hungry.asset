@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 177fd93a6a8f42cebc60e422d1b6d7fd, type: 3}
   m_Name: UI Style Hungry
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   fillGradient:
     serializedVersion: 2
     key0: {r: 0.40754926, g: 0.02352939, b: 0.6901961, a: 1}
@@ -43,32 +43,3 @@ MonoBehaviour:
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   pendingColor: {r: 1, g: 0, b: 0, a: 1}
-  quickDuration: 0.2
-  slowDuration: 0.8
-  delayBeforeSlow: 0.3
-  basicEase: 6
-  enableAdvancedEffects: 1
-  healScaleIntensity: 1.1
-  healScaleDuration: 0.2
-  healMoveDistance: {x: 0, y: 5}
-  damageScaleIntensity: 0.95
-  damageScaleDuration: 0.1
-  damageShakeStrength: 8
-  damageShakeDuration: 0.4
-  damageShakeVibrato: 15
-  advancedEase: 30
-  healEase: 3
-  damageEase: 4
-  smoothCurrentEase: 10
-  smoothPendingEase: 4
-  smoothCurrentDuration: 0.4
-  smoothPendingDuration: 1.2
-  enablePulseEffect: 1
-  pulseScale: 1.02
-  pulseDuration: 0.8
-  pulseEase: 4
-  enableTextAnimation: 0
-  textScaleIntensity: 1.2
-  textAnimationDuration: 0.3
-  textEase: 27
-  enableSoundFeedback: 0

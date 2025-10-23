@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private FillAnimationProfile animationProfile;
 
         private IFillAnimationStrategy _fillStrategy;
+        private Tween _colorTween;
 
         private float _currentFill;
         private float _previousFill;
@@ -64,6 +66,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             InstanceConfig = config;
             _currentStyle = config?.slotStyle;
 
+            _currentFill = 1f;
+            _previousFill = 1f;
+
             ApplyBaseStyleImmediate();
 
             // Cria estratégia a partir do perfil (ou Instant como fallback)
@@ -74,9 +79,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 iconImage.sprite = InstanceConfig.resourceDefinition.icon;
 
             gameObject.name = $"{actorId}_{type}";
-
-            _currentFill = 1f;
-            _previousFill = 1f;
 
             ApplyVisualsImmediate();
 
@@ -89,13 +91,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             DebugUtility.LogVerbose<ResourceUISlot>($"🎨 Applying base style: {_currentStyle.name}");
 
-            if (pendingFillImage != null && _currentStyle.pendingColor != default)
-                pendingFillImage.color = _currentStyle.pendingColor;
-
             if (fillImage != null)
-                fillImage.fillAmount = 1f;
+                fillImage.fillAmount = _currentFill;
+
             if (pendingFillImage != null)
-                pendingFillImage.fillAmount = 1f;
+            {
+                pendingFillImage.fillAmount = _currentFill;
+
+                if (_currentStyle.pendingColor != default)
+                    pendingFillImage.color = _currentStyle.pendingColor;
+            }
+
+            ApplyStyleColors(_currentFill);
         }
 
         public void Configure(IResourceValue data)
@@ -130,6 +137,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (valueText != null)
                 valueText.text = _currentText;
 
+            ApplyStyleColors(_currentFill);
+
             SetVisible(true);
         }
 
@@ -138,6 +147,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
             _fillStrategy?.SetInstant(_currentFill);
             ClearAllTween();
+            ApplyStyleColors(_currentFill);
         }
 
         public void RefreshStyle()
@@ -191,6 +201,63 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (FillImage != null) FillImage.DOKill();
             if (PendingFillImage != null) PendingFillImage.DOKill();
             if (ValueText != null) ValueText.transform.DOKill();
+            _colorTween?.Kill();
+            _colorTween = null;
+        }
+
+        private void ApplyStyleColors(float targetFill)
+        {
+            if (_currentStyle == null)
+                return;
+
+            if (FillImage != null && _currentStyle != null && _currentStyle.HasFillGradient())
+            {
+                Color targetColor = _currentStyle.EvaluateFillColor(Mathf.Clamp01(targetFill));
+                float transitionDuration = _isFirstConfigure ? 0f : GetColorTransitionDuration();
+
+                if (transitionDuration <= 0f)
+                {
+                    FillImage.color = targetColor;
+                    _colorTween?.Kill();
+                    _colorTween = null;
+                }
+                else
+                {
+                    _colorTween?.Kill();
+                    _colorTween = FillImage.DoColor(targetColor, transitionDuration)
+                        .SetEase(GetColorTransitionEase());
+                }
+            }
+
+            if (PendingFillImage != null && _currentStyle.pendingColor != default)
+            {
+                PendingFillImage.color = _currentStyle.pendingColor;
+            }
+        }
+
+        /// <summary>
+        /// Recupera a duração de transição de cor a partir do perfil de animação,
+        /// garantindo um valor padrão consistente quando nenhum perfil for atribuído.
+        /// </summary>
+        private float GetColorTransitionDuration()
+        {
+            const float defaultDuration = 0.2f;
+            if (animationProfile == null)
+                return defaultDuration;
+
+            return Mathf.Max(0f, animationProfile.colorTransitionDuration);
+        }
+
+        /// <summary>
+        /// Recupera o easing da transição de cor com fallback para o easing padrão.
+        /// </summary>
+        private Ease GetColorTransitionEase()
+        {
+            const Ease defaultEase = Ease.OutQuad;
+            if (animationProfile == null)
+                return defaultEase;
+
+            return animationProfile.colorTransitionEase;
         }
     }
 }

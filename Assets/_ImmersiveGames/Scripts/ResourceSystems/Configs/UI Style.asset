@@ -43,6 +43,3 @@ MonoBehaviour:
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   pendingColor: {r: 1, g: 0, b: 0, a: 1}
-  quickDuration: 0.2
-  slowDuration: 0.8
-  delayBeforeSlow: 0.3
