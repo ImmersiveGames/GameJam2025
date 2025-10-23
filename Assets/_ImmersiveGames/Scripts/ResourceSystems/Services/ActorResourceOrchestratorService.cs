@@ -283,8 +283,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             foreach (var (canvasId, canvasUpdates) in _pendingFirstUpdates.ToList())
             {
-                var keysToRemove = canvasUpdates.Keys.Where(key => key.actorId == actorId).ToList();
-                foreach (var key in keysToRemove)
+                var actorKeysToRemove = canvasUpdates.Keys.Where(key => key.actorId == actorId).ToList();
+                foreach (var key in actorKeysToRemove)
                 {
                     canvasUpdates.Remove(key);
                 }
