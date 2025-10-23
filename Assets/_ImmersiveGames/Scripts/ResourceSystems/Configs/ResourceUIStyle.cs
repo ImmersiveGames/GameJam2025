@@ -1,4 +1,3 @@
-using DG.Tweening;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
@@ -11,10 +10,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
 
         [Header("Pending Bar")]
         public Color pendingColor = new(1f, 1f, 1f, 0.6f);
-
-        [Header("Color Animation")]
-        [Min(0f)] public float colorTransitionDuration = 0.2f;
-        public Ease colorTransitionEase = Ease.OutQuad;
 
         /// <summary>
         /// Calcula a cor do preenchimento baseado no valor normalizado informado.

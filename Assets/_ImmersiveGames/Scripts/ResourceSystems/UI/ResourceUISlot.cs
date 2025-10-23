@@ -213,7 +213,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (FillImage != null && _currentStyle != null && _currentStyle.HasFillGradient())
             {
                 Color targetColor = _currentStyle.EvaluateFillColor(Mathf.Clamp01(targetFill));
-                float transitionDuration = _isFirstConfigure ? 0f : Mathf.Max(0f, _currentStyle.colorTransitionDuration);
+                float transitionDuration = _isFirstConfigure ? 0f : GetColorTransitionDuration();
 
                 if (transitionDuration <= 0f)
                 {
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 {
                     _colorTween?.Kill();
                     _colorTween = FillImage.DoColor(targetColor, transitionDuration)
-                        .SetEase(_currentStyle.colorTransitionEase);
+                        .SetEase(GetColorTransitionEase());
                 }
             }
 
@@ -233,6 +233,31 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 PendingFillImage.color = _currentStyle.pendingColor;
             }
+        }
+
+        /// <summary>
+        /// Recupera a duração de transição de cor a partir do perfil de animação,
+        /// garantindo um valor padrão consistente quando nenhum perfil for atribuído.
+        /// </summary>
+        private float GetColorTransitionDuration()
+        {
+            const float defaultDuration = 0.2f;
+            if (animationProfile == null)
+                return defaultDuration;
+
+            return Mathf.Max(0f, animationProfile.colorTransitionDuration);
+        }
+
+        /// <summary>
+        /// Recupera o easing da transição de cor com fallback para o easing padrão.
+        /// </summary>
+        private Ease GetColorTransitionEase()
+        {
+            const Ease defaultEase = Ease.OutQuad;
+            if (animationProfile == null)
+                return defaultEase;
+
+            return animationProfile.colorTransitionEase;
         }
     }
 }

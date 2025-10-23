@@ -18,3 +18,5 @@ MonoBehaviour:
   residualDelay: 0.3
   residualSpeed: 1
   residualEase: 9
+  colorTransitionDuration: 0.2
+  colorTransitionEase: 6
