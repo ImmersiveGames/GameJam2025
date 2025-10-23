@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         [SerializeField] private float minFrequency = 0.1f;
         [SerializeField] private float maxFrequency = 0.5f;
         [SerializeField] private bool debugMode;
+        [SerializeField, Min(1)] private int maxColliders = 5;
         
         [Header("Detection Mode")]
         [SerializeField] private SensorDetectionMode detectionMode = SensorDetectionMode.Spherical;
@@ -35,6 +36,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         public float MinFrequency => minFrequency;
         public float MaxFrequency => maxFrequency;
         public bool DebugMode => debugMode;
+        public int MaxColliders => Mathf.Max(1, maxColliders);
         public SensorDetectionMode DetectionMode => detectionMode;
         public float ConeAngle => coneAngle;
         public Vector3 ConeDirection => coneDirection;

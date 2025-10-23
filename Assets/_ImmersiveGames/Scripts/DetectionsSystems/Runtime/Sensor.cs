@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.DetectionsSystems.Runtime.Internal;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -11,22 +12,21 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
     
     public class Sensor
     {
-        private readonly Collider[] _results = new Collider[5];
-        private readonly List<IDetectable> _detected = new();
+        private Collider[] _results;
+        private readonly DetectionSet _detected = new();
         private readonly List<IDetectable> _currentDetections = new(); // Lista temporária reutilizada para armazenar detecções no frame atual
-        private readonly List<IDetectable> _cleanupBuffer = new(); // Buffer reaproveitado para evitar GC por frame
+        private readonly HashSet<IDetectable> _currentDetectionsLookup = new(); // Lookup para evitar Contains O(n)
         private readonly Transform _origin;
         private readonly IDetector _detector;
-        
-        // Cache por objeto por frame - mais específico
-        private readonly Dictionary<IDetectable, int> _enterEventFrameCache = new();
-        private readonly Dictionary<IDetectable, int> _exitEventFrameCache = new();
+        private readonly FrameEventCache _enterEventFrameCache = new();
+        private readonly FrameEventCache _exitEventFrameCache = new();
+        private bool _hasLoggedColliderResize;
         
         private float _timer;
 
         public SensorConfig Config { get; }
         private DetectionType DetectionType => Config.DetectionType;
-        public ReadOnlyCollection<IDetectable> CurrentlyDetected => _detected.AsReadOnly();
+        public ReadOnlyCollection<IDetectable> CurrentlyDetected => _detected.ReadOnlyItems;
         public bool IsDetecting => _detected.Count > 0;
         public Transform Origin => _origin;
 
@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             _origin = origin;
             _detector = detector;
             Config = config;
+            _results = new Collider[Mathf.Max(1, config.MaxColliders)];
 
             string mode = config.DetectionMode == SensorDetectionMode.Spherical ? "Esférico" : "Cônico";
             DebugUtility.LogVerbose<Sensor>($"Criado em {origin.name}: Tipo={config.DetectionType?.TypeName}, Modo={mode}, Raio={config.Radius}");
@@ -46,28 +47,58 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             if (_timer < Config.MaxFrequency) return;
 
             DetectObjects();
-            ProcessDetections(_currentDetections);
+            ProcessDetections();
             _timer = 0f;
         }
 
         private void DetectObjects()
         {
             _currentDetections.Clear();
-            int hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
+            _currentDetectionsLookup.Clear();
+
+            int hits = CaptureColliders();
 
             for (int i = 0; i < hits; i++)
             {
                 var collider = _results[i];
+                if (collider == null) continue;
+
                 var detectable = GetDetectableFromCollider(collider);
 
                 if (detectable == null) continue;
                 if (IsSelfOrChild(detectable, _detector)) continue;
                 if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(collider.transform.position)) continue;
 
-                if (!_currentDetections.Contains(detectable))
+                if (_currentDetectionsLookup.Add(detectable))
                 {
                     _currentDetections.Add(detectable);
                 }
+            }
+        }
+
+        private int CaptureColliders()
+        {
+            int hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
+
+            while (hits == _results.Length)
+            {
+                ExpandResultsBuffer();
+                hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
+            }
+
+            return hits;
+        }
+
+        private void ExpandResultsBuffer()
+        {
+            int previousLength = _results.Length;
+            int newSize = Mathf.Max(previousLength * 2, previousLength + 1);
+            Array.Resize(ref _results, newSize);
+
+            if (!_hasLoggedColliderResize)
+            {
+                DebugUtility.LogWarning<Sensor>($"Buffer de colisores expandido de {previousLength} para {newSize} em {GetName(_detector)}. Ajuste o campo MaxColliders no SensorConfig para otimizar.");
+                _hasLoggedColliderResize = true;
             }
         }
 
@@ -96,22 +127,18 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             return detectable.Owner == detector.Owner;
         }
 
-        private void ProcessDetections(List<IDetectable> current)
+        private void ProcessDetections()
         {
             int currentFrame = Time.frameCount;
 
             // Novas detecções
-            for (int i = 0; i < current.Count; i++)
+            for (int i = 0; i < _currentDetections.Count; i++)
             {
-                var detectable = current[i];
+                var detectable = _currentDetections[i];
                 if (_detected.Contains(detectable)) continue;
-
-                // Verificar se já processamos este detectable neste frame
-                if (_enterEventFrameCache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame)
-                    continue;
+                if (!_enterEventFrameCache.TryRegister(detectable, currentFrame)) continue;
 
                 _detected.Add(detectable);
-                _enterEventFrameCache[detectable] = currentFrame;
 
                 DebugUtility.LogVerbose<Sensor>($" → NOVA DETECÇÃO: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
 
@@ -123,53 +150,20 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             for (int i = _detected.Count - 1; i >= 0; i--)
             {
                 var detectable = _detected[i];
-                if (current.Contains(detectable)) continue;
+                if (_currentDetectionsLookup.Contains(detectable)) continue;
+                if (!_exitEventFrameCache.TryRegister(detectable, currentFrame)) continue;
 
-                // Verificar se já processamos este detectable neste frame
-                if (_exitEventFrameCache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame)
-                    continue;
+                var removed = _detected.RemoveAt(i);
 
-                _detected.RemoveAt(i);
-                _exitEventFrameCache[detectable] = currentFrame;
-
-                DebugUtility.LogVerbose<Sensor>($" → PERDA DE DETECÇÃO: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
+                DebugUtility.LogVerbose<Sensor>($" → PERDA DE DETECÇÃO: {GetName(removed)} por {GetName(_detector)} [Frame {currentFrame}]");
 
                 // APENAS EventBus
-                EventBus<DetectionExitEvent>.Raise(new DetectionExitEvent(detectable, _detector, DetectionType));
+                EventBus<DetectionExitEvent>.Raise(new DetectionExitEvent(removed, _detector, DetectionType));
             }
 
             // Limpar caches antigos (mais de 1 frame atrás) para evitar memory leak
-            CleanupFrameCaches(currentFrame);
-        }
-
-        private void CleanupFrameCaches(int currentFrame)
-        {
-            // Remove entradas com mais de 1 frame de idade
-            _cleanupBuffer.Clear();
-
-            foreach (var kvp in _enterEventFrameCache)
-            {
-                if (kvp.Value < currentFrame - 1)
-                {
-                    _cleanupBuffer.Add(kvp.Key);
-                }
-            }
-
-            foreach (var key in _cleanupBuffer)
-                _enterEventFrameCache.Remove(key);
-
-            _cleanupBuffer.Clear();
-
-            foreach (var kvp in _exitEventFrameCache)
-            {
-                if (kvp.Value < currentFrame - 1)
-                {
-                    _cleanupBuffer.Add(kvp.Key);
-                }
-            }
-
-            foreach (var key in _cleanupBuffer)
-                _exitEventFrameCache.Remove(key);
+            _enterEventFrameCache.Cleanup(currentFrame);
+            _exitEventFrameCache.Cleanup(currentFrame);
         }
 
         private string GetName(object obj)
@@ -178,7 +172,13 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         }
 
         public bool IsDetectingObject(IDetectable detectable) => _detected.Contains(detectable);
-        public void ClearDetections() => _detected.Clear();
+
+        public void ClearDetections()
+        {
+            _detected.Clear();
+            _enterEventFrameCache.Clear();
+            _exitEventFrameCache.Clear();
+        }
 
         private Vector3 GetConeWorldDirection()
         {

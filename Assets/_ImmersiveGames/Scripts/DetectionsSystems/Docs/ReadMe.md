@@ -108,12 +108,12 @@ consulta (`GetSensors`, `IsAnySensorDetecting`, `GetTotalDetections`) úteis par
 
 ### `Sensor`
 `Runtime/Sensor.cs` é a unidade operacional:
-- Reutiliza um array fixo de `Collider[5]` para sobreposições (evitando GC).
-- `ProcessDetections` compara lista atual (`current`) com cache `_detected` para identificar entradas/saídas.
-- Usa `Dictionary<IDetectable,int>` para garantir que cada alvo gera apenas um evento por frame (ENTER/EXIT).
+- Dimensiona o buffer de colisores a partir de `SensorConfig.MaxColliders` e expande dinamicamente quando necessário, sinalizando via log para calibrar o valor ideal.
+- Utiliza `DetectionSet` interno para manter buscas O(1) sem gerar garbage durante as remoções.
+- `FrameEventCache` garante que cada alvo gere apenas um evento por frame (ENTER/EXIT) e limpa automaticamente caches antigos.
 - Expõe estado para debug (`CurrentlyDetected`, `IsDetecting`, `GetConeEdgeDirections`, `GetConeArcPoints`).
 
-> ⚠️ Ajuste `Collider[5]` se o mesmo sensor precisar detectar mais de cinco objetos simultâneos.
+> ⚠️ Ajuste `MaxColliders` no `SensorConfig` para refletir o volume médio de alvos e evitar expansões em runtime.
 
 ---
 
@@ -195,6 +195,6 @@ MonoBehaviour opcional (`Mono/SensorDebugVisualizer.cs`):
 ## 🚀 Sugestões de Evolução
 
 - **Buffers reutilizáveis em sensores** — Padronize o uso de listas e caches reaproveitados para remover alocações por frame, especialmente em sensores com alta frequência. A classe `Sensor` já utiliza padrões de reuso e pode servir de referência para outros sistemas.
-- **Dimensionamento adaptativo do array de colisores** — Extraia para configuração global a capacidade do array interno (`Collider[5]`). Dessa forma é possível ajustar conforme o número médio de alvos, evitando perder detecções quando mais de cinco objetos estiverem elegíveis.
+- **Configuração centralizada de buffers** — Criar um `ScriptableObject` global (ex.: `SensorRuntimeSettings`) para definir valores padrão como `MaxColliders` e limites de expansão, permitindo calibrar cenários específicos sem duplicar ajustes em cada `SensorConfig`.
 - **Pipeline paralelo para sensores não críticos** — Considere mover sensores auxiliares (ex.: decoração, feedback visual) para um `JobHandle` dedicado ou execução alternada a cada `FixedUpdate`. Reduz a contenda pelo thread principal em cenas com muitos atores.
 - **Métricas em runtime** — Instrumente o `DetectorService` com contadores simples (tempo médio de varredura, quantidade máxima de detecções simultâneas). Esses dados ajudam a calibrar frequências e a identificar gargalos em mapas complexos.
