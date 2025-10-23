@@ -65,7 +65,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _waitingDelay = false;
                 DebugUtility.LogVerbose<EaterDesireService>(
                     "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
-                    instance: _master);
+                    context: _master,
+                    instance: this);
                 PickNextDesire();
                 return;
             }
@@ -74,7 +75,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogVerbose<EaterDesireService>(
                     $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
-                    instance: _master);
+                    context: _master,
+                    instance: this);
                 PickNextDesire();
             }
         }
@@ -102,7 +104,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 RestartTimer(delay);
                 DebugUtility.LogVerbose<EaterDesireService>(
                     $"⌛ Iniciando desejos após atraso de {delay:F2}s.",
-                    instance: _master);
+                    context: _master,
+                    instance: this);
             }
             else
             {
@@ -132,7 +135,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _timer.Stop();
             }
 
-            DebugUtility.LogVerbose<EaterDesireService>("🛑 Desejos do Eater pausados.", instance: _master);
+            DebugUtility.LogVerbose<EaterDesireService>("🛑 Desejos do Eater pausados.", context: _master, instance: this);
             return true;
         }
 
@@ -171,7 +174,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogWarning<EaterDesireService>(
                     "Não foi possível selecionar um desejo válido para o Eater.",
-                    instance: _master);
+                    context: _master,
+                    instance: this);
                 _currentDesire = null;
                 _currentDesireAvailable = false;
                 _currentDuration = 0f;
@@ -209,13 +213,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             float timestamp = Time.timeSinceLevelLoad;
             DebugUtility.Log<EaterDesireService>(
                 $"✨ {actorName} deseja {desire} ({availability}) por {_currentDuration:F2}s (peso {_currentDesireWeight:F2}, t={timestamp:F2}s).",
-                instance: _master);
+                context: _master,
+                instance: this);
 
             if (!available)
             {
                 DebugUtility.LogVerbose<EaterDesireService>(
                     $"Nenhum planeta com {desire} detectado, mantendo desejo com duração reduzida para {_currentDuration:F2}s.",
-                    instance: _master);
+                    context: _master,
+                    instance: this);
             }
         }
 
@@ -301,7 +307,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         .Append(')');
                 }
 
-                DebugUtility.LogVerbose<EaterDesireService>(_debugBuilder.ToString(), instance: _master, deduplicate: true);
+                DebugUtility.LogVerbose<EaterDesireService>(
+                    _debugBuilder.ToString(),
+                    context: _master,
+                    instance: this,
+                    deduplicate: true);
             }
 
             if (totalWeight <= 0f)
