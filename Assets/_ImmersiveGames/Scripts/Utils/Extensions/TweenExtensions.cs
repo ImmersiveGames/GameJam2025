@@ -1,4 +1,5 @@
-﻿using DG.Tweening;
+using DG.Tweening;
+using UnityEngine;
 using UnityEngine.UI;
 namespace _ImmersiveGames.Scripts.Utils.Extensions
 {
@@ -23,6 +24,33 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
                 startValue = x;
                 if (target != null)
                     target.fillAmount = x;
+            }, endValue, duration);
+
+            tween.SetTarget(target);
+            return tween;
+        }
+    }
+
+    /// <summary>
+    /// Extensão para interpolar cores de Image usando DOTween gratuito.
+    /// </summary>
+    public static class DoColorExtension
+    {
+        /// <summary>
+        /// Cria um tween que anima a cor de uma Image.
+        /// Compatível com DOTween free.
+        /// </summary>
+        public static Tweener DoColor(this Image target, Color endValue, float duration)
+        {
+            if (target == null)
+                throw new System.ArgumentNullException(nameof(target));
+
+            Color startValue = target.color;
+            Tweener tween = DOTween.To(() => startValue, x =>
+            {
+                startValue = x;
+                if (target != null)
+                    target.color = x;
             }, endValue, duration);
 
             tween.SetTarget(target);

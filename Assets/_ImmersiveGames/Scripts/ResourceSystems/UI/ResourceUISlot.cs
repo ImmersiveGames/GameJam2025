@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.Extensions;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -223,7 +224,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 else
                 {
                     _colorTween?.Kill();
-                    _colorTween = FillImage.DOColor(targetColor, transitionDuration)
+                    _colorTween = FillImage.DoColor(targetColor, transitionDuration)
                         .SetEase(_currentStyle.basicEase);
                 }
             }
