@@ -48,6 +48,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool ShouldWander => !IsHungry && !IsEating;
         public bool LostTargetWhileHungry => IsHungry && !HasTarget && !IsEating;
         public bool HasPlayerAnchor => _hasCachedPlayerAnchor;
+        public bool HasWanderingTimer => _wanderingTimer != null;
+        public bool IsWanderingTimerRunning => _wanderingTimer != null && _wanderingTimer.IsRunning;
 
         public void ResetStateTimer()
         {
@@ -150,6 +152,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return false;
         }
 
+        public bool TryGetCachedPlayerAnchor(out Vector3 anchor)
+        {
+            if (_hasCachedPlayerAnchor)
+            {
+                anchor = _lastKnownPlayerAnchor;
+                return true;
+            }
+
+            anchor = Transform.position;
+            return false;
+        }
+
         public void RestartWanderingTimer()
         {
             if (_wanderingTimer == null)
@@ -175,6 +189,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool HasWanderingTimerElapsed()
         {
             return _wanderingTimer != null && _wanderingTimer.IsFinished;
+        }
+
+        public float GetWanderingTimerValue()
+        {
+            return _wanderingTimer != null ? _wanderingTimer.CurrentTime : 0f;
         }
     }
 }

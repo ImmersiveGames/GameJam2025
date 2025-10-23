@@ -1,4 +1,7 @@
+using System;
+using System.Text;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -29,6 +32,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private IState _chasingState;
         private IState _eatingState;
         private bool _stateMachineBuilt;
+        private IState _lastKnownState;
+        private readonly StringBuilder _summaryBuilder = new StringBuilder(256);
+
+        [Header("Debug")]
+        [SerializeField, Tooltip("Exibe logs automáticos quando o estado do comportamento muda.")]
+        private bool logStateTransitions = true;
+        [SerializeField, Tooltip("Inclui um resumo básico do estado atual no log de transição.")]
+        private bool logStateSummaries;
+
+        public event Action<IState, IState> EventStateChanged;
+
+        public IState CurrentState => _stateMachine?.CurrentState;
+        public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
 
         private void Awake()
         {
@@ -69,6 +85,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             _stateMachine.Update();
+            TrackStateChange("Update");
         }
 
         private void FixedUpdate()
@@ -198,6 +215,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _stateMachine = builder.Build();
             _stateMachineBuilt = true;
+            _lastKnownState = _stateMachine.CurrentState;
+
+            if (logStateTransitions)
+            {
+                DebugUtility.Log<EaterBehavior>($"Estado inicial definido: {GetStateName(_lastKnownState)}.", instance: this);
+            }
+
+            LogStateSummary("📊 Resumo inicial do comportamento");
+
             ForceStateEvaluation();
         }
 
@@ -209,6 +235,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             _stateMachine.Update();
+            TrackStateChange("ForceEvaluation");
         }
 
         [ContextMenu("Eater States/Force Wandering")]
@@ -305,11 +332,114 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 current?.OnExit();
                 _stateMachine.SetState(targetState);
+                TrackStateChange("ForceSetState");
                 return;
             }
 
             current?.OnExit();
             _stateMachine.SetState(targetState);
+            TrackStateChange("ForceSetState");
+        }
+
+        private void TrackStateChange(string reason)
+        {
+            if (_stateMachine == null)
+            {
+                return;
+            }
+
+            IState current = _stateMachine.CurrentState;
+            if (ReferenceEquals(current, _lastKnownState))
+            {
+                return;
+            }
+
+            IState previous = _lastKnownState;
+            _lastKnownState = current;
+
+            if (logStateTransitions)
+            {
+                string message = string.IsNullOrEmpty(reason)
+                    ? $"Estado alterado: {GetStateName(previous)} → {GetStateName(current)}."
+                    : $"Estado alterado ({reason}): {GetStateName(previous)} → {GetStateName(current)}.";
+                DebugUtility.Log<EaterBehavior>(message, instance: this);
+            }
+
+            LogStateSummary($"📊 Resumo após transição ({reason})");
+
+            EventStateChanged?.Invoke(previous, current);
+        }
+
+        private void LogStateSummary(string title)
+        {
+            if (!logStateSummaries)
+            {
+                return;
+            }
+
+            EaterBehaviorDebugSnapshot snapshot = CreateDebugSnapshot();
+            if (!snapshot.IsValid)
+            {
+                DebugUtility.LogWarning<EaterBehavior>("Contexto ainda não está disponível para gerar resumo.", this);
+                return;
+            }
+
+            _summaryBuilder.Clear();
+            _summaryBuilder.AppendLine(title);
+            _summaryBuilder.AppendLine($"- Estado: {snapshot.CurrentState}");
+            _summaryBuilder.AppendLine($"- Fome: {snapshot.IsHungry}, Comendo: {snapshot.IsEating}");
+            _summaryBuilder.AppendLine($"- Alvo: {(snapshot.HasTarget ? snapshot.TargetName : "Nenhum")}");
+            _summaryBuilder.AppendLine($"- Timer do estado: {snapshot.StateTimer:F2}s");
+
+            if (snapshot.HasWanderingTimer)
+            {
+                _summaryBuilder.AppendLine($"- Timer de vagar: running={snapshot.WanderingTimerRunning}, finalizado={snapshot.WanderingTimerFinished}, tempo={snapshot.WanderingTimerValue:F2}s de {snapshot.WanderingDuration:F2}s");
+            }
+
+            if (snapshot.HasPlayerAnchor)
+            {
+                _summaryBuilder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
+            }
+
+            _summaryBuilder.AppendLine($"- Posição: {snapshot.Position}");
+
+            DebugUtility.Log<EaterBehavior>(_summaryBuilder.ToString(), instance: this);
+        }
+
+        public EaterBehaviorDebugSnapshot CreateDebugSnapshot()
+        {
+            if (_context == null)
+            {
+                return EaterBehaviorDebugSnapshot.Empty;
+            }
+
+            Vector3 anchor = default;
+            bool hasAnchor = _context.TryGetCachedPlayerAnchor(out anchor);
+            var target = _context.Target;
+            string targetName = target?.Owner?.ActorName ?? target?.Owner?.Transform?.name ?? string.Empty;
+
+            return new EaterBehaviorDebugSnapshot(
+                true,
+                GetStateName(_stateMachine?.CurrentState),
+                _context.IsHungry,
+                _context.IsEating,
+                _context.HasTarget,
+                targetName,
+                _context.StateTimer,
+                _context.HasWanderingTimer,
+                _context.IsWanderingTimerRunning,
+                _context.HasWanderingTimerElapsed(),
+                _context.GetWanderingTimerValue(),
+                _context.Config.WanderingDuration,
+                _context.Transform.position,
+                hasAnchor,
+                anchor
+            );
+        }
+
+        private static string GetStateName(IState state)
+        {
+            return state?.GetType().Name ?? "None";
         }
     }
 }
