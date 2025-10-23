@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private readonly Dictionary<string, ICanvasBinder> _canvases = new();
 
         private readonly Dictionary<(string actorId, ResourceType resourceType), string> _canvasIdCache = new();
-        private readonly Dictionary<string, Dictionary<string, ResourceUpdateEvent>> _pendingFirstUpdates = new();
+        private readonly Dictionary<string, Dictionary<(string actorId, ResourceType resourceType), ResourceUpdateEvent>> _pendingFirstUpdates = new();
         private readonly HashSet<(string actorId, ResourceType resourceType)> _processedFirstUpdates = new();
 
         private readonly ICanvasRoutingStrategy _routingStrategy;
@@ -128,13 +128,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         private void CacheInitialSlotCreation(string actorId, ResourceType resourceType, IResourceValue data, string targetCanvasId)
         {
-            if (!_pendingFirstUpdates.ContainsKey(targetCanvasId))
+            if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out var canvasEvents))
             {
-                _pendingFirstUpdates[targetCanvasId] = new Dictionary<string, ResourceUpdateEvent>();
+                canvasEvents = new Dictionary<(string actorId, ResourceType resourceType), ResourceUpdateEvent>();
+                _pendingFirstUpdates[targetCanvasId] = canvasEvents;
             }
 
             var evt = new ResourceUpdateEvent(actorId, resourceType, data);
-            _pendingFirstUpdates[targetCanvasId][actorId] = evt;
+            canvasEvents[(actorId, resourceType)] = evt;
 
             // Registrar também no hub para compatibilidade global
             try
@@ -189,11 +190,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             if (!_pendingFirstUpdates.TryGetValue(targetCanvasId, out var canvasUpdates))
             {
-                canvasUpdates = new Dictionary<string, ResourceUpdateEvent>();
+                canvasUpdates = new Dictionary<(string actorId, ResourceType resourceType), ResourceUpdateEvent>();
                 _pendingFirstUpdates[targetCanvasId] = canvasUpdates;
             }
 
-            string key = $"{evt.ActorId}_{evt.ResourceType}";
+            var key = (evt.ActorId, evt.ResourceType);
             canvasUpdates[key] = evt;
 
             // Registrar no hub para pendentes
@@ -220,32 +221,33 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public void ProcessPendingFirstUpdatesForCanvas(string canvasId)
         {
-            if (_pendingFirstUpdates.TryGetValue(canvasId, out Dictionary<string, ResourceUpdateEvent> actorEvents))
+            if (!_pendingFirstUpdates.TryGetValue(canvasId, out var actorEvents))
+                return;
+
+            DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"🔄 Processing {actorEvents.Count} pending updates for canvas '{canvasId}'");
+
+            foreach (var (key, evt) in actorEvents.ToList())
             {
-                DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"🔄 Processing {actorEvents.Count} pending updates for canvas '{canvasId}'");
-
-                foreach ((string actorId, var evt) in actorEvents.ToList())
+                if (_actors.ContainsKey(key.actorId))
                 {
-                    if (_actors.ContainsKey(actorId))
-                    {
-                        ScheduleBindForActor(evt.ActorId, evt.ResourceType, evt.NewValue, canvasId);
-                        actorEvents.Remove(actorId);
-                        DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"✅ Processed cached update: {evt.ActorId}.{evt.ResourceType}");
-                    }
+                    ScheduleBindForActor(evt.ActorId, evt.ResourceType, evt.NewValue, canvasId);
+                    actorEvents.Remove(key);
+                    DebugUtility.LogVerbose<ActorResourceOrchestratorService>($"✅ Processed cached update: {evt.ActorId}.{evt.ResourceType}");
                 }
+            }
 
-                if (actorEvents.Count == 0)
-                {
-                    _pendingFirstUpdates.Remove(canvasId);
-                }
+            if (actorEvents.Count == 0)
+            {
+                _pendingFirstUpdates.Remove(canvasId);
             }
         }
 
         private void ProcessPendingFirstUpdatesForActor(string actorId)
         {
-            var canvasesToProcess = _pendingFirstUpdates.Keys.Where(canvasId =>
-                _pendingFirstUpdates[canvasId].ContainsKey(actorId)
-            ).ToList();
+            var canvasesToProcess = _pendingFirstUpdates
+                .Where(pair => pair.Value.Keys.Any(key => key.actorId == actorId))
+                .Select(pair => pair.Key)
+                .ToList();
 
             foreach (string canvasId in canvasesToProcess)
             {
@@ -279,15 +281,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             foreach (var key in keysToRemove)
                 _canvasIdCache.Remove(key);
 
-            foreach (Dictionary<string, ResourceUpdateEvent> canvasUpdates in _pendingFirstUpdates.Values)
+            foreach (var (canvasId, canvasUpdates) in _pendingFirstUpdates.ToList())
             {
-                canvasUpdates.Remove(actorId);
-            }
+                var keysToRemove = canvasUpdates.Keys.Where(key => key.actorId == actorId).ToList();
+                foreach (var key in keysToRemove)
+                {
+                    canvasUpdates.Remove(key);
+                }
 
-            var emptyCanvases = _pendingFirstUpdates.Where(kvp => kvp.Value.Count == 0).Select(kvp => kvp.Key).ToList();
-            foreach (string canvasId in emptyCanvases)
-            {
-                _pendingFirstUpdates.Remove(canvasId);
+                if (canvasUpdates.Count == 0)
+                {
+                    _pendingFirstUpdates.Remove(canvasId);
+                }
             }
 
             var processedToRemove = _processedFirstUpdates.Where(k => k.actorId == actorId).ToList();

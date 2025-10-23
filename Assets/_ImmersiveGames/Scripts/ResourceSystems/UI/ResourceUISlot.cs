@@ -23,6 +23,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private FillAnimationProfile animationProfile;
 
         private IFillAnimationStrategy _fillStrategy;
+        private Tween _colorTween;
 
         private float _currentFill;
         private float _previousFill;
@@ -64,6 +65,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             InstanceConfig = config;
             _currentStyle = config?.slotStyle;
 
+            _currentFill = 1f;
+            _previousFill = 1f;
+
             ApplyBaseStyleImmediate();
 
             // Cria estratégia a partir do perfil (ou Instant como fallback)
@@ -74,9 +78,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 iconImage.sprite = InstanceConfig.resourceDefinition.icon;
 
             gameObject.name = $"{actorId}_{type}";
-
-            _currentFill = 1f;
-            _previousFill = 1f;
 
             ApplyVisualsImmediate();
 
@@ -89,13 +90,18 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             DebugUtility.LogVerbose<ResourceUISlot>($"🎨 Applying base style: {_currentStyle.name}");
 
-            if (pendingFillImage != null && _currentStyle.pendingColor != default)
-                pendingFillImage.color = _currentStyle.pendingColor;
-
             if (fillImage != null)
-                fillImage.fillAmount = 1f;
+                fillImage.fillAmount = _currentFill;
+
             if (pendingFillImage != null)
-                pendingFillImage.fillAmount = 1f;
+            {
+                pendingFillImage.fillAmount = _currentFill;
+
+                if (_currentStyle.pendingColor != default)
+                    pendingFillImage.color = _currentStyle.pendingColor;
+            }
+
+            ApplyStyleColors(_currentFill);
         }
 
         public void Configure(IResourceValue data)
@@ -130,6 +136,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (valueText != null)
                 valueText.text = _currentText;
 
+            ApplyStyleColors(_currentFill);
+
             SetVisible(true);
         }
 
@@ -138,6 +146,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             DebugUtility.LogVerbose<ResourceUISlot>($"⚡ ApplyVisualsImmediate: {Type} - Current: {_currentFill}, Style: {_currentStyle?.name}");
             _fillStrategy?.SetInstant(_currentFill);
             ClearAllTween();
+            ApplyStyleColors(_currentFill);
         }
 
         public void RefreshStyle()
@@ -191,6 +200,43 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (FillImage != null) FillImage.DOKill();
             if (PendingFillImage != null) PendingFillImage.DOKill();
             if (ValueText != null) ValueText.transform.DOKill();
+            _colorTween?.Kill();
+            _colorTween = null;
+        }
+
+        private void ApplyStyleColors(float targetFill)
+        {
+            if (_currentStyle == null)
+                return;
+
+            if (FillImage != null && HasValidGradient(_currentStyle))
+            {
+                Color targetColor = _currentStyle.fillGradient.Evaluate(Mathf.Clamp01(targetFill));
+                float transitionDuration = _isFirstConfigure ? 0f : Mathf.Max(0f, _currentStyle.quickDuration);
+
+                if (transitionDuration <= 0f)
+                {
+                    FillImage.color = targetColor;
+                    _colorTween?.Kill();
+                    _colorTween = null;
+                }
+                else
+                {
+                    _colorTween?.Kill();
+                    _colorTween = FillImage.DOColor(targetColor, transitionDuration)
+                        .SetEase(_currentStyle.basicEase);
+                }
+            }
+
+            if (PendingFillImage != null && _currentStyle.pendingColor != default)
+            {
+                PendingFillImage.color = _currentStyle.pendingColor;
+            }
+        }
+
+        private static bool HasValidGradient(ResourceUIStyle style)
+        {
+            return style.fillGradient != null && style.fillGradient.colorKeys != null && style.fillGradient.colorKeys.Length > 0;
         }
     }
 }
