@@ -60,8 +60,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 
             if (master != null)
             {
-                master.EventStartEatPlanet += OnStartEat;
-                master.EventEndEatPlanet += OnEndEat;
+                master.EventStartEatPlanet += OnStartEatPlanet;
+                master.EventEndEatPlanet += OnEndEatPlanet;
                 master.EventEaterBite += OnBite;
                 master.EventConsumeResource += OnConsumeResource;
                 master.EventEaterTakeDamage += OnTakeDamage;
@@ -77,8 +77,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 
             if (master != null)
             {
-                master.EventStartEatPlanet -= OnStartEat;
-                master.EventEndEatPlanet -= OnEndEat;
+                master.EventStartEatPlanet -= OnStartEatPlanet;
+                master.EventEndEatPlanet -= OnEndEatPlanet;
                 master.EventEaterBite -= OnBite;
                 master.EventConsumeResource -= OnConsumeResource;
                 master.EventEaterTakeDamage -= OnTakeDamage;
