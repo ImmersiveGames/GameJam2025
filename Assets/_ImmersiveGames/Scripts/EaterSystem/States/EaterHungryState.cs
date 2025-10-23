@@ -35,5 +35,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             return Mathf.Max(Config.DirectionChangeInterval * 0.5f, 0.1f);
         }
+
+        protected override Vector3 EvaluateDirection()
+        {
+            Vector3 randomDirection = base.EvaluateDirection();
+            if (!Context.TryGetPlayerAnchor(out Vector3 anchor))
+            {
+                return randomDirection;
+            }
+
+            Vector3 toAnchor = anchor - Transform.position;
+            if (toAnchor.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return randomDirection;
+            }
+
+            float maxDistance = Mathf.Max(Config.WanderingMaxDistanceFromPlayer, 0f);
+            float distance = toAnchor.magnitude;
+            if (maxDistance > 0f && distance >= maxDistance)
+            {
+                return toAnchor.normalized;
+            }
+
+            float attraction = Mathf.Clamp01(Config.HungryPlayerAttraction);
+            if (maxDistance > 0f && distance > 0f)
+            {
+                float proximityFactor = 1f - Mathf.Clamp01(distance / maxDistance);
+                attraction = Mathf.Clamp01(attraction + (1f - attraction) * proximityFactor);
+            }
+
+            Vector3 directionToAnchor = toAnchor.normalized;
+            Vector3 blendedDirection = Vector3.Slerp(randomDirection, directionToAnchor, attraction);
+            return blendedDirection.sqrMagnitude > 0f ? blendedDirection.normalized : directionToAnchor;
+        }
     }
 }

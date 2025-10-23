@@ -200,6 +200,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
                 _builder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
             }
 
+            if (snapshot.HasAutoFlow)
+            {
+                _builder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
+            }
+
+            _builder.AppendLine($"- Desejos ativos: {snapshot.DesiresActive}");
             _builder.AppendLine($"- Posição atual: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);

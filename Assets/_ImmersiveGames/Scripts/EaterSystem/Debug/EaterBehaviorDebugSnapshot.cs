@@ -24,6 +24,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         public Vector3 Position { get; }
         public bool HasPlayerAnchor { get; }
         public Vector3 PlayerAnchor { get; }
+        public bool HasAutoFlow { get; }
+        public bool AutoFlowActive { get; }
+        public bool DesiresActive { get; }
+        public bool PendingHungryEffects { get; }
 
         public EaterBehaviorDebugSnapshot(
             bool isValid,
@@ -40,7 +44,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             float wanderingDuration,
             Vector3 position,
             bool hasPlayerAnchor,
-            Vector3 playerAnchor)
+            Vector3 playerAnchor,
+            bool hasAutoFlow,
+            bool autoFlowActive,
+            bool desiresActive,
+            bool pendingHungryEffects)
         {
             IsValid = isValid;
             CurrentState = currentState;
@@ -57,6 +65,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             Position = position;
             HasPlayerAnchor = hasPlayerAnchor;
             PlayerAnchor = playerAnchor;
+            HasAutoFlow = hasAutoFlow;
+            AutoFlowActive = autoFlowActive;
+            DesiresActive = desiresActive;
+            PendingHungryEffects = pendingHungryEffects;
         }
     }
 }

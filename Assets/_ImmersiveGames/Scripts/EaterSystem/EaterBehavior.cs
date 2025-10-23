@@ -108,6 +108,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _stateMachine.Update();
             TrackStateChange("Update");
+            _context.EnsureHungryEffects();
         }
 
         private void FixedUpdate()
@@ -423,6 +424,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _summaryBuilder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
             }
 
+            if (snapshot.HasAutoFlow)
+            {
+                _summaryBuilder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
+            }
+
+            _summaryBuilder.AppendLine($"- Desejos ativos: {snapshot.DesiresActive}");
             _summaryBuilder.AppendLine($"- Posição: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehavior>(_summaryBuilder.ToString(), instance: this);
@@ -455,7 +462,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _context.Config.WanderingDuration,
                 _context.Transform.position,
                 hasAnchor,
-                anchor
+                anchor,
+                _context.HasAutoFlowService,
+                _context.IsAutoFlowActive,
+                _context.AreDesiresActive,
+                _context.HasPendingHungryEffects
             );
         }
 

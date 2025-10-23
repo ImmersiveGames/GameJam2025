@@ -30,6 +30,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float wanderingMaxDistanceFromPlayer = 25f;
         [SerializeField, Tooltip("Influência usada para puxar a direção do movimento de volta para o jogador quando próximo do limite.")]
         private float wanderingReturnBias = 0.35f;
+        [SerializeField, Tooltip("Influência usada para puxar o movimento em direção aos jogadores quando o Eater está com fome.")]
+        private float hungryPlayerAttraction = 0.75f;
         
         [SerializeField, Tooltip("Fome restaurada ao consumir recurso desejado")]
         private float desiredHungerRestored = 50f;
@@ -55,6 +57,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float WanderingDuration => wanderingDuration;
         public float WanderingMaxDistanceFromPlayer => wanderingMaxDistanceFromPlayer;
         public float WanderingReturnBias => wanderingReturnBias;
+        public float HungryPlayerAttraction => hungryPlayerAttraction;
         public float MinimumChaseDistance => minimumChaseDistance;
         
         public int BiteDamage => biteDamage;

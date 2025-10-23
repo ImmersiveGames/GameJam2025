@@ -10,6 +10,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         [SerializeField] private bool startPaused = true;
         private ResourceAutoFlowService _autoFlow;
 
+        public bool HasAutoFlowService => _autoFlow != null;
+        public bool IsAutoFlowActive => _autoFlow != null && !_autoFlow.IsPaused;
+
         protected override void OnServiceInitialized()
         {
             if (resourceSystem == null)
@@ -38,6 +41,42 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (_autoFlow != null && IsInitialized && !_autoFlow.IsPaused)
                 _autoFlow.Process(Time.deltaTime);
+        }
+
+        public bool ResumeAutoFlow()
+        {
+            if (_autoFlow == null)
+            {
+                return false;
+            }
+
+            if (!_autoFlow.IsPaused)
+            {
+                return false;
+            }
+
+            _autoFlow.Resume();
+            string actorId = actor?.ActorId ?? name;
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"▶️ AutoFlow retomado para {actorId}.");
+            return true;
+        }
+
+        public bool PauseAutoFlow()
+        {
+            if (_autoFlow == null)
+            {
+                return false;
+            }
+
+            if (_autoFlow.IsPaused)
+            {
+                return false;
+            }
+
+            _autoFlow.Pause();
+            string actorId = actor?.ActorId ?? name;
+            DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"⏸️ AutoFlow pausado para {actorId}.");
+            return true;
         }
 
         protected override void OnServiceDispose()

@@ -1,5 +1,7 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
 using UnityEngine;
 
@@ -14,12 +16,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private readonly EaterMaster _master;
         private readonly Transform _transform;
         private readonly EaterConfigSo _config;
+        private readonly ResourceAutoFlowBridge _autoFlowBridge;
 
         private readonly CountdownTimer _wanderingTimer;
         private IDetectable _target;
         private float _stateTimer;
         private Vector3 _lastKnownPlayerAnchor;
         private bool _hasCachedPlayerAnchor;
+        private bool _desiresActive;
+        private bool _pendingHungryEffects;
 
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
@@ -27,6 +32,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _transform = master.transform;
             _config = config;
             GameArea = gameArea;
+            if (master.TryGetComponent(out ResourceAutoFlowBridge autoFlowBridge))
+            {
+                _autoFlowBridge = autoFlowBridge;
+            }
             if (config.WanderingDuration > 0f)
             {
                 _wanderingTimer = new CountdownTimer(config.WanderingDuration);
@@ -50,6 +59,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool HasPlayerAnchor => _hasCachedPlayerAnchor;
         public bool HasWanderingTimer => _wanderingTimer != null;
         public bool IsWanderingTimerRunning => _wanderingTimer != null && _wanderingTimer.IsRunning;
+        public bool HasAutoFlowService => _autoFlowBridge != null && _autoFlowBridge.HasAutoFlowService;
+        public bool IsAutoFlowActive => _autoFlowBridge != null && _autoFlowBridge.IsAutoFlowActive;
+        public bool AreDesiresActive => _desiresActive;
+        public bool HasPendingHungryEffects => _pendingHungryEffects;
 
         public void ResetStateTimer()
         {
@@ -70,6 +83,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             IsHungry = value;
             _master.InHungry = value;
+
+            if (value)
+            {
+                bool autoFlowActive = ResumeAutoFlow();
+                BeginDesires();
+                _pendingHungryEffects = _autoFlowBridge != null && !autoFlowActive;
+            }
+            else
+            {
+                PauseAutoFlow();
+                EndDesires();
+                _pendingHungryEffects = false;
+            }
+
             return true;
         }
 
@@ -194,6 +221,76 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float GetWanderingTimerValue()
         {
             return _wanderingTimer != null ? _wanderingTimer.CurrentTime : 0f;
+        }
+
+        public bool ResumeAutoFlow()
+        {
+            if (_autoFlowBridge == null || !_autoFlowBridge.IsInitialized || !_autoFlowBridge.HasAutoFlowService)
+            {
+                return false;
+            }
+
+            bool resumed = _autoFlowBridge.ResumeAutoFlow();
+            if (resumed)
+            {
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow retomado para {_master.ActorId}.");
+            }
+
+            return _autoFlowBridge.IsAutoFlowActive;
+        }
+
+        public bool PauseAutoFlow()
+        {
+            if (_autoFlowBridge == null || !_autoFlowBridge.IsInitialized || !_autoFlowBridge.HasAutoFlowService)
+            {
+                return false;
+            }
+
+            bool paused = _autoFlowBridge.PauseAutoFlow();
+            if (paused)
+            {
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow pausado para {_master.ActorId}.");
+            }
+
+            return paused;
+        }
+
+        public bool BeginDesires()
+        {
+            if (_desiresActive)
+            {
+                return false;
+            }
+
+            _desiresActive = true;
+            DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos iniciados para {_master.ActorId}.");
+            return true;
+        }
+
+        public bool EndDesires()
+        {
+            if (!_desiresActive)
+            {
+                return false;
+            }
+
+            _desiresActive = false;
+            DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos pausados para {_master.ActorId}.");
+            return true;
+        }
+
+        public void EnsureHungryEffects()
+        {
+            if (!IsHungry || !_pendingHungryEffects)
+            {
+                return;
+            }
+
+            bool active = ResumeAutoFlow();
+            if (active)
+            {
+                _pendingHungryEffects = false;
+            }
         }
     }
 }
