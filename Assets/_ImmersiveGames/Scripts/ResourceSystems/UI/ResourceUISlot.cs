@@ -210,10 +210,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             if (_currentStyle == null)
                 return;
 
-            if (FillImage != null && HasValidGradient(_currentStyle))
+            if (FillImage != null && _currentStyle != null && _currentStyle.HasFillGradient())
             {
-                Color targetColor = _currentStyle.fillGradient.Evaluate(Mathf.Clamp01(targetFill));
-                float transitionDuration = _isFirstConfigure ? 0f : Mathf.Max(0f, _currentStyle.quickDuration);
+                Color targetColor = _currentStyle.EvaluateFillColor(Mathf.Clamp01(targetFill));
+                float transitionDuration = _isFirstConfigure ? 0f : Mathf.Max(0f, _currentStyle.colorTransitionDuration);
 
                 if (transitionDuration <= 0f)
                 {
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 {
                     _colorTween?.Kill();
                     _colorTween = FillImage.DoColor(targetColor, transitionDuration)
-                        .SetEase(_currentStyle.basicEase);
+                        .SetEase(_currentStyle.colorTransitionEase);
                 }
             }
 
@@ -233,11 +233,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             {
                 PendingFillImage.color = _currentStyle.pendingColor;
             }
-        }
-
-        private static bool HasValidGradient(ResourceUIStyle style)
-        {
-            return style.fillGradient != null && style.fillGradient.colorKeys != null && style.fillGradient.colorKeys.Length > 0;
         }
     }
 }
