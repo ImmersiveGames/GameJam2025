@@ -32,6 +32,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private int _currentDesireAvailableCount;
         private float _currentDesireWeight;
 
+        public event Action<EaterDesireInfo> EventDesireChanged;
+
         public EaterDesireService(EaterMaster master, EaterConfigSo config)
         {
             _master = master;
@@ -65,7 +67,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _waitingDelay = false;
                 DebugUtility.LogVerbose<EaterDesireService>(
                     "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
-                     _master);
+                    context: _master,
+                    instance: this);
                 PickNextDesire();
                 return;
             }
@@ -105,6 +108,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     $"⌛ Iniciando desejos após atraso de {delay:F2}s.",
                     context: _master,
                     instance: this);
+                NotifyDesireChanged();
             }
             else
             {
@@ -135,6 +139,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             DebugUtility.LogVerbose<EaterDesireService>("🛑 Desejos do Eater pausados.", context: _master, instance: this);
+            NotifyDesireChanged();
             return true;
         }
 
@@ -180,6 +185,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _currentDuration = 0f;
                 _currentDesireAvailableCount = 0;
                 _currentDesireWeight = 0f;
+                NotifyDesireChanged();
                 return;
             }
 
@@ -222,6 +228,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     context: _master,
                     instance: this);
             }
+
+            NotifyDesireChanged();
         }
 
         private bool TrySelectDesire(out PlanetResources desire, out bool available, out int availableCount, out float selectionWeight)
@@ -399,6 +407,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             return Mathf.Max(weight, 0f);
+        }
+
+        private void NotifyDesireChanged()
+        {
+            EventDesireChanged?.Invoke(BuildDesireInfo());
+        }
+
+        private EaterDesireInfo BuildDesireInfo()
+        {
+            bool hasDesire = HasActiveDesire;
+            PlanetResources? resource = hasDesire ? _currentDesire : null;
+            bool available = hasDesire && _currentDesireAvailable;
+            int availableCount = hasDesire ? _currentDesireAvailableCount : 0;
+            float weight = hasDesire ? _currentDesireWeight : 0f;
+            float duration = hasDesire ? _currentDuration : 0f;
+            float remaining = _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
+
+            if (!hasDesire)
+            {
+                remaining = 0f;
+            }
+
+            return new EaterDesireInfo(_active, hasDesire, resource, available, availableCount, weight, duration, remaining);
         }
 
         private readonly struct WeightedDesireCandidate

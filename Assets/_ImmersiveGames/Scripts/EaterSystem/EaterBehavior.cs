@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _stateMachineBuilt;
         private IState _lastKnownState;
         private readonly StringBuilder _summaryBuilder = new StringBuilder(256);
+        private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
 
         [Header("Execução")]
         [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
@@ -51,9 +52,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _hasWarnedAboutInactiveGameState;
 
         public event Action<IState, IState> EventStateChanged;
+        public event Action<EaterDesireInfo> EventDesireChanged;
 
         public IState CurrentState => _stateMachine?.CurrentState;
         public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
+        public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
 
         private void Awake()
         {
@@ -71,6 +74,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             Rect gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
             _context = new EaterBehaviorContext(_master, config, gameArea);
+            _currentDesireInfo = _context.GetCurrentDesireInfo();
+            _context.EventDesireChanged += HandleContextDesireChanged;
         }
 
         private void Start()
@@ -81,6 +86,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             BuildStateMachine();
+        }
+
+        private void OnDestroy()
+        {
+            if (_context != null)
+            {
+                _context.EventDesireChanged -= HandleContextDesireChanged;
+                _context.Dispose();
+            }
         }
 
         private void Update()
@@ -165,6 +179,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void ClearTarget()
         {
             SetTarget(null);
+        }
+
+        public EaterDesireInfo GetCurrentDesireInfo()
+        {
+            return _context != null ? _currentDesireInfo : EaterDesireInfo.Inactive;
         }
 
         /// <summary>
@@ -364,6 +383,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             current?.OnExit();
             _stateMachine.SetState(targetState);
             TrackStateChange("ForceSetState");
+        }
+
+        private void HandleContextDesireChanged(EaterDesireInfo info)
+        {
+            _currentDesireInfo = info;
+            EventDesireChanged?.Invoke(info);
         }
 
         private void TrackStateChange(string reason)

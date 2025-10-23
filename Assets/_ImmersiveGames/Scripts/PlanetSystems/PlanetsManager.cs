@@ -64,6 +64,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private readonly List<float> _orbitRadii = new();
         private readonly Dictionary<string, PlanetsMaster> _planetsByActorId = new();
         private EventBinding<DeathEvent> _planetDeathBinding;
+        private readonly Dictionary<PlanetResources, PlanetResourcesSo> _resourceDefinitions = new();
 
         protected override void Awake()
         {
@@ -73,8 +74,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 planetsRoot = transform;
             }
 
+            RebuildResourceDefinitions();
             _planetDeathBinding = new EventBinding<DeathEvent>(OnPlanetDeath);
             EventBus<DeathEvent>.Register(_planetDeathBinding);
+        }
+
+        private void OnValidate()
+        {
+            RebuildResourceDefinitions();
         }
 
         private void Start() => StartCoroutine(InitializePlanetsRoutine());
@@ -126,6 +133,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             planetInstance.AssignResource(resource);
+            CacheResourceDefinition(resource);
 
             PlanetResources resourceType = resource != null ? resource.ResourceType : default;
             _planetResourcesMap[planetInstance] = resourceType;
@@ -229,7 +237,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             int randomIndex = Random.Range(0, availableResources.Count);
-            return availableResources[randomIndex];
+            PlanetResourcesSo resource = availableResources[randomIndex];
+            CacheResourceDefinition(resource);
+            return resource;
+        }
+
+        private void RebuildResourceDefinitions()
+        {
+            _resourceDefinitions.Clear();
+            if (availableResources == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < availableResources.Count; i++)
+            {
+                CacheResourceDefinition(availableResources[i]);
+            }
+        }
+
+        private void CacheResourceDefinition(PlanetResourcesSo resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            PlanetResources resourceType = resource.ResourceType;
+            if (_resourceDefinitions.ContainsKey(resourceType))
+            {
+                return;
+            }
+
+            _resourceDefinitions.Add(resourceType, resource);
         }
 
         public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
@@ -238,6 +278,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public IDetectable GetPlanetMarked() => _targetToEater;
 
         public bool IsMarkedPlanet(IDetectable planet) => _targetToEater == planet;
+
+        public bool TryGetResourceDefinition(PlanetResources resourceType, out PlanetResourcesSo definition)
+        {
+            if (_resourceDefinitions.TryGetValue(resourceType, out definition) && definition != null)
+            {
+                return true;
+            }
+
+            definition = null;
+            return false;
+        }
 
         private void OnPlanetDeath(DeathEvent evt)
         {

@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     /// Contexto compartilhado entre os estados do comportamento do Eater.
     /// Mantém referências essenciais e estado atual para facilitar transições previsíveis.
     /// </summary>
-    public sealed class EaterBehaviorContext
+    public sealed class EaterBehaviorContext : IDisposable
     {
         private readonly EaterMaster _master;
         private readonly Transform _transform;
@@ -32,6 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _hasHungryMetrics;
         private float _lastAnchorDistance;
         private float _lastAnchorAlignment;
+        private bool _disposed;
 
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
@@ -44,6 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _autoFlowBridge = autoFlowBridge;
             }
             _desireService = new EaterDesireService(master, config);
+            _desireService.EventDesireChanged += HandleDesireChanged;
             if (config.WanderingDuration > 0f)
             {
                 _wanderingTimer = new CountdownTimer(config.WanderingDuration);
@@ -84,6 +87,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float CurrentDesireRemainingTime => _desireService != null ? _desireService.CurrentDesireRemainingTime : 0f;
         public int CurrentDesireAvailableCount => _desireService != null ? _desireService.CurrentDesireAvailableCount : 0;
         public float CurrentDesireWeight => _desireService != null ? _desireService.CurrentDesireWeight : 0f;
+        public event Action<EaterDesireInfo> EventDesireChanged;
 
         public void ResetStateTimer()
         {
@@ -343,6 +347,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _lastAnchorDistance = Mathf.Max(distanceToAnchor, 0f);
             _lastAnchorAlignment = Mathf.Clamp(alignmentWithAnchor, -1f, 1f);
             _hasHungryMetrics = true;
+        }
+
+        public EaterDesireInfo GetCurrentDesireInfo()
+        {
+            if (_desireService == null)
+            {
+                return EaterDesireInfo.Inactive;
+            }
+
+            bool serviceActive = _desireService.IsActive;
+            bool hasDesire = _desireService.HasActiveDesire;
+            PlanetResources? resource = hasDesire ? _desireService.CurrentDesire : null;
+            bool available = hasDesire && _desireService.CurrentDesireAvailable;
+            int availableCount = hasDesire ? _desireService.CurrentDesireAvailableCount : 0;
+            float weight = hasDesire ? _desireService.CurrentDesireWeight : 0f;
+            float duration = hasDesire ? _desireService.CurrentDesireDuration : 0f;
+            float remaining = hasDesire ? _desireService.CurrentDesireRemainingTime : 0f;
+
+            return new EaterDesireInfo(serviceActive, hasDesire, resource, available, availableCount, weight, duration, remaining);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_desireService != null)
+            {
+                _desireService.EventDesireChanged -= HandleDesireChanged;
+            }
+
+            _disposed = true;
+        }
+
+        private void HandleDesireChanged(EaterDesireInfo info)
+        {
+            EventDesireChanged?.Invoke(info);
         }
     }
 }
