@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [SerializeField] private bool autoTestOnReady;
         [SerializeField] private TestMode testMode = TestMode.Hybrid;
         [SerializeField] private float testDamage = 10f;
-        [SerializeField] private ResourceType damageResourceType = ResourceType.Health; // Novo: Escolha o tipo de recurso para dano
+        [SerializeField] private ResourceType damageResourceType = ResourceType.Health; // Novo: Escolha o tipo de recurso para os testes
         [SerializeField] private float initializationDelay = 0.5f;
         [SerializeField] private float overallTimeout = 5f;
         [SerializeField] private bool verboseEvents = true;
@@ -159,11 +159,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 yield break;
             }
 
-            ApplyDamage(testDamage);
+            ApplyDamage(testDamage, damageResourceType);
             yield return new WaitForSeconds(0.3f);
             yield return LogState("AFTER FIRST DAMAGE");
 
-            ApplyDamage(testDamage);
+            ApplyDamage(testDamage, damageResourceType);
             yield return new WaitForSeconds(0.3f);
             yield return LogState("AFTER SECOND DAMAGE");
         }
@@ -216,17 +216,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             yield return null;
         }
 
-        private void ApplyDamage(float amount, ResourceType resourceType = ResourceType.Health) // Novo: Parâmetro opcional para tipo de recurso
+        private void ApplyDamage(float amount, ResourceType resourceType = ResourceType.Health)
         {
-            if (_resourceSystem == null)
-            {
-                _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-                if (_resourceSystem == null)
-                {
-                    DebugUtility.LogError<EntityDebugUtility>("❌ Still cannot access ResourceSystem after retry! Aborting damage application.");
-                    return;
-                }
-            }
+            if (!EnsureResourceSystem()) return;
 
             var resource = _resourceSystem.Get(resourceType);
             if (resource == null)
@@ -239,6 +231,24 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             _resourceSystem.Modify(resourceType, -amount);
             float after = resource.GetCurrentValue();
             DebugUtility.Log<EntityDebugUtility>($"💥 Damage Applied to {resourceType}: {before:F1} → {after:F1}");
+        }
+
+        [ContextMenu("🟢 Fill Selected Resource")]
+        public void FillSelectedResource()
+        {
+            if (!EnsureResourceSystem()) return;
+
+            var resource = _resourceSystem.Get(damageResourceType);
+            if (resource == null)
+            {
+                DebugUtility.LogError<EntityDebugUtility>($"❌ Resource {damageResourceType} not found!");
+                return;
+            }
+
+            float before = resource.GetCurrentValue();
+            float max = resource.GetMaxValue();
+            _resourceSystem.Set(damageResourceType, max);
+            DebugUtility.Log<EntityDebugUtility>($"🟢 Filled {damageResourceType}: {before:F1} → {max:F1}");
         }
 
         private void OnResourceUpdateEvent(ResourceUpdateEvent evt)
@@ -575,6 +585,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             return count;
+        }
+
+        private bool EnsureResourceSystem()
+        {
+            if (_resourceSystem != null) return true;
+
+            _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
+            if (_resourceSystem != null) return true;
+
+            DebugUtility.LogError<EntityDebugUtility>("❌ ResourceSystem is null - cannot continue the requested operation.");
+            return false;
         }
     }
 }
