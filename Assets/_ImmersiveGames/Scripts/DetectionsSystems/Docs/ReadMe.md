@@ -52,7 +52,7 @@ EventBus
 
 1. `SensorController` injeta `DetectorService` com um `IDetector` (Player/Eater) e uma `SensorCollection`.
 2. `DetectorService.Update` percorre cada `Sensor` com a cadência configurada em `SensorConfig.MaxFrequency`.
-3. `Sensor` coleta colisores (`Physics.OverlapSphereNonAlloc`), filtra self-collisions e modo cônico (`IsInCone`).
+3. `Sensor` coleta colisores (`Physics.OverlapSphereNonAlloc`), filtra self-collisions e modo cônico (`IsInCone`). Quando não há colisores válidos, ele consulta o `DetectableRegistry` para localizar detectáveis registrados na mesma vizinhança.
 4. Novas detecções geram `DetectionEnterEvent`; saídas geram `DetectionExitEvent`, ambos publicados no `EventBus`.
 5. `AbstractDetector` e `AbstractDetectable` consomem os eventos e disparam os métodos abstratos para a lógica específica.
 
