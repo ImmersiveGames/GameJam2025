@@ -129,12 +129,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1456968061734532042}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee54ac93978a4a4c87c94dab2fbda987, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  collection: {fileID: 11400000, guid: a0d4bc25f3d4e22458277497c00a9479, type: 2}
+  m_Name:
+  m_EditorClassIdentifier:
+  collection: {fileID: 11400000, guid: 8a4f14adc11d5f9428d7f47855637a4c, type: 2}
 --- !u!114 &13957112238197562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -142,11 +142,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1456968061734532042}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ade62e7b435b4078a73ba8f100989b9a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
+  planetDefenseDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
+  planetProximityDetectionType: {fileID: 11400000, guid: 05f5f4c1c7f24687a7bf01e919f4c32e, type: 2}
 --- !u!114 &7952149840871249308
 MonoBehaviour:
   m_ObjectHideFlags: 0

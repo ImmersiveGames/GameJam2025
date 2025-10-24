@@ -35,6 +35,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _disposed;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
 
+        public event Action<PlanetsMaster, PlanetsMaster> EventTargetChanged;
+
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
             _master = master;
@@ -69,6 +71,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool ShouldChase => IsHungry && HasTarget && !IsEating;
         public bool ShouldEat => IsEating && HasTarget;
+        public bool ShouldEnableProximitySensor => ShouldChase || ShouldEat;
         public bool ShouldWander => !IsHungry && !IsEating;
         public bool LostTargetWhileHungry => IsHungry && !HasTarget && !IsEating;
         public bool HasPlayerAnchor => _hasCachedPlayerAnchor;
@@ -135,12 +138,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public bool SetTarget(PlanetsMaster target)
         {
-            if (_targetPlanet == target)
+            PlanetsMaster previousTarget = _targetPlanet;
+
+            if (previousTarget == target)
             {
                 return false;
             }
 
             _targetPlanet = target;
+            EventTargetChanged?.Invoke(previousTarget, _targetPlanet);
             return true;
         }
 
