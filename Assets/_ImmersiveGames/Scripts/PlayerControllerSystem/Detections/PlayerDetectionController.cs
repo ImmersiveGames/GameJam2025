@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
         private readonly HashSet<DetectionType> _registeredDetectionTypes = new();
         private SensorController _sensorController;
+        private readonly HashSet<IDetectable> _activeDefenseDetections = new();
 
         protected override void Awake()
         {
@@ -169,8 +170,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
         private void HandlePlanetDefenseDetection(IDetectable detectable)
         {
+            if (!_activeDefenseDetections.Add(detectable))
+            {
+                return;
+            }
+
             if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
             {
+                _activeDefenseDetections.Remove(detectable);
                 DebugUtility.LogWarning<PlayerDetectionController>(
                     "Detecção defensiva sem PlanetsMaster associado.", this);
                 return;
@@ -186,8 +193,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
         private void HandlePlanetDefenseLost(IDetectable detectable)
         {
+            if (!_activeDefenseDetections.Remove(detectable))
+            {
+                return;
+            }
+
             if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
             {
+                // Mesmo sem o PlanetsMaster válido, garantimos que o cache foi limpo.
                 return;
             }
 
@@ -197,6 +210,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 $"Planeta {planetMaster.ActorName} desativou defesas contra {detectorName}.",
                 null,
                 this);
+        }
+
+        protected override void OnCacheCleared()
+        {
+            _activeDefenseDetections.Clear();
+            base.OnCacheCleared();
         }
 
         private static bool TryResolvePlanetMaster(IDetectable detectable, out PlanetsMaster planetMaster)
