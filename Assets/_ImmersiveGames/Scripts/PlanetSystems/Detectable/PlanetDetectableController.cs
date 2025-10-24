@@ -1,3 +1,6 @@
+using UnityEngine;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -8,6 +11,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDetectableController : AbstractDetectable
     {
         private PlanetsMaster _planetMaster;
+        [Header("Audio")]
+        [SerializeField] private EntityAudioEmitter audioEmitter;
+        [SerializeField] private SoundData discoverySound;
 
         protected override void Awake()
         {
@@ -19,12 +25,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 _planetMaster = GetComponentInParent<PlanetsMaster>();
             }
 
+            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+
             if (_planetMaster == null)
             {
                 DebugUtility.LogError<PlanetDetectableController>(
                     $"PlanetsMaster não encontrado para o detectável {gameObject.name}.", this);
             }
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (_planetMaster == null)
+            {
+                _planetMaster = GetComponentInParent<PlanetsMaster>();
+            }
+
+            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+        }
+#endif
 
         public override void OnEnterDetection(IDetector detector, DetectionType detectionType)
         {
@@ -54,6 +74,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             // Quando detectado pelo Player/Eater o recurso é revelado permanentemente.
             _planetMaster.RevealResource();
+
+            TryPlayDiscoveryAudio();
         }
 
         public override void OnExitDetection(IDetector detector, DetectionType detectionType)
@@ -67,6 +89,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 $"Planeta {gameObject.name} saiu do alcance de {GetName(detector)}.",
                 null,
                 this);
+        }
+
+        private void TryPlayDiscoveryAudio()
+        {
+            if (audioEmitter == null)
+            {
+                DebugUtility.LogVerbose<PlanetDetectableController>(
+                    $"Nenhum EntityAudioEmitter configurado para tocar áudio de descoberta em {gameObject.name}.",
+                    null,
+                    this);
+                return;
+            }
+
+            if (discoverySound == null || discoverySound.clip == null)
+            {
+                return;
+            }
+
+            var context = AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend);
+            audioEmitter.Play(discoverySound, context);
         }
     }
 }

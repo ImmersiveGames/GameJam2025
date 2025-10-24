@@ -11,6 +11,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
     {
         [Header("Detection Types")]
         [SerializeField] private DetectionType planetResourcesDetectionType;
+        [SerializeField] private DetectionType planetDefenseDetectionType;
 
         private readonly HashSet<DetectionType> _registeredDetectionTypes = new();
         private SensorController _sensorController;
@@ -57,6 +58,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 return;
             }
 
+            if (detectionType == planetDefenseDetectionType)
+            {
+                HandlePlanetDefenseDetection(detectable);
+                return;
+            }
+
             DebugUtility.LogVerbose<PlayerDetectionController>(
                 $"Detecção recebida sem manipulador específico: {detectionType.TypeName}",
                 null,
@@ -73,6 +80,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             if (detectionType == planetResourcesDetectionType)
             {
                 // Este sensor não exige lógica de saída porque o planeta permanece revelado.
+                return;
+            }
+
+            if (detectionType == planetDefenseDetectionType)
+            {
+                HandlePlanetDefenseLost(detectable);
                 return;
             }
         }
@@ -107,12 +120,24 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 {
                     planetResourcesDetectionType = sensor.DetectionType;
                 }
+
+                if (planetDefenseDetectionType == null &&
+                    sensor.DetectionType.TypeName == "PlanetDefenseDetector")
+                {
+                    planetDefenseDetectionType = sensor.DetectionType;
+                }
             }
 
             if (planetResourcesDetectionType == null)
             {
                 DebugUtility.LogWarning<PlayerDetectionController>(
                     "DetectionType PlanetResourcesDetector não encontrado na coleção do Player.", this);
+            }
+
+            if (planetDefenseDetectionType == null)
+            {
+                DebugUtility.LogWarning<PlayerDetectionController>(
+                    "DetectionType PlanetDefenseDetector não encontrado na coleção do Player.", this);
             }
         }
 
@@ -139,6 +164,38 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             DebugUtility.LogVerbose<PlayerDetectionController>(
                 $"Recurso do planeta {planetMaster.ActorName} revelado pelo Player.",
                 DebugUtility.Colors.Success,
+                this);
+        }
+
+        private void HandlePlanetDefenseDetection(IDetectable detectable)
+        {
+            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            {
+                DebugUtility.LogWarning<PlayerDetectionController>(
+                    "Detecção defensiva sem PlanetsMaster associado.", this);
+                return;
+            }
+
+            string detectorName = Owner?.ActorName ?? name;
+
+            DebugUtility.LogVerbose<PlayerDetectionController>(
+                $"Planeta {planetMaster.ActorName} ativou defesas contra {detectorName}.",
+                DebugUtility.Colors.CrucialInfo,
+                this);
+        }
+
+        private void HandlePlanetDefenseLost(IDetectable detectable)
+        {
+            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            {
+                return;
+            }
+
+            string detectorName = Owner?.ActorName ?? name;
+
+            DebugUtility.LogVerbose<PlayerDetectionController>(
+                $"Planeta {planetMaster.ActorName} desativou defesas contra {detectorName}.",
+                null,
                 this);
         }
 

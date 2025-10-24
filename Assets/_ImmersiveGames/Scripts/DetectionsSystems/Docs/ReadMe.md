@@ -94,6 +94,8 @@ Base para alvos detectáveis (`Mono/AbstractDetectable.cs`):
 - Paleta de cores para gizmos (`Idle`, `Detecting`, `Selected`).
 
 > 🪐 **Sensor padrão do Player** — `DetectPlanetResourcesSensorConfig` (cone curto frontal) usa o `DetectionType` `PlanetResourcesDetector`. A `MaxFrequency` ajustada para 1.5s evita atualizações desnecessárias após todos os recursos serem revelados.
+>
+> 🛡️ **Sensor defensivo** — `DetectPlanetDefenseSensorConfig` fornece um raio esférico amplo (25m) com varredura rápida (0.3s). Ele compartilha o `DetectionType` `PlanetDefenseDetector` entre Player e Eater para sinalizar ameaças aos planetas.
 
 ### `SensorCollection`
 Lista serializada de `SensorConfig` (`Runtime/SensorCollection.cs`). Facilita reutilização de pacotes de sensores entre múltiplos
@@ -103,6 +105,10 @@ atores. Existem coleções exemplo em `Scripts/DetectionsSystems/Data` (Player/E
 Arquivos `.asset` na pasta `Data/` exemplificam a separação de domínios (ex.: `PlanetResourcesDetector` para revelar recursos, `PlayerDetector`, `PlanetDetector`).
 
 > ✅ Player e Eater compartilham `PlanetResourcesDetector` ao revelar recursos. O planeta só reage quando recebe o mesmo tipo configurado no `PlanetDetectableController`.
+
+> 🔊 `PlanetDetectableController` aceita opcionalmente um `EntityAudioEmitter` + `SoundData` para tocar um SFX sempre que o recurso for revelado. Basta atribuir o asset (ex.: `PlanetResourceDiscoverySound`) para habilitar o feedback sonoro.
+
+> 🚨 `PlanetDefenseDetectable` trabalha em conjunto com `PlanetDefenseController` para registrar quem acionou o alerta defensivo e liberar a notificação quando o sensor perder o alvo, preparando o fluxo para futuros comportamentos ofensivos.
 
 ---
 
