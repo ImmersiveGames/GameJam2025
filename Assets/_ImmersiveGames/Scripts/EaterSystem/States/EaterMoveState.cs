@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.EaterSystem;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States

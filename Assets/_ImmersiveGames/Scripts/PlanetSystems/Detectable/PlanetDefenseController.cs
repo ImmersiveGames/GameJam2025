@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -10,7 +9,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     {
         [SerializeField] private PlanetsMaster planetsMaster;
 
-        private readonly HashSet<IDetector> _activeDetectors = new();
+        private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
         private void Awake()
         {
@@ -43,13 +42,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 return;
             }
 
-            if (_activeDetectors.Add(detector))
+            if (_activeDetectors.ContainsKey(detector))
             {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"Planeta {GetPlanetName()} iniciou defesas contra {GetDetectorName(detector)}.",
-                    DebugUtility.Colors.CrucialInfo,
-                    this);
+                return;
             }
+
+            DefenseRole role = ResolveDefenseRole(detector);
+            _activeDetectors.Add(detector, role);
+
+            DebugUtility.LogVerbose<PlanetDefenseController>(
+                $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
+                DebugUtility.Colors.CrucialInfo,
+                this);
         }
 
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
@@ -59,10 +63,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 return;
             }
 
-            if (_activeDetectors.Remove(detector))
+            if (_activeDetectors.TryGetValue(detector, out DefenseRole role))
             {
+                _activeDetectors.Remove(detector);
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"Planeta {GetPlanetName()} encerrou defesas contra {GetDetectorName(detector)}.",
+                    $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
                     null,
                     this);
             }
@@ -76,6 +81,44 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         private static string GetDetectorName(IDetector detector)
         {
             return detector.Owner?.ActorName ?? detector.ToString();
+        }
+
+        private static DefenseRole ResolveDefenseRole(IDetector detector)
+        {
+            if (detector is IDefenseRoleProvider provider)
+            {
+                return provider.DefenseRole;
+            }
+
+            string actorName = detector.Owner?.ActorName;
+            if (string.IsNullOrEmpty(actorName))
+            {
+                return DefenseRole.Unknown;
+            }
+
+            if (actorName.Contains("Player"))
+            {
+                return DefenseRole.Player;
+            }
+
+            if (actorName.Contains("Eater"))
+            {
+                return DefenseRole.Eater;
+            }
+
+            return DefenseRole.Unknown;
+        }
+
+        private static string FormatDetector(IDetector detector, DefenseRole role)
+        {
+            string detectorName = GetDetectorName(detector);
+
+            return role switch
+            {
+                DefenseRole.Player => $"o Player ({detectorName})",
+                DefenseRole.Eater => $"o Eater ({detectorName})",
+                _ => detectorName
+            };
         }
     }
 }

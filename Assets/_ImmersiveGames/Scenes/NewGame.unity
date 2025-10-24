@@ -630,7 +630,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planetResourcesDetectionType: {fileID: 11400000, guid: 6a267baacedb4dff9a098996007f138d, type: 2}
-  planetDefenseDetectionType: {fileID: 0}
+  planetDefenseDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
 --- !u!114 &1432878147
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -791,7 +791,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   showGizmos: 1
-  showDebugRays: 0
+  showDebugRays: 1
   sensorController: {fileID: 1432878143}
   showDetectionLines: 1
   showObjectMarkers: 1
@@ -1454,10 +1454,6 @@ PrefabInstance:
     - target: {fileID: 1456968061734532042, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_Name
       value: EaterPrefab
-      objectReference: {fileID: 0}
-    - target: {fileID: 1456968061734532042, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6256545176937765026, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_LocalPosition.x

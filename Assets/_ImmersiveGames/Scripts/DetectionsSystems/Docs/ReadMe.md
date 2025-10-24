@@ -97,6 +97,8 @@ Base para alvos detectáveis (`Mono/AbstractDetectable.cs`):
 >
 > 🛡️ **Sensor defensivo** — `DetectPlanetDefenseSensorConfig` fornece um raio esférico amplo (25m) com varredura rápida (0.3s). Ele compartilha o `DetectionType` `PlanetDefenseDetector` entre Player e Eater para sinalizar ameaças aos planetas.
 
+> 🍽️ **Sensor de proximidade do Eater** — `DetectPlanetProximitySensorConfig` usa o `DetectionType` `PlanetProximityDetector` em modo esférico (18m, atualização a cada 1.5s). Ele fica ativo apenas enquanto o Eater está perseguindo ou comendo e controla a transição automática entre os estados de perseguição e consumo.
+
 ### `SensorCollection`
 Lista serializada de `SensorConfig` (`Runtime/SensorCollection.cs`). Facilita reutilização de pacotes de sensores entre múltiplos
 atores. Existem coleções exemplo em `Scripts/DetectionsSystems/Data` (Player/Eater).

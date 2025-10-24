@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.StatesMachines;
 using UnityEngine;
 

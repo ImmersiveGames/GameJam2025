@@ -23,11 +23,13 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private readonly Dictionary<IDetectable, int> _exitEventFrameCache = new();
         
         private float _timer;
+        private bool _isEnabled = true;
 
         public SensorConfig Config { get; }
         private DetectionType DetectionType => Config.DetectionType;
         public ReadOnlyCollection<IDetectable> CurrentlyDetected => _detected.AsReadOnly();
         public bool IsDetecting => _detected.Count > 0;
+        public bool IsEnabled => _isEnabled;
         public Transform Origin => _origin;
 
         public Sensor(Transform origin, IDetector detector, SensorConfig config)
@@ -42,12 +44,37 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public void Update(float deltaTime)
         {
+            if (!_isEnabled)
+            {
+                return;
+            }
+
             _timer += deltaTime;
             if (_timer < Config.MaxFrequency) return;
 
             DetectObjects();
             ProcessDetections(_currentDetections);
             _timer = 0f;
+        }
+
+        public void SetEnabled(bool enabled)
+        {
+            if (_isEnabled == enabled)
+            {
+                return;
+            }
+
+            _isEnabled = enabled;
+
+            if (!enabled)
+            {
+                ForceClearDetections();
+                _timer = 0f;
+                return;
+            }
+
+            // Força uma atualização rápida assim que o sensor volta a ficar ativo.
+            _timer = Config.MaxFrequency;
         }
 
         private void DetectObjects()
@@ -196,6 +223,31 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
             // Limpar caches antigos (mais de 1 frame atrás) para evitar memory leak
             CleanupFrameCaches(currentFrame);
+        }
+
+        private void ForceClearDetections()
+        {
+            if (_detected.Count == 0)
+            {
+                return;
+            }
+
+            int currentFrame = Time.frameCount;
+
+            for (int i = _detected.Count - 1; i >= 0; i--)
+            {
+                var detectable = _detected[i];
+                _detected.RemoveAt(i);
+                _exitEventFrameCache[detectable] = currentFrame;
+
+                DebugUtility.LogVerbose<Sensor>(
+                    $" → LIMPEZA MANUAL: {GetName(detectable)} por {GetName(_detector)} [Frame {currentFrame}]");
+
+                EventBus<DetectionExitEvent>.Raise(new DetectionExitEvent(detectable, _detector, DetectionType));
+            }
+
+            CleanupFrameCaches(currentFrame);
+            _currentDetections.Clear();
         }
 
         private void CleanupFrameCaches(int currentFrame)
