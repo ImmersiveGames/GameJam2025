@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -12,10 +12,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Configuração")]
         [SerializeField] private EaterConfigSo config;
 
-        public event Action<IDetectable> EventStartEatPlanet;
-        public event Action<IDetectable> EventEndEatPlanet;
-        public event Action<IDetectable, bool, IActor> EventConsumeResource;
-        public event Action<IDetectable> EventEaterBite;
+        public event Action<PlanetsMaster> EventStartEatPlanet;
+        public event Action<PlanetsMaster> EventEndEatPlanet;
+        public event Action<PlanetsMaster, bool, IActor> EventConsumeResource;
+        public event Action<PlanetsMaster> EventEaterBite;
         public event Action<IActor> EventEaterTakeDamage;
 
         public EaterConfigSo Config => config;
@@ -26,24 +26,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public IActor EaterActor => this;
 
-        public void OnEventStartEatPlanet(IDetectable detectable)
+        public void OnEventStartEatPlanet(PlanetsMaster planet)
         {
-            EventStartEatPlanet?.Invoke(detectable);
+            EventStartEatPlanet?.Invoke(planet);
         }
 
-        public void OnEventEndEatPlanet(IDetectable detectable)
+        public void OnEventEndEatPlanet(PlanetsMaster planet)
         {
-            EventEndEatPlanet?.Invoke(detectable);
+            EventEndEatPlanet?.Invoke(planet);
         }
 
-        public void OnEventConsumeResource(IDetectable detectable, bool desireSatisfied, IActor byActor)
+        public void OnEventConsumeResource(PlanetsMaster planet, bool desireSatisfied, IActor byActor)
         {
-            EventConsumeResource?.Invoke(detectable, desireSatisfied, byActor);
+            EventConsumeResource?.Invoke(planet, desireSatisfied, byActor);
         }
 
-        public void OnEventEaterBite(IDetectable detectable)
+        public void OnEventEaterBite(PlanetsMaster planet)
         {
-            EventEaterBite?.Invoke(detectable);
+            EventEaterBite?.Invoke(planet);
         }
 
         public void OnEventEaterTakeDamage(IActor byActor)

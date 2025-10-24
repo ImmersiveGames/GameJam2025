@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -21,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private readonly ResourceAutoFlowBridge _autoFlowBridge;
 
         private readonly CountdownTimer _wanderingTimer;
-        private IDetectable _target;
+        private PlanetsMaster _targetPlanet;
         private float _stateTimer;
         private Vector3 _lastKnownPlayerAnchor;
         private bool _hasCachedPlayerAnchor;
@@ -60,9 +59,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public Rect GameArea { get; set; }
         public bool IsHungry { get; private set; }
         public bool IsEating { get; private set; }
-        public IDetectable Target => _target;
+        /// <summary>
+        /// Planeta atualmente selecionado como alvo do Eater.
+        /// </summary>
+        public PlanetsMaster Target => _targetPlanet;
+        public PlanetsMaster TargetPlanet => _targetPlanet;
         public float StateTimer => _stateTimer;
-        public bool HasTarget => _target != null;
+        public bool HasTarget => _targetPlanet != null;
 
         public bool ShouldChase => IsHungry && HasTarget && !IsEating;
         public bool ShouldEat => IsEating && HasTarget;
@@ -127,14 +130,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return true;
         }
 
-        public bool SetTarget(IDetectable target)
+        /// <summary>
+        /// Define o planeta que o Eater deve perseguir.
+        /// </summary>
+        public bool SetTarget(PlanetsMaster target)
         {
-            if (_target == target)
+            if (_targetPlanet == target)
             {
                 return false;
             }
 
-            _target = target;
+            _targetPlanet = target;
             return true;
         }
 
@@ -157,9 +163,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool TryGetTargetPosition(out Vector3 position)
         {
-            if (_target?.Owner?.Transform != null)
+            if (_targetPlanet != null)
             {
-                position = _target.Owner.Transform.position;
+                position = _targetPlanet.transform.position;
                 return true;
             }
 

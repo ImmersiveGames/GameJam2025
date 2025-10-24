@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -35,9 +36,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _biteTimer = 0f;
-            if (Context.Target != null)
+            PlanetsMaster target = Context.Target;
+            if (target != null)
             {
-                Context.Master.OnEventEaterBite(Context.Target);
+                Context.Master.OnEventEaterBite(target);
             }
         }
 
@@ -45,9 +47,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             DebugUtility.LogVerbose<EaterEatingState>("Saindo do estado Comendo.");
             bool changed = Context.SetEating(false);
-            if (changed && Context.Target != null)
+            PlanetsMaster target = Context.Target;
+            if (changed && target != null)
             {
-                Context.Master.OnEventEndEatPlanet(Context.Target);
+                Context.Master.OnEventEndEatPlanet(target);
             }
         }
     }

@@ -1,8 +1,8 @@
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Debug
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             _captureNextTransition = false;
         }
 
-        private void OnStartEatPlanet(IDetectable target)
+        private void OnStartEatPlanet(PlanetsMaster target)
         {
             if (!logMasterEvents)
             {
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.Log<EaterBehaviorDebugUtility>($"🍽️ Início do consumo: {DescribeTarget(target)}", instance: this);
         }
 
-        private void OnEndEatPlanet(IDetectable target)
+        private void OnEndEatPlanet(PlanetsMaster target)
         {
             if (!logMasterEvents)
             {
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.Log<EaterBehaviorDebugUtility>($"✅ Consumo finalizado: {DescribeTarget(target)}", instance: this);
         }
 
-        private void OnBite(IDetectable target)
+        private void OnBite(PlanetsMaster target)
         {
             if (!logMasterEvents)
             {
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.Log<EaterBehaviorDebugUtility>($"🦷 Mordida aplicada em: {DescribeTarget(target)}", instance: this);
         }
 
-        private void OnConsumeResource(IDetectable target, bool satisfied, IActor byActor)
+        private void OnConsumeResource(PlanetsMaster target, bool satisfied, IActor byActor)
         {
             if (!logMasterEvents)
             {
@@ -232,15 +232,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);
         }
 
-        private static string DescribeTarget(IDetectable target)
+        private static string DescribeTarget(PlanetsMaster target)
         {
-            if (target?.Owner == null)
+            if (target == null)
             {
                 return "Sem alvo";
             }
 
-            string actorName = target.Owner.ActorName;
-            return string.IsNullOrEmpty(actorName) ? target.Owner.Transform.name : actorName;
+            string actorName = target.ActorName;
+            return string.IsNullOrEmpty(actorName) ? target.name : actorName;
         }
 
         private static string GetStateName(IState state)

@@ -3,7 +3,6 @@ using System.Text;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -192,9 +191,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         /// <summary>
-        /// Atualiza o alvo perseguido pelo Eater.
+        /// Atualiza o planeta alvo perseguido pelo Eater.
         /// </summary>
-        public void SetTarget(IDetectable target)
+        public void SetTarget(PlanetsMaster target)
         {
             if (_context == null)
             {
@@ -204,7 +203,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool changed = _context.SetTarget(target);
             if (changed)
             {
-                DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {(target != null ? target.Owner?.ActorName : "Nenhum")}");
+                DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {GetPlanetName(target)}.", this);
                 ForceStateEvaluation();
             }
         }
@@ -236,9 +235,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (changed)
             {
                 DebugUtility.LogVerbose<EaterBehavior>("Início manual do estado Comendo.");
-                if (_context.Target != null)
+                PlanetsMaster target = _context.Target;
+                if (target != null)
                 {
-                    _context.Master.OnEventStartEatPlanet(_context.Target);
+                    _context.Master.OnEventStartEatPlanet(target);
                 }
                 ForceStateEvaluation();
             }
@@ -258,9 +258,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (wasEating)
             {
                 DebugUtility.LogVerbose<EaterBehavior>("Fim manual do estado Comendo.");
-                if (_context.Target != null)
+                PlanetsMaster target = _context.Target;
+                if (target != null)
                 {
-                    _context.Master.OnEventEndEatPlanet(_context.Target);
+                    _context.Master.OnEventEndEatPlanet(target);
                 }
             }
 
@@ -383,7 +384,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool startedEating = _context.SetEating(true);
             if (startedEating)
             {
-                _context.Master.OnEventStartEatPlanet(_context.Target);
+                PlanetsMaster target = _context.Target;
+                if (target != null)
+                {
+                    _context.Master.OnEventStartEatPlanet(target);
+                }
             }
 
             ForceSetState(_eatingState);
@@ -498,10 +503,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!TryResolvePlanetTarget(newMarked, out IDetectable newTarget))
+            PlanetsManager manager = PlanetsManager.Instance;
+            if (manager == null || !manager.TryGetPlanet(newMarked, out PlanetsMaster newTarget))
             {
                 DebugUtility.LogWarning<EaterBehavior>(
-                    $"Não foi possível localizar o detectável para o planeta marcado: {newMarked.ActorName}.",
+                    $"Não foi possível localizar o planeta marcado em PlanetsManager: {newMarked.ActorName}.",
                     this);
                 return;
             }
@@ -512,7 +518,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            DebugUtility.LogVerbose<EaterBehavior>($"Planeta marcado definido como alvo: {newMarked.ActorName}.", this);
+            DebugUtility.LogVerbose<EaterBehavior>($"Planeta marcado definido como alvo: {GetPlanetName(newTarget)}.", this);
             ForceStateEvaluation();
         }
 
@@ -529,49 +535,46 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            IDetectable currentTarget = _context.Target;
-            if (currentTarget?.Owner == null)
+            PlanetsMaster currentTarget = _context.TargetPlanet;
+            if (currentTarget == null)
             {
                 return;
             }
 
-            if (!IsSameActor(currentTarget.Owner, unmarked))
+            if (!IsSameActor(currentTarget, unmarked))
             {
                 return;
             }
 
             if (_context.ClearTarget())
             {
-                DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {unmarked.ActorName}.", this);
+                string planetName = GetPlanetName(currentTarget);
+                DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {planetName}.", this);
                 ForceStateEvaluation();
             }
         }
 
         private void HandlePlanetDestroyed(PlanetDestroyedEvent evt)
         {
-            if (_context == null || !_context.HasTarget || evt?.Detected == null)
+            if (_context == null || !_context.HasTarget || evt?.Detected?.Owner == null)
             {
                 return;
             }
 
-            IDetectable currentTarget = _context.Target;
+            PlanetsMaster currentTarget = _context.TargetPlanet;
             if (currentTarget == null)
             {
                 return;
             }
 
-            IDetectable destroyed = evt.Detected;
-            bool sameDetectable = ReferenceEquals(currentTarget, destroyed);
-            bool sameActor = IsSameActor(currentTarget.Owner, destroyed.Owner);
-
-            if (!sameDetectable && !sameActor)
+            if (!IsSameActor(currentTarget, evt.Detected.Owner))
             {
                 return;
             }
 
             if (_context.ClearTarget())
             {
-                string planetName = destroyed.Owner?.ActorName ?? destroyed.Owner?.ActorId ?? destroyed.ToString();
+                string planetName = GetPlanetName(currentTarget);
                 DebugUtility.LogVerbose<EaterBehavior>($"Planeta alvo destruído removido: {planetName}.", this);
                 ForceStateEvaluation();
             }
@@ -605,34 +608,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             SetHungry(false);
         }
 
-        private bool TryResolvePlanetTarget(IActor planetActor, out IDetectable detectable)
-        {
-            detectable = null;
-
-            if (planetActor == null)
-            {
-                return false;
-            }
-
-            PlanetsManager manager = PlanetsManager.Instance;
-            if (manager != null && manager.TryGetDetectable(planetActor, out detectable))
-            {
-                return true;
-            }
-
-            Transform actorTransform = planetActor.Transform;
-            if (actorTransform != null)
-            {
-                detectable = actorTransform.GetComponentInChildren<IDetectable>(true);
-                if (detectable != null)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static bool IsSameActor(IActor left, IActor right)
         {
             if (left == null || right == null)
@@ -641,6 +616,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             return left.ActorId == right.ActorId;
+        }
+
+        private static bool IsSameActor(PlanetsMaster planet, IActor actor)
+        {
+            if (planet == null || actor == null)
+            {
+                return false;
+            }
+
+            return planet.ActorId == actor.ActorId;
         }
 
         /// <summary>
@@ -848,8 +833,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             Vector3 anchor = default;
             bool hasAnchor = _context.TryGetCachedPlayerAnchor(out anchor);
-            var target = _context.Target;
-            string targetName = target?.Owner?.ActorName ?? target?.Owner?.Transform?.name ?? string.Empty;
+            PlanetsMaster target = _context.Target;
+            string targetName = target != null ? GetPlanetName(target) : string.Empty;
 
             PlanetResources? currentDesire = _context.CurrentDesire;
             string currentDesireName = currentDesire.HasValue ? currentDesire.Value.ToString() : string.Empty;
@@ -893,6 +878,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private static string GetStateName(IState state)
         {
             return state?.GetType().Name ?? "None";
+        }
+
+        private static string GetPlanetName(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return "Nenhum";
+            }
+
+            string actorName = planet.ActorName;
+            return string.IsNullOrEmpty(actorName) ? planet.name : actorName;
         }
 
         /// <summary>

@@ -278,6 +278,56 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public List<IDetectable> GetActivePlanets() => _activePlanets;
         public IDetectable GetPlanetMarked() => _targetToEater;
 
+        /// <summary>
+        /// Resolve o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
+        /// </summary>
+        public bool TryGetPlanet(IActor planetActor, out PlanetsMaster planet)
+        {
+            planet = null;
+
+            if (planetActor == null)
+            {
+                return false;
+            }
+
+            string actorId = planetActor.ActorId;
+            if (string.IsNullOrEmpty(actorId))
+            {
+                return false;
+            }
+
+            if (_planetsByActorId.TryGetValue(actorId, out PlanetsMaster cached) && cached != null)
+            {
+                planet = cached;
+                return true;
+            }
+
+            if (planetActor is PlanetsMaster master && master != null)
+            {
+                planet = master;
+                _planetsByActorId[actorId] = master;
+                return true;
+            }
+
+            for (int i = 0; i < _spawnedPlanets.Count; i++)
+            {
+                PlanetsMaster candidate = _spawnedPlanets[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (candidate.ActorId == actorId)
+                {
+                    planet = candidate;
+                    _planetsByActorId[actorId] = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool TryGetDetectable(IActor planetActor, out IDetectable detectable)
         {
             detectable = null;

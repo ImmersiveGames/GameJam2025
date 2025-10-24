@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -52,7 +53,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 if (startedEating)
                 {
                     Context.ResetStateTimer();
-                    Context.Master.OnEventStartEatPlanet(Context.Target);
+                    PlanetsMaster targetPlanet = Context.Target;
+                    if (targetPlanet != null)
+                    {
+                        Context.Master.OnEventStartEatPlanet(targetPlanet);
+                    }
                 }
             }
         }
