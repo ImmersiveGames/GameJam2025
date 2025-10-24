@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
@@ -23,6 +25,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         [Header("Referências")]
         [SerializeField] private EaterConfigSo overrideConfig;
+        [SerializeField, Tooltip("Emissor de áudio responsável pelos efeitos do Eater.")]
+        private EntityAudioEmitter audioEmitter;
+        [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
+        private SoundData desireSelectedSound;
 
         private EaterMaster _master;
         private EaterBehaviorContext _context;
@@ -36,6 +42,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private IState _lastKnownState;
         private readonly StringBuilder _summaryBuilder = new StringBuilder(256);
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private SoundData _resolvedDesireSound;
+        private bool _warnedMissingAudioEmitter;
+        private bool _warnedMissingDesireSound;
 
         [Header("Execução")]
         [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
@@ -63,6 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EnsureExecutionToggleInitialized();
 
             _master = GetComponent<EaterMaster>();
+            audioEmitter ??= GetComponent<EntityAudioEmitter>();
             var config = overrideConfig != null ? overrideConfig : _master.Config;
 
             if (config == null)
@@ -75,6 +85,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             Rect gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
             _context = new EaterBehaviorContext(_master, config, gameArea);
             _currentDesireInfo = _context.GetCurrentDesireInfo();
+            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
             _context.EventDesireChanged += HandleContextDesireChanged;
         }
 
@@ -387,8 +398,113 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandleContextDesireChanged(EaterDesireInfo info)
         {
+            EaterDesireInfo previousInfo = _currentDesireInfo;
             _currentDesireInfo = info;
+            TryPlayDesireSound(previousInfo, info);
             EventDesireChanged?.Invoke(info);
+        }
+
+        /// <summary>
+        /// Resolve o SoundData utilizado para o áudio de desejos considerando overrides e configuração global.
+        /// </summary>
+        private void EnsureDesireSoundResolved()
+        {
+            if (_resolvedDesireSound != null)
+            {
+                return;
+            }
+
+            SoundData configSound = null;
+            if (overrideConfig != null)
+            {
+                configSound = overrideConfig.DesireSelectedSound;
+            }
+
+            if (configSound == null && _context != null)
+            {
+                configSound = _context.Config?.DesireSelectedSound;
+            }
+
+            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : configSound;
+        }
+
+        /// <summary>
+        /// Avalia se um novo desejo foi sorteado e dispara o som correspondente via AudioSystem.
+        /// </summary>
+        private void TryPlayDesireSound(EaterDesireInfo previousInfo, EaterDesireInfo newInfo)
+        {
+            if (!newInfo.ServiceActive || !newInfo.HasDesire || !newInfo.HasResource)
+            {
+                return;
+            }
+
+            EnsureDesireSoundResolved();
+
+            if (!EnsureAudioEmitter())
+            {
+                return;
+            }
+
+            if (_resolvedDesireSound == null || _resolvedDesireSound.clip == null)
+            {
+                if (!_warnedMissingDesireSound)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>(
+                        "SoundData para o desejo do Eater não foi configurado.",
+                        this);
+                    _warnedMissingDesireSound = true;
+                }
+                return;
+            }
+
+            bool hadPrevious = previousInfo.ServiceActive && previousInfo.HasDesire && previousInfo.HasResource;
+            bool resourceChanged = !hadPrevious || previousInfo.Resource != newInfo.Resource;
+            bool timerReset = newInfo.Duration > 0f &&
+                              newInfo.RemainingTime >= Mathf.Max(newInfo.Duration - 0.01f, 0f);
+
+            if (!resourceChanged && !timerReset)
+            {
+                return;
+            }
+
+            _warnedMissingDesireSound = false;
+
+            Transform emitterTransform = audioEmitter != null ? audioEmitter.transform : transform;
+            Vector3 position = emitterTransform.position;
+            bool spatial = audioEmitter != null && audioEmitter.UsesSpatialBlend;
+            AudioContext audioContext = AudioContext.Default(position, spatial);
+
+            audioEmitter.Play(_resolvedDesireSound, audioContext);
+
+            DebugUtility.LogVerbose<EaterBehavior>(
+                $"🔊 Som de desejo reproduzido para {newInfo.Resource!.Value} (disp={newInfo.IsAvailable}, planetas={newInfo.AvailableCount}).");
+        }
+
+        /// <summary>
+        /// Garante a presença do emissor de áudio necessário para reproduzir o som de desejos.
+        /// </summary>
+        private bool EnsureAudioEmitter()
+        {
+            if (audioEmitter != null)
+            {
+                _warnedMissingAudioEmitter = false;
+                return true;
+            }
+
+            if (!TryGetComponent(out audioEmitter))
+            {
+                if (!_warnedMissingAudioEmitter)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>(
+                        "EntityAudioEmitter não encontrado. O som de desejo não será reproduzido.",
+                        this);
+                    _warnedMissingAudioEmitter = true;
+                }
+                return false;
+            }
+
+            _warnedMissingAudioEmitter = false;
+            return true;
         }
 
         private void TrackStateChange(string reason)
@@ -562,6 +678,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             EnsureExecutionToggleInitialized();
+            audioEmitter ??= GetComponent<EntityAudioEmitter>();
         }
 #endif
     }

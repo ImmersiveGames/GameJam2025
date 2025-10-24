@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -24,6 +25,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float desireThreshold = 0.9f;
         [SerializeField, Tooltip("Atraso para iniciar a escolha de desejos (segundos)")]
         private float delayTimer = 2;
+
+        [Header("Áudio")]
+        [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
+        private SoundData desireSelectedSound;
 
         [Header("Configuração de Movimento")]
         [SerializeField, Tooltip("Intervalo para mudar de direção (segundos)")]
@@ -65,6 +70,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float PerPlanetAvailableWeight => perPlanetAvailableWeight;
         public float UnavailableDesireWeight => unavailableDesireWeight;
         public float RecentDesireWeightMultiplier => recentDesireWeightMultiplier;
+        public SoundData DesireSelectedSound => desireSelectedSound;
         public float DirectionChangeInterval => directionChangeInterval;
         public float MinSpeed => minSpeed;
         public float MaxSpeed => maxSpeed;
