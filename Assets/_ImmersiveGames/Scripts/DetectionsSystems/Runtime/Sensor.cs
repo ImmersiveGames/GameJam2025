@@ -53,6 +53,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private void DetectObjects()
         {
             _currentDetections.Clear();
+            DetectUsingPhysics();
+            DetectUsingRegistry();
+        }
+
+        private void DetectUsingPhysics()
+        {
             int hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
 
             for (int i = 0; i < hits; i++)
@@ -71,6 +77,32 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             }
         }
 
+        private void DetectUsingRegistry()
+        {
+            var detectables = DetectableRegistry.GetByType(DetectionType);
+            if (detectables.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var detectable in detectables)
+            {
+                if (detectable == null) continue;
+                if (_currentDetections.Contains(detectable)) continue;
+                if (IsSelfOrChild(detectable, _detector)) continue;
+
+                if (detectable is not MonoBehaviour detectableMono) continue;
+                if (!detectableMono.isActiveAndEnabled || !detectableMono.gameObject.activeInHierarchy) continue;
+                if (!MatchesLayer(detectableMono.gameObject.layer)) continue;
+
+                var targetPosition = GetDetectablePosition(detectable, detectableMono);
+                if (!IsWithinRadius(targetPosition)) continue;
+                if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(targetPosition)) continue;
+
+                _currentDetections.Add(detectable);
+            }
+        }
+
         private bool IsInCone(Vector3 targetPosition)
         {
             var coneWorldDirection = _origin.TransformDirection(Config.ConeDirection);
@@ -81,8 +113,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private IDetectable GetDetectableFromCollider(Collider collider)
         {
-            var root = collider.transform.root;
-            return root.GetComponent<IDetectable>() ?? collider.GetComponent<IDetectable>();
+            if (collider == null) return null;
+
+            // Utiliza a hierarquia completa porque os colliders residem em filhos dos detectables.
+            return collider.GetComponentInParent<IDetectable>();
         }
 
         private bool IsSelfOrChild(IDetectable detectable, IDetector detector)
@@ -94,6 +128,28 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                        detectorMono.transform.IsChildOf(detectableMono.transform);
             }
             return detectable.Owner == detector.Owner;
+        }
+
+        private bool MatchesLayer(int objectLayer)
+        {
+            int targetMask = Config.TargetLayer;
+            int layerMask = 1 << objectLayer;
+            return (targetMask & layerMask) != 0;
+        }
+
+        private bool IsWithinRadius(Vector3 targetPosition)
+        {
+            float maxDistanceSqr = Config.Radius * Config.Radius;
+            float distanceSqr = (_origin.position - targetPosition).sqrMagnitude;
+            return distanceSqr <= maxDistanceSqr;
+        }
+
+        private Vector3 GetDetectablePosition(IDetectable detectable, MonoBehaviour detectableMono)
+        {
+            // Utiliza o Transform do ator quando disponível para manter consistência com o sistema de atores.
+            return detectable.Owner?.Transform != null
+                ? detectable.Owner.Transform.position
+                : detectableMono.transform.position;
         }
 
         private void ProcessDetections(List<IDetectable> current)

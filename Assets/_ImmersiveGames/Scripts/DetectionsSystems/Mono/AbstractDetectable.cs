@@ -1,5 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -16,9 +17,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         private IActor _owner;
         private EventBinding<DetectionEnterEvent> _enterBinding;
         private EventBinding<DetectionExitEvent> _exitBinding;
-        
+
         // Cache por evento por frame
         private readonly Dictionary<string, int> _processedEvents = new();
+        private bool _isRegisteredInRegistry;
 
         protected virtual void Awake()
         {
@@ -45,10 +47,38 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             DebugUtility.LogVerbose<AbstractDetectable>($"Inicializado em {gameObject.name} com tipo: {myDetectionType.TypeName}");
         }
 
+        protected virtual void OnEnable()
+        {
+            if (_owner == null || myDetectionType == null)
+            {
+                return;
+            }
+
+            DetectableRegistry.Register(this, myDetectionType);
+            _isRegisteredInRegistry = true;
+        }
+
+        protected virtual void OnDisable()
+        {
+            if (!_isRegisteredInRegistry)
+            {
+                return;
+            }
+
+            DetectableRegistry.Unregister(this);
+            _isRegisteredInRegistry = false;
+        }
+
         protected virtual void OnDestroy()
         {
             EventBus<DetectionEnterEvent>.Unregister(_enterBinding);
             EventBus<DetectionExitEvent>.Unregister(_exitBinding);
+
+            if (_isRegisteredInRegistry)
+            {
+                DetectableRegistry.Unregister(this);
+                _isRegisteredInRegistry = false;
+            }
         }
 
         public IActor Owner => _owner;

@@ -16,7 +16,8 @@ GameObject:
   - component: {fileID: 2902669177486074835}
   - component: {fileID: 2774738434980984958}
   - component: {fileID: 6005341794915908452}
-  - component: {fileID: 5646439767534810260}
+  - component: {fileID: 5359047152701732458}
+  - component: {fileID: 2819374650281937465}
   - component: {fileID: 299314230134813839}
   - component: {fileID: 8373132218115634742}
   - component: {fileID: 81636598692984422}
@@ -160,10 +161,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ef8167bef3e440289ec6c2a10cb4726, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  myDetectionType: {fileID: 11400000, guid: 7fe3a70e6e2d12f4689fd7da6799b07c, type: 2}
---- !u!114 &5646439767534810260
+  m_Name:
+  m_EditorClassIdentifier:
+  myDetectionType: {fileID: 11400000, guid: 6a267baacedb4dff9a098996007f138d, type: 2}
+  audioEmitter: {fileID: 743985210123456788}
+  discoverySound: {fileID: 11400000, guid: 71f68fbf5f7142b0beb4abda71fb50b5, type: 2}
+--- !u!114 &5359047152701732458
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -172,9 +175,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 5312295584184867285}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2cd5e493aa547bc888696c9d0e4a089, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: 3f64dd52ca7e4b5dbcc9b6fa49cc5ce2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  planetsMaster: {fileID: 3945190765558734642}
+--- !u!114 &2819374650281937465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fcb6f6b6b5148f1b006aa9de6c21e6f, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  myDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
+  defenseController: {fileID: 5359047152701732458}
 --- !u!114 &299314230134813839
 MonoBehaviour:
   m_ObjectHideFlags: 0
