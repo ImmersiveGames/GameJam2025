@@ -29,6 +29,8 @@ substituição por implementações customizadas e testes isolados.
 - **Integração por eventos** — `DetectionEnterEvent`/`DetectionExitEvent` trafegam pelo `EventBus`, mantendo acoplamento mínimo.
 - **Ferramentas de debug** — `SensorDebugVisualizer` e editores customizados facilitam inspeção e tuning em tempo real.
 
+> ℹ️ **Topologia invertida** — Somente Player e Eater carregam sensores. Eles varrem o espaço, detectam planetas próximos e os planetas reagem ao evento recebido (revelando recursos, habilitando FX etc.), minimizando o custo de sensores espalhados pela cena.
+
 ---
 
 ## 🧭 Fluxo de Detecção
@@ -48,9 +50,9 @@ EventBus
     └─ AbstractDetectable → OnEnterDetection / OnExitDetection
 ```
 
-1. `SensorController` injeta `DetectorService` com um `IDetector` e uma `SensorCollection`.
+1. `SensorController` injeta `DetectorService` com um `IDetector` (Player/Eater) e uma `SensorCollection`.
 2. `DetectorService.Update` percorre cada `Sensor` com a cadência configurada em `SensorConfig.MaxFrequency`.
-3. `Sensor` coleta colisores (`Physics.OverlapSphereNonAlloc`), filtra self-collisions e modo cônico (`IsInCone`).
+3. `Sensor` coleta colisores (`Physics.OverlapSphereNonAlloc`), filtra self-collisions e modo cônico (`IsInCone`). Quando não há colisores válidos, ele consulta o `DetectableRegistry` para localizar detectáveis registrados na mesma vizinhança.
 4. Novas detecções geram `DetectionEnterEvent`; saídas geram `DetectionExitEvent`, ambos publicados no `EventBus`.
 5. `AbstractDetector` e `AbstractDetectable` consomem os eventos e disparam os métodos abstratos para a lógica específica.
 
@@ -91,12 +93,16 @@ Base para alvos detectáveis (`Mono/AbstractDetectable.cs`):
 - **DetectionMode** (`Spherical` ou `Conical`), com `ConeAngle` e `ConeDirection` (vetor local).
 - Paleta de cores para gizmos (`Idle`, `Detecting`, `Selected`).
 
+> 🪐 **Sensor padrão do Player** — `DetectPlanetResourcesSensorConfig` (cone curto frontal) usa o `DetectionType` `PlanetResourcesDetector`. A `MaxFrequency` ajustada para 1.5s evita atualizações desnecessárias após todos os recursos serem revelados.
+
 ### `SensorCollection`
 Lista serializada de `SensorConfig` (`Runtime/SensorCollection.cs`). Facilita reutilização de pacotes de sensores entre múltiplos
 atores. Existem coleções exemplo em `Scripts/DetectionsSystems/Data` (Player/Eater).
 
 ### `DetectionType` Assets
-Arquivos `.asset` na pasta `Data/` exemplificam a separação de domínios (ex.: `PlayerDetector`, `PlanetDetector`).
+Arquivos `.asset` na pasta `Data/` exemplificam a separação de domínios (ex.: `PlanetResourcesDetector` para revelar recursos, `PlayerDetector`, `PlanetDetector`).
+
+> ✅ Player e Eater compartilham `PlanetResourcesDetector` ao revelar recursos. O planeta só reage quando recebe o mesmo tipo configurado no `PlanetDetectableController`.
 
 ---
 
