@@ -134,6 +134,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             DebugUtility.LogVerbose<EaterDesireUI>(
                 $"Ícone de desejo atualizado para {_currentInfo.Resource.Value} (disp={_currentInfo.IsAvailable}, planetas={_currentInfo.AvailableCount}).",
+                null,
                 this);
         }
 
@@ -160,7 +161,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 SetIconVisibility(false);
             }
 
-            DebugUtility.LogVerbose<EaterDesireUI>("Nenhum desejo ativo para exibir na UI.", this);
+            DebugUtility.LogVerbose<EaterDesireUI>("Nenhum desejo ativo para exibir na UI.", null, this);
         }
 
         private void UseFallbackIcon()
@@ -257,7 +258,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_warnedMissingManager)
                 {
-                    DebugUtility.LogVerbose<EaterDesireUI>("PlanetsManager ainda não está disponível. Aguardando para resolver ícone de desejo.", this);
+                    DebugUtility.LogVerbose<EaterDesireUI>("PlanetsManager ainda não está disponível. Aguardando para resolver ícone de desejo.", null, this);
                     _warnedMissingManager = true;
                 }
 
@@ -307,7 +308,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (eaterBehavior != null)
             {
-                DebugUtility.LogVerbose<EaterDesireUI>($"EaterBehavior localizado para UI: {eaterBehavior.name}.", this);
+                DebugUtility.LogVerbose<EaterDesireUI>($"EaterBehavior localizado para UI: {eaterBehavior.name}.", null, this);
             }
         }
     }
