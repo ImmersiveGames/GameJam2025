@@ -162,7 +162,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ef8167bef3e440289ec6c2a10cb4726, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  myDetectionType: {fileID: 11400000, guid: 7fe3a70e6e2d12f4689fd7da6799b07c, type: 2}
+  myDetectionType: {fileID: 11400000, guid: 6a267baacedb4dff9a098996007f138d, type: 2}
 --- !u!114 &5646439767534810260
 MonoBehaviour:
   m_ObjectHideFlags: 0
