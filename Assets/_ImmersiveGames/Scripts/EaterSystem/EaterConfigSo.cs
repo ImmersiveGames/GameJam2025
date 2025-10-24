@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -29,6 +30,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Áudio")]
         [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
         private SoundData desireSelectedSound;
+
+        [Header("Saciedade")]
+        [SerializeField, Tooltip("Tipo de recurso que indica quando o Eater está totalmente saciado (ex.: Stamina).")]
+        private ResourceType satiationResourceType = ResourceType.Stamina;
 
         [Header("Configuração de Movimento")]
         [SerializeField, Tooltip("Intervalo para mudar de direção (segundos)")]
@@ -81,6 +86,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float WanderingReturnBias => wanderingReturnBias;
         public float HungryPlayerAttraction => hungryPlayerAttraction;
         public float MinimumChaseDistance => minimumChaseDistance;
+
+        public ResourceType SatiationResourceType => satiationResourceType;
         
         public int BiteDamage => biteDamage;
         

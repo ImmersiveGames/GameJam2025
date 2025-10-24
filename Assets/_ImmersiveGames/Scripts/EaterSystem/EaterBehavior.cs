@@ -2,13 +2,17 @@ using System;
 using System.Text;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StatesMachines;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -45,6 +49,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private SoundData _resolvedDesireSound;
         private bool _warnedMissingAudioEmitter;
         private bool _warnedMissingDesireSound;
+        private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
+        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
+        private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
+        private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
 
         [Header("Execução")]
         [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
@@ -84,9 +92,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             Rect gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
             _context = new EaterBehaviorContext(_master, config, gameArea);
-            _currentDesireInfo = _context.GetCurrentDesireInfo();
+            _currentDesireInfo = _context.CurrentDesireInfo;
             _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
             _context.EventDesireChanged += HandleContextDesireChanged;
+        }
+
+        private void OnEnable()
+        {
+            if (!enabled)
+            {
+                return;
+            }
+
+            RegisterEventListeners();
+        }
+
+        private void OnDisable()
+        {
+            UnregisterEventListeners();
         }
 
         private void Start()
@@ -101,6 +124,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnDestroy()
         {
+            UnregisterEventListeners();
+
             if (_context != null)
             {
                 _context.EventDesireChanged -= HandleContextDesireChanged;
@@ -404,6 +429,220 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventDesireChanged?.Invoke(info);
         }
 
+        private void RegisterEventListeners()
+        {
+            if (_planetMarkingChangedBinding == null)
+            {
+                _planetMarkingChangedBinding = new EventBinding<PlanetMarkingChangedEvent>(HandlePlanetMarkingChanged);
+            }
+
+            if (_planetUnmarkedBinding == null)
+            {
+                _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
+            }
+
+            if (_planetDestroyedBinding == null)
+            {
+                _planetDestroyedBinding = new EventBinding<PlanetDestroyedEvent>(HandlePlanetDestroyed);
+            }
+
+            if (_resourceUpdateBinding == null)
+            {
+                _resourceUpdateBinding = new EventBinding<ResourceUpdateEvent>(HandleResourceUpdated);
+            }
+
+            EventBus<PlanetMarkingChangedEvent>.Register(_planetMarkingChangedBinding);
+            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
+            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedBinding);
+            EventBus<ResourceUpdateEvent>.Register(_resourceUpdateBinding);
+        }
+
+        private void UnregisterEventListeners()
+        {
+            if (_planetMarkingChangedBinding != null)
+            {
+                EventBus<PlanetMarkingChangedEvent>.Unregister(_planetMarkingChangedBinding);
+            }
+
+            if (_planetUnmarkedBinding != null)
+            {
+                EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
+            }
+
+            if (_planetDestroyedBinding != null)
+            {
+                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedBinding);
+            }
+
+            if (_resourceUpdateBinding != null)
+            {
+                EventBus<ResourceUpdateEvent>.Unregister(_resourceUpdateBinding);
+            }
+        }
+
+        private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent evt)
+        {
+            if (_context == null)
+            {
+                return;
+            }
+
+            IActor newMarked = evt.NewMarkedPlanet;
+            if (newMarked == null)
+            {
+                if (_context.ClearTarget())
+                {
+                    DebugUtility.LogVerbose<EaterBehavior>("Planeta marcado removido. Alvo do Eater limpo.", this);
+                    ForceStateEvaluation();
+                }
+                return;
+            }
+
+            if (!TryResolvePlanetTarget(newMarked, out IDetectable newTarget))
+            {
+                DebugUtility.LogWarning<EaterBehavior>(
+                    $"Não foi possível localizar o detectável para o planeta marcado: {newMarked.ActorName}.",
+                    this);
+                return;
+            }
+
+            bool changed = _context.SetTarget(newTarget);
+            if (!changed)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<EaterBehavior>($"Planeta marcado definido como alvo: {newMarked.ActorName}.", this);
+            ForceStateEvaluation();
+        }
+
+        private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
+        {
+            if (_context == null || !_context.HasTarget)
+            {
+                return;
+            }
+
+            IActor unmarked = evt.PlanetActor;
+            if (unmarked == null)
+            {
+                return;
+            }
+
+            IDetectable currentTarget = _context.Target;
+            if (currentTarget?.Owner == null)
+            {
+                return;
+            }
+
+            if (!IsSameActor(currentTarget.Owner, unmarked))
+            {
+                return;
+            }
+
+            if (_context.ClearTarget())
+            {
+                DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {unmarked.ActorName}.", this);
+                ForceStateEvaluation();
+            }
+        }
+
+        private void HandlePlanetDestroyed(PlanetDestroyedEvent evt)
+        {
+            if (_context == null || !_context.HasTarget || evt?.Detected == null)
+            {
+                return;
+            }
+
+            IDetectable currentTarget = _context.Target;
+            if (currentTarget == null)
+            {
+                return;
+            }
+
+            IDetectable destroyed = evt.Detected;
+            bool sameDetectable = ReferenceEquals(currentTarget, destroyed);
+            bool sameActor = IsSameActor(currentTarget.Owner, destroyed.Owner);
+
+            if (!sameDetectable && !sameActor)
+            {
+                return;
+            }
+
+            if (_context.ClearTarget())
+            {
+                string planetName = destroyed.Owner?.ActorName ?? destroyed.Owner?.ActorId ?? destroyed.ToString();
+                DebugUtility.LogVerbose<EaterBehavior>($"Planeta alvo destruído removido: {planetName}.", this);
+                ForceStateEvaluation();
+            }
+        }
+
+        private void HandleResourceUpdated(ResourceUpdateEvent evt)
+        {
+            if (_context == null || evt?.NewValue == null || _master == null)
+            {
+                return;
+            }
+
+            if (evt.ActorId != _master.ActorId)
+            {
+                return;
+            }
+
+            if (evt.ResourceType != _context.Config.SatiationResourceType)
+            {
+                return;
+            }
+
+            if (!evt.NewValue.IsFull() || !_context.IsHungry)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<EaterBehavior>(
+                $"Recurso de saciedade cheio ({evt.ResourceType}). Retornando ao estado Vagando.",
+                this);
+            SetHungry(false);
+        }
+
+        private bool TryResolvePlanetTarget(IActor planetActor, out IDetectable detectable)
+        {
+            detectable = null;
+
+            if (planetActor == null)
+            {
+                return false;
+            }
+
+            PlanetsManager manager = PlanetsManager.Instance;
+            if (manager != null && manager.TryGetDetectable(planetActor, out detectable))
+            {
+                return true;
+            }
+
+            Transform actorTransform = planetActor.Transform;
+            if (actorTransform != null)
+            {
+                detectable = actorTransform.GetComponentInChildren<IDetectable>(true);
+                if (detectable != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsSameActor(IActor left, IActor right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.ActorId == right.ActorId;
+        }
+
         /// <summary>
         /// Resolve o SoundData utilizado para o áudio de desejos considerando overrides e configuração global.
         /// </summary>
@@ -477,7 +716,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             audioEmitter.Play(_resolvedDesireSound, audioContext);
 
             DebugUtility.LogVerbose<EaterBehavior>(
-                $"🔊 Som de desejo reproduzido para {newInfo.Resource!.Value} (disp={newInfo.IsAvailable}, planetas={newInfo.AvailableCount}).");
+                $"🔊 Som de desejo reproduzido para {newInfo.Resource!.Value} (disp={newInfo.IsAvailable}, planetas={newInfo.AvailableCount}).",
+                this);
         }
 
         /// <summary>

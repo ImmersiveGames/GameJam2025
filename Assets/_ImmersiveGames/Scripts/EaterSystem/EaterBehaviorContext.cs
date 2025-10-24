@@ -34,6 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _lastAnchorDistance;
         private float _lastAnchorAlignment;
         private bool _disposed;
+        private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
 
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
@@ -72,7 +73,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool IsWanderingTimerRunning => _wanderingTimer != null && _wanderingTimer.IsRunning;
         public bool HasAutoFlowService => _autoFlowBridge != null && _autoFlowBridge.HasAutoFlowService;
         public bool IsAutoFlowActive => _autoFlowBridge != null && _autoFlowBridge.IsAutoFlowActive;
-        public bool AreDesiresActive => _desireService != null && _desireService.IsActive;
+        public bool AreDesiresActive => _desireService != null && _currentDesireInfo.ServiceActive;
         public bool HasPendingHungryEffects => _pendingHungryEffects;
         public bool HasMovementSample => _hasMovementSample;
         public Vector3 LastMovementDirection => _lastMovementDirection;
@@ -80,13 +81,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public bool HasHungryMetrics => _hasHungryMetrics;
         public float LastAnchorDistance => _lastAnchorDistance;
         public float LastAnchorAlignment => _lastAnchorAlignment;
-        public bool HasCurrentDesire => _desireService != null && _desireService.HasActiveDesire;
-        public PlanetResources? CurrentDesire => _desireService?.CurrentDesire;
-        public bool CurrentDesireAvailable => _desireService != null && _desireService.CurrentDesireAvailable;
-        public float CurrentDesireDuration => _desireService != null ? _desireService.CurrentDesireDuration : 0f;
-        public float CurrentDesireRemainingTime => _desireService != null ? _desireService.CurrentDesireRemainingTime : 0f;
-        public int CurrentDesireAvailableCount => _desireService != null ? _desireService.CurrentDesireAvailableCount : 0;
-        public float CurrentDesireWeight => _desireService != null ? _desireService.CurrentDesireWeight : 0f;
+        public bool HasCurrentDesire => _currentDesireInfo.HasDesire;
+        public PlanetResources? CurrentDesire => _currentDesireInfo.Resource;
+        public bool CurrentDesireAvailable => _currentDesireInfo.IsAvailable;
+        public float CurrentDesireDuration => _currentDesireInfo.Duration;
+        public float CurrentDesireRemainingTime => _currentDesireInfo.RemainingTime;
+        public int CurrentDesireAvailableCount => _currentDesireInfo.AvailableCount;
+        public float CurrentDesireWeight => _currentDesireInfo.Weight;
+        public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
         public event Action<EaterDesireInfo> EventDesireChanged;
 
         public void ResetStateTimer()
@@ -356,16 +358,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return EaterDesireInfo.Inactive;
             }
 
-            bool serviceActive = _desireService.IsActive;
-            bool hasDesire = _desireService.HasActiveDesire;
-            PlanetResources? resource = hasDesire ? _desireService.CurrentDesire : null;
-            bool available = hasDesire && _desireService.CurrentDesireAvailable;
-            int availableCount = hasDesire ? _desireService.CurrentDesireAvailableCount : 0;
-            float weight = hasDesire ? _desireService.CurrentDesireWeight : 0f;
-            float duration = hasDesire ? _desireService.CurrentDesireDuration : 0f;
-            float remaining = hasDesire ? _desireService.CurrentDesireRemainingTime : 0f;
-
-            return new EaterDesireInfo(serviceActive, hasDesire, resource, available, availableCount, weight, duration, remaining);
+            return _currentDesireInfo;
         }
 
         public void Dispose()
@@ -385,6 +378,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandleDesireChanged(EaterDesireInfo info)
         {
+            _currentDesireInfo = info;
             EventDesireChanged?.Invoke(info);
         }
     }

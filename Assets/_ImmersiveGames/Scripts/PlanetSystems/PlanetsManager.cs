@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityUtils;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
@@ -276,6 +277,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public IReadOnlyCollection<IPlanetActor> GetPlanetActors() => _planetResourcesMap.Keys;
         public List<IDetectable> GetActivePlanets() => _activePlanets;
         public IDetectable GetPlanetMarked() => _targetToEater;
+
+        public bool TryGetDetectable(IActor planetActor, out IDetectable detectable)
+        {
+            detectable = null;
+
+            if (planetActor == null)
+            {
+                return false;
+            }
+
+            string actorId = planetActor.ActorId;
+            for (int i = 0; i < _activePlanets.Count; i++)
+            {
+                IDetectable candidate = _activePlanets[i];
+                if (candidate?.Owner == null)
+                {
+                    continue;
+                }
+
+                if (candidate.Owner.ActorId == actorId)
+                {
+                    detectable = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public bool IsMarkedPlanet(IDetectable planet) => _targetToEater == planet;
 

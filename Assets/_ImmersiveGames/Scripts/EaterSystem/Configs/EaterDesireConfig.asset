@@ -16,6 +16,7 @@ MonoBehaviour:
   desireThreshold: 0.9
   delayTimer: 2
   desireSelectedSound: {fileID: 11400000, guid: 04449c5613ee426f947003fca010a017, type: 2}
+  satiationResourceType: 3
   desireChangeInterval: 10
   directionChangeInterval: 4
   minSpeed: 2.5
