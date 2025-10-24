@@ -240,7 +240,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             float before = resource.GetCurrentValue();
             _resourceSystem.Modify(resourceType, -amount);
             float after = resource.GetCurrentValue();
-            DebugUtility.Log<EntityDebugUtility>($"💥 Damage Applied to {resourceType}: {before:F1} → {after:F1}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"💥 Damage Applied to {resourceType}: {before:F1} → {after:F1}");
 
             if (pausedAutoFlow)
             {
@@ -279,7 +279,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
             if (verboseEvents)
             {
-                DebugUtility.Log<EntityDebugUtility>($"🔔 ResourceUpdateEvent observed for {evt.ActorId}.{evt.ResourceType} -> {evt.NewValue?.GetCurrentValue():F1}");
+                DebugUtility.LogVerbose<EntityDebugUtility>($"🔔 ResourceUpdateEvent observed for {evt.ActorId}.{evt.ResourceType} -> {evt.NewValue?.GetCurrentValue():F1}");
             }
         }
 
@@ -290,7 +290,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
             if (verboseEvents)
             {
-                DebugUtility.Log<EntityDebugUtility>($"🔗 CanvasBindRequest observed for {req.actorId}.{req.resourceType} -> {req.targetCanvasId}");
+                DebugUtility.LogVerbose<EntityDebugUtility>($"🔗 CanvasBindRequest observed for {req.actorId}.{req.resourceType} -> {req.targetCanvasId}");
             }
         }
 
@@ -322,7 +322,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 sb.AppendLine("✅ Heuristic: No suspicious forced-bind pattern detected.");
 
             sb.AppendLine("=== END SUMMARY ===");
-            DebugUtility.Log<EntityDebugUtility>(sb.ToString());
+            DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
         }
 
         [ContextMenu("🔍 Quick Status")]

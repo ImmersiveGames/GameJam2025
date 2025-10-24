@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 3792857144750339892}
   - component: {fileID: 13957112238197562}
   - component: {fileID: 7952149840871249308}
+  - component: {fileID: 4035914436011544175}
   - component: {fileID: 794571938524048265}
   - component: {fileID: 5311924979779348153}
   - component: {fileID: 6850824342457013645}
@@ -23,6 +24,8 @@ GameObject:
   - component: {fileID: 452753156535112276}
   - component: {fileID: 7633387691389220541}
   - component: {fileID: 3502098637227668626}
+  - component: {fileID: 142333882723398855}
+  - component: {fileID: 3208070097848032392}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -107,6 +110,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
+  config: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
 --- !u!114 &4391767132752609887
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -171,11 +175,30 @@ MonoBehaviour:
   - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
     canvasTargetMode: 2
     customCanvasId: MainUI2
-    slotStyle: {fileID: 0}
+    slotStyle: {fileID: 11400000, guid: 473ed2f8373b93843b19bbdfa5ab3f6e, type: 2}
     thresholdConfig: {fileID: 0}
     hasAutoFlow: 1
     autoFlowConfig: {fileID: 11400000, guid: e8651aab02560ac45bfdf4dba97f49c7, type: 2}
     sortOrder: 0
+--- !u!114 &4035914436011544175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4daba9e0e4f741d094feb2eeeee469c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoTestOnReady: 0
+  testMode: 2
+  testDamage: 10
+  damageResourceType: 0
+  initializationDelay: 0.5
+  overallTimeout: 5
+  verboseEvents: 1
 --- !u!114 &794571938524048265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -288,3 +311,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
   poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
+--- !u!114 &142333882723398855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d93bf1a54a34c908ae1af3a7bc8f0d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  overrideConfig: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
+  audioEmitter: {fileID: 3502098637227668626}
+  desireSelectedSound: {fileID: 11400000, guid: 04449c5613ee426f947003fca010a017, type: 2}
+  updateWhileGameInactive: 1
+  executionToggleInitialized: 1
+  logStateTransitions: 1
+  logStateSummaries: 1
+--- !u!114 &3208070097848032392
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d29c06184426429d84df334bf307ee93, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  behavior: {fileID: 142333882723398855}
+  master: {fileID: 3116386425379354428}
+  autoLogStateChanges: 1
+  logSnapshotOnChange: 1
+  logMasterEvents: 1

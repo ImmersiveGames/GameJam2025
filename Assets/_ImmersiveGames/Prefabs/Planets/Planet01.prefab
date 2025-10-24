@@ -16,11 +16,11 @@ GameObject:
   - component: {fileID: 2902669177486074835}
   - component: {fileID: 2774738434980984958}
   - component: {fileID: 6005341794915908452}
-  - component: {fileID: 5646439767534810260}
   - component: {fileID: 299314230134813839}
   - component: {fileID: 8373132218115634742}
   - component: {fileID: 81636598692984422}
   - component: {fileID: 3388031708181859575}
+  - component: {fileID: 743985210123456788}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Untagged
@@ -163,18 +163,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   myDetectionType: {fileID: 11400000, guid: 7fe3a70e6e2d12f4689fd7da6799b07c, type: 2}
---- !u!114 &5646439767534810260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312295584184867285}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2cd5e493aa547bc888696c9d0e4a089, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &299314230134813839
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -216,16 +204,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 15eb4ca9f6ea40ecbe9fc496ca7b3c60, type: 3}
   m_Name: 
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   targetResource: 0
   damageCooldown: 0.25
   spawnExplosionOnDeath: 1
   explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}
   explosionOffset: {x: 0, y: 0, z: 0}
-  audioEmitter: {fileID: 743985210123456788}
-  hitSound: {fileID: 11400000, guid: 37cf9a1f0eb3e154f9980bbab4df7f39, type: 2}
-  deathSound: {fileID: 11400000, guid: 0ec6599d9cf3ec44f8e6afe5872f5c5c, type: 2}
-  reviveSound: {fileID: 11400000, guid: 04968c6a60f4e4847aa8dc27bf49eaea, type: 2}
   strategyPipeline:
   - type: 0
     criticalSettings:
@@ -233,6 +217,10 @@ MonoBehaviour:
       criticalMultiplier: 2
     resistanceModifiers:
       entries: []
+  audioEmitter: {fileID: 743985210123456788}
+  hitSound: {fileID: 0}
+  deathSound: {fileID: 0}
+  reviveSound: {fileID: 0}
 --- !u!114 &3388031708181859575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,7 +248,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3a8f5a62f6046a4830a703ef3c460e8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  defaults: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
   poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
