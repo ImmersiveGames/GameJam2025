@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             if (_planetMaster == null)
             {
                 DebugUtility.LogError<PlanetDetectableController>(
-                    $"PlanetsMaster não encontrado para o detectável {gameObject.name}.");
+                    $"PlanetsMaster não encontrado para o detectável {gameObject.name}.", this);
             }
         }
 
@@ -34,7 +34,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             DebugUtility.LogVerbose<PlanetDetectableController>(
-                $"Planeta {gameObject.name} detectado por {GetName(detector)}.");
+                $"Planeta {gameObject.name} detectado por {GetName(detector)}.",
+                DebugUtility.Colors.CrucialInfo,
+                this);
 
             if (_planetMaster == null)
             {
@@ -44,7 +46,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             if (_planetMaster.IsResourceDiscovered)
             {
                 DebugUtility.LogVerbose<PlanetDetectableController>(
-                    $"Recurso do planeta {gameObject.name} já estava revelado.");
+                    $"Recurso do planeta {gameObject.name} já estava revelado.",
+                    null,
+                    this);
                 return;
             }
 
@@ -60,7 +64,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             DebugUtility.LogVerbose<PlanetDetectableController>(
-                $"Planeta {gameObject.name} saiu do alcance de {GetName(detector)}.");
+                $"Planeta {gameObject.name} saiu do alcance de {GetName(detector)}.",
+                null,
+                this);
         }
     }
 }

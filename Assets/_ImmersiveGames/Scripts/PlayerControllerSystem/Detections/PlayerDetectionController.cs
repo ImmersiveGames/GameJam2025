@@ -21,7 +21,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
             // Como o Player pode operar múltiplos sensores, guardamos a referência do SensorController
             // para mapear os DetectionType configurados via coleção em tempo de execução.
-            _sensorController = GetComponent<SensorController>();
+            _sensorController = GetComponent<SensorController>() ??
+                                GetComponentInChildren<SensorController>(includeInactive: true);
         }
 
         private void Start()
@@ -57,7 +58,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             }
 
             DebugUtility.LogVerbose<PlayerDetectionController>(
-                $"Detecção recebida sem manipulador específico: {detectionType.TypeName}");
+                $"Detecção recebida sem manipulador específico: {detectionType.TypeName}",
+                null,
+                this);
         }
 
         public override void OnLost(IDetectable detectable, DetectionType detectionType)
@@ -91,6 +94,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 return;
             }
 
+            _registeredDetectionTypes.Clear();
+
             foreach (var sensor in collection.Sensors)
             {
                 if (sensor?.DetectionType == null) continue;
@@ -123,14 +128,18 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             if (planetMaster.IsResourceDiscovered)
             {
                 DebugUtility.LogVerbose<PlayerDetectionController>(
-                    $"Planeta {planetMaster.ActorName} já estava revelado.");
+                    $"Planeta {planetMaster.ActorName} já estava revelado.",
+                    null,
+                    this);
                 return;
             }
 
             planetMaster.RevealResource();
 
             DebugUtility.LogVerbose<PlayerDetectionController>(
-                $"Recurso do planeta {planetMaster.ActorName} revelado pelo Player.");
+                $"Recurso do planeta {planetMaster.ActorName} revelado pelo Player.",
+                DebugUtility.Colors.Success,
+                this);
         }
 
         private static bool TryResolvePlanetMaster(IDetectable detectable, out PlanetsMaster planetMaster)
