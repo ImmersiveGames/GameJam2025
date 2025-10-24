@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -47,19 +46,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             Transform.position = Vector3.MoveTowards(currentPosition, targetPosition, chaseSpeed * Time.deltaTime);
 
-            if (distance <= Config.MinimumChaseDistance)
-            {
-                bool startedEating = Context.SetEating(true);
-                if (startedEating)
-                {
-                    Context.ResetStateTimer();
-                    PlanetsMaster targetPlanet = Context.Target;
-                    if (targetPlanet != null)
-                    {
-                        Context.Master.OnEventStartEatPlanet(targetPlanet);
-                    }
-                }
-            }
         }
 
         public override void OnExit()

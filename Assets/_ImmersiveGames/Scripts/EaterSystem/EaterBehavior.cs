@@ -69,10 +69,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public event Action<IState, IState> EventStateChanged;
         public event Action<EaterDesireInfo> EventDesireChanged;
+        public event Action<PlanetsMaster> EventTargetChanged;
 
         public IState CurrentState => _stateMachine?.CurrentState;
         public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
         public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
+        public PlanetsMaster CurrentTarget => _context?.TargetPlanet;
+        public bool IsEating => _context?.IsEating ?? false;
+        public bool ShouldEnableProximitySensor => _context?.ShouldEnableProximitySensor ?? false;
 
         private void Awake()
         {
@@ -94,6 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireInfo = _context.CurrentDesireInfo;
             _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
             _context.EventDesireChanged += HandleContextDesireChanged;
+            _context.EventTargetChanged += HandleContextTargetChanged;
         }
 
         private void OnEnable()
@@ -128,6 +133,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_context != null)
             {
                 _context.EventDesireChanged -= HandleContextDesireChanged;
+                _context.EventTargetChanged -= HandleContextTargetChanged;
                 _context.Dispose();
             }
         }
@@ -240,6 +246,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     _context.Master.OnEventStartEatPlanet(target);
                 }
+                _context.ResetStateTimer();
                 ForceStateEvaluation();
             }
         }
@@ -432,6 +439,32 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireInfo = info;
             TryPlayDesireSound(previousInfo, info);
             EventDesireChanged?.Invoke(info);
+        }
+
+        private void HandleContextTargetChanged(PlanetsMaster previous, PlanetsMaster current)
+        {
+            if (_context == null)
+            {
+                return;
+            }
+
+            bool targetChanged = !IsSameActor(previous, current);
+            if (previous != null && targetChanged && _context.IsEating)
+            {
+                bool stopped = _context.SetEating(false);
+                if (stopped)
+                {
+                    DebugUtility.LogVerbose<EaterBehavior>(
+                        $"Alvo atualizado enquanto o Eater comia. Encerrando consumo do planeta {GetPlanetName(previous)}.",
+                        DebugUtility.Colors.Warning,
+                        this);
+
+                    _context.Master.OnEventEndEatPlanet(previous);
+                    ForceStateEvaluation();
+                }
+            }
+
+            EventTargetChanged?.Invoke(current);
         }
 
         private void RegisterEventListeners()
