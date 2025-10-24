@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         {
             if (detectable == null || detectionType == null)
             {
-                DebugUtility.LogWarning<DetectableRegistry>(
+                DebugUtility.LogWarning(typeof(DetectableRegistry),
                     "Tentativa de registrar detectável inválido no DetectableRegistry.");
                 return;
             }

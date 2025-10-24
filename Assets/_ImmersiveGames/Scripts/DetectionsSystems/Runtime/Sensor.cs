@@ -113,8 +113,10 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private IDetectable GetDetectableFromCollider(Collider collider)
         {
-            var root = collider.transform.root;
-            return root.GetComponent<IDetectable>() ?? collider.GetComponent<IDetectable>();
+            if (collider == null) return null;
+
+            // Utiliza a hierarquia completa porque os colliders residem em filhos dos detectables.
+            return collider.GetComponentInParent<IDetectable>();
         }
 
         private bool IsSelfOrChild(IDetectable detectable, IDetector detector)
