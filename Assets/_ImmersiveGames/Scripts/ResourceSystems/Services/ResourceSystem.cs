@@ -20,6 +20,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private readonly IResourceLinkService _linkService;
 
         public event Action<ResourceUpdateEvent> ResourceUpdated;
+        public event Action<ResourceChangeContext> ResourceChanging;
+        public event Action<ResourceChangeContext> ResourceChanged;
 
         public float LastDamageTime { get; private set; } = -999f;
 
@@ -42,49 +44,43 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             }
         }
 
-        public void Set(ResourceType type, float value)
+        public void Set(ResourceType type, float value, ResourceChangeSource source = ResourceChangeSource.Manual)
         {
             if (!_resources.TryGetValue(type, out var resource)) return;
-            float newValue = Mathf.Clamp(value, 0, resource.GetMaxValue());
-            if (Mathf.Approximately(resource.GetCurrentValue(), newValue)) return;
-            resource.SetCurrentValue(newValue);
-            ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, resource));
+            float previous = resource.GetCurrentValue();
+            float clamped = Mathf.Clamp(value, 0, resource.GetMaxValue());
+            float delta = clamped - previous;
+            if (Mathf.Approximately(delta, 0f)) return;
+
+            ApplyDelta(type, resource, delta, source, false);
         }
 
-        public void Modify(ResourceType type, float delta)
+        public void Modify(ResourceType type, float delta, ResourceChangeSource source = ResourceChangeSource.Manual)
         {
             if (!_resources.TryGetValue(type, out var resource)) return;
 
             // Verificar se há link para este recurso
             var linkConfig = _linkService.GetLink(EntityId, type);
-            
+
             if (linkConfig != null && delta < 0) // Apenas para redução (dano)
             {
-                ModifyWithLink(type, delta, linkConfig);
+                ModifyWithLink(type, delta, linkConfig, source);
             }
             else
             {
-                // Modificação normal
-                float newValue = Mathf.Clamp(resource.GetCurrentValue() + delta, 0, resource.GetMaxValue());
-                if (Mathf.Approximately(resource.GetCurrentValue(), newValue)) return;
-
-                ApplyModification(type, delta, resource);
+                ApplyDelta(type, resource, delta, source, false);
             }
         }
 
-        private void ModifyWithLink(ResourceType type, float delta, ResourceLinkConfig linkConfig)
+        private void ModifyWithLink(ResourceType type, float delta, ResourceLinkConfig linkConfig, ResourceChangeSource source)
         {
             var sourceResource = _resources[type];
             var targetResource = _resources.GetValueOrDefault(linkConfig.targetResource);
 
-            if (targetResource == null) 
+            if (targetResource == null)
             {
                 // Fallback para modificação normal se o recurso alvo não existir
-                float newValue = Mathf.Clamp(sourceResource.GetCurrentValue() + delta, 0, sourceResource.GetMaxValue());
-                if (!Mathf.Approximately(sourceResource.GetCurrentValue(), newValue))
-                {
-                    ApplyModification(type, delta, sourceResource);
-                }
+                ApplyDelta(type, sourceResource, delta, source, false);
                 return;
             }
 
@@ -96,56 +92,60 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             float remainingReduction = desiredReduction - sourceReduction;
 
             // Aplicar redução no recurso fonte
+            bool sourceChanged = false;
+
             if (sourceReduction > 0)
             {
-                float newSourceValue = Mathf.Clamp(sourceResource.GetCurrentValue() - sourceReduction, 0, sourceResource.GetMaxValue());
-                if (!Mathf.Approximately(sourceResource.GetCurrentValue(), newSourceValue))
-                {
-                    sourceResource.SetCurrentValue(newSourceValue);
-                    ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, type, sourceResource));
-                    
-                    if (delta < 0)
-                    {
-                        LastDamageTime = Time.time;
-                    }
-                }
+                sourceChanged = ApplyDelta(type, sourceResource, -sourceReduction, source, false);
             }
 
-            // Aplicar redução restante no recurso alvo
+            bool targetChanged = false;
+
             if (remainingReduction > 0)
             {
-                float newTargetValue = Mathf.Clamp(targetResource.GetCurrentValue() - remainingReduction, 0, targetResource.GetMaxValue());
-                if (!Mathf.Approximately(targetResource.GetCurrentValue(), newTargetValue))
-                {
-                    targetResource.SetCurrentValue(newTargetValue);
-                    ResourceUpdated?.Invoke(new ResourceUpdateEvent(EntityId, linkConfig.targetResource, targetResource));
-                    
-                    LastDamageTime = Time.time;
-                }
+                var targetSource = source == ResourceChangeSource.AutoFlow ? ResourceChangeSource.AutoFlow : ResourceChangeSource.Link;
+                targetChanged = ApplyDelta(linkConfig.targetResource, targetResource, -remainingReduction, targetSource, true);
+            }
 
+            if (sourceChanged || targetChanged)
+            {
                 DebugUtility.LogVerbose<ResourceSystem>($"Link transfer: {type} -> {linkConfig.targetResource}, " +
                                                        $"Source: -{sourceReduction}, Target: -{remainingReduction}");
             }
         }
 
-        private void ApplyModification(ResourceType type, float delta, IResourceValue resource)
+        private bool ApplyDelta(ResourceType type, IResourceValue resource, float delta, ResourceChangeSource source, bool isLinkedChange)
         {
-            switch (delta)
+            if (resource == null)
             {
-                case > 0:
-                    resource.Increase(delta);
-                    break;
-                case < 0:
-                    resource.Decrease(-delta);
-                    LastDamageTime = Time.time;
-                    break;
+                return false;
             }
-            
+
+            float previous = resource.GetCurrentValue();
+            float target = Mathf.Clamp(previous + delta, 0f, resource.GetMaxValue());
+            float appliedDelta = target - previous;
+
+            if (Mathf.Approximately(appliedDelta, 0f))
+            {
+                return false;
+            }
+
+            var context = new ResourceChangeContext(this, type, previous, target, appliedDelta, resource.GetMaxValue(), source, isLinkedChange);
+            ResourceChanging?.Invoke(context);
+
+            resource.SetCurrentValue(target);
+
+            if (appliedDelta < 0f)
+            {
+                LastDamageTime = Time.time;
+            }
+
             var evt = new ResourceUpdateEvent(EntityId, type, resource);
             ResourceUpdated?.Invoke(evt);
-
-            // Publicar no EventBus para listeners desacoplados
             EventBus<ResourceUpdateEvent>.Raise(evt);
+
+            ResourceChanged?.Invoke(context);
+            return true;
         }
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);

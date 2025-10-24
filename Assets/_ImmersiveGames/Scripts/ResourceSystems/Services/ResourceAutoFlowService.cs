@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 float perTick = CalculateDelta(cfg, type);
                 if (Mathf.Abs(perTick) <= 0.0001f) continue;
 
-                _resourceSystem.Modify(type, perTick);
+                _resourceSystem.Modify(type, perTick, ResourceChangeSource.AutoFlow);
 
                 EventBus<AutoFlowEffectEvent>.Raise(
                     new AutoFlowEffectEvent(_resourceSystem.EntityId, type, perTick, Vector3.zero)
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             float delta = 0f;
             if (cfg.autoFill) delta += amount;
-            if (cfg.autoDrain) delta -= _linkService.ProcessLinkedDrain(_resourceSystem.EntityId, type, amount, _resourceSystem);
+            if (cfg.autoDrain) delta -= _linkService.ProcessLinkedDrain(_resourceSystem.EntityId, type, amount, _resourceSystem, ResourceChangeSource.AutoFlow);
             return delta;
         }
 

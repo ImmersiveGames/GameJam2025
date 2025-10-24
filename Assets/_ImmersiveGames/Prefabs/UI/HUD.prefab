@@ -370,10 +370,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cded0fb0eaa940be91367022517e196b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   desireIcon: {fileID: 7612169731846915587}
-  eaterDesire: {fileID: 0}
+  eaterBehavior: {fileID: 0}
+  fallbackSprite: {fileID: 0}
+  hideWhenNoDesire: 1
 --- !u!1 &2387444979595858881
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityUtils;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -61,6 +63,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private readonly Dictionary<IPlanetActor, PlanetResources> _planetResourcesMap = new();
         private readonly List<PlanetsMaster> _spawnedPlanets = new();
         private readonly List<float> _orbitRadii = new();
+        private readonly Dictionary<string, PlanetsMaster> _planetsByActorId = new();
+        private EventBinding<DeathEvent> _planetDeathBinding;
+        private readonly Dictionary<PlanetResources, PlanetResourcesSo> _resourceDefinitions = new();
 
         protected override void Awake()
         {
@@ -69,6 +74,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 planetsRoot = transform;
             }
+
+            RebuildResourceDefinitions();
+            _planetDeathBinding = new EventBinding<DeathEvent>(OnPlanetDeath);
+            EventBus<DeathEvent>.Register(_planetDeathBinding);
+        }
+
+        private void OnValidate()
+        {
+            RebuildResourceDefinitions();
         }
 
         private void Start() => StartCoroutine(InitializePlanetsRoutine());
@@ -120,9 +134,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             planetInstance.AssignResource(resource);
+            CacheResourceDefinition(resource);
 
             PlanetResources resourceType = resource != null ? resource.ResourceType : default;
             _planetResourcesMap[planetInstance] = resourceType;
+            _planetsByActorId[planetInstance.ActorId] = planetInstance;
+            RegisterActiveDetectables(planetInstance);
         }
 
         private void ArrangePlanetsInOrbits()
@@ -221,7 +238,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             int randomIndex = Random.Range(0, availableResources.Count);
-            return availableResources[randomIndex];
+            PlanetResourcesSo resource = availableResources[randomIndex];
+            CacheResourceDefinition(resource);
+            return resource;
+        }
+
+        private void RebuildResourceDefinitions()
+        {
+            _resourceDefinitions.Clear();
+            if (availableResources == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < availableResources.Count; i++)
+            {
+                CacheResourceDefinition(availableResources[i]);
+            }
+        }
+
+        private void CacheResourceDefinition(PlanetResourcesSo resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            PlanetResources resourceType = resource.ResourceType;
+            if (_resourceDefinitions.ContainsKey(resourceType))
+            {
+                return;
+            }
+
+            _resourceDefinitions.Add(resourceType, resource);
         }
 
         public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
@@ -229,7 +278,184 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public List<IDetectable> GetActivePlanets() => _activePlanets;
         public IDetectable GetPlanetMarked() => _targetToEater;
 
+        /// <summary>
+        /// Resolve o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
+        /// </summary>
+        public bool TryGetPlanet(IActor planetActor, out PlanetsMaster planet)
+        {
+            planet = null;
+
+            if (planetActor == null)
+            {
+                return false;
+            }
+
+            string actorId = planetActor.ActorId;
+            if (string.IsNullOrEmpty(actorId))
+            {
+                return false;
+            }
+
+            if (_planetsByActorId.TryGetValue(actorId, out PlanetsMaster cached) && cached != null)
+            {
+                planet = cached;
+                return true;
+            }
+
+            if (planetActor is PlanetsMaster master && master != null)
+            {
+                planet = master;
+                _planetsByActorId[actorId] = master;
+                return true;
+            }
+
+            for (int i = 0; i < _spawnedPlanets.Count; i++)
+            {
+                PlanetsMaster candidate = _spawnedPlanets[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (candidate.ActorId == actorId)
+                {
+                    planet = candidate;
+                    _planetsByActorId[actorId] = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryGetDetectable(IActor planetActor, out IDetectable detectable)
+        {
+            detectable = null;
+
+            if (planetActor == null)
+            {
+                return false;
+            }
+
+            string actorId = planetActor.ActorId;
+            for (int i = 0; i < _activePlanets.Count; i++)
+            {
+                IDetectable candidate = _activePlanets[i];
+                if (candidate?.Owner == null)
+                {
+                    continue;
+                }
+
+                if (candidate.Owner.ActorId == actorId)
+                {
+                    detectable = candidate;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool IsMarkedPlanet(IDetectable planet) => _targetToEater == planet;
+
+        public bool TryGetResourceDefinition(PlanetResources resourceType, out PlanetResourcesSo definition)
+        {
+            if (_resourceDefinitions.TryGetValue(resourceType, out definition) && definition != null)
+            {
+                return true;
+            }
+
+            definition = null;
+            return false;
+        }
+
+        private void OnPlanetDeath(DeathEvent evt)
+        {
+            if (evt.EntityId == null)
+            {
+                return;
+            }
+
+            if (!_planetsByActorId.TryGetValue(evt.EntityId, out PlanetsMaster planet) || planet == null)
+            {
+                _planetsByActorId.Remove(evt.EntityId);
+                return;
+            }
+
+            RemovePlanet(planet);
+        }
+
+        private void RemovePlanet(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            _planetsByActorId.Remove(planet.ActorId);
+            _planetResourcesMap.Remove(planet);
+            _spawnedPlanets.Remove(planet);
+            UnregisterActiveDetectables(planet);
+
+            DebugUtility.LogVerbose<PlanetsManager>($"Planeta removido do gerenciamento: {planet.ActorName}.");
+        }
+
+        private void RegisterActiveDetectables(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            var detectables = planet.GetComponentsInChildren<IDetectable>(true);
+            for (int i = 0; i < detectables.Length; i++)
+            {
+                RegisterActiveDetectable(detectables[i]);
+            }
+        }
+
+        private void UnregisterActiveDetectables(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            var detectables = planet.GetComponentsInChildren<IDetectable>(true);
+            for (int i = 0; i < detectables.Length; i++)
+            {
+                UnregisterActiveDetectable(detectables[i]);
+            }
+        }
+
+        private void RegisterActiveDetectable(IDetectable detectable)
+        {
+            if (detectable == null || _activePlanets.Contains(detectable))
+            {
+                return;
+            }
+
+            _activePlanets.Add(detectable);
+        }
+
+        private void UnregisterActiveDetectable(IDetectable detectable)
+        {
+            if (detectable == null)
+            {
+                return;
+            }
+
+            _activePlanets.Remove(detectable);
+        }
+
+        private void OnDestroy()
+        {
+            if (_planetDeathBinding != null)
+            {
+                EventBus<DeathEvent>.Unregister(_planetDeathBinding);
+                _planetDeathBinding = null;
+            }
+        }
 
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
