@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using UnityEngine;
 
@@ -147,14 +148,43 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             if (sensor.CurrentlyDetected.Count == 0) return;
 
             Gizmos.color = sensor.Config.DetectingColor;
-            if (sensor.CurrentlyDetected[0] is MonoBehaviour mono)
+            for (int i = 0; i < sensor.CurrentlyDetected.Count; i++)
             {
-                Gizmos.DrawLine(sensorController.transform.position, mono.transform.position);
+                var detectable = sensor.CurrentlyDetected[i];
+                if (detectable == null) continue;
+
+                if (!TryGetDetectablePosition(detectable, out var targetPosition)) continue;
+
+                var originPosition = sensor.Origin != null
+                    ? sensor.Origin.position
+                    : sensorController.transform.position;
+
+                Gizmos.DrawLine(originPosition, targetPosition);
                 if (showObjectMarkers)
                 {
-                    Gizmos.DrawWireCube(mono.transform.position, Vector3.one * 0.2f);
+                    Gizmos.DrawWireCube(targetPosition, Vector3.one * 0.2f);
                 }
             }
+        }
+
+        private bool TryGetDetectablePosition(IDetectable detectable, out Vector3 position)
+        {
+            position = default;
+
+            IActor owner = detectable.Owner;
+            if (owner?.Transform != null)
+            {
+                position = owner.Transform.position;
+                return true;
+            }
+
+            if (detectable is MonoBehaviour mono && mono != null)
+            {
+                position = mono.transform.position;
+                return true;
+            }
+
+            return false;
         }
 
         private void OnDrawGizmosSelected()
