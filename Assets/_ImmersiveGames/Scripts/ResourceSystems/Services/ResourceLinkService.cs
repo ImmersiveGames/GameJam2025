@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         void UnregisterAllLinks(string actorId);
         bool HasLink(string actorId, ResourceType sourceResource);
         ResourceLinkConfig GetLink(string actorId, ResourceType sourceResource);
-        float ProcessLinkedDrain(string actorId, ResourceType resourceType, float desiredDrain, ResourceSystem resourceSystem);
+        float ProcessLinkedDrain(string actorId, ResourceType resourceType, float desiredDrain, ResourceSystem resourceSystem, ResourceChangeSource source = ResourceChangeSource.Manual);
     }
 
     [DebugLevel(DebugLevel.Warning)]
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public ResourceLinkConfig GetLink(string actorId, ResourceType src) =>
             _links.TryGetValue(actorId, out var dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
 
-        public float ProcessLinkedDrain(string actorId, ResourceType type, float desired, ResourceSystem sys)
+        public float ProcessLinkedDrain(string actorId, ResourceType type, float desired, ResourceSystem sys, ResourceChangeSource source = ResourceChangeSource.Manual)
         {
             var cfg = GetLink(actorId, type);
             if (cfg == null || !cfg.affectTargetWithAutoFlow) return desired;
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             float available = src.GetCurrentValue();
             float srcDrain = Mathf.Min(desired, available);
             float remaining = desired - srcDrain;
-            if (remaining > 0) sys.Modify(cfg.targetResource, -remaining);
+            if (remaining > 0) sys.Modify(cfg.targetResource, -remaining, source);
 
             DebugUtility.LogVerbose<ResourceLinkService>(
                 $"AutoFlow link aplicado: {type}↓{srcDrain}, {cfg.targetResource}↓{remaining}");
