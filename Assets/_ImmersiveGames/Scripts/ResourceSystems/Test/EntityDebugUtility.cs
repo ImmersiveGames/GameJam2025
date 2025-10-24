@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -34,6 +35,8 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         private int _resourceUpdateEventsSeen;
         private int _canvasBindRequestsSeen;
         private bool _actorRegisteredEventSeen;
+
+        private Coroutine _pendingResumeRoutine;
 
         private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
         private EventBinding<ResourceEventHub.CanvasBindRequest> _canvasBindRequestBinding;
@@ -75,6 +78,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
         private void OnDestroy()
         {
+            if (_pendingResumeRoutine != null)
+            {
+                StopCoroutine(_pendingResumeRoutine);
+                _pendingResumeRoutine = null;
+            }
+
             if (_resourceUpdateBinding != null) EventBus<ResourceUpdateEvent>.Unregister(_resourceUpdateBinding);
             if (_canvasBindRequestBinding != null) EventBus<ResourceEventHub.CanvasBindRequest>.Unregister(_canvasBindRequestBinding);
             if (_actorRegisteredBinding != null) EventBus<ResourceEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
@@ -227,10 +236,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 return;
             }
 
+            bool pausedAutoFlow = TryPauseAutoFlow(out var autoFlowBridge);
             float before = resource.GetCurrentValue();
             _resourceSystem.Modify(resourceType, -amount);
             float after = resource.GetCurrentValue();
             DebugUtility.Log<EntityDebugUtility>($"💥 Damage Applied to {resourceType}: {before:F1} → {after:F1}");
+
+            if (pausedAutoFlow)
+            {
+                ResumeAutoFlowWhenReady(autoFlowBridge, after, resource.GetMaxValue());
+            }
         }
 
         [ContextMenu("🟢 Fill Selected Resource")]
@@ -245,10 +260,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 return;
             }
 
+            bool pausedAutoFlow = TryPauseAutoFlow(out var autoFlowBridge);
             float before = resource.GetCurrentValue();
             float max = resource.GetMaxValue();
             _resourceSystem.Set(damageResourceType, max);
             DebugUtility.Log<EntityDebugUtility>($"🟢 Filled {damageResourceType}: {before:F1} → {max:F1}");
+
+            if (pausedAutoFlow)
+            {
+                ResumeAutoFlowWhenReady(autoFlowBridge, max, max);
+            }
         }
 
         private void OnResourceUpdateEvent(ResourceUpdateEvent evt)
@@ -596,6 +617,69 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
             DebugUtility.LogError<EntityDebugUtility>("❌ ResourceSystem is null - cannot continue the requested operation.");
             return false;
+        }
+
+        private bool TryPauseAutoFlow(out ResourceAutoFlowBridge bridge)
+        {
+            bridge = GetComponent<ResourceAutoFlowBridge>();
+            if (bridge == null || !bridge.HasAutoFlowService)
+            {
+                return false;
+            }
+
+            if (!bridge.IsAutoFlowActive)
+            {
+                return false;
+            }
+
+            bool paused = bridge.PauseAutoFlow();
+            if (paused)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>("⏸️ Temporarily paused AutoFlow for manual resource adjustment.", null, this);
+            }
+            return paused;
+        }
+
+        private void ResumeAutoFlowWhenReady(ResourceAutoFlowBridge bridge, float currentValue, float maxValue)
+        {
+            if (bridge == null)
+            {
+                return;
+            }
+
+            bool shouldResume = currentValue < maxValue - 0.01f;
+            if (!shouldResume)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>("✅ Resource filled to max — keeping AutoFlow paused until behavior handles the state change.", null, this);
+                return;
+            }
+
+            if (!isActiveAndEnabled)
+            {
+                bridge.ResumeAutoFlow();
+                return;
+            }
+
+            if (_pendingResumeRoutine != null)
+            {
+                StopCoroutine(_pendingResumeRoutine);
+            }
+
+            _pendingResumeRoutine = StartCoroutine(ResumeAutoFlowNextFrame(bridge));
+        }
+
+        private IEnumerator ResumeAutoFlowNextFrame(ResourceAutoFlowBridge bridge)
+        {
+            yield return null;
+            yield return null;
+
+            if (bridge != null && bridge.HasAutoFlowService)
+            {
+                bridge.ResumeAutoFlow();
+                DebugUtility.LogVerbose<EntityDebugUtility>("▶️ AutoFlow resumed after manual adjustment.", null, this);
+            }
+
+            _pendingResumeRoutine = null;
         }
     }
 }
