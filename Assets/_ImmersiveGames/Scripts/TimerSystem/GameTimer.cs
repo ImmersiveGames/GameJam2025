@@ -1,5 +1,3 @@
-using System;
-using System.Reflection;
 using ImprovedTimers;
 using UnityEngine;
 using UnityUtils;
@@ -14,70 +12,66 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
     /// <summary>
-    /// Controlador central da contagem regressiva da partida.
-    /// Mantém a duração configurada, atualiza o relógio a cada frame
-    /// e reage aos eventos de ciclo de jogo para iniciar, pausar ou encerrar a sessão.
+    /// Controla o cronômetro principal da partida utilizando o ImprovedTimer.
+    /// Responsável por iniciar, pausar, retomar e encerrar a contagem com base
+    /// nos eventos do ciclo de jogo e por manter o valor restante disponível
+    /// para outros sistemas.
     /// </summary>
-    [DefaultExecutionOrder(-90), DebugLevel(DebugLevel.Logs)]
+    [DefaultExecutionOrder(-90)]
+    [DebugLevel(DebugLevel.Logs)]
     public sealed class GameTimer : Singleton<GameTimer>
     {
-        private CountdownTimer _countdownTimer;
-        private Action<float> _pluginTickInvoker;
+        private CountdownTimer _timer;
 
         private EventBinding<GameStartEvent> _startBinding;
         private EventBinding<GamePauseEvent> _pauseBinding;
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
-        private EventBinding<StateChangedEvent> _stateChangedBinding;
+        private EventBinding<GameResetRequestedEvent> _resetBinding;
 
         private float _configuredDuration;
         private float _remainingTime;
-
         private bool _sessionActive;
-        private bool _isRunning;
-        private bool _manualFallback;
-        private bool _autoStartArmed;
-
+        private bool _isPaused;
         private int _lastLoggedSecond = -1;
 
-        /// <summary>Duração configurada em segundos.</summary>
+        /// <summary>Duração configurada (segundos).</summary>
         public float ConfiguredDuration => Mathf.Max(_configuredDuration, 0f);
-        /// <summary>Tempo restante da sessão em segundos.</summary>
+        /// <summary>Tempo restante atual (segundos).</summary>
         public float RemainingTime => Mathf.Max(_remainingTime, 0f);
-        /// <summary>Indica se existe uma sessão ativa.</summary>
+        /// <summary>Indica se há uma sessão de contagem ativa.</summary>
         public bool HasActiveSession => _sessionActive;
-        /// <summary>Indica se o relógio está correndo atualmente.</summary>
-        public bool IsRunning => _isRunning;
+        /// <summary>Indica se o cronômetro está contando no momento.</summary>
+        public bool IsRunning => _sessionActive && !_isPaused;
 
         protected override void Awake()
         {
             base.Awake();
 
-            _configuredDuration = ResolveConfiguredDuration();
+            _configuredDuration = LoadConfiguredDuration();
             _remainingTime = _configuredDuration;
-            BuildTimer(_configuredDuration);
+            EnsureTimerInstance();
+            PrepareTimer(_configuredDuration);
 
-            DebugUtility.Log<GameTimer>(
-                $"Timer configurado para {_configuredDuration:F2}s.",
-                context: this);
+            DebugUtility.Log<GameTimer>($"Timer configurado com {_configuredDuration:F2}s.", context: this);
         }
 
         private void OnEnable()
         {
-            _startBinding = new EventBinding<GameStartEvent>(_ => BeginSession());
+            _startBinding = new EventBinding<GameStartEvent>(_ => StartSession());
             EventBus<GameStartEvent>.Register(_startBinding);
 
             _pauseBinding = new EventBinding<GamePauseEvent>(HandlePauseEvent);
             EventBus<GamePauseEvent>.Register(_pauseBinding);
 
-            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopInternal(false));
+            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopSession(false));
             EventBus<GameOverEvent>.Register(_gameOverBinding);
 
-            _victoryBinding = new EventBinding<GameVictoryEvent>(_ => StopInternal(false));
+            _victoryBinding = new EventBinding<GameVictoryEvent>(_ => StopSession(false));
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
-            _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
-            EventBus<StateChangedEvent>.Register(_stateChangedBinding);
+            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true));
+            EventBus<GameResetRequestedEvent>.Register(_resetBinding);
         }
 
         private void OnDisable()
@@ -106,198 +100,150 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _victoryBinding = null;
             }
 
-            if (_stateChangedBinding != null)
+            if (_resetBinding != null)
             {
-                EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
-                _stateChangedBinding = null;
+                EventBus<GameResetRequestedEvent>.Unregister(_resetBinding);
+                _resetBinding = null;
             }
         }
 
         private void Update()
         {
-            AdvanceCountdown(Time.deltaTime);
-            TryAutoStart();
+            TryStartWhenPlaying();
+
+            if (!_sessionActive || _isPaused)
+            {
+                return;
+            }
+
+            float current = ReadTimerTime();
+            if (!Mathf.Approximately(current, _remainingTime))
+            {
+                _remainingTime = current;
+                LogWholeSecond();
+            }
+
+            if (_remainingTime <= 0f || (_timer != null && _timer.IsFinished))
+            {
+                HandleTimeEnded();
+            }
         }
 
         /// <summary>Inicia uma nova sessão utilizando o valor configurado.</summary>
-        private void BeginSession()
+        private void StartSession()
         {
-            float duration = ResolveConfiguredDuration();
+            float duration = LoadConfiguredDuration();
+            _configuredDuration = duration;
+
             if (duration <= 0f)
             {
-                DebugUtility.LogWarning<GameTimer>("Duração configurada inválida; sessão não iniciada.", context: this);
-                StopInternal(true);
+                DebugUtility.LogWarning<GameTimer>(
+                    "Duração configurada inválida para o cronômetro; sessão não iniciada.",
+                    context: this);
+                StopSession(true);
                 return;
             }
 
-            if (_sessionActive)
-            {
-                StopInternal(false);
-            }
+            EnsureTimerInstance();
+            PrepareTimer(duration);
 
-            _configuredDuration = duration;
             _remainingTime = duration;
-            EnsureTimerReset(duration);
-
             _sessionActive = true;
-            _isRunning = true;
-            _manualFallback = _pluginTickInvoker == null;
-            _autoStartArmed = true;
+            _isPaused = false;
             _lastLoggedSecond = Mathf.CeilToInt(_remainingTime);
 
-            EventBus<EventTimerStarted>.Raise(new EventTimerStarted(_configuredDuration));
-            DebugUtility.Log<GameTimer>(
-                $"Sessão iniciada com {_configuredDuration:F2}s.",
-                context: this);
+            _timer?.Start();
 
-            if (_manualFallback)
-            {
-                DebugUtility.LogWarning<GameTimer>(
-                    "CountdownTimer sem atualização automática; utilizando deltaTime manual.",
-                    context: this);
-            }
+            EventBus<EventTimerStarted>.Raise(new EventTimerStarted(_configuredDuration));
+            DebugUtility.Log<GameTimer>($"Cronômetro iniciado com {_configuredDuration:F2}s.", context: this);
         }
 
-        /// <summary>Pausa a contagem corrente.</summary>
+        /// <summary>Pausa a contagem preservando o tempo restante.</summary>
         private void PauseSession()
         {
-            if (!_isRunning)
+            if (!_sessionActive || _isPaused)
             {
                 return;
             }
 
-            _isRunning = false;
-            _countdownTimer?.Pause();
+            _remainingTime = ReadTimerTime();
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Reset(_remainingTime);
+            }
 
-            DebugUtility.Log<GameTimer>(
-                $"Contagem pausada com {_remainingTime:F2}s.",
-                context: this);
+            _isPaused = true;
+            DebugUtility.Log<GameTimer>($"Cronômetro pausado em {_remainingTime:F2}s.", context: this);
         }
 
         /// <summary>Retoma a contagem após uma pausa.</summary>
         private void ResumeSession()
         {
-            if (!_sessionActive || _isRunning || _remainingTime <= 0f)
+            if (!_sessionActive || !_isPaused || _remainingTime <= 0f)
             {
                 return;
             }
 
-            _isRunning = true;
-            EnsureTimerReset(_remainingTime);
-            _manualFallback = _pluginTickInvoker == null;
+            EnsureTimerInstance();
+            if (_timer != null)
+            {
+                _timer.Reset(_remainingTime);
+                _timer.Start();
+            }
+
+            _isPaused = false;
             _lastLoggedSecond = Mathf.CeilToInt(_remainingTime);
-
-            DebugUtility.Log<GameTimer>(
-                $"Contagem retomada com {_remainingTime:F2}s.",
-                context: this);
-
-            if (_manualFallback)
-            {
-                DebugUtility.LogWarning<GameTimer>(
-                    "Retomando em modo manual por falta de tick do ImprovedTimer.",
-                    context: this);
-            }
+            DebugUtility.Log<GameTimer>($"Cronômetro retomado com {_remainingTime:F2}s.", context: this);
         }
 
-        private void AdvanceCountdown(float deltaTime)
-        {
-            if (!_sessionActive || !_isRunning || deltaTime <= 0f)
-            {
-                return;
-            }
-
-            bool advanced = !_manualFallback && TryAdvanceWithPlugin(deltaTime);
-            if (!advanced)
-            {
-                _manualFallback = true;
-                _remainingTime = Mathf.Max(_remainingTime - deltaTime, 0f);
-            }
-
-            LogWholeSecond();
-
-            if (_remainingTime > 0f)
-            {
-                return;
-            }
-
-            FinishSession();
-        }
-
-        private bool TryAdvanceWithPlugin(float deltaTime)
-        {
-            if (_countdownTimer == null || _pluginTickInvoker == null)
-            {
-                return false;
-            }
-
-            float before = Mathf.Max(_countdownTimer.CurrentTime, 0f);
-            _pluginTickInvoker(deltaTime);
-            float after = Mathf.Max(_countdownTimer.CurrentTime, 0f);
-
-            if (Mathf.Approximately(before, after))
-            {
-                return false;
-            }
-
-            _remainingTime = after;
-            return true;
-        }
-
-        private void FinishSession()
+        /// <summary>Finaliza a sessão atual e dispara o GameOver.</summary>
+        private void HandleTimeEnded()
         {
             if (!_sessionActive)
             {
                 return;
             }
 
-            _remainingTime = 0f;
             _sessionActive = false;
-            _isRunning = false;
-            _countdownTimer?.Stop();
+            _isPaused = false;
+            _remainingTime = 0f;
 
-            DebugUtility.Log<GameTimer>("Tempo esgotado; disparando GameOver.", context: this);
+            if (_timer != null)
+            {
+                _timer.Stop();
+                _timer.Reset(0f);
+            }
+
+            DebugUtility.Log<GameTimer>("Tempo esgotado. Disparando GameOver.", context: this);
 
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDuration));
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
 
-        private void StopInternal(bool resetToConfigured)
+        /// <summary>Interrompe a sessão atual e opcionalmente restaura o valor configurado.</summary>
+        private void StopSession(bool resetToConfigured)
         {
-            _countdownTimer?.Stop();
-            _isRunning = false;
+            float current = ReadTimerTime();
+
+            if (_timer != null)
+            {
+                _timer.Stop();
+            }
+
             _sessionActive = false;
+            _isPaused = false;
+            _lastLoggedSecond = -1;
+            _remainingTime = current;
 
             if (resetToConfigured)
             {
-                _configuredDuration = ResolveConfiguredDuration();
+                _configuredDuration = LoadConfiguredDuration();
                 _remainingTime = _configuredDuration;
+                PrepareTimer(_configuredDuration);
             }
 
-            _autoStartArmed = false;
-
-            DebugUtility.Log<GameTimer>(
-                $"Contagem encerrada. Reset={resetToConfigured}, restante={_remainingTime:F2}s.",
-                context: this);
-        }
-
-        private void TryAutoStart()
-        {
-            var stateMachine = GameManagerStateMachine.Instance;
-            if (stateMachine == null)
-            {
-                _autoStartArmed = false;
-                return;
-            }
-
-            bool isPlaying = stateMachine.CurrentState is PlayingState;
-            if (isPlaying && !_sessionActive && !_isRunning && !_autoStartArmed)
-            {
-                BeginSession();
-            }
-            else if (!isPlaying)
-            {
-                _autoStartArmed = false;
-            }
+            DebugUtility.Log<GameTimer>($"Cronômetro parado. Reset={resetToConfigured}, restante={_remainingTime:F2}s.", context: this);
         }
 
         private void HandlePauseEvent(GamePauseEvent pauseEvent)
@@ -312,100 +258,88 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
         }
 
-        private void HandleStateChanged(StateChangedEvent evt)
+        private float ReadTimerTime()
         {
-            if (!evt.isGameActive)
+            if (_timer == null)
             {
-                StopInternal(true);
+                return Mathf.Max(_remainingTime, 0f);
             }
+
+            return Mathf.Max(_timer.CurrentTime, 0f);
         }
 
         private void LogWholeSecond()
         {
-            int current = Mathf.CeilToInt(_remainingTime);
-            if (current == _lastLoggedSecond)
+            if (!_sessionActive)
             {
                 return;
             }
 
-            _lastLoggedSecond = current;
-            DebugUtility.Log<GameTimer>(
-                $"Tempo restante: {Mathf.Max(current, 0)}s.",
-                context: this);
+            int second = Mathf.CeilToInt(_remainingTime);
+            if (second == _lastLoggedSecond)
+            {
+                return;
+            }
+
+            _lastLoggedSecond = second;
+            DebugUtility.Log<GameTimer>($"Tempo restante: {Mathf.Max(second, 0)}s.", context: this);
         }
 
-        private float ResolveConfiguredDuration()
+        private void TryStartWhenPlaying()
         {
-            var manager = GameManager.Instance;
+            if (_sessionActive)
+            {
+                return;
+            }
+
+            GameManagerStateMachine stateMachine = GameManagerStateMachine.Instance;
+            if (stateMachine == null || stateMachine.CurrentState is not PlayingState)
+            {
+                return;
+            }
+
+            StartSession();
+        }
+
+        private void EnsureTimerInstance()
+        {
+            if (_timer != null)
+            {
+                return;
+            }
+
+            float safeDuration = Mathf.Max(_configuredDuration, 0f);
+            _timer = new CountdownTimer(safeDuration);
+            _timer.Stop();
+            _timer.Reset(safeDuration);
+        }
+
+        private void PrepareTimer(float duration)
+        {
+            if (_timer == null)
+            {
+                EnsureTimerInstance();
+            }
+
+            if (_timer == null)
+            {
+                return;
+            }
+
+            float safeDuration = Mathf.Max(duration, 0f);
+            _timer.Stop();
+            _timer.Reset(safeDuration);
+        }
+
+        private float LoadConfiguredDuration()
+        {
+            GameManager manager = GameManager.Instance;
             if (manager != null && manager.GameConfig != null)
             {
                 return Mathf.Max(manager.GameConfig.timerGame, 0f);
             }
 
             return Mathf.Max(_configuredDuration, 0f);
-        }
-
-        private void BuildTimer(float duration)
-        {
-            float safeDuration = Mathf.Max(duration, 0f);
-            _countdownTimer = new CountdownTimer(safeDuration);
-            _pluginTickInvoker = CreatePluginInvoker(_countdownTimer);
-            _countdownTimer.Stop();
-            _countdownTimer.Reset(safeDuration);
-        }
-
-        private void EnsureTimerReset(float duration)
-        {
-            float safeDuration = Mathf.Max(duration, 0f);
-
-            if (_countdownTimer == null)
-            {
-                BuildTimer(safeDuration);
-            }
-            else
-            {
-                _countdownTimer.Stop();
-                _countdownTimer.Reset(safeDuration);
-            }
-
-            if (_countdownTimer != null)
-            {
-                _countdownTimer.Start();
-            }
-
-            if (_pluginTickInvoker == null && _countdownTimer != null)
-            {
-                _pluginTickInvoker = CreatePluginInvoker(_countdownTimer);
-            }
-        }
-
-        private static Action<float> CreatePluginInvoker(CountdownTimer timer)
-        {
-            if (timer == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                MethodInfo method = timer.GetType().GetMethod("Tick", BindingFlags.Instance | BindingFlags.Public);
-                if (method != null)
-                {
-                    return (Action<float>)Delegate.CreateDelegate(typeof(Action<float>), timer, method);
-                }
-
-                method = timer.GetType().GetMethod("Update", BindingFlags.Instance | BindingFlags.Public);
-                if (method != null)
-                {
-                    return (Action<float>)Delegate.CreateDelegate(typeof(Action<float>), timer, method);
-                }
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
-
-            return null;
         }
     }
 }
