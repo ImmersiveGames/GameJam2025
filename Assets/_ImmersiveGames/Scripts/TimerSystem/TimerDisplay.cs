@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -173,31 +172,12 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void UpdateConfiguredDuration()
         {
-            if (_gameTimer != null)
+            if (_gameTimer == null)
             {
-                _configuredDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
                 return;
             }
 
-            GameManager manager = GameManager.Instance;
-            if (manager != null && manager.GameConfig != null)
-            {
-                _configuredDuration = Mathf.Max(manager.GameConfig.timerGame, 0f);
-            }
-            else if (!_loggedInitialDisplay && !_loggedZeroWhileActive)
-            {
-                bool showingInitialValue = _gameTimer == null
-                    ? Mathf.Approximately(remainingTime, _initialDuration)
-                    : (!_gameTimer.HasActiveSession && Mathf.Approximately(remainingTime, Mathf.Max(_initialDuration, _gameTimer.ConfiguredDuration)));
-
-                if (showingInitialValue)
-                {
-                    _loggedInitialDisplay = true;
-                    DebugUtility.Log<TimerDisplay>(
-                        $"Display configurado com valor inicial {FormatTime(remainingTime)}.",
-                        context: this);
-                }
-            }
+            _configuredDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
         }
 
         private void ResolveComponents()
