@@ -30,6 +30,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private EventBinding<EventTimeEnded> _timerEndedBinding;
         private bool _loggedInitialDisplay;
         private bool _loggedZeroWhileActive;
+        private string _lastFormattedTime;
 
         private void Awake()
         {
@@ -49,6 +50,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             SyncInitialDuration();
             _loggedInitialDisplay = false;
             _loggedZeroWhileActive = false;
+            _lastFormattedTime = null;
             RegisterTimerEvents();
             UpdateTimerDisplay();
         }
@@ -130,7 +132,16 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             if (timerText != null)
             {
-                timerText.text = FormatTime(remainingTime);
+                string formatted = FormatTime(remainingTime);
+                if (_lastFormattedTime != formatted)
+                {
+                    _lastFormattedTime = formatted;
+                    DebugUtility.Log<TimerDisplay>(
+                        $"Display atualizado para {formatted} (restante={remainingTime:F2}s).",
+                        context: this);
+                }
+
+                timerText.text = formatted;
             }
 
             if (timerFillImage == null)

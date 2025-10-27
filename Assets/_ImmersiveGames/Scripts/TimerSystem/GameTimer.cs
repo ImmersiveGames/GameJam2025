@@ -24,6 +24,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private bool _isResettingTimer;
         private bool _hasLoggedUnexpectedZero;
         private int _lastWholeSecondReported = -1;
+        private bool _pendingStartRequest;
+        private string _pendingStartOrigin;
 
         public float RemainingTime => Mathf.Max(_remainingTime, 0f);
 
@@ -52,7 +54,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void OnEnable()
         {
-            _startBinding = new EventBinding<GameStartEvent>(() => StartTimerSession("GameStartEvent"));
+            _startBinding = new EventBinding<GameStartEvent>(() => QueueTimerStart("GameStartEvent"));
             EventBus<GameStartEvent>.Register(_startBinding);
 
             _gameOverBinding = new EventBinding<GameOverEvent>(OnGameOver);
@@ -118,8 +120,21 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             StartTimerSession("ManualStart");
         }
 
+        private void QueueTimerStart(string origin)
+        {
+            _pendingStartRequest = true;
+            _pendingStartOrigin = origin;
+
+            DebugUtility.Log<GameTimer>(
+                $"Início do timer agendado (origem={origin}). Estado atual={(GameManagerStateMachine.Instance?.CurrentState?.GetType().Name ?? "<null>")}",
+                context: this);
+        }
+
         private void StartTimerSession(string origin)
         {
+            _pendingStartRequest = false;
+            _pendingStartOrigin = null;
+
             float configuredSeconds = ResolveConfiguredDuration();
             PrepareTimer(configuredSeconds);
 
@@ -267,7 +282,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 case PlayingState:
                     if (!_hasActiveSession || _countdownTimer == null || _countdownTimer.IsFinished || Mathf.Approximately(_remainingTime, 0f))
                     {
-                        StartTimerSession("StateChangedEvent-PlayingState");
+                        QueueTimerStart("StateChangedEvent-PlayingState");
                     }
                     else
                     {
@@ -298,6 +313,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _hasLoggedUnexpectedZero = false;
             _lastWholeSecondReported = -1;
 
+            _pendingStartRequest = false;
+            _pendingStartOrigin = null;
+
             DebugUtility.Log<GameTimer>(
                 $"Timer resetado para o valor inicial de {configuredSeconds:F2}s.",
                 context: this);
@@ -319,6 +337,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
             _lastWholeSecondReported = -1;
+            _pendingStartRequest = false;
+            _pendingStartOrigin = null;
 
             DebugUtility.Log<GameTimer>(
                 $"Timer interrompido manualmente com {_remainingTime:F2}s registrados.",
@@ -327,6 +347,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void Update()
         {
+            ProcessPendingOperations();
+
             if (_countdownTimer == null)
             {
                 return;
@@ -361,7 +383,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 if (wholeSeconds != _lastWholeSecondReported)
                 {
                     _lastWholeSecondReported = wholeSeconds;
-                    DebugUtility.LogVerbose<GameTimer>(
+                    DebugUtility.Log<GameTimer>(
                         $"Contagem regressiva atualizada para {_remainingTime:F2}s (running={_countdownTimer.IsRunning}).",
                         context: this);
                 }
@@ -431,6 +453,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
             _lastWholeSecondReported = -1;
+            _pendingStartRequest = false;
+            _pendingStartOrigin = null;
 
             if (_countdownTimer != null && _countdownTimer.IsRunning)
             {
@@ -457,6 +481,25 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _countdownTimer.OnTimerStart -= HandleTimerStart;
                 _isResettingTimer = false;
             }
+        }
+
+        private void ProcessPendingOperations()
+        {
+            if (_pendingStartRequest)
+            {
+                if (IsInPlayingState())
+                {
+                    _pendingStartRequest = false;
+                    string origin = _pendingStartOrigin ?? "PendingStart";
+                    _pendingStartOrigin = null;
+                    StartTimerSession(origin);
+                }
+            }
+        }
+
+        private static bool IsInPlayingState()
+        {
+            return GameManagerStateMachine.Instance?.CurrentState is PlayingState;
         }
     }
 }
