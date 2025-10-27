@@ -114,12 +114,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return Mathf.Max(_configuredDuration, 0f);
             }
 
-            if (_gameTimer.HasActiveSession)
-            {
-                return _gameTimer.RemainingTime;
-            }
-
-            return Mathf.Max(_gameTimer.ConfiguredDuration, _configuredDuration);
+            return _gameTimer.RemainingTime;
         }
 
         private void ApplyDisplay(float seconds)

@@ -65,13 +65,18 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _pauseBinding = new EventBinding<GamePauseEvent>(HandlePauseEvent);
             EventBus<GamePauseEvent>.Register(_pauseBinding);
 
-            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopSession(false));
+            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopSession(false, reason: "GameOver recebido"));
             EventBus<GameOverEvent>.Register(_gameOverBinding);
 
-            _victoryBinding = new EventBinding<GameVictoryEvent>(_ => StopSession(false));
+            _victoryBinding = new EventBinding<GameVictoryEvent>(_ =>
+            {
+                float snapshot = Mathf.Max(_remainingTime, 0f);
+                StopSession(false, snapshot, "Victory recebido");
+                DebugUtility.Log<GameTimer>($"Vitória detectada. Cronômetro finalizado em {snapshot:F2}s.", context: this);
+            });
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
-            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true));
+            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true, reason: "Reset solicitado"));
             EventBus<GameResetRequestedEvent>.Register(_resetBinding);
 
             _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
@@ -145,7 +150,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 DebugUtility.LogWarning<GameTimer>(
                     "Duração configurada inválida para o cronômetro; sessão não iniciada.",
                     context: this);
-                StopSession(true);
+                StopSession(true, reason: "Duração inválida");
                 return;
             }
 
@@ -210,15 +215,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            _sessionActive = false;
-            _isPaused = false;
-            _remainingTime = 0f;
-
-            if (_timer != null)
-            {
-                _timer.Stop();
-                _timer.Reset(0f);
-            }
+            StopSession(false, 0f, "Tempo esgotado");
 
             DebugUtility.Log<GameTimer>("Tempo esgotado. Disparando GameOver.", context: this);
 
@@ -227,9 +224,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
 
         /// <summary>Interrompe a sessão atual e opcionalmente restaura o valor configurado.</summary>
-        private void StopSession(bool resetToConfigured)
+        private void StopSession(bool resetToConfigured, float? overrideRemaining = null, string reason = null)
         {
-            float current = ReadTimerTime();
+            float current = overrideRemaining ?? ReadTimerTime();
+            current = Mathf.Clamp(current, 0f, Mathf.Max(_configuredDuration, current));
 
             if (_timer != null)
             {
@@ -239,16 +237,24 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _sessionActive = false;
             _isPaused = false;
             _lastLoggedSecond = -1;
-            _remainingTime = current;
 
             if (resetToConfigured)
             {
                 _configuredDuration = LoadConfiguredDuration();
-                _remainingTime = _configuredDuration;
+                _remainingTime = Mathf.Max(_configuredDuration, 0f);
                 PrepareTimer(_configuredDuration);
             }
+            else
+            {
+                _remainingTime = current;
+                if (_timer != null)
+                {
+                    _timer.Reset(_remainingTime);
+                }
+            }
 
-            DebugUtility.Log<GameTimer>($"Cronômetro parado. Reset={resetToConfigured}, restante={_remainingTime:F2}s.", context: this);
+            string label = string.IsNullOrEmpty(reason) ? "sem motivo" : reason;
+            DebugUtility.Log<GameTimer>($"Cronômetro parado ({label}). Reset={resetToConfigured}, restante={_remainingTime:F2}s.", context: this);
         }
 
         private void HandlePauseEvent(GamePauseEvent pauseEvent)
@@ -270,7 +276,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return Mathf.Max(_remainingTime, 0f);
             }
 
-            return Mathf.Max(_timer.CurrentTime, 0f);
+            float pluginTime = Mathf.Max(_timer.CurrentTime, 0f);
+            return Mathf.Max(Mathf.Min(_remainingTime, pluginTime), 0f);
         }
 
         private void AdvanceCountdown(float deltaTime)
