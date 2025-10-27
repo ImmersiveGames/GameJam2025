@@ -1,8 +1,8 @@
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Debug

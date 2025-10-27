@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.StatesMachines;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {

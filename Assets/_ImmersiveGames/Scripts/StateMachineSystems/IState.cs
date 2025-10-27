@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.StatesMachines
+namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public interface IState
     {

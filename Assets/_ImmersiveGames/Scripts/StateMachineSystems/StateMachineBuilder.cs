@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.StatesMachines;
-using _ImmersiveGames.Scripts.Utils.Predicates;
+﻿using _ImmersiveGames.Scripts.Utils.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
     /// <summary>
     /// Builder para criar uma StateMachine para o ControllerSystems de forma fluida e modular.

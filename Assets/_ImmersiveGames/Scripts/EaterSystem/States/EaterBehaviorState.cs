@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.StatesMachines;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
