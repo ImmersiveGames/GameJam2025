@@ -23,6 +23,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private bool _isPaused;
         private bool _isResettingTimer;
         private bool _hasLoggedUnexpectedZero;
+        private int _lastWholeSecondReported = -1;
 
         public float RemainingTime => Mathf.Max(_remainingTime, 0f);
 
@@ -51,7 +52,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void OnEnable()
         {
-            _startBinding = new EventBinding<GameStartEvent>(StartGameTimer);
+            _startBinding = new EventBinding<GameStartEvent>(() => StartTimerSession("GameStartEvent"));
             EventBus<GameStartEvent>.Register(_startBinding);
 
             _gameOverBinding = new EventBinding<GameOverEvent>(OnGameOver);
@@ -114,6 +115,11 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void StartGameTimer()
         {
+            StartTimerSession("ManualStart");
+        }
+
+        private void StartTimerSession(string origin)
+        {
             float configuredSeconds = ResolveConfiguredDuration();
             PrepareTimer(configuredSeconds);
 
@@ -121,9 +127,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _hasActiveSession = true;
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
+            _lastWholeSecondReported = -1;
 
             DebugUtility.Log<GameTimer>(
-                $"Solicitado início da contagem com {configuredSeconds:F2}s.",
+                $"Solicitado início da contagem com {configuredSeconds:F2}s (origem={origin}).",
                 context: this);
 
             if (Mathf.Approximately(configuredSeconds, 0f))
@@ -142,7 +149,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
             DebugUtility.Log<GameTimer>(
-                $"ImprovedTimer iniciou com {_countdownTimer.CurrentTime:F2}s restantes.",
+                $"ImprovedTimer iniciou sessão com {_remainingTime:F2}s restantes (running={_countdownTimer.IsRunning}).",
                 context: this);
         }
 
@@ -166,10 +173,16 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
+            if (!_hasActiveSession || _isPaused)
+            {
+                return;
+            }
+
             _countdownTimer.Pause();
-            _remainingTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
             _isPaused = true;
-            DebugUtility.Log<GameTimer>($"Timer pausado com {_remainingTime:F2}s restantes.", context: this);
+            DebugUtility.Log<GameTimer>(
+                $"Timer pausado com {_remainingTime:F2}s restantes (running={_countdownTimer.IsRunning}).",
+                context: this);
         }
 
         public void ResumeTimer()
@@ -179,23 +192,33 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
+            if (!_hasActiveSession || !_isPaused)
+            {
+                return;
+            }
+
             if (Mathf.Approximately(_remainingTime, 0f))
             {
+                DebugUtility.LogWarning<GameTimer>(
+                    "Solicitada retomada com 0s restantes; ignorando.",
+                    context: this);
                 return;
             }
 
             if (!_countdownTimer.IsRunning)
             {
                 _countdownTimer.Resume();
-                _hasActiveSession = true;
-                _isPaused = false;
-                DebugUtility.Log<GameTimer>($"Timer retomado com {_remainingTime:F2}s restantes.", context: this);
             }
+
+            _isPaused = false;
+            DebugUtility.Log<GameTimer>(
+                $"Timer retomado com {_remainingTime:F2}s restantes (running={_countdownTimer.IsRunning}).",
+                context: this);
         }
 
         public void RestartTimer()
         {
-            StartGameTimer();
+            StartTimerSession("RestartTimer");
         }
 
         public string GetFormattedTime()
@@ -233,13 +256,18 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleStateChanged(StateChangedEvent _)
         {
             var currentState = GameManagerStateMachine.Instance.CurrentState;
+            string stateName = currentState?.GetType().Name ?? "<null>";
+
+            DebugUtility.Log<GameTimer>(
+                $"StateChangedEvent recebido. Estado atual={stateName}, sessão ativa={_hasActiveSession}, pausado={_isPaused}.",
+                context: this);
 
             switch (currentState)
             {
                 case PlayingState:
                     if (!_hasActiveSession || _countdownTimer == null || _countdownTimer.IsFinished || Mathf.Approximately(_remainingTime, 0f))
                     {
-                        StartGameTimer();
+                        StartTimerSession("StateChangedEvent-PlayingState");
                     }
                     else
                     {
@@ -268,6 +296,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _hasActiveSession = false;
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
+            _lastWholeSecondReported = -1;
 
             DebugUtility.Log<GameTimer>(
                 $"Timer resetado para o valor inicial de {configuredSeconds:F2}s.",
@@ -289,6 +318,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _hasActiveSession = false;
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
+            _lastWholeSecondReported = -1;
 
             DebugUtility.Log<GameTimer>(
                 $"Timer interrompido manualmente com {_remainingTime:F2}s registrados.",
@@ -302,20 +332,47 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            if (!_hasActiveSession)
+            if (!_hasActiveSession || _isPaused)
             {
                 return;
             }
 
-            float currentTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
-            _remainingTime = currentTime;
+            float deltaTime = Time.deltaTime;
+            if (deltaTime <= 0f)
+            {
+                return;
+            }
 
-            if (!_hasLoggedUnexpectedZero && currentTime <= 0f && !_countdownTimer.IsFinished)
+            float previousTime = _remainingTime;
+            _remainingTime = Mathf.Max(_remainingTime - deltaTime, 0f);
+
+            float timerReportedTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
+            if (!_hasLoggedUnexpectedZero && timerReportedTime <= 0f && previousTime > 0f && _countdownTimer.IsRunning)
             {
                 _hasLoggedUnexpectedZero = true;
                 DebugUtility.Log<GameTimer>(
-                    $"Timer reportou 0s com sessão ativa (running={_countdownTimer.IsRunning}, finished={_countdownTimer.IsFinished}).",
+                    $"ImprovedTimer reportou 0s enquanto ainda restavam {previousTime:F2}s locais (running={_countdownTimer.IsRunning}, finished={_countdownTimer.IsFinished}).",
                     context: this);
+            }
+
+            if (!Mathf.Approximately(previousTime, _remainingTime))
+            {
+                int wholeSeconds = Mathf.FloorToInt(_remainingTime);
+                if (wholeSeconds != _lastWholeSecondReported)
+                {
+                    _lastWholeSecondReported = wholeSeconds;
+                    DebugUtility.LogVerbose<GameTimer>(
+                        $"Contagem regressiva atualizada para {_remainingTime:F2}s (running={_countdownTimer.IsRunning}).",
+                        context: this);
+                }
+            }
+
+            if (_remainingTime <= 0f)
+            {
+                DebugUtility.Log<GameTimer>(
+                    "Contagem regressiva atingiu 0 via Update(); finalizando sessão.",
+                    context: this);
+                CompleteTimerSession("contagem regressiva atingiu zero");
             }
         }
 
@@ -361,7 +418,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void CompleteTimerSession(string reason)
         {
-            if (!_hasActiveSession && !_isPaused && _remainingTime <= 0f)
+            if (!_hasActiveSession)
             {
                 DebugUtility.Log<GameTimer>(
                     $"Solicitação de finalização ignorada ({reason}). Nenhuma sessão ativa.",
@@ -373,6 +430,14 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _hasActiveSession = false;
             _isPaused = false;
             _hasLoggedUnexpectedZero = false;
+            _lastWholeSecondReported = -1;
+
+            if (_countdownTimer != null && _countdownTimer.IsRunning)
+            {
+                _isResettingTimer = true;
+                _countdownTimer.Stop();
+                _isResettingTimer = false;
+            }
 
             DebugUtility.Log<GameTimer>(
                 $"Tempo esgotado ({reason}). Disparando GameOver.",
