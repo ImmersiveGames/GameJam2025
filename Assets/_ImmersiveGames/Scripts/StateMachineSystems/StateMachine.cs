@@ -35,13 +35,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             if (state == _currentNode.State)
                 return;
 
-            var previousState = _currentNode.State;
             var nextNode = GetNodeOrThrow(state.GetType());
+            var previousState = _currentNode.State;
             var nextState = nextNode.State;
 
             previousState?.OnExit();
-            nextState.OnEnter();
             _currentNode = nextNode;
+            nextState?.OnEnter();
         }
 
         public void AddTransition<T>(IState from, IState to, T condition) {
