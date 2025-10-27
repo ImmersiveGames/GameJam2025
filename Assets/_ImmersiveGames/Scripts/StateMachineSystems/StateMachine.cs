@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         private readonly Dictionary<Type, StateNode> _nodes = new();
         private readonly HashSet<Transition> _anyTransitions = new();
         
-        public IState CurrentState => _currentNode.State;
+        public IState CurrentState => _currentNode?.State;
 
         public void Update() {
             var transition = GetTransition();
@@ -32,16 +32,17 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         }
 
         private void ChangeState(IState state) {
-            if (state == _currentNode.State)
+            if (_currentNode != null && state == _currentNode.State)
                 return;
 
-            var previousState = _currentNode.State;
             var nextNode = GetNodeOrThrow(state.GetType());
+            var previousState = _currentNode?.State;
             var nextState = nextNode.State;
 
-            previousState?.OnExit();
-            nextState.OnEnter();
             _currentNode = nextNode;
+
+            previousState?.OnExit();
+            nextState?.OnEnter();
         }
 
         public void AddTransition<T>(IState from, IState to, T condition) {
