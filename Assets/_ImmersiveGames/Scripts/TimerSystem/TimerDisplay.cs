@@ -1,4 +1,6 @@
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -192,9 +194,15 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _initialDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
             }
 
-            float remaining = _gameTimer.RemainingTime;
+            float remaining = Mathf.Max(_gameTimer.RemainingTime, 0f);
 
-            if (!_gameTimer.HasActiveSession && remaining <= 0f)
+            if (_gameTimer.HasActiveSession)
+            {
+                return remaining;
+            }
+
+            var currentState = GameManagerStateMachine.Instance?.CurrentState;
+            if (currentState is MenuState)
             {
                 return Mathf.Max(_initialDuration, 0f);
             }
