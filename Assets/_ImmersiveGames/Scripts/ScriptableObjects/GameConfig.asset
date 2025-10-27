@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0549e23a1231459cbf94d79ca8a61ef5, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
-  timerGame: 200
+  timerGame: 30
   gameArea:
     serializedVersion: 2
     x: -800

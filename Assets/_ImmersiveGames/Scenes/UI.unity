@@ -1061,9 +1061,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   timerText: {fileID: 4998799170581755434}
   timerFillImage: {fileID: 0}
+  useFillColorStates: 0
   normalColor: {r: 0, g: 1, b: 0, a: 1}
   warningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   dangerColor: {r: 1, g: 0, b: 0, a: 1}
+  useTextColorStates: 1
+  textNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  textWarningColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  textDangerColor: {r: 1, g: 0, b: 0, a: 1}
   warningThreshold: 120
   dangerThreshold: 30
 --- !u!1 &8340473758687783081

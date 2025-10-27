@@ -17,9 +17,17 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private Image timerFillImage;
 
+        [Header("Fill Settings")]
+        [SerializeField] private bool useFillColorStates = true;
         [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color warningColor = Color.yellow;
         [SerializeField] private Color dangerColor = Color.red;
+
+        [Header("Text Settings")]
+        [SerializeField] private bool useTextColorStates = false;
+        [SerializeField] private Color textNormalColor = Color.white;
+        [SerializeField] private Color textWarningColor = Color.yellow;
+        [SerializeField] private Color textDangerColor = Color.red;
 
         [SerializeField] private float warningThreshold = 60f;
         [SerializeField] private float dangerThreshold = 15f;
@@ -30,12 +38,16 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private GameTimer _gameTimer;
         private float _configuredDuration;
         private string _lastFormattedValue;
+        private Color _initialFillColor;
+        private Color _initialTextColor;
+        private bool _capturedDefaults;
 
         private void Awake()
         {
             ResolveComponents();
             RefreshTimerReference();
             UpdateConfiguredDuration();
+            CaptureDefaultColors();
             ApplyDisplay(_configuredDuration);
 
             DebugUtility.Log<TimerDisplay>(
@@ -47,6 +59,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             RefreshTimerReference();
             UpdateConfiguredDuration();
+            CaptureDefaultColors();
             RegisterEvents();
             ForceRefresh();
         }
@@ -131,6 +144,15 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 }
 
                 timerText.text = formatted;
+
+                if (useTextColorStates)
+                {
+                    timerText.color = EvaluateColor(seconds, textNormalColor, textWarningColor, textDangerColor);
+                }
+                else if (_capturedDefaults)
+                {
+                    timerText.color = _initialTextColor;
+                }
             }
 
             if (timerFillImage == null)
@@ -144,17 +166,14 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             timerFillImage.fillAmount = normalized;
 
-            Color targetColor = normalColor;
-            if (seconds <= dangerThreshold)
+            if (useFillColorStates)
             {
-                targetColor = dangerColor;
+                timerFillImage.color = EvaluateColor(seconds, normalColor, warningColor, dangerColor);
             }
-            else if (seconds <= warningThreshold)
+            else if (_capturedDefaults)
             {
-                targetColor = warningColor;
+                timerFillImage.color = _initialFillColor;
             }
-
-            timerFillImage.color = targetColor;
         }
 
         private void RefreshTimerReference()
@@ -175,6 +194,26 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _configuredDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
         }
 
+        private void CaptureDefaultColors()
+        {
+            if (_capturedDefaults)
+            {
+                return;
+            }
+
+            if (timerFillImage != null)
+            {
+                _initialFillColor = timerFillImage.color;
+            }
+
+            if (timerText != null)
+            {
+                _initialTextColor = timerText.color;
+            }
+
+            _capturedDefaults = true;
+        }
+
         private void ResolveComponents()
         {
             if (timerText == null)
@@ -186,6 +225,21 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             {
                 timerFillImage = GetComponentInChildren<Image>(true);
             }
+        }
+
+        private Color EvaluateColor(float seconds, Color normal, Color warning, Color danger)
+        {
+            if (seconds <= dangerThreshold)
+            {
+                return danger;
+            }
+
+            if (seconds <= warningThreshold)
+            {
+                return warning;
+            }
+
+            return normal;
         }
 
         private static string FormatTime(float seconds)
