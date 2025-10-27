@@ -1,6 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,143 +11,390 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
+    /// <summary>
+    /// Controla a contagem regressiva global da sessão, utilizando ImprovedTimer como relógio
+    /// base e sincronizando com os estados do ciclo de jogo.
+    /// </summary>
     [DefaultExecutionOrder(-90), DebugLevel(DebugLevel.Logs)]
     public class GameTimer : Singleton<GameTimer>
     {
         private CountdownTimer _countdownTimer;
-        private int _gameDuration = 300; // Duração do jogo em segundos (5 minutos)
-        
-        // Eventos que podem ser assinados por outros scripts
         private GameManager _gameManager;
-        
-        // Propriedade para acessar o tempo restante
-        public float RemainingTime => _countdownTimer.IsRunning ? _countdownTimer.CurrentTime : 0f;
-        
+
+        private float _configuredDurationSeconds;
+        private float _remainingTime;
+
+        private bool _sessionActive;
+        private bool _isRunning;
+
+        private int _lastWholeSecondLogged = -1;
+
         private EventBinding<GameStartEvent> _startBinding;
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
         private EventBinding<GamePauseEvent> _pauseBinding;
-        
+        private EventBinding<StateChangedEvent> _stateChangedBinding;
+
+        public float RemainingTime => Mathf.Max(_remainingTime, 0f);
+        public float ConfiguredDuration => Mathf.Max(_configuredDurationSeconds, 0f);
+        public bool HasActiveSession => _sessionActive;
+
         protected override void Awake()
         {
             base.Awake();
+
             _gameManager = GameManager.Instance;
-            _gameDuration = _gameManager.GameConfig.timerGame;
-            // Criar o CountdownTimer
-            _countdownTimer = new CountdownTimer(_gameDuration);
-            
-            // Registrar eventos internos da biblioteca de timer
-            _countdownTimer.OnTimerStop += HandleTimerComplete;
-            _countdownTimer.OnTimerStart += HandleTimerStart;
+            _configuredDurationSeconds = ResolveConfiguredDuration();
+            _remainingTime = _configuredDurationSeconds;
+
+            EnsureTimerInstance(_configuredDurationSeconds);
+
+            DebugUtility.Log<GameTimer>(
+                $"Timer inicializado com {_configuredDurationSeconds:F2}s configurados.",
+                context: this);
         }
 
         private void OnEnable()
         {
-            _startBinding = new EventBinding<GameStartEvent>(StartGameTimer);
+            _startBinding = new EventBinding<GameStartEvent>(HandleGameStart);
             EventBus<GameStartEvent>.Register(_startBinding);
 
-            _gameOverBinding = new EventBinding<GameOverEvent>(PauseTimer);
+            _pauseBinding = new EventBinding<GamePauseEvent>(HandlePauseEvent);
+            EventBus<GamePauseEvent>.Register(_pauseBinding);
+
+            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopSession("GameOverEvent"));
             EventBus<GameOverEvent>.Register(_gameOverBinding);
 
-            _victoryBinding = new EventBinding<GameVictoryEvent>(PauseTimer);
+            _victoryBinding = new EventBinding<GameVictoryEvent>(_ => StopSession("GameVictoryEvent"));
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
-            _pauseBinding = new EventBinding<GamePauseEvent>(PauseTimerHandler);
-            EventBus<GamePauseEvent>.Register(_pauseBinding);
-            
+            _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
+            EventBus<StateChangedEvent>.Register(_stateChangedBinding);
         }
+
         private void OnDisable()
         {
-            EventBus<GameStartEvent>.Unregister(_startBinding);
-            EventBus<GameOverEvent>.Unregister(_gameOverBinding);
-            EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
-            EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+            if (_startBinding != null)
+            {
+                EventBus<GameStartEvent>.Unregister(_startBinding);
+                _startBinding = null;
+            }
+
+            if (_pauseBinding != null)
+            {
+                EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+                _pauseBinding = null;
+            }
+
+            if (_gameOverBinding != null)
+            {
+                EventBus<GameOverEvent>.Unregister(_gameOverBinding);
+                _gameOverBinding = null;
+            }
+
+            if (_victoryBinding != null)
+            {
+                EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
+                _victoryBinding = null;
+            }
+
+            if (_stateChangedBinding != null)
+            {
+                EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
+                _stateChangedBinding = null;
+            }
         }
-        private void PauseTimerHandler(GamePauseEvent evt)
+
+        private void Update()
         {
-            if(evt.IsPaused)
-                PauseTimer();
+            if (!_sessionActive || !_isRunning)
+            {
+                return;
+            }
+
+            float deltaTime = Time.deltaTime;
+            if (deltaTime <= 0f)
+            {
+                return;
+            }
+
+            _remainingTime = Mathf.Max(_remainingTime - deltaTime, 0f);
+
+            LogWholeSecondProgress(_remainingTime);
+
+            if (_remainingTime <= 0f)
+            {
+                DebugUtility.Log<GameTimer>(
+                    "Tempo esgotado; disparando GameOver.",
+                    context: this);
+                CompleteSession();
+            }
+        }
+
+        private void HandleGameStart(GameStartEvent _)
+        {
+            if (!_sessionActive)
+            {
+                PrepareNewSession();
+            }
+
+            var currentState = GameManagerStateMachine.Instance?.CurrentState;
+            if (currentState is PlayingState)
+            {
+                StartCountdown("GameStartEvent");
+                return;
+            }
+
+            DebugUtility.Log<GameTimer>(
+                "GameStartEvent recebido; aguardando PlayingState para iniciar a sessão.",
+                context: this);
+        }
+
+        private void HandlePauseEvent(GamePauseEvent evt)
+        {
+            if (evt.IsPaused)
+            {
+                PauseCountdown("GamePauseEvent");
+            }
             else
             {
-                ResumeTimer();
+                ResumeCountdown("GamePauseEvent");
             }
         }
 
-
-        private void HandleTimerStart()
+        private void HandleStateChanged(StateChangedEvent evt)
         {
-            DebugUtility.LogVerbose<GameTimer>("Jogo iniciado! Timer de 5 minutos começou.");
+            DebugUtility.Log<GameTimer>(
+                $"StateChangedEvent: ativo={evt.isGameActive}, sessão={_sessionActive}, rodando={_isRunning}.",
+                context: this);
 
+            var currentState = GameManagerStateMachine.Instance?.CurrentState;
+
+            if (evt.isGameActive)
+            {
+                if (currentState is PlayingState)
+                {
+                    if (!_sessionActive)
+                    {
+                        PrepareNewSession();
+                        StartCountdown("StateChangedEvent");
+                    }
+                    else if (!_isRunning)
+                    {
+                        if (Mathf.Approximately(_remainingTime, _configuredDurationSeconds))
+                        {
+                            StartCountdown("StateChangedEvent");
+                        }
+                        else
+                        {
+                            ResumeCountdown("StateChangedEvent");
+                        }
+                    }
+                }
+                else if (_sessionActive && !_isRunning)
+                {
+                    ResumeCountdown("StateChangedEvent");
+                }
+
+                return;
+            }
+
+            if (currentState is PausedState)
+            {
+                PauseCountdown("StateChangedEvent");
+            }
+            else if (currentState is MenuState)
+            {
+                StopSession("StateChangedEvent");
+                ResetDisplayToConfigured();
+            }
+            else
+            {
+                StopSession("StateChangedEvent");
+            }
         }
-        
 
-        private void StartGameTimer()
+        private void PrepareNewSession()
         {
-            DebugUtility.LogVerbose<GameTimer>($"Começou o timer {_countdownTimer.IsRunning}, {_countdownTimer.IsFinished}");
-    
-            // Resetar o timer para a duração inicial
-            _countdownTimer.Stop();
-            _countdownTimer.Reset(_gameDuration);
+            float duration = ResolveConfiguredDuration();
+            _configuredDurationSeconds = duration;
+            _remainingTime = duration;
 
-            // Iniciar o timer
-            _countdownTimer.Start();
-            EventBus<EventTimerStarted>.Raise(new EventTimerStarted());
-            DebugUtility.LogVerbose<GameTimer>($"Começou");
+            EnsureTimerInstance(duration);
+            ResetTimerInstance(duration);
+
+            _sessionActive = true;
+            _isRunning = false;
+            _lastWholeSecondLogged = Mathf.FloorToInt(duration);
+
+            DebugUtility.Log<GameTimer>(
+                $"Sessão preparada com duração de {duration:F2}s.",
+                context: this);
         }
-        
-        private void HandleTimerComplete()
+
+        private void CompleteSession()
         {
-            DebugUtility.LogVerbose<GameTimer>("Tempo acabou!");
-            EventBus<EventTimeEnded>.Raise(new EventTimeEnded());
+            _remainingTime = 0f;
+            _sessionActive = false;
+            _isRunning = false;
+
+            StopCountdownInternal();
+
+            EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDurationSeconds));
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
-        
-        public void PauseTimer()
+
+        private void StopSession(string origin)
         {
-            _countdownTimer.Pause();
-        }
-        
-        public void ResumeTimer()
-        {
-            if (!_countdownTimer.IsRunning)
+            if (!_sessionActive)
             {
-                _countdownTimer.Resume();
+                return;
             }
+
+            StopCountdownInternal();
+
+            _sessionActive = false;
+            _isRunning = false;
+
+            DebugUtility.Log<GameTimer>(
+                $"Sessão encerrada ({origin}) com {_remainingTime:F2}s restantes.",
+                context: this);
         }
-        
-        public void RestartTimer()
+
+        private void StartCountdown(string origin)
         {
-            // Parar e resetar o timer
+            if (!_sessionActive || _isRunning)
+            {
+                return;
+            }
+
+            if (Mathf.Approximately(_remainingTime, 0f))
+            {
+                CompleteSession();
+                return;
+            }
+
+            _isRunning = true;
+
+            _countdownTimer.Start();
+            _lastWholeSecondLogged = Mathf.FloorToInt(_remainingTime);
+
+            DebugUtility.Log<GameTimer>(
+                $"Contagem iniciada ({origin}) com {_remainingTime:F2}s restantes.",
+                context: this);
+
+            EventBus<EventTimerStarted>.Raise(new EventTimerStarted(_remainingTime));
+        }
+
+        private void PauseCountdown(string origin)
+        {
+            if (!_sessionActive || !_isRunning)
+            {
+                return;
+            }
+
+            _countdownTimer.Pause();
+            _isRunning = false;
+
+            DebugUtility.Log<GameTimer>(
+                $"Contagem pausada ({origin}) com {_remainingTime:F2}s restantes.",
+                context: this);
+        }
+
+        private void ResumeCountdown(string origin)
+        {
+            if (!_sessionActive || _isRunning)
+            {
+                return;
+            }
+
+            if (Mathf.Approximately(_remainingTime, 0f))
+            {
+                CompleteSession();
+                return;
+            }
+
+            _countdownTimer.Resume();
+            _isRunning = true;
+            _lastWholeSecondLogged = Mathf.FloorToInt(_remainingTime);
+
+            DebugUtility.Log<GameTimer>(
+                $"Contagem retomada ({origin}) com {_remainingTime:F2}s restantes.",
+                context: this);
+        }
+
+        private void StopCountdownInternal()
+        {
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
             _countdownTimer.Stop();
-            _countdownTimer.Reset();
-            
-            // Iniciar novamente
-            StartGameTimer();
         }
-        
-        public string GetFormattedTime()
+
+        private float ResolveConfiguredDuration()
         {
-            if (!_countdownTimer.IsRunning && _countdownTimer.IsFinished)
-                return "00:00";
-                
-            float timeRemaining = _countdownTimer.CurrentTime;
-            int minutes = Mathf.FloorToInt(timeRemaining / 60);
-            int seconds = Mathf.FloorToInt(timeRemaining % 60);
-            
-            return $"{minutes:00}:{seconds:00}";
+            if (_gameManager == null)
+            {
+                _gameManager = GameManager.Instance;
+            }
+
+            if (_gameManager != null && _gameManager.GameConfig != null)
+            {
+                _configuredDurationSeconds = Mathf.Max(0f, _gameManager.GameConfig.timerGame);
+            }
+
+            return _configuredDurationSeconds;
         }
-        
-        
-        private void OnDestroy()
+
+        private void EnsureTimerInstance(float duration)
         {
-            // Garantir que o timer seja limpo corretamente
             if (_countdownTimer != null)
             {
-                _countdownTimer.Stop();
-                _countdownTimer.OnTimerStop -= HandleTimerComplete;
-                _countdownTimer.OnTimerStart -= HandleTimerStart;
+                return;
             }
-            
+
+            _countdownTimer = new CountdownTimer(Mathf.Max(duration, 0f));
+        }
+
+        private void ResetTimerInstance(float duration)
+        {
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
+            _countdownTimer.Stop();
+            _countdownTimer.Reset(Mathf.Max(duration, 0f));
+        }
+
+        private void LogWholeSecondProgress(float current)
+        {
+            int currentWhole = Mathf.FloorToInt(current);
+
+            if (currentWhole == _lastWholeSecondLogged)
+            {
+                return;
+            }
+
+            _lastWholeSecondLogged = currentWhole;
+
+            DebugUtility.Log<GameTimer>(
+                $"Tempo restante: {current:F2}s.",
+                context: this);
+        }
+
+        private void ResetDisplayToConfigured()
+        {
+            float configured = ResolveConfiguredDuration();
+            if (!Mathf.Approximately(_remainingTime, configured))
+            {
+                _remainingTime = configured;
+                DebugUtility.Log<GameTimer>(
+                    $"Timer alinhado para exibir duração inicial de {configured:F2}s.",
+                    context: this);
+            }
         }
     }
 }
