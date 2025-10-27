@@ -28,6 +28,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
         private EventBinding<GameResetRequestedEvent> _resetBinding;
+        private EventBinding<StateChangedEvent> _stateChangedBinding;
 
         private float _configuredDuration;
         private float _remainingTime;
@@ -72,6 +73,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true));
             EventBus<GameResetRequestedEvent>.Register(_resetBinding);
+
+            _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
+            EventBus<StateChangedEvent>.Register(_stateChangedBinding);
         }
 
         private void OnDisable()
@@ -105,6 +109,12 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 EventBus<GameResetRequestedEvent>.Unregister(_resetBinding);
                 _resetBinding = null;
             }
+
+            if (_stateChangedBinding != null)
+            {
+                EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
+                _stateChangedBinding = null;
+            }
         }
 
         private void Update()
@@ -116,22 +126,17 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            float current = ReadTimerTime();
-            if (!Mathf.Approximately(current, _remainingTime))
-            {
-                _remainingTime = current;
-                LogWholeSecond();
-            }
-
-            if (_remainingTime <= 0f || (_timer != null && _timer.IsFinished))
-            {
-                HandleTimeEnded();
-            }
+            AdvanceCountdown(Time.deltaTime);
         }
 
         /// <summary>Inicia uma nova sessão utilizando o valor configurado.</summary>
         private void StartSession()
         {
+            if (_sessionActive)
+            {
+                return;
+            }
+
             float duration = LoadConfiguredDuration();
             _configuredDuration = duration;
 
@@ -268,6 +273,35 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             return Mathf.Max(_timer.CurrentTime, 0f);
         }
 
+        private void AdvanceCountdown(float deltaTime)
+        {
+            if (deltaTime > 0f)
+            {
+                _remainingTime = Mathf.Max(_remainingTime - deltaTime, 0f);
+            }
+
+            if (_timer != null)
+            {
+                float pluginRemaining = Mathf.Max(_timer.CurrentTime, 0f);
+
+                if (_timer.IsFinished)
+                {
+                    _remainingTime = 0f;
+                }
+                else if (_timer.IsRunning && pluginRemaining <= _configuredDuration + 0.01f)
+                {
+                    _remainingTime = Mathf.Min(_remainingTime, pluginRemaining);
+                }
+            }
+
+            LogWholeSecond();
+
+            if (_remainingTime <= 0f)
+            {
+                HandleTimeEnded();
+            }
+        }
+
         private void LogWholeSecond()
         {
             if (!_sessionActive)
@@ -299,6 +333,25 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
 
             StartSession();
+        }
+
+        private void HandleStateChanged(StateChangedEvent stateEvent)
+        {
+            if (stateEvent.isGameActive)
+            {
+                if (_sessionActive)
+                {
+                    ResumeSession();
+                }
+                else
+                {
+                    StartSession();
+                }
+            }
+            else if (_sessionActive)
+            {
+                PauseSession();
+            }
         }
 
         private void EnsureTimerInstance()
