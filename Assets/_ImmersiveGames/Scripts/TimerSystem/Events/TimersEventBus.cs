@@ -3,10 +3,20 @@ namespace _ImmersiveGames.Scripts.TimerSystem.Events
 {
     public class EventTimerStarted : IEvent
     {
-        // Pode incluir dados como motivo do game over, se necessário
+        public float Duration { get; }
+
+        public EventTimerStarted(float duration)
+        {
+            Duration = duration;
+        }
     }
     public class EventTimeEnded : IEvent
     {
-        // Pode incluir dados como motivo do game over, se necessário
+        public float Duration { get; }
+
+        public EventTimeEnded(float duration)
+        {
+            Duration = duration;
+        }
     }
 }
