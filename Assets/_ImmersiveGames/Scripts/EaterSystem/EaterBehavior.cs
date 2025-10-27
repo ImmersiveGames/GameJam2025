@@ -456,7 +456,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     DebugUtility.LogVerbose<EaterBehavior>(
                         $"Alvo atualizado enquanto o Eater comia. Encerrando consumo do planeta {GetPlanetName(previous)}.",
-                        DebugUtility.Colors.CrucialInfo,
+                        DebugUtility.Colors.Success,
                         this);
 
                     _context.Master.OnEventEndEatPlanet(previous);
