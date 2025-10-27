@@ -1,6 +1,8 @@
-﻿using UnityEngine;
+using UnityEngine;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -14,32 +16,30 @@ namespace _ImmersiveGames.Scripts.TimerSystem
     {
         private CountdownTimer _countdownTimer;
         private float _gameDurationSeconds = 300f; // Duração do jogo em segundos (5 minutos)
+        private float _lastKnownRemainingTime;
+        private bool _hasActiveSession;
         private bool _isResettingTimer;
-        
-        // Eventos que podem ser assinados por outros scripts
+
         private GameManager _gameManager;
-        
-        // Propriedade para acessar o tempo restante
-        public float RemainingTime => _countdownTimer != null ? Mathf.Max(_countdownTimer.CurrentTime, 0f) : 0f;
+
+        public float RemainingTime => Mathf.Max(_lastKnownRemainingTime, 0f);
 
         public float ConfiguredDuration => _gameDurationSeconds;
-        
+
         private EventBinding<GameStartEvent> _startBinding;
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
         private EventBinding<GamePauseEvent> _pauseBinding;
-        
+        private EventBinding<StateChangedEvent> _stateChangedBinding;
+
         protected override void Awake()
         {
             base.Awake();
             _gameManager = GameManager.Instance;
             _gameDurationSeconds = Mathf.Max(0f, _gameManager.GameConfig.timerGame);
 
-            _countdownTimer = new CountdownTimer(_gameDurationSeconds);
-
-            // Registrar eventos internos da biblioteca de timer
-            _countdownTimer.OnTimerStop += HandleTimerComplete;
-            _countdownTimer.OnTimerStart += HandleTimerStart;
+            EnsureTimerInstance(_gameDurationSeconds);
+            _lastKnownRemainingTime = _gameDurationSeconds;
         }
 
         private void OnEnable()
@@ -47,59 +47,81 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _startBinding = new EventBinding<GameStartEvent>(StartGameTimer);
             EventBus<GameStartEvent>.Register(_startBinding);
 
-            _gameOverBinding = new EventBinding<GameOverEvent>(PauseTimer);
+            _gameOverBinding = new EventBinding<GameOverEvent>(OnGameOver);
             EventBus<GameOverEvent>.Register(_gameOverBinding);
 
-            _victoryBinding = new EventBinding<GameVictoryEvent>(PauseTimer);
+            _victoryBinding = new EventBinding<GameVictoryEvent>(OnVictory);
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
             _pauseBinding = new EventBinding<GamePauseEvent>(PauseTimerHandler);
             EventBus<GamePauseEvent>.Register(_pauseBinding);
-            
+
+            _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
+            EventBus<StateChangedEvent>.Register(_stateChangedBinding);
         }
+
         private void OnDisable()
         {
-            EventBus<GameStartEvent>.Unregister(_startBinding);
-            EventBus<GameOverEvent>.Unregister(_gameOverBinding);
-            EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
-            EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+            if (_startBinding != null)
+            {
+                EventBus<GameStartEvent>.Unregister(_startBinding);
+                _startBinding = null;
+            }
+
+            if (_gameOverBinding != null)
+            {
+                EventBus<GameOverEvent>.Unregister(_gameOverBinding);
+                _gameOverBinding = null;
+            }
+
+            if (_victoryBinding != null)
+            {
+                EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
+                _victoryBinding = null;
+            }
+
+            if (_pauseBinding != null)
+            {
+                EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+                _pauseBinding = null;
+            }
+
+            if (_stateChangedBinding != null)
+            {
+                EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
+                _stateChangedBinding = null;
+            }
         }
+
         private void PauseTimerHandler(GamePauseEvent evt)
         {
-            if(evt.IsPaused)
+            if (evt.IsPaused)
+            {
                 PauseTimer();
+            }
             else
             {
                 ResumeTimer();
             }
         }
 
-
         private void HandleTimerStart()
         {
+            _hasActiveSession = true;
             DebugUtility.LogVerbose<GameTimer>($"Jogo iniciado! Timer de {_gameDurationSeconds} segundo(s) começou.");
-
         }
-        
 
         private void StartGameTimer()
         {
-            DebugUtility.LogVerbose<GameTimer>($"Começou o timer {_countdownTimer.IsRunning}, {_countdownTimer.IsFinished}");
-    
-            // Resetar o timer para a duração inicial
             float configuredSeconds = ResolveConfiguredDuration();
-
-            if (_countdownTimer == null)
-            {
-                _countdownTimer = new CountdownTimer(configuredSeconds);
-                _countdownTimer.OnTimerStop += HandleTimerComplete;
-                _countdownTimer.OnTimerStart += HandleTimerStart;
-            }
+            EnsureTimerInstance(configuredSeconds);
 
             _isResettingTimer = true;
             _countdownTimer.Stop();
             _countdownTimer.Reset(configuredSeconds);
             _isResettingTimer = false;
+
+            _lastKnownRemainingTime = configuredSeconds;
 
             if (Mathf.Approximately(configuredSeconds, 0f))
             {
@@ -107,10 +129,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            // Iniciar o timer
             _countdownTimer.Start();
+            _hasActiveSession = true;
             EventBus<EventTimerStarted>.Raise(new EventTimerStarted(configuredSeconds));
-            DebugUtility.LogVerbose<GameTimer>($"Começou");
+            DebugUtility.LogVerbose<GameTimer>("Timer iniciado a partir do estado.");
         }
 
         private void HandleTimerComplete()
@@ -125,24 +147,43 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
+            _lastKnownRemainingTime = 0f;
+            _hasActiveSession = false;
             DebugUtility.LogVerbose<GameTimer>("Tempo acabou!");
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_gameDurationSeconds));
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
-        
+
         public void PauseTimer()
         {
-            _countdownTimer?.Pause();
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
+            _countdownTimer.Pause();
+            _lastKnownRemainingTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
         }
 
         public void ResumeTimer()
         {
-            if (_countdownTimer != null && !_countdownTimer.IsRunning)
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
+            if (Mathf.Approximately(_lastKnownRemainingTime, 0f))
+            {
+                return;
+            }
+
+            if (!_countdownTimer.IsRunning)
             {
                 _countdownTimer.Resume();
+                _hasActiveSession = true;
             }
         }
-        
+
         public void RestartTimer()
         {
             StartGameTimer();
@@ -150,13 +191,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         public string GetFormattedTime()
         {
-            if (_countdownTimer == null)
-                return "00:00";
-
-            if (!_countdownTimer.IsRunning && _countdownTimer.IsFinished)
-                return "00:00";
-
-            float timeRemaining = _countdownTimer.CurrentTime;
+            float timeRemaining = RemainingTime;
             int minutes = Mathf.FloorToInt(timeRemaining / 60);
             int seconds = Mathf.FloorToInt(timeRemaining % 60);
 
@@ -172,11 +207,112 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             return _gameDurationSeconds;
         }
-        
-        
+
+        private void HandleStateChanged(StateChangedEvent _)
+        {
+            var currentState = GameManagerStateMachine.Instance.CurrentState;
+
+            switch (currentState)
+            {
+                case PlayingState:
+                    if (!_hasActiveSession || _countdownTimer == null || _countdownTimer.IsFinished || Mathf.Approximately(_lastKnownRemainingTime, 0f))
+                    {
+                        StartGameTimer();
+                    }
+                    else
+                    {
+                        ResumeTimer();
+                    }
+                    break;
+                case PausedState:
+                    PauseTimer();
+                    break;
+                case MenuState:
+                    ResetTimerToInitialDuration();
+                    break;
+                case GameOverState:
+                case VictoryState:
+                    StopTimer();
+                    break;
+            }
+        }
+
+        private void ResetTimerToInitialDuration()
+        {
+            float configuredSeconds = ResolveConfiguredDuration();
+            EnsureTimerInstance(configuredSeconds);
+
+            _isResettingTimer = true;
+            _countdownTimer.Stop();
+            _countdownTimer.Reset(configuredSeconds);
+            _isResettingTimer = false;
+
+            _lastKnownRemainingTime = configuredSeconds;
+            _hasActiveSession = false;
+        }
+
+        private void StopTimer()
+        {
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
+            _isResettingTimer = true;
+            _countdownTimer.Stop();
+            _isResettingTimer = false;
+
+            _lastKnownRemainingTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
+            if (_countdownTimer.IsFinished || Mathf.Approximately(_lastKnownRemainingTime, 0f))
+            {
+                _lastKnownRemainingTime = 0f;
+            }
+
+            _hasActiveSession = false;
+        }
+
+        private void Update()
+        {
+            if (_countdownTimer == null)
+            {
+                return;
+            }
+
+            if (_countdownTimer.IsRunning)
+            {
+                _lastKnownRemainingTime = Mathf.Max(_countdownTimer.CurrentTime, 0f);
+            }
+            else if (_countdownTimer.IsFinished)
+            {
+                _lastKnownRemainingTime = 0f;
+            }
+        }
+
+        private void OnGameOver(GameOverEvent _)
+        {
+            StopTimer();
+        }
+
+        private void OnVictory(GameVictoryEvent _)
+        {
+            StopTimer();
+        }
+
+        private void EnsureTimerInstance(float duration)
+        {
+            if (_countdownTimer != null)
+            {
+                return;
+            }
+
+            float safeDuration = Mathf.Max(duration, 0f);
+            _countdownTimer = new CountdownTimer(safeDuration);
+            _countdownTimer.OnTimerStop += HandleTimerComplete;
+            _countdownTimer.OnTimerStart += HandleTimerStart;
+        }
+
         private void OnDestroy()
         {
-            // Garantir que o timer seja limpo corretamente
             if (_countdownTimer != null)
             {
                 _isResettingTimer = true;
@@ -185,7 +321,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _countdownTimer.OnTimerStart -= HandleTimerStart;
                 _isResettingTimer = false;
             }
-
         }
     }
 }

@@ -1281,7 +1281,7 @@ MonoBehaviour:
   verboseInPlayer: 0
   fallbacksInEditor: 1
   fallbacksInPlayer: 0
-  repeatedCallVerboseInEditor: 1
+  repeatedCallVerboseInEditor: 0
   repeatedCallVerboseInPlayer: 0
   editorDefaultLevel: 4
   playerDefaultLevel: 2
