@@ -26,8 +26,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private bool _sessionActive;
         private bool _isRunning;
-        private bool _isGameActive;
-        private bool _shouldRunWhenActive;
 
         private int _lastWholeSecondLogged = -1;
 
@@ -135,17 +133,21 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void HandleGameStart(GameStartEvent _)
         {
-            PrepareNewSession();
-            _shouldRunWhenActive = true;
+            if (!_sessionActive)
+            {
+                PrepareNewSession();
+            }
 
-            DebugUtility.Log<GameTimer>(
-                $"Sessão preparada aguardando estado ativo ({_configuredDurationSeconds:F2}s).",
-                context: this);
-
-            if (_isGameActive)
+            var currentState = GameManagerStateMachine.Instance?.CurrentState;
+            if (currentState is PlayingState)
             {
                 StartCountdown("GameStartEvent");
+                return;
             }
+
+            DebugUtility.Log<GameTimer>(
+                "GameStartEvent recebido; aguardando PlayingState para iniciar a sessão.",
+                context: this);
         }
 
         private void HandlePauseEvent(GamePauseEvent evt)
@@ -162,44 +164,53 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void HandleStateChanged(StateChangedEvent evt)
         {
-            _isGameActive = evt.isGameActive;
-
             DebugUtility.Log<GameTimer>(
-                $"StateChangedEvent: ativo={_isGameActive}, sessão={_sessionActive}, rodando={_isRunning}, pendente={_shouldRunWhenActive}.",
+                $"StateChangedEvent: ativo={evt.isGameActive}, sessão={_sessionActive}, rodando={_isRunning}.",
                 context: this);
 
-            if (!_sessionActive)
+            var currentState = GameManagerStateMachine.Instance?.CurrentState;
+
+            if (evt.isGameActive)
             {
-                if (_isGameActive && _shouldRunWhenActive)
+                if (currentState is PlayingState)
                 {
-                    StartCountdown("StateChangedEvent");
-                }
-                else if (!_isGameActive && !_shouldRunWhenActive)
-                {
-                    var currentState = GameManagerStateMachine.Instance?.CurrentState;
-                    if (currentState is MenuState)
+                    if (!_sessionActive)
                     {
-                        ResetDisplayToConfigured();
+                        PrepareNewSession();
+                        StartCountdown("StateChangedEvent");
                     }
+                    else if (!_isRunning)
+                    {
+                        if (Mathf.Approximately(_remainingTime, _configuredDurationSeconds))
+                        {
+                            StartCountdown("StateChangedEvent");
+                        }
+                        else
+                        {
+                            ResumeCountdown("StateChangedEvent");
+                        }
+                    }
+                }
+                else if (_sessionActive && !_isRunning)
+                {
+                    ResumeCountdown("StateChangedEvent");
                 }
 
                 return;
             }
 
-            if (_isGameActive)
+            if (currentState is PausedState)
             {
-                if (_shouldRunWhenActive)
-                {
-                    StartCountdown("StateChangedEvent");
-                }
-                else
-                {
-                    ResumeCountdown("StateChangedEvent");
-                }
+                PauseCountdown("StateChangedEvent");
+            }
+            else if (currentState is MenuState)
+            {
+                StopSession("StateChangedEvent");
+                ResetDisplayToConfigured();
             }
             else
             {
-                PauseCountdown("StateChangedEvent");
+                StopSession("StateChangedEvent");
             }
         }
 
@@ -215,6 +226,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _sessionActive = true;
             _isRunning = false;
             _lastWholeSecondLogged = Mathf.FloorToInt(duration);
+
+            DebugUtility.Log<GameTimer>(
+                $"Sessão preparada com duração de {duration:F2}s.",
+                context: this);
         }
 
         private void CompleteSession()
@@ -222,7 +237,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _remainingTime = 0f;
             _sessionActive = false;
             _isRunning = false;
-            _shouldRunWhenActive = false;
 
             StopCountdownInternal();
 
@@ -232,7 +246,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void StopSession(string origin)
         {
-            if (!_sessionActive && !_shouldRunWhenActive)
+            if (!_sessionActive)
             {
                 return;
             }
@@ -241,7 +255,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             _sessionActive = false;
             _isRunning = false;
-            _shouldRunWhenActive = false;
 
             DebugUtility.Log<GameTimer>(
                 $"Sessão encerrada ({origin}) com {_remainingTime:F2}s restantes.",
@@ -261,7 +274,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            _shouldRunWhenActive = false;
             _isRunning = true;
 
             _countdownTimer.Start();
