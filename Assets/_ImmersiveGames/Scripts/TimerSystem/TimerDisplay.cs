@@ -1,61 +1,85 @@
 using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
+    /// <summary>
+    /// Responsável por exibir o tempo restante na UI com formatação 00:00
+    /// e preenchimento opcional de barra.
+    /// </summary>
     [DisallowMultipleComponent]
-    public class TimerDisplay : MonoBehaviour
+    public sealed class TimerDisplay : MonoBehaviour
     {
-        private GameTimer _gameTimer;
-
         [SerializeField] private TextMeshProUGUI timerText;
         [SerializeField] private Image timerFillImage;
 
-        [SerializeField] private Color normalColor = Color.green;
+        [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color warningColor = Color.yellow;
         [SerializeField] private Color dangerColor = Color.red;
 
-        [SerializeField] private float warningThreshold = 120f; // 2 minutos
-        [SerializeField] private float dangerThreshold = 30f;  // 30 segundos
+        [SerializeField] private float warningThreshold = 60f;
+        [SerializeField] private float dangerThreshold = 15f;
 
-        private float _initialDuration = 300f; // 5 minutos
         private EventBinding<EventTimerStarted> _timerStartedBinding;
         private EventBinding<EventTimeEnded> _timerEndedBinding;
-        private bool _loggedInitialDisplay;
-        private bool _loggedZeroWhileActive;
-        private string _lastFormattedTime;
+
+        private GameTimer _gameTimer;
+        private float _configuredDuration;
+        private string _lastFormattedValue;
 
         private void Awake()
         {
-            TryResolveTimerText();
-            TryResolveFillImage();
-            EnsureGameTimerReference();
-            SyncInitialDuration();
-            UpdateTimerDisplay();
+            ResolveComponents();
+            RefreshTimerReference();
+            UpdateConfiguredDuration();
+            ApplyDisplay(_configuredDuration);
+
             DebugUtility.Log<TimerDisplay>(
-                $"TimerDisplay inicializado (Text={(timerText != null)}, Fill={(timerFillImage != null)}, Duração={_initialDuration:F2}s).",
+                $"TimerDisplay pronto com duração inicial {_configuredDuration:F2}s.",
                 context: this);
         }
 
         private void OnEnable()
         {
-            EnsureGameTimerReference();
-            SyncInitialDuration();
-            _loggedInitialDisplay = false;
-            _loggedZeroWhileActive = false;
-            _lastFormattedTime = null;
-            RegisterTimerEvents();
-            UpdateTimerDisplay();
+            RefreshTimerReference();
+            UpdateConfiguredDuration();
+            RegisterEvents();
+            ForceRefresh();
         }
 
         private void OnDisable()
+        {
+            UnregisterEvents();
+        }
+
+        private void Update()
+        {
+            RefreshTimerReference();
+            UpdateConfiguredDuration();
+            ApplyDisplay(GetRemainingTime());
+        }
+
+        private void RegisterEvents()
+        {
+            if (_timerStartedBinding == null)
+            {
+                _timerStartedBinding = new EventBinding<EventTimerStarted>(HandleTimerStarted);
+                EventBus<EventTimerStarted>.Register(_timerStartedBinding);
+            }
+
+            if (_timerEndedBinding == null)
+            {
+                _timerEndedBinding = new EventBinding<EventTimeEnded>(_ => ForceRefresh());
+                EventBus<EventTimeEnded>.Register(_timerEndedBinding);
+            }
+        }
+
+        private void UnregisterEvents()
         {
             if (_timerStartedBinding != null)
             {
@@ -70,74 +94,45 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
         }
 
-        private void Update()
-        {
-            if (_gameTimer == null)
-            {
-                EnsureGameTimerReference();
-                SyncInitialDuration();
-                RegisterTimerEvents();
-            }
-
-            UpdateTimerDisplay();
-        }
-
-        private void RegisterTimerEvents()
-        {
-            if (_gameTimer == null)
-            {
-                return;
-            }
-
-            bool registered = false;
-
-            if (_timerStartedBinding == null)
-            {
-                _timerStartedBinding = new EventBinding<EventTimerStarted>(HandleTimerStarted);
-                EventBus<EventTimerStarted>.Register(_timerStartedBinding);
-                registered = true;
-            }
-
-            if (_timerEndedBinding == null)
-            {
-                _timerEndedBinding = new EventBinding<EventTimeEnded>(HandleTimerEnded);
-                EventBus<EventTimeEnded>.Register(_timerEndedBinding);
-                registered = true;
-            }
-
-            if (registered)
-            {
-                DebugUtility.LogVerbose<TimerDisplay>("UI: Timer monitorando eventos do sistema.");
-            }
-        }
-
         private void HandleTimerStarted(EventTimerStarted evt)
         {
-            _initialDuration = Mathf.Max(evt.Duration, 0f);
-            _loggedZeroWhileActive = false;
+            _configuredDuration = Mathf.Max(evt.Duration, 0f);
             DebugUtility.Log<TimerDisplay>(
-                $"Evento de início recebido com duração {_initialDuration:F2}s.",
+                $"Evento de início recebido: {_configuredDuration:F2}s.",
                 context: this);
-            UpdateTimerDisplay();
+            ForceRefresh();
         }
 
-        private void HandleTimerEnded(EventTimeEnded _)
+        private void ForceRefresh()
         {
-            UpdateTimerDisplay();
+            ApplyDisplay(GetRemainingTime());
         }
 
-        private void UpdateTimerDisplay()
+        private float GetRemainingTime()
         {
-            float remainingTime = ResolveRemainingTime();
+            if (_gameTimer == null)
+            {
+                return Mathf.Max(_configuredDuration, 0f);
+            }
 
+            if (_gameTimer.HasActiveSession)
+            {
+                return _gameTimer.RemainingTime;
+            }
+
+            return Mathf.Max(_gameTimer.ConfiguredDuration, _configuredDuration);
+        }
+
+        private void ApplyDisplay(float seconds)
+        {
+            string formatted = FormatTime(seconds);
             if (timerText != null)
             {
-                string formatted = FormatTime(remainingTime);
-                if (_lastFormattedTime != formatted)
+                if (_lastFormattedValue != formatted)
                 {
-                    _lastFormattedTime = formatted;
+                    _lastFormattedValue = formatted;
                     DebugUtility.Log<TimerDisplay>(
-                        $"Display atualizado para {formatted} (restante={remainingTime:F2}s).",
+                        $"Display atualizado para {formatted}.",
                         context: this);
                 }
 
@@ -149,33 +144,45 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            float normalizedTime = _initialDuration > 0f ? remainingTime / _initialDuration : 0f;
-            normalizedTime = Mathf.Clamp01(normalizedTime);
-            timerFillImage.fillAmount = normalizedTime;
+            float normalized = _configuredDuration > 0f
+                ? Mathf.Clamp01(seconds / _configuredDuration)
+                : 0f;
 
-            if (remainingTime <= dangerThreshold)
+            timerFillImage.fillAmount = normalized;
+
+            Color targetColor = normalColor;
+            if (seconds <= dangerThreshold)
             {
-                timerFillImage.color = dangerColor;
+                targetColor = dangerColor;
             }
-            else if (remainingTime <= warningThreshold)
+            else if (seconds <= warningThreshold)
             {
-                timerFillImage.color = warningColor;
-            }
-            else
-            {
-                timerFillImage.color = normalColor;
+                targetColor = warningColor;
             }
 
-            if (remainingTime <= 0f && _gameTimer != null && _gameTimer.HasActiveSession)
+            timerFillImage.color = targetColor;
+        }
+
+        private void RefreshTimerReference()
+        {
+            if (_gameTimer == null)
             {
-                if (!_loggedZeroWhileActive)
-                {
-                    _loggedZeroWhileActive = true;
-                    DebugUtility.Log<TimerDisplay>(
-                        "Display exibindo 00:00 com sessão ativa.",
-                        context: this);
-                }
-                DebugUtility.LogVerbose<TimerDisplay>("UI: Tempo esgotado!");
+                _gameTimer = GameTimer.Instance;
+            }
+        }
+
+        private void UpdateConfiguredDuration()
+        {
+            if (_gameTimer != null)
+            {
+                _configuredDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
+                return;
+            }
+
+            GameManager manager = GameManager.Instance;
+            if (manager != null && manager.GameConfig != null)
+            {
+                _configuredDuration = Mathf.Max(manager.GameConfig.timerGame, 0f);
             }
             else if (!_loggedInitialDisplay && !_loggedZeroWhileActive)
             {
@@ -193,79 +200,25 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
         }
 
-        private float ResolveRemainingTime()
-        {
-            if (_gameTimer == null)
-            {
-                return Mathf.Max(_initialDuration, 0f);
-            }
-
-            if (_initialDuration <= 0f)
-            {
-                _initialDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
-            }
-
-            float remaining = Mathf.Max(_gameTimer.RemainingTime, 0f);
-
-            if (_gameTimer.HasActiveSession)
-            {
-                return remaining;
-            }
-
-            var currentState = GameManagerStateMachine.Instance?.CurrentState;
-            if (currentState is MenuState)
-            {
-                return Mathf.Max(_initialDuration, 0f);
-            }
-
-            return remaining;
-        }
-
-        private void EnsureGameTimerReference()
-        {
-            if (_gameTimer == null)
-            {
-                _gameTimer = GameTimer.Instance;
-            }
-        }
-
-        private void SyncInitialDuration()
-        {
-            if (_gameTimer != null)
-            {
-                _initialDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
-                return;
-            }
-
-            GameManager manager = GameManager.Instance;
-            if (manager != null && manager.GameConfig != null)
-            {
-                _initialDuration = Mathf.Max(manager.GameConfig.timerGame, 0f);
-            }
-        }
-
-        private void TryResolveTimerText()
+        private void ResolveComponents()
         {
             if (timerText == null)
             {
                 timerText = GetComponentInChildren<TextMeshProUGUI>(true);
             }
-        }
 
-        private void TryResolveFillImage()
-        {
             if (timerFillImage == null)
             {
                 timerFillImage = GetComponentInChildren<Image>(true);
             }
         }
 
-        private static string FormatTime(float timeRemaining)
+        private static string FormatTime(float seconds)
         {
-            float clamped = Mathf.Max(timeRemaining, 0f);
+            float clamped = Mathf.Max(seconds, 0f);
             int minutes = Mathf.FloorToInt(clamped / 60f);
-            int seconds = Mathf.FloorToInt(clamped % 60f);
-            return $"{minutes:00}:{seconds:00}";
+            int secs = Mathf.FloorToInt(clamped % 60f);
+            return $"{minutes:00}:{secs:00}";
         }
     }
 }
