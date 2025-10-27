@@ -26,6 +26,8 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private float _initialDuration = 300f; // 5 minutos
         private EventBinding<EventTimerStarted> _timerStartedBinding;
         private EventBinding<EventTimeEnded> _timerEndedBinding;
+        private bool _loggedInitialDisplay;
+        private bool _loggedZeroWhileActive;
 
         private void Awake()
         {
@@ -34,12 +36,17 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             EnsureGameTimerReference();
             SyncInitialDuration();
             UpdateTimerDisplay();
+            DebugUtility.Log<TimerDisplay>(
+                $"TimerDisplay inicializado (Text={(timerText != null)}, Fill={(timerFillImage != null)}, Duração={_initialDuration:F2}s).",
+                context: this);
         }
 
         private void OnEnable()
         {
             EnsureGameTimerReference();
             SyncInitialDuration();
+            _loggedInitialDisplay = false;
+            _loggedZeroWhileActive = false;
             RegisterTimerEvents();
             UpdateTimerDisplay();
         }
@@ -103,6 +110,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleTimerStarted(EventTimerStarted evt)
         {
             _initialDuration = Mathf.Max(evt.Duration, 0f);
+            _loggedZeroWhileActive = false;
+            DebugUtility.Log<TimerDisplay>(
+                $"Evento de início recebido com duração {_initialDuration:F2}s.",
+                context: this);
             UpdateTimerDisplay();
         }
 
@@ -142,9 +153,30 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 timerFillImage.color = normalColor;
             }
 
-            if (remainingTime <= 0f)
+            if (remainingTime <= 0f && _gameTimer != null && _gameTimer.HasActiveSession)
             {
+                if (!_loggedZeroWhileActive)
+                {
+                    _loggedZeroWhileActive = true;
+                    DebugUtility.Log<TimerDisplay>(
+                        "Display exibindo 00:00 com sessão ativa.",
+                        context: this);
+                }
                 DebugUtility.LogVerbose<TimerDisplay>("UI: Tempo esgotado!");
+            }
+            else if (!_loggedInitialDisplay && !_loggedZeroWhileActive)
+            {
+                bool showingInitialValue = _gameTimer == null
+                    ? Mathf.Approximately(remainingTime, _initialDuration)
+                    : (!_gameTimer.HasActiveSession && Mathf.Approximately(remainingTime, Mathf.Max(_initialDuration, _gameTimer.ConfiguredDuration)));
+
+                if (showingInitialValue)
+                {
+                    _loggedInitialDisplay = true;
+                    DebugUtility.Log<TimerDisplay>(
+                        $"Display configurado com valor inicial {FormatTime(remainingTime)}.",
+                        context: this);
+                }
             }
         }
 
@@ -160,7 +192,14 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _initialDuration = Mathf.Max(_gameTimer.ConfiguredDuration, 0f);
             }
 
-            return _gameTimer.RemainingTime;
+            float remaining = _gameTimer.RemainingTime;
+
+            if (!_gameTimer.HasActiveSession && remaining <= 0f)
+            {
+                return Mathf.Max(_initialDuration, 0f);
+            }
+
+            return remaining;
         }
 
         private void EnsureGameTimerReference()
