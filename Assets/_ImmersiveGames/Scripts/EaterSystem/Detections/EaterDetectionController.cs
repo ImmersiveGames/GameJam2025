@@ -25,6 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         private PlanetsMaster _activeProximityPlanet;
         private bool _isProximitySensorEnabled;
         private bool _proximitySensorWarningLogged;
+        private float _nextProximitySweepTime;
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
@@ -51,6 +52,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             CacheDetectionTypesFromSensors();
             ResolveRuntimeSensors();
             UpdateProximitySensorState();
+        }
+
+        private void Update()
+        {
+            ProcessProximitySweepLoop();
         }
 
         private void OnEnable()
@@ -282,6 +288,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 $"Sensor de proximidade do Eater ativado. Contexto: {reason ?? "sem contexto"}",
                 DebugUtility.Colors.CrucialInfo,
                 this);
+            _nextProximitySweepTime = 0f;
             ReevaluateProximityDetections(reason ?? "Reavaliação após ativação do sensor");
         }
 
@@ -303,6 +310,44 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
             _eaterBehavior?.ClearProximityContact();
+        }
+        
+        private void ProcessProximitySweepLoop()
+        {
+            if (!_isProximitySensorEnabled)
+            {
+                return;
+            }
+
+            if (_eaterBehavior == null)
+            {
+                return;
+            }
+
+            if (!_eaterBehavior.ShouldChase || _eaterBehavior.IsEating)
+            {
+                return;
+            }
+
+            if (_activeProximityPlanet != null)
+            {
+                return;
+            }
+
+            if (!EnsureProximitySensorResolved())
+            {
+                return;
+            }
+
+            float sweepInterval = Mathf.Max(_proximitySensor.Config.MaxFrequency, 0.05f);
+            if (Time.time < _nextProximitySweepTime)
+            {
+                return;
+            }
+
+            _nextProximitySweepTime = Time.time + sweepInterval;
+
+            ReevaluateProximityDetections("Reavaliação periódica durante perseguição", logWhenEmpty: false);
         }
 
         private void HandlePlanetDefenseDetection(IDetectable detectable)
@@ -600,7 +645,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}, FlagShouldEnable={_eaterBehavior.ShouldEnableProximitySensor}";
         }
 
-        private void ReevaluateProximityDetections(string reason)
+        private void ReevaluateProximityDetections(string reason, bool logWhenEmpty = true)
         {
             if (!_isProximitySensorEnabled)
             {
@@ -615,10 +660,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             var detected = _proximitySensor.CurrentlyDetected;
             if (detected == null || detected.Count == 0)
             {
-                DebugUtility.LogVerbose<EaterDetectionController>(
-                    $"Reavaliação de proximidade ignorada ({reason}). Nenhum detectável ativo no sensor.",
-                    null,
-                    this);
+                if (logWhenEmpty)
+                {
+                    DebugUtility.LogVerbose<EaterDetectionController>(
+                        $"Reavaliação de proximidade ignorada ({reason}). Nenhum detectável ativo no sensor.",
+                        null,
+                        this);
+                }
                 return;
             }
 
