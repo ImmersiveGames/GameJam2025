@@ -27,6 +27,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _currentOrbitAngle;
         private float _heightOffset;
         private bool _orbitConfigured;
+        private bool _orbitPaused;
 
         private Transform OrbitCenter => orbitCenter != null ? orbitCenter : transform.parent;
 
@@ -37,8 +38,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            UpdateOrbitAngle();
-            ApplyOrbitPosition();
+            if (!_orbitPaused)
+            {
+                UpdateOrbitAngle();
+                ApplyOrbitPosition();
+            }
+
             ApplySelfRotation();
         }
 
@@ -67,6 +72,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _orbitConfigured = true;
             ApplyOrbitPosition();
         }
+
+        /// <summary>
+        /// Define se a órbita do planeta deve permanecer pausada.
+        /// Ao pausar, o planeta deixa de percorrer o caminho orbital, mas mantém a rotação própria.
+        /// </summary>
+        /// <param name="paused">Indica se a órbita deve ser pausada.</param>
+        public void SetOrbitPaused(bool paused)
+        {
+            if (_orbitPaused == paused)
+            {
+                return;
+            }
+
+            _orbitPaused = paused;
+
+            if (!paused)
+            {
+                ApplyOrbitPosition();
+            }
+        }
+
+        /// <summary>
+        /// Indica se a órbita do planeta está pausada.
+        /// </summary>
+        public bool IsOrbitPaused => _orbitPaused;
 
         private void UpdateOrbitAngle()
         {

@@ -22,12 +22,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
             _biteTimer = 0f;
             Context.SetEating(true);
+            Context.ReportMovementSample(Vector3.zero, 0f);
+            FaceTargetImmediately();
             DebugUtility.LogVerbose<EaterEatingState>("Entrando no estado Comendo.");
         }
 
         public override void Update()
         {
             base.Update();
+
+            MaintainFacingTarget();
 
             _biteTimer += Time.deltaTime;
             if (_biteTimer < BiteInterval)
@@ -52,6 +56,39 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 Context.Master.OnEventEndEatPlanet(target);
             }
+        }
+
+        private void MaintainFacingTarget()
+        {
+            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
+            {
+                return;
+            }
+
+            Vector3 direction = targetPosition - Transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+        }
+
+        private void FaceTargetImmediately()
+        {
+            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
+            {
+                return;
+            }
+
+            Vector3 direction = targetPosition - Transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
     }
 }

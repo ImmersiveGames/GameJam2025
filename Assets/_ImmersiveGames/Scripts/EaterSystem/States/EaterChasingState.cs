@@ -16,6 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            Context.SetProximitySensorActive(true);
             DebugUtility.LogVerbose<EaterChasingState>("Entrando no estado Perseguindo.");
         }
 
@@ -29,20 +30,25 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             Vector3 currentPosition = Transform.position;
-            Vector3 direction = (targetPosition - currentPosition);
-            float distance = direction.magnitude;
-            if (distance <= Mathf.Epsilon)
+            Vector3 direction = targetPosition - currentPosition;
+            float sqrDistance = direction.sqrMagnitude;
+            if (sqrDistance <= Mathf.Epsilon)
             {
                 return;
             }
 
-            direction.Normalize();
+            Vector3 normalizedDirection = direction.normalized;
+            Quaternion targetRotation = Quaternion.LookRotation(normalizedDirection, Vector3.up);
+            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+
+            if (Context.IsTargetInProximity)
+            {
+                Context.ReportMovementSample(Vector3.zero, 0f);
+                return;
+            }
 
             float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
-            Context.ReportMovementSample(direction, chaseSpeed);
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+            Context.ReportMovementSample(normalizedDirection, chaseSpeed);
 
             Transform.position = Vector3.MoveTowards(currentPosition, targetPosition, chaseSpeed * Time.deltaTime);
 
@@ -50,6 +56,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public override void OnExit()
         {
+            base.OnExit();
+            Context.SetProximitySensorActive(false);
             DebugUtility.LogVerbose<EaterChasingState>("Saindo do estado Perseguindo.");
         }
     }

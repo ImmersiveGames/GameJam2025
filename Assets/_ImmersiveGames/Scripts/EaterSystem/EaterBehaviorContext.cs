@@ -35,8 +35,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _lastAnchorAlignment;
         private bool _disposed;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private bool _shouldEnableProximitySensor;
+        private bool _isTargetInProximity;
+        private PlanetsMaster _proximityPlanet;
 
         public event Action<PlanetsMaster, PlanetsMaster> EventTargetChanged;
+        public event Action<PlanetsMaster, bool> EventTargetProximityChanged;
 
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
@@ -73,7 +77,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool ShouldChase => IsHungry && HasTarget && !IsEating;
         public bool ShouldEat => IsEating && HasTarget;
-        public bool ShouldEnableProximitySensor => ShouldChase || ShouldEat;
+        public bool ShouldEnableProximitySensor => _shouldEnableProximitySensor;
+        public bool IsTargetInProximity => _isTargetInProximity;
+        public PlanetsMaster ProximityPlanet => _proximityPlanet;
         public bool ShouldWander => !IsHungry && !IsEating;
         public bool LostTargetWhileHungry => IsHungry && !HasTarget && !IsEating;
         public bool HasPlayerAnchor => _hasCachedPlayerAnchor;
@@ -145,9 +151,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             PlanetsMaster previousTarget = _targetPlanet;
 
-            if (previousTarget == target)
+            if (IsSamePlanet(previousTarget, target))
             {
                 return false;
+            }
+
+            if (_isTargetInProximity && !IsSamePlanet(target, _proximityPlanet))
+            {
+                UnmarkTargetProximity();
             }
 
             _targetPlanet = target;
@@ -185,6 +196,66 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             position = default;
             return false;
+        }
+
+        /// <summary>
+        /// Controla a ativação do sensor de proximidade utilizado pelo Eater.
+        /// Mantém o valor para que outros sistemas possam consultar o estado desejado do sensor.
+        /// </summary>
+        /// <param name="enable">Define se o sensor deve permanecer ativo.</param>
+        /// <returns>Retorna <c>true</c> quando há alteração de estado.</returns>
+        public bool SetProximitySensorActive(bool enable)
+        {
+            if (_shouldEnableProximitySensor == enable)
+            {
+                return false;
+            }
+
+            _shouldEnableProximitySensor = enable;
+
+            if (!enable)
+            {
+                UnmarkTargetProximity();
+            }
+
+            return true;
+        }
+
+        public bool MarkTargetProximity(PlanetsMaster planet)
+        {
+            if (planet == null || !IsSamePlanet(planet, _targetPlanet))
+            {
+                return false;
+            }
+
+            if (_isTargetInProximity && IsSamePlanet(_proximityPlanet, planet))
+            {
+                return false;
+            }
+
+            _isTargetInProximity = true;
+            _proximityPlanet = planet;
+            EventTargetProximityChanged?.Invoke(planet, true);
+            return true;
+        }
+
+        public bool UnmarkTargetProximity(PlanetsMaster planet = null)
+        {
+            if (!_isTargetInProximity)
+            {
+                return false;
+            }
+
+            if (planet != null && !IsSamePlanet(_proximityPlanet, planet))
+            {
+                return false;
+            }
+
+            PlanetsMaster previousPlanet = _proximityPlanet;
+            _isTargetInProximity = false;
+            _proximityPlanet = null;
+            EventTargetProximityChanged?.Invoke(previousPlanet, false);
+            return true;
         }
 
         public bool TryGetPlayerAnchor(out Vector3 anchor)
@@ -353,6 +424,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _desireService?.Update();
         }
 
+        private static bool IsSamePlanet(PlanetsMaster left, PlanetsMaster right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return left != null;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.ActorId == right.ActorId;
+        }
+
         private string GetSafeMasterActorId()
         {
             if (_master != null)
@@ -422,6 +508,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _desireService.EventDesireChanged -= HandleDesireChanged;
             }
 
+            _shouldEnableProximitySensor = false;
+            _isTargetInProximity = false;
+            _proximityPlanet = null;
+            EventTargetProximityChanged = null;
+            EventTargetChanged = null;
+            EventDesireChanged = null;
             _disposed = true;
         }
 

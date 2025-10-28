@@ -69,6 +69,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public event Action<IState, IState> EventStateChanged;
         public event Action<EaterDesireInfo> EventDesireChanged;
         public event Action<PlanetsMaster> EventTargetChanged;
+        public event Action<PlanetsMaster, bool> EventTargetProximityChanged;
 
         public IState CurrentState => _stateMachine?.CurrentState;
         public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
@@ -76,6 +77,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public PlanetsMaster CurrentTarget => _context?.TargetPlanet;
         public bool IsEating => _context?.IsEating ?? false;
         public bool ShouldEnableProximitySensor => _context?.ShouldEnableProximitySensor ?? false;
+        public bool IsTargetInProximity => _context?.IsTargetInProximity ?? false;
 
         private void Awake()
         {
@@ -98,6 +100,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
             _context.EventDesireChanged += HandleContextDesireChanged;
             _context.EventTargetChanged += HandleContextTargetChanged;
+            _context.EventTargetProximityChanged += HandleContextTargetProximityChanged;
         }
 
         private void OnEnable()
@@ -147,6 +150,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _context.EventDesireChanged -= HandleContextDesireChanged;
                 _context.EventTargetChanged -= HandleContextTargetChanged;
+                _context.EventTargetProximityChanged -= HandleContextTargetProximityChanged;
                 _context.Dispose();
             }
         }
@@ -233,6 +237,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void ClearTarget()
         {
             SetTarget(null);
+        }
+
+        public void NotifyTargetProximityEntered(PlanetsMaster planet)
+        {
+            if (_context == null)
+            {
+                return;
+            }
+
+            bool changed = _context.MarkTargetProximity(planet);
+            if (changed)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>(
+                    $"Planeta {GetPlanetName(planet)} entrou na proximidade do Eater.",
+                    DebugUtility.Colors.Success,
+                    this);
+            }
+        }
+
+        public void NotifyTargetProximityExited(PlanetsMaster planet)
+        {
+            if (_context == null)
+            {
+                return;
+            }
+
+            bool changed = _context.UnmarkTargetProximity(planet);
+            if (changed)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>(
+                    $"Planeta {GetPlanetName(planet)} saiu da proximidade do Eater.",
+                    null,
+                    this);
+            }
         }
 
         public EaterDesireInfo GetCurrentDesireInfo()
@@ -478,6 +516,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             EventTargetChanged?.Invoke(current);
+        }
+
+        private void HandleContextTargetProximityChanged(PlanetsMaster planet, bool isInProximity)
+        {
+            EventTargetProximityChanged?.Invoke(planet, isInProximity);
         }
 
         private void RegisterEventListeners()
