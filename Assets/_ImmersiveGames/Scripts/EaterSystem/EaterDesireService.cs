@@ -16,6 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         private readonly EaterMaster _master;
         private readonly EaterConfigSo _config;
+        private readonly string _actorLabel;
         private readonly Queue<PlanetResources> _recentDesires = new();
         private readonly PlanetResources[] _resourcePool;
         private readonly Dictionary<PlanetResources, int> _availabilityBuffer = new();
@@ -38,6 +39,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _master = master;
             _config = config;
+            _actorLabel = ResolveActorLabel(master);
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
 
@@ -211,7 +213,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _recentDesires.Dequeue();
             }
 
-            string actorName = string.IsNullOrEmpty(_master.ActorName) ? _master.name : _master.ActorName;
+            string actorName = _actorLabel;
             string availability = available
                 ? $"disponível ({_currentDesireAvailableCount} planeta(s))"
                 : "indisponível";
@@ -230,6 +232,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             NotifyDesireChanged();
+        }
+
+        private static string ResolveActorLabel(EaterMaster master)
+        {
+            if (master == null)
+            {
+                return "Eater";
+            }
+
+            string actorName = master.ActorName;
+            if (string.IsNullOrWhiteSpace(actorName))
+            {
+                actorName = master.name;
+            }
+
+            return string.IsNullOrWhiteSpace(actorName) ? "Eater" : actorName;
         }
 
         private bool TrySelectDesire(out PlanetResources desire, out bool available, out int availableCount, out float selectionWeight)
