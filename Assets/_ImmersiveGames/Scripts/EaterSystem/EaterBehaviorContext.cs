@@ -35,6 +35,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _lastAnchorAlignment;
         private bool _disposed;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private bool _hasProximityContact;
+        private PlanetsMaster _proximityPlanet;
+        private Vector3 _proximityHoldPosition;
+        private bool _hasProximityHoldPosition;
 
         public event Action<PlanetsMaster, PlanetsMaster> EventTargetChanged;
 
@@ -97,6 +101,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public int CurrentDesireAvailableCount => _currentDesireInfo.AvailableCount;
         public float CurrentDesireWeight => _currentDesireInfo.Weight;
         public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
+        public bool HasProximityContact => _hasProximityContact && _proximityPlanet != null;
+        public PlanetsMaster ProximityPlanet => _proximityPlanet;
+        public bool HasProximityContactForTarget => HasProximityContact && _targetPlanet != null && IsSamePlanet(_proximityPlanet, _targetPlanet);
         public event Action<EaterDesireInfo> EventDesireChanged;
 
         public void ResetStateTimer()
@@ -151,6 +158,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             _targetPlanet = target;
+            if (_hasProximityContact && !HasProximityContactForTarget)
+            {
+                // Limpa o lock de proximidade caso ele pertença ao alvo anterior.
+                ClearProximityContactInternal();
+            }
             EventTargetChanged?.Invoke(previousTarget, _targetPlanet);
             return true;
         }
@@ -171,6 +183,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_master != null)
             {
                 _master.IsEating = value;
+            }
+            if (!value)
+            {
+                // Ao sair do estado de comer, liberar qualquer posição de parada forçada.
+                ClearProximityContactInternal();
             }
             return true;
         }
@@ -402,6 +419,53 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
+        public bool RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition, bool clearHungryMetrics = true)
+        {
+            if (planet == null)
+            {
+                return false;
+            }
+
+            bool changed = !_hasProximityContact || !IsSamePlanet(_proximityPlanet, planet);
+
+            _hasProximityContact = true;
+            _proximityPlanet = planet;
+            _proximityHoldPosition = eaterPosition;
+            _hasProximityHoldPosition = true;
+
+            ClearMovementSample(clearHungryMetrics);
+
+            return changed;
+        }
+
+        public bool ClearProximityContact(PlanetsMaster planet = null)
+        {
+            if (!_hasProximityContact)
+            {
+                return false;
+            }
+
+            if (planet != null && !IsSamePlanet(_proximityPlanet, planet))
+            {
+                return false;
+            }
+
+            ClearProximityContactInternal();
+            return true;
+        }
+
+        public bool TryGetProximityHoldPosition(out Vector3 position)
+        {
+            if (_hasProximityHoldPosition)
+            {
+                position = _proximityHoldPosition;
+                return true;
+            }
+
+            position = default;
+            return false;
+        }
+
         public void ReportHungryMetrics(float distanceToAnchor, float alignmentWithAnchor)
         {
             _lastAnchorDistance = Mathf.Max(distanceToAnchor, 0f);
@@ -440,6 +504,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _currentDesireInfo = info;
             EventDesireChanged?.Invoke(info);
+        }
+
+        private void ClearProximityContactInternal()
+        {
+            _hasProximityContact = false;
+            _proximityPlanet = null;
+            _hasProximityHoldPosition = false;
+        }
+
+        private static bool IsSamePlanet(PlanetsMaster left, PlanetsMaster right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.ActorId == right.ActorId;
         }
     }
 }
