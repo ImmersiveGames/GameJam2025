@@ -23,6 +23,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
+            if (Context.HasProximityContactForTarget)
+            {
+                if (Context.TryGetProximityHoldPosition(out Vector3 holdPosition))
+                {
+                    Transform.position = holdPosition;
+                }
+
+                Context.ClearMovementSample();
+                return;
+            }
+
+            if (Context.ShouldEat)
+            {
+                Context.ClearMovementSample();
+                return;
+            }
+
             if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
             {
                 return;

@@ -253,6 +253,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool changed = _context.SetEating(true);
             if (changed)
             {
+                _context.ClearMovementSample();
                 DebugUtility.LogVerbose<EaterBehavior>("Início manual do estado Comendo.");
                 PlanetsMaster target = _context.Target;
                 if (target != null)
@@ -261,6 +262,51 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
                 _context.ResetStateTimer();
                 ForceStateEvaluation();
+                return;
+            }
+
+            _context.ClearMovementSample();
+        }
+
+        /// <summary>
+        /// Informa o contexto de que o sensor de proximidade detectou o alvo atual.
+        /// Responsável por travar o movimento e iniciar o estado de comer quando necessário.
+        /// </summary>
+        public void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
+        {
+            if (_context == null || planet == null)
+            {
+                return;
+            }
+
+            bool changed = _context.RegisterProximityContact(planet, eaterPosition);
+            if (!_context.IsEating)
+            {
+                BeginEating();
+                return;
+            }
+
+            if (changed)
+            {
+                _context.ClearMovementSample();
+                ForceStateEvaluation();
+            }
+        }
+
+        /// <summary>
+        /// Remove o lock de proximidade ativo, liberando o movimento do Eater.
+        /// </summary>
+        public void ClearProximityContact(PlanetsMaster planet = null)
+        {
+            if (_context == null)
+            {
+                return;
+            }
+
+            bool cleared = _context.ClearProximityContact(planet);
+            if (cleared)
+            {
+                _context.ClearMovementSample();
             }
         }
 
