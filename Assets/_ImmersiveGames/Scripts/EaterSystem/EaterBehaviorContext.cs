@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     public sealed class EaterBehaviorContext : IDisposable
     {
         private readonly EaterMaster _master;
+        private readonly string _masterActorId;
         private readonly Transform _transform;
         private readonly EaterConfigSo _config;
         private readonly ResourceAutoFlowBridge _autoFlowBridge;
@@ -40,7 +41,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public EaterBehaviorContext(EaterMaster master, EaterConfigSo config, Rect gameArea)
         {
             _master = master;
-            _transform = master.transform;
+            _transform = master != null ? master.transform : null;
+            _masterActorId = ResolveMasterActorId(master);
             _config = config;
             GameArea = gameArea;
             if (master.TryGetComponent(out ResourceAutoFlowBridge autoFlowBridge))
@@ -115,7 +117,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             IsHungry = value;
-            _master.InHungry = value;
+            if (_master != null)
+            {
+                _master.InHungry = value;
+            }
 
             if (value)
             {
@@ -163,7 +168,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             IsEating = value;
-            _master.IsEating = value;
+            if (_master != null)
+            {
+                _master.IsEating = value;
+            }
             return true;
         }
 
@@ -272,7 +280,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool resumed = _autoFlowBridge.ResumeAutoFlow();
             if (resumed)
             {
-                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow retomado para {_master.ActorId}.");
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow retomado para {GetSafeMasterActorId()}.");
             }
 
             return _autoFlowBridge.IsAutoFlowActive;
@@ -288,7 +296,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool paused = _autoFlowBridge.PauseAutoFlow();
             if (paused)
             {
-                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow pausado para {_master.ActorId}.");
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"AutoFlow pausado para {GetSafeMasterActorId()}.");
             }
 
             return paused;
@@ -304,7 +312,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool started = _desireService.Start();
             if (started)
             {
-                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos iniciados para {_master.ActorId}.");
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos iniciados para {GetSafeMasterActorId()}.");
             }
 
             return started;
@@ -320,7 +328,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool stopped = _desireService.Stop();
             if (stopped)
             {
-                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos pausados para {_master.ActorId}.");
+                DebugUtility.LogVerbose<EaterBehaviorContext>($"Desejos pausados para {GetSafeMasterActorId()}.");
             }
 
             return stopped;
@@ -343,6 +351,33 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void UpdateServices()
         {
             _desireService?.Update();
+        }
+
+        private string GetSafeMasterActorId()
+        {
+            if (_master != null)
+            {
+                return _master.ActorId;
+            }
+
+            return string.IsNullOrEmpty(_masterActorId) ? "Eater" : _masterActorId;
+        }
+
+        private static string ResolveMasterActorId(EaterMaster master)
+        {
+            if (master == null)
+            {
+                return "Eater";
+            }
+
+            string actorId = master.ActorId;
+            if (!string.IsNullOrWhiteSpace(actorId))
+            {
+                return actorId;
+            }
+
+            string fallbackName = master.name;
+            return string.IsNullOrWhiteSpace(fallbackName) ? "Eater" : fallbackName;
         }
 
         public void ReportMovementSample(Vector3 direction, float speed, bool clearHungryMetrics = true)
@@ -382,6 +417,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (_desireService != null)
             {
+                // Garante que o serviço pare de emitir eventos antes de liberar o contexto.
+                _desireService.Stop();
                 _desireService.EventDesireChanged -= HandleDesireChanged;
             }
 
