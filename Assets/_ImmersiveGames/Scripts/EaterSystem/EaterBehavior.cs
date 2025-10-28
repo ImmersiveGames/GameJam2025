@@ -253,6 +253,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool changed = _context.SetEating(true);
             if (changed)
             {
+                _context.ClearMovementSample();
                 DebugUtility.LogVerbose<EaterBehavior>("Início manual do estado Comendo.");
                 PlanetsMaster target = _context.Target;
                 if (target != null)
@@ -261,7 +262,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
                 _context.ResetStateTimer();
                 ForceStateEvaluation();
+                return;
             }
+
+            _context.ClearMovementSample();
         }
 
         /// <summary>

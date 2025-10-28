@@ -391,6 +391,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
+        public void ClearMovementSample(bool clearHungryMetrics = true)
+        {
+            _lastMovementDirection = Vector3.zero;
+            _lastMovementSpeed = 0f;
+            _hasMovementSample = false;
+            if (clearHungryMetrics)
+            {
+                _hasHungryMetrics = false;
+            }
+        }
+
         public void ReportHungryMetrics(float distanceToAnchor, float alignmentWithAnchor)
         {
             _lastAnchorDistance = Mathf.Max(distanceToAnchor, 0f);

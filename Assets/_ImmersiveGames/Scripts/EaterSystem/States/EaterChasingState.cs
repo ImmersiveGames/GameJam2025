@@ -23,6 +23,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
+            if (Context.ShouldEat)
+            {
+                Context.ClearMovementSample();
+                return;
+            }
+
             if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
             {
                 return;
