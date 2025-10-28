@@ -16,6 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            Context.SetProximitySensorActive(true);
             DebugUtility.LogVerbose<EaterChasingState>("Entrando no estado Perseguindo.");
         }
 
@@ -50,6 +51,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public override void OnExit()
         {
+            base.OnExit();
+            Context.SetProximitySensorActive(false);
             DebugUtility.LogVerbose<EaterChasingState>("Saindo do estado Perseguindo.");
         }
     }

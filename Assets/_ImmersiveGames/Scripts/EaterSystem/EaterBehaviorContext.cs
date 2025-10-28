@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _lastAnchorAlignment;
         private bool _disposed;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private bool _shouldEnableProximitySensor;
 
         public event Action<PlanetsMaster, PlanetsMaster> EventTargetChanged;
 
@@ -73,7 +74,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool ShouldChase => IsHungry && HasTarget && !IsEating;
         public bool ShouldEat => IsEating && HasTarget;
-        public bool ShouldEnableProximitySensor => ShouldChase || ShouldEat;
+        public bool ShouldEnableProximitySensor => _shouldEnableProximitySensor;
         public bool ShouldWander => !IsHungry && !IsEating;
         public bool LostTargetWhileHungry => IsHungry && !HasTarget && !IsEating;
         public bool HasPlayerAnchor => _hasCachedPlayerAnchor;
@@ -185,6 +186,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             position = default;
             return false;
+        }
+
+        /// <summary>
+        /// Controla a ativação do sensor de proximidade utilizado pelo Eater.
+        /// Mantém o valor para que outros sistemas possam consultar o estado desejado do sensor.
+        /// </summary>
+        /// <param name="enable">Define se o sensor deve permanecer ativo.</param>
+        /// <returns>Retorna <c>true</c> quando há alteração de estado.</returns>
+        public bool SetProximitySensorActive(bool enable)
+        {
+            if (_shouldEnableProximitySensor == enable)
+            {
+                return false;
+            }
+
+            _shouldEnableProximitySensor = enable;
+            return true;
         }
 
         public bool TryGetPlayerAnchor(out Vector3 anchor)
@@ -422,6 +440,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _desireService.EventDesireChanged -= HandleDesireChanged;
             }
 
+            _shouldEnableProximitySensor = false;
             _disposed = true;
         }
 
