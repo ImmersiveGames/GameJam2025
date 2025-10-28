@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -25,7 +26,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         private PlanetsMaster _activeProximityPlanet;
         private bool _isProximitySensorEnabled;
         private bool _proximitySensorWarningLogged;
-        private float _nextProximitySweepTime;
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
@@ -52,11 +52,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             CacheDetectionTypesFromSensors();
             ResolveRuntimeSensors();
             UpdateProximitySensorState();
-        }
-
-        private void Update()
-        {
-            ProcessProximitySweepLoop();
         }
 
         private void OnEnable()
@@ -217,9 +212,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void UpdateProximitySensorState()
         {
-            bool shouldEnable = _eaterBehavior != null && _eaterBehavior.ShouldEnableProximitySensor;
             string context = BuildProximitySensorContext("Avaliação automática");
-            SetProximitySensorEnabled(shouldEnable, context);
+            SetProximitySensorEnabled(ShouldEnableProximitySensor(), context);
         }
 
         private void SetProximitySensorEnabled(bool enable, string reason = null)
@@ -263,11 +257,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                         this);
                 }
 
-                if (enable)
-                {
-                    ReevaluateProximityDetections(reason ?? "Reavaliação automática (sensor já ativo)");
-                }
-
                 return;
             }
 
@@ -288,21 +277,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 $"Sensor de proximidade do Eater ativado. Contexto: {reason ?? "sem contexto"}",
                 DebugUtility.Colors.CrucialInfo,
                 this);
-            _nextProximitySweepTime = 0f;
+            _proximitySensor.Update(0f);
             ReevaluateProximityDetections(reason ?? "Reavaliação após ativação do sensor");
         }
 
         private void HandleEaterStateChanged(IState previous, IState current)
         {
-            UpdateProximitySensorState();
-            ReevaluateProximityDetections("Reavaliação após mudança de estado");
+            string reason = $"Mudança de estado: {GetStateName(current)}";
+            SetProximitySensorEnabled(ShouldEnableProximitySensor(current), BuildProximitySensorContext(reason));
+            if (_isProximitySensorEnabled)
+            {
+                ReevaluateProximityDetections("Reavaliação após mudança de estado");
+            }
         }
 
         private void HandleEaterTargetChanged(PlanetsMaster _)
         {
             ClearProximityTracking();
-            UpdateProximitySensorState();
-            ReevaluateProximityDetections("Reavaliação após troca de alvo");
+            UpdateProximitySensorState("Troca de alvo");
+            if (_isProximitySensorEnabled)
+            {
+                ReevaluateProximityDetections("Reavaliação após troca de alvo");
+            }
         }
 
         private void ClearProximityTracking()
@@ -310,44 +306,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
             _eaterBehavior?.ClearProximityContact();
-        }
-        
-        private void ProcessProximitySweepLoop()
-        {
-            if (!_isProximitySensorEnabled)
-            {
-                return;
-            }
-
-            if (_eaterBehavior == null)
-            {
-                return;
-            }
-
-            if (!_eaterBehavior.ShouldChase || _eaterBehavior.IsEating)
-            {
-                return;
-            }
-
-            if (_activeProximityPlanet != null)
-            {
-                return;
-            }
-
-            if (!EnsureProximitySensorResolved())
-            {
-                return;
-            }
-
-            float sweepInterval = Mathf.Max(_proximitySensor.Config.MaxFrequency, 0.05f);
-            if (Time.time < _nextProximitySweepTime)
-            {
-                return;
-            }
-
-            _nextProximitySweepTime = Time.time + sweepInterval;
-
-            ReevaluateProximityDetections("Reavaliação periódica durante perseguição", logWhenEmpty: false);
         }
 
         private void HandlePlanetDefenseDetection(IDetectable detectable)
@@ -642,7 +600,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             string targetName = GetPlanetName(_eaterBehavior.CurrentTarget);
 
-            return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}, FlagShouldEnable={_eaterBehavior.ShouldEnableProximitySensor}";
+            return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}";
+        }
+
+        private void UpdateProximitySensorState(string origin)
+        {
+            string context = BuildProximitySensorContext(origin);
+            SetProximitySensorEnabled(ShouldEnableProximitySensor(), context);
+        }
+
+        private bool ShouldEnableProximitySensor()
+        {
+            return ShouldEnableProximitySensor(_eaterBehavior?.CurrentState);
+        }
+
+        private bool ShouldEnableProximitySensor(IState state)
+        {
+            return state is EaterChasingState || state is EaterEatingState;
+        }
+
+        private static string GetStateName(IState state)
+        {
+            return state?.GetType().Name ?? "estado desconhecido";
         }
 
         private void ReevaluateProximityDetections(string reason, bool logWhenEmpty = true)
