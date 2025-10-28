@@ -256,6 +256,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                         null,
                         this);
                 }
+
+                if (enable)
+                {
+                    ReevaluateProximityDetections(reason ?? "Reavaliação automática (sensor já ativo)");
+                }
+
                 return;
             }
 
@@ -276,17 +282,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 $"Sensor de proximidade do Eater ativado. Contexto: {reason ?? "sem contexto"}",
                 DebugUtility.Colors.CrucialInfo,
                 this);
+            ReevaluateProximityDetections(reason ?? "Reavaliação após ativação do sensor");
         }
 
         private void HandleEaterStateChanged(IState previous, IState current)
         {
             UpdateProximitySensorState();
+            ReevaluateProximityDetections("Reavaliação após mudança de estado");
         }
 
         private void HandleEaterTargetChanged(PlanetsMaster _)
         {
             ClearProximityTracking();
             UpdateProximitySensorState();
+            ReevaluateProximityDetections("Reavaliação após troca de alvo");
         }
 
         private void ClearProximityTracking()
@@ -349,17 +358,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
+            EvaluatePlanetProximityDetection(detectable, "Evento de detecção");
+        }
+
+        private void EvaluatePlanetProximityDetection(IDetectable detectable, string origin)
+        {
             string detectableName = GetDetectableName(detectable);
 
             DebugUtility.LogVerbose<EaterDetectionController>(
-                $"Detecção de proximidade recebida de {detectableName}. SensorAtivo={_isProximitySensorEnabled}. Contexto: {BuildProximitySensorContext("Evento de detecção")}",
+                $"Verificação de proximidade ({origin}) de {detectableName}. SensorAtivo={_isProximitySensorEnabled}. Contexto: {BuildProximitySensorContext(origin)}",
                 null,
                 this);
 
             if (_eaterBehavior == null)
             {
                 DebugUtility.LogWarning<EaterDetectionController>(
-                    $"Detecção de proximidade de {detectableName}, porém o EaterBehavior não está configurado.",
+                    $"Verificação de proximidade ({origin}) para {detectableName}, porém o EaterBehavior não está configurado.",
                     this);
                 return;
             }
@@ -367,7 +381,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (!EnsureProximitySensorResolved())
             {
                 DebugUtility.LogWarning<EaterDetectionController>(
-                    $"Detecção de proximidade de {detectableName}, mas o sensor ainda não foi resolvido.",
+                    $"Verificação de proximidade ({origin}) para {detectableName}, mas o sensor ainda não foi resolvido.",
                     this);
                 return;
             }
@@ -375,7 +389,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
             {
                 DebugUtility.LogWarning<EaterDetectionController>(
-                    $"Detecção de proximidade sem PlanetsMaster associado para {detectableName}.",
+                    $"Verificação de proximidade ({origin}) sem PlanetsMaster associado para {detectableName}.",
                     this);
                 return;
             }
@@ -384,7 +398,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (currentTarget == null)
             {
                 DebugUtility.Log<EaterDetectionController>(
-                    $"Planeta {GetPlanetName(planetMaster)} detectado, porém o Eater não possui alvo configurado.",
+                    $"Planeta {GetPlanetName(planetMaster)} detectado ({origin}), porém o Eater não possui alvo configurado.",
                     null,
                     this);
                 return;
@@ -393,7 +407,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (!IsSamePlanet(currentTarget, planetMaster))
             {
                 DebugUtility.Log<EaterDetectionController>(
-                    $"Planeta {GetPlanetName(planetMaster)} detectado fora do alvo atual do Eater (alvo atual: {GetPlanetName(currentTarget)}).",
+                    $"Planeta {GetPlanetName(planetMaster)} detectado ({origin}) fora do alvo atual do Eater (alvo atual: {GetPlanetName(currentTarget)}).",
                     null,
                     this);
                 return;
@@ -415,7 +429,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (isSameDetectable && _eaterBehavior.IsEating)
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(
-                    $"Proximidade mantida com {GetPlanetName(planetMaster)}; nenhuma ação adicional necessária.",
+                    $"Proximidade mantida com {GetPlanetName(planetMaster)} ({origin}); nenhuma ação adicional necessária.",
                     null,
                     this);
                 return;
@@ -425,7 +439,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             {
                 _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
                 DebugUtility.Log<EaterDetectionController>(
-                    $"Planeta {GetPlanetName(planetMaster)} está dentro do raio de consumo do Eater.",
+                    $"Planeta {GetPlanetName(planetMaster)} está dentro do raio de consumo do Eater ({origin}).",
                     DebugUtility.Colors.Success,
                     this);
                 return;
@@ -435,7 +449,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (!isSameDetectable || !isSamePlanet)
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(
-                    $"Contato de proximidade atualizado para {GetPlanetName(planetMaster)}.",
+                    $"Contato de proximidade atualizado para {GetPlanetName(planetMaster)} ({origin}).",
                     null,
                     this);
             }
@@ -584,6 +598,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             string targetName = GetPlanetName(_eaterBehavior.CurrentTarget);
 
             return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}, FlagShouldEnable={_eaterBehavior.ShouldEnableProximitySensor}";
+        }
+
+        private void ReevaluateProximityDetections(string reason)
+        {
+            if (!_isProximitySensorEnabled)
+            {
+                return;
+            }
+
+            if (!EnsureProximitySensorResolved())
+            {
+                return;
+            }
+
+            var detected = _proximitySensor.CurrentlyDetected;
+            if (detected == null || detected.Count == 0)
+            {
+                DebugUtility.LogVerbose<EaterDetectionController>(
+                    $"Reavaliação de proximidade ignorada ({reason}). Nenhum detectável ativo no sensor.",
+                    null,
+                    this);
+                return;
+            }
+
+            DebugUtility.LogVerbose<EaterDetectionController>(
+                $"Reavaliando {detected.Count} detecções de proximidade. Motivo: {reason}.",
+                null,
+                this);
+
+            for (int i = 0; i < detected.Count; i++)
+            {
+                var detectable = detected[i];
+                if (detectable == null)
+                {
+                    continue;
+                }
+
+                EvaluatePlanetProximityDetection(detectable, reason);
+            }
         }
     }
 }
