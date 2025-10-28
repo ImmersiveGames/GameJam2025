@@ -113,6 +113,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDisable()
         {
             UnregisterEventListeners();
+
+            if (_context != null)
+            {
+                // Garantir que sistemas dependentes parem quando o comportamento for desativado.
+                _context.EndDesires();
+                _context.PauseAutoFlow();
+            }
         }
 
         private void Start()
@@ -128,6 +135,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDestroy()
         {
             UnregisterEventListeners();
+
+            if (_context != null)
+            {
+                // Prevenir atualizações tardias acessando um master destruído.
+                _context.EndDesires();
+                _context.PauseAutoFlow();
+            }
 
             if (_context != null)
             {

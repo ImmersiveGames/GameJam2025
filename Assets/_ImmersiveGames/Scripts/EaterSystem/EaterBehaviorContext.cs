@@ -382,6 +382,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (_desireService != null)
             {
+                // Garante que o serviço pare de emitir eventos antes de liberar o contexto.
+                _desireService.Stop();
                 _desireService.EventDesireChanged -= HandleDesireChanged;
             }
 
