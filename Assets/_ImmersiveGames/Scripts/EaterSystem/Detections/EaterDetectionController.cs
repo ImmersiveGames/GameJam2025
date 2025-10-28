@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            DebugUtility.LogVerbose<EaterDetectionController>(
+            DebugUtility.Log<EaterDetectionController>(
                 $"Detecção recebida sem manipulador específico: {detectionType.TypeName}",
                 null,
                 this);
@@ -250,14 +250,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (!enable)
             {
                 ClearProximityTracking();
-                DebugUtility.LogVerbose<EaterDetectionController>(
+                DebugUtility.Log<EaterDetectionController>(
                     "Sensor de proximidade do Eater desativado.",
                     null,
                     this);
                 return;
             }
 
-            DebugUtility.LogVerbose<EaterDetectionController>(
+            DebugUtility.Log<EaterDetectionController>(
                 "Sensor de proximidade do Eater ativado.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             string detectorName = Owner?.ActorName ?? name;
 
-            DebugUtility.LogVerbose<EaterDetectionController>(
+            DebugUtility.Log<EaterDetectionController>(
                 $"Planeta {planetMaster.ActorName} ativou defesas contra {detectorName} (Eater).",
                 DebugUtility.Colors.CrucialInfo,
                 this);
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             string detectorName = Owner?.ActorName ?? name;
 
-            DebugUtility.LogVerbose<EaterDetectionController>(
+            DebugUtility.Log<EaterDetectionController>(
                 $"Planeta {planetMaster.ActorName} desativou defesas contra {detectorName} (Eater).",
                 null,
                 this);
@@ -325,6 +325,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void HandlePlanetProximityDetection(IDetectable detectable)
         {
+            DebugUtility.Log<EaterDetectionController>(
+                $"Planeta {detectable.Owner.ActorName} detectado, Pela approximate do sensor",
+                null,
+                this);
             if (!EnsureProximitySensorResolved())
             {
                 return;
@@ -341,7 +345,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             PlanetsMaster currentTarget = _eaterBehavior?.CurrentTarget;
             if (currentTarget == null)
             {
-                DebugUtility.LogVerbose<EaterDetectionController>(
+                DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planetMaster)} detectado, porém o Eater não possui alvo configurado.",
                     null,
                     this);
@@ -350,7 +354,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             if (!IsSamePlanet(currentTarget, planetMaster))
             {
-                DebugUtility.LogVerbose<EaterDetectionController>(
+                DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planetMaster)} detectado fora do alvo atual do Eater.",
                     null,
                     this);
@@ -363,7 +367,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (_eaterBehavior != null && !_eaterBehavior.IsEating)
             {
                 _eaterBehavior.BeginEating();
-                DebugUtility.LogVerbose<EaterDetectionController>(
+                DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planetMaster)} está dentro do raio de consumo do Eater.",
                     DebugUtility.Colors.Success,
                     this);
@@ -399,7 +403,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             if (_eaterBehavior != null && _eaterBehavior.IsEating)
             {
                 _eaterBehavior.EndEating(false);
-                DebugUtility.LogVerbose<EaterDetectionController>(
+                DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planet)} deixou o alcance do Eater. Retornando à perseguição.",
                     null,
                     this);
