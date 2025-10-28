@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void HandleTimerStarted(EventTimerStarted evt)
         {
             _configuredDuration = Mathf.Max(evt.Duration, 0f);
-            DebugUtility.Log<TimerDisplay>(
+            DebugUtility.LogVerbose<TimerDisplay>(
                 $"Evento de início recebido: {_configuredDuration:F2}s.",
                 context: this);
             ForceRefresh();
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 if (_lastFormattedValue != formatted)
                 {
                     _lastFormattedValue = formatted;
-                    DebugUtility.Log<TimerDisplay>(
+                    DebugUtility.LogVerbose<TimerDisplay>(
                         $"Display atualizado para {formatted}.",
                         context: this);
                 }

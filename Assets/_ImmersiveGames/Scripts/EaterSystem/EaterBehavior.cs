@@ -223,7 +223,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (changed)
             {
                 DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {GetPlanetName(target)}.", null, this);
-                ForceStateEvaluation();
             }
         }
 
@@ -508,7 +507,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             bool targetChanged = !IsSameActor(previous, current);
-            if (previous != null && targetChanged && _context.IsEating)
+            if (targetChanged && previous != null && _context.IsEating)
             {
                 bool stopped = _context.SetEating(false);
                 if (stopped)
@@ -519,8 +518,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         this);
 
                     _context.Master.OnEventEndEatPlanet(previous);
-                    ForceStateEvaluation();
                 }
+            }
+
+            if (targetChanged)
+            {
+                ForceStateEvaluation();
             }
 
             EventTargetChanged?.Invoke(current);
@@ -590,7 +593,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 if (_context.ClearTarget())
                 {
                     DebugUtility.LogVerbose<EaterBehavior>("Planeta marcado removido. Alvo do Eater limpo.", null, this);
-                    ForceStateEvaluation();
                 }
                 return;
             }
@@ -611,7 +613,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             DebugUtility.LogVerbose<EaterBehavior>($"Planeta marcado definido como alvo: {GetPlanetName(newTarget)}.", null, this);
-            ForceStateEvaluation();
         }
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
@@ -642,7 +643,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 string planetName = GetPlanetName(currentTarget);
                 DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {planetName}.", null, this);
-                ForceStateEvaluation();
             }
         }
 
@@ -668,7 +668,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 string planetName = GetPlanetName(currentTarget);
                 DebugUtility.LogVerbose<EaterBehavior>($"Planeta alvo destruído removido: {planetName}.", null, this);
-                ForceStateEvaluation();
             }
         }
 

@@ -17,8 +17,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   radius: 18
-  minFrequency: 0.2
-  maxFrequency: 0.5
+  minFrequency: 0.05
+  maxFrequency: 0.2
   debugMode: 1
   detectionMode: 0
   coneAngle: 360

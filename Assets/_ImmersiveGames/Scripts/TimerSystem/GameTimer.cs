@@ -18,7 +18,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
     /// para outros sistemas.
     /// </summary>
     [DefaultExecutionOrder(-90)]
-    [DebugLevel(DebugLevel.Logs)]
     public sealed class GameTimer : Singleton<GameTimer>
     {
         private CountdownTimer _timer;
@@ -323,7 +322,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
 
             _lastLoggedSecond = second;
-            DebugUtility.Log<GameTimer>($"Tempo restante: {Mathf.Max(second, 0)}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Tempo restante: {Mathf.Max(second, 0)}s.", context: this);
         }
 
         private void TryStartWhenPlaying()
