@@ -25,6 +25,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         private PlanetsMaster _activeProximityPlanet;
         private bool _isProximitySensorEnabled;
         private bool _proximitySensorWarningLogged;
+        private PlanetMotion _pausedOrbitMotion;
+        private PlanetsMaster _pausedOrbitPlanet;
+        private bool _pausedOrbitByEater;
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
@@ -234,6 +237,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 _isProximitySensorEnabled = false;
                 if (!enable)
                 {
+                    ReleaseProximityPlanet();
                     ClearProximityTracking();
                 }
                 return;
@@ -249,6 +253,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             if (!enable)
             {
+                ReleaseProximityPlanet();
                 ClearProximityTracking();
                 DebugUtility.LogVerbose<EaterDetectionController>(
                     "Sensor de proximidade do Eater desativado.",
@@ -270,6 +275,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void HandleEaterTargetChanged(PlanetsMaster _)
         {
+            ReleaseProximityPlanet();
             ClearProximityTracking();
             UpdateProximitySensorState();
         }
@@ -278,6 +284,113 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
+        }
+
+        private void ReleaseProximityPlanet(PlanetsMaster planet = null)
+        {
+            PlanetsMaster trackedPlanet = _activeProximityPlanet ?? planet;
+            if (trackedPlanet != null)
+            {
+                _eaterBehavior?.NotifyTargetProximityExited(trackedPlanet);
+            }
+
+            ResumeOrbitForPlanet(trackedPlanet);
+        }
+
+        private void PausePlanetOrbit(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            if (_pausedOrbitMotion != null)
+            {
+                if (IsSamePlanet(_pausedOrbitPlanet, planet))
+                {
+                    return;
+                }
+
+                ResumeOrbitForPlanet(null);
+            }
+
+            if (!TryResolvePlanetMotion(planet, out PlanetMotion motion))
+            {
+                return;
+            }
+
+            bool wasPaused = motion.IsOrbitPaused;
+            if (!wasPaused)
+            {
+                motion.SetOrbitPaused(true);
+                DebugUtility.LogVerbose<EaterDetectionController>(
+                    $"Órbita do planeta {GetPlanetName(planet)} pausada pelo Eater.",
+                    DebugUtility.Colors.CrucialInfo,
+                    this);
+            }
+
+            _pausedOrbitMotion = motion;
+            _pausedOrbitPlanet = planet;
+            _pausedOrbitByEater = !wasPaused;
+        }
+
+        private void ResumeOrbitForPlanet(PlanetsMaster planet)
+        {
+            if (_pausedOrbitMotion == null)
+            {
+                _pausedOrbitPlanet = null;
+                _pausedOrbitByEater = false;
+                return;
+            }
+
+            if (planet != null && !IsSamePlanet(_pausedOrbitPlanet, planet))
+            {
+                return;
+            }
+
+            if (_pausedOrbitByEater && _pausedOrbitMotion.IsOrbitPaused)
+            {
+                _pausedOrbitMotion.SetOrbitPaused(false);
+                DebugUtility.LogVerbose<EaterDetectionController>(
+                    $"Órbita do planeta {GetPlanetName(_pausedOrbitPlanet)} retomada pelo Eater.",
+                    null,
+                    this);
+            }
+
+            _pausedOrbitMotion = null;
+            _pausedOrbitPlanet = null;
+            _pausedOrbitByEater = false;
+        }
+
+        private bool TryResolvePlanetMotion(PlanetsMaster planet, out PlanetMotion motion)
+        {
+            motion = null;
+            if (planet == null)
+            {
+                return false;
+            }
+
+            if (planet.TryGetComponent(out motion) && motion != null)
+            {
+                return true;
+            }
+
+            motion = planet.GetComponentInChildren<PlanetMotion>(includeInactive: true);
+            if (motion != null)
+            {
+                return true;
+            }
+
+            motion = planet.GetComponentInParent<PlanetMotion>();
+            if (motion != null)
+            {
+                return true;
+            }
+
+            DebugUtility.LogWarning<EaterDetectionController>(
+                $"Planeta {GetPlanetName(planet)} não possui PlanetMotion para pausar a órbita.",
+                this);
+            return false;
         }
 
         private void HandlePlanetDefenseDetection(IDetectable detectable)
@@ -360,6 +473,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             _activeProximityDetectable = detectable;
             _activeProximityPlanet = planetMaster;
 
+            PausePlanetOrbit(planetMaster);
+            _eaterBehavior?.NotifyTargetProximityEntered(planetMaster);
+
             if (_eaterBehavior != null && !_eaterBehavior.IsEating)
             {
                 _eaterBehavior.BeginEating();
@@ -393,6 +509,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void FinalizeProximityLoss(PlanetsMaster planet)
         {
+            ReleaseProximityPlanet(planet);
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
 
@@ -409,6 +526,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         protected override void OnCacheCleared()
         {
             _activeDefenseDetections.Clear();
+            ReleaseProximityPlanet();
             ClearProximityTracking();
             _isProximitySensorEnabled = false;
             base.OnCacheCleared();

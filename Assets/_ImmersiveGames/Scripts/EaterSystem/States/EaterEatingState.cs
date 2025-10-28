@@ -22,12 +22,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
             _biteTimer = 0f;
             Context.SetEating(true);
+            if (Context.TryGetProximityHoldPosition(out Vector3 holdPosition))
+            {
+                Transform.position = holdPosition;
+            }
+
+            Context.ReportMovementSample(Vector3.zero, 0f);
+            FaceTargetImmediately();
             DebugUtility.LogVerbose<EaterEatingState>("Entrando no estado Comendo.");
         }
 
         public override void Update()
         {
             base.Update();
+
+            MaintainFacingTarget();
 
             _biteTimer += Time.deltaTime;
             if (_biteTimer < BiteInterval)
@@ -39,7 +48,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             PlanetsMaster target = Context.Target;
             if (target != null)
             {
-                Context.Master.OnEventEaterBite(target);
+                if (Context.Master != null)
+                {
+                    Context.Master.OnEventEaterBite(target);
+                }
             }
         }
 
@@ -50,8 +62,44 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             PlanetsMaster target = Context.Target;
             if (changed && target != null)
             {
-                Context.Master.OnEventEndEatPlanet(target);
+                if (Context.Master != null)
+                {
+                    Context.Master.OnEventEndEatPlanet(target);
+                }
             }
+        }
+
+        private void MaintainFacingTarget()
+        {
+            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
+            {
+                return;
+            }
+
+            Vector3 direction = targetPosition - Transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+        }
+
+        private void FaceTargetImmediately()
+        {
+            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
+            {
+                return;
+            }
+
+            Vector3 direction = targetPosition - Transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
     }
 }
