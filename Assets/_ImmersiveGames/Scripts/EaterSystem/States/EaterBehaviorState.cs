@@ -1,28 +1,25 @@
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Classe base para estados da máquina de estados do Eater.
-    /// Fornece operações comuns como controle de tempo, acesso ao contexto e métodos padrão.
+    /// Classe base minimalista para todos os estados do Eater.
+    /// Responsável apenas por registrar logs básicos de entrada e saída.
     /// </summary>
     internal abstract class EaterBehaviorState : IState
     {
-        protected readonly EaterBehaviorContext Context;
-        protected readonly Transform Transform;
-        protected readonly EaterConfigSo Config;
+        protected readonly EaterBehavior Behavior;
+        protected readonly string StateName;
 
-        protected EaterBehaviorState(EaterBehaviorContext context)
+        protected EaterBehaviorState(EaterBehavior behavior, string stateName)
         {
-            Context = context;
-            Transform = context.Transform;
-            Config = context.Config;
+            Behavior = behavior;
+            StateName = stateName;
         }
 
         public virtual void Update()
         {
-            Context.AdvanceStateTimer(Time.deltaTime);
         }
 
         public virtual void FixedUpdate()
@@ -31,11 +28,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
-            Context.ResetStateTimer();
+            DebugUtility.LogVerbose<EaterBehaviorState>($"Entrando no estado {StateName}.");
         }
 
         public virtual void OnExit()
         {
+            DebugUtility.LogVerbose<EaterBehaviorState>($"Saindo do estado {StateName}.");
         }
 
         public virtual bool CanPerformAction(ActionType action)
@@ -46,6 +44,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public virtual bool IsGameActive()
         {
             return true;
+        }
+
+        public override string ToString()
+        {
+            return StateName;
         }
     }
 }
