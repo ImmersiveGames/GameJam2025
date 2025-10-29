@@ -41,7 +41,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public PlanetsMaster CurrentTarget => _currentTarget;
         public bool IsEating => _isEating;
         public bool IsHungry => _isHungry;
-        public bool ShouldEnableProximitySensor => _currentState == _chasingState || _currentState == _eatingState;
 
         private void Awake()
         {
