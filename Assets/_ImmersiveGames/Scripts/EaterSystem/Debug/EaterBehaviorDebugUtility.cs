@@ -1,14 +1,14 @@
 using System.Text;
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.EaterSystem;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 {
     /// <summary>
-    /// Utilitário de debug para acompanhar o fluxo de estados e eventos do Eater em tempo real.
+    /// Utilitário simples de debug para acompanhar o fluxo de estados do Eater.
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior Debug Utility")]
@@ -16,21 +16,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
     public sealed class EaterBehaviorDebugUtility : MonoBehaviour
     {
         [Header("Referências")]
-        [SerializeField, Tooltip("Comportamento principal do Eater que será inspecionado.")]
+        [SerializeField]
         private EaterBehavior behavior;
-        [SerializeField, Tooltip("Master do Eater para capturar eventos de mordida e consumo.")]
+        [SerializeField]
         private EaterMaster master;
 
-        [Header("Opções de Log")]
-        [SerializeField, Tooltip("Escreve uma entrada de log sempre que o estado do comportamento mudar.")]
-        private bool autoLogStateChanges = true;
-        [SerializeField, Tooltip("Gera um snapshot detalhado a cada transição de estado.")]
-        private bool logSnapshotOnChange = true;
-        [SerializeField, Tooltip("Loga eventos de comer, mordidas e consumo emitidos pelo Master.")]
-        private bool logMasterEvents = true;
-
-        private bool _captureNextTransition;
-        private readonly StringBuilder _builder = new StringBuilder(512);
+        private readonly StringBuilder _builder = new StringBuilder(256);
 
         private void Reset()
         {
@@ -62,9 +53,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             {
                 master.EventStartEatPlanet += OnStartEatPlanet;
                 master.EventEndEatPlanet += OnEndEatPlanet;
-                master.EventEaterBite += OnBite;
-                master.EventConsumeResource += OnConsumeResource;
-                master.EventEaterTakeDamage += OnTakeDamage;
             }
         }
 
@@ -79,173 +67,57 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             {
                 master.EventStartEatPlanet -= OnStartEatPlanet;
                 master.EventEndEatPlanet -= OnEndEatPlanet;
-                master.EventEaterBite -= OnBite;
-                master.EventConsumeResource -= OnConsumeResource;
-                master.EventEaterTakeDamage -= OnTakeDamage;
             }
         }
 
         [ContextMenu("Debug/Log Snapshot Atual")]
-        private void ContextLogSnapshot()
-        {
-            LogSnapshot("📸 Snapshot manual do Eater");
-        }
-
-        [ContextMenu("Debug/Capturar Próxima Transição")]
-        private void ContextCaptureNextTransition()
-        {
-            _captureNextTransition = true;
-            DebugUtility.Log<EaterBehaviorDebugUtility>("Próxima transição será registrada com detalhes.", instance: this);
-        }
-
-        private void OnStateChanged(IState previous, IState current)
-        {
-            string from = GetStateName(previous);
-            string to = GetStateName(current);
-
-            if (autoLogStateChanges || _captureNextTransition)
-            {
-                DebugUtility.Log<EaterBehaviorDebugUtility>($"🔄 Estado alterado: {from} → {to}", instance: this);
-            }
-
-            if (logSnapshotOnChange || _captureNextTransition)
-            {
-                LogSnapshot($"📊 Snapshot após transição {from} → {to}");
-            }
-
-            _captureNextTransition = false;
-        }
-
-        private void OnStartEatPlanet(PlanetsMaster target)
-        {
-            if (!logMasterEvents)
-            {
-                return;
-            }
-
-            DebugUtility.Log<EaterBehaviorDebugUtility>($"🍽️ Início do consumo: {DescribeTarget(target)}", instance: this);
-        }
-
-        private void OnEndEatPlanet(PlanetsMaster target)
-        {
-            if (!logMasterEvents)
-            {
-                return;
-            }
-
-            DebugUtility.Log<EaterBehaviorDebugUtility>($"✅ Consumo finalizado: {DescribeTarget(target)}", instance: this);
-        }
-
-        private void OnBite(PlanetsMaster target)
-        {
-            if (!logMasterEvents)
-            {
-                return;
-            }
-
-            DebugUtility.Log<EaterBehaviorDebugUtility>($"🦷 Mordida aplicada em: {DescribeTarget(target)}", instance: this);
-        }
-
-        private void OnConsumeResource(PlanetsMaster target, bool satisfied, IActor byActor)
-        {
-            if (!logMasterEvents)
-            {
-                return;
-            }
-
-            string source = byActor?.ActorName ?? "Desconhecido";
-            DebugUtility.Log<EaterBehaviorDebugUtility>($"🍽️ Consumiu recurso de {DescribeTarget(target)} | Satisfeito: {satisfied} | Fonte: {source}", instance: this);
-        }
-
-        private void OnTakeDamage(IActor byActor)
-        {
-            if (!logMasterEvents)
-            {
-                return;
-            }
-
-            string attacker = byActor?.ActorName ?? "Desconhecido";
-            DebugUtility.Log<EaterBehaviorDebugUtility>($"⚠️ Eater recebeu dano de {attacker}", instance: this);
-        }
-
-        private void LogSnapshot(string title)
+        private void LogSnapshot()
         {
             if (behavior == null)
             {
-                DebugUtility.LogWarning<EaterBehaviorDebugUtility>("Nenhum EaterBehavior configurado para debug.", this);
+                DebugUtility.LogWarning<EaterBehaviorDebugUtility>("Nenhum EaterBehavior configurado.", this);
                 return;
             }
 
-            EaterBehaviorDebugSnapshot snapshot = behavior.CreateDebugSnapshot();
+            var snapshot = behavior.CreateDebugSnapshot();
             if (!snapshot.IsValid)
             {
-                DebugUtility.LogWarning<EaterBehaviorDebugUtility>("StateMachine do Eater ainda não está pronta para snapshot.", this);
+                DebugUtility.LogWarning<EaterBehaviorDebugUtility>("Snapshot inválido.", this);
                 return;
             }
 
             _builder.Clear();
-            _builder.AppendLine(title);
+            _builder.AppendLine("📸 Snapshot do Eater");
             _builder.AppendLine($"- Estado atual: {snapshot.CurrentState}");
             _builder.AppendLine($"- Fome: {snapshot.IsHungry}, Comendo: {snapshot.IsEating}");
             _builder.AppendLine($"- Alvo: {(snapshot.HasTarget ? snapshot.TargetName : "Nenhum")}");
-            _builder.AppendLine($"- Timer do estado: {snapshot.StateTimer:F2}s");
-
-            if (snapshot.HasWanderingTimer)
+            _builder.AppendLine($"- Contato de proximidade: {snapshot.HasProximityContact}");
+            if (snapshot.HasProximityContact)
             {
-                _builder.AppendLine($"- Timer de vagar: running={snapshot.WanderingTimerRunning}, finalizado={snapshot.WanderingTimerFinished}, valor={snapshot.WanderingTimerValue:F2}s/{snapshot.WanderingDuration:F2}s");
+                _builder.AppendLine($"- Último ponto de contato: {snapshot.LastProximityPoint}");
             }
-
-            if (snapshot.HasPlayerAnchor)
-            {
-                _builder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
-            }
-
-            if (snapshot.HasAutoFlow)
-            {
-                _builder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
-            }
-
-            if (snapshot.HasMovementSample)
-            {
-                _builder.AppendLine($"- Movimento: direção={snapshot.MovementDirection}, velocidade={snapshot.MovementSpeed:F2}");
-            }
-
-            if (snapshot.HasHungryMetrics)
-            {
-                _builder.AppendLine($"- Métricas de fome: distânciaJogadores={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2}");
-            }
-
-            if (snapshot.DesiresActive)
-            {
-                string desireInfo = snapshot.HasCurrentDesire
-                    ? $"{snapshot.CurrentDesireName} (disp={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s/{snapshot.CurrentDesireDuration:F2}s)"
-                    : "Aguardando sorteio";
-                _builder.AppendLine($"- Desejos: ativo=True, atual={desireInfo}");
-            }
-            else
-            {
-                _builder.AppendLine("- Desejos: ativo=False");
-            }
-
-            _builder.AppendLine($"- Posição atual: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);
         }
 
-        private static string DescribeTarget(PlanetsMaster target)
+        private void OnStateChanged(IState previous, IState current)
         {
-            if (target == null)
-            {
-                return "Sem alvo";
-            }
-
-            string actorName = target.ActorName;
-            return string.IsNullOrEmpty(actorName) ? target.name : actorName;
+            DebugUtility.Log<EaterBehaviorDebugUtility>($"🔄 Estado alterado: {previous} → {current}", instance: this);
         }
 
-        private static string GetStateName(IState state)
+        private void OnStartEatPlanet(PlanetsMaster planet)
         {
-            return state?.GetType().Name ?? "None";
+            DebugUtility.Log<EaterBehaviorDebugUtility>($"🍽️ Início do consumo: {DescribeTarget(planet)}", instance: this);
+        }
+
+        private void OnEndEatPlanet(PlanetsMaster planet)
+        {
+            DebugUtility.Log<EaterBehaviorDebugUtility>($"✅ Fim do consumo: {DescribeTarget(planet)}", instance: this);
+        }
+
+        private static string DescribeTarget(PlanetsMaster planet)
+        {
+            return planet != null ? planet.name : "Desconhecido";
         }
     }
 }

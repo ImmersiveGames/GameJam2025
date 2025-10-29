@@ -212,8 +212,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void UpdateProximitySensorState()
         {
-            string context = BuildProximitySensorContext("Avaliação automática");
-            SetProximitySensorEnabled(ShouldEnableProximitySensor(), context);
+            UpdateProximitySensorState("Avaliação automática");
         }
 
         private void SetProximitySensorEnabled(bool enable, string reason = null)
@@ -284,7 +283,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         private void HandleEaterStateChanged(IState previous, IState current)
         {
             string reason = $"Mudança de estado: {GetStateName(current)}";
-            SetProximitySensorEnabled(ShouldEnableProximitySensor(current), BuildProximitySensorContext(reason));
+            SetProximitySensorEnabled(ShouldEnableProximitySensor(), BuildProximitySensorContext(reason));
             if (_isProximitySensorEnabled)
             {
                 ReevaluateProximityDetections("Reavaliação após mudança de estado");
@@ -600,7 +599,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             string targetName = GetPlanetName(_eaterBehavior.CurrentTarget);
 
-            return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}";
+            bool shouldEnable = _eaterBehavior.ShouldEnableProximitySensor;
+            return $"{origin}: State={stateName}, Target={targetName}, IsEating={_eaterBehavior.IsEating}, ShouldEnable={shouldEnable}";
         }
 
         private void UpdateProximitySensorState(string origin)
@@ -611,12 +611,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private bool ShouldEnableProximitySensor()
         {
-            return ShouldEnableProximitySensor(_eaterBehavior?.CurrentState);
-        }
-
-        private bool ShouldEnableProximitySensor(IState state)
-        {
-            return state is EaterChasingState || state is EaterEatingState;
+            return _eaterBehavior != null && _eaterBehavior.ShouldEnableProximitySensor;
         }
 
         private static string GetStateName(IState state)

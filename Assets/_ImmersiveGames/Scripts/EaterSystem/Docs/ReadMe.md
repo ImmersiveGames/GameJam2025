@@ -1,23 +1,34 @@
-# Eater System – Fluxo de Estados
+# Eater System – Fluxo Simplificado
 
-Visão geral das regras de transição do `EaterBehavior` após a integração com o serviço de desejos, o `ResourceSystem` e o áudio de feedback. Use esta referência rápida para validar comportamentos em jogo ou durante depurações.
+A implementação atual do `EaterBehavior` foi reiniciada para servir como base de trabalho. O controle
+agora consiste apenas em uma máquina de estados mínima com cinco estados e sem integrações extras.
 
-| Estado | Entradas | Saídas | Observações |
-| --- | --- | --- | --- |
-| Vagando (`EaterWanderingState`) | • Estado inicial da máquina.<br>• Sempre que `IsHungry` for definido como `false` e `IsEating` estiver `false` (retorno de Fome, Perseguindo ou Comendo).<br>• Transições manuais via menu de contexto. | • Quando o temporizador de vagar expira o contexto marca `IsHungry = true`, levando ao estado **Com Fome**.<br>• Se `IsEating` for ativado (ex.: testes), muda diretamente para **Comendo**. | Reinicia o temporizador de vagar, interrompe AutoFlow e desejos e limita o deslocamento para manter o Eater próximo ao ponto médio dos jogadores. |
-| Com Fome (`EaterHungryState`) | • Ativado quando `IsHungry = true` e `IsEating = false` (normalmente após o estado Vagando expirar).<br>• Retorno de **Perseguindo** quando o alvo é perdido mas a fome continua ativa. | • `IsHungry` volta para `false` (recurso de saciedade cheio via evento do `ResourceSystem`) → **Vagando**.<br>• `ShouldChase` (`IsHungry` + alvo válido) → **Perseguindo**.<br>• `ShouldEat` (`IsEating` + alvo válido) → **Comendo**. | Reativa AutoFlow e desejos, registrando métricas de alinhamento com os jogadores para debug e disparando áudio/UI quando um desejo válido é sorteado. |
-| Perseguindo (`EaterChasingState`) | • `ShouldChase = true` (Eater com fome, alvo marcado pelo `PlanetsManager` e não está comendo).<br>• Transições manuais via menu de contexto. | • `LostTargetWhileHungry` (perdeu o planeta marcado) → **Com Fome**.<br>• `IsHungry` encerra (`false`) e não está comendo → **Vagando**.<br>• `ShouldEat = true` (normalmente após `PlanetProximityDetector` detectar o alvo atual) → **Comendo**. | Atualiza rotação e posição em direção ao planeta marcado, mantém o alvo via `PlanetsManager`, ativa o sensor de proximidade via `EaterDetectionController` e delega a ele o disparo de `BeginEating` quando o planeta entra no raio configurado. |
-| Comendo (`EaterEatingState`) | • `ShouldEat = true` (Eater está comendo e possui alvo).<br>• Tipicamente ocorre quando o `PlanetProximityDetector` detecta o planeta perseguido enquanto estava em **Perseguindo**, mas pode ser forçado via menu ou vir de **Com Fome**. | • `IsHungry` permanece `true` porém `IsEating` retorna `false` → **Com Fome**.<br>• `IsHungry` torna-se `false` e `IsEating` volta `false` → **Vagando**.<br>• Saída de detecção do `PlanetProximityDetector` para o alvo atual faz o `EaterDetectionController` chamar `EndEating(false)` → **Perseguindo** (mantendo a fome ativa). | Aplica mordidas periódicas no planeta, mantém o sensor de proximidade ativo para validar o alcance, pausa AutoFlow automaticamente ao sair da fome e emite `OnEventEndEatPlanet` ao concluir ou ao perder o alvo. |
+## Estados Disponíveis
 
-## Eventos externos relevantes
+| Estado | Descrição |
+| --- | --- |
+| `EaterIdleState` | Estado inicial utilizado durante a configuração do componente. |
+| `EaterWanderingState` | Eater livre, sem alvo definido e sem fome. |
+| `EaterHungryState` | Eater com fome, aguardando um alvo para perseguir. |
+| `EaterChasingState` | Eater perseguindo o planeta definido como alvo atual. |
+| `EaterEatingState` | Eater consumindo o planeta que está em contato de proximidade. |
 
-- **Recurso de saciedade cheio**: evento do `ResourceSystem` observado pelo `EaterBehavior` define `IsHungry = false`, levando o estado para **Vagando** se não estiver comendo.
-- **Planeta marcado**: eventos de marcação (`PlanetMarkingChangedEvent`, `PlanetUnmarkedEvent`, `PlanetDestroyedEvent`) resolvem o alvo via `PlanetsManager`, habilitando ou cancelando o estado **Perseguindo**.
-- **Menus de contexto**: os comandos no `EaterBehavior` permitem testar cada estado manualmente, ajustando os flags de fome, alvo e consumo conforme necessário.
+A seleção do estado é determinada apenas por três informações internas:
 
-## Integrações auxiliares
+- Flag de fome (`IsHungry`).
+- Presença de alvo (`CurrentTarget`).
+- Flag de consumo (`IsEating`).
 
-- **ResourceSystem**: o `EaterBehaviorContext` pausa o `ResourceAutoFlowBridge` sempre que o Eater não está com fome e retoma automaticamente ao entrar em fome. Alterações externas em recursos (via `ResourceChanging`/`ResourceChanged`) também interrompem o AutoFlow globalmente até que os ajustes terminem.
-- **Serviço de desejos**: `EaterDesireService` seleciona `PlanetResources` válidos com peso para planetas ativos, emitindo `EventDesireChanged`. A UI (`EaterDesireUI`) e o áudio usam esse evento para atualizar ícone e tocar o som configurado.
-- **AudioSystem**: ao sortear um novo desejo disponível, o `EaterBehavior` garante que o `EntityAudioEmitter` reproduza o `SoundData` configurado (`DesireSelectedSound`).
-- **Ferramentas de debug**: `EaterBehaviorDebugUtility` e `EntityDebugUtility` expõem menus de contexto para mudar estados, preencher recursos (pausando AutoFlow durante o ajuste) e capturar snapshots de métricas de movimento/fome.
+Não há mais dependências com sistemas de desejos, recursos ou timers. O comportamento também não
+possui lógica de movimentação, deixando claro onde novas regras deverão ser adicionadas.
+
+## API Pública Essencial
+
+- `SetHungry(bool)` altera a flag de fome e reavalia o estado.
+- `SetTarget(PlanetsMaster)` define o alvo atual e dispara `EventTargetChanged`.
+- `BeginEating()` e `EndEating(bool)` controlam a flag de consumo e publicam eventos no `EaterMaster`.
+- `RegisterProximityContact(...)` e `ClearProximityContact(...)` habilitam o estado de comer quando o
+  planeta alvo entra ou sai do alcance.
+- `EventStateChanged` informa transições para outros componentes (ex.: sensores).
+
+Essa versão serve de ponto de partida limpo para reconstruir a lógica desejada em etapas futuras.
