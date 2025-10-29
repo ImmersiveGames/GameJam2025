@@ -28,12 +28,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
-            DebugUtility.LogVerbose<EaterBehaviorState>($"Entrando no estado {StateName}.");
+            DebugUtility.Log<EaterBehaviorState>(
+                $"[{GetBehaviorName()}] Entrando no estado {StateName}.",
+                context: Behavior);
         }
 
         public virtual void OnExit()
         {
-            DebugUtility.LogVerbose<EaterBehaviorState>($"Saindo do estado {StateName}.");
+            DebugUtility.Log<EaterBehaviorState>(
+                $"[{GetBehaviorName()}] Saindo do estado {StateName}.",
+                context: Behavior);
         }
 
         public virtual bool CanPerformAction(ActionType action)
@@ -49,6 +53,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override string ToString()
         {
             return StateName;
+        }
+
+        private string GetBehaviorName()
+        {
+            return Behavior != null ? Behavior.name : "Eater";
         }
     }
 }

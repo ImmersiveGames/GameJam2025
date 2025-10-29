@@ -318,5 +318,75 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             return planet != null ? planet.name : "Nenhum";
         }
+
+#if UNITY_EDITOR
+        [ContextMenu("Debug/Forçar estado/Idle")]
+        private void DebugForceIdleState()
+        {
+            ForceDebugState(_idleState, "Idle", requiresTarget: false, markHungry: false, markEating: false);
+        }
+
+        [ContextMenu("Debug/Forçar estado/Wandering")]
+        private void DebugForceWanderingState()
+        {
+            ForceDebugState(_wanderingState, "Wandering", requiresTarget: false, markHungry: false, markEating: false);
+        }
+
+        [ContextMenu("Debug/Forçar estado/Hungry")]
+        private void DebugForceHungryState()
+        {
+            ForceDebugState(_hungryState, "Hungry", requiresTarget: false, markHungry: true, markEating: false);
+        }
+
+        [ContextMenu("Debug/Forçar estado/Chasing")]
+        private void DebugForceChasingState()
+        {
+            ForceDebugState(_chasingState, "Chasing", requiresTarget: true, markHungry: true, markEating: false);
+        }
+
+        [ContextMenu("Debug/Forçar estado/Eating")]
+        private void DebugForceEatingState()
+        {
+            ForceDebugState(_eatingState, "Eating", requiresTarget: true, markHungry: true, markEating: true);
+        }
+
+        private void ForceDebugState(IState desiredState, string label, bool requiresTarget, bool markHungry, bool markEating)
+        {
+            if (desiredState == null)
+            {
+                DebugUtility.LogWarning<EaterBehavior>($"Estado {label} indisponível para debug.", this);
+                return;
+            }
+
+            if (requiresTarget && _currentTarget == null)
+            {
+                DebugUtility.LogWarning<EaterBehavior>($"Estado {label} exige um planeta alvo configurado antes do teste.", this);
+                return;
+            }
+
+            _isHungry = markHungry;
+            _isEating = markEating;
+
+            if (_master != null)
+            {
+                _master.InHungry = _isHungry;
+                _master.IsEating = _isEating;
+            }
+
+            if (!markEating)
+            {
+                _lastProximityPoint = Vector3.zero;
+                _hasProximityContact = false;
+            }
+            else
+            {
+                _hasProximityContact = true;
+                _lastProximityPoint = transform.position;
+            }
+
+            ChangeState(desiredState, $"Menu de contexto ({label})");
+            DebugUtility.Log<EaterBehavior>($"Estado {label} forçado via menu de contexto.", context: this);
+        }
+#endif
     }
 }
