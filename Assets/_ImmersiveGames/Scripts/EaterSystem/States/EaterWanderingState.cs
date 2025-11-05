@@ -43,15 +43,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (Context.TryGetPlayerAnchor(out Vector3 anchor))
             {
                 float maxDistance = Mathf.Max(Config.WanderingMaxDistanceFromPlayer, 0f);
-                if (maxDistance > 0f)
-                {
-                    Vector3 offset = Transform.position - anchor;
-                    float maxDistanceSqr = maxDistance * maxDistance;
-                    if (offset.sqrMagnitude > maxDistanceSqr)
-                    {
-                        Transform.position = anchor + offset.normalized * maxDistance;
-                    }
-                }
+                MaintainMaxDistanceFromPlayer(anchor, maxDistance);
             }
         }
 
@@ -75,10 +67,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             Vector3 toAnchor = anchor - Transform.position;
+            toAnchor.y = 0f;
             float distance = toAnchor.magnitude;
             if (distance > maxDistance)
             {
-                return toAnchor.normalized;
+                return toAnchor.sqrMagnitude > 0f ? toAnchor.normalized : randomDirection;
             }
 
             if (distance <= Mathf.Epsilon)
@@ -94,6 +87,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             Vector3 blendedDirection = Vector3.Slerp(randomDirection, toAnchor.normalized, bias);
             return blendedDirection.normalized;
+        }
+
+        private void MaintainMaxDistanceFromPlayer(Vector3 anchor, float maxDistance)
+        {
+            if (maxDistance <= 0f)
+            {
+                return;
+            }
+
+            Vector3 currentPosition = Transform.position;
+            Vector3 offset = currentPosition - anchor;
+            offset.y = 0f;
+
+            float maxDistanceSqr = maxDistance * maxDistance;
+            if (offset.sqrMagnitude <= maxDistanceSqr)
+            {
+                return;
+            }
+
+            Vector3 clampedOffset = offset.sqrMagnitude > 0f ? offset.normalized * maxDistance : Vector3.forward * maxDistance;
+            Vector3 clampedPosition = new Vector3(anchor.x + clampedOffset.x, currentPosition.y, anchor.z + clampedOffset.z);
+            Transform.position = clampedPosition;
         }
     }
 }
