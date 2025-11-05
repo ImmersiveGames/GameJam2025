@@ -1,4 +1,6 @@
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.EaterSystem;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
@@ -7,6 +9,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal abstract class EaterBehaviorState : IState
     {
+        protected EaterBehaviorState(string stateName)
+        {
+            StateName = stateName;
+        }
+
+        public string StateName { get; }
+
+        public EaterBehavior Behavior { get; private set; }
+
+        internal void Attach(EaterBehavior behavior)
+        {
+            Behavior = behavior;
+        }
+
         public virtual void Update()
         {
         }
@@ -17,13 +33,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
+            LogStateEvent("Entrou");
         }
 
         public virtual void OnExit()
         {
-            DebugUtility.Log<EaterBehaviorState>(
-                $"[{GetBehaviorName()}] Saindo do estado {StateName}.",
-                context: Behavior);
+            LogStateEvent("Saiu");
         }
 
         public virtual bool CanPerformAction(ActionType action)
@@ -36,14 +51,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
-        public override string ToString()
+        protected void LogStateEvent(string description)
         {
-            return StateName;
-        }
+            if (Behavior == null || !Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
 
-        private string GetBehaviorName()
-        {
-            return Behavior != null ? Behavior.name : "Eater";
+            string message = $"{description} no estado {StateName}.";
+            DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.Info, Behavior, Behavior);
         }
     }
 }
