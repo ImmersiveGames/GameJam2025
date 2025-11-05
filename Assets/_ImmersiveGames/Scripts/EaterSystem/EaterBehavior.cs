@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -194,7 +195,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (logStateTransitions)
             {
-                Debug.Log($"[EaterBehavior] Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).", this);
+                string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
+                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             EventStateChanged?.Invoke(previous, targetState);
