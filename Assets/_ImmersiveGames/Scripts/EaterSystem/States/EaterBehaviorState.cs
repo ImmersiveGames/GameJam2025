@@ -1,4 +1,6 @@
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.EaterSystem;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
@@ -7,6 +9,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal abstract class EaterBehaviorState : IState
     {
+        protected EaterBehaviorState(string stateName)
+        {
+            StateName = stateName;
+        }
+
+        public string StateName { get; }
+
+        public EaterBehavior Behavior { get; private set; }
+
+        internal void Attach(EaterBehavior behavior)
+        {
+            Behavior = behavior;
+        }
+
         public virtual void Update()
         {
         }
@@ -17,10 +33,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
+            LogStateEvent("Entrou");
         }
 
         public virtual void OnExit()
         {
+            LogStateEvent("Saiu");
         }
 
         public virtual bool CanPerformAction(ActionType action)
@@ -31,6 +49,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public virtual bool IsGameActive()
         {
             return true;
+        }
+
+        protected void LogStateEvent(string description)
+        {
+            if (Behavior == null || !Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            string message = $"{description} no estado {StateName}.";
+            DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.Info, Behavior, Behavior);
         }
     }
 }

@@ -5,5 +5,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterChasingState : EaterBehaviorState
     {
+        public EaterChasingState() : base("Chasing")
+        {
+        }
     }
 }
