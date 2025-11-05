@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float BiteInterval = 1.2f;
         private float _biteTimer;
 
-        public EaterEatingState(EaterBehaviorContext context) : base(context)
+        public EaterEatingState(EaterBehavior behavior) : base(behavior)
         {
         }
 
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
             _biteTimer = 0f;
-            Context.SetEating(true);
+            Behavior?.SetEating(true);
             DebugUtility.LogVerbose<EaterEatingState>("Entrando no estado Comendo.");
         }
 
@@ -36,21 +36,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _biteTimer = 0f;
-            PlanetsMaster target = Context.Target;
+            PlanetsMaster target = Behavior != null ? Behavior.CurrentTarget : null;
             if (target != null)
             {
-                Context.Master.OnEventEaterBite(target);
+                Behavior?.Master.OnEventEaterBite(target);
             }
         }
 
         public override void OnExit()
         {
             DebugUtility.LogVerbose<EaterEatingState>("Saindo do estado Comendo.");
-            bool changed = Context.SetEating(false);
-            PlanetsMaster target = Context.Target;
+            bool changed = Behavior != null && Behavior.SetEating(false);
+            PlanetsMaster target = Behavior != null ? Behavior.CurrentTarget : null;
             if (changed && target != null)
             {
-                Context.Master.OnEventEndEatPlanet(target);
+                Behavior?.Master.OnEventEndEatPlanet(target);
             }
         }
     }

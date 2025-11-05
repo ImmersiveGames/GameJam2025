@@ -12,6 +12,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using ImprovedTimers;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -33,7 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private SoundData desireSelectedSound;
 
         private EaterMaster _master;
-        private EaterBehaviorContext _context;
+        private EaterConfigSo _config;
         private StateMachine _stateMachine;
 
         private IState _wanderingState;
@@ -51,6 +52,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
         private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
         private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
+
+        private Rect _gameArea;
+        private bool _isHungry;
+        private bool _isEating;
+        private PlanetsMaster _targetPlanet;
+        private float _stateTimer;
+        private CountdownTimer _wanderingTimer;
+        private Vector3 _lastKnownPlayerAnchor;
+        private bool _hasCachedPlayerAnchor;
+        private bool _pendingHungryEffects;
+        private ResourceAutoFlowBridge _autoFlowBridge;
+        private EaterDesireService _desireService;
+        private bool _hasMovementSample;
+        private Vector3 _lastMovementDirection;
+        private float _lastMovementSpeed;
+        private bool _hasHungryMetrics;
+        private float _lastAnchorDistance;
+        private float _lastAnchorAlignment;
+        private bool _hasProximityContact;
+        private PlanetsMaster _proximityPlanet;
+        private Vector3 _proximityHoldPosition;
+        private bool _hasProximityHoldPosition;
 
         [Header("Execução")]
         [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
@@ -73,9 +96,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public IState CurrentState => _stateMachine?.CurrentState;
         public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
         public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
-        public PlanetsMaster CurrentTarget => _context?.TargetPlanet;
-        public bool IsEating => _context?.IsEating ?? false;
-        public bool ShouldEnableProximitySensor => _context?.ShouldEnableProximitySensor ?? false;
+        public PlanetsMaster CurrentTarget => _targetPlanet;
+        public bool IsEating => _isEating;
+        public bool ShouldEnableProximitySensor => ShouldChase || ShouldEat;
+        public EaterMaster Master => _master;
+        public EaterConfigSo Config => _config;
+        public Rect GameArea => _gameArea;
+        internal bool IsHungry => _isHungry;
+        internal bool ShouldChase => _isHungry && _targetPlanet != null && !_isEating;
+        internal bool ShouldEat => _isEating && _targetPlanet != null;
+        internal bool LostTargetWhileHungry => _isHungry && _targetPlanet == null && !_isEating;
+        internal bool HasTarget => _targetPlanet != null;
+        internal bool HasWanderingTimer => _wanderingTimer != null;
+        internal bool IsWanderingTimerRunning => _wanderingTimer != null && _wanderingTimer.IsRunning;
 
         private void Awake()
         {
@@ -83,21 +116,32 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _master = GetComponent<EaterMaster>();
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
-            var config = overrideConfig != null ? overrideConfig : _master.Config;
+            _config = overrideConfig != null ? overrideConfig : _master.Config;
 
-            if (config == null)
+            if (_config == null)
             {
                 DebugUtility.LogError<EaterBehavior>("Configuração do Eater não definida.", this);
                 enabled = false;
                 return;
             }
 
-            Rect gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
-            _context = new EaterBehaviorContext(_master, config, gameArea);
-            _currentDesireInfo = _context.CurrentDesireInfo;
-            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
-            _context.EventDesireChanged += HandleContextDesireChanged;
-            _context.EventTargetChanged += HandleContextTargetChanged;
+            _gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
+
+            if (_master.TryGetComponent(out ResourceAutoFlowBridge autoFlowBridge))
+            {
+                _autoFlowBridge = autoFlowBridge;
+            }
+
+            _desireService = new EaterDesireService(_master, _config);
+            _desireService.EventDesireChanged += HandleServiceDesireChanged;
+            _currentDesireInfo = EaterDesireInfo.Inactive;
+
+            if (_config.WanderingDuration > 0f)
+            {
+                _wanderingTimer = new CountdownTimer(_config.WanderingDuration);
+            }
+
+            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : _config?.DesireSelectedSound;
         }
 
         private void OnEnable()
@@ -114,12 +158,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             UnregisterEventListeners();
 
-            if (_context != null)
-            {
-                // Garantir que sistemas dependentes parem quando o comportamento for desativado.
-                _context.EndDesires();
-                _context.PauseAutoFlow();
-            }
+            // Garantir que sistemas dependentes parem quando o comportamento for desativado.
+            EndDesires();
+            PauseAutoFlow();
         }
 
         private void Start()
@@ -136,18 +177,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             UnregisterEventListeners();
 
-            if (_context != null)
-            {
-                // Prevenir atualizações tardias acessando um master destruído.
-                _context.EndDesires();
-                _context.PauseAutoFlow();
-            }
+            // Prevenir atualizações tardias acessando um master destruído.
+            EndDesires();
+            PauseAutoFlow();
 
-            if (_context != null)
+            if (_desireService != null)
             {
-                _context.EventDesireChanged -= HandleContextDesireChanged;
-                _context.EventTargetChanged -= HandleContextTargetChanged;
-                _context.Dispose();
+                _desireService.EventDesireChanged -= HandleServiceDesireChanged;
             }
         }
 
@@ -177,8 +213,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _stateMachine.Update();
             TrackStateChange("Update");
-            _context.UpdateServices();
-            _context.EnsureHungryEffects();
+            UpdateServices();
+            EnsureHungryEffects();
         }
 
         private void FixedUpdate()
@@ -196,12 +232,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void SetHungry(bool isHungry)
         {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetHungry(isHungry);
+            bool changed = SetHungryInternal(isHungry);
             if (changed)
             {
                 DebugUtility.LogVerbose<EaterBehavior>($"Estado de fome atualizado: {isHungry}");
@@ -214,12 +245,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void SetTarget(PlanetsMaster target)
         {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetTarget(target);
+            bool changed = SetTargetInternal(target);
             if (changed)
             {
                 DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {GetPlanetName(target)}.", null, this);
@@ -236,7 +262,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public EaterDesireInfo GetCurrentDesireInfo()
         {
-            return _context != null ? _currentDesireInfo : EaterDesireInfo.Inactive;
+            return _currentDesireInfo;
         }
 
         /// <summary>
@@ -244,27 +270,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void BeginEating()
         {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetEating(true);
+            bool changed = SetEatingInternal(true);
             if (changed)
             {
-                _context.ClearMovementSample();
+                ClearMovementSample();
                 DebugUtility.LogVerbose<EaterBehavior>("Início manual do estado Comendo.");
-                PlanetsMaster target = _context.Target;
+                PlanetsMaster target = _targetPlanet;
                 if (target != null)
                 {
-                    _context.Master.OnEventStartEatPlanet(target);
+                    _master?.OnEventStartEatPlanet(target);
                 }
-                _context.ResetStateTimer();
+                ResetStateTimer();
                 ForceStateEvaluation();
                 return;
             }
 
-            _context.ClearMovementSample();
+            ClearMovementSample();
         }
 
         /// <summary>
@@ -273,13 +294,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
         {
-            if (_context == null || planet == null)
+            if (planet == null)
             {
                 return;
             }
 
-            bool changed = _context.RegisterProximityContact(planet, eaterPosition);
-            if (!_context.IsEating)
+            bool changed = RegisterProximityContactInternal(planet, eaterPosition);
+            if (!_isEating)
             {
                 BeginEating();
                 return;
@@ -287,7 +308,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (changed)
             {
-                _context.ClearMovementSample();
                 ForceStateEvaluation();
             }
         }
@@ -297,15 +317,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void ClearProximityContact(PlanetsMaster planet = null)
         {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool cleared = _context.ClearProximityContact(planet);
+            bool cleared = ClearProximityContactInternal(planet);
             if (cleared)
             {
-                _context.ClearMovementSample();
+                ClearMovementSample();
             }
         }
 
@@ -314,25 +329,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// </summary>
         public void EndEating(bool satiated)
         {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool wasEating = _context.SetEating(false);
+            bool wasEating = SetEatingInternal(false);
             if (wasEating)
             {
                 DebugUtility.LogVerbose<EaterBehavior>("Fim manual do estado Comendo.");
-                PlanetsMaster target = _context.Target;
+                PlanetsMaster target = _targetPlanet;
                 if (target != null)
                 {
-                    _context.Master.OnEventEndEatPlanet(target);
+                    _master?.OnEventEndEatPlanet(target);
                 }
             }
 
             if (satiated)
             {
-                _context.SetHungry(false);
+                SetHungryInternal(false);
             }
 
             ForceStateEvaluation();
@@ -343,20 +353,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var builder = new StateMachineBuilder();
 
             builder
-                .AddState(new EaterWanderingState(_context), out _wanderingState)
-                .AddState(new EaterHungryState(_context), out _hungryState)
-                .AddState(new EaterChasingState(_context), out _chasingState)
-                .AddState(new EaterEatingState(_context), out _eatingState)
-                .At(_wanderingState, _hungryState, new FuncPredicate(() => _context.IsHungry && !_context.IsEating))
-                .At(_wanderingState, _eatingState, new FuncPredicate(() => _context.IsEating))
-                .At(_hungryState, _wanderingState, new FuncPredicate(() => !_context.IsHungry))
-                .At(_hungryState, _chasingState, new FuncPredicate(() => _context.ShouldChase))
-                .At(_hungryState, _eatingState, new FuncPredicate(() => _context.ShouldEat))
-                .At(_chasingState, _hungryState, new FuncPredicate(() => _context.LostTargetWhileHungry))
-                .At(_chasingState, _wanderingState, new FuncPredicate(() => !_context.IsHungry && !_context.IsEating))
-                .At(_chasingState, _eatingState, new FuncPredicate(() => _context.ShouldEat))
-                .At(_eatingState, _hungryState, new FuncPredicate(() => _context.IsHungry && !_context.IsEating))
-                .At(_eatingState, _wanderingState, new FuncPredicate(() => !_context.IsHungry && !_context.IsEating))
+                .AddState(new EaterWanderingState(this), out _wanderingState)
+                .AddState(new EaterHungryState(this), out _hungryState)
+                .AddState(new EaterChasingState(this), out _chasingState)
+                .AddState(new EaterEatingState(this), out _eatingState)
+                .At(_wanderingState, _hungryState, new FuncPredicate(() => _isHungry && !_isEating))
+                .At(_wanderingState, _eatingState, new FuncPredicate(() => _isEating))
+                .At(_hungryState, _wanderingState, new FuncPredicate(() => !_isHungry))
+                .At(_hungryState, _chasingState, new FuncPredicate(() => ShouldChase))
+                .At(_hungryState, _eatingState, new FuncPredicate(() => ShouldEat))
+                .At(_chasingState, _hungryState, new FuncPredicate(() => LostTargetWhileHungry))
+                .At(_chasingState, _wanderingState, new FuncPredicate(() => !_isHungry && !_isEating))
+                .At(_chasingState, _eatingState, new FuncPredicate(() => ShouldEat))
+                .At(_eatingState, _hungryState, new FuncPredicate(() => _isHungry && !_isEating))
+                .At(_eatingState, _wanderingState, new FuncPredicate(() => !_isHungry && !_isEating))
                 .StateInitial(_wanderingState);
 
             _stateMachine = builder.Build();
@@ -392,10 +402,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            _context.SetEating(false);
-            _context.SetHungry(false);
-            _context.ClearTarget();
-            _context.RestartWanderingTimer();
+            SetEatingInternal(false);
+            SetHungryInternal(false);
+            ClearTargetInternal();
+            RestartWanderingTimer();
             ForceSetState(_wanderingState);
         }
 
@@ -407,8 +417,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            _context.SetEating(false);
-            _context.SetHungry(true);
+            SetEatingInternal(false);
+            SetHungryInternal(true);
             ForceSetState(_hungryState);
         }
 
@@ -420,14 +430,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!_context.HasTarget)
+            if (!HasTarget)
             {
                 DebugUtility.LogWarning<EaterBehavior>("Não há alvo configurado para iniciar a perseguição.", this);
                 return;
             }
 
-            _context.SetHungry(true);
-            _context.SetEating(false);
+            SetHungryInternal(true);
+            SetEatingInternal(false);
             ForceSetState(_chasingState);
         }
 
@@ -439,20 +449,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!_context.HasTarget)
+            if (!HasTarget)
             {
                 DebugUtility.LogWarning<EaterBehavior>("Não há alvo configurado para iniciar o consumo.", this);
                 return;
             }
 
-            _context.SetHungry(true);
-            bool startedEating = _context.SetEating(true);
+            SetHungryInternal(true);
+            bool startedEating = SetEatingInternal(true);
             if (startedEating)
             {
-                PlanetsMaster target = _context.Target;
+                PlanetsMaster target = _targetPlanet;
                 if (target != null)
                 {
-                    _context.Master.OnEventStartEatPlanet(target);
+                    _master?.OnEventStartEatPlanet(target);
                 }
             }
 
@@ -461,7 +471,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private bool EnsureStateMachineReady()
         {
-            if (!_stateMachineBuilt || _stateMachine == null || _context == null)
+            if (!_stateMachineBuilt || _stateMachine == null)
             {
                 DebugUtility.LogWarning<EaterBehavior>("StateMachine do Eater ainda não foi inicializada.", this);
                 return false;
@@ -491,42 +501,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             TrackStateChange("ForceSetState");
         }
 
-        private void HandleContextDesireChanged(EaterDesireInfo info)
+        private void HandleServiceDesireChanged(EaterDesireInfo info)
         {
             EaterDesireInfo previousInfo = _currentDesireInfo;
             _currentDesireInfo = info;
             TryPlayDesireSound(previousInfo, info);
             EventDesireChanged?.Invoke(info);
-        }
-
-        private void HandleContextTargetChanged(PlanetsMaster previous, PlanetsMaster current)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool targetChanged = !IsSameActor(previous, current);
-            if (targetChanged && previous != null && _context.IsEating)
-            {
-                bool stopped = _context.SetEating(false);
-                if (stopped)
-                {
-                    DebugUtility.LogVerbose<EaterBehavior>(
-                        $"Alvo atualizado enquanto o Eater comia. Encerrando consumo do planeta {GetPlanetName(previous)}.",
-                        DebugUtility.Colors.Success,
-                        this);
-
-                    _context.Master.OnEventEndEatPlanet(previous);
-                }
-            }
-
-            if (targetChanged)
-            {
-                ForceStateEvaluation();
-            }
-
-            EventTargetChanged?.Invoke(current);
         }
 
         private void RegisterEventListeners()
@@ -582,15 +562,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent evt)
         {
-            if (_context == null)
-            {
-                return;
-            }
-
             IActor newMarked = evt.NewMarkedPlanet;
             if (newMarked == null)
             {
-                if (_context.ClearTarget())
+                if (ClearTargetInternal())
                 {
                     DebugUtility.LogVerbose<EaterBehavior>("Planeta marcado removido. Alvo do Eater limpo.", null, this);
                 }
@@ -606,7 +581,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            bool changed = _context.SetTarget(newTarget);
+            bool changed = SetTargetInternal(newTarget);
             if (!changed)
             {
                 return;
@@ -617,7 +592,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
         {
-            if (_context == null || !_context.HasTarget)
+            if (!HasTarget)
             {
                 return;
             }
@@ -628,7 +603,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            PlanetsMaster currentTarget = _context.TargetPlanet;
+            PlanetsMaster currentTarget = _targetPlanet;
             if (currentTarget == null)
             {
                 return;
@@ -639,7 +614,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (_context.ClearTarget())
+            if (ClearTargetInternal())
             {
                 string planetName = GetPlanetName(currentTarget);
                 DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {planetName}.", null, this);
@@ -648,12 +623,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandlePlanetDestroyed(PlanetDestroyedEvent evt)
         {
-            if (_context == null || !_context.HasTarget || evt?.Detected?.Owner == null)
+            if (!HasTarget || evt?.Detected?.Owner == null)
             {
                 return;
             }
 
-            PlanetsMaster currentTarget = _context.TargetPlanet;
+            PlanetsMaster currentTarget = _targetPlanet;
             if (currentTarget == null)
             {
                 return;
@@ -664,7 +639,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (_context.ClearTarget())
+            if (ClearTargetInternal())
             {
                 string planetName = GetPlanetName(currentTarget);
                 DebugUtility.LogVerbose<EaterBehavior>($"Planeta alvo destruído removido: {planetName}.", null, this);
@@ -673,7 +648,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandleResourceUpdated(ResourceUpdateEvent evt)
         {
-            if (_context == null || evt?.NewValue == null || _master == null)
+            if (evt?.NewValue == null || _master == null)
             {
                 return;
             }
@@ -683,12 +658,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (evt.ResourceType != _context.Config.SatiationResourceType)
+            if (_config == null || evt.ResourceType != _config.SatiationResourceType)
             {
                 return;
             }
 
-            if (!evt.NewValue.IsFull() || !_context.IsHungry)
+            if (!evt.NewValue.IsFull() || !_isHungry)
             {
                 return;
             }
@@ -720,6 +695,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return planet.ActorId == actor.ActorId;
         }
 
+        private static bool IsSamePlanet(PlanetsMaster left, PlanetsMaster right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.ActorId == right.ActorId;
+        }
+
         /// <summary>
         /// Resolve o SoundData utilizado para o áudio de desejos considerando overrides e configuração global.
         /// </summary>
@@ -730,15 +715,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            SoundData configSound = null;
-            if (overrideConfig != null)
+            SoundData configSound = overrideConfig != null ? overrideConfig.DesireSelectedSound : null;
+            if (configSound == null)
             {
-                configSound = overrideConfig.DesireSelectedSound;
-            }
-
-            if (configSound == null && _context != null)
-            {
-                configSound = _context.Config?.DesireSelectedSound;
+                configSound = _config != null ? _config.DesireSelectedSound : null;
             }
 
             _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : configSound;
@@ -823,6 +803,396 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _warnedMissingAudioEmitter = false;
             return true;
+        }
+
+        internal void ResetStateTimer()
+        {
+            _stateTimer = 0f;
+        }
+
+        internal void AdvanceStateTimer(float deltaTime)
+        {
+            _stateTimer += Mathf.Max(deltaTime, 0f);
+        }
+
+        internal bool TryGetTargetPosition(out Vector3 position)
+        {
+            if (_targetPlanet != null)
+            {
+                position = _targetPlanet.transform.position;
+                return true;
+            }
+
+            position = default;
+            return false;
+        }
+
+        internal bool TryGetPlayerAnchor(out Vector3 anchor)
+        {
+            var playerManager = PlayerManager.Instance;
+            if (playerManager != null)
+            {
+                Vector3 accumulator = Vector3.zero;
+                int validPlayers = 0;
+                var players = playerManager.Players;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    Transform player = players[i];
+                    if (player == null)
+                    {
+                        continue;
+                    }
+
+                    accumulator += player.position;
+                    validPlayers++;
+                }
+
+                if (validPlayers > 0)
+                {
+                    anchor = accumulator / validPlayers;
+                    _lastKnownPlayerAnchor = anchor;
+                    _hasCachedPlayerAnchor = true;
+                    return true;
+                }
+            }
+
+            if (_hasCachedPlayerAnchor)
+            {
+                anchor = _lastKnownPlayerAnchor;
+                return true;
+            }
+
+            anchor = transform.position;
+            return false;
+        }
+
+        internal bool TryGetCachedPlayerAnchor(out Vector3 anchor)
+        {
+            if (_hasCachedPlayerAnchor)
+            {
+                anchor = _lastKnownPlayerAnchor;
+                return true;
+            }
+
+            anchor = transform.position;
+            return false;
+        }
+
+        internal void RestartWanderingTimer()
+        {
+            if (_wanderingTimer == null)
+            {
+                return;
+            }
+
+            _wanderingTimer.Stop();
+            _wanderingTimer.Reset(Mathf.Max(_config.WanderingDuration, 0.1f));
+            _wanderingTimer.Start();
+        }
+
+        internal void StopWanderingTimer()
+        {
+            _wanderingTimer?.Stop();
+        }
+
+        internal bool HasWanderingTimerElapsed()
+        {
+            return _wanderingTimer != null && _wanderingTimer.IsFinished;
+        }
+
+        internal float GetWanderingTimerValue()
+        {
+            return _wanderingTimer != null ? _wanderingTimer.CurrentTime : 0f;
+        }
+
+        internal void ReportMovementSample(Vector3 direction, float speed)
+        {
+            _lastMovementDirection = direction;
+            _lastMovementSpeed = speed;
+            _hasMovementSample = direction.sqrMagnitude > 0f || speed > 0f;
+            _hasHungryMetrics = false;
+        }
+
+        internal void ClearMovementSample()
+        {
+            _lastMovementDirection = Vector3.zero;
+            _lastMovementSpeed = 0f;
+            _hasMovementSample = false;
+            _hasHungryMetrics = false;
+        }
+
+        internal void ReportHungryMetrics(float distanceToAnchor, float alignmentWithAnchor)
+        {
+            _lastAnchorDistance = Mathf.Max(distanceToAnchor, 0f);
+            _lastAnchorAlignment = Mathf.Clamp(alignmentWithAnchor, -1f, 1f);
+            _hasHungryMetrics = true;
+        }
+
+        internal bool RegisterProximityContactInternal(PlanetsMaster planet, Vector3 eaterPosition)
+        {
+            if (planet == null)
+            {
+                return false;
+            }
+
+            bool changed = !_hasProximityContact || !IsSamePlanet(_proximityPlanet, planet);
+            _hasProximityContact = true;
+            _proximityPlanet = planet;
+            _proximityHoldPosition = eaterPosition;
+            _hasProximityHoldPosition = true;
+            ClearMovementSample();
+            return changed;
+        }
+
+        internal bool ClearProximityContactInternal(PlanetsMaster planet = null)
+        {
+            if (!_hasProximityContact)
+            {
+                return false;
+            }
+
+            if (planet != null && !IsSamePlanet(_proximityPlanet, planet))
+            {
+                return false;
+            }
+
+            ClearProximityContactState();
+            return true;
+        }
+
+        private void ClearProximityContactState()
+        {
+            _hasProximityContact = false;
+            _proximityPlanet = null;
+            _hasProximityHoldPosition = false;
+        }
+
+        internal bool TryGetProximityHoldPosition(out Vector3 position)
+        {
+            if (_hasProximityHoldPosition)
+            {
+                position = _proximityHoldPosition;
+                return true;
+            }
+
+            position = default;
+            return false;
+        }
+
+        internal bool HasProximityContactForTarget => _hasProximityContact && _proximityPlanet != null && _targetPlanet != null && IsSamePlanet(_proximityPlanet, _targetPlanet);
+        internal bool HasMovementSample => _hasMovementSample;
+        internal Vector3 LastMovementDirection => _lastMovementDirection;
+        internal float LastMovementSpeed => _lastMovementSpeed;
+        internal bool HasHungryMetrics => _hasHungryMetrics;
+        internal float LastAnchorDistance => _lastAnchorDistance;
+        internal float LastAnchorAlignment => _lastAnchorAlignment;
+        internal float StateTimer => _stateTimer;
+        internal bool HasPendingHungryEffects => _pendingHungryEffects;
+        internal bool HasAutoFlowService => _autoFlowBridge != null && _autoFlowBridge.HasAutoFlowService;
+        internal bool IsAutoFlowActive => _autoFlowBridge != null && _autoFlowBridge.IsAutoFlowActive;
+        internal bool AreDesiresActive => _desireService != null && _desireService.IsActive;
+        internal bool HasCurrentDesire => _desireService != null && _desireService.HasActiveDesire;
+        internal PlanetResources? CurrentDesire => _desireService?.CurrentDesire;
+        internal bool CurrentDesireAvailable => _desireService != null && _desireService.CurrentDesireAvailable;
+        internal float CurrentDesireRemainingTime => _desireService != null ? _desireService.CurrentDesireRemainingTime : 0f;
+        internal float CurrentDesireDuration => _desireService != null ? _desireService.CurrentDesireDuration : 0f;
+        internal int CurrentDesireAvailableCount => _desireService != null ? _desireService.CurrentDesireAvailableCount : 0;
+        internal float CurrentDesireWeight => _desireService != null ? _desireService.CurrentDesireWeight : 0f;
+
+        private bool SetHungryInternal(bool value)
+        {
+            if (_isHungry == value)
+            {
+                return false;
+            }
+
+            _isHungry = value;
+            if (_master != null)
+            {
+                _master.InHungry = value;
+            }
+
+            if (value)
+            {
+                bool autoFlowActive = ResumeAutoFlow();
+                BeginDesires();
+                _pendingHungryEffects = _autoFlowBridge != null && !autoFlowActive;
+            }
+            else
+            {
+                PauseAutoFlow();
+                EndDesires();
+                _pendingHungryEffects = false;
+            }
+
+            return true;
+        }
+
+        private bool SetEatingInternal(bool value)
+        {
+            if (_isEating == value)
+            {
+                return false;
+            }
+
+            _isEating = value;
+            if (_master != null)
+            {
+                _master.IsEating = value;
+            }
+
+            if (!value)
+            {
+                ClearProximityContactState();
+            }
+
+            return true;
+        }
+
+        private bool SetTargetInternal(PlanetsMaster target)
+        {
+            PlanetsMaster previous = _targetPlanet;
+            if (previous == target)
+            {
+                return false;
+            }
+
+            bool targetChanged = !IsSameActor(previous, target);
+            _targetPlanet = target;
+
+            if (_hasProximityContact && !HasProximityContactForTarget)
+            {
+                ClearProximityContactState();
+            }
+
+            if (targetChanged && previous != null && _isEating)
+            {
+                bool stopped = SetEatingInternal(false);
+                if (stopped)
+                {
+                    DebugUtility.LogVerbose<EaterBehavior>(
+                        $"Alvo atualizado enquanto o Eater comia. Encerrando consumo do planeta {GetPlanetName(previous)}.",
+                        DebugUtility.Colors.Success,
+                        this);
+
+                    _master?.OnEventEndEatPlanet(previous);
+                }
+            }
+
+            if (targetChanged)
+            {
+                ForceStateEvaluation();
+            }
+
+            EventTargetChanged?.Invoke(_targetPlanet);
+            return true;
+        }
+
+        private bool ClearTargetInternal()
+        {
+            if (_targetPlanet == null)
+            {
+                return false;
+            }
+
+            PlanetsMaster previous = _targetPlanet;
+            _targetPlanet = null;
+            if (_isEating)
+            {
+                bool stopped = SetEatingInternal(false);
+                if (stopped)
+                {
+                    _master?.OnEventEndEatPlanet(previous);
+                }
+            }
+
+            ClearProximityContactState();
+            ForceStateEvaluation();
+            EventTargetChanged?.Invoke(null);
+            return true;
+        }
+
+        private bool ResumeAutoFlow()
+        {
+            if (_autoFlowBridge == null || !_autoFlowBridge.IsInitialized || !_autoFlowBridge.HasAutoFlowService)
+            {
+                return false;
+            }
+
+            bool resumed = _autoFlowBridge.ResumeAutoFlow();
+            if (resumed)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>($"AutoFlow retomado para {_master?.ActorId ?? name}.");
+            }
+
+            return _autoFlowBridge.IsAutoFlowActive;
+        }
+
+        private bool PauseAutoFlow()
+        {
+            if (_autoFlowBridge == null || !_autoFlowBridge.IsInitialized || !_autoFlowBridge.HasAutoFlowService)
+            {
+                return false;
+            }
+
+            bool paused = _autoFlowBridge.PauseAutoFlow();
+            if (paused)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>($"AutoFlow pausado para {_master?.ActorId ?? name}.");
+            }
+
+            return paused;
+        }
+
+        private bool BeginDesires()
+        {
+            if (_desireService == null)
+            {
+                return false;
+            }
+
+            bool started = _desireService.Start();
+            if (started)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>($"Desejos iniciados para {_master?.ActorId ?? name}.");
+            }
+
+            return started;
+        }
+
+        private bool EndDesires()
+        {
+            if (_desireService == null)
+            {
+                return false;
+            }
+
+            bool stopped = _desireService.Stop();
+            if (stopped)
+            {
+                DebugUtility.LogVerbose<EaterBehavior>($"Desejos pausados para {_master?.ActorId ?? name}.");
+            }
+
+            return stopped;
+        }
+
+        private void UpdateServices()
+        {
+            _desireService?.Update();
+        }
+
+        private void EnsureHungryEffects()
+        {
+            if (!_isHungry || !_pendingHungryEffects)
+            {
+                return;
+            }
+
+            bool active = ResumeAutoFlow();
+            if (active)
+            {
+                _pendingHungryEffects = false;
+            }
         }
 
         private void TrackStateChange(string reason)
@@ -919,52 +1289,47 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public EaterBehaviorDebugSnapshot CreateDebugSnapshot()
         {
-            if (_context == null)
-            {
-                return EaterBehaviorDebugSnapshot.Empty;
-            }
-
             Vector3 anchor = default;
-            bool hasAnchor = _context.TryGetCachedPlayerAnchor(out anchor);
-            PlanetsMaster target = _context.Target;
+            bool hasAnchor = TryGetCachedPlayerAnchor(out anchor);
+            PlanetsMaster target = _targetPlanet;
             string targetName = target != null ? GetPlanetName(target) : string.Empty;
 
-            PlanetResources? currentDesire = _context.CurrentDesire;
+            PlanetResources? currentDesire = CurrentDesire;
             string currentDesireName = currentDesire.HasValue ? currentDesire.Value.ToString() : string.Empty;
 
             return new EaterBehaviorDebugSnapshot(
                 true,
                 GetStateName(_stateMachine?.CurrentState),
-                _context.IsHungry,
-                _context.IsEating,
-                _context.HasTarget,
+                _isHungry,
+                _isEating,
+                HasTarget,
                 targetName,
-                _context.StateTimer,
-                _context.HasWanderingTimer,
-                _context.IsWanderingTimerRunning,
-                _context.HasWanderingTimerElapsed(),
-                _context.GetWanderingTimerValue(),
-                _context.Config.WanderingDuration,
-                _context.Transform.position,
+                _stateTimer,
+                HasWanderingTimer,
+                IsWanderingTimerRunning,
+                HasWanderingTimerElapsed(),
+                GetWanderingTimerValue(),
+                _config != null ? _config.WanderingDuration : 0f,
+                transform.position,
                 hasAnchor,
                 anchor,
-                _context.HasAutoFlowService,
-                _context.IsAutoFlowActive,
-                _context.AreDesiresActive,
-                _context.HasPendingHungryEffects,
-                _context.HasMovementSample,
-                _context.LastMovementDirection,
-                _context.LastMovementSpeed,
-                _context.HasHungryMetrics,
-                _context.HasHungryMetrics ? _context.LastAnchorDistance : 0f,
-                _context.HasHungryMetrics ? _context.LastAnchorAlignment : 0f,
-                _context.HasCurrentDesire,
+                HasAutoFlowService,
+                IsAutoFlowActive,
+                AreDesiresActive,
+                _pendingHungryEffects,
+                HasMovementSample,
+                _lastMovementDirection,
+                _lastMovementSpeed,
+                _hasHungryMetrics,
+                _hasHungryMetrics ? _lastAnchorDistance : 0f,
+                _hasHungryMetrics ? _lastAnchorAlignment : 0f,
+                HasCurrentDesire,
                 currentDesireName,
-                _context.CurrentDesireAvailable,
-                _context.CurrentDesireRemainingTime,
-                _context.CurrentDesireDuration,
-                _context.CurrentDesireAvailableCount,
-                _context.CurrentDesireWeight
+                CurrentDesireAvailable,
+                CurrentDesireRemainingTime,
+                CurrentDesireDuration,
+                CurrentDesireAvailableCount,
+                CurrentDesireWeight
             );
         }
 

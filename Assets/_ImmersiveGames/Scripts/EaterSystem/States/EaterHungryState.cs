@@ -9,14 +9,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterHungryState : EaterMovementState
     {
-        public EaterHungryState(EaterBehaviorContext context) : base(context)
+        public EaterHungryState(EaterBehavior behavior) : base(behavior)
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            Context.SetHungry(true);
+            Behavior?.SetHungry(true);
             DebugUtility.LogVerbose<EaterHungryState>("Entrando no estado Com Fome.");
         }
 
@@ -70,9 +70,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             float attraction = Mathf.Clamp01(Config.HungryPlayerAttraction);
             direction = Vector3.Slerp(direction, toAnchor.normalized, attraction);
 
-            if (direction.sqrMagnitude > Mathf.Epsilon)
+            if (direction.sqrMagnitude > Mathf.Epsilon && Behavior != null)
             {
-                Context.ReportHungryMetrics(distance, Vector3.Dot(direction.normalized, toAnchor.normalized));
+                Behavior.ReportHungryMetrics(distance, Vector3.Dot(direction.normalized, toAnchor.normalized));
             }
         }
 

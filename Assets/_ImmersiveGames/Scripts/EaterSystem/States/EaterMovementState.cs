@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _baseSpeed;
         private float _directionTimer;
 
-        protected EaterMovementState(EaterBehaviorContext context) : base(context)
+        protected EaterMovementState(EaterBehavior behavior) : base(behavior)
         {
         }
 
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnExit()
         {
             base.OnExit();
-            Context.ClearMovementSample();
+            Behavior?.ClearMovementSample();
         }
 
         public override void Update()
@@ -83,12 +83,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected bool TryGetPlayerAnchor(out Vector3 anchor)
         {
-            return Context.TryGetPlayerAnchor(out anchor);
+            if (Behavior != null)
+            {
+                return Behavior.TryGetPlayerAnchor(out anchor);
+            }
+
+            anchor = Vector3.zero;
+            return false;
         }
 
         protected Vector3 ClampToGameArea(Vector3 position)
         {
-            Rect area = Context.GameArea;
+            Rect area = Behavior != null ? Behavior.GameArea : new Rect(position.x, position.z, 0f, 0f);
             position.x = Mathf.Clamp(position.x, area.xMin, area.xMax);
             position.z = Mathf.Clamp(position.z, area.yMin, area.yMax);
             return position;
@@ -99,7 +105,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _directionTimer = 0f;
             _baseDirection = ResolveDirection();
             _baseSpeed = ResolveSpeed();
-            Context.ReportMovementSample(_baseDirection, _baseSpeed);
+            Behavior?.ReportMovementSample(_baseDirection, _baseSpeed);
         }
 
         private void RotateTowards(Vector3 direction)

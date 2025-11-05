@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterChasingState : EaterBehaviorState
     {
-        public EaterChasingState(EaterBehaviorContext context) : base(context)
+        public EaterChasingState(EaterBehavior behavior) : base(behavior)
         {
         }
 
@@ -23,24 +23,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            if (Context.HasProximityContactForTarget)
+            if (Behavior != null && Behavior.HasProximityContactForTarget)
             {
-                if (Context.TryGetProximityHoldPosition(out Vector3 holdPosition))
+                if (Behavior.TryGetProximityHoldPosition(out Vector3 holdPosition))
                 {
                     Transform.position = holdPosition;
                 }
 
-                Context.ClearMovementSample();
+                Behavior.ClearMovementSample();
                 return;
             }
 
-            if (Context.ShouldEat)
+            if (Behavior != null && Behavior.ShouldEat)
             {
-                Context.ClearMovementSample();
+                Behavior.ClearMovementSample();
                 return;
             }
 
-            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
+            if (Behavior == null || !Behavior.TryGetTargetPosition(out Vector3 targetPosition))
             {
                 return;
             }
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             direction.Normalize();
 
             float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
-            Context.ReportMovementSample(direction, chaseSpeed);
+            Behavior.ReportMovementSample(direction, chaseSpeed);
 
             Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
             Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);

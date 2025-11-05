@@ -5,24 +5,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
     /// Classe base para estados da máquina de estados do Eater.
-    /// Fornece operações comuns como controle de tempo, acesso ao contexto e métodos padrão.
+    /// Fornece operações comuns como controle de tempo, acesso às dependências principais e métodos padrão.
     /// </summary>
     internal abstract class EaterBehaviorState : IState
     {
-        protected readonly EaterBehaviorContext Context;
+        protected readonly EaterBehavior Behavior;
         protected readonly Transform Transform;
         protected readonly EaterConfigSo Config;
 
-        protected EaterBehaviorState(EaterBehaviorContext context)
+        protected EaterBehaviorState(EaterBehavior behavior)
         {
-            Context = context;
-            Transform = context.Transform;
-            Config = context.Config;
+            Behavior = behavior;
+            Transform = behavior != null ? behavior.transform : null;
+            Config = behavior != null ? behavior.Config : null;
         }
 
         public virtual void Update()
         {
-            Context.AdvanceStateTimer(Time.deltaTime);
+            Behavior?.AdvanceStateTimer(Time.deltaTime);
         }
 
         public virtual void FixedUpdate()
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
-            Context.ResetStateTimer();
+            Behavior?.ResetStateTimer();
         }
 
         public virtual void OnExit()

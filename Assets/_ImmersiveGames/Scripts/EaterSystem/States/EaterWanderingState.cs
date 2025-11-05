@@ -9,21 +9,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterWanderingState : EaterMovementState
     {
-        public EaterWanderingState(EaterBehaviorContext context) : base(context)
+        public EaterWanderingState(EaterBehavior behavior) : base(behavior)
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            Context.SetHungry(false);
-            Context.RestartWanderingTimer();
+            Behavior?.SetHungry(false);
+            Behavior?.RestartWanderingTimer();
             DebugUtility.LogVerbose<EaterWanderingState>("Entrando no estado Vagando.");
         }
 
         public override void OnExit()
         {
-            Context.StopWanderingTimer();
+            Behavior?.StopWanderingTimer();
             DebugUtility.LogVerbose<EaterWanderingState>("Saindo do estado Vagando.");
             base.OnExit();
         }
@@ -32,9 +32,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            if (!Context.IsHungry && Context.HasWanderingTimerElapsed())
+            if (Behavior != null && !Behavior.IsHungry && Behavior.HasWanderingTimerElapsed())
             {
-                bool changed = Context.SetHungry(true);
+                bool changed = Behavior.SetHungry(true);
                 if (changed)
                 {
                     DebugUtility.LogVerbose<EaterWanderingState>("Tempo de vagar finalizado. Eater ficou com fome.");

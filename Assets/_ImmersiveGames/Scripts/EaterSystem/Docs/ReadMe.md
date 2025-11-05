@@ -17,7 +17,7 @@ Visão geral das regras de transição do `EaterBehavior` após a integração c
 
 ## Integrações auxiliares
 
-- **ResourceSystem**: o `EaterBehaviorContext` pausa o `ResourceAutoFlowBridge` sempre que o Eater não está com fome e retoma automaticamente ao entrar em fome. Alterações externas em recursos (via `ResourceChanging`/`ResourceChanged`) também interrompem o AutoFlow globalmente até que os ajustes terminem.
+- **ResourceSystem**: o `EaterBehavior` pausa o `ResourceAutoFlowBridge` sempre que o Eater não está com fome e retoma automaticamente ao entrar em fome. Alterações externas em recursos (via `ResourceChanging`/`ResourceChanged`) também interrompem o AutoFlow globalmente até que os ajustes terminem.
 - **Serviço de desejos**: `EaterDesireService` seleciona `PlanetResources` válidos com peso para planetas ativos, emitindo `EventDesireChanged`. A UI (`EaterDesireUI`) e o áudio usam esse evento para atualizar ícone e tocar o som configurado.
 - **AudioSystem**: ao sortear um novo desejo disponível, o `EaterBehavior` garante que o `EntityAudioEmitter` reproduza o `SoundData` configurado (`DesireSelectedSound`).
 - **Ferramentas de debug**: `EaterBehaviorDebugUtility` e `EntityDebugUtility` expõem menus de contexto para mudar estados, preencher recursos (pausando AutoFlow durante o ajuste) e capturar snapshots de métricas de movimento/fome.
