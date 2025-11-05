@@ -1,92 +1,69 @@
 using System;
-using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>
-    /// Implementação simplificada do comportamento do Eater.
-    /// Mantém apenas uma FSM básica com cinco estados e eventos de transição.
+    /// Controle básico do comportamento do Eater.
+    /// Cria os estados conhecidos e permite alterná-los manualmente via menu de contexto.
     /// </summary>
     [RequireComponent(typeof(EaterMaster))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterBehavior : MonoBehaviour
     {
-        private EaterMaster _master;
-        private IState _currentState;
-        private EaterIdleState _idleState;
-        private EaterWanderingState _wanderingState;
-        private EaterHungryState _hungryState;
-        private EaterChasingState _chasingState;
-        private EaterEatingState _eatingState;
+        [Header("Debug")]
+        [SerializeField, Tooltip("Registra mudanças de estado para depuração básica.")]
+        private bool logStateTransitions = true;
 
-        private bool _isHungry;
-        private bool _isEating;
-        private bool _hasProximityContact;
-        private Vector3 _lastProximityPoint;
+        private StateMachine _stateMachine;
+        private IState _wanderingState;
+        private IState _hungryState;
+        private IState _chasingState;
+        private IState _eatingState;
         private PlanetsMaster _currentTarget;
-        private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private bool _isEating;
+        private readonly EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
 
         public event Action<IState, IState> EventStateChanged;
         public event Action<EaterDesireInfo> EventDesireChanged;
         public event Action<PlanetsMaster> EventTargetChanged;
 
-        public IState CurrentState => _currentState;
-        public string CurrentStateName => _currentState?.ToString() ?? string.Empty;
+        public IState CurrentState => _stateMachine?.CurrentState;
+        public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
+        public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
         public PlanetsMaster CurrentTarget => _currentTarget;
         public bool IsEating => _isEating;
-        public bool IsHungry => _isHungry;
+        public bool ShouldEnableProximitySensor => CurrentState is EaterChasingState || CurrentState is EaterEatingState;
 
         private void Awake()
         {
-            _master = GetComponent<EaterMaster>();
             BuildStates();
-        }
-
-        private void Start()
-        {
-            ChangeState(_idleState, "Inicialização");
-            EventDesireChanged?.Invoke(_currentDesireInfo);
-            EventTargetChanged?.Invoke(_currentTarget);
         }
 
         private void Update()
         {
-            _currentState?.Update();
+            _stateMachine?.Update();
         }
 
         private void FixedUpdate()
         {
-            _currentState?.FixedUpdate();
+            _stateMachine?.FixedUpdate();
         }
 
         /// <summary>
-        /// Atualiza o estado de fome do Eater.
+        /// Mantido por compatibilidade. A lógica será reintroduzida futuramente.
         /// </summary>
         public void SetHungry(bool isHungry)
         {
-            if (_isHungry == isHungry)
-            {
-                return;
-            }
-
-            _isHungry = isHungry;
-            if (_master != null)
-            {
-                _master.InHungry = isHungry;
-            }
-
-            DebugUtility.LogVerbose<EaterBehavior>($"Estado de fome atualizado: {_isHungry}.", null, this);
-            ReevaluateState("Mudança de fome");
         }
 
         /// <summary>
-        /// Define o planeta alvo atual.
+        /// Define o planeta alvo atual do Eater.
         /// </summary>
         public void SetTarget(PlanetsMaster target)
         {
@@ -96,125 +73,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             _currentTarget = target;
-            if (_currentTarget == null)
-            {
-                ClearProximityContact();
-            }
-
             EventTargetChanged?.Invoke(_currentTarget);
-            DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {GetPlanetName(_currentTarget)}.", null, this);
-            ReevaluateState("Mudança de alvo");
         }
 
         /// <summary>
-        /// Remove o alvo atual, caso exista.
+        /// Limpa o planeta alvo atual.
         /// </summary>
         public void ClearTarget()
         {
-            if (_currentTarget == null)
-            {
-                return;
-            }
-
             SetTarget(null);
         }
 
         /// <summary>
-        /// Inicia o processo de comer caso haja um alvo válido.
-        /// </summary>
-        public void BeginEating()
-        {
-            if (_currentTarget == null)
-            {
-                DebugUtility.LogWarning<EaterBehavior>("Tentativa de iniciar consumo sem alvo.", this);
-                return;
-            }
-
-            if (_isEating)
-            {
-                return;
-            }
-
-            _isEating = true;
-            _master.IsEating = true;
-            _master.OnEventStartEatPlanet(_currentTarget);
-            DebugUtility.LogVerbose<EaterBehavior>($"Início do consumo: {GetPlanetName(_currentTarget)}.", null, this);
-            ReevaluateState("Início do consumo");
-        }
-
-        /// <summary>
-        /// Finaliza o processo de comer.
-        /// </summary>
-        public void EndEating(bool satisfied)
-        {
-            if (!_isEating)
-            {
-                return;
-            }
-
-            _isEating = false;
-            _master.IsEating = false;
-            _master.OnEventEndEatPlanet(_currentTarget);
-            DebugUtility.LogVerbose<EaterBehavior>($"Fim do consumo (satisfeito={satisfied}).", null, this);
-            ReevaluateState("Fim do consumo");
-        }
-
-        /// <summary>
-        /// Informa que o planeta alvo está no alcance de proximidade.
-        /// </summary>
-        public void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
-        {
-            if (planet == null)
-            {
-                return;
-            }
-
-            if (_currentTarget != null && planet != _currentTarget)
-            {
-                return;
-            }
-
-            _hasProximityContact = true;
-            _lastProximityPoint = eaterPosition;
-            DebugUtility.LogVerbose<EaterBehavior>($"Contato de proximidade registrado em {eaterPosition}.", null, this);
-            BeginEating();
-        }
-
-        /// <summary>
-        /// Cancela o contato de proximidade atualmente registrado.
-        /// </summary>
-        public void ClearProximityContact(PlanetsMaster planet = null)
-        {
-            if (planet != null && planet != _currentTarget)
-            {
-                return;
-            }
-
-            if (!_hasProximityContact)
-            {
-                return;
-            }
-
-            _hasProximityContact = false;
-            _lastProximityPoint = Vector3.zero;
-            DebugUtility.LogVerbose<EaterBehavior>("Contato de proximidade limpo.", null, this);
-
-            if (_isEating)
-            {
-                EndEating(false);
-            }
-        }
-
-        /// <summary>
-        /// Reexecuta a lógica de seleção de estado considerando os dados atuais.
-        /// </summary>
-        public void ForceStateEvaluation()
-        {
-            ReevaluateState("Forçado externamente");
-        }
-
-        /// <summary>
-        /// Obtém o desejo atual. Nesta versão simplificada sempre retorna inativo.
+        /// Retorna informações sobre desejos do Eater.
         /// </summary>
         public EaterDesireInfo GetCurrentDesireInfo()
         {
@@ -222,170 +93,124 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         /// <summary>
-        /// Atualiza o desejo atual e notifica ouvintes.
+        /// Inicia manualmente o estado de comer.
         /// </summary>
-        public void SetDesireInfo(EaterDesireInfo info)
+        public void BeginEating()
         {
-            _currentDesireInfo = info;
-            EventDesireChanged?.Invoke(_currentDesireInfo);
+            _isEating = true;
+            EnsureStateMachine();
+            ForceSetState(_eatingState, "BeginEating");
         }
 
         /// <summary>
-        /// Cria um snapshot resumido para ferramentas de debug.
+        /// Registra contato de proximidade com um planeta. Implementação propositalmente vazia.
         /// </summary>
-        public EaterBehaviorDebugSnapshot CreateDebugSnapshot()
+        public void BeginEating()
         {
-            if (_currentState == null)
-            {
-                return EaterBehaviorDebugSnapshot.Empty;
-            }
+        }
 
-            return new EaterBehaviorDebugSnapshot(
-                isValid: true,
-                currentState: CurrentStateName,
-                isHungry: _isHungry,
-                isEating: _isEating,
-                hasTarget: _currentTarget != null,
-                targetName: GetPlanetName(_currentTarget),
-                hasProximityContact: _hasProximityContact,
-                lastProximityPoint: _lastProximityPoint);
+        /// <summary>
+        /// Remove o contato de proximidade ativo. Implementação propositalmente vazia.
+        /// </summary>
+        public void EndEating(bool satisfied)
+        {
+        }
+
+        /// <summary>
+        /// Finaliza o estado de comer.
+        /// </summary>
+        public void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
+        {
+            _isEating = false;
+            if (satiated)
+            {
+                SetHungry(false);
+            }
         }
 
         private void BuildStates()
         {
-            _idleState = new EaterIdleState(this);
-            _wanderingState = new EaterWanderingState(this);
-            _hungryState = new EaterHungryState(this);
-            _chasingState = new EaterChasingState(this);
-            _eatingState = new EaterEatingState(this);
+            _stateMachine = new StateMachine();
+
+            _wanderingState = new EaterWanderingState();
+            _hungryState = new EaterHungryState();
+            _chasingState = new EaterChasingState();
+            _eatingState = new EaterEatingState();
+
+            _stateMachine.RegisterState(_wanderingState);
+            _stateMachine.RegisterState(_hungryState);
+            _stateMachine.RegisterState(_chasingState);
+            _stateMachine.RegisterState(_eatingState);
+
+            ForceSetState(_wanderingState, "Inicialização");
         }
 
-        private void ChangeState(IState nextState, string reason)
+        private void EnsureStateMachine()
         {
-            if (nextState == null || _currentState == nextState)
+            if (_stateMachine == null)
+            {
+                BuildStates();
+            }
+        }
+
+        [ContextMenu("Eater States/Set Wandering")]
+        private void ContextSetWandering()
+        {
+            EnsureStateMachine();
+            ForceSetState(_wanderingState, "ContextMenu/Wandering");
+        }
+
+        [ContextMenu("Eater States/Set Hungry")]
+        private void ContextSetHungry()
+        {
+            EnsureStateMachine();
+            ForceSetState(_hungryState, "ContextMenu/Hungry");
+        }
+
+        [ContextMenu("Eater States/Set Chasing")]
+        private void ContextSetChasing()
+        {
+            EnsureStateMachine();
+            ForceSetState(_chasingState, "ContextMenu/Chasing");
+        }
+
+        [ContextMenu("Eater States/Set Eating")]
+        private void ContextSetEating()
+        {
+            EnsureStateMachine();
+            ForceSetState(_eatingState, "ContextMenu/Eating");
+        }
+
+        private void ForceSetState(IState targetState, string reason)
+        {
+            if (_stateMachine == null || targetState == null)
             {
                 return;
             }
 
-            IState previous = _currentState;
+            IState previous = _stateMachine.CurrentState;
             previous?.OnExit();
-            _currentState = nextState;
-            _currentState.OnEnter();
 
-            string previousName = previous?.ToString() ?? "Nenhum";
-            string currentName = _currentState?.ToString() ?? "Nenhum";
-            DebugUtility.LogVerbose<EaterBehavior>($"Transição de estado: {previousName} → {currentName} ({reason}).", null, this);
-            EventStateChanged?.Invoke(previous, _currentState);
+            _stateMachine.SetState(targetState);
+            UpdateInternalFlags();
+
+            if (logStateTransitions)
+            {
+                string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
+                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            EventStateChanged?.Invoke(previous, targetState);
         }
 
-        private void ReevaluateState(string reason)
+        private void UpdateInternalFlags()
         {
-            IState desiredState;
-
-            if (_isEating && _currentTarget != null)
-            {
-                desiredState = _eatingState;
-            }
-            else if (_isHungry && _currentTarget != null)
-            {
-                desiredState = _chasingState;
-            }
-            else if (_isHungry)
-            {
-                desiredState = _hungryState;
-            }
-            else if (_currentTarget != null)
-            {
-                desiredState = _chasingState;
-            }
-            else
-            {
-                desiredState = _wanderingState;
-            }
-
-            if (_currentState == null)
-            {
-                ChangeState(desiredState, reason);
-            }
-            else
-            {
-                ChangeState(desiredState, reason);
-            }
+            _isEating = _stateMachine?.CurrentState is EaterEatingState;
         }
 
-        private static string GetPlanetName(PlanetsMaster planet)
+        private static string GetStateName(IState state)
         {
-            return planet != null ? planet.name : "Nenhum";
+            return state?.GetType().Name ?? "estado desconhecido";
         }
-
-#if UNITY_EDITOR
-        [ContextMenu("Debug/Forçar estado/Idle")]
-        private void DebugForceIdleState()
-        {
-            ForceDebugState(_idleState, "Idle", requiresTarget: false, markHungry: false, markEating: false);
-        }
-
-        [ContextMenu("Debug/Forçar estado/Wandering")]
-        private void DebugForceWanderingState()
-        {
-            ForceDebugState(_wanderingState, "Wandering", requiresTarget: false, markHungry: false, markEating: false);
-        }
-
-        [ContextMenu("Debug/Forçar estado/Hungry")]
-        private void DebugForceHungryState()
-        {
-            ForceDebugState(_hungryState, "Hungry", requiresTarget: false, markHungry: true, markEating: false);
-        }
-
-        [ContextMenu("Debug/Forçar estado/Chasing")]
-        private void DebugForceChasingState()
-        {
-            ForceDebugState(_chasingState, "Chasing", requiresTarget: true, markHungry: true, markEating: false);
-        }
-
-        [ContextMenu("Debug/Forçar estado/Eating")]
-        private void DebugForceEatingState()
-        {
-            ForceDebugState(_eatingState, "Eating", requiresTarget: true, markHungry: true, markEating: true);
-        }
-
-        private void ForceDebugState(IState desiredState, string label, bool requiresTarget, bool markHungry, bool markEating)
-        {
-            if (desiredState == null)
-            {
-                DebugUtility.LogWarning<EaterBehavior>($"Estado {label} indisponível para debug.", this);
-                return;
-            }
-
-            if (requiresTarget && _currentTarget == null)
-            {
-                DebugUtility.LogWarning<EaterBehavior>($"Estado {label} exige um planeta alvo configurado antes do teste.", this);
-                return;
-            }
-
-            _isHungry = markHungry;
-            _isEating = markEating;
-
-            if (_master != null)
-            {
-                _master.InHungry = _isHungry;
-                _master.IsEating = _isEating;
-            }
-
-            if (!markEating)
-            {
-                _lastProximityPoint = Vector3.zero;
-                _hasProximityContact = false;
-            }
-            else
-            {
-                _hasProximityContact = true;
-                _lastProximityPoint = transform.position;
-            }
-
-            ChangeState(desiredState, $"Menu de contexto ({label})");
-            DebugUtility.Log<EaterBehavior>($"Estado {label} forçado via menu de contexto.", context: this);
-        }
-#endif
     }
 }
