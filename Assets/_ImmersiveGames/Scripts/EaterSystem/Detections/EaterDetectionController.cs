@@ -440,7 +440,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             if (!_eaterBehavior.IsEating)
             {
-                _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
+                _eaterBehavior.RegisterProximityContact(planetMaster);
                 DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planetMaster)} está dentro do raio de consumo do Eater ({origin}).",
                     DebugUtility.Colors.Success,
@@ -448,7 +448,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
+            _eaterBehavior.RegisterProximityContact(planetMaster);
             if (!isSameDetectable || !isSamePlanet)
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(

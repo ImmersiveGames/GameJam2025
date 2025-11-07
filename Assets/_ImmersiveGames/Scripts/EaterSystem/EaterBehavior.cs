@@ -61,7 +61,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private PlanetsMaster _currentTarget;
         private bool _hasProximityContact;
         private PlanetsMaster _proximityPlanet;
-        private Vector3 _proximityPosition;
 
         private float _stateTimer;
         private EaterBehaviorState _lastStateSampled;
@@ -204,7 +203,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ForceSetState(_deathState, "ContextMenu/Death");
         }
 
-        private void ForceSetState(EaterBehaviorState targetState, string reason)
+        private void ForceSetState(EaterBehaviorState targetState, string source)
         {
             if (_stateMachine == null || targetState == null)
             {
@@ -228,7 +227,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (logStateTransitions)
             {
                 DebugUtility.Log<EaterBehavior>(
-                    $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).",
+                    $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({source}).",
                     DebugUtility.Colors.CrucialInfo,
                     context: this,
                     instance: this);
@@ -259,12 +258,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return state?.GetType().Name ?? "estado desconhecido";
         }
 
-        private void RefreshCurrentTarget()
+        private bool RefreshCurrentTarget()
         {
             PlanetsMaster resolved = ResolveMarkedPlanet();
             if (ReferenceEquals(_currentTarget, resolved))
             {
-                return;
+                return false;
             }
 
             PlanetsMaster previous = _currentTarget;
@@ -285,6 +284,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     context: this,
                     instance: this);
             }
+
+            return true;
         }
 
         private PlanetsMaster ResolveMarkedPlanet()
@@ -328,7 +329,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return ReferenceEquals(_currentTarget, planet);
         }
 
-        internal void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
+        internal void RegisterProximityContact(PlanetsMaster planet)
         {
             if (planet == null)
             {
@@ -339,8 +340,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hasProximityContact = true;
             _proximityPlanet = planet;
-            _proximityPosition = eaterPosition;
-
             if (!alreadyTracking)
             {
                 if (logStateTransitions)
@@ -377,8 +376,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hasProximityContact = false;
             _proximityPlanet = null;
-            _proximityPosition = Vector3.zero;
-
             if (logStateTransitions)
             {
                 DebugUtility.Log<EaterBehavior>(
@@ -389,11 +386,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             EventProximityContactChanged?.Invoke(previous, false);
-        }
-
-        internal Vector3 GetProximityContactPosition()
-        {
-            return _proximityPosition;
         }
 
         internal void EndEating(bool desireSatisfied)
@@ -411,11 +403,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ForceSetState(_chasingState, $"EndEating({desireSatisfied})");
         }
 
-        internal void TryPlayDesireSelectedSound(string reason)
+        internal bool TryPlayDesireSelectedSound(string source)
         {
             if (_config?.DesireSelectedSound == null)
             {
-                return;
+                return false;
             }
 
             if (!TryEnsureAudioEmitter())
@@ -430,7 +422,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     _loggedMissingAudioEmitter = true;
                 }
 
-                return;
+                return false;
             }
 
             _loggedMissingAudioEmitter = false;
@@ -441,11 +433,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (logStateTransitions)
             {
                 DebugUtility.Log<EaterBehavior>(
-                    $"Som de desejo reproduzido ({reason}).",
+                    $"Som de desejo reproduzido ({source}).",
                     DebugUtility.Colors.CrucialInfo,
                     context: this,
                     instance: this);
             }
+
+            return true;
         }
 
         private bool TryEnsureAudioEmitter()
@@ -691,7 +685,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
-        internal bool ResumeAutoFlow(string reason)
+        internal bool ResumeAutoFlow(string source)
         {
             if (!TryEnsureAutoFlowBridge())
             {
@@ -708,12 +702,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool resumed = _autoFlowBridge.ResumeAutoFlow();
             LogAutoFlowResult(resumed,
                 resumed
-                    ? $"AutoFlow retomado ({reason})."
-                    : $"AutoFlow permaneceu pausado ({reason}).");
+                    ? $"AutoFlow retomado ({source})."
+                    : $"AutoFlow permaneceu pausado ({source}).");
             return resumed;
         }
 
-        internal bool PauseAutoFlow(string reason)
+        internal bool PauseAutoFlow(string source)
         {
             if (!TryEnsureAutoFlowBridge())
             {
@@ -730,19 +724,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool paused = _autoFlowBridge.PauseAutoFlow();
             LogAutoFlowResult(paused,
                 paused
-                    ? $"AutoFlow pausado ({reason})."
-                    : $"Falha ao pausar AutoFlow ({reason}).");
+                    ? $"AutoFlow pausado ({source})."
+                    : $"Falha ao pausar AutoFlow ({source}).");
             return paused;
-        }
-
-        private bool HasAutoFlowService()
-        {
-            return TryEnsureAutoFlowBridge() && _autoFlowBridge.HasAutoFlowService;
-        }
-
-        private bool IsAutoFlowActive()
-        {
-            return TryEnsureAutoFlowBridge() && _autoFlowBridge.IsAutoFlowActive;
         }
 
         internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)
@@ -840,7 +824,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                    || ReferenceEquals(state, _eatingState);
         }
 
-        internal bool BeginDesires(string reason)
+        internal bool BeginDesires(string source)
         {
             if (!EnsureDesireService())
             {
@@ -851,13 +835,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (started && logStateTransitions)
             {
-                DebugUtility.Log<EaterBehavior>($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
+                DebugUtility.Log<EaterBehavior>($"Desejos ativados ({source}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
             }
 
             return started;
         }
 
-        internal bool EndDesires(string reason)
+        internal bool EndDesires(string source)
         {
             bool stopped = false;
 
@@ -867,19 +851,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
                 if (stopped && logStateTransitions)
                 {
-                    DebugUtility.Log<EaterBehavior>($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
+                    DebugUtility.Log<EaterBehavior>($"Desejos pausados ({source}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
                 }
             }
 
             if (!stopped)
             {
-                EnsureNoActiveDesire(reason);
+                EnsureNoActiveDesire(source);
             }
 
             return stopped;
         }
 
-        internal void EnsureNoActiveDesire(string reason)
+        internal void EnsureNoActiveDesire(string source)
         {
             if (!_currentDesireInfo.ServiceActive && !_currentDesireInfo.HasDesire)
             {
@@ -888,7 +872,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (logStateTransitions)
             {
-                DebugUtility.Log<EaterBehavior>($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
+                DebugUtility.Log<EaterBehavior>($"Desejos finalizados ({source}).", DebugUtility.Colors.CrucialInfo, context: this, instance: this);
             }
 
             UpdateDesireInfo(EaterDesireInfo.Inactive);
@@ -960,6 +944,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireName = resource.ToString();
             }
 
+            bool hasAutoFlow = TryEnsureAutoFlowBridge() && _autoFlowBridge.HasAutoFlowService;
+            bool autoFlowActive = hasAutoFlow && _autoFlowBridge.IsAutoFlowActive;
+            bool desiresActive = _currentDesireInfo.ServiceActive || (_desireService?.IsActive ?? false);
+
             return new EaterBehaviorDebugSnapshot(
                 isValid,
                 currentState,
@@ -976,9 +964,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 transform.position,
                 hasPlayerAnchor,
                 playerAnchor,
-                HasAutoFlowService(),
-                IsAutoFlowActive(),
-                _currentDesireInfo.ServiceActive,
+                hasAutoFlow,
+                autoFlowActive,
+                desiresActive,
                 pendingHungryEffects: false,
                 _hasMovementSample,
                 _lastMovementDirection,
