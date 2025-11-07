@@ -2,6 +2,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -19,6 +20,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private EventBinding<DetectionExitEvent> _proximityExitBinding;
         private EaterDetectionController _detectionController;
         private DetectionType _planetProximityDetectionType;
+        private bool _haltMovement;
+        private Transform _haltedTarget;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -33,6 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnExit()
         {
             UnsubscribeFromProximityEvents();
+            ResetMovementHalt();
             base.OnExit();
         }
 
@@ -43,6 +47,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Transform target = Behavior.CurrentTargetPlanet;
             if (target == null)
             {
+                ResetMovementHalt();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogVerbose<EaterChasingState>(
@@ -55,6 +60,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _reportedMissingTarget = false;
+
+            if (_haltMovement)
+            {
+                if (ReferenceEquals(target, _haltedTarget))
+                {
+                    Behavior.LookAt(target.position);
+                    return;
+                }
+
+                ResetMovementHalt();
+            }
 
             Vector3 toTarget = target.position - Transform.position;
             float distance = toTarget.magnitude;
@@ -165,7 +181,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!TryResolvePlanetActor(enterEvent.Detectable, out IPlanetActor planetActor))
+            if (!TryResolveMarkedPlanet(enterEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
             {
                 return;
             }
@@ -173,9 +189,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             string planetName = GetPlanetDisplayName(planetActor);
             DebugUtility.Log<EaterChasingState>(
                 $"Planeta {planetName} entrou no detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.CrucialInfo,
+                DebugUtility.Colors.Info,
                 Behavior,
                 this);
+
+            Transform planetTransform = markedPlanet.transform;
+            if (ReferenceEquals(Behavior.CurrentTargetPlanet, planetTransform))
+            {
+                HaltChasingTarget(planetTransform);
+            }
         }
 
         private void HandleProximityExit(DetectionExitEvent exitEvent)
@@ -185,7 +207,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!TryResolvePlanetActor(exitEvent.Detectable, out IPlanetActor planetActor))
+            if (!TryResolveMarkedPlanet(exitEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
             {
                 return;
             }
@@ -193,9 +215,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             string planetName = GetPlanetDisplayName(planetActor);
             DebugUtility.Log<EaterChasingState>(
                 $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.CrucialInfo,
+                DebugUtility.Colors.Info,
                 Behavior,
                 this);
+
+            Transform planetTransform = markedPlanet.transform;
+            if (ReferenceEquals(_haltedTarget, planetTransform))
+            {
+                ResumeChasingTarget();
+            }
         }
 
         private bool IsRelevantProximityEvent(IDetector detector, DetectionType detectionType)
@@ -211,6 +239,35 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return ReferenceEquals(detectionType, _planetProximityDetectionType);
+        }
+
+        private void HaltChasingTarget(Transform target)
+        {
+            _haltMovement = true;
+            _haltedTarget = target;
+        }
+
+        private void ResumeChasingTarget()
+        {
+            ResetMovementHalt();
+        }
+
+        private void ResetMovementHalt()
+        {
+            _haltMovement = false;
+            _haltedTarget = null;
+        }
+
+        private bool TryResolveMarkedPlanet(IDetectable detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet)
+        {
+            markedPlanet = null;
+
+            if (!TryResolvePlanetActor(detectable, out planetActor))
+            {
+                return false;
+            }
+
+            return TryResolveMarkPlanet(planetActor, out markedPlanet);
         }
 
         private static bool TryResolvePlanetActor(IDetectable detectable, out IPlanetActor planetActor)
@@ -245,6 +302,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return false;
+        }
+
+        private static bool TryResolveMarkPlanet(IPlanetActor planetActor, out MarkPlanet markedPlanet)
+        {
+            markedPlanet = null;
+
+            Transform planetTransform = planetActor?.PlanetActor?.Transform;
+            if (planetTransform == null)
+            {
+                return false;
+            }
+
+            if (!planetTransform.TryGetComponent(out markedPlanet))
+            {
+                markedPlanet = planetTransform.GetComponentInParent<MarkPlanet>();
+            }
+
+            if (markedPlanet == null)
+            {
+                return false;
+            }
+
+            return markedPlanet.IsMarked;
         }
 
         private static string GetPlanetDisplayName(IPlanetActor planetActor)
