@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
@@ -22,15 +23,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
         private bool hideWhenNoDesire = true;
 
-        private bool _subscribed;
         private bool _pendingIconResolve;
         private bool _warnedMissingIcon;
         private bool _warnedMissingBehavior;
         private bool _warnedMissingManager;
+        private bool _syncedInitialInfo;
         private PlanetsManager _planetsManager;
-        private EaterBehavior _activeBehavior;
         private EaterDesireInfo _currentInfo = EaterDesireInfo.Inactive;
         private bool _listeningPlanets;
+        private bool _listeningDesires;
+        private EventBinding<EaterDesireInfoChangedEvent> _desireChangedBinding;
         private EventBinding<PlanetsInitializationCompletedEvent> _planetsInitializedBinding;
         private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
         private readonly HashSet<PlanetResources> _missingDefinitionWarnings = new();
@@ -54,15 +56,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnEnable()
         {
             RegisterPlanetEvents();
-            TryResolveBehavior();
-            SubscribeToBehavior();
-            ApplyCurrentInfo();
+            RegisterDesireEvents();
+
+            bool resolved = TryResolveBehavior();
+            bool synced = resolved && SyncCurrentInfoFromBehavior();
+
+            if (!synced)
+            {
+                ApplyCurrentInfo();
+            }
         }
 
         private void OnDisable()
         {
             UnregisterPlanetEvents();
-            UnsubscribeFromBehavior();
+            UnregisterDesireEvents();
+            ResetCurrentInfo();
             ShowNoDesireState();
             _planetsManager = null;
             _warnedMissingManager = false;
@@ -72,14 +81,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void LateUpdate()
         {
-            if (!_subscribed)
+            if (eaterBehavior == null)
             {
                 TryResolveBehavior();
-                SubscribeToBehavior();
-                if (_subscribed)
-                {
-                    ApplyCurrentInfo();
-                }
+            }
+
+            if (!_syncedInitialInfo)
+            {
+                SyncCurrentInfoFromBehavior();
             }
 
             if (_pendingIconResolve)
@@ -88,59 +97,96 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
-        private void SubscribeToBehavior()
+        private void RegisterDesireEvents()
         {
-            if (_subscribed && eaterBehavior != _activeBehavior)
-            {
-                UnsubscribeFromBehavior();
-            }
-
-            if (eaterBehavior == null)
-            {
-                if (!_warnedMissingBehavior)
-                {
-                    DebugUtility.LogWarning<EaterDesireUI>(
-                        "EaterBehavior não encontrado para atualizar o HUD de desejos.",
-                        context: this,
-                        instance: this);
-                    _warnedMissingBehavior = true;
-                }
-                return;
-            }
-
-            if (_subscribed)
+            if (_listeningDesires)
             {
                 return;
             }
 
-            //eaterBehavior.EventDesireChanged += HandleDesireChanged;
-            //_currentInfo = eaterBehavior.GetCurrentDesireInfo();
-            _subscribed = true;
-            _warnedMissingBehavior = false;
-            _activeBehavior = eaterBehavior;
+            _desireChangedBinding ??= new EventBinding<EaterDesireInfoChangedEvent>(HandleDesireChanged);
+            EventBus<EaterDesireInfoChangedEvent>.Register(_desireChangedBinding);
+            _listeningDesires = true;
 
             DebugUtility.LogVerbose<EaterDesireUI>(
-                $"Assinatura estabelecida com {eaterBehavior.name}.",
+                "Escutando alterações globais de desejo do Eater via EventBus.",
                 context: this,
                 instance: this);
         }
 
-        private void UnsubscribeFromBehavior()
+        private void UnregisterDesireEvents()
         {
-            if (_subscribed && _activeBehavior != null)
+            if (!_listeningDesires)
             {
-                _activeBehavior.EventDesireChanged -= HandleDesireChanged;
+                return;
             }
 
-            _subscribed = false;
-            _activeBehavior = null;
-            _currentInfo = EaterDesireInfo.Inactive;
+            if (_desireChangedBinding != null)
+            {
+                EventBus<EaterDesireInfoChangedEvent>.Unregister(_desireChangedBinding);
+            }
+
+            _listeningDesires = false;
         }
 
-        private void HandleDesireChanged(EaterDesireInfo info)
+        private void HandleDesireChanged(EaterDesireInfoChangedEvent evt)
         {
+            if (!evt.HasBehavior)
+            {
+                if (eaterBehavior == null)
+                {
+                    DebugUtility.LogVerbose<EaterDesireUI>(
+                        "Evento de desejo recebido sem referência ao comportamento. Aguardando resolução do Eater.",
+                        context: this,
+                        instance: this);
+                    return;
+                }
+            }
+            else if (eaterBehavior == null)
+            {
+                eaterBehavior = evt.Behavior;
+                _warnedMissingBehavior = false;
+
+                DebugUtility.LogVerbose<EaterDesireUI>(
+                    $"EaterBehavior associado via EventBus: {eaterBehavior.name}.",
+                    context: this,
+                    instance: this);
+            }
+            else if (evt.Behavior != eaterBehavior)
+            {
+                return;
+            }
+
+            UpdateDesireInfo(evt.Info);
+        }
+
+        private void UpdateDesireInfo(EaterDesireInfo info)
+        {
+            if (_syncedInitialInfo && info.Equals(_currentInfo))
+            {
+                return;
+            }
+
             _currentInfo = info;
+            _syncedInitialInfo = true;
             ApplyCurrentInfo();
+        }
+
+        private bool SyncCurrentInfoFromBehavior()
+        {
+            if (eaterBehavior == null)
+            {
+                return false;
+            }
+
+            UpdateDesireInfo(eaterBehavior.GetCurrentDesireInfo());
+            return true;
+        }
+
+        private void ResetCurrentInfo()
+        {
+            _currentInfo = EaterDesireInfo.Inactive;
+            _syncedInitialInfo = false;
         }
 
         private void ApplyCurrentInfo()
@@ -453,11 +499,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _missingSpriteWarnings.Clear();
         }
 
-        private void TryResolveBehavior()
+        private bool TryResolveBehavior()
         {
             if (eaterBehavior != null)
             {
-                return;
+                return true;
             }
 
             Transform eaterTransform = GameManager.Instance != null ? GameManager.Instance.WorldEater : null;
@@ -480,7 +526,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     $"EaterBehavior localizado para UI: {eaterBehavior.name}.",
                     context: this,
                     instance: this);
+                _warnedMissingBehavior = false;
+                return true;
             }
+
+            if (!_warnedMissingBehavior)
+            {
+                DebugUtility.LogWarning<EaterDesireUI>(
+                    "EaterBehavior não encontrado para atualizar o HUD de desejos.",
+                    context: this,
+                    instance: this);
+                _warnedMissingBehavior = true;
+            }
+
+            return false;
         }
     }
 }
