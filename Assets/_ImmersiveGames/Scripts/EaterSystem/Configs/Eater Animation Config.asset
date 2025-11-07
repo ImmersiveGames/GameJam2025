@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   idleAnimation: Idle
   hitAnimation: GetHit
-  deathAnimation: Die
+  deathAnimation: Dead
   reviveAnimation: Revive
   eatingAnimation: isEating
   happyAnimation: Happy
