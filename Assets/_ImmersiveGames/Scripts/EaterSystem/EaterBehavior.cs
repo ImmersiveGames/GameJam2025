@@ -25,22 +25,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         internal bool ShouldLogStateTransitions => logStateTransitions;
 
-        [Header("Movimentação")]
-        [SerializeField, Tooltip("Distância mínima que o Eater deve manter do jogador mais próximo.")]
-        private float minPlayerDistance = 5f;
-
-        [SerializeField, Tooltip("Distância máxima que o Eater pode se afastar do jogador mais próximo.")]
-        private float maxPlayerDistance = 25f;
-
-        [SerializeField, Tooltip("Distância fixa utilizada para orbitar planetas durante o estado Eating.")]
-        private float orbitDistance = 3f;
-
-        [SerializeField, Tooltip("Duração em segundos para completar uma volta orbitando o planeta.")]
-        private float orbitDuration = 4f;
-
-        [SerializeField, Tooltip("Tempo em segundos para ajustar a distância de órbita ao entrar no estado Eating.")]
-        private float orbitApproachDuration = 0.5f;
-
         private StateMachine _stateMachine;
         private EaterBehaviorState _wanderingState;
         private EaterBehaviorState _hungryState;
@@ -51,6 +35,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterConfigSo _config;
         private PlayerManager _playerManager;
         private PlanetMarkingManager _planetMarkingManager;
+
+        private float _minPlayerDistance;
+        private float _maxPlayerDistance;
+        private float _orbitDistance;
+        private float _orbitDuration;
+        private float _orbitApproachDuration;
 
         private ResourceAutoFlowBridge _autoFlowBridge;
         private bool _missingAutoFlowBridgeLogged;
@@ -73,6 +63,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ApplyConfigDefaults();
             EnsureStatesInitialized();
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            _master ??= GetComponent<EaterMaster>();
+            _config = _master != null ? _master.Config : null;
+            ApplyConfigDefaults();
+        }
+#endif
 
         private void Update()
         {
@@ -169,16 +173,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void ApplyConfigDefaults()
         {
+            const float defaultMinDistance = 5f;
+            const float defaultMaxDistance = 25f;
+            const float defaultOrbitDistance = 3f;
+            const float defaultOrbitDuration = 4f;
+            const float defaultOrbitApproachDuration = 0.5f;
+
             if (_config == null)
             {
+                _minPlayerDistance = defaultMinDistance;
+                _maxPlayerDistance = Mathf.Max(defaultMaxDistance, _minPlayerDistance);
+                _orbitDistance = defaultOrbitDistance;
+                _orbitDuration = defaultOrbitDuration;
+                _orbitApproachDuration = defaultOrbitApproachDuration;
                 return;
             }
 
-            maxPlayerDistance = Mathf.Max(maxPlayerDistance, _config.WanderingMaxDistanceFromPlayer);
-            minPlayerDistance = Mathf.Clamp(minPlayerDistance, 0f, maxPlayerDistance);
-            orbitDuration = Mathf.Max(orbitDuration, 0.25f);
-            orbitApproachDuration = Mathf.Max(orbitApproachDuration, 0.1f);
-            orbitDistance = Mathf.Max(orbitDistance, 0.1f);
+            float configuredMinDistance = Mathf.Max(0f, _config.WanderingMinDistanceFromPlayer);
+            float configuredMaxDistance = Mathf.Max(configuredMinDistance, _config.WanderingMaxDistanceFromPlayer);
+
+            _minPlayerDistance = configuredMinDistance;
+            _maxPlayerDistance = configuredMaxDistance;
+            _orbitDistance = Mathf.Max(0.1f, _config.OrbitDistance);
+            _orbitDuration = Mathf.Max(0.25f, _config.OrbitDuration);
+            _orbitApproachDuration = Mathf.Max(0.1f, Mathf.Min(_config.OrbitApproachDuration, _orbitDuration));
         }
 
         private bool TryGetClosestPlayer(out Transform player, out float sqrDistance)
@@ -232,20 +250,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             Vector3 offset = desiredPosition - anchor;
             float sqrMagnitude = offset.sqrMagnitude;
 
-            if (maxPlayerDistance > 0f)
+            if (_maxPlayerDistance > 0f)
             {
-                float maxDistanceSqr = maxPlayerDistance * maxPlayerDistance;
+                float maxDistanceSqr = _maxPlayerDistance * _maxPlayerDistance;
                 if (sqrMagnitude > maxDistanceSqr)
                 {
-                    desiredPosition = anchor + offset.normalized * maxPlayerDistance;
+                    desiredPosition = anchor + offset.normalized * _maxPlayerDistance;
                     offset = desiredPosition - anchor;
                     sqrMagnitude = offset.sqrMagnitude;
                 }
             }
 
-            if (minPlayerDistance > 0f)
+            if (_minPlayerDistance > 0f)
             {
-                float minDistanceSqr = minPlayerDistance * minPlayerDistance;
+                float minDistanceSqr = _minPlayerDistance * _minPlayerDistance;
                 if (sqrMagnitude < minDistanceSqr)
                 {
                     Vector3 direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
@@ -254,7 +272,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         direction = Vector3.forward;
                     }
 
-                    desiredPosition = anchor + direction * minPlayerDistance;
+                    desiredPosition = anchor + direction * _minPlayerDistance;
                 }
             }
 
@@ -265,15 +283,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         internal EaterConfigSo Config => _config;
 
-        internal float MinPlayerDistance => minPlayerDistance;
+        internal float MinPlayerDistance => _minPlayerDistance;
 
-        internal float MaxPlayerDistance => maxPlayerDistance;
+        internal float MaxPlayerDistance => _maxPlayerDistance;
 
-        internal float OrbitDistance => orbitDistance;
+        internal float OrbitDistance => _orbitDistance;
 
-        internal float OrbitDuration => orbitDuration;
+        internal float OrbitDuration => _orbitDuration;
 
-        internal float OrbitApproachDuration => orbitApproachDuration;
+        internal float OrbitApproachDuration => _orbitApproachDuration;
 
         internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform

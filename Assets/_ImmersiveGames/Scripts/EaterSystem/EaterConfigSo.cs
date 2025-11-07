@@ -46,13 +46,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Comportamento de Fome")]
         [SerializeField, Tooltip("Tempo em segundos que o Eater permanece vagando antes de voltar a sentir fome.")]
         private float wanderingDuration = 15f;
+        [SerializeField, Tooltip("Distância mínima em relação ao jogador mais próximo enquanto o Eater vaga satisfeito.")]
+        private float wanderingMinDistanceFromPlayer = 5f;
         [SerializeField, Tooltip("Distância máxima em relação ao jogador mais próximo enquanto o Eater vaga satisfeito.")]
         private float wanderingMaxDistanceFromPlayer = 25f;
         [SerializeField, Tooltip("Influência usada para puxar a direção do movimento de volta para o jogador quando próximo do limite.")]
         private float wanderingReturnBias = 0.35f;
         [SerializeField, Tooltip("Influência usada para puxar o movimento em direção aos jogadores quando o Eater está com fome.")]
         private float hungryPlayerAttraction = 0.75f;
-        
+
+        [Header("Órbita")]
+        [SerializeField, Tooltip("Distância base utilizada para orbitar planetas durante o estado de alimentação.")]
+        private float orbitDistance = 3f;
+        [SerializeField, Tooltip("Tempo em segundos para completar uma volta ao orbitar um planeta.")]
+        private float orbitDuration = 4f;
+        [SerializeField, Tooltip("Tempo em segundos para se aproximar da distância de órbita ao iniciar o estado de alimentação.")]
+        private float orbitApproachDuration = 0.5f;
+
         [SerializeField, Tooltip("Fome restaurada ao consumir recurso desejado")]
         private float desiredHungerRestored = 50f;
         [SerializeField, Tooltip("Fome restaurada ao consumir recurso indesejado")]
@@ -82,10 +92,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public int MultiplierChase => multiplierChase;
         public float RotationSpeed => rotationSpeed;
         public float WanderingDuration => wanderingDuration;
+        public float WanderingMinDistanceFromPlayer => wanderingMinDistanceFromPlayer;
         public float WanderingMaxDistanceFromPlayer => wanderingMaxDistanceFromPlayer;
         public float WanderingReturnBias => wanderingReturnBias;
         public float HungryPlayerAttraction => hungryPlayerAttraction;
         public float MinimumChaseDistance => minimumChaseDistance;
+        public float OrbitDistance => orbitDistance;
+        public float OrbitDuration => orbitDuration;
+        public float OrbitApproachDuration => orbitApproachDuration;
 
         public ResourceType SatiationResourceType => satiationResourceType;
         

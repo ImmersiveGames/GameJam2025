@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +30,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private PlanetsManager _planetsManager;
         private EaterBehavior _activeBehavior;
         private EaterDesireInfo _currentInfo = EaterDesireInfo.Inactive;
+        private bool _listeningPlanets;
+        private EventBinding<PlanetsInitializationCompletedEvent> _planetsInitializedBinding;
+        private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
+        private readonly HashSet<PlanetResources> _missingDefinitionWarnings = new();
+        private readonly HashSet<PlanetResources> _missingSpriteWarnings = new();
 
         private bool SharesGameObjectWithIcon =>
             desireIcon != null && desireIcon.gameObject == gameObject;
@@ -45,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnEnable()
         {
+            RegisterPlanetEvents();
             TryResolveBehavior();
             SubscribeToBehavior();
             ApplyCurrentInfo();
@@ -52,11 +61,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void OnDisable()
         {
+            UnregisterPlanetEvents();
             UnsubscribeFromBehavior();
             ShowNoDesireState();
             _planetsManager = null;
             _warnedMissingManager = false;
             _pendingIconResolve = false;
+            ClearMissingResourceWarnings();
         }
 
         private void LateUpdate()
@@ -165,7 +176,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             desireIcon.sprite = icon;
+            desireIcon.overrideSprite = icon;
             SetIconVisibility(true);
+            desireIcon.SetAllDirty();
 
             _pendingIconResolve = false;
 
@@ -191,6 +204,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             else if (fallbackSprite != null)
             {
                 desireIcon.sprite = fallbackSprite;
+                desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
             }
             else
@@ -214,6 +228,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (fallbackSprite != null)
             {
                 desireIcon.sprite = fallbackSprite;
+                desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
 
                 DebugUtility.LogWarning<EaterDesireUI>(
@@ -302,23 +317,35 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (!manager.TryGetResourceDefinition(resource, out PlanetResourcesSo definition) || definition == null)
             {
-                DebugUtility.LogWarning<EaterDesireUI>(
-                    $"Nenhuma definição encontrada para o recurso {resource}.",
-                    context: this,
-                    instance: this);
+                if (_missingDefinitionWarnings.Add(resource))
+                {
+                    DebugUtility.LogWarning<EaterDesireUI>(
+                        $"Nenhuma definição encontrada para o recurso {resource}.",
+                        context: this,
+                        instance: this);
+                }
+
+                _pendingIconResolve = true;
                 return false;
             }
 
             icon = definition.ResourceIcon;
             if (icon == null)
             {
-                DebugUtility.LogWarning<EaterDesireUI>(
-                    $"A definição do recurso {resource} não possui sprite configurado.",
-                    context: this,
-                    instance: this);
+                if (_missingSpriteWarnings.Add(resource))
+                {
+                    DebugUtility.LogWarning<EaterDesireUI>(
+                        $"A definição do recurso {resource} não possui sprite configurado.",
+                        context: this,
+                        instance: this);
+                }
+
+                _pendingIconResolve = true;
                 return false;
             }
 
+            _missingDefinitionWarnings.Remove(resource);
+            _missingSpriteWarnings.Remove(resource);
             return true;
         }
 
@@ -354,12 +381,76 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _planetsManager = manager;
             _warnedMissingManager = false;
             _pendingIconResolve = false;
+            ClearMissingResourceWarnings();
 
             DebugUtility.LogVerbose<EaterDesireUI>(
                 "PlanetsManager localizado para resolução de ícones de desejo.",
                 context: this,
                 instance: this);
             return true;
+        }
+
+        private void RegisterPlanetEvents()
+        {
+            if (_listeningPlanets)
+            {
+                return;
+            }
+
+            _planetsInitializedBinding ??= new EventBinding<PlanetsInitializationCompletedEvent>(HandlePlanetsInitialized);
+            EventBus<PlanetsInitializationCompletedEvent>.Register(_planetsInitializedBinding);
+
+            _planetCreatedBinding ??= new EventBinding<PlanetCreatedEvent>(HandlePlanetCreated);
+            EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
+
+            _listeningPlanets = true;
+        }
+
+        private void UnregisterPlanetEvents()
+        {
+            if (!_listeningPlanets)
+            {
+                return;
+            }
+
+            if (_planetsInitializedBinding != null)
+            {
+                EventBus<PlanetsInitializationCompletedEvent>.Unregister(_planetsInitializedBinding);
+            }
+
+            if (_planetCreatedBinding != null)
+            {
+                EventBus<PlanetCreatedEvent>.Unregister(_planetCreatedBinding);
+            }
+
+            _listeningPlanets = false;
+        }
+
+        private void HandlePlanetsInitialized(PlanetsInitializationCompletedEvent _)
+        {
+            _planetsManager = null;
+            _warnedMissingManager = false;
+            ClearMissingResourceWarnings();
+            _pendingIconResolve = true;
+            ApplyCurrentInfo();
+        }
+
+        private void HandlePlanetCreated(PlanetCreatedEvent _)
+        {
+            if (!_currentInfo.ServiceActive || !_currentInfo.HasResource)
+            {
+                return;
+            }
+
+            ClearMissingResourceWarnings();
+            _pendingIconResolve = true;
+            ApplyCurrentInfo();
+        }
+
+        private void ClearMissingResourceWarnings()
+        {
+            _missingDefinitionWarnings.Clear();
+            _missingSpriteWarnings.Clear();
         }
 
         private void TryResolveBehavior()
