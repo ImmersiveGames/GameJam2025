@@ -46,8 +46,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected override float EvaluateSpeed()
         {
-            float min = Config != null ? Mathf.Max(0f, Config.MinSpeed) : 0f;
-            float max = Config != null ? Mathf.Max(min, Config.MaxSpeed) : min;
+            float min = Config?.MinSpeed ?? 0f;
+            float max = Config?.MaxSpeed ?? min;
             float baseSpeed = Mathf.Max(min, max);
             return baseSpeed * 0.75f;
         }
@@ -65,8 +65,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return direction;
             }
 
-            float maxDistance = Behavior.MaxPlayerDistance;
-            float minDistance = Behavior.MinPlayerDistance;
+            float maxDistance = Config?.WanderingMaxDistanceFromPlayer ?? 0f;
+            float minDistance = Config?.WanderingMinDistanceFromPlayer ?? 0f;
 
             if (minDistance > 0f && distance < minDistance)
             {

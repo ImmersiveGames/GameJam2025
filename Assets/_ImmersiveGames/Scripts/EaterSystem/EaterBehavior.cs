@@ -36,12 +36,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private PlayerManager _playerManager;
         private PlanetMarkingManager _planetMarkingManager;
 
-        private float _minPlayerDistance;
-        private float _maxPlayerDistance;
-        private float _orbitDistance;
-        private float _orbitDuration;
-        private float _orbitApproachDuration;
-
         private ResourceAutoFlowBridge _autoFlowBridge;
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
@@ -60,7 +54,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
-            ApplyConfigDefaults();
             EnsureStatesInitialized();
         }
 
@@ -74,7 +67,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _master ??= GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
-            ApplyConfigDefaults();
         }
 #endif
 
@@ -171,34 +163,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return state?.GetType().Name ?? "estado desconhecido";
         }
 
-        private void ApplyConfigDefaults()
-        {
-            const float defaultMinDistance = 5f;
-            const float defaultMaxDistance = 25f;
-            const float defaultOrbitDistance = 3f;
-            const float defaultOrbitDuration = 4f;
-            const float defaultOrbitApproachDuration = 0.5f;
-
-            if (_config == null)
-            {
-                _minPlayerDistance = defaultMinDistance;
-                _maxPlayerDistance = Mathf.Max(defaultMaxDistance, _minPlayerDistance);
-                _orbitDistance = defaultOrbitDistance;
-                _orbitDuration = defaultOrbitDuration;
-                _orbitApproachDuration = defaultOrbitApproachDuration;
-                return;
-            }
-
-            float configuredMinDistance = Mathf.Max(0f, _config.WanderingMinDistanceFromPlayer);
-            float configuredMaxDistance = Mathf.Max(configuredMinDistance, _config.WanderingMaxDistanceFromPlayer);
-
-            _minPlayerDistance = configuredMinDistance;
-            _maxPlayerDistance = configuredMaxDistance;
-            _orbitDistance = Mathf.Max(0.1f, _config.OrbitDistance);
-            _orbitDuration = Mathf.Max(0.25f, _config.OrbitDuration);
-            _orbitApproachDuration = Mathf.Max(0.1f, Mathf.Min(_config.OrbitApproachDuration, _orbitDuration));
-        }
-
         private bool TryGetClosestPlayer(out Transform player, out float sqrDistance)
         {
             _playerManager ??= PlayerManager.Instance;
@@ -247,23 +211,36 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return desiredPosition;
             }
 
+            float maxDistance = Mathf.Max(0f, _config?.WanderingMaxDistanceFromPlayer ?? 0f);
+            float minDistance = Mathf.Max(0f, _config?.WanderingMinDistanceFromPlayer ?? 0f);
+
+            if (maxDistance <= 0f && minDistance <= 0f)
+            {
+                return desiredPosition;
+            }
+
+            if (maxDistance > 0f && maxDistance < minDistance)
+            {
+                maxDistance = minDistance;
+            }
+
             Vector3 offset = desiredPosition - anchor;
             float sqrMagnitude = offset.sqrMagnitude;
 
-            if (_maxPlayerDistance > 0f)
+            if (maxDistance > 0f)
             {
-                float maxDistanceSqr = _maxPlayerDistance * _maxPlayerDistance;
+                float maxDistanceSqr = maxDistance * maxDistance;
                 if (sqrMagnitude > maxDistanceSqr)
                 {
-                    desiredPosition = anchor + offset.normalized * _maxPlayerDistance;
+                    desiredPosition = anchor + offset.normalized * maxDistance;
                     offset = desiredPosition - anchor;
                     sqrMagnitude = offset.sqrMagnitude;
                 }
             }
 
-            if (_minPlayerDistance > 0f)
+            if (minDistance > 0f)
             {
-                float minDistanceSqr = _minPlayerDistance * _minPlayerDistance;
+                float minDistanceSqr = minDistance * minDistance;
                 if (sqrMagnitude < minDistanceSqr)
                 {
                     Vector3 direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
@@ -272,7 +249,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         direction = Vector3.forward;
                     }
 
-                    desiredPosition = anchor + direction * _minPlayerDistance;
+                    desiredPosition = anchor + direction * minDistance;
                 }
             }
 
@@ -282,16 +259,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         internal EaterMaster Master => _master;
 
         internal EaterConfigSo Config => _config;
-
-        internal float MinPlayerDistance => _minPlayerDistance;
-
-        internal float MaxPlayerDistance => _maxPlayerDistance;
-
-        internal float OrbitDistance => _orbitDistance;
-
-        internal float OrbitDuration => _orbitDuration;
-
-        internal float OrbitApproachDuration => _orbitApproachDuration;
 
         internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
@@ -348,8 +315,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return 0f;
             }
 
-            float min = Mathf.Max(0f, _config.MinSpeed);
-            float max = Mathf.Max(min, _config.MaxSpeed);
+            float min = _config.MinSpeed;
+            float max = _config.MaxSpeed;
             return Random.Range(min, max);
         }
 
@@ -360,8 +327,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return 0f;
             }
 
-            float baseSpeed = Mathf.Max(_config.MaxSpeed, _config.MinSpeed);
-            return baseSpeed * Mathf.Max(1, _config.MultiplierChase);
+            float baseSpeed = _config.MaxSpeed;
+            return baseSpeed * _config.MultiplierChase;
         }
 
         internal void Move(Vector3 direction, float speed, float deltaTime, bool respectPlayerBounds)
@@ -394,7 +361,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            float rotationSpeed = _config != null ? Mathf.Max(0f, _config.RotationSpeed) : 5f;
+            float rotationSpeed = _config != null ? _config.RotationSpeed : 5f;
+            rotationSpeed = Mathf.Max(0f, rotationSpeed);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, deltaTime * rotationSpeed);
         }
 

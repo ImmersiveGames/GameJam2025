@@ -86,20 +86,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float UnavailableDesireWeight => unavailableDesireWeight;
         public float RecentDesireWeightMultiplier => recentDesireWeightMultiplier;
         public SoundData DesireSelectedSound => desireSelectedSound;
-        public float DirectionChangeInterval => directionChangeInterval;
-        public float MinSpeed => minSpeed;
-        public float MaxSpeed => maxSpeed;
-        public int MultiplierChase => multiplierChase;
-        public float RotationSpeed => rotationSpeed;
-        public float WanderingDuration => wanderingDuration;
-        public float WanderingMinDistanceFromPlayer => wanderingMinDistanceFromPlayer;
-        public float WanderingMaxDistanceFromPlayer => wanderingMaxDistanceFromPlayer;
-        public float WanderingReturnBias => wanderingReturnBias;
-        public float HungryPlayerAttraction => hungryPlayerAttraction;
-        public float MinimumChaseDistance => minimumChaseDistance;
-        public float OrbitDistance => orbitDistance;
-        public float OrbitDuration => orbitDuration;
-        public float OrbitApproachDuration => orbitApproachDuration;
+        public float DirectionChangeInterval => Mathf.Max(0.1f, directionChangeInterval);
+        public float MinSpeed => Mathf.Max(0f, minSpeed);
+        public float MaxSpeed => Mathf.Max(MinSpeed, maxSpeed);
+        public int MultiplierChase => Mathf.Max(1, multiplierChase);
+        public float RotationSpeed => Mathf.Max(0f, rotationSpeed);
+        public float WanderingDuration => Mathf.Max(0f, wanderingDuration);
+        public float WanderingMinDistanceFromPlayer => Mathf.Max(0f, wanderingMinDistanceFromPlayer);
+        public float WanderingMaxDistanceFromPlayer => Mathf.Max(WanderingMinDistanceFromPlayer, wanderingMaxDistanceFromPlayer);
+        public float WanderingReturnBias => Mathf.Clamp01(wanderingReturnBias);
+        public float HungryPlayerAttraction => Mathf.Clamp01(hungryPlayerAttraction);
+        public float MinimumChaseDistance => Mathf.Max(0f, minimumChaseDistance);
+        public float OrbitDistance => Mathf.Max(0.1f, orbitDistance);
+        public float OrbitDuration => Mathf.Max(0.25f, orbitDuration);
+        public float OrbitApproachDuration => Mathf.Min(Mathf.Max(0.1f, orbitApproachDuration), OrbitDuration);
 
         public ResourceType SatiationResourceType => satiationResourceType;
         
