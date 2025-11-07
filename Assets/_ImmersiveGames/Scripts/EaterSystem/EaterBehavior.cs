@@ -1,7 +1,11 @@
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.States;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -19,15 +23,51 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         internal bool ShouldLogStateTransitions => logStateTransitions;
 
+        [Header("Movimentação")]
+        [SerializeField, Tooltip("Distância mínima que o Eater deve manter do jogador mais próximo.")]
+        private float minPlayerDistance = 5f;
+
+        [SerializeField, Tooltip("Distância máxima que o Eater pode se afastar do jogador mais próximo.")]
+        private float maxPlayerDistance = 25f;
+
+        [SerializeField, Tooltip("Distância fixa utilizada para orbitar planetas durante o estado Eating.")]
+        private float orbitDistance = 3f;
+
+        [SerializeField, Tooltip("Duração em segundos para completar uma volta orbitando o planeta.")]
+        private float orbitDuration = 4f;
+
+        [SerializeField, Tooltip("Tempo em segundos para ajustar a distância de órbita ao entrar no estado Eating.")]
+        private float orbitApproachDuration = 0.5f;
+
         private StateMachine _stateMachine;
         private EaterBehaviorState _wanderingState;
         private EaterBehaviorState _hungryState;
         private EaterBehaviorState _chasingState;
         private EaterBehaviorState _eatingState;
 
+        private EaterMaster _master;
+        private EaterConfigSo _config;
+        private PlayerManager _playerManager;
+        private PlanetMarkingManager _planetMarkingManager;
+
         private void Awake()
         {
+            _master = GetComponent<EaterMaster>();
+            _config = _master != null ? _master.Config : null;
+            _planetMarkingManager = PlanetMarkingManager.Instance;
+            _playerManager = PlayerManager.Instance;
+            ApplyConfigDefaults();
             BuildStates();
+        }
+
+        private void Update()
+        {
+            _stateMachine?.Update();
+        }
+
+        private void FixedUpdate()
+        {
+            _stateMachine?.FixedUpdate();
         }
 
         private void BuildStates()
@@ -112,6 +152,201 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             return state?.GetType().Name ?? "estado desconhecido";
+        }
+
+        private void ApplyConfigDefaults()
+        {
+            if (_config == null)
+            {
+                return;
+            }
+
+            maxPlayerDistance = Mathf.Max(maxPlayerDistance, _config.WanderingMaxDistanceFromPlayer);
+            minPlayerDistance = Mathf.Clamp(minPlayerDistance, 0f, maxPlayerDistance);
+            orbitDuration = Mathf.Max(orbitDuration, 0.25f);
+            orbitApproachDuration = Mathf.Max(orbitApproachDuration, 0.1f);
+            orbitDistance = Mathf.Max(orbitDistance, 0.1f);
+        }
+
+        private bool TryGetClosestPlayer(out Transform player, out float sqrDistance)
+        {
+            _playerManager ??= PlayerManager.Instance;
+            IReadOnlyList<Transform> players = _playerManager?.Players;
+            player = null;
+            sqrDistance = 0f;
+
+            if (players == null || players.Count == 0)
+            {
+                return false;
+            }
+
+            float bestDistance = float.MaxValue;
+            Transform bestPlayer = null;
+            Vector3 origin = transform.position;
+
+            foreach (Transform candidate in players)
+            {
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                float candidateDistance = (candidate.position - origin).sqrMagnitude;
+                if (candidateDistance < bestDistance)
+                {
+                    bestDistance = candidateDistance;
+                    bestPlayer = candidate;
+                }
+            }
+
+            if (bestPlayer == null)
+            {
+                return false;
+            }
+
+            player = bestPlayer;
+            sqrDistance = bestDistance;
+            return true;
+        }
+
+        private Vector3 ApplyPlayerBounds(Vector3 desiredPosition)
+        {
+            if (!TryGetClosestPlayerAnchor(out Vector3 anchor, out _))
+            {
+                return desiredPosition;
+            }
+
+            Vector3 offset = desiredPosition - anchor;
+            float sqrMagnitude = offset.sqrMagnitude;
+
+            if (maxPlayerDistance > 0f)
+            {
+                float maxDistanceSqr = maxPlayerDistance * maxPlayerDistance;
+                if (sqrMagnitude > maxDistanceSqr)
+                {
+                    desiredPosition = anchor + offset.normalized * maxPlayerDistance;
+                    offset = desiredPosition - anchor;
+                    sqrMagnitude = offset.sqrMagnitude;
+                }
+            }
+
+            if (minPlayerDistance > 0f)
+            {
+                float minDistanceSqr = minPlayerDistance * minPlayerDistance;
+                if (sqrMagnitude < minDistanceSqr)
+                {
+                    Vector3 direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
+                    if (direction.sqrMagnitude <= Mathf.Epsilon)
+                    {
+                        direction = Vector3.forward;
+                    }
+
+                    desiredPosition = anchor + direction * minPlayerDistance;
+                }
+            }
+
+            return desiredPosition;
+        }
+
+        internal EaterMaster Master => _master;
+
+        internal EaterConfigSo Config => _config;
+
+        internal float MinPlayerDistance => minPlayerDistance;
+
+        internal float MaxPlayerDistance => maxPlayerDistance;
+
+        internal float OrbitDistance => orbitDistance;
+
+        internal float OrbitDuration => orbitDuration;
+
+        internal float OrbitApproachDuration => orbitApproachDuration;
+
+        internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
+            ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
+            : null;
+
+        internal float GetRandomRoamingSpeed()
+        {
+            if (_config == null)
+            {
+                return 0f;
+            }
+
+            float min = Mathf.Max(0f, _config.MinSpeed);
+            float max = Mathf.Max(min, _config.MaxSpeed);
+            return Random.Range(min, max);
+        }
+
+        internal float GetChaseSpeed()
+        {
+            if (_config == null)
+            {
+                return 0f;
+            }
+
+            float baseSpeed = Mathf.Max(_config.MaxSpeed, _config.MinSpeed);
+            return baseSpeed * Mathf.Max(1, _config.MultiplierChase);
+        }
+
+        internal void Move(Vector3 direction, float speed, float deltaTime, bool respectPlayerBounds)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon || speed <= 0f)
+            {
+                return;
+            }
+
+            Vector3 displacement = direction.normalized * speed * deltaTime;
+            Translate(displacement, respectPlayerBounds);
+        }
+
+        internal void Translate(Vector3 displacement, bool respectPlayerBounds)
+        {
+            Vector3 desiredPosition = transform.position + displacement;
+            if (respectPlayerBounds)
+            {
+                desiredPosition = ApplyPlayerBounds(desiredPosition);
+            }
+
+            transform.position = desiredPosition;
+        }
+
+        internal void RotateTowards(Vector3 direction, float deltaTime)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            float rotationSpeed = _config != null ? Mathf.Max(0f, _config.RotationSpeed) : 5f;
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, deltaTime * rotationSpeed);
+        }
+
+        internal void LookAt(Vector3 targetPosition)
+        {
+            Vector3 direction = targetPosition - transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            transform.rotation = targetRotation;
+        }
+
+        internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)
+        {
+            if (TryGetClosestPlayer(out Transform player, out float sqrDistance))
+            {
+                anchor = player.position;
+                distance = Mathf.Sqrt(sqrDistance);
+                return true;
+            }
+
+            anchor = default;
+            distance = 0f;
+            return false;
         }
     }
 }
