@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterDeathState : EaterBehaviorState
     {
-        private PlayerAnimationController _animationController;
+        private EaterAnimationController _animationController;
         private bool _missingAnimationLogged;
 
         public EaterDeathState() : base("Death")
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return false;
             }
 
-            if (Behavior.TryGetAnimationController(out PlayerAnimationController controller))
+            if (Behavior.TryGetAnimationController(out EaterAnimationController controller))
             {
                 _animationController = controller;
                 _missingAnimationLogged = false;

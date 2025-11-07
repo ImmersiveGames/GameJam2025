@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingDesireServiceLogged;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
-        private PlayerAnimationController _animationController;
+        private EaterAnimationController _animationController;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _config = _master != null ? _master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
-            _animationController = GetComponent<PlayerAnimationController>();
+            _animationController = GetComponent<EaterAnimationController>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _config = _master != null ? _master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
-            _animationController = GetComponent<PlayerAnimationController>();
+            _animationController = GetComponent<EaterAnimationController>();
         }
 #endif
 
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return detectionController != null;
         }
 
-        internal bool TryGetAnimationController(out PlayerAnimationController animationController)
+        internal bool TryGetAnimationController(out EaterAnimationController animationController)
         {
             if (_animationController == null)
             {
