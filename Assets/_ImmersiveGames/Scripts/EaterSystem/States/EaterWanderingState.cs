@@ -31,8 +31,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return direction;
             }
 
-            float maxDistance = Behavior.MaxPlayerDistance;
-            float minDistance = Behavior.MinPlayerDistance;
+            float maxDistance = Config?.WanderingMaxDistanceFromPlayer ?? 0f;
+            float minDistance = Config?.WanderingMinDistanceFromPlayer ?? 0f;
 
             if (maxDistance > 0f && distance > maxDistance)
             {

@@ -9,11 +9,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterEatingState : EaterBehaviorState
     {
+        private const float DefaultOrbitDistance = 3f;
+        private const float DefaultOrbitDuration = 4f;
+        private const float DefaultOrbitApproachDuration = 0.5f;
+
         private Tween _approachTween;
         private Tween _orbitTween;
         private Transform _currentTarget;
         private Vector3 _radialBasis;
         private float _currentAngle;
+
+        private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
+
+        private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
+
+        private float OrbitApproachDuration
+        {
+            get
+            {
+                float duration = OrbitDuration;
+                float approach = Config?.OrbitApproachDuration ?? DefaultOrbitApproachDuration;
+                approach = Mathf.Max(0.1f, approach);
+                return Mathf.Min(approach, duration);
+            }
+        }
 
         public EaterEatingState() : base("Eating")
         {
@@ -63,12 +82,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _radialBasis = ResolveRadialBasis();
-            Vector3 desiredPosition = _currentTarget.position + _radialBasis * Behavior.OrbitDistance;
+            Vector3 desiredPosition = _currentTarget.position + _radialBasis * OrbitDistance;
             float distanceToDesired = Vector3.Distance(Transform.position, desiredPosition);
 
             if (distanceToDesired > 0.05f)
             {
-                _approachTween = Transform.DOMove(desiredPosition, Behavior.OrbitApproachDuration)
+                _approachTween = Transform.DOMove(desiredPosition, OrbitApproachDuration)
                     .SetEase(Ease.InOutSine)
                     .OnUpdate(LookAtTarget)
                     .OnComplete(StartOrbit);
@@ -98,7 +117,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     ApplyOrbitAngle(angle);
                 },
                 360f,
-                Behavior.OrbitDuration)
+                OrbitDuration)
                 .SetEase(Ease.Linear)
                 .SetLoops(-1, LoopType.Restart)
                 .OnUpdate(LookAtTarget);
@@ -131,7 +150,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Vector3 tangent = Vector3.Cross(axis, radial).normalized;
 
             float radians = angle * Mathf.Deg2Rad;
-            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * Behavior.OrbitDistance;
+            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * OrbitDistance;
             Transform.position = _currentTarget.position + offset;
         }
 
