@@ -2,11 +2,6 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Events
 {
-    public class EaterDeathEvent : IEvent {}
-
-    public class DesireChangedEvent : IEvent {}
-
-    public class EaterStarvedEvent : IEvent {}
 
     /// <summary>
     /// Evento global utilizado para informar mudanças no desejo atual do Eater.

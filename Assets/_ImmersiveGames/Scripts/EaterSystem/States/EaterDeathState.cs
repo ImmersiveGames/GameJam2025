@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (!_missingAnimationLogged)
             {
-                DebugUtility.LogWarning<EaterDeathState>(
+                DebugUtility.LogWarning(
                     "EaterAnimationController não encontrado. Não será possível reproduzir animações de morte/idle.",
                     Behavior,
                     this);

@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    
     public class ObjectPool : MonoBehaviour
     {
         private readonly Queue<IPoolable> _pool = new();
@@ -16,7 +15,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public bool IsInitialized { get; private set; }
 
         private int _lastGetFrame;
-        private bool _allowMultipleGetsInFrame = true;
+        private readonly bool _allowMultipleGetsInFrame = true;
         private bool _hasWarnedExhausted;
 
         public UnityEvent<IPoolable> OnObjectActivated { get; } = new();

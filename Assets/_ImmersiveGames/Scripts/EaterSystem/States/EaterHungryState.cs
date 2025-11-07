@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            DebugUtility.Log<EaterHungryState>(
+            DebugUtility.LogVerbose(
                 $"Nova direção faminta: {direction} | velocidade={speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string availability = info.IsAvailable ? "disponível" : "indisponível";
-            DebugUtility.Log<EaterHungryState>(
+            DebugUtility.LogVerbose(
                 $"Novo desejo selecionado: {resource} ({availability}, planetas={info.AvailableCount}, duração={info.Duration:F2}s)",
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,

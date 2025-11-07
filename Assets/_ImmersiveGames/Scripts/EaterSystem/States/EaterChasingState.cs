@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 ResetMovementHalt();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
-                    DebugUtility.LogVerbose<EaterChasingState>(
+                    DebugUtility.LogVerbose(
                         "Nenhum planeta marcado para perseguir.",
                         context: Behavior,
                         instance: this);
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (_detectionController == null && !Behavior.TryGetDetectionController(out _detectionController))
             {
-                DebugUtility.LogWarning<EaterChasingState>(
+                DebugUtility.LogWarning(
                     "EaterDetectionController não encontrado para monitorar eventos de proximidade.",
                     Behavior,
                     this);
@@ -164,7 +164,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _planetProximityDetectionType = _detectionController.PlanetProximityDetectionType;
             if (_planetProximityDetectionType == null)
             {
-                DebugUtility.LogWarning<EaterChasingState>(
+                DebugUtility.LogWarning(
                     "DetectionType de proximidade de planetas não configurado para o Eater.",
                     Behavior,
                     this);
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string planetName = GetPlanetDisplayName(planetActor);
-            DebugUtility.Log<EaterChasingState>(
+            DebugUtility.Log(
                 $"Planeta {planetName} entrou no detector de proximidade durante a perseguição.",
                 DebugUtility.Colors.Info,
                 Behavior,
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string planetName = GetPlanetDisplayName(planetActor);
-            DebugUtility.Log<EaterChasingState>(
+            DebugUtility.LogVerbose(
                 $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
                 DebugUtility.Colors.Info,
                 Behavior,

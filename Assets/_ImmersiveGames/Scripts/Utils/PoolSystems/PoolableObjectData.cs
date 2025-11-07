@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (lifetime < 0)
             {
-                DebugUtility.LogWarning<ObjectPool>($"Lifetime não pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<PoolableObjectData>($"Lifetime não pode ser negativo em {name}. Definindo como 0.", this);
                 lifetime = 0;
             }
         }

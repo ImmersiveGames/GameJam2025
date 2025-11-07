@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             if (!DependencyManager.Instance.TryGetGlobal<T>(out var existing) || existing == null)
             {
                 var implementation = factory();
-                DependencyManager.Instance.RegisterGlobal<T>(implementation);
+                DependencyManager.Instance.RegisterGlobal(implementation);
                 DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered global service: {typeof(T).Name}");
             }
             else

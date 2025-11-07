@@ -24,6 +24,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [RequireComponent(typeof(EaterMaster))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterBehavior : MonoBehaviour
     {
         [Header("Debug")]
@@ -173,7 +174,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (logStateTransitions)
             {
                 string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
-                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.Log(message, DebugUtility.Colors.CrucialInfo, this, this);
             }
 
         }
@@ -235,7 +236,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            DebugUtility.LogWarning<EaterBehavior>(
+            DebugUtility.LogWarning(
                 "EaterMaster não encontrado. Transições de morte/revive permanecerão desabilitadas.",
                 this,
                 this);
@@ -515,7 +516,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+            DebugUtility.LogWarning(message, this, this);
             cacheFlag = true;
         }
 
@@ -528,11 +529,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (success)
             {
-                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.Success, this, this);
+                DebugUtility.Log(message, DebugUtility.Colors.Success, this, this);
             }
             else
             {
-                DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+                DebugUtility.LogWarning(message, this, this);
             }
         }
 
@@ -560,7 +561,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool started = _desireService.Start();
             if (logStateTransitions && started)
             {
-                DebugUtility.Log<EaterBehavior>($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.Log($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return started;
@@ -575,7 +576,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 stopped = _desireService.Stop();
                 if (logStateTransitions && stopped)
                 {
-                    DebugUtility.Log<EaterBehavior>($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                    DebugUtility.Log($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
                 }
             }
 
@@ -596,7 +597,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (logStateTransitions)
             {
-                DebugUtility.Log<EaterBehavior>($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.Log($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             UpdateDesireInfo(EaterDesireInfo.Inactive);
@@ -618,7 +619,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (logStateTransitions && !_missingDesireServiceLogged)
                 {
-                    DebugUtility.LogWarning<EaterBehavior>("Não foi possível inicializar o serviço de desejos (Master ou Config ausentes).", this, this);
+                    DebugUtility.LogWarning("Não foi possível inicializar o serviço de desejos (Master ou Config ausentes).", this, this);
                     _missingDesireServiceLogged = true;
                 }
 

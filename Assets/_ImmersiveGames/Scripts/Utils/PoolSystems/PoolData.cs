@@ -23,19 +23,19 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (data == null || string.IsNullOrEmpty(data.ObjectName))
             {
-                DebugUtility.LogError<ObjectPool>($"PoolData is null or ObjectName is empty in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolData is null or ObjectName is empty in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
             if (data.InitialPoolSize <= 0)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolData '{data.ObjectName}' has invalid InitialPoolSize: {data.InitialPoolSize} in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolData '{data.ObjectName}' has invalid InitialPoolSize: {data.InitialPoolSize} in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
             if (data.ObjectConfigs == null || data.ObjectConfigs.Length == 0)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolData '{data.ObjectName}' has no ObjectConfigs in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolData '{data.ObjectName}' has no ObjectConfigs in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
@@ -43,12 +43,12 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (!ValidatePoolableObjectData(data.ObjectConfigs[i], caller))
                 {
-                    DebugUtility.LogError<ObjectPool>($"Invalid PoolableObjectData at index {i} in PoolData '{data.ObjectName}' in '{caller?.name ?? "Unknown"}'.", caller);
+                    DebugUtility.LogError<PoolData>($"Invalid PoolableObjectData at index {i} in PoolData '{data.ObjectName}' in '{caller?.name ?? "Unknown"}'.", caller);
                     return false;
                 }
             }
 
-            DebugUtility.Log<ObjectPool>(
+            DebugUtility.LogVerbose<PoolData>(
                 $"PoolData '{data.ObjectName}' validated successfully in '{caller?.name ?? "Unknown"}'.",
                 DebugUtility.Colors.Success,
                 caller);
@@ -59,23 +59,23 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (data == null || string.IsNullOrEmpty(data.name))
             {
-                DebugUtility.LogError<ObjectPool>($"PoolableObjectData is null or name is empty in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolableObjectData is null or name is empty in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
             if (data.Prefab == null)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolableObjectData '{data.name}' has null Prefab in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolableObjectData '{data.name}' has null Prefab in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
             if (data.Lifetime <= 0)
             {
-                DebugUtility.LogError<ObjectPool>($"PoolableObjectData '{data.name}' has invalid Lifetime: {data.Lifetime} in '{caller?.name ?? "Unknown"}'.", caller);
+                DebugUtility.LogError<PoolData>($"PoolableObjectData '{data.name}' has invalid Lifetime: {data.Lifetime} in '{caller?.name ?? "Unknown"}'.", caller);
                 return false;
             }
 
-            DebugUtility.Log<ObjectPool>(
+            DebugUtility.LogVerbose<PoolData>(
                 $"PoolableObjectData '{data.name}' validated successfully in '{caller?.name ?? "Unknown"}'.",
                 DebugUtility.Colors.Success,
                 caller);
@@ -87,16 +87,16 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                DebugUtility.LogWarning<ObjectPool>($"ObjectName não configurado em {name}.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectName não configurado em {name}.", this);
             }
             if (initialPoolSize < 0)
             {
-                DebugUtility.LogWarning<ObjectPool>($"InitialPoolSize não pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<PoolData>($"InitialPoolSize não pode ser negativo em {name}. Definindo como 0.", this);
                 initialPoolSize = 0;
             }
             if (objectConfigs == null || objectConfigs.Length == 0)
             {
-                DebugUtility.LogWarning<ObjectPool>($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
+                DebugUtility.LogWarning<PoolData>($"ObjectConfigs não configurado em {name}. Pelo menos uma configuração é necessária.", this);
             }
         }
 #endif

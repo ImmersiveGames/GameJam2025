@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_waitingDelay)
             {
                 _waitingDelay = false;
-                DebugUtility.LogVerbose<EaterDesireService>(
+                DebugUtility.LogVerbose(
                     "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
                     context: _master,
                     instance: this);
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (HasActiveDesire)
             {
-                DebugUtility.LogVerbose<EaterDesireService>(
+                DebugUtility.LogVerbose(
                     $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
                     context: _master,
                     instance: this);
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _waitingDelay = true;
                 RestartTimer(delay);
-                DebugUtility.LogVerbose<EaterDesireService>(
+                DebugUtility.LogVerbose(
                     $"⌛ Iniciando desejos após atraso de {delay:F2}s.",
                     context: _master,
                     instance: this);
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _timer.Stop();
             }
 
-            DebugUtility.LogVerbose<EaterDesireService>("🛑 Desejos do Eater pausados.", context: _master, instance: this);
+            DebugUtility.LogVerbose("🛑 Desejos do Eater pausados.", context: _master, instance: this);
             NotifyDesireChanged();
             return true;
         }
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (!TrySelectDesire(out PlanetResources desire, out bool available, out int availableCount, out float selectionWeight))
             {
-                DebugUtility.LogWarning<EaterDesireService>(
+                DebugUtility.LogWarning(
                     "Não foi possível selecionar um desejo válido para o Eater.",
                     context: _master,
                     instance: this);
@@ -227,14 +227,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 ? $"disponível ({_currentDesireAvailableCount} planeta(s))"
                 : "indisponível";
             float timestamp = Time.timeSinceLevelLoad;
-            DebugUtility.Log<EaterDesireService>(
+            DebugUtility.Log(
                 $"✨ {actorName} deseja {desire} ({availability}) por {_currentDuration:F2}s (peso {_currentDesireWeight:F2}, t={timestamp:F2}s).",
                 context: _master,
                 instance: this);
 
             if (!available)
             {
-                DebugUtility.LogVerbose<EaterDesireService>(
+                DebugUtility.LogVerbose(
                     $"Nenhum planeta com {desire} detectado, mantendo desejo com duração reduzida para {_currentDuration:F2}s.",
                     context: _master,
                     instance: this);
@@ -341,7 +341,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         .Append(')');
                 }
 
-                DebugUtility.LogVerbose<EaterDesireService>(
+                DebugUtility.LogVerbose(
                     _debugBuilder.ToString(),
                     context: _master,
                     instance: this,
@@ -453,7 +453,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_missingSoundLogged)
                 {
-                    DebugUtility.LogVerbose<EaterDesireService>(
+                    DebugUtility.LogVerbose(
                         "Nenhum som configurado para desejos do Eater.",
                         context: _master,
                         instance: this);
@@ -467,7 +467,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_missingEmitterLogged)
                 {
-                    DebugUtility.LogWarning<EaterDesireService>(
+                    DebugUtility.LogWarning(
                         "EntityAudioEmitter não encontrado — som de desejo não reproduzido.",
                         context: _master,
                         instance: this);

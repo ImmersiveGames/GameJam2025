@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (desireIcon == null && TryGetComponent(out Image resolvedIcon))
             {
                 desireIcon = resolvedIcon;
-                DebugUtility.LogVerbose<EaterDesireUI>(
+                DebugUtility.LogVerbose(
                     "Imagem de desejo resolvida automaticamente a partir do próprio GameObject.",
                     context: this,
                     instance: this);
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventBus<EaterDesireInfoChangedEvent>.Register(_desireChangedBinding);
             _listeningDesires = true;
 
-            DebugUtility.LogVerbose<EaterDesireUI>(
+            DebugUtility.LogVerbose(
                 "Escutando alterações globais de desejo do Eater via EventBus.",
                 context: this,
                 instance: this);
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (eaterBehavior == null)
                 {
-                    DebugUtility.LogVerbose<EaterDesireUI>(
+                    DebugUtility.LogVerbose(
                         "Evento de desejo recebido sem referência ao comportamento. Aguardando resolução do Eater.",
                         context: this,
                         instance: this);
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 eaterBehavior = evt.Behavior;
                 _warnedMissingBehavior = false;
 
-                DebugUtility.LogVerbose<EaterDesireUI>(
+                DebugUtility.LogVerbose(
                     $"EaterBehavior associado via EventBus: {eaterBehavior.name}.",
                     context: this,
                     instance: this);
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_warnedMissingIcon)
                 {
-                    DebugUtility.LogWarning<EaterDesireUI>(
+                    DebugUtility.LogWarning(
                         "Componente Image do ícone de desejo não configurado.",
                         context: this,
                         instance: this);
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _pendingIconResolve = false;
 
-            DebugUtility.LogVerbose<EaterDesireUI>(
+            DebugUtility.LogVerbose(
                 $"Ícone de desejo atualizado para {_currentInfo.Resource.Value} (disp={_currentInfo.IsAvailable}, planetas={_currentInfo.AvailableCount}).",
                 context: this,
                 instance: this);
@@ -258,7 +258,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 SetIconVisibility(false);
             }
 
-            DebugUtility.LogVerbose<EaterDesireUI>(
+            DebugUtility.LogVerbose(
                 "Nenhum desejo ativo para exibir na UI.",
                 context: this,
                 instance: this);
@@ -277,7 +277,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
 
-                DebugUtility.LogWarning<EaterDesireUI>(
+                DebugUtility.LogWarning(
                     _currentInfo.HasResource
                         ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
                         : "Ícone de desejo indisponível. Utilizando fallback.",
@@ -287,7 +287,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             else
             {
                 SetIconVisibility(false);
-                DebugUtility.LogWarning<EaterDesireUI>(
+                DebugUtility.LogWarning(
                     _currentInfo.HasResource
                         ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
                         : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
@@ -304,7 +304,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             GameObject iconObject = desireIcon.gameObject;
-            CanvasRenderer renderer = desireIcon.canvasRenderer;
+            CanvasRenderer canvasRenderer = desireIcon.canvasRenderer;
 
             if (visible)
             {
@@ -318,9 +318,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     desireIcon.enabled = true;
                 }
 
-                if (renderer != null)
+                if (canvasRenderer != null)
                 {
-                    renderer.SetAlpha(1f);
+                    canvasRenderer.SetAlpha(1f);
                 }
 
                 return;
@@ -346,9 +346,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireIcon.enabled = false;
             }
 
-            if (renderer != null)
+            if (canvasRenderer != null)
             {
-                renderer.SetAlpha(0f);
+                canvasRenderer.SetAlpha(0f);
             }
         }
 
@@ -365,7 +365,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (_missingDefinitionWarnings.Add(resource))
                 {
-                    DebugUtility.LogWarning<EaterDesireUI>(
+                    DebugUtility.LogWarning(
                         $"Nenhuma definição encontrada para o recurso {resource}.",
                         context: this,
                         instance: this);
@@ -380,7 +380,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (_missingSpriteWarnings.Add(resource))
                 {
-                    DebugUtility.LogWarning<EaterDesireUI>(
+                    DebugUtility.LogWarning(
                         $"A definição do recurso {resource} não possui sprite configurado.",
                         context: this,
                         instance: this);
@@ -413,7 +413,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_warnedMissingManager)
                 {
-                    DebugUtility.LogVerbose<EaterDesireUI>(
+                    DebugUtility.LogVerbose(
                         "PlanetsManager ainda não está disponível. Aguardando para resolver ícone de desejo.",
                         context: this,
                         instance: this);
@@ -429,7 +429,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _pendingIconResolve = false;
             ClearMissingResourceWarnings();
 
-            DebugUtility.LogVerbose<EaterDesireUI>(
+            DebugUtility.LogVerbose(
                 "PlanetsManager localizado para resolução de ícones de desejo.",
                 context: this,
                 instance: this);
@@ -522,7 +522,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (eaterBehavior != null)
             {
-                DebugUtility.LogVerbose<EaterDesireUI>(
+                DebugUtility.LogVerbose(
                     $"EaterBehavior localizado para UI: {eaterBehavior.name}.",
                     context: this,
                     instance: this);
@@ -532,7 +532,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (!_warnedMissingBehavior)
             {
-                DebugUtility.LogWarning<EaterDesireUI>(
+                DebugUtility.LogWarning(
                     "EaterBehavior não encontrado para atualizar o HUD de desejos.",
                     context: this,
                     instance: this);
