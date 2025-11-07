@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -8,6 +9,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterHungryState : EaterMoveState
     {
+        private bool _listeningDesires;
+
         public EaterHungryState() : base("Hungry")
         {
         }
@@ -15,11 +18,26 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            if (Behavior != null)
+            {
+                Behavior.EventDesireChanged += HandleDesireChanged;
+                _listeningDesires = true;
+                Behavior.BeginDesires("HungryState.OnEnter");
+            }
+
             Behavior?.ResumeAutoFlow("HungryState.OnEnter");
         }
 
         public override void OnExit()
         {
+            if (_listeningDesires && Behavior != null)
+            {
+                Behavior.EventDesireChanged -= HandleDesireChanged;
+                _listeningDesires = false;
+            }
+
+            Behavior?.EndDesires("HungryState.OnExit");
+            Behavior?.EnsureNoActiveDesire("HungryState.OnExit");
             Behavior?.PauseAutoFlow("HungryState.OnExit");
             base.OnExit();
         }
@@ -83,6 +101,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             DebugUtility.Log<EaterHungryState>(
                 $"Nova direção faminta: {direction} | velocidade={speed:F2}",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
+        }
+
+        private void HandleDesireChanged(EaterDesireInfo info)
+        {
+            if (!Behavior.ShouldLogStateTransitions || !info.HasDesire || !info.TryGetResource(out var resource))
+            {
+                return;
+            }
+
+            string availability = info.IsAvailable ? "disponível" : "indisponível";
+            DebugUtility.Log<EaterHungryState>(
+                $"Novo desejo selecionado: {resource} ({availability}, planetas={info.AvailableCount}, duração={info.Duration:F2}s)",
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,
                 instance: this);

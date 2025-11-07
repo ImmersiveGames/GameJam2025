@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -56,6 +57,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
 
+        private EaterDesireService _desireService;
+        private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
+        private bool _missingDesireServiceLogged;
+
+        public event Action<EaterDesireInfo> EventDesireChanged;
+
         private void Awake()
         {
             _master = GetComponent<EaterMaster>();
@@ -63,16 +70,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
+            EnsureDesireService();
             ApplyConfigDefaults();
             BuildStates();
         }
 
         private void Update()
         {
+            _desireService?.Update();
             _stateMachine?.Update();
         }
 
-        private void FixedUpdate()
+        private void EnsureStateMachine()
         {
             _stateMachine?.FixedUpdate();
         }
@@ -444,6 +453,107 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             anchor = default;
             distance = 0f;
             return false;
+        }
+
+        internal bool BeginDesires(string reason)
+        {
+            if (!EnsureDesireService())
+            {
+                return false;
+            }
+
+            bool started = _desireService.Start();
+            if (logStateTransitions && started)
+            {
+                DebugUtility.Log<EaterBehavior>($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            return started;
+        }
+
+        internal bool EndDesires(string reason)
+        {
+            bool stopped = false;
+
+            if (_desireService != null)
+            {
+                stopped = _desireService.Stop();
+                if (logStateTransitions && stopped)
+                {
+                    DebugUtility.Log<EaterBehavior>($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+            }
+
+            if (!stopped)
+            {
+                EnsureNoActiveDesire(reason);
+            }
+
+            return stopped;
+        }
+
+        internal void EnsureNoActiveDesire(string reason)
+        {
+            if (!_currentDesireInfo.ServiceActive && !_currentDesireInfo.HasDesire)
+            {
+                return;
+            }
+
+            if (logStateTransitions)
+            {
+                DebugUtility.Log<EaterBehavior>($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            UpdateDesireInfo(EaterDesireInfo.Inactive);
+        }
+
+        public EaterDesireInfo GetCurrentDesireInfo()
+        {
+            return _currentDesireInfo;
+        }
+
+        private bool EnsureDesireService()
+        {
+            if (_desireService != null)
+            {
+                return true;
+            }
+
+            if (_master == null || _config == null)
+            {
+                if (logStateTransitions && !_missingDesireServiceLogged)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>("Não foi possível inicializar o serviço de desejos (Master ou Config ausentes).", this, this);
+                    _missingDesireServiceLogged = true;
+                }
+
+                return false;
+            }
+
+            _desireService = new EaterDesireService(_master, _config);
+            _desireService.EventDesireChanged += HandleDesireChanged;
+            _missingDesireServiceLogged = false;
+            return true;
+        }
+
+        private void HandleDesireChanged(EaterDesireInfo info)
+        {
+            UpdateDesireInfo(info);
+        }
+
+        private void UpdateDesireInfo(EaterDesireInfo info)
+        {
+            _currentDesireInfo = info;
+            EventDesireChanged?.Invoke(info);
+        }
+
+        private void OnDestroy()
+        {
+            if (_desireService != null)
+            {
+                _desireService.EventDesireChanged -= HandleDesireChanged;
+                _desireService.Stop();
+            }
         }
     }
 }
