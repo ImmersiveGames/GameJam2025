@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.EaterSystem.Animations;
+using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -33,6 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterBehaviorState _hungryState;
         private EaterBehaviorState _chasingState;
         private EaterBehaviorState _eatingState;
+        private EaterBehaviorState _deathState;
 
         private EaterMaster _master;
         private EaterConfigSo _config;
@@ -46,6 +50,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
         private bool _missingDesireServiceLogged;
+        private EntityAudioEmitter _audioEmitter;
+        private EaterDetectionController _detectionController;
+        private PlayerAnimationController _animationController;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -53,6 +60,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _master = GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
+            _audioEmitter = GetComponent<EntityAudioEmitter>();
+            _detectionController = GetComponent<EaterDetectionController>();
+            _animationController = GetComponent<PlayerAnimationController>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
@@ -70,6 +80,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _master ??= GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
+            _audioEmitter = GetComponent<EntityAudioEmitter>();
+            _detectionController = GetComponent<EaterDetectionController>();
+            _animationController = GetComponent<PlayerAnimationController>();
         }
 #endif
 
@@ -97,6 +110,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _hungryState = RegisterState(new EaterHungryState());
             _chasingState = RegisterState(new EaterChasingState());
             _eatingState = RegisterState(new EaterEatingState());
+            _deathState = RegisterState(new EaterDeathState());
 
             ForceSetState(_wanderingState, "Inicialização");
             return _stateMachine != null;
@@ -128,6 +142,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             EnsureStatesInitialized();
             ForceSetState(_eatingState, "ContextMenu/Eating");
+        }
+
+        [ContextMenu("Eater States/Set Death")]
+        private void ContextSetDeath()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_deathState, "ContextMenu/Death");
         }
 
         private void ForceSetState(EaterBehaviorState targetState, string reason)
@@ -266,6 +287,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
             : null;
+
+        internal bool TryGetDetectionController(out EaterDetectionController detectionController)
+        {
+            if (_detectionController == null)
+            {
+                TryGetComponent(out _detectionController);
+            }
+
+            detectionController = _detectionController;
+            return detectionController != null;
+        }
+
+        internal bool TryGetAnimationController(out PlayerAnimationController animationController)
+        {
+            if (_animationController == null)
+            {
+                TryGetComponent(out _animationController);
+            }
+
+            animationController = _animationController;
+            return animationController != null;
+        }
 
         internal bool ResumeAutoFlow(string reason)
         {
@@ -516,7 +559,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            _desireService = new EaterDesireService(_master, _config);
+            _desireService = new EaterDesireService(_master, _config, _audioEmitter);
             _desireService.EventDesireChanged += HandleDesireChanged;
             _missingDesireServiceLogged = false;
             return true;
