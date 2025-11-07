@@ -27,6 +27,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
+        internal DetectionType PlanetProximityDetectionType => planetProximityDetectionType;
+
         protected override void Awake()
         {
             base.Awake();

@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -22,18 +21,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float unavailableDesireWeight = 0.5f;
         [SerializeField, Range(0f, 1f), Tooltip("Multiplicador aplicado ao peso de desejos recentes quando existem novas opções.")]
         private float recentDesireWeightMultiplier = 0.35f;
-        [SerializeField, Tooltip("Limiar para iniciar os desejos (0-1)")]
-        private float desireThreshold = 0.9f;
         [SerializeField, Tooltip("Atraso para iniciar a escolha de desejos (segundos)")]
         private float delayTimer = 2;
 
         [Header("Áudio")]
         [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
         private SoundData desireSelectedSound;
-
-        [Header("Saciedade")]
-        [SerializeField, Tooltip("Tipo de recurso que indica quando o Eater está totalmente saciado (ex.: Stamina).")]
-        private ResourceType satiationResourceType = ResourceType.Stamina;
 
         [Header("Configuração de Movimento")]
         [SerializeField, Tooltip("Intervalo para mudar de direção (segundos)")]
@@ -44,8 +37,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Velocidade de Rotação")]  private float rotationSpeed = 5f;
 
         [Header("Comportamento de Fome")]
-        [SerializeField, Tooltip("Tempo em segundos que o Eater permanece vagando antes de voltar a sentir fome.")]
-        private float wanderingDuration = 15f;
         [SerializeField, Tooltip("Distância mínima em relação ao jogador mais próximo enquanto o Eater vaga satisfeito.")]
         private float wanderingMinDistanceFromPlayer = 5f;
         [SerializeField, Tooltip("Distância máxima em relação ao jogador mais próximo enquanto o Eater vaga satisfeito.")]
@@ -63,20 +54,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Tempo em segundos para se aproximar da distância de órbita ao iniciar o estado de alimentação.")]
         private float orbitApproachDuration = 0.5f;
 
-        [SerializeField, Tooltip("Fome restaurada ao consumir recurso desejado")]
-        private float desiredHungerRestored = 50f;
-        [SerializeField, Tooltip("Fome restaurada ao consumir recurso indesejado")]
-        private float nonDesiredHungerRestored = 25f;
-        [SerializeField, Tooltip("HP restaurado ao consumir recurso desejado")]
-        private float desiredHealthRestored = 30f;
-        [SerializeField, Tooltip("Dano causado ao morder um planeta")]
-        private int biteDamage = 10;
-        
         [Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
         public float minimumChaseDistance = 1.5f;
 
         public int MaxRecentDesires => maxRecentDesires;
-        public float DesireThreshold => desireThreshold;
         public float DelayTimer => delayTimer;
         public float DesireChangeInterval => desireChangeInterval;
         public float DesireDuration => desireChangeInterval;
@@ -91,7 +72,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float MaxSpeed => Mathf.Max(MinSpeed, maxSpeed);
         public int MultiplierChase => Mathf.Max(1, multiplierChase);
         public float RotationSpeed => Mathf.Max(0f, rotationSpeed);
-        public float WanderingDuration => Mathf.Max(0f, wanderingDuration);
         public float WanderingMinDistanceFromPlayer => Mathf.Max(0f, wanderingMinDistanceFromPlayer);
         public float WanderingMaxDistanceFromPlayer => Mathf.Max(WanderingMinDistanceFromPlayer, wanderingMaxDistanceFromPlayer);
         public float WanderingReturnBias => Mathf.Clamp01(wanderingReturnBias);
@@ -100,14 +80,5 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float OrbitDistance => Mathf.Max(0.1f, orbitDistance);
         public float OrbitDuration => Mathf.Max(0.25f, orbitDuration);
         public float OrbitApproachDuration => Mathf.Min(Mathf.Max(0.1f, orbitApproachDuration), OrbitDuration);
-
-        public ResourceType SatiationResourceType => satiationResourceType;
-        
-        public int BiteDamage => biteDamage;
-        
-        
-        public float DesiredHungerRestored => desiredHungerRestored;
-        public float NonDesiredHungerRestored => nonDesiredHungerRestored;
-        public float DesiredHealthRestored => desiredHealthRestored;
     }
 }
