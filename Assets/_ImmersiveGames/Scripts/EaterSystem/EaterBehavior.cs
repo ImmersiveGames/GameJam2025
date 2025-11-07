@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
             ApplyConfigDefaults();
-            EnsureStateMachine();
+            EnsureStatesInitialized();
         }
 
         private void Update()
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _stateMachine?.FixedUpdate();
         }
 
-        private bool EnsureStateMachine()
+        private bool EnsureStatesInitialized()
         {
             if (_stateMachine != null)
             {
@@ -107,28 +107,28 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [ContextMenu("Eater States/Set Wandering")]
         private void ContextSetWandering()
         {
-            EnsureStateMachine();
+            EnsureStatesInitialized();
             ForceSetState(_wanderingState, "ContextMenu/Wandering");
         }
 
         [ContextMenu("Eater States/Set Hungry")]
         private void ContextSetHungry()
         {
-            EnsureStateMachine();
+            EnsureStatesInitialized();
             ForceSetState(_hungryState, "ContextMenu/Hungry");
         }
 
         [ContextMenu("Eater States/Set Chasing")]
         private void ContextSetChasing()
         {
-            EnsureStateMachine();
+            EnsureStatesInitialized();
             ForceSetState(_chasingState, "ContextMenu/Chasing");
         }
 
         [ContextMenu("Eater States/Set Eating")]
         private void ContextSetEating()
         {
-            EnsureStateMachine();
+            EnsureStatesInitialized();
             ForceSetState(_eatingState, "ContextMenu/Eating");
         }
 
