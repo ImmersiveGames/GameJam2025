@@ -96,8 +96,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             Behavior.RotateTowards(direction, Time.deltaTime);
             Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
-            float sampleSpeed = travelDistance / Mathf.Max(Time.deltaTime, Mathf.Epsilon);
-            Behavior.RecordMovement(direction, sampleSpeed);
         }
 
         private void HandleProximityContactChanged(PlanetsMaster planet, bool active)

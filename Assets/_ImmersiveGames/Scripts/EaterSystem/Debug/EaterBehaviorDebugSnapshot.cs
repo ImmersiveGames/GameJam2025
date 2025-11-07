@@ -3,7 +3,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 {
     /// <summary>
-    /// Estrutura imutável que captura um snapshot do comportamento do Eater para fins de debug.
+    /// Estrutura imutável contendo apenas os dados relevantes para inspeção do comportamento do Eater.
     /// </summary>
     public readonly struct EaterBehaviorDebugSnapshot
     {
@@ -16,24 +16,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         public bool HasTarget { get; }
         public string TargetName { get; }
         public float StateTimer { get; }
-        public bool HasWanderingTimer { get; }
-        public bool WanderingTimerRunning { get; }
-        public bool WanderingTimerFinished { get; }
-        public float WanderingTimerValue { get; }
-        public float WanderingDuration { get; }
         public Vector3 Position { get; }
         public bool HasPlayerAnchor { get; }
         public Vector3 PlayerAnchor { get; }
+        public float PlayerAnchorDistance { get; }
+        public float PlayerAnchorAlignment { get; }
         public bool HasAutoFlow { get; }
         public bool AutoFlowActive { get; }
         public bool DesiresActive { get; }
-        public bool PendingHungryEffects { get; }
-        public bool HasMovementSample { get; }
-        public Vector3 MovementDirection { get; }
-        public float MovementSpeed { get; }
-        public bool HasHungryMetrics { get; }
-        public float PlayerAnchorDistance { get; }
-        public float PlayerAnchorAlignment { get; }
         public bool HasCurrentDesire { get; }
         public string CurrentDesireName { get; }
         public bool CurrentDesireAvailable { get; }
@@ -50,24 +40,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             bool hasTarget,
             string targetName,
             float stateTimer,
-            bool hasWanderingTimer,
-            bool wanderingTimerRunning,
-            bool wanderingTimerFinished,
-            float wanderingTimerValue,
-            float wanderingDuration,
             Vector3 position,
             bool hasPlayerAnchor,
             Vector3 playerAnchor,
+            float playerAnchorDistance,
+            float playerAnchorAlignment,
             bool hasAutoFlow,
             bool autoFlowActive,
             bool desiresActive,
-            bool pendingHungryEffects,
-            bool hasMovementSample,
-            Vector3 movementDirection,
-            float movementSpeed,
-            bool hasHungryMetrics,
-            float playerAnchorDistance,
-            float playerAnchorAlignment,
             bool hasCurrentDesire,
             string currentDesireName,
             bool currentDesireAvailable,
@@ -83,24 +63,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             HasTarget = hasTarget;
             TargetName = targetName;
             StateTimer = stateTimer;
-            HasWanderingTimer = hasWanderingTimer;
-            WanderingTimerRunning = wanderingTimerRunning;
-            WanderingTimerFinished = wanderingTimerFinished;
-            WanderingTimerValue = wanderingTimerValue;
-            WanderingDuration = wanderingDuration;
             Position = position;
             HasPlayerAnchor = hasPlayerAnchor;
             PlayerAnchor = playerAnchor;
+            PlayerAnchorDistance = playerAnchorDistance;
+            PlayerAnchorAlignment = playerAnchorAlignment;
             HasAutoFlow = hasAutoFlow;
             AutoFlowActive = autoFlowActive;
             DesiresActive = desiresActive;
-            PendingHungryEffects = pendingHungryEffects;
-            HasMovementSample = hasMovementSample;
-            MovementDirection = movementDirection;
-            MovementSpeed = movementSpeed;
-            HasHungryMetrics = hasHungryMetrics;
-            PlayerAnchorDistance = playerAnchorDistance;
-            PlayerAnchorAlignment = playerAnchorAlignment;
             HasCurrentDesire = hasCurrentDesire;
             CurrentDesireName = currentDesireName;
             CurrentDesireAvailable = currentDesireAvailable;

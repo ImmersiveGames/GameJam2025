@@ -65,15 +65,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _stateTimer;
         private EaterBehaviorState _lastStateSampled;
 
-        private bool _hasMovementSample;
-        private Vector3 _lastMovementDirection;
-        private float _lastMovementSpeed;
-
-        private bool _hasPlayerAnchorSample;
-        private Vector3 _lastPlayerAnchorPosition;
-        private float _lastPlayerAnchorDistance;
-        private float _lastPlayerAnchorAlignment;
-
         public event Action<EaterDesireInfo> EventDesireChanged;
         public event Action<IState, IState> EventStateChanged;
         public event Action<PlanetsMaster> EventTargetChanged;
@@ -141,7 +132,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             RefreshCurrentTarget();
             _desireService?.Update();
             _stateMachine?.Update();
-            SamplePlayerAnchor();
             AdvanceStateTimer(Time.deltaTime);
         }
 
@@ -258,12 +248,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return state?.GetType().Name ?? "estado desconhecido";
         }
 
-        private bool RefreshCurrentTarget()
+        private void RefreshCurrentTarget()
         {
             PlanetsMaster resolved = ResolveMarkedPlanet();
             if (ReferenceEquals(_currentTarget, resolved))
             {
-                return false;
+                return;
             }
 
             PlanetsMaster previous = _currentTarget;
@@ -284,8 +274,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     context: this,
                     instance: this);
             }
-
-            return true;
         }
 
         private PlanetsMaster ResolveMarkedPlanet()
@@ -403,11 +391,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ForceSetState(_chasingState, $"EndEating({desireSatisfied})");
         }
 
-        internal bool TryPlayDesireSelectedSound(string source)
+        internal void TryPlayDesireSelectedSound(string source)
         {
             if (_config?.DesireSelectedSound == null)
             {
-                return false;
+                if (logStateTransitions)
+                {
+                    DebugUtility.LogVerbose<EaterBehavior>(
+                        "Nenhum áudio configurado para desejos.",
+                        context: this,
+                        instance: this);
+                }
+
+                return;
             }
 
             if (!TryEnsureAudioEmitter())
@@ -422,7 +418,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     _loggedMissingAudioEmitter = true;
                 }
 
-                return false;
+                return;
             }
 
             _loggedMissingAudioEmitter = false;
@@ -438,8 +434,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     context: this,
                     instance: this);
             }
-
-            return true;
         }
 
         private bool TryEnsureAudioEmitter()
@@ -589,7 +583,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             Vector3 normalized = direction.normalized;
             Vector3 displacement = normalized * speed * deltaTime;
             Translate(displacement, respectPlayerBounds);
-            RecordMovement(normalized, speed);
         }
 
         internal void Translate(Vector3 displacement, bool respectPlayerBounds)
@@ -601,18 +594,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             transform.position = desiredPosition;
-        }
-
-        internal void RecordMovement(Vector3 direction, float speed)
-        {
-            if (direction.sqrMagnitude <= Mathf.Epsilon || speed <= Mathf.Epsilon)
-            {
-                return;
-            }
-
-            _hasMovementSample = true;
-            _lastMovementDirection = direction.normalized;
-            _lastMovementSpeed = speed;
         }
 
         internal void RotateTowards(Vector3 direction, float deltaTime)
@@ -741,35 +722,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             anchor = default;
             distance = 0f;
             return false;
-        }
-
-        private void SamplePlayerAnchor()
-        {
-            if (TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance))
-            {
-                _hasPlayerAnchorSample = true;
-                _lastPlayerAnchorPosition = anchor;
-                _lastPlayerAnchorDistance = distance;
-
-                Vector3 toAnchor = anchor - transform.position;
-                Vector3 forward = transform.forward;
-
-                if (toAnchor.sqrMagnitude > Mathf.Epsilon && forward.sqrMagnitude > Mathf.Epsilon)
-                {
-                    _lastPlayerAnchorAlignment = Vector3.Dot(forward.normalized, toAnchor.normalized);
-                }
-                else
-                {
-                    _lastPlayerAnchorAlignment = 0f;
-                }
-            }
-            else
-            {
-                _hasPlayerAnchorSample = false;
-                _lastPlayerAnchorPosition = Vector3.zero;
-                _lastPlayerAnchorDistance = 0f;
-                _lastPlayerAnchorAlignment = 0f;
-            }
         }
 
         private void AdvanceStateTimer(float deltaTime)
@@ -932,21 +884,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool hasTarget = _currentTarget != null;
             string targetName = hasTarget ? FormatPlanetName(_currentTarget) : string.Empty;
 
-            bool hasPlayerAnchor = _hasPlayerAnchorSample;
-            Vector3 playerAnchor = _lastPlayerAnchorPosition;
-            float playerAnchorDistance = _hasPlayerAnchorSample ? _lastPlayerAnchorDistance : 0f;
-            float playerAnchorAlignment = _hasPlayerAnchorSample ? _lastPlayerAnchorAlignment : 0f;
-
-            bool hasDesire = _currentDesireInfo.HasDesire;
-            string desireName = string.Empty;
-            if (hasDesire && _currentDesireInfo.TryGetResource(out PlanetResources resource))
+            bool hasPlayerAnchor = TryGetClosestPlayerAnchor(out Vector3 anchor, out float anchorDistance);
+            float anchorAlignment = 0f;
+            if (hasPlayerAnchor)
             {
-                desireName = resource.ToString();
+                Vector3 toAnchor = anchor - transform.position;
+                Vector3 forward = transform.forward;
+
+                if (toAnchor.sqrMagnitude > Mathf.Epsilon && forward.sqrMagnitude > Mathf.Epsilon)
+                {
+                    anchorAlignment = Vector3.Dot(toAnchor.normalized, forward.normalized);
+                }
+            }
+            else
+            {
+                anchor = Vector3.zero;
+                anchorDistance = 0f;
             }
 
             bool hasAutoFlow = TryEnsureAutoFlowBridge() && _autoFlowBridge.HasAutoFlowService;
             bool autoFlowActive = hasAutoFlow && _autoFlowBridge.IsAutoFlowActive;
             bool desiresActive = _currentDesireInfo.ServiceActive || (_desireService?.IsActive ?? false);
+            bool hasDesire = _currentDesireInfo.HasDesire;
+
+            string desireName = string.Empty;
+            if (hasDesire && _currentDesireInfo.TryGetResource(out PlanetResources resource))
+            {
+                desireName = resource.ToString();
+            }
 
             return new EaterBehaviorDebugSnapshot(
                 isValid,
@@ -956,24 +921,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 hasTarget,
                 targetName,
                 _stateTimer,
-                hasWanderingTimer: false,
-                wanderingTimerRunning: false,
-                wanderingTimerFinished: false,
-                wanderingTimerValue: 0f,
-                wanderingDuration: 0f,
                 transform.position,
                 hasPlayerAnchor,
-                playerAnchor,
+                anchor,
+                anchorDistance,
+                anchorAlignment,
                 hasAutoFlow,
                 autoFlowActive,
                 desiresActive,
-                pendingHungryEffects: false,
-                _hasMovementSample,
-                _lastMovementDirection,
-                _lastMovementSpeed,
-                _hasPlayerAnchorSample,
-                playerAnchorDistance,
-                playerAnchorAlignment,
                 hasDesire,
                 desireName,
                 _currentDesireInfo.IsAvailable,

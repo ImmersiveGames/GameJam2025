@@ -110,14 +110,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             if (info.HasDesire && Behavior != null)
             {
-                bool played = Behavior.TryPlayDesireSelectedSound("HungryState.HandleDesireChanged");
-                if (!played && Behavior.ShouldLogStateTransitions)
-                {
-                    DebugUtility.LogVerbose<EaterHungryState>(
-                        "Não foi possível reproduzir o áudio do desejo selecionado.",
-                        context: Behavior,
-                        instance: this);
-                }
+                Behavior.TryPlayDesireSelectedSound("HungryState.HandleDesireChanged");
             }
 
             if (Behavior == null || !Behavior.ShouldLogStateTransitions || !info.HasDesire || !info.TryGetResource(out var resource))

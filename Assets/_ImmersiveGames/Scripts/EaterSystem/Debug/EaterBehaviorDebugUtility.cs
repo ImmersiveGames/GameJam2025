@@ -189,36 +189,23 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             _builder.AppendLine($"- Fome: {snapshot.IsHungry}, Comendo: {snapshot.IsEating}");
             _builder.AppendLine($"- Alvo: {(snapshot.HasTarget ? snapshot.TargetName : "Nenhum")}");
             _builder.AppendLine($"- Timer do estado: {snapshot.StateTimer:F2}s");
-
-            if (snapshot.HasWanderingTimer)
-            {
-                _builder.AppendLine($"- Timer de vagar: running={snapshot.WanderingTimerRunning}, finalizado={snapshot.WanderingTimerFinished}, valor={snapshot.WanderingTimerValue:F2}s/{snapshot.WanderingDuration:F2}s");
-            }
+            _builder.AppendLine($"- Posição atual: {snapshot.Position}");
 
             if (snapshot.HasPlayerAnchor)
             {
-                _builder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
+                _builder.AppendLine(
+                    $"- Âncora de players: {snapshot.PlayerAnchor} (distância={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2})");
             }
 
             if (snapshot.HasAutoFlow)
             {
-                _builder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
-            }
-
-            if (snapshot.HasMovementSample)
-            {
-                _builder.AppendLine($"- Movimento: direção={snapshot.MovementDirection}, velocidade={snapshot.MovementSpeed:F2}");
-            }
-
-            if (snapshot.HasHungryMetrics)
-            {
-                _builder.AppendLine($"- Métricas de fome: distânciaJogadores={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2}");
+                _builder.AppendLine($"- AutoFlow ativo: {snapshot.AutoFlowActive}");
             }
 
             if (snapshot.DesiresActive)
             {
                 string desireInfo = snapshot.HasCurrentDesire
-                    ? $"{snapshot.CurrentDesireName} (disp={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s/{snapshot.CurrentDesireDuration:F2}s)"
+                    ? $"{snapshot.CurrentDesireName} (disponível={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s/{snapshot.CurrentDesireDuration:F2}s)"
                     : "Aguardando sorteio";
                 _builder.AppendLine($"- Desejos: ativo=True, atual={desireInfo}");
             }
@@ -226,8 +213,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             {
                 _builder.AppendLine("- Desejos: ativo=False");
             }
-
-            _builder.AppendLine($"- Posição atual: {snapshot.Position}");
 
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);
         }
