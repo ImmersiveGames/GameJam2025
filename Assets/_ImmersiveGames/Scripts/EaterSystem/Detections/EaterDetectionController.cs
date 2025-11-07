@@ -27,6 +27,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
+        internal DetectionType PlanetProximityDetectionType => planetProximityDetectionType;
+
         protected override void Awake()
         {
             base.Awake();
@@ -59,7 +61,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             if (_eaterBehavior != null)
             {
-                //_eaterBehavior.EventTargetChanged += HandleEaterTargetChanged;
+                _eaterBehavior.EventTargetChanged += HandleEaterTargetChanged;
             }
         }
 
@@ -67,7 +69,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             if (_eaterBehavior != null)
             {
-                //_eaterBehavior.EventTargetChanged -= HandleEaterTargetChanged;
+                _eaterBehavior.EventTargetChanged -= HandleEaterTargetChanged;
             }
 
             DeactivateProximitySensor("Componente EaterDetectionController desativado");
@@ -368,7 +370,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            PlanetsMaster currentTarget = null;//_eaterBehavior.CurrentTarget;
+            PlanetsMaster currentTarget = _eaterBehavior.CurrentTarget;
             if (currentTarget == null)
             {
                 DebugUtility.Log<EaterDetectionController>(
@@ -399,8 +401,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             {
                 _activeProximityPlanet = planetMaster;
             }
-/*
-            if (isSameDetectable && _eaterBehavior.IsEating)
+            bool wasEating = _eaterBehavior.IsEating;
+            if (isSameDetectable && wasEating)
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(
                     $"Proximidade mantida com {GetPlanetName(planetMaster)} ({origin}); nenhuma ação adicional necessária.",
@@ -409,9 +411,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            if (!_eaterBehavior.IsEating)
+            _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
+            bool isEatingNow = _eaterBehavior.IsEating;
+
+            if (!wasEating && isEatingNow)
             {
-                _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
                 DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planetMaster)} está dentro do raio de consumo do Eater ({origin}).",
                     DebugUtility.Colors.Success,
@@ -419,15 +423,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            _eaterBehavior.RegisterProximityContact(planetMaster, transform.position);
-            if (!isSameDetectable || !isSamePlanet)
+            if (isEatingNow && (!isSameDetectable || !isSamePlanet))
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(
                     $"Contato de proximidade atualizado para {GetPlanetName(planetMaster)} ({origin}).",
                     null,
                     this);
             }
-            */
         }
 
         private void HandlePlanetProximityLost(IDetectable detectable)
@@ -473,17 +475,33 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
-            //_eaterBehavior?.ClearProximityContact(planet);
-
-            /*if (_eaterBehavior != null && _eaterBehavior.IsEating)
+            if (_eaterBehavior == null)
             {
-                _eaterBehavior.EndEating(false);
+                DebugUtility.LogVerbose<EaterDetectionController>(
+                    $"Perda de proximidade concluída para {GetPlanetName(planet)} sem comportamento associado.",
+                    null,
+                    this);
+                return;
+            }
+
+            bool wasEating = _eaterBehavior.IsEating;
+            if (planet != null)
+            {
+                _eaterBehavior.ClearProximityContact(planet);
+            }
+            else
+            {
+                _eaterBehavior.ClearProximityContact(null);
+            }
+
+            if (wasEating)
+            {
                 DebugUtility.Log<EaterDetectionController>(
                     $"Planeta {GetPlanetName(planet)} deixou o alcance do Eater. Retornando à perseguição.",
                     null,
                     this);
                 return;
-            }*/
+            }
 
             DebugUtility.LogVerbose<EaterDetectionController>(
                 $"Perda de proximidade concluída para {GetPlanetName(planet)} sem alteração de estado, pois o Eater não estava comendo.",

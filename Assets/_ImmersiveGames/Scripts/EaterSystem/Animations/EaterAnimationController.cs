@@ -7,14 +7,15 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
-    
-    public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
+
+    public class EaterAnimationController : AnimationControllerBase, IActorAnimationController
     {
         private EaterAnimationConfig EaterAnimationConfig => animationConfig as EaterAnimationConfig;
         private EventBinding<DamageEvent> _damageBinding;
         private EventBinding<DeathEvent> _deathBinding;
         private EventBinding<ReviveEvent> _reviveBinding;
         private bool _listenersRegistered;
+        private static readonly int DefaultDeathTriggerHash = Animator.StringToHash("isDeath");
 
         protected override void Awake()
         {
@@ -51,14 +52,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
             if (Actor == null || string.IsNullOrEmpty(Actor.ActorId))
             {
-                DebugUtility.LogWarning<PlayerAnimationController>(
+                DebugUtility.LogWarning<EaterAnimationController>(
                     "ActorId inválido. Eventos de animação não serão registrados.");
                 return;
             }
 
             if (_damageBinding == null || _deathBinding == null || _reviveBinding == null)
             {
-                DebugUtility.LogWarning<PlayerAnimationController>(
+                DebugUtility.LogWarning<EaterAnimationController>(
                     "Bindings de animação não foram inicializados corretamente.");
                 return;
             }
@@ -68,16 +69,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
-            DebugUtility.Log<PlayerAnimationController>(
+            DebugUtility.Log<EaterAnimationController>(
                 $"Eventos de dano registrados para {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
         }
-        protected new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
+
         protected int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
         protected int HappyHash => EaterAnimationConfig?.HappyHash ?? Animator.StringToHash("Happy");
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
-        
-        
+
+
 
         private void UnregisterDamageListeners()
         {
@@ -111,7 +112,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido DamageEvent. Executando animação de Hit.");
+            DebugUtility.LogVerbose<EaterAnimationController>("Recebido DamageEvent. Executando animação de Hit.");
             PlayHit();
         }
 
@@ -122,7 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido DeathEvent. Executando animação de Death.");
+            DebugUtility.LogVerbose<EaterAnimationController>("Recebido DeathEvent. Executando animação de Death.");
             PlayDeath();
         }
 
@@ -133,13 +134,41 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            DebugUtility.LogVerbose<PlayerAnimationController>("Recebido ReviveEvent. Executando animação de Revive.");
+            DebugUtility.LogVerbose<EaterAnimationController>("Recebido ReviveEvent. Executando animação de Revive.");
             PlayRevive();
         }
 
         public void PlayHit() => PlayHash(HitHash);
-        public void PlayDeath() => PlayHash(DeathHash);
+
+        public void PlayDeath()
+        {
+            if (animator == null || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            int deathTriggerHash = ResolveDeathTriggerHash();
+            animator.ResetTrigger(deathTriggerHash);
+            animator.SetTrigger(deathTriggerHash);
+        }
+
         public void PlayRevive() => PlayHash(ReviveHash);
-        public void PlayIdle() => PlayHash(IdleHash);
+
+        public void PlayIdle()
+        {
+            if (animator == null || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            animator.ResetTrigger(ResolveDeathTriggerHash());
+
+            PlayHash(IdleHash);
+        }
+
+        private int ResolveDeathTriggerHash()
+        {
+            return EaterAnimationConfig?.DeathTriggerHash ?? DefaultDeathTriggerHash;
+        }
     }
 }
