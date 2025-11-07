@@ -34,6 +34,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         public static class Colors
         {
             public const string CrucialInfo = "#00BCD4";
+            public const string Info = "#A8DEED";
             public const string Success = "#4CAF50";
         }
 

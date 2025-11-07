@@ -173,7 +173,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             string planetName = GetPlanetDisplayName(planetActor);
             DebugUtility.Log<EaterChasingState>(
                 $"Planeta {planetName} entrou no detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.Info,
+                DebugUtility.Colors.CrucialInfo,
                 Behavior,
                 this);
         }
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             string planetName = GetPlanetDisplayName(planetActor);
             DebugUtility.Log<EaterChasingState>(
                 $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.Info,
+                DebugUtility.Colors.CrucialInfo,
                 Behavior,
                 this);
         }
