@@ -23,7 +23,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
-                    DebugUtility.LogVerbose<EaterChasingState>("Nenhum planeta marcado para perseguir.");
+                    DebugUtility.LogVerbose<EaterChasingState>(
+                        "Nenhum planeta marcado para perseguir.",
+                        context: Behavior,
+                        instance: this);
                     _reportedMissingTarget = true;
                 }
                 return;

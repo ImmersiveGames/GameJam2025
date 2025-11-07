@@ -67,7 +67,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.Log<EaterWanderingState>(
                 $"Nova direção de passeio: {direction} | velocidade={speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
-                Behavior);
+                context: Behavior,
+                instance: this);
         }
     }
 }

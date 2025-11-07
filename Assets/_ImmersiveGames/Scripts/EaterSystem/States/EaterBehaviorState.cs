@@ -66,7 +66,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string message = $"{description} no estado {StateName}.";
-            DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.CrucialInfo, Behavior, Behavior);
+            DebugUtility.Log<EaterBehavior>(
+                message,
+                DebugUtility.Colors.CrucialInfo,
+                Behavior,
+                Behavior);
         }
     }
 }

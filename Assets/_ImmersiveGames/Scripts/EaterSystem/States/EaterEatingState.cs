@@ -105,7 +105,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (Behavior.ShouldLogStateTransitions)
             {
-                DebugUtility.Log<EaterEatingState>("Órbita iniciada.", DebugUtility.Colors.Success, Behavior);
+                DebugUtility.Log<EaterEatingState>(
+                    "Órbita iniciada.",
+                    DebugUtility.Colors.Success,
+                    context: Behavior,
+                    instance: this);
             }
         }
 

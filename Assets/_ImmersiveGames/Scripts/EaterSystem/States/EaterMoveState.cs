@@ -66,7 +66,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.Log<EaterMoveState>(
                 $"Direção inicial configurada: {direction} com velocidade {speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
-                Behavior);
+                context: Behavior,
+                instance: this);
         }
 
         protected virtual void Move(float deltaTime)
