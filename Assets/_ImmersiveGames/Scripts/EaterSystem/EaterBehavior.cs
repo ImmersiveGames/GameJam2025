@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -528,6 +530,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _currentDesireInfo = info;
             EventDesireChanged?.Invoke(info);
+            EventBus<EaterDesireInfoChangedEvent>.Raise(new EaterDesireInfoChangedEvent(this, info));
         }
 
         private void OnDestroy()
