@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -48,6 +49,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
         private bool _missingDesireServiceLogged;
         private EntityAudioEmitter _audioEmitter;
+        private EaterDetectionController _detectionController;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -56,6 +58,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _master = GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
+            _detectionController = GetComponent<EaterDetectionController>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
@@ -74,6 +77,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _master ??= GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
+            _detectionController = GetComponent<EaterDetectionController>();
         }
 #endif
 
@@ -270,6 +274,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
             : null;
+
+        internal bool TryGetDetectionController(out EaterDetectionController detectionController)
+        {
+            if (_detectionController == null)
+            {
+                TryGetComponent(out _detectionController);
+            }
+
+            detectionController = _detectionController;
+            return detectionController != null;
+        }
 
         internal bool ResumeAutoFlow(string reason)
         {
