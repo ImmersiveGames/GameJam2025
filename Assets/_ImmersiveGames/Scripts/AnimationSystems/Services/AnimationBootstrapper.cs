@@ -13,6 +13,8 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
             // Registra configs padrão
             configProvider.RegisterConfig("PlayerAnimationController", 
                 Resources.Load<AnimationConfig>($"DefaultPlayerAnimationConfig"));
+            configProvider.RegisterConfig("EaterAnimationController", 
+                Resources.Load<AnimationConfig>($"DefaultEaterAnimationConfig"));
             configProvider.RegisterConfig("EnemyAnimationController", 
                 Resources.Load<AnimationConfig>($"DefaultEnemyAnimationConfig"));
                 
