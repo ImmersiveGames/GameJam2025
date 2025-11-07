@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
             ApplyConfigDefaults();
-            BuildStates();
+            EnsureStateMachine();
         }
 
         private void Update()
@@ -86,8 +86,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _stateMachine?.FixedUpdate();
         }
 
-        private void BuildStates()
+        private bool EnsureStateMachine()
         {
+            if (_stateMachine != null)
+            {
+                return true;
+            }
+
             _stateMachine = new StateMachine();
 
             _wanderingState = RegisterState(new EaterWanderingState());
@@ -96,14 +101,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _eatingState = RegisterState(new EaterEatingState());
 
             ForceSetState(_wanderingState, "Inicialização");
-        }
-
-        private void EnsureStateMachine()
-        {
-            if (_stateMachine == null)
-            {
-                BuildStates();
-            }
+            return _stateMachine != null;
         }
 
         [ContextMenu("Eater States/Set Wandering")]
