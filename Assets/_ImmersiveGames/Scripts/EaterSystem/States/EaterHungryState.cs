@@ -1,96 +1,124 @@
+using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Estado "Com Fome" – o Eater procura por alvos enquanto sente fome.
+    /// Estado em que o eater busca manter-se mais próximo dos jogadores, mas ainda com movimento aleatório.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterHungryState : EaterMoveState
     {
-        public EaterHungryState(EaterBehaviorContext context) : base(context)
+        private bool _listeningDesires;
+
+        public EaterHungryState() : base("Hungry")
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            Context.SetHungry(true);
-            DebugUtility.LogVerbose<EaterHungryState>("Entrando no estado Com Fome.");
+            if (Behavior != null)
+            {
+                Behavior.EventDesireChanged += HandleDesireChanged;
+                _listeningDesires = true;
+                Behavior.BeginDesires("HungryState.OnEnter");
+            }
+
+            Behavior?.ResumeAutoFlow("HungryState.OnEnter");
         }
 
         public override void OnExit()
         {
-            DebugUtility.LogVerbose<EaterHungryState>("Saindo do estado Com Fome.");
+            if (_listeningDesires && Behavior != null)
+            {
+                Behavior.EventDesireChanged -= HandleDesireChanged;
+                _listeningDesires = false;
+            }
+
+            Behavior?.EndDesires("HungryState.OnExit");
+            Behavior?.EnsureNoActiveDesire("HungryState.OnExit");
+            Behavior?.PauseAutoFlow("HungryState.OnExit");
+            base.OnExit();
         }
+
+        protected override float DirectionInterval => Mathf.Max(base.DirectionInterval * 0.5f, 0.1f);
 
         protected override float EvaluateSpeed()
         {
-            float baseSpeed = Mathf.Max(Config.MaxSpeed, Config.MinSpeed);
+            float min = Config != null ? Mathf.Max(0f, Config.MinSpeed) : 0f;
+            float max = Config != null ? Mathf.Max(min, Config.MaxSpeed) : min;
+            float baseSpeed = Mathf.Max(min, max);
             return baseSpeed * 0.75f;
         }
 
-        protected override float GetDirectionInterval()
+        protected override Vector3 AdjustDirection(Vector3 direction)
         {
-            return Mathf.Max(Config.DirectionChangeInterval * 0.5f, 0.1f);
-        }
-
-        protected override Vector3 EvaluateDirection()
-        {
-            Vector3 randomDirection = base.EvaluateDirection();
-            if (!Context.TryGetPlayerAnchor(out Vector3 anchor))
+            if (!Behavior.TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance))
             {
-                return randomDirection;
+                return direction;
             }
 
             Vector3 toAnchor = anchor - Transform.position;
             if (toAnchor.sqrMagnitude <= Mathf.Epsilon)
             {
-                return randomDirection;
+                return direction;
             }
 
-            float maxDistance = Mathf.Max(Config.WanderingMaxDistanceFromPlayer, 0f);
-            float distance = toAnchor.magnitude;
-            if (maxDistance > 0f && distance >= maxDistance)
+            float maxDistance = Behavior.MaxPlayerDistance;
+            float minDistance = Behavior.MinPlayerDistance;
+
+            if (minDistance > 0f && distance < minDistance)
+            {
+                return (-toAnchor).normalized;
+            }
+
+            if (maxDistance > 0f && distance > maxDistance)
             {
                 return toAnchor.normalized;
             }
 
-            float attraction = Mathf.Clamp01(Config.HungryPlayerAttraction);
+            float attraction = Mathf.Clamp01(Config?.HungryPlayerAttraction ?? 0.75f);
             if (maxDistance > 0f && distance > 0f)
             {
-                float proximityFactor = 1f - Mathf.Clamp01(distance / maxDistance);
-                attraction = Mathf.Clamp01(attraction + (1f - attraction) * proximityFactor);
+                float normalizedDistance = Mathf.Clamp01(distance / maxDistance);
+                attraction = Mathf.Clamp01(attraction + (1f - attraction) * (1f - normalizedDistance));
             }
 
-            Vector3 directionToAnchor = toAnchor.normalized;
-            Vector3 blendedDirection = Vector3.Slerp(randomDirection, directionToAnchor, attraction);
-            return blendedDirection.sqrMagnitude > 0f ? blendedDirection.normalized : directionToAnchor;
+            Vector3 normalized = toAnchor.normalized;
+            Vector3 blended = Vector3.Slerp(direction, normalized, attraction);
+            return blended.sqrMagnitude > Mathf.Epsilon ? blended.normalized : normalized;
         }
 
-        protected override void OnDirectionChosen(Vector3 direction, float speed)
+        protected override void OnDirectionChosen(Vector3 direction, float speed, bool force)
         {
-            base.OnDirectionChosen(direction, speed);
+            base.OnDirectionChosen(direction, speed, force);
 
-            if (!Context.TryGetPlayerAnchor(out Vector3 anchor))
+            if (!Behavior.ShouldLogStateTransitions)
             {
-                DebugUtility.LogVerbose<EaterHungryState>(
-                    $"Direção escolhida em fome sem âncora de players | velocidade={speed:F2}");
                 return;
             }
 
-            Vector3 toAnchor = anchor - Transform.position;
-            float distance = toAnchor.magnitude;
-            float alignment = 0f;
-            if (direction.sqrMagnitude > Mathf.Epsilon && toAnchor.sqrMagnitude > Mathf.Epsilon)
+            DebugUtility.Log<EaterHungryState>(
+                $"Nova direção faminta: {direction} | velocidade={speed:F2}",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
+        }
+
+        private void HandleDesireChanged(EaterDesireInfo info)
+        {
+            if (!Behavior.ShouldLogStateTransitions || !info.HasDesire || !info.TryGetResource(out var resource))
             {
-                alignment = Vector3.Dot(direction.normalized, toAnchor.normalized);
+                return;
             }
 
-            DebugUtility.LogVerbose<EaterHungryState>(
-                $"Nova direção em fome | velocidade={speed:F2} | distânciaJogador={distance:F2} | alinhamento={alignment:F2}");
-            Context.ReportHungryMetrics(distance, alignment);
+            string availability = info.IsAvailable ? "disponível" : "indisponível";
+            DebugUtility.Log<EaterHungryState>(
+                $"Novo desejo selecionado: {resource} ({availability}, planetas={info.AvailableCount}, duração={info.Duration:F2}s)",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
         }
     }
 }
