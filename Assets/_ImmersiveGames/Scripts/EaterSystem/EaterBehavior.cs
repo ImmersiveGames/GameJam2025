@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
+using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -51,12 +52,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private PlayerManager _playerManager;
         private PlanetMarkingManager _planetMarkingManager;
 
+        private ResourceAutoFlowBridge _autoFlowBridge;
+        private bool _missingAutoFlowBridgeLogged;
+        private bool _autoFlowUnavailableLogged;
+
         private void Awake()
         {
             _master = GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
+            TryEnsureAutoFlowBridge();
             ApplyConfigDefaults();
             BuildStates();
         }
@@ -267,6 +273,50 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
             : null;
 
+        internal bool ResumeAutoFlow(string reason)
+        {
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para controlar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            bool resumed = _autoFlowBridge.ResumeAutoFlow();
+            LogAutoFlowResult(resumed,
+                resumed
+                    ? $"AutoFlow retomado ({reason})."
+                    : $"AutoFlow permaneceu pausado ({reason}).");
+            return resumed;
+        }
+
+        internal bool PauseAutoFlow(string reason)
+        {
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para pausar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            bool paused = _autoFlowBridge.PauseAutoFlow();
+            LogAutoFlowResult(paused,
+                paused
+                    ? $"AutoFlow pausado ({reason})."
+                    : $"Falha ao pausar AutoFlow ({reason}).");
+            return paused;
+        }
+
         internal float GetRandomRoamingSpeed()
         {
             if (_config == null)
@@ -334,6 +384,52 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = targetRotation;
+        }
+
+        private bool TryEnsureAutoFlowBridge()
+        {
+            if (_autoFlowBridge != null)
+            {
+                return true;
+            }
+
+            if (TryGetComponent(out ResourceAutoFlowBridge bridge))
+            {
+                _autoFlowBridge = bridge;
+                _missingAutoFlowBridgeLogged = false;
+                _autoFlowUnavailableLogged = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void LogAutoFlowIssue(string message, ref bool cacheFlag)
+        {
+            if (!logStateTransitions || cacheFlag)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+            cacheFlag = true;
+        }
+
+        private void LogAutoFlowResult(bool success, string message)
+        {
+            if (!logStateTransitions)
+            {
+                return;
+            }
+
+            if (success)
+            {
+                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.Success, this, this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+            }
         }
 
         internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)

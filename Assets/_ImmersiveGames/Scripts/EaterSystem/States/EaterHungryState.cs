@@ -12,6 +12,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
         }
 
+        public override void OnEnter()
+        {
+            base.OnEnter();
+            Behavior?.ResumeAutoFlow("HungryState.OnEnter");
+        }
+
+        public override void OnExit()
+        {
+            Behavior?.PauseAutoFlow("HungryState.OnExit");
+            base.OnExit();
+        }
+
         protected override float DirectionInterval => Mathf.Max(base.DirectionInterval * 0.5f, 0.1f);
 
         protected override float EvaluateSpeed()
