@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
@@ -16,6 +18,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         private readonly EaterMaster _master;
         private readonly EaterConfigSo _config;
+        private readonly EntityAudioEmitter _audioEmitter;
         private readonly string _actorLabel;
         private readonly Queue<PlanetResources> _recentDesires = new();
         private readonly PlanetResources[] _resourcePool;
@@ -35,10 +38,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
-        public EaterDesireService(EaterMaster master, EaterConfigSo config)
+        private bool _missingEmitterLogged;
+        private bool _missingSoundLogged;
+
+        public EaterDesireService(EaterMaster master, EaterConfigSo config, EntityAudioEmitter audioEmitter)
         {
             _master = master;
             _config = config;
+            _audioEmitter = audioEmitter;
             _actorLabel = ResolveActorLabel(master);
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
@@ -201,6 +208,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDuration = available ? baseDuration : Mathf.Max(baseDuration * unavailableFactor, 0.05f);
 
             RestartTimer(_currentDuration);
+
+            PlayDesireSelectedAudio();
 
             _recentDesires.Enqueue(desire);
             int maxRecent = Mathf.Max(_config.MaxRecentDesires, 0);
@@ -430,6 +439,47 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void NotifyDesireChanged()
         {
             EventDesireChanged?.Invoke(BuildDesireInfo());
+        }
+
+        private void PlayDesireSelectedAudio()
+        {
+            if (_config == null)
+            {
+                return;
+            }
+
+            SoundData sound = _config.DesireSelectedSound;
+            if (sound == null || sound.clip == null)
+            {
+                if (!_missingSoundLogged)
+                {
+                    DebugUtility.LogVerbose<EaterDesireService>(
+                        "Nenhum som configurado para desejos do Eater.",
+                        context: _master,
+                        instance: this);
+                    _missingSoundLogged = true;
+                }
+
+                return;
+            }
+
+            if (_audioEmitter == null)
+            {
+                if (!_missingEmitterLogged)
+                {
+                    DebugUtility.LogWarning<EaterDesireService>(
+                        "EntityAudioEmitter não encontrado — som de desejo não reproduzido.",
+                        context: _master,
+                        instance: this);
+                    _missingEmitterLogged = true;
+                }
+
+                return;
+            }
+
+            Vector3 position = _master != null ? _master.transform.position : Vector3.zero;
+            var context = AudioContext.Default(position, _audioEmitter.UsesSpatialBlend);
+            _audioEmitter.Play(sound, context);
         }
 
         private EaterDesireInfo BuildDesireInfo()

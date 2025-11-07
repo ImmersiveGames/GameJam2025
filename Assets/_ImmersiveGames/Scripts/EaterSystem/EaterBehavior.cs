@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -46,6 +47,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
         private bool _missingDesireServiceLogged;
+        private EntityAudioEmitter _audioEmitter;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -53,6 +55,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _master = GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
+            _audioEmitter = GetComponent<EntityAudioEmitter>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
@@ -70,6 +73,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _master ??= GetComponent<EaterMaster>();
             _config = _master != null ? _master.Config : null;
+            _audioEmitter = GetComponent<EntityAudioEmitter>();
         }
 #endif
 
@@ -516,7 +520,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            _desireService = new EaterDesireService(_master, _config);
+            _desireService = new EaterDesireService(_master, _config, _audioEmitter);
             _desireService.EventDesireChanged += HandleDesireChanged;
             _missingDesireServiceLogged = false;
             return true;
