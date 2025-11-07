@@ -4,70 +4,67 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Estado "Perseguindo" – o Eater corre em direção ao alvo marcado.
+    /// Estado de perseguição: o eater avança na direção do planeta marcado via PlanetMarkingManager.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterChasingState : EaterBehaviorState
     {
-        public EaterChasingState(EaterBehaviorContext context) : base(context)
-        {
-        }
+        private bool _reportedMissingTarget;
 
-        public override void OnEnter()
+        public EaterChasingState() : base("Chasing")
         {
-            base.OnEnter();
-            DebugUtility.LogVerbose<EaterChasingState>("Entrando no estado Perseguindo.");
         }
 
         public override void Update()
         {
             base.Update();
 
-            if (Context.HasProximityContactForTarget)
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target == null)
             {
-                if (Context.TryGetProximityHoldPosition(out Vector3 holdPosition))
+                if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
-                    Transform.position = holdPosition;
+                    DebugUtility.LogVerbose<EaterChasingState>(
+                        "Nenhum planeta marcado para perseguir.",
+                        context: Behavior,
+                        instance: this);
+                    _reportedMissingTarget = true;
                 }
-
-                Context.ClearMovementSample();
                 return;
             }
 
-            if (Context.ShouldEat)
-            {
-                Context.ClearMovementSample();
-                return;
-            }
+            _reportedMissingTarget = false;
 
-            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
-            {
-                return;
-            }
-
-            Vector3 currentPosition = Transform.position;
-            Vector3 direction = (targetPosition - currentPosition);
-            float distance = direction.magnitude;
+            Vector3 toTarget = target.position - Transform.position;
+            float distance = toTarget.magnitude;
             if (distance <= Mathf.Epsilon)
             {
                 return;
             }
 
-            direction.Normalize();
+            float stopDistance = Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
+            if (stopDistance > 0f && distance <= stopDistance)
+            {
+                Behavior.LookAt(target.position);
+                return;
+            }
 
-            float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
-            Context.ReportMovementSample(direction, chaseSpeed);
+            Vector3 direction = toTarget.normalized;
+            float speed = Behavior.GetChaseSpeed();
+            float travelDistance = speed * Time.deltaTime;
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+            if (stopDistance > 0f)
+            {
+                float remaining = Mathf.Max(distance - stopDistance, 0f);
+                travelDistance = Mathf.Min(travelDistance, remaining);
+            }
 
-            Transform.position = Vector3.MoveTowards(currentPosition, targetPosition, chaseSpeed * Time.deltaTime);
+            if (travelDistance <= 0f)
+            {
+                return;
+            }
 
-        }
-
-        public override void OnExit()
-        {
-            DebugUtility.LogVerbose<EaterChasingState>("Saindo do estado Perseguindo.");
+            Behavior.RotateTowards(direction, Time.deltaTime);
+            Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
         }
     }
 }
