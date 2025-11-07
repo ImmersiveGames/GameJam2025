@@ -4,7 +4,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     internal sealed class EaterIdleState : EaterBehaviorState
     {
-        public EaterIdleState(EaterBehavior behavior) : base(behavior, "EaterIdleState")
+        public EaterIdleState(EaterBehavior behavior) : base("EaterIdleState")
         {
         }
 

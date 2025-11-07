@@ -76,8 +76,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            eaterBehavior.EventDesireChanged += HandleDesireChanged;
-            _currentInfo = eaterBehavior.GetCurrentDesireInfo();
+            //eaterBehavior.EventDesireChanged += HandleDesireChanged;
+            //_currentInfo = eaterBehavior.GetCurrentDesireInfo();
             _subscribed = true;
             _warnedMissingBehavior = false;
         }
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_subscribed && eaterBehavior != null)
             {
-                eaterBehavior.EventDesireChanged -= HandleDesireChanged;
+                //eaterBehavior.EventDesireChanged -= HandleDesireChanged;
             }
 
             _subscribed = false;

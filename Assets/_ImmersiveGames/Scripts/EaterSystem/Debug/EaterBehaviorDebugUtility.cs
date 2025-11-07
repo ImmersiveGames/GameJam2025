@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         {
             if (behavior != null)
             {
-                behavior.EventStateChanged += OnStateChanged;
+                //behavior.EventStateChanged += OnStateChanged;
             }
 
             if (master != null)
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         {
             if (behavior != null)
             {
-                behavior.EventStateChanged -= OnStateChanged;
+                //behavior.EventStateChanged -= OnStateChanged;
             }
 
             if (master != null)
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
                 return;
             }
 
-            var snapshot = behavior.CreateDebugSnapshot();
+            /*var snapshot = behavior.CreateDebugSnapshot();
             if (!snapshot.IsValid)
             {
                 DebugUtility.LogWarning<EaterBehaviorDebugUtility>("Snapshot inválido.", this);
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
             if (snapshot.HasProximityContact)
             {
                 _builder.AppendLine($"- Último ponto de contato: {snapshot.LastProximityPoint}");
-            }
+            }*/
 
             DebugUtility.Log<EaterBehaviorDebugUtility>(_builder.ToString(), instance: this);
         }

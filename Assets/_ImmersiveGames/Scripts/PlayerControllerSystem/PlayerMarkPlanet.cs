@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     
-    public class PlayerMarkPlanet : MonoBehaviour
+    /*public class PlayerMarkPlanet : MonoBehaviour
     {
         private PlayerInput _playerInput;
         private Camera _mainCamera;
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
                     context: this);
                 return;
             }
-            EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet))*/;
+            EventBus<PlanetMarkedEvent>.Raise(new PlanetMarkedEvent(planet))#1#;
         }
-    }
+    }*/
 }

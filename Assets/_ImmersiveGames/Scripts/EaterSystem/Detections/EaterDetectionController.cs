@@ -59,7 +59,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
             if (_eaterBehavior != null)
             {
-                _eaterBehavior.EventTargetChanged += HandleEaterTargetChanged;
+                //_eaterBehavior.EventTargetChanged += HandleEaterTargetChanged;
             }
         }
 
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             if (_eaterBehavior != null)
             {
-                _eaterBehavior.EventTargetChanged -= HandleEaterTargetChanged;
+                //_eaterBehavior.EventTargetChanged -= HandleEaterTargetChanged;
             }
 
             DeactivateProximitySensor("Componente EaterDetectionController desativado");
@@ -273,7 +273,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
-            _eaterBehavior?.ClearProximityContact();
         }
 
         private void HandlePlanetDefenseDetection(IDetectable detectable)
@@ -369,7 +368,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            PlanetsMaster currentTarget = _eaterBehavior.CurrentTarget;
+            PlanetsMaster currentTarget = null;//_eaterBehavior.CurrentTarget;
             if (currentTarget == null)
             {
                 DebugUtility.Log<EaterDetectionController>(
@@ -400,7 +399,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             {
                 _activeProximityPlanet = planetMaster;
             }
-
+/*
             if (isSameDetectable && _eaterBehavior.IsEating)
             {
                 DebugUtility.LogVerbose<EaterDetectionController>(
@@ -428,6 +427,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                     null,
                     this);
             }
+            */
         }
 
         private void HandlePlanetProximityLost(IDetectable detectable)
@@ -473,9 +473,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             _activeProximityDetectable = null;
             _activeProximityPlanet = null;
-            _eaterBehavior?.ClearProximityContact(planet);
+            //_eaterBehavior?.ClearProximityContact(planet);
 
-            if (_eaterBehavior != null && _eaterBehavior.IsEating)
+            /*if (_eaterBehavior != null && _eaterBehavior.IsEating)
             {
                 _eaterBehavior.EndEating(false);
                 DebugUtility.Log<EaterDetectionController>(
@@ -483,7 +483,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                     null,
                     this);
                 return;
-            }
+            }*/
 
             DebugUtility.LogVerbose<EaterDetectionController>(
                 $"Perda de proximidade concluída para {GetPlanetName(planet)} sem alteração de estado, pois o Eater não estava comendo.",

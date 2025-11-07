@@ -65,8 +65,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             DebugUtility.Log<EaterMoveState>(
                 $"Direção inicial configurada: {direction} com velocidade {speed:F2}",
-                DebugUtility.Colors.Debug,
-                Behavior,
+                DebugUtility.Colors.CrucialInfo,
                 Behavior);
         }
 

@@ -83,8 +83,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             DebugUtility.Log<EaterHungryState>(
                 $"Nova direção faminta: {direction} | velocidade={speed:F2}",
-                DebugUtility.Colors.Warning,
-                Behavior,
+                DebugUtility.Colors.CrucialInfo,
                 Behavior);
         }
     }
