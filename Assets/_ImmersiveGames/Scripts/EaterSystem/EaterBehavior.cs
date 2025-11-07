@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
+using _ImmersiveGames.Scripts.EaterSystem.Debug;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
@@ -64,6 +64,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private PlanetsMaster _proximityPlanet;
         private Vector3 _proximityPosition;
 
+        private float _stateTimer;
+        private EaterBehaviorState _lastStateSampled;
+
+        private bool _hasMovementSample;
+        private Vector3 _lastMovementDirection;
+        private float _lastMovementSpeed;
+
+        private bool _hasPlayerAnchorSample;
+        private Vector3 _lastPlayerAnchorPosition;
+        private float _lastPlayerAnchorDistance;
+        private float _lastPlayerAnchorAlignment;
+
         public event Action<EaterDesireInfo> EventDesireChanged;
         public event Action<IState, IState> EventStateChanged;
         public event Action<PlanetsMaster> EventTargetChanged;
@@ -85,6 +97,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         internal PlayerAnimationController AnimationController => _animationController;
 
+        internal bool IsHungry => IsHungryState(_stateMachine?.CurrentState as EaterBehaviorState);
+
         private void Awake()
         {
             _master = GetComponent<EaterMaster>();
@@ -98,6 +112,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EnsureDesireService();
             EnsureStatesInitialized();
             RefreshCurrentTarget();
+            UpdateMasterState();
         }
 
 #if UNITY_EDITOR
@@ -118,6 +133,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             RefreshCurrentTarget();
             _desireService?.Update();
             _stateMachine?.Update();
+            SamplePlayerAnchor();
+            AdvanceStateTimer(Time.deltaTime);
         }
 
         private void FixedUpdate()
@@ -190,6 +207,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             previous?.OnExit();
 
             _stateMachine.SetState(targetState);
+            _stateTimer = 0f;
+            _lastStateSampled = targetState;
+            UpdateMasterState();
             if (logStateTransitions)
             {
                 string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
@@ -605,8 +625,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            Vector3 displacement = direction.normalized * speed * deltaTime;
+            Vector3 normalized = direction.normalized;
+            Vector3 displacement = normalized * speed * deltaTime;
             Translate(displacement, respectPlayerBounds);
+            RecordMovement(normalized, speed);
         }
 
         internal void Translate(Vector3 displacement, bool respectPlayerBounds)
@@ -618,6 +640,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             transform.position = desiredPosition;
+        }
+
+        internal void RecordMovement(Vector3 direction, float speed)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon || speed <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            _hasMovementSample = true;
+            _lastMovementDirection = direction.normalized;
+            _lastMovementSpeed = speed;
         }
 
         internal void RotateTowards(Vector3 direction, float deltaTime)
@@ -703,6 +737,100 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             anchor = default;
             distance = 0f;
             return false;
+        }
+
+        private void SamplePlayerAnchor()
+        {
+            if (TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance))
+            {
+                _hasPlayerAnchorSample = true;
+                _lastPlayerAnchorPosition = anchor;
+                _lastPlayerAnchorDistance = distance;
+
+                Vector3 toAnchor = anchor - transform.position;
+                Vector3 forward = transform.forward;
+                if (toAnchor.sqrMagnitude > Mathf.Epsilon && forward.sqrMagnitude > Mathf.Epsilon)
+                {
+                    _lastPlayerAnchorAlignment = Vector3.Dot(forward.normalized, toAnchor.normalized);
+                }
+                else
+                {
+                    _lastPlayerAnchorAlignment = 0f;
+                }
+            }
+            else
+            {
+                _hasPlayerAnchorSample = false;
+                _lastPlayerAnchorPosition = Vector3.zero;
+                _lastPlayerAnchorDistance = 0f;
+                _lastPlayerAnchorAlignment = 0f;
+            }
+        }
+
+        private void AdvanceStateTimer(float deltaTime)
+        {
+            if (_stateMachine == null)
+            {
+                _lastStateSampled = null;
+                _stateTimer = 0f;
+                return;
+            }
+
+            if (_stateMachine.CurrentState is not EaterBehaviorState currentState)
+            {
+                _lastStateSampled = null;
+                _stateTimer = 0f;
+                return;
+            }
+
+            if (!ReferenceEquals(currentState, _lastStateSampled))
+            {
+                _stateTimer = 0f;
+                _lastStateSampled = currentState;
+                return;
+            }
+
+            _stateTimer += Mathf.Max(deltaTime, 0f);
+        }
+
+        private void UpdateMasterState()
+        {
+            if (_master == null)
+            {
+                return;
+            }
+
+            EaterBehaviorState current = _stateMachine != null
+                ? _stateMachine.CurrentState as EaterBehaviorState
+                : null;
+
+            bool isEating = ReferenceEquals(current, _eatingState);
+            bool isHungry = IsHungryState(current);
+
+            _master.IsEating = isEating;
+            _master.InHungry = isHungry;
+        }
+
+        private bool IsHungryState(EaterBehaviorState state)
+        {
+            if (state == null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(state, _hungryState)
+                   || ReferenceEquals(state, _chasingState)
+                   || ReferenceEquals(state, _eatingState);
+        }
+
+        private bool HasAutoFlowService()
+        {
+            return TryEnsureAutoFlowBridge() && _autoFlowBridge.HasAutoFlowService;
+        }
+
+        private bool IsAutoFlowActive()
+        {
+            return TryEnsureAutoFlowBridge() && _autoFlowBridge.IsAutoFlowActive;
         }
 
         internal bool BeginDesires(string reason)
@@ -796,6 +924,62 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireInfo = info;
             EventDesireChanged?.Invoke(info);
             EventBus<EaterDesireInfoChangedEvent>.Raise(new EaterDesireInfoChangedEvent(this, info));
+        }
+
+        internal EaterBehaviorDebugSnapshot CreateDebugSnapshot()
+        {
+            bool isValid = _stateMachine != null;
+            string currentState = GetStateName(_stateMachine?.CurrentState);
+            bool isEating = IsEating;
+            bool isHungry = IsHungry;
+            bool hasTarget = _currentTarget != null;
+            string targetName = hasTarget ? FormatPlanetName(_currentTarget) : string.Empty;
+
+            bool hasPlayerAnchor = _hasPlayerAnchorSample;
+            Vector3 playerAnchor = _lastPlayerAnchorPosition;
+            float playerAnchorDistance = _hasPlayerAnchorSample ? _lastPlayerAnchorDistance : 0f;
+            float playerAnchorAlignment = _hasPlayerAnchorSample ? _lastPlayerAnchorAlignment : 0f;
+
+            bool hasDesire = _currentDesireInfo.HasDesire;
+            string desireName = string.Empty;
+            if (hasDesire && _currentDesireInfo.TryGetResource(out PlanetResources resource))
+            {
+                desireName = resource.ToString();
+            }
+
+            return new EaterBehaviorDebugSnapshot(
+                isValid,
+                currentState,
+                isHungry,
+                isEating,
+                hasTarget,
+                targetName,
+                _stateTimer,
+                hasWanderingTimer: false,
+                wanderingTimerRunning: false,
+                wanderingTimerFinished: false,
+                wanderingTimerValue: 0f,
+                wanderingDuration: 0f,
+                transform.position,
+                hasPlayerAnchor,
+                playerAnchor,
+                HasAutoFlowService(),
+                IsAutoFlowActive(),
+                _currentDesireInfo.ServiceActive,
+                pendingHungryEffects: false,
+                _hasMovementSample,
+                _lastMovementDirection,
+                _lastMovementSpeed,
+                _hasPlayerAnchorSample,
+                playerAnchorDistance,
+                playerAnchorAlignment,
+                hasDesire,
+                desireName,
+                _currentDesireInfo.IsAvailable,
+                _currentDesireInfo.RemainingTime,
+                _currentDesireInfo.Duration,
+                _currentDesireInfo.AvailableCount,
+                _currentDesireInfo.Weight);
         }
 
         private void OnDestroy()
