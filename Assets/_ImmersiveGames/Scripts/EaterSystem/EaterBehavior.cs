@@ -9,6 +9,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.Predicates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -32,6 +33,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         internal bool ShouldLogStateTransitions => logStateTransitions;
 
         private StateMachine _stateMachine;
+        private DeathEventPredicate _deathPredicate;
+        private ReviveEventPredicate _revivePredicate;
         private EaterBehaviorState _wanderingState;
         private EaterBehaviorState _hungryState;
         private EaterBehaviorState _chasingState;
@@ -50,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
         private bool _missingDesireServiceLogged;
+        private bool _missingMasterForPredicatesLogged;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
@@ -104,15 +108,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            _stateMachine = new StateMachine();
+            var builder = new StateMachineBuilder();
 
-            _wanderingState = RegisterState(new EaterWanderingState());
-            _hungryState = RegisterState(new EaterHungryState());
-            _chasingState = RegisterState(new EaterChasingState());
-            _eatingState = RegisterState(new EaterEatingState());
-            _deathState = RegisterState(new EaterDeathState());
+            _wanderingState = RegisterState(builder, new EaterWanderingState());
+            _hungryState = RegisterState(builder, new EaterHungryState());
+            _chasingState = RegisterState(builder, new EaterChasingState());
+            _eatingState = RegisterState(builder, new EaterEatingState());
+            _deathState = RegisterState(builder, new EaterDeathState());
 
-            ForceSetState(_wanderingState, "Inicialização");
+            ConfigureTransitions(builder);
+
+            builder.StateInitial(_wanderingState);
+            _stateMachine = builder.Build();
+
             return _stateMachine != null;
         }
 
@@ -170,11 +178,69 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         }
 
-        private T RegisterState<T>(T state) where T : EaterBehaviorState
+        private void ConfigureTransitions(StateMachineBuilder builder)
+        {
+            IPredicate deathPredicate = EnsureDeathPredicate();
+            IPredicate revivePredicate = EnsureRevivePredicate();
+
+            builder.Any(_deathState, deathPredicate);
+            builder.At(_deathState, _wanderingState, revivePredicate);
+        }
+
+        private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
         {
             state.Attach(this);
-            _stateMachine.RegisterState(state);
+            builder.AddState(state, out _);
             return state;
+        }
+
+        private IPredicate EnsureDeathPredicate()
+        {
+            if (_deathPredicate != null)
+            {
+                return _deathPredicate;
+            }
+
+            if (_master == null)
+            {
+                LogMissingMasterForPredicates();
+                return FalsePredicate.Instance;
+            }
+
+            _deathPredicate = new DeathEventPredicate(_master.ActorId);
+            return _deathPredicate;
+        }
+
+        private IPredicate EnsureRevivePredicate()
+        {
+            if (_revivePredicate != null)
+            {
+                return _revivePredicate;
+            }
+
+            if (_master == null)
+            {
+                LogMissingMasterForPredicates();
+                return FalsePredicate.Instance;
+            }
+
+            _revivePredicate = new ReviveEventPredicate(_master.ActorId);
+            return _revivePredicate;
+        }
+
+        private void LogMissingMasterForPredicates()
+        {
+            if (_missingMasterForPredicatesLogged)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning<EaterBehavior>(
+                "EaterMaster não encontrado. Transições de morte/revive permanecerão desabilitadas.",
+                this,
+                this);
+
+            _missingMasterForPredicatesLogged = true;
         }
 
         private static string GetStateName(IState state)
@@ -583,6 +649,26 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 _desireService.EventDesireChanged -= HandleDesireChanged;
                 _desireService.Stop();
+            }
+
+            _deathPredicate?.Dispose();
+            _deathPredicate = null;
+
+            _revivePredicate?.Dispose();
+            _revivePredicate = null;
+        }
+
+        private sealed class FalsePredicate : IPredicate
+        {
+            public static readonly FalsePredicate Instance = new();
+
+            private FalsePredicate()
+            {
+            }
+
+            public bool Evaluate()
+            {
+                return false;
             }
         }
     }
