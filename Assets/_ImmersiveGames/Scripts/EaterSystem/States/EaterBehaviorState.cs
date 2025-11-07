@@ -1,28 +1,37 @@
+using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Classe base para estados da máquina de estados do Eater.
-    /// Fornece operações comuns como controle de tempo, acesso ao contexto e métodos padrão.
+    /// Estado base sem regras enquanto o comportamento completo é reimplementado.
     /// </summary>
     internal abstract class EaterBehaviorState : IState
     {
-        protected readonly EaterBehaviorContext Context;
-        protected readonly Transform Transform;
-        protected readonly EaterConfigSo Config;
-
-        protected EaterBehaviorState(EaterBehaviorContext context)
+        protected EaterBehaviorState(string stateName)
         {
-            Context = context;
-            Transform = context.Transform;
-            Config = context.Config;
+            StateName = stateName;
+        }
+
+        public string StateName { get; }
+
+        public EaterBehavior Behavior { get; private set; }
+
+        protected Transform Transform => Behavior != null ? Behavior.transform : null;
+
+        protected EaterMaster Master => Behavior != null ? Behavior.Master : null;
+
+        protected EaterConfigSo Config => Behavior != null ? Behavior.Config : null;
+
+        internal void Attach(EaterBehavior behavior)
+        {
+            Behavior = behavior;
         }
 
         public virtual void Update()
         {
-            Context.AdvanceStateTimer(Time.deltaTime);
         }
 
         public virtual void FixedUpdate()
@@ -31,11 +40,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public virtual void OnEnter()
         {
-            Context.ResetStateTimer();
+            LogStateEvent("Entrou");
         }
 
         public virtual void OnExit()
         {
+            LogStateEvent("Saiu");
         }
 
         public virtual bool CanPerformAction(ActionType action)
@@ -46,6 +56,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public virtual bool IsGameActive()
         {
             return true;
+        }
+
+        protected void LogStateEvent(string description)
+        {
+            if (Behavior == null || !Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            string message = $"{description} no estado {StateName}.";
+            DebugUtility.Log<EaterBehavior>(
+                message,
+                DebugUtility.Colors.CrucialInfo,
+                Behavior,
+                Behavior);
         }
     }
 }

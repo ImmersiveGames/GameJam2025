@@ -1,88 +1,118 @@
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Estado base para movimentos vagos do Eater com direção e limites.
+    /// Estado base responsável por tratar movimento genérico do Eater.
+    /// Mantém direção, velocidade e aplica ajustes comuns durante a rotação/locomoção.
     /// </summary>
     internal abstract class EaterMoveState : EaterBehaviorState
     {
-        private Vector3 _direction;
+        private Vector3 _currentDirection;
         private float _currentSpeed;
+        private float _directionTimer;
 
-        protected EaterMoveState(EaterBehaviorContext context) : base(context)
+        protected EaterMoveState(string stateName) : base(stateName)
         {
         }
+
+        protected virtual float DirectionInterval => Mathf.Max(Config?.DirectionChangeInterval ?? 1f, 0.1f);
+
+        protected virtual bool ShouldRespectPlayerBounds => true;
 
         public override void OnEnter()
         {
             base.OnEnter();
-            ChooseNewDirection();
+            _directionTimer = DirectionInterval;
+            ChooseNewDirection(force: true);
         }
 
         public override void Update()
         {
             base.Update();
 
-            if (Context.StateTimer >= GetDirectionInterval())
+            _directionTimer += Time.deltaTime;
+            if (_directionTimer >= DirectionInterval)
             {
                 ChooseNewDirection();
-                Context.ResetStateTimer();
             }
 
-            RotateTowardsDirection();
-            MoveForward();
-            KeepWithinBounds();
-        }
-
-        protected virtual float GetDirectionInterval()
-        {
-            return Mathf.Max(Config.DirectionChangeInterval, 0.1f);
+            Move(Time.deltaTime);
         }
 
         protected abstract float EvaluateSpeed();
 
         protected virtual Vector3 EvaluateDirection()
         {
-            Vector3 newDirection = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
-            return newDirection.sqrMagnitude > 0f ? newDirection.normalized : Transform.forward;
+            Vector2 random = Random.insideUnitCircle;
+            Vector3 direction = new(random.x, 0f, random.y);
+            return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Transform.forward;
         }
 
-        private void ChooseNewDirection()
+        protected virtual Vector3 AdjustDirection(Vector3 direction)
         {
-            _direction = EvaluateDirection();
-            _currentSpeed = Mathf.Max(EvaluateSpeed(), 0f);
-            Context.ReportMovementSample(_direction, _currentSpeed);
-            OnDirectionChosen(_direction, _currentSpeed);
+            return direction;
         }
 
-        protected virtual void OnDirectionChosen(Vector3 direction, float speed)
+        protected virtual void OnDirectionChosen(Vector3 direction, float speed, bool force)
         {
-        }
-
-        private void RotateTowardsDirection()
-        {
-            if (_direction == Vector3.zero)
+            if (!force || !Behavior.ShouldLogStateTransitions)
             {
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(_direction, Vector3.up);
-            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+            DebugUtility.Log<EaterMoveState>(
+                $"Direção inicial configurada: {direction} com velocidade {speed:F2}",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
         }
 
-        private void MoveForward()
+        protected virtual void Move(float deltaTime)
         {
-            float distance = _currentSpeed * Time.deltaTime;
-            Transform.Translate(Vector3.forward * distance, Space.Self);
+            if (_currentSpeed <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Vector3 adjustedDirection = AdjustDirection(_currentDirection);
+            if (adjustedDirection.sqrMagnitude > Mathf.Epsilon)
+            {
+                _currentDirection = adjustedDirection.normalized;
+            }
+
+            if (_currentDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Behavior.RotateTowards(_currentDirection, deltaTime);
+            Behavior.Move(_currentDirection, _currentSpeed, deltaTime, ShouldRespectPlayerBounds);
         }
 
-        private void KeepWithinBounds()
+        private void ChooseNewDirection(bool force = false)
         {
-            Vector3 position = Transform.position;
-            position.x = Mathf.Clamp(position.x, Context.GameArea.xMin, Context.GameArea.xMax);
-            position.z = Mathf.Clamp(position.z, Context.GameArea.yMin, Context.GameArea.yMax);
-            Transform.position = position;
+            _directionTimer = 0f;
+
+            Vector3 direction = EvaluateDirection();
+            Vector3 adjusted = AdjustDirection(direction);
+            if (adjusted.sqrMagnitude > Mathf.Epsilon)
+            {
+                _currentDirection = adjusted.normalized;
+            }
+            else if (direction.sqrMagnitude > Mathf.Epsilon)
+            {
+                _currentDirection = direction.normalized;
+            }
+            else
+            {
+                _currentDirection = Transform.forward;
+            }
+
+            _currentSpeed = Mathf.Max(EvaluateSpeed(), 0f);
+            OnDirectionChosen(_currentDirection, _currentSpeed, force);
         }
     }
 }

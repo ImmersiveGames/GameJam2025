@@ -1,5 +1,9 @@
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,38 +23,72 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
         private bool hideWhenNoDesire = true;
 
-        private bool _subscribed;
         private bool _pendingIconResolve;
         private bool _warnedMissingIcon;
         private bool _warnedMissingBehavior;
         private bool _warnedMissingManager;
+        private bool _syncedInitialInfo;
+        private PlanetsManager _planetsManager;
         private EaterDesireInfo _currentInfo = EaterDesireInfo.Inactive;
+        private bool _listeningPlanets;
+        private bool _listeningDesires;
+        private EventBinding<EaterDesireInfoChangedEvent> _desireChangedBinding;
+        private EventBinding<PlanetsInitializationCompletedEvent> _planetsInitializedBinding;
+        private EventBinding<PlanetCreatedEvent> _planetCreatedBinding;
+        private readonly HashSet<PlanetResources> _missingDefinitionWarnings = new();
+        private readonly HashSet<PlanetResources> _missingSpriteWarnings = new();
 
         private bool SharesGameObjectWithIcon =>
             desireIcon != null && desireIcon.gameObject == gameObject;
 
+        private void Awake()
+        {
+            if (desireIcon == null && TryGetComponent(out Image resolvedIcon))
+            {
+                desireIcon = resolvedIcon;
+                DebugUtility.LogVerbose<EaterDesireUI>(
+                    "Imagem de desejo resolvida automaticamente a partir do próprio GameObject.",
+                    context: this,
+                    instance: this);
+            }
+        }
+
         private void OnEnable()
         {
-            TryResolveBehavior();
-            SubscribeToBehavior();
-            ApplyCurrentInfo();
+            RegisterPlanetEvents();
+            RegisterDesireEvents();
+
+            bool resolved = TryResolveBehavior();
+            bool synced = resolved && SyncCurrentInfoFromBehavior();
+
+            if (!synced)
+            {
+                ApplyCurrentInfo();
+            }
         }
 
         private void OnDisable()
         {
-            UnsubscribeFromBehavior();
+            UnregisterPlanetEvents();
+            UnregisterDesireEvents();
+            ResetCurrentInfo();
+            ShowNoDesireState();
+            _planetsManager = null;
+            _warnedMissingManager = false;
+            _pendingIconResolve = false;
+            ClearMissingResourceWarnings();
         }
 
         private void LateUpdate()
         {
-            if (!_subscribed)
+            if (eaterBehavior == null)
             {
                 TryResolveBehavior();
-                SubscribeToBehavior();
-                if (_subscribed)
-                {
-                    ApplyCurrentInfo();
-                }
+            }
+
+            if (!_syncedInitialInfo)
+            {
+                SyncCurrentInfoFromBehavior();
             }
 
             if (_pendingIconResolve)
@@ -59,43 +97,96 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
-        private void SubscribeToBehavior()
+        private void RegisterDesireEvents()
+        {
+            if (_listeningDesires)
+            {
+                return;
+            }
+
+            _desireChangedBinding ??= new EventBinding<EaterDesireInfoChangedEvent>(HandleDesireChanged);
+            EventBus<EaterDesireInfoChangedEvent>.Register(_desireChangedBinding);
+            _listeningDesires = true;
+
+            DebugUtility.LogVerbose<EaterDesireUI>(
+                "Escutando alterações globais de desejo do Eater via EventBus.",
+                context: this,
+                instance: this);
+        }
+
+        private void UnregisterDesireEvents()
+        {
+            if (!_listeningDesires)
+            {
+                return;
+            }
+
+            if (_desireChangedBinding != null)
+            {
+                EventBus<EaterDesireInfoChangedEvent>.Unregister(_desireChangedBinding);
+            }
+
+            _listeningDesires = false;
+        }
+
+        private void HandleDesireChanged(EaterDesireInfoChangedEvent evt)
+        {
+            if (!evt.HasBehavior)
+            {
+                if (eaterBehavior == null)
+                {
+                    DebugUtility.LogVerbose<EaterDesireUI>(
+                        "Evento de desejo recebido sem referência ao comportamento. Aguardando resolução do Eater.",
+                        context: this,
+                        instance: this);
+                    return;
+                }
+            }
+            else if (eaterBehavior == null)
+            {
+                eaterBehavior = evt.Behavior;
+                _warnedMissingBehavior = false;
+
+                DebugUtility.LogVerbose<EaterDesireUI>(
+                    $"EaterBehavior associado via EventBus: {eaterBehavior.name}.",
+                    context: this,
+                    instance: this);
+            }
+            else if (evt.Behavior != eaterBehavior)
+            {
+                return;
+            }
+
+            UpdateDesireInfo(evt.Info);
+        }
+
+        private void UpdateDesireInfo(EaterDesireInfo info)
+        {
+            if (_syncedInitialInfo && info.Equals(_currentInfo))
+            {
+                return;
+            }
+
+            _currentInfo = info;
+            _syncedInitialInfo = true;
+            ApplyCurrentInfo();
+        }
+
+        private bool SyncCurrentInfoFromBehavior()
         {
             if (eaterBehavior == null)
             {
-                if (!_warnedMissingBehavior)
-                {
-                    DebugUtility.LogWarning<EaterDesireUI>("EaterBehavior não encontrado para atualizar o HUD de desejos.", this);
-                    _warnedMissingBehavior = true;
-                }
-                return;
+                return false;
             }
 
-            if (_subscribed)
-            {
-                return;
-            }
-
-            eaterBehavior.EventDesireChanged += HandleDesireChanged;
-            _currentInfo = eaterBehavior.GetCurrentDesireInfo();
-            _subscribed = true;
-            _warnedMissingBehavior = false;
+            UpdateDesireInfo(eaterBehavior.GetCurrentDesireInfo());
+            return true;
         }
 
-        private void UnsubscribeFromBehavior()
+        private void ResetCurrentInfo()
         {
-            if (_subscribed && eaterBehavior != null)
-            {
-                eaterBehavior.EventDesireChanged -= HandleDesireChanged;
-            }
-
-            _subscribed = false;
-        }
-
-        private void HandleDesireChanged(EaterDesireInfo info)
-        {
-            _currentInfo = info;
-            ApplyCurrentInfo();
+            _currentInfo = EaterDesireInfo.Inactive;
+            _syncedInitialInfo = false;
         }
 
         private void ApplyCurrentInfo()
@@ -104,7 +195,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!_warnedMissingIcon)
                 {
-                    DebugUtility.LogWarning<EaterDesireUI>("Image do ícone de desejo não configurada.", this);
+                    DebugUtility.LogWarning<EaterDesireUI>(
+                        "Componente Image do ícone de desejo não configurado.",
+                        context: this,
+                        instance: this);
                     _warnedMissingIcon = true;
                 }
                 return;
@@ -128,14 +222,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             desireIcon.sprite = icon;
+            desireIcon.overrideSprite = icon;
             SetIconVisibility(true);
+            desireIcon.SetAllDirty();
 
             _pendingIconResolve = false;
 
             DebugUtility.LogVerbose<EaterDesireUI>(
                 $"Ícone de desejo atualizado para {_currentInfo.Resource.Value} (disp={_currentInfo.IsAvailable}, planetas={_currentInfo.AvailableCount}).",
-                null,
-                this);
+                context: this,
+                instance: this);
         }
 
         private void ShowNoDesireState()
@@ -154,6 +250,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             else if (fallbackSprite != null)
             {
                 desireIcon.sprite = fallbackSprite;
+                desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
             }
             else
@@ -161,7 +258,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 SetIconVisibility(false);
             }
 
-            DebugUtility.LogVerbose<EaterDesireUI>("Nenhum desejo ativo para exibir na UI.", null, this);
+            DebugUtility.LogVerbose<EaterDesireUI>(
+                "Nenhum desejo ativo para exibir na UI.",
+                context: this,
+                instance: this);
         }
 
         private void UseFallbackIcon()
@@ -174,13 +274,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (fallbackSprite != null)
             {
                 desireIcon.sprite = fallbackSprite;
+                desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
 
                 DebugUtility.LogWarning<EaterDesireUI>(
                     _currentInfo.HasResource
                         ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
                         : "Ícone de desejo indisponível. Utilizando fallback.",
-                    this);
+                    context: this,
+                    instance: this);
             }
             else
             {
@@ -189,7 +291,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     _currentInfo.HasResource
                         ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
                         : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
-                    this);
+                    context: this,
+                    instance: this);
             }
         }
 
@@ -253,12 +356,67 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             icon = null;
 
-            PlanetsManager manager = PlanetsManager.Instance;
+            if (!TryGetPlanetsManager(out PlanetsManager manager))
+            {
+                return false;
+            }
+
+            if (!manager.TryGetResourceDefinition(resource, out PlanetResourcesSo definition) || definition == null)
+            {
+                if (_missingDefinitionWarnings.Add(resource))
+                {
+                    DebugUtility.LogWarning<EaterDesireUI>(
+                        $"Nenhuma definição encontrada para o recurso {resource}.",
+                        context: this,
+                        instance: this);
+                }
+
+                _pendingIconResolve = true;
+                return false;
+            }
+
+            icon = definition.ResourceIcon;
+            if (icon == null)
+            {
+                if (_missingSpriteWarnings.Add(resource))
+                {
+                    DebugUtility.LogWarning<EaterDesireUI>(
+                        $"A definição do recurso {resource} não possui sprite configurado.",
+                        context: this,
+                        instance: this);
+                }
+
+                _pendingIconResolve = true;
+                return false;
+            }
+
+            _missingDefinitionWarnings.Remove(resource);
+            _missingSpriteWarnings.Remove(resource);
+            return true;
+        }
+
+        private bool TryGetPlanetsManager(out PlanetsManager manager)
+        {
+            if (_planetsManager != null)
+            {
+                manager = _planetsManager;
+                if (manager != null)
+                {
+                    return true;
+                }
+
+                _planetsManager = null;
+            }
+
+            manager = PlanetsManager.Instance;
             if (manager == null)
             {
                 if (!_warnedMissingManager)
                 {
-                    DebugUtility.LogVerbose<EaterDesireUI>("PlanetsManager ainda não está disponível. Aguardando para resolver ícone de desejo.", null, this);
+                    DebugUtility.LogVerbose<EaterDesireUI>(
+                        "PlanetsManager ainda não está disponível. Aguardando para resolver ícone de desejo.",
+                        context: this,
+                        instance: this);
                     _warnedMissingManager = true;
                 }
 
@@ -266,30 +424,86 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
+            _planetsManager = manager;
             _warnedMissingManager = false;
             _pendingIconResolve = false;
+            ClearMissingResourceWarnings();
 
-            if (!manager.TryGetResourceDefinition(resource, out PlanetResourcesSo definition) || definition == null)
-            {
-                DebugUtility.LogWarning<EaterDesireUI>($"Nenhuma definição encontrada para o recurso {resource}.", this);
-                return false;
-            }
-
-            icon = definition.ResourceIcon;
-            if (icon == null)
-            {
-                DebugUtility.LogWarning<EaterDesireUI>($"A definição do recurso {resource} não possui sprite configurado.", this);
-                return false;
-            }
-
+            DebugUtility.LogVerbose<EaterDesireUI>(
+                "PlanetsManager localizado para resolução de ícones de desejo.",
+                context: this,
+                instance: this);
             return true;
         }
 
-        private void TryResolveBehavior()
+        private void RegisterPlanetEvents()
+        {
+            if (_listeningPlanets)
+            {
+                return;
+            }
+
+            _planetsInitializedBinding ??= new EventBinding<PlanetsInitializationCompletedEvent>(HandlePlanetsInitialized);
+            EventBus<PlanetsInitializationCompletedEvent>.Register(_planetsInitializedBinding);
+
+            _planetCreatedBinding ??= new EventBinding<PlanetCreatedEvent>(HandlePlanetCreated);
+            EventBus<PlanetCreatedEvent>.Register(_planetCreatedBinding);
+
+            _listeningPlanets = true;
+        }
+
+        private void UnregisterPlanetEvents()
+        {
+            if (!_listeningPlanets)
+            {
+                return;
+            }
+
+            if (_planetsInitializedBinding != null)
+            {
+                EventBus<PlanetsInitializationCompletedEvent>.Unregister(_planetsInitializedBinding);
+            }
+
+            if (_planetCreatedBinding != null)
+            {
+                EventBus<PlanetCreatedEvent>.Unregister(_planetCreatedBinding);
+            }
+
+            _listeningPlanets = false;
+        }
+
+        private void HandlePlanetsInitialized(PlanetsInitializationCompletedEvent _)
+        {
+            _planetsManager = null;
+            _warnedMissingManager = false;
+            ClearMissingResourceWarnings();
+            _pendingIconResolve = true;
+            ApplyCurrentInfo();
+        }
+
+        private void HandlePlanetCreated(PlanetCreatedEvent _)
+        {
+            if (!_currentInfo.ServiceActive || !_currentInfo.HasResource)
+            {
+                return;
+            }
+
+            ClearMissingResourceWarnings();
+            _pendingIconResolve = true;
+            ApplyCurrentInfo();
+        }
+
+        private void ClearMissingResourceWarnings()
+        {
+            _missingDefinitionWarnings.Clear();
+            _missingSpriteWarnings.Clear();
+        }
+
+        private bool TryResolveBehavior()
         {
             if (eaterBehavior != null)
             {
-                return;
+                return true;
             }
 
             Transform eaterTransform = GameManager.Instance != null ? GameManager.Instance.WorldEater : null;
@@ -308,8 +522,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (eaterBehavior != null)
             {
-                DebugUtility.LogVerbose<EaterDesireUI>($"EaterBehavior localizado para UI: {eaterBehavior.name}.", null, this);
+                DebugUtility.LogVerbose<EaterDesireUI>(
+                    $"EaterBehavior localizado para UI: {eaterBehavior.name}.",
+                    context: this,
+                    instance: this);
+                _warnedMissingBehavior = false;
+                return true;
             }
+
+            if (!_warnedMissingBehavior)
+            {
+                DebugUtility.LogWarning<EaterDesireUI>(
+                    "EaterBehavior não encontrado para atualizar o HUD de desejos.",
+                    context: this,
+                    instance: this);
+                _warnedMissingBehavior = true;
+            }
+
+            return false;
         }
     }
 }

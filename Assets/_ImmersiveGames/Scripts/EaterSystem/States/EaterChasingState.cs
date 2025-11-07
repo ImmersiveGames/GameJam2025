@@ -1,73 +1,133 @@
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Estado "Perseguindo" – o Eater corre em direção ao alvo marcado.
+    /// Estado de perseguição: o eater avança na direção do planeta marcado via PlanetMarkingManager.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterChasingState : EaterBehaviorState
     {
-        public EaterChasingState(EaterBehaviorContext context) : base(context)
+        private bool _reportedMissingTarget;
+        private bool _hasTargetContact;
+
+        public EaterChasingState() : base("Chasing")
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            DebugUtility.LogVerbose<EaterChasingState>("Entrando no estado Perseguindo.");
+
+            if (Behavior != null)
+            {
+                Behavior.EventProximityContactChanged += HandleProximityContactChanged;
+                _hasTargetContact = Behavior.HasProximityContactForTarget;
+            }
+        }
+
+        public override void OnExit()
+        {
+            if (Behavior != null)
+            {
+                Behavior.EventProximityContactChanged -= HandleProximityContactChanged;
+            }
+
+            _hasTargetContact = false;
+            base.OnExit();
         }
 
         public override void Update()
         {
             base.Update();
 
-            if (Context.HasProximityContactForTarget)
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target == null)
             {
-                if (Context.TryGetProximityHoldPosition(out Vector3 holdPosition))
+                if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
-                    Transform.position = holdPosition;
+                    DebugUtility.LogVerbose<EaterChasingState>(
+                        "Nenhum planeta marcado para perseguir.",
+                        context: Behavior,
+                        instance: this);
+                    _reportedMissingTarget = true;
                 }
-
-                Context.ClearMovementSample();
                 return;
             }
 
-            if (Context.ShouldEat)
-            {
-                Context.ClearMovementSample();
-                return;
-            }
+            _reportedMissingTarget = false;
 
-            if (!Context.TryGetTargetPosition(out Vector3 targetPosition))
-            {
-                return;
-            }
-
-            Vector3 currentPosition = Transform.position;
-            Vector3 direction = (targetPosition - currentPosition);
-            float distance = direction.magnitude;
+            Vector3 toTarget = target.position - Transform.position;
+            float distance = toTarget.magnitude;
             if (distance <= Mathf.Epsilon)
             {
                 return;
             }
 
-            direction.Normalize();
+            bool hasProximityContact = _hasTargetContact || Behavior.HasProximityContactForTarget;
+            if (hasProximityContact)
+            {
+                Behavior.RotateTowards(toTarget, Time.deltaTime);
+                return;
+            }
 
-            float chaseSpeed = Mathf.Max(Config.MaxSpeed * Config.MultiplierChase, Config.MinSpeed);
-            Context.ReportMovementSample(direction, chaseSpeed);
+            float stopDistance = Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
+            if (stopDistance > 0f && distance <= stopDistance)
+            {
+                Behavior.LookAt(target.position);
+                return;
+            }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
-            Transform.rotation = Quaternion.Slerp(Transform.rotation, targetRotation, Time.deltaTime * Config.RotationSpeed);
+            Vector3 direction = toTarget.normalized;
+            float speed = Behavior.GetChaseSpeed();
+            float travelDistance = speed * Time.deltaTime;
 
-            Transform.position = Vector3.MoveTowards(currentPosition, targetPosition, chaseSpeed * Time.deltaTime);
+            if (stopDistance > 0f)
+            {
+                float remaining = Mathf.Max(distance - stopDistance, 0f);
+                travelDistance = Mathf.Min(travelDistance, remaining);
+            }
 
+            if (travelDistance <= 0f)
+            {
+                return;
+            }
+
+            Behavior.RotateTowards(direction, Time.deltaTime);
+            Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
         }
 
-        public override void OnExit()
+        private void HandleProximityContactChanged(PlanetsMaster planet, bool active)
         {
-            DebugUtility.LogVerbose<EaterChasingState>("Saindo do estado Perseguindo.");
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            _hasTargetContact = Behavior.HasProximityContactForTarget;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            if (planet == null || !Behavior.IsCurrentTarget(planet))
+            {
+                DebugUtility.LogVerbose<EaterChasingState>(
+                    "Evento de proximidade recebido para planeta não-alvo.",
+                    context: Behavior,
+                    instance: this);
+                return;
+            }
+
+            string planetName = !string.IsNullOrEmpty(planet.ActorName) ? planet.ActorName : planet.name;
+            string state = active ? "alcançado" : "perdido";
+            DebugUtility.Log<EaterChasingState>(
+                $"Sensor de proximidade {state} para o alvo {planetName}.",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
         }
     }
 }

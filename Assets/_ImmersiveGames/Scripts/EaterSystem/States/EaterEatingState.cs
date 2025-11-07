@@ -1,57 +1,214 @@
-using _ImmersiveGames.Scripts.PlanetSystems;
+using DG.Tweening;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
-    /// Estado "Comendo" – o Eater consome o alvo atual e aplica mordidas periódicas.
+    /// Estado de alimentação: orbita o planeta marcado utilizando DOTween.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     internal sealed class EaterEatingState : EaterBehaviorState
     {
-        private const float BiteInterval = 1.2f;
-        private float _biteTimer;
+        private const float DefaultOrbitDistance = 3f;
+        private const float DefaultOrbitDuration = 4f;
+        private const float DefaultOrbitApproachDuration = 0.5f;
 
-        public EaterEatingState(EaterBehaviorContext context) : base(context)
+        private Tween _approachTween;
+        private Tween _orbitTween;
+        private Transform _currentTarget;
+        private Vector3 _radialBasis;
+        private float _currentAngle;
+
+        private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
+
+        private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
+
+        private float OrbitApproachDuration
+        {
+            get
+            {
+                float duration = OrbitDuration;
+                float approach = Config?.OrbitApproachDuration ?? DefaultOrbitApproachDuration;
+                approach = Mathf.Max(0.1f, approach);
+                return Mathf.Min(approach, duration);
+            }
+        }
+
+        public EaterEatingState() : base("Eating")
         {
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
-            _biteTimer = 0f;
-            Context.SetEating(true);
-            DebugUtility.LogVerbose<EaterEatingState>("Entrando no estado Comendo.");
+            PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
+        }
+
+        public override void OnExit()
+        {
+            base.OnExit();
+            StopTweens();
+            _currentTarget = null;
         }
 
         public override void Update()
         {
             base.Update();
 
-            _biteTimer += Time.deltaTime;
-            if (_biteTimer < BiteInterval)
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target != _currentTarget)
+            {
+                PrepareTarget(target, restartOrbit: true);
+            }
+
+            if (target != null)
+            {
+                LookAtTarget();
+            }
+        }
+
+        private void PrepareTarget(Transform target, bool restartOrbit)
+        {
+            _currentTarget = target;
+            StopTweens();
+
+            if (_currentTarget == null)
+            {
+                if (Behavior.ShouldLogStateTransitions)
+                {
+                    DebugUtility.LogWarning<EaterEatingState>("Estado Eating sem planeta marcado.", Behavior);
+                }
+                return;
+            }
+
+            _radialBasis = ResolveRadialBasis();
+            Vector3 desiredPosition = _currentTarget.position + _radialBasis * OrbitDistance;
+            float distanceToDesired = Vector3.Distance(Transform.position, desiredPosition);
+
+            if (distanceToDesired > 0.05f)
+            {
+                _approachTween = Transform.DOMove(desiredPosition, OrbitApproachDuration)
+                    .SetEase(Ease.InOutSine)
+                    .OnUpdate(LookAtTarget)
+                    .OnComplete(StartOrbit);
+            }
+            else if (restartOrbit)
+            {
+                Transform.position = desiredPosition;
+                StartOrbit();
+            }
+        }
+
+        private void StartOrbit()
+        {
+            StopOrbitTween();
+
+            if (_currentTarget == null)
             {
                 return;
             }
 
-            _biteTimer = 0f;
-            PlanetsMaster target = Context.Target;
-            if (target != null)
+            _radialBasis = ResolveRadialBasis();
+            _currentAngle = 0f;
+
+            _orbitTween = DOTween.To(() => _currentAngle, angle =>
+                {
+                    _currentAngle = angle;
+                    ApplyOrbitAngle(angle);
+                },
+                360f,
+                OrbitDuration)
+                .SetEase(Ease.Linear)
+                .SetLoops(-1, LoopType.Restart)
+                .OnUpdate(LookAtTarget);
+
+            if (Behavior.ShouldLogStateTransitions)
             {
-                Context.Master.OnEventEaterBite(target);
+                DebugUtility.Log<EaterEatingState>(
+                    "Órbita iniciada.",
+                    DebugUtility.Colors.Success,
+                    context: Behavior,
+                    instance: this);
             }
         }
 
-        public override void OnExit()
+        private void ApplyOrbitAngle(float angle)
         {
-            DebugUtility.LogVerbose<EaterEatingState>("Saindo do estado Comendo.");
-            bool changed = Context.SetEating(false);
-            PlanetsMaster target = Context.Target;
-            if (changed && target != null)
+            if (_currentTarget == null)
             {
-                Context.Master.OnEventEndEatPlanet(target);
+                return;
             }
+
+            Vector3 axis = ResolveOrbitAxis();
+            Vector3 radial = Vector3.ProjectOnPlane(_radialBasis, axis);
+            if (radial.sqrMagnitude <= Mathf.Epsilon)
+            {
+                radial = ResolveRadialBasis();
+            }
+            radial = radial.normalized;
+            _radialBasis = radial;
+            Vector3 tangent = Vector3.Cross(axis, radial).normalized;
+
+            float radians = angle * Mathf.Deg2Rad;
+            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * OrbitDistance;
+            Transform.position = _currentTarget.position + offset;
+        }
+
+        private Vector3 ResolveRadialBasis()
+        {
+            if (_currentTarget == null)
+            {
+                return Transform.forward.sqrMagnitude > Mathf.Epsilon ? Transform.forward.normalized : Vector3.forward;
+            }
+
+            Vector3 axis = ResolveOrbitAxis();
+            Vector3 offset = Transform.position - _currentTarget.position;
+            Vector3 planarOffset = Vector3.ProjectOnPlane(offset, axis);
+            if (planarOffset.sqrMagnitude <= Mathf.Epsilon)
+            {
+                planarOffset = Vector3.ProjectOnPlane(Transform.forward, axis);
+            }
+
+            if (planarOffset.sqrMagnitude <= Mathf.Epsilon)
+            {
+                planarOffset = Vector3.ProjectOnPlane(Vector3.right, axis);
+            }
+
+            return planarOffset.normalized;
+        }
+
+        private Vector3 ResolveOrbitAxis()
+        {
+            return _currentTarget != null ? _currentTarget.up.normalized : Vector3.up;
+        }
+
+        private void LookAtTarget()
+        {
+            if (_currentTarget == null)
+            {
+                return;
+            }
+
+            Behavior.LookAt(_currentTarget.position);
+        }
+
+        private void StopTweens()
+        {
+            StopOrbitTween();
+            if (_approachTween != null && _approachTween.IsActive())
+            {
+                _approachTween.Kill();
+            }
+            _approachTween = null;
+        }
+
+        private void StopOrbitTween()
+        {
+            if (_orbitTween != null && _orbitTween.IsActive())
+            {
+                _orbitTween.Kill();
+            }
+            _orbitTween = null;
         }
     }
 }

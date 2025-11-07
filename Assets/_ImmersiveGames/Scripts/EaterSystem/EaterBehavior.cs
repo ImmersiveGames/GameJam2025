@@ -1,1001 +1,103 @@
 using System;
-using System.Text;
-using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.EaterSystem.Debug;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.EaterSystem.Animations;
+using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>
-    /// Controla o comportamento do Eater utilizando a infraestrutura de StateMachine do projeto.
-    /// Define os estados Vagando, Com Fome, Perseguindo e Comendo.
+    /// Controle básico do comportamento do Eater.
+    /// Cria os estados conhecidos e permite alterná-los manualmente via menu de contexto.
     /// </summary>
     [RequireComponent(typeof(EaterMaster))]
     [DefaultExecutionOrder(10)]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterBehavior : MonoBehaviour
     {
-        [Header("Referências")]
-        [SerializeField] private EaterConfigSo overrideConfig;
-        [SerializeField, Tooltip("Emissor de áudio responsável pelos efeitos do Eater.")]
-        private EntityAudioEmitter audioEmitter;
-        [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
-        private SoundData desireSelectedSound;
+        [Header("Debug")]
+        [SerializeField, Tooltip("Registra mudanças de estado para depuração básica.")]
+        private bool logStateTransitions = true;
+
+        internal bool ShouldLogStateTransitions => logStateTransitions;
+
+        private StateMachine _stateMachine;
+        private EaterBehaviorState _wanderingState;
+        private EaterBehaviorState _hungryState;
+        private EaterBehaviorState _chasingState;
+        private EaterBehaviorState _eatingState;
+        private EaterBehaviorState _deathState;
 
         private EaterMaster _master;
-        private EaterBehaviorContext _context;
-        private StateMachine _stateMachine;
+        private EaterConfigSo _config;
+        private PlayerManager _playerManager;
+        private PlanetMarkingManager _planetMarkingManager;
+        private PlanetsManager _planetsManager;
 
-        private IState _wanderingState;
-        private IState _hungryState;
-        private IState _chasingState;
-        private IState _eatingState;
-        private bool _stateMachineBuilt;
-        private IState _lastKnownState;
-        private readonly StringBuilder _summaryBuilder = new StringBuilder(256);
+        private ResourceAutoFlowBridge _autoFlowBridge;
+        private bool _missingAutoFlowBridgeLogged;
+        private bool _autoFlowUnavailableLogged;
+
+        private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
-        private SoundData _resolvedDesireSound;
-        private bool _warnedMissingAudioEmitter;
-        private bool _warnedMissingDesireSound;
-        private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
-        private EventBinding<PlanetUnmarkedEvent> _planetUnmarkedBinding;
-        private EventBinding<PlanetDestroyedEvent> _planetDestroyedBinding;
-        private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
+        private bool _missingDesireServiceLogged;
 
-        [Header("Execução")]
-        [SerializeField, Tooltip("Processa a máquina de estados mesmo quando o GameManager está inativo (útil para testes na cena).")]
-        private bool updateWhileGameInactive = true;
-        [SerializeField, HideInInspector]
-        private bool executionToggleInitialized;
+        private EntityAudioEmitter _audioEmitter;
+        private bool _audioEmitterResolved;
+        private bool _missingAudioEmitterLogged;
 
-        [Header("Debug")]
-        [SerializeField, Tooltip("Exibe logs automáticos quando o estado do comportamento muda.")]
-        private bool logStateTransitions = true;
-        [SerializeField, Tooltip("Inclui um resumo básico do estado atual no log de transição.")]
-        private bool logStateSummaries;
+        private PlayerAnimationController _animationController;
 
-        private bool _hasWarnedAboutInactiveGameState;
+        private PlanetsMaster _currentTarget;
+        private bool _hasProximityContact;
+        private PlanetsMaster _proximityPlanet;
+        private Vector3 _proximityPosition;
 
-        public event Action<IState, IState> EventStateChanged;
         public event Action<EaterDesireInfo> EventDesireChanged;
+        public event Action<IState, IState> EventStateChanged;
         public event Action<PlanetsMaster> EventTargetChanged;
+        public event Action<PlanetsMaster, bool> EventProximityContactChanged;
 
         public IState CurrentState => _stateMachine?.CurrentState;
+
         public string CurrentStateName => GetStateName(_stateMachine?.CurrentState);
-        public EaterDesireInfo CurrentDesireInfo => _currentDesireInfo;
-        public PlanetsMaster CurrentTarget => _context?.TargetPlanet;
-        public bool IsEating => _context?.IsEating ?? false;
-        public bool ShouldEnableProximitySensor => _context?.ShouldEnableProximitySensor ?? false;
+
+        public PlanetsMaster CurrentTarget => _currentTarget;
+
+        internal Transform CurrentTargetPlanet => _currentTarget != null ? _currentTarget.transform : null;
+
+        public bool IsEating => _stateMachine != null && ReferenceEquals(_stateMachine.CurrentState, _eatingState);
+
+        internal bool HasProximityContactForTarget => _hasProximityContact && IsCurrentTarget(_proximityPlanet);
+
+        internal bool HasProximityContact => _hasProximityContact;
+
+        internal PlayerAnimationController AnimationController => _animationController;
 
         private void Awake()
         {
-            EnsureExecutionToggleInitialized();
-
             _master = GetComponent<EaterMaster>();
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
-            var config = overrideConfig != null ? overrideConfig : _master.Config;
-
-            if (config == null)
-            {
-                DebugUtility.LogError<EaterBehavior>("Configuração do Eater não definida.", this);
-                enabled = false;
-                return;
-            }
-
-            Rect gameArea = GameManager.Instance != null ? GameManager.Instance.GameConfig.gameArea : new Rect(-50f, -50f, 100f, 100f);
-            _context = new EaterBehaviorContext(_master, config, gameArea);
-            _currentDesireInfo = _context.CurrentDesireInfo;
-            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : config?.DesireSelectedSound;
-            _context.EventDesireChanged += HandleContextDesireChanged;
-            _context.EventTargetChanged += HandleContextTargetChanged;
-        }
-
-        private void OnEnable()
-        {
-            if (!enabled)
-            {
-                return;
-            }
-
-            RegisterEventListeners();
-        }
-
-        private void OnDisable()
-        {
-            UnregisterEventListeners();
-
-            if (_context != null)
-            {
-                // Garantir que sistemas dependentes parem quando o comportamento for desativado.
-                _context.EndDesires();
-                _context.PauseAutoFlow();
-            }
-        }
-
-        private void Start()
-        {
-            if (!enabled)
-            {
-                return;
-            }
-
-            BuildStateMachine();
-        }
-
-        private void OnDestroy()
-        {
-            UnregisterEventListeners();
-
-            if (_context != null)
-            {
-                // Prevenir atualizações tardias acessando um master destruído.
-                _context.EndDesires();
-                _context.PauseAutoFlow();
-            }
-
-            if (_context != null)
-            {
-                _context.EventDesireChanged -= HandleContextDesireChanged;
-                _context.EventTargetChanged -= HandleContextTargetChanged;
-                _context.Dispose();
-            }
-        }
-
-        private void Update()
-        {
-            if (_stateMachine == null)
-            {
-                return;
-            }
-
-            GameManager gameManager = GameManager.Instance;
-            bool isGameActive = gameManager == null || gameManager.IsGameActive();
-            bool canUpdate = isGameActive || updateWhileGameInactive;
-            if (!canUpdate)
-            {
-                if (!_hasWarnedAboutInactiveGameState)
-                {
-                    DebugUtility.LogWarning<EaterBehavior>(
-                        "GameManager está inativo e a execução fora da sessão está desabilitada. Ative 'updateWhileGameInactive' para testar o comportamento.",
-                        this);
-                    _hasWarnedAboutInactiveGameState = true;
-                }
-                return;
-            }
-
-            _hasWarnedAboutInactiveGameState = false;
-
-            _stateMachine.Update();
-            TrackStateChange("Update");
-            _context.UpdateServices();
-            _context.EnsureHungryEffects();
-        }
-
-        private void FixedUpdate()
-        {
-            if (_stateMachine == null)
-            {
-                return;
-            }
-
-            _stateMachine.FixedUpdate();
-        }
-
-        /// <summary>
-        /// Define se o Eater está com fome.
-        /// </summary>
-        public void SetHungry(bool isHungry)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetHungry(isHungry);
-            if (changed)
-            {
-                DebugUtility.LogVerbose<EaterBehavior>($"Estado de fome atualizado: {isHungry}");
-                ForceStateEvaluation();
-            }
-        }
-
-        /// <summary>
-        /// Atualiza o planeta alvo perseguido pelo Eater.
-        /// </summary>
-        public void SetTarget(PlanetsMaster target)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetTarget(target);
-            if (changed)
-            {
-                DebugUtility.LogVerbose<EaterBehavior>($"Alvo atualizado: {GetPlanetName(target)}.", null, this);
-            }
-        }
-
-        /// <summary>
-        /// Limpa o alvo atual.
-        /// </summary>
-        public void ClearTarget()
-        {
-            SetTarget(null);
-        }
-
-        public EaterDesireInfo GetCurrentDesireInfo()
-        {
-            return _context != null ? _currentDesireInfo : EaterDesireInfo.Inactive;
-        }
-
-        /// <summary>
-        /// Solicita que o Eater inicie a ação de comer.
-        /// </summary>
-        public void BeginEating()
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool changed = _context.SetEating(true);
-            if (changed)
-            {
-                _context.ClearMovementSample();
-                DebugUtility.LogVerbose<EaterBehavior>("Início manual do estado Comendo.");
-                PlanetsMaster target = _context.Target;
-                if (target != null)
-                {
-                    _context.Master.OnEventStartEatPlanet(target);
-                }
-                _context.ResetStateTimer();
-                ForceStateEvaluation();
-                return;
-            }
-
-            _context.ClearMovementSample();
-        }
-
-        /// <summary>
-        /// Informa o contexto de que o sensor de proximidade detectou o alvo atual.
-        /// Responsável por travar o movimento e iniciar o estado de comer quando necessário.
-        /// </summary>
-        public void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
-        {
-            if (_context == null || planet == null)
-            {
-                return;
-            }
-
-            bool changed = _context.RegisterProximityContact(planet, eaterPosition);
-            if (!_context.IsEating)
-            {
-                BeginEating();
-                return;
-            }
-
-            if (changed)
-            {
-                _context.ClearMovementSample();
-                ForceStateEvaluation();
-            }
-        }
-
-        /// <summary>
-        /// Remove o lock de proximidade ativo, liberando o movimento do Eater.
-        /// </summary>
-        public void ClearProximityContact(PlanetsMaster planet = null)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool cleared = _context.ClearProximityContact(planet);
-            if (cleared)
-            {
-                _context.ClearMovementSample();
-            }
-        }
-
-        /// <summary>
-        /// Finaliza o estado de comer e limpa o alvo se necessário.
-        /// </summary>
-        public void EndEating(bool satiated)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool wasEating = _context.SetEating(false);
-            if (wasEating)
-            {
-                DebugUtility.LogVerbose<EaterBehavior>("Fim manual do estado Comendo.");
-                PlanetsMaster target = _context.Target;
-                if (target != null)
-                {
-                    _context.Master.OnEventEndEatPlanet(target);
-                }
-            }
-
-            if (satiated)
-            {
-                _context.SetHungry(false);
-            }
-
-            ForceStateEvaluation();
-        }
-
-        private void BuildStateMachine()
-        {
-            var builder = new StateMachineBuilder();
-
-            builder
-                .AddState(new EaterWanderingState(_context), out _wanderingState)
-                .AddState(new EaterHungryState(_context), out _hungryState)
-                .AddState(new EaterChasingState(_context), out _chasingState)
-                .AddState(new EaterEatingState(_context), out _eatingState)
-                .At(_wanderingState, _hungryState, new FuncPredicate(() => _context.IsHungry && !_context.IsEating))
-                .At(_wanderingState, _eatingState, new FuncPredicate(() => _context.IsEating))
-                .At(_hungryState, _wanderingState, new FuncPredicate(() => !_context.IsHungry))
-                .At(_hungryState, _chasingState, new FuncPredicate(() => _context.ShouldChase))
-                .At(_hungryState, _eatingState, new FuncPredicate(() => _context.ShouldEat))
-                .At(_chasingState, _hungryState, new FuncPredicate(() => _context.LostTargetWhileHungry))
-                .At(_chasingState, _wanderingState, new FuncPredicate(() => !_context.IsHungry && !_context.IsEating))
-                .At(_chasingState, _eatingState, new FuncPredicate(() => _context.ShouldEat))
-                .At(_eatingState, _hungryState, new FuncPredicate(() => _context.IsHungry && !_context.IsEating))
-                .At(_eatingState, _wanderingState, new FuncPredicate(() => !_context.IsHungry && !_context.IsEating))
-                .StateInitial(_wanderingState);
-
-            _stateMachine = builder.Build();
-            _stateMachineBuilt = true;
-            _lastKnownState = _stateMachine.CurrentState;
-
-            if (logStateTransitions)
-            {
-                DebugUtility.Log<EaterBehavior>($"Estado inicial definido: {GetStateName(_lastKnownState)}.", instance: this);
-            }
-
-            LogStateSummary("📊 Resumo inicial do comportamento");
-
-            ForceStateEvaluation();
-        }
-
-        private void ForceStateEvaluation()
-        {
-            if (_stateMachine == null)
-            {
-                return;
-            }
-
-            _stateMachine.Update();
-            TrackStateChange("ForceEvaluation");
-        }
-
-        [ContextMenu("Eater States/Force Wandering")]
-        private void ContextForceWandering()
-        {
-            if (!EnsureStateMachineReady())
-            {
-                return;
-            }
-
-            _context.SetEating(false);
-            _context.SetHungry(false);
-            _context.ClearTarget();
-            _context.RestartWanderingTimer();
-            ForceSetState(_wanderingState);
-        }
-
-        [ContextMenu("Eater States/Force Hungry")]
-        private void ContextForceHungry()
-        {
-            if (!EnsureStateMachineReady())
-            {
-                return;
-            }
-
-            _context.SetEating(false);
-            _context.SetHungry(true);
-            ForceSetState(_hungryState);
-        }
-
-        [ContextMenu("Eater States/Force Chasing")]
-        private void ContextForceChasing()
-        {
-            if (!EnsureStateMachineReady())
-            {
-                return;
-            }
-
-            if (!_context.HasTarget)
-            {
-                DebugUtility.LogWarning<EaterBehavior>("Não há alvo configurado para iniciar a perseguição.", this);
-                return;
-            }
-
-            _context.SetHungry(true);
-            _context.SetEating(false);
-            ForceSetState(_chasingState);
-        }
-
-        [ContextMenu("Eater States/Force Eating")]
-        private void ContextForceEating()
-        {
-            if (!EnsureStateMachineReady())
-            {
-                return;
-            }
-
-            if (!_context.HasTarget)
-            {
-                DebugUtility.LogWarning<EaterBehavior>("Não há alvo configurado para iniciar o consumo.", this);
-                return;
-            }
-
-            _context.SetHungry(true);
-            bool startedEating = _context.SetEating(true);
-            if (startedEating)
-            {
-                PlanetsMaster target = _context.Target;
-                if (target != null)
-                {
-                    _context.Master.OnEventStartEatPlanet(target);
-                }
-            }
-
-            ForceSetState(_eatingState);
-        }
-
-        private bool EnsureStateMachineReady()
-        {
-            if (!_stateMachineBuilt || _stateMachine == null || _context == null)
-            {
-                DebugUtility.LogWarning<EaterBehavior>("StateMachine do Eater ainda não foi inicializada.", this);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void ForceSetState(IState targetState)
-        {
-            if (_stateMachine == null || targetState == null)
-            {
-                return;
-            }
-
-            var current = _stateMachine.CurrentState;
-            if (current == targetState)
-            {
-                current?.OnExit();
-                _stateMachine.SetState(targetState);
-                TrackStateChange("ForceSetState");
-                return;
-            }
-
-            current?.OnExit();
-            _stateMachine.SetState(targetState);
-            TrackStateChange("ForceSetState");
-        }
-
-        private void HandleContextDesireChanged(EaterDesireInfo info)
-        {
-            EaterDesireInfo previousInfo = _currentDesireInfo;
-            _currentDesireInfo = info;
-            TryPlayDesireSound(previousInfo, info);
-            EventDesireChanged?.Invoke(info);
-        }
-
-        private void HandleContextTargetChanged(PlanetsMaster previous, PlanetsMaster current)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            bool targetChanged = !IsSameActor(previous, current);
-            if (targetChanged && previous != null && _context.IsEating)
-            {
-                bool stopped = _context.SetEating(false);
-                if (stopped)
-                {
-                    DebugUtility.LogVerbose<EaterBehavior>(
-                        $"Alvo atualizado enquanto o Eater comia. Encerrando consumo do planeta {GetPlanetName(previous)}.",
-                        DebugUtility.Colors.Success,
-                        this);
-
-                    _context.Master.OnEventEndEatPlanet(previous);
-                }
-            }
-
-            if (targetChanged)
-            {
-                ForceStateEvaluation();
-            }
-
-            EventTargetChanged?.Invoke(current);
-        }
-
-        private void RegisterEventListeners()
-        {
-            if (_planetMarkingChangedBinding == null)
-            {
-                _planetMarkingChangedBinding = new EventBinding<PlanetMarkingChangedEvent>(HandlePlanetMarkingChanged);
-            }
-
-            if (_planetUnmarkedBinding == null)
-            {
-                _planetUnmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
-            }
-
-            if (_planetDestroyedBinding == null)
-            {
-                _planetDestroyedBinding = new EventBinding<PlanetDestroyedEvent>(HandlePlanetDestroyed);
-            }
-
-            if (_resourceUpdateBinding == null)
-            {
-                _resourceUpdateBinding = new EventBinding<ResourceUpdateEvent>(HandleResourceUpdated);
-            }
-
-            EventBus<PlanetMarkingChangedEvent>.Register(_planetMarkingChangedBinding);
-            EventBus<PlanetUnmarkedEvent>.Register(_planetUnmarkedBinding);
-            EventBus<PlanetDestroyedEvent>.Register(_planetDestroyedBinding);
-            EventBus<ResourceUpdateEvent>.Register(_resourceUpdateBinding);
-        }
-
-        private void UnregisterEventListeners()
-        {
-            if (_planetMarkingChangedBinding != null)
-            {
-                EventBus<PlanetMarkingChangedEvent>.Unregister(_planetMarkingChangedBinding);
-            }
-
-            if (_planetUnmarkedBinding != null)
-            {
-                EventBus<PlanetUnmarkedEvent>.Unregister(_planetUnmarkedBinding);
-            }
-
-            if (_planetDestroyedBinding != null)
-            {
-                EventBus<PlanetDestroyedEvent>.Unregister(_planetDestroyedBinding);
-            }
-
-            if (_resourceUpdateBinding != null)
-            {
-                EventBus<ResourceUpdateEvent>.Unregister(_resourceUpdateBinding);
-            }
-        }
-
-        private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent evt)
-        {
-            if (_context == null)
-            {
-                return;
-            }
-
-            IActor newMarked = evt.NewMarkedPlanet;
-            if (newMarked == null)
-            {
-                if (_context.ClearTarget())
-                {
-                    DebugUtility.LogVerbose<EaterBehavior>("Planeta marcado removido. Alvo do Eater limpo.", null, this);
-                }
-                return;
-            }
-
-            PlanetsManager manager = PlanetsManager.Instance;
-            if (manager == null || !manager.TryGetPlanet(newMarked, out PlanetsMaster newTarget))
-            {
-                DebugUtility.LogWarning<EaterBehavior>(
-                    $"Não foi possível localizar o planeta marcado em PlanetsManager: {newMarked.ActorName}.",
-                    this);
-                return;
-            }
-
-            bool changed = _context.SetTarget(newTarget);
-            if (!changed)
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<EaterBehavior>($"Planeta marcado definido como alvo: {GetPlanetName(newTarget)}.", null, this);
-        }
-
-        private void HandlePlanetUnmarked(PlanetUnmarkedEvent evt)
-        {
-            if (_context == null || !_context.HasTarget)
-            {
-                return;
-            }
-
-            IActor unmarked = evt.PlanetActor;
-            if (unmarked == null)
-            {
-                return;
-            }
-
-            PlanetsMaster currentTarget = _context.TargetPlanet;
-            if (currentTarget == null)
-            {
-                return;
-            }
-
-            if (!IsSameActor(currentTarget, unmarked))
-            {
-                return;
-            }
-
-            if (_context.ClearTarget())
-            {
-                string planetName = GetPlanetName(currentTarget);
-                DebugUtility.LogVerbose<EaterBehavior>($"Planeta desmarcado removido do alvo: {planetName}.", null, this);
-            }
-        }
-
-        private void HandlePlanetDestroyed(PlanetDestroyedEvent evt)
-        {
-            if (_context == null || !_context.HasTarget || evt?.Detected?.Owner == null)
-            {
-                return;
-            }
-
-            PlanetsMaster currentTarget = _context.TargetPlanet;
-            if (currentTarget == null)
-            {
-                return;
-            }
-
-            if (!IsSameActor(currentTarget, evt.Detected.Owner))
-            {
-                return;
-            }
-
-            if (_context.ClearTarget())
-            {
-                string planetName = GetPlanetName(currentTarget);
-                DebugUtility.LogVerbose<EaterBehavior>($"Planeta alvo destruído removido: {planetName}.", null, this);
-            }
-        }
-
-        private void HandleResourceUpdated(ResourceUpdateEvent evt)
-        {
-            if (_context == null || evt?.NewValue == null || _master == null)
-            {
-                return;
-            }
-
-            if (evt.ActorId != _master.ActorId)
-            {
-                return;
-            }
-
-            if (evt.ResourceType != _context.Config.SatiationResourceType)
-            {
-                return;
-            }
-
-            if (!evt.NewValue.IsFull() || !_context.IsHungry)
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<EaterBehavior>(
-                $"Recurso de saciedade cheio ({evt.ResourceType}). Retornando ao estado Vagando.",
-                null,
-                this);
-            SetHungry(false);
-        }
-
-        private static bool IsSameActor(IActor left, IActor right)
-        {
-            if (left == null || right == null)
-            {
-                return false;
-            }
-
-            return left.ActorId == right.ActorId;
-        }
-
-        private static bool IsSameActor(PlanetsMaster planet, IActor actor)
-        {
-            if (planet == null || actor == null)
-            {
-                return false;
-            }
-
-            return planet.ActorId == actor.ActorId;
-        }
-
-        /// <summary>
-        /// Resolve o SoundData utilizado para o áudio de desejos considerando overrides e configuração global.
-        /// </summary>
-        private void EnsureDesireSoundResolved()
-        {
-            if (_resolvedDesireSound != null)
-            {
-                return;
-            }
-
-            SoundData configSound = null;
-            if (overrideConfig != null)
-            {
-                configSound = overrideConfig.DesireSelectedSound;
-            }
-
-            if (configSound == null && _context != null)
-            {
-                configSound = _context.Config?.DesireSelectedSound;
-            }
-
-            _resolvedDesireSound = desireSelectedSound != null ? desireSelectedSound : configSound;
-        }
-
-        /// <summary>
-        /// Avalia se um novo desejo foi sorteado e dispara o som correspondente via AudioSystem.
-        /// </summary>
-        private void TryPlayDesireSound(EaterDesireInfo previousInfo, EaterDesireInfo newInfo)
-        {
-            if (!newInfo.ServiceActive || !newInfo.HasDesire || !newInfo.HasResource)
-            {
-                return;
-            }
-
-            EnsureDesireSoundResolved();
-
-            if (!EnsureAudioEmitter())
-            {
-                return;
-            }
-
-            if (_resolvedDesireSound == null || _resolvedDesireSound.clip == null)
-            {
-                if (!_warnedMissingDesireSound)
-                {
-                    DebugUtility.LogWarning<EaterBehavior>(
-                        "SoundData para o desejo do Eater não foi configurado.",
-                        this);
-                    _warnedMissingDesireSound = true;
-                }
-                return;
-            }
-
-            bool hadPrevious = previousInfo.ServiceActive && previousInfo.HasDesire && previousInfo.HasResource;
-            bool resourceChanged = !hadPrevious || previousInfo.Resource != newInfo.Resource;
-            bool timerReset = newInfo.Duration > 0f &&
-                              newInfo.RemainingTime >= Mathf.Max(newInfo.Duration - 0.01f, 0f);
-
-            if (!resourceChanged && !timerReset)
-            {
-                return;
-            }
-
-            _warnedMissingDesireSound = false;
-
-            Transform emitterTransform = audioEmitter != null ? audioEmitter.transform : transform;
-            Vector3 position = emitterTransform.position;
-            bool spatial = audioEmitter != null && audioEmitter.UsesSpatialBlend;
-            AudioContext audioContext = AudioContext.Default(position, spatial);
-
-            audioEmitter.Play(_resolvedDesireSound, audioContext);
-
-            DebugUtility.LogVerbose<EaterBehavior>(
-                $"🔊 Som de desejo reproduzido para {newInfo.Resource!.Value} (disp={newInfo.IsAvailable}, planetas={newInfo.AvailableCount}).",
-                null,
-                this);
-        }
-
-        /// <summary>
-        /// Garante a presença do emissor de áudio necessário para reproduzir o som de desejos.
-        /// </summary>
-        private bool EnsureAudioEmitter()
-        {
-            if (audioEmitter != null)
-            {
-                _warnedMissingAudioEmitter = false;
-                return true;
-            }
-
-            if (!TryGetComponent(out audioEmitter))
-            {
-                if (!_warnedMissingAudioEmitter)
-                {
-                    DebugUtility.LogWarning<EaterBehavior>(
-                        "EntityAudioEmitter não encontrado. O som de desejo não será reproduzido.",
-                        this);
-                    _warnedMissingAudioEmitter = true;
-                }
-                return false;
-            }
-
-            _warnedMissingAudioEmitter = false;
-            return true;
-        }
-
-        private void TrackStateChange(string reason)
-        {
-            if (_stateMachine == null)
-            {
-                return;
-            }
-
-            IState current = _stateMachine.CurrentState;
-            if (ReferenceEquals(current, _lastKnownState))
-            {
-                return;
-            }
-
-            IState previous = _lastKnownState;
-            _lastKnownState = current;
-
-            if (logStateTransitions)
-            {
-                string message = string.IsNullOrEmpty(reason)
-                    ? $"Estado alterado: {GetStateName(previous)} → {GetStateName(current)}."
-                    : $"Estado alterado ({reason}): {GetStateName(previous)} → {GetStateName(current)}.";
-                DebugUtility.Log<EaterBehavior>(message, instance: this);
-            }
-
-            LogStateSummary($"📊 Resumo após transição ({reason})");
-
-            EventStateChanged?.Invoke(previous, current);
-        }
-
-        private void LogStateSummary(string title)
-        {
-            if (!logStateSummaries)
-            {
-                return;
-            }
-
-            EaterBehaviorDebugSnapshot snapshot = CreateDebugSnapshot();
-            if (!snapshot.IsValid)
-            {
-                DebugUtility.LogWarning<EaterBehavior>("Contexto ainda não está disponível para gerar resumo.", this);
-                return;
-            }
-
-            _summaryBuilder.Clear();
-            _summaryBuilder.AppendLine(title);
-            _summaryBuilder.AppendLine($"- Estado: {snapshot.CurrentState}");
-            _summaryBuilder.AppendLine($"- Fome: {snapshot.IsHungry}, Comendo: {snapshot.IsEating}");
-            _summaryBuilder.AppendLine($"- Alvo: {(snapshot.HasTarget ? snapshot.TargetName : "Nenhum")}");
-            _summaryBuilder.AppendLine($"- Timer do estado: {snapshot.StateTimer:F2}s");
-
-            if (snapshot.HasWanderingTimer)
-            {
-                _summaryBuilder.AppendLine($"- Timer de vagar: running={snapshot.WanderingTimerRunning}, finalizado={snapshot.WanderingTimerFinished}, tempo={snapshot.WanderingTimerValue:F2}s de {snapshot.WanderingDuration:F2}s");
-            }
-
-            if (snapshot.HasPlayerAnchor)
-            {
-                _summaryBuilder.AppendLine($"- Âncora de players: {snapshot.PlayerAnchor}");
-            }
-
-            if (snapshot.HasAutoFlow)
-            {
-                _summaryBuilder.AppendLine($"- AutoFlow: ativo={snapshot.AutoFlowActive}, pendente={snapshot.PendingHungryEffects}");
-            }
-
-            if (snapshot.HasMovementSample)
-            {
-                _summaryBuilder.AppendLine($"- Movimento: direção={snapshot.MovementDirection}, velocidade={snapshot.MovementSpeed:F2}");
-            }
-
-            if (snapshot.HasHungryMetrics)
-            {
-                _summaryBuilder.AppendLine($"- Métricas de fome: distânciaJogadores={snapshot.PlayerAnchorDistance:F2}, alinhamento={snapshot.PlayerAnchorAlignment:F2}");
-            }
-
-            if (snapshot.DesiresActive)
-            {
-                string desireInfo = snapshot.HasCurrentDesire
-                    ? $"{snapshot.CurrentDesireName} (disp={snapshot.CurrentDesireAvailable}, planetas={snapshot.CurrentDesireAvailableCount}, peso={snapshot.CurrentDesireWeight:F2}, restante={snapshot.CurrentDesireRemaining:F2}s de {snapshot.CurrentDesireDuration:F2}s)"
-                    : "Aguardando sorteio";
-                _summaryBuilder.AppendLine($"- Desejos: ativo=True, atual={desireInfo}");
-            }
-            else
-            {
-                _summaryBuilder.AppendLine("- Desejos: ativo=False");
-            }
-
-            _summaryBuilder.AppendLine($"- Posição: {snapshot.Position}");
-
-            DebugUtility.Log<EaterBehavior>(_summaryBuilder.ToString(), instance: this);
-        }
-
-        public EaterBehaviorDebugSnapshot CreateDebugSnapshot()
-        {
-            if (_context == null)
-            {
-                return EaterBehaviorDebugSnapshot.Empty;
-            }
-
-            Vector3 anchor = default;
-            bool hasAnchor = _context.TryGetCachedPlayerAnchor(out anchor);
-            PlanetsMaster target = _context.Target;
-            string targetName = target != null ? GetPlanetName(target) : string.Empty;
-
-            PlanetResources? currentDesire = _context.CurrentDesire;
-            string currentDesireName = currentDesire.HasValue ? currentDesire.Value.ToString() : string.Empty;
-
-            return new EaterBehaviorDebugSnapshot(
-                true,
-                GetStateName(_stateMachine?.CurrentState),
-                _context.IsHungry,
-                _context.IsEating,
-                _context.HasTarget,
-                targetName,
-                _context.StateTimer,
-                _context.HasWanderingTimer,
-                _context.IsWanderingTimerRunning,
-                _context.HasWanderingTimerElapsed(),
-                _context.GetWanderingTimerValue(),
-                _context.Config.WanderingDuration,
-                _context.Transform.position,
-                hasAnchor,
-                anchor,
-                _context.HasAutoFlowService,
-                _context.IsAutoFlowActive,
-                _context.AreDesiresActive,
-                _context.HasPendingHungryEffects,
-                _context.HasMovementSample,
-                _context.LastMovementDirection,
-                _context.LastMovementSpeed,
-                _context.HasHungryMetrics,
-                _context.HasHungryMetrics ? _context.LastAnchorDistance : 0f,
-                _context.HasHungryMetrics ? _context.LastAnchorAlignment : 0f,
-                _context.HasCurrentDesire,
-                currentDesireName,
-                _context.CurrentDesireAvailable,
-                _context.CurrentDesireRemainingTime,
-                _context.CurrentDesireDuration,
-                _context.CurrentDesireAvailableCount,
-                _context.CurrentDesireWeight
-            );
-        }
-
-        private static string GetStateName(IState state)
-        {
-            return state?.GetType().Name ?? "None";
-        }
-
-        private static string GetPlanetName(PlanetsMaster planet)
-        {
-            if (planet == null)
-            {
-                return "Nenhum";
-            }
-
-            string actorName = planet.ActorName;
-            return string.IsNullOrEmpty(actorName) ? planet.name : actorName;
-        }
-
-        /// <summary>
-        /// Garante que o toggle de execução fora da sessão seja inicializado com o valor padrão seguro.
-        /// </summary>
-        private void EnsureExecutionToggleInitialized()
-        {
-            if (executionToggleInitialized)
-            {
-                return;
-            }
-
-            updateWhileGameInactive = true;
-            executionToggleInitialized = true;
+            _config = _master != null ? _master.Config : null;
+            _planetMarkingManager = PlanetMarkingManager.Instance;
+            _playerManager = PlayerManager.Instance;
+            _planetsManager = PlanetsManager.Instance;
+            _animationController = GetComponent<PlayerAnimationController>() ??
+                                   GetComponentInChildren<PlayerAnimationController>(true);
+            TryEnsureAutoFlowBridge();
+            EnsureDesireService();
+            EnsureStatesInitialized();
+            RefreshCurrentTarget();
         }
 
 #if UNITY_EDITOR
@@ -1006,9 +108,703 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            EnsureExecutionToggleInitialized();
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            _master ??= GetComponent<EaterMaster>();
+            _config = _master != null ? _master.Config : null;
         }
 #endif
+
+        private void Update()
+        {
+            RefreshCurrentTarget();
+            _desireService?.Update();
+            _stateMachine?.Update();
+        }
+
+        private void FixedUpdate()
+        {
+            _stateMachine?.FixedUpdate();
+        }
+
+        private bool EnsureStatesInitialized()
+        {
+            if (_stateMachine != null)
+            {
+                return true;
+            }
+
+            _stateMachine = new StateMachine();
+
+            _wanderingState = RegisterState(new EaterWanderingState());
+            _hungryState = RegisterState(new EaterHungryState());
+            _chasingState = RegisterState(new EaterChasingState());
+            _eatingState = RegisterState(new EaterEatingState());
+            _deathState = RegisterState(new EaterDeathState());
+
+            ForceSetState(_wanderingState, "Inicialização");
+            return _stateMachine != null;
+        }
+
+        [ContextMenu("Eater States/Set Wandering")]
+        private void ContextSetWandering()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_wanderingState, "ContextMenu/Wandering");
+        }
+
+        [ContextMenu("Eater States/Set Hungry")]
+        private void ContextSetHungry()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_hungryState, "ContextMenu/Hungry");
+        }
+
+        [ContextMenu("Eater States/Set Chasing")]
+        private void ContextSetChasing()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_chasingState, "ContextMenu/Chasing");
+        }
+
+        [ContextMenu("Eater States/Set Eating")]
+        private void ContextSetEating()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_eatingState, "ContextMenu/Eating");
+        }
+
+        [ContextMenu("Eater States/Set Death")]
+        private void ContextSetDeath()
+        {
+            EnsureStatesInitialized();
+            ForceSetState(_deathState, "ContextMenu/Death");
+        }
+
+        private void ForceSetState(EaterBehaviorState targetState, string reason)
+        {
+            if (_stateMachine == null || targetState == null)
+            {
+                return;
+            }
+
+            IState previous = _stateMachine.CurrentState;
+            previous?.OnExit();
+
+            _stateMachine.SetState(targetState);
+            if (logStateTransitions)
+            {
+                string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
+                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            EventStateChanged?.Invoke(previous, targetState);
+
+            if (!ReferenceEquals(targetState, _chasingState) && !ReferenceEquals(targetState, _eatingState))
+            {
+                ClearProximityContact();
+            }
+
+        }
+
+        private T RegisterState<T>(T state) where T : EaterBehaviorState
+        {
+            state.Attach(this);
+            _stateMachine.RegisterState(state);
+            return state;
+        }
+
+        private static string GetStateName(IState state)
+        {
+            if (state is EaterBehaviorState eaterState)
+            {
+                return eaterState.StateName;
+            }
+
+            return state?.GetType().Name ?? "estado desconhecido";
+        }
+
+        private void RefreshCurrentTarget()
+        {
+            PlanetsMaster resolved = ResolveMarkedPlanet();
+            if (ReferenceEquals(_currentTarget, resolved))
+            {
+                return;
+            }
+
+            PlanetsMaster previous = _currentTarget;
+            _currentTarget = resolved;
+
+            if (previous != null && !ReferenceEquals(previous, _currentTarget))
+            {
+                ClearProximityContact(previous);
+            }
+
+            EventTargetChanged?.Invoke(_currentTarget);
+
+            if (logStateTransitions)
+            {
+                string previousName = FormatPlanetName(previous);
+                string newName = FormatPlanetName(_currentTarget);
+                DebugUtility.Log<EaterBehavior>(
+                    $"Alvo atualizado: {previousName} -> {newName}.",
+                    DebugUtility.Colors.CrucialInfo,
+                    this,
+                    this);
+            }
+        }
+
+        private PlanetsMaster ResolveMarkedPlanet()
+        {
+            MarkPlanet mark = _planetMarkingManager?.CurrentlyMarkedPlanet;
+            if (mark == null)
+            {
+                return null;
+            }
+
+            PlanetsMaster planet = null;
+            IActor actor = mark.PlanetActor;
+            if (actor != null)
+            {
+                if (_planetsManager != null && _planetsManager.TryGetPlanet(actor, out PlanetsMaster resolved))
+                {
+                    planet = resolved;
+                }
+                else if (actor is PlanetsMaster directMaster)
+                {
+                    planet = directMaster;
+                }
+            }
+
+            if (planet == null)
+            {
+                planet = mark.GetComponentInParent<PlanetsMaster>();
+            }
+
+            return planet;
+        }
+
+        internal bool IsCurrentTarget(PlanetsMaster planet)
+        {
+            if (planet == null || _currentTarget == null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(_currentTarget, planet);
+        }
+
+        internal void RegisterProximityContact(PlanetsMaster planet, Vector3 eaterPosition)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            bool wasActive = _hasProximityContact && ReferenceEquals(_proximityPlanet, planet);
+            _hasProximityContact = true;
+            _proximityPlanet = planet;
+            _proximityPosition = eaterPosition;
+
+            if (!wasActive)
+            {
+                if (logStateTransitions)
+                {
+                    DebugUtility.Log<EaterBehavior>(
+                        $"Sensor de proximidade detectou {FormatPlanetName(planet)}.",
+                        DebugUtility.Colors.Success,
+                        this,
+                        this);
+                }
+
+                EventProximityContactChanged?.Invoke(planet, true);
+            }
+        }
+
+        internal void ClearProximityContact()
+        {
+            ClearProximityContact(null);
+        }
+
+        internal void ClearProximityContact(PlanetsMaster planet)
+        {
+            if (!_hasProximityContact)
+            {
+                return;
+            }
+
+            if (planet != null && !ReferenceEquals(_proximityPlanet, planet))
+            {
+                return;
+            }
+
+            PlanetsMaster previous = _proximityPlanet;
+            _hasProximityContact = false;
+            _proximityPlanet = null;
+            _proximityPosition = Vector3.zero;
+
+            if (logStateTransitions)
+            {
+                DebugUtility.Log<EaterBehavior>(
+                    $"Sensor de proximidade liberou {FormatPlanetName(previous)}.",
+                    DebugUtility.Colors.CrucialInfo,
+                    this,
+                    this);
+            }
+
+            EventProximityContactChanged?.Invoke(previous, false);
+        }
+
+        internal Vector3 GetProximityContactPosition()
+        {
+            return _proximityPosition;
+        }
+
+        internal void EndEating(bool desireSatisfied)
+        {
+            if (_stateMachine == null || _eatingState == null)
+            {
+                return;
+            }
+
+            if (!ReferenceEquals(_stateMachine.CurrentState, _eatingState))
+            {
+                return;
+            }
+
+            string reason = $"EndEating({desireSatisfied})";
+            ForceSetState(_chasingState, reason);
+        }
+
+        internal void TryPlayDesireSelectedSound(string reason)
+        {
+            if (_config?.DesireSelectedSound == null)
+            {
+                return;
+            }
+
+            if (!TryEnsureAudioEmitter())
+            {
+                if (logStateTransitions && !_missingAudioEmitterLogged)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>(
+                        "EntityAudioEmitter não encontrado para reproduzir som de desejo.",
+                        this,
+                        this);
+                    _missingAudioEmitterLogged = true;
+                }
+
+                return;
+            }
+
+            _missingAudioEmitterLogged = false;
+
+            AudioContext context = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);
+            _audioEmitter.Play(_config.DesireSelectedSound, context);
+
+            if (logStateTransitions)
+            {
+                DebugUtility.Log<EaterBehavior>($"Som de desejo reproduzido ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+        }
+
+        private bool TryEnsureAudioEmitter()
+        {
+            if (_audioEmitterResolved)
+            {
+                return _audioEmitter != null;
+            }
+
+            _audioEmitter = GetComponent<EntityAudioEmitter>() ?? GetComponentInChildren<EntityAudioEmitter>(true);
+            _audioEmitterResolved = true;
+            if (_audioEmitter != null)
+            {
+                _missingAudioEmitterLogged = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string FormatPlanetName(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return "nenhum planeta";
+            }
+
+            return !string.IsNullOrEmpty(planet.ActorName) ? planet.ActorName : planet.name;
+        }
+
+        private bool TryGetClosestPlayer(out Transform player, out float sqrDistance)
+        {
+            _playerManager ??= PlayerManager.Instance;
+            IReadOnlyList<Transform> players = _playerManager?.Players;
+            player = null;
+            sqrDistance = 0f;
+
+            if (players == null || players.Count == 0)
+            {
+                return false;
+            }
+
+            float bestDistance = float.MaxValue;
+            Transform bestPlayer = null;
+            Vector3 origin = transform.position;
+
+            foreach (Transform candidate in players)
+            {
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                float candidateDistance = (candidate.position - origin).sqrMagnitude;
+                if (candidateDistance < bestDistance)
+                {
+                    bestDistance = candidateDistance;
+                    bestPlayer = candidate;
+                }
+            }
+
+            if (bestPlayer == null)
+            {
+                return false;
+            }
+
+            player = bestPlayer;
+            sqrDistance = bestDistance;
+            return true;
+        }
+
+        private Vector3 ApplyPlayerBounds(Vector3 desiredPosition)
+        {
+            if (!TryGetClosestPlayerAnchor(out Vector3 anchor, out _))
+            {
+                return desiredPosition;
+            }
+
+            float maxDistance = Mathf.Max(0f, _config?.WanderingMaxDistanceFromPlayer ?? 0f);
+            float minDistance = Mathf.Max(0f, _config?.WanderingMinDistanceFromPlayer ?? 0f);
+
+            if (maxDistance <= 0f && minDistance <= 0f)
+            {
+                return desiredPosition;
+            }
+
+            if (maxDistance > 0f && maxDistance < minDistance)
+            {
+                maxDistance = minDistance;
+            }
+
+            Vector3 offset = desiredPosition - anchor;
+            float sqrMagnitude = offset.sqrMagnitude;
+
+            if (maxDistance > 0f)
+            {
+                float maxDistanceSqr = maxDistance * maxDistance;
+                if (sqrMagnitude > maxDistanceSqr)
+                {
+                    desiredPosition = anchor + offset.normalized * maxDistance;
+                    offset = desiredPosition - anchor;
+                    sqrMagnitude = offset.sqrMagnitude;
+                }
+            }
+
+            if (minDistance > 0f)
+            {
+                float minDistanceSqr = minDistance * minDistance;
+                if (sqrMagnitude < minDistanceSqr)
+                {
+                    Vector3 direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
+                    if (direction.sqrMagnitude <= Mathf.Epsilon)
+                    {
+                        direction = Vector3.forward;
+                    }
+
+                    desiredPosition = anchor + direction * minDistance;
+                }
+            }
+
+            return desiredPosition;
+        }
+
+        internal EaterMaster Master => _master;
+
+        internal EaterConfigSo Config => _config;
+
+        internal bool ResumeAutoFlow(string reason)
+        {
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para controlar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            bool resumed = _autoFlowBridge.ResumeAutoFlow();
+            LogAutoFlowResult(resumed,
+                resumed
+                    ? $"AutoFlow retomado ({reason})."
+                    : $"AutoFlow permaneceu pausado ({reason}).");
+            return resumed;
+        }
+
+        internal bool PauseAutoFlow(string reason)
+        {
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para pausar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            bool paused = _autoFlowBridge.PauseAutoFlow();
+            LogAutoFlowResult(paused,
+                paused
+                    ? $"AutoFlow pausado ({reason})."
+                    : $"Falha ao pausar AutoFlow ({reason}).");
+            return paused;
+        }
+
+        internal float GetRandomRoamingSpeed()
+        {
+            if (_config == null)
+            {
+                return 0f;
+            }
+
+            float min = _config.MinSpeed;
+            float max = _config.MaxSpeed;
+            return Random.Range(min, max);
+        }
+
+        internal float GetChaseSpeed()
+        {
+            if (_config == null)
+            {
+                return 0f;
+            }
+
+            float baseSpeed = _config.MaxSpeed;
+            return baseSpeed * _config.MultiplierChase;
+        }
+
+        internal void Move(Vector3 direction, float speed, float deltaTime, bool respectPlayerBounds)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon || speed <= 0f)
+            {
+                return;
+            }
+
+            Vector3 displacement = direction.normalized * speed * deltaTime;
+            Translate(displacement, respectPlayerBounds);
+        }
+
+        internal void Translate(Vector3 displacement, bool respectPlayerBounds)
+        {
+            Vector3 desiredPosition = transform.position + displacement;
+            if (respectPlayerBounds)
+            {
+                desiredPosition = ApplyPlayerBounds(desiredPosition);
+            }
+
+            transform.position = desiredPosition;
+        }
+
+        internal void RotateTowards(Vector3 direction, float deltaTime)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            float rotationSpeed = _config != null ? _config.RotationSpeed : 5f;
+            rotationSpeed = Mathf.Max(0f, rotationSpeed);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, deltaTime * rotationSpeed);
+        }
+
+        internal void LookAt(Vector3 targetPosition)
+        {
+            Vector3 direction = targetPosition - transform.position;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            transform.rotation = targetRotation;
+        }
+
+        private bool TryEnsureAutoFlowBridge()
+        {
+            if (_autoFlowBridge != null)
+            {
+                return true;
+            }
+
+            if (TryGetComponent(out ResourceAutoFlowBridge bridge))
+            {
+                _autoFlowBridge = bridge;
+                _missingAutoFlowBridgeLogged = false;
+                _autoFlowUnavailableLogged = false;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void LogAutoFlowIssue(string message, ref bool cacheFlag)
+        {
+            if (!logStateTransitions || cacheFlag)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+            cacheFlag = true;
+        }
+
+        private void LogAutoFlowResult(bool success, string message)
+        {
+            if (!logStateTransitions)
+            {
+                return;
+            }
+
+            if (success)
+            {
+                DebugUtility.Log<EaterBehavior>(message, DebugUtility.Colors.Success, this, this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<EaterBehavior>(message, this, this);
+            }
+        }
+
+        internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)
+        {
+            if (TryGetClosestPlayer(out Transform player, out float sqrDistance))
+            {
+                anchor = player.position;
+                distance = Mathf.Sqrt(sqrDistance);
+                return true;
+            }
+
+            anchor = default;
+            distance = 0f;
+            return false;
+        }
+
+        internal bool BeginDesires(string reason)
+        {
+            if (!EnsureDesireService())
+            {
+                return false;
+            }
+
+            bool started = _desireService.Start();
+            if (logStateTransitions && started)
+            {
+                DebugUtility.Log<EaterBehavior>($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            return started;
+        }
+
+        internal bool EndDesires(string reason)
+        {
+            bool stopped = false;
+
+            if (_desireService != null)
+            {
+                stopped = _desireService.Stop();
+                if (logStateTransitions && stopped)
+                {
+                    DebugUtility.Log<EaterBehavior>($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+            }
+
+            if (!stopped)
+            {
+                EnsureNoActiveDesire(reason);
+            }
+
+            return stopped;
+        }
+
+        internal void EnsureNoActiveDesire(string reason)
+        {
+            if (!_currentDesireInfo.ServiceActive && !_currentDesireInfo.HasDesire)
+            {
+                return;
+            }
+
+            if (logStateTransitions)
+            {
+                DebugUtility.Log<EaterBehavior>($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            UpdateDesireInfo(EaterDesireInfo.Inactive);
+        }
+
+        public EaterDesireInfo GetCurrentDesireInfo()
+        {
+            return _currentDesireInfo;
+        }
+
+        private bool EnsureDesireService()
+        {
+            if (_desireService != null)
+            {
+                return true;
+            }
+
+            if (_master == null || _config == null)
+            {
+                if (logStateTransitions && !_missingDesireServiceLogged)
+                {
+                    DebugUtility.LogWarning<EaterBehavior>("Não foi possível inicializar o serviço de desejos (Master ou Config ausentes).", this, this);
+                    _missingDesireServiceLogged = true;
+                }
+
+                return false;
+            }
+
+            _desireService = new EaterDesireService(_master, _config);
+            _desireService.EventDesireChanged += HandleDesireChanged;
+            _missingDesireServiceLogged = false;
+            return true;
+        }
+
+        private void HandleDesireChanged(EaterDesireInfo info)
+        {
+            UpdateDesireInfo(info);
+        }
+
+        private void UpdateDesireInfo(EaterDesireInfo info)
+        {
+            _currentDesireInfo = info;
+            EventDesireChanged?.Invoke(info);
+            EventBus<EaterDesireInfoChangedEvent>.Raise(new EaterDesireInfoChangedEvent(this, info));
+        }
+
+        private void OnDestroy()
+        {
+            if (_desireService != null)
+            {
+                _desireService.EventDesireChanged -= HandleDesireChanged;
+                _desireService.Stop();
+            }
+        }
     }
 }
