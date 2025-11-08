@@ -14,9 +14,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private Coroutine _pendingResumeRoutine;
         private int _manualPauseCount;
         private int _automaticPauseCount;
+        private bool _autoResumeAllowed;
 
         public bool HasAutoFlowService => _autoFlow != null;
         public bool IsAutoFlowActive => _autoFlow != null && !_autoFlow.IsPaused;
+        public bool AutoResumeAllowed => _autoResumeAllowed;
+        public bool StartPaused => startPaused;
 
         protected override void OnServiceInitialized()
         {
@@ -35,6 +38,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             _autoFlow = new ResourceAutoFlowService(resourceSystem, startPaused);
+            _autoResumeAllowed = !startPaused;
             resourceSystem.ResourceChanging += HandleResourceChanging;
             resourceSystem.ResourceChanged += HandleResourceChanged;
 
@@ -62,6 +66,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return false;
             }
 
+            // Assim que o jogador solicitar a retomada manual, liberamos o auto-resume.
+            if (!_autoResumeAllowed)
+            {
+                _autoResumeAllowed = true;
+            }
+
             if (_manualPauseCount > 0)
             {
                 _manualPauseCount = Mathf.Max(0, _manualPauseCount - 1);
@@ -77,7 +87,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return false;
             }
 
-            if (_autoFlow.IsPaused)
+            if (_autoFlow.IsPaused && _automaticPauseCount == 0)
             {
                 _autoFlow.Resume();
                 string actorId = actor?.ActorId ?? name;
@@ -119,6 +129,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             CancelPendingResume();
             _manualPauseCount = 0;
             _automaticPauseCount = 0;
+            _autoResumeAllowed = false;
 
             _autoFlow?.Dispose();
             _autoFlow = null;
@@ -182,6 +193,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return;
             }
 
+            if (!_autoResumeAllowed)
+            {
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>(
+                    $"⏸️ AutoFlow permanece pausado (StartPaused ativo) após alteração de {context.ResourceType}.",
+                    null,
+                    this,
+                    deduplicate: true);
+                return;
+            }
+
             ScheduleAutomaticResume();
         }
 
@@ -207,6 +228,16 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return;
             }
 
+            if (!_autoResumeAllowed)
+            {
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>(
+                    "⏸️ AutoFlow permaneceu pausado por configuração startPaused.",
+                    null,
+                    this,
+                    deduplicate: true);
+                return;
+            }
+
             CancelPendingResume();
             _pendingResumeRoutine = StartCoroutine(ResumeAutoFlowNextFrame());
         }
@@ -223,6 +254,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             if (_manualPauseCount > 0 || _automaticPauseCount > 0)
+            {
+                yield break;
+            }
+
+            if (!_autoResumeAllowed)
             {
                 yield break;
             }

@@ -723,6 +723,48 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
+        [ContextMenu(BridgesMenuRoot + "Resume AutoFlow")]
+        public void ResumeAutoFlow()
+        {
+            var bridges = GetComponents<ResourceAutoFlowBridge>();
+            if (bridges == null || bridges.Length == 0)
+            {
+                DebugUtility.LogWarning<EntityDebugUtility>("Nenhum ResourceAutoFlowBridge encontrado para retomar.");
+                return;
+            }
+
+            foreach (var bridge in bridges)
+            {
+                bool resumed = bridge.ResumeAutoFlow();
+                string actorId = bridge.Actor?.ActorId ?? bridge.name;
+                DebugUtility.LogWarning<EntityDebugUtility>(
+                    resumed
+                        ? $"▶️ AutoFlow retomado manualmente para {actorId}."
+                        : $"⏸️ AutoFlow permaneceu pausado para {actorId}. Verifique bloqueios automáticos ou pausas manuais.");
+            }
+        }
+
+        [ContextMenu(BridgesMenuRoot + "Pause AutoFlow")]
+        public void PauseAutoFlow()
+        {
+            var bridges = GetComponents<ResourceAutoFlowBridge>();
+            if (bridges == null || bridges.Length == 0)
+            {
+                DebugUtility.LogWarning<EntityDebugUtility>("Nenhum ResourceAutoFlowBridge encontrado para pausar.");
+                return;
+            }
+
+            foreach (var bridge in bridges)
+            {
+                bool paused = bridge.PauseAutoFlow();
+                string actorId = bridge.Actor?.ActorId ?? bridge.name;
+                DebugUtility.LogWarning<EntityDebugUtility>(
+                    paused
+                        ? $"⏸️ AutoFlow pausado manualmente para {actorId}."
+                        : $"⚠️ AutoFlow já estava pausado em {actorId} ou serviço indisponível.");
+            }
+        }
+
         [ContextMenu(BridgesMenuRoot + "Threshold Status")]
         public void DebugThresholdStatus()
         {
@@ -772,6 +814,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 var resourceSystem = bridge.GetResourceSystem();
                 if (resourceSystem != null && bridge.isInitialized)
                 {
+                    DebugUtility.LogWarning<EntityDebugUtility>(
+                        $"🔄 AutoFlow Bridge '{bridge.name}': Service={(bridge.HasAutoFlowService ? "✅" : "❌")}, " +
+                        $"StartPaused={bridge.StartPaused}, AutoResumeAllowed={bridge.AutoResumeAllowed}, " +
+                        $"IsActive={bridge.IsAutoFlowActive}");
+
                     int autoFlowCount = CountAutoFlowResources(resourceSystem);
                     DebugUtility.LogWarning<EntityDebugUtility>($"📊 Recursos com AutoFlow: {autoFlowCount}");
 
