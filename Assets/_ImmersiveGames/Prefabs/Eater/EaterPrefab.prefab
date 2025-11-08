@@ -345,13 +345,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d93bf1a54a34c908ae1af3a7bc8f0d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  overrideConfig: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
-  audioEmitter: {fileID: 3502098637227668626}
-  desireSelectedSound: {fileID: 11400000, guid: 04449c5613ee426f947003fca010a017, type: 2}
-  updateWhileGameInactive: 1
-  executionToggleInitialized: 1
   logStateTransitions: 1
-  logStateSummaries: 1
 --- !u!114 &3208070097848032392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -366,6 +360,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   behavior: {fileID: 142333882723398855}
   master: {fileID: 3116386425379354428}
-  autoLogStateChanges: 1
-  logSnapshotOnChange: 1
-  logMasterEvents: 1
