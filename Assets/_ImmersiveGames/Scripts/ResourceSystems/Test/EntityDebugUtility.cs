@@ -21,6 +21,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         private const string ResourcesMenuRoot = "Resources/";
         private const string DiagnosticsMenuRoot = "Diagnostics/";
         private const string BridgesMenuRoot = "Bridges/";
+        private const float MinimalReviveAmount = 1f;
 
         private static readonly FieldInfo DamageReceiverTargetField =
             typeof(DamageReceiver).GetField("targetResource", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -292,6 +293,38 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             ExecuteDamagePipeline(-missing, damageResourceType, "Restock Selected Resource");
+        }
+
+        [ContextMenu(ResourcesMenuRoot + "Revive Selected Resource")]
+        public void ReviveSelectedResource()
+        {
+            if (!TryGetResourceMetrics(damageResourceType, out var current, out var max))
+            {
+                return;
+            }
+
+            if (current > Mathf.Epsilon)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"✅ {damageResourceType} já está acima de zero — ator ativo.");
+                return;
+            }
+
+            float baseAmount = Mathf.Max(testDamage, MinimalReviveAmount);
+            float healAmount = baseAmount;
+
+            if (max > Mathf.Epsilon)
+            {
+                float missing = Mathf.Max(0f, max - current);
+                if (missing <= Mathf.Epsilon)
+                {
+                    DebugUtility.LogVerbose<EntityDebugUtility>($"⚠️ {damageResourceType} já está no valor máximo.");
+                    return;
+                }
+
+                healAmount = Mathf.Min(baseAmount, missing);
+            }
+
+            ExecuteDamagePipeline(-healAmount, damageResourceType, "Revive Selected Resource");
         }
 
         private bool ExecuteDamagePipeline(float amount, ResourceType requestedResource, string contextLabel)
