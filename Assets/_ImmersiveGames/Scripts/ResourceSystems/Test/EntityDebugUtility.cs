@@ -1,7 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -15,6 +17,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
     
     public class EntityDebugUtility : MonoBehaviour, IInjectableComponent
     {
+        private const string TestsMenuRoot = "Tests/";
+        private const string ResourcesMenuRoot = "Resources/";
+        private const string DiagnosticsMenuRoot = "Diagnostics/";
+        private const string BridgesMenuRoot = "Bridges/";
+
+        private static readonly FieldInfo DamageReceiverTargetField =
+            typeof(DamageReceiver).GetField("targetResource", BindingFlags.Instance | BindingFlags.NonPublic);
+
         public enum TestMode { Passive, Active, Hybrid }
 
         [Header("Test Settings")]
@@ -34,8 +44,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         private int _resourceUpdateEventsSeen;
         private int _canvasBindRequestsSeen;
         private bool _actorRegisteredEventSeen;
-
-        private Coroutine _pendingResumeRoutine;
 
         private EventBinding<ResourceUpdateEvent> _resourceUpdateBinding;
         private EventBinding<ResourceEventHub.CanvasBindRequest> _canvasBindRequestBinding;
@@ -77,18 +85,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
         private void OnDestroy()
         {
-            if (_pendingResumeRoutine != null)
-            {
-                StopCoroutine(_pendingResumeRoutine);
-                _pendingResumeRoutine = null;
-            }
-
             if (_resourceUpdateBinding != null) EventBus<ResourceUpdateEvent>.Unregister(_resourceUpdateBinding);
             if (_canvasBindRequestBinding != null) EventBus<ResourceEventHub.CanvasBindRequest>.Unregister(_canvasBindRequestBinding);
             if (_actorRegisteredBinding != null) EventBus<ResourceEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
         }
 
-        [ContextMenu("🎯 Run Test Routine")]
+        [ContextMenu(TestsMenuRoot + "Run Test Routine")]
         public void RunTestRoutine() => StartCoroutine(DelayedTestRoutine());
 
         private IEnumerator DelayedTestRoutine()
@@ -161,17 +163,19 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.Log<EntityDebugUtility>($"🔨 Active test for {_actor.ActorId}");
             yield return LogState("INITIAL");
 
-            if (_resourceSystem == null)
+            if (!ExecuteDamagePipeline(testDamage, damageResourceType, "Active Test - First Damage"))
             {
-                DebugUtility.LogError<EntityDebugUtility>("❌ ResourceSystem is null - aborting active test");
                 yield break;
             }
 
-            ApplyDamage(testDamage, damageResourceType);
             yield return new WaitForSeconds(0.3f);
             yield return LogState("AFTER FIRST DAMAGE");
 
-            ApplyDamage(testDamage, damageResourceType);
+            if (!ExecuteDamagePipeline(testDamage, damageResourceType, "Active Test - Second Damage"))
+            {
+                yield break;
+            }
+
             yield return new WaitForSeconds(0.3f);
             yield return LogState("AFTER SECOND DAMAGE");
         }
@@ -224,51 +228,200 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             yield return null;
         }
 
-        private void ApplyDamage(float amount, ResourceType resourceType = ResourceType.Health)
+        [ContextMenu(ResourcesMenuRoot + "Damage Selected Resource")]
+        public void DamageSelectedResource()
         {
-            if (!EnsureResourceSystem()) return;
-
-            var resource = _resourceSystem.Get(resourceType);
-            if (resource == null)
+            if (testDamage <= Mathf.Epsilon)
             {
-                DebugUtility.LogError<EntityDebugUtility>($"❌ Resource {resourceType} not found!");
+                DebugUtility.LogWarning<EntityDebugUtility>("⚠️ Configure um valor de dano maior que zero antes de executar o teste.");
                 return;
             }
 
-            bool pausedAutoFlow = TryPauseAutoFlow(out var autoFlowBridge);
-            float before = resource.GetCurrentValue();
-            _resourceSystem.Modify(resourceType, -amount);
-            float after = resource.GetCurrentValue();
-            DebugUtility.LogVerbose<EntityDebugUtility>($"💥 Damage Applied to {resourceType}: {before:F1} → {after:F1}");
+            ExecuteDamagePipeline(testDamage, damageResourceType, "Damage Selected Resource");
+        }
 
-            if (pausedAutoFlow)
+        [ContextMenu(ResourcesMenuRoot + "Recover Selected Resource")]
+        public void RecoverSelectedResource()
+        {
+            if (!TryGetResourceMetrics(damageResourceType, out var current, out var max))
             {
-                ResumeAutoFlowWhenReady(autoFlowBridge, after, resource.GetMaxValue());
+                return;
+            }
+
+            float missing = Mathf.Max(0f, max - current);
+            if (missing <= Mathf.Epsilon)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"✅ {damageResourceType} já está cheio — nada para recuperar.");
+                return;
+            }
+
+            float amount = -Mathf.Min(testDamage, missing);
+            ExecuteDamagePipeline(amount, damageResourceType, "Recover Selected Resource");
+        }
+
+        [ContextMenu(ResourcesMenuRoot + "Deplete Selected Resource")]
+        public void DepleteSelectedResource()
+        {
+            if (!TryGetResourceMetrics(damageResourceType, out var current, out _))
+            {
+                return;
+            }
+
+            if (current <= Mathf.Epsilon)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"⚠️ {damageResourceType} já está zerado.");
+                return;
+            }
+
+            ExecuteDamagePipeline(current, damageResourceType, "Deplete Selected Resource");
+        }
+
+        [ContextMenu(ResourcesMenuRoot + "Restock Selected Resource")]
+        public void RestockSelectedResource()
+        {
+            if (!TryGetResourceMetrics(damageResourceType, out var current, out var max))
+            {
+                return;
+            }
+
+            float missing = Mathf.Max(0f, max - current);
+            if (missing <= Mathf.Epsilon)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"✅ {damageResourceType} já está no máximo.");
+                return;
+            }
+
+            ExecuteDamagePipeline(-missing, damageResourceType, "Restock Selected Resource");
+        }
+
+        private bool ExecuteDamagePipeline(float amount, ResourceType requestedResource, string contextLabel)
+        {
+            if (Mathf.Abs(amount) <= Mathf.Epsilon)
+            {
+                DebugUtility.LogVerbose<EntityDebugUtility>($"⚠️ {contextLabel}: valor zero ignorado.");
+                return false;
+            }
+
+            if (!TryResolveDamageReceiver(requestedResource, out var receiver, out var resolvedResource))
+            {
+                return false;
+            }
+
+            if (!TryGetResource(resolvedResource, out var resource))
+            {
+                return false;
+            }
+
+            float before = resource.GetCurrentValue();
+            var attackerId = _actor?.ActorId ?? gameObject.name;
+            var ctx = new DamageContext(attackerId, receiver.GetReceiverId(), amount, resolvedResource);
+
+            receiver.ReceiveDamage(ctx);
+
+            float after = resource.GetCurrentValue();
+            float delta = after - before;
+
+            DebugUtility.Log<EntityDebugUtility>($"🧪 {contextLabel}: {resolvedResource} {before:F1} → {after:F1} (Δ={delta:+0.0;-0.0;0.0})");
+
+            if (resolvedResource != requestedResource)
+            {
+                DebugUtility.LogWarning<EntityDebugUtility>(
+                    $"⚠️ Receiver direcionado para {resolvedResource}, diferente do recurso solicitado {requestedResource}. Ajuste a configuração se necessário.");
+            }
+
+            return true;
+        }
+
+        private bool TryResolveDamageReceiver(ResourceType requestedResource, out IDamageReceiver receiver, out ResourceType resolvedResource)
+        {
+            var receivers = GetComponents<IDamageReceiver>();
+            if (receivers == null || receivers.Length == 0)
+            {
+                DebugUtility.LogError<EntityDebugUtility>("❌ Nenhum IDamageReceiver encontrado no ator para executar o pipeline de dano.");
+                receiver = null;
+                resolvedResource = requestedResource;
+                return false;
+            }
+
+            foreach (var candidate in receivers)
+            {
+                if (candidate is DamageReceiver typed && TryGetDamageReceiverTarget(typed, out var target) && target == requestedResource)
+                {
+                    receiver = candidate;
+                    resolvedResource = target;
+                    return true;
+                }
+            }
+
+            receiver = receivers[0];
+            if (receiver is DamageReceiver defaultReceiver && TryGetDamageReceiverTarget(defaultReceiver, out var fallbackTarget))
+            {
+                resolvedResource = fallbackTarget;
+            }
+            else
+            {
+                resolvedResource = requestedResource;
+            }
+
+            if (resolvedResource != requestedResource)
+            {
+                DebugUtility.LogWarning<EntityDebugUtility>(
+                    $"⚠️ Usando o primeiro DamageReceiver disponível configurado para {resolvedResource}. Selecione um recurso compatível ou adicione um receiver dedicado.");
+            }
+
+            return true;
+        }
+
+        private static bool TryGetDamageReceiverTarget(DamageReceiver receiver, out ResourceType resourceType)
+        {
+            resourceType = ResourceType.Health;
+            if (receiver == null || DamageReceiverTargetField == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                resourceType = (ResourceType)DamageReceiverTargetField.GetValue(receiver);
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
-        [ContextMenu("🟢 Fill Selected Resource")]
-        public void FillSelectedResource()
+        private bool TryGetResource(ResourceType resourceType, out IResourceValue resource)
         {
-            if (!EnsureResourceSystem()) return;
-
-            var resource = _resourceSystem.Get(damageResourceType);
-            if (resource == null)
+            resource = null;
+            if (!EnsureResourceSystem())
             {
-                DebugUtility.LogError<EntityDebugUtility>($"❌ Resource {damageResourceType} not found!");
-                return;
+                return false;
             }
 
-            bool pausedAutoFlow = TryPauseAutoFlow(out var autoFlowBridge);
-            float before = resource.GetCurrentValue();
-            float max = resource.GetMaxValue();
-            _resourceSystem.Set(damageResourceType, max);
-            DebugUtility.Log<EntityDebugUtility>($"🟢 Filled {damageResourceType}: {before:F1} → {max:F1}");
-
-            if (pausedAutoFlow)
+            resource = _resourceSystem.Get(resourceType);
+            if (resource != null)
             {
-                ResumeAutoFlowWhenReady(autoFlowBridge, max, max);
+                return true;
             }
+
+            DebugUtility.LogError<EntityDebugUtility>($"❌ Resource {resourceType} não encontrado para {_actor?.ActorId}.");
+            return false;
+        }
+
+        private bool TryGetResourceMetrics(ResourceType resourceType, out float current, out float max)
+        {
+            current = 0f;
+            max = 0f;
+
+            if (!TryGetResource(resourceType, out var resource))
+            {
+                return false;
+            }
+
+            current = resource.GetCurrentValue();
+            max = resource.GetMaxValue();
+            return true;
         }
 
         private void OnResourceUpdateEvent(ResourceUpdateEvent evt)
@@ -324,7 +477,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
         }
 
-        [ContextMenu("🔍 Quick Status")]
+        [ContextMenu(DiagnosticsMenuRoot + "Quick Status")]
         public void QuickStatus()
         {
             _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
@@ -339,14 +492,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.Log<EntityDebugUtility>($"📋 Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
         }
 
-        [ContextMenu("🔄 Re-resolve ResourceSystem")]
+        [ContextMenu(DiagnosticsMenuRoot + "Re-resolve ResourceSystem")]
         public void ReresolveResourceSystem()
         {
             _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
             DebugUtility.Log<EntityDebugUtility>($"Re-resolved ResourceSystem for {_actor.ActorId}: {_resourceSystem != null}");
         }
 
-        [ContextMenu("📋 Debug Orchestrator Access")]
+        [ContextMenu(DiagnosticsMenuRoot + "Debug Orchestrator Access")]
         public void DebugOrchestratorAccess()
         {
             DebugUtility.Log<EntityDebugUtility>($"📋 ORCHESTRATOR ACCESS DEBUG for {_actor.ActorId}");
@@ -372,7 +525,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        [ContextMenu("🔧 Debug Bridge Status")]
+        [ContextMenu(BridgesMenuRoot + "Injectable Bridge Status")]
         public void DebugBridgeStatus()
         {
             if (!TryGetComponentForDebug(out InjectableEntityResourceBridge bridge, "Debug Bridge Status"))
@@ -415,7 +568,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.Log<EntityDebugUtility>($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
         }
 
-        [ContextMenu("Debug/Print Resources")]
+        [ContextMenu(DiagnosticsMenuRoot + "Print Resources")]
         public void DebugPrintResources()
         {
             if (!EnsureResourceSystem())
@@ -460,7 +613,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.Log<EntityDebugUtility>(sb.ToString());
         }
 
-        [ContextMenu("🔧 Debug Resource Bridge Base Status")]
+        [ContextMenu(BridgesMenuRoot + "Resource Bridge Status")]
         public void DebugResourceBridgeStatus()
         {
             var bridges = GetComponents<ResourceBridgeBase>();
@@ -500,7 +653,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.LogWarning<EntityDebugUtility>($"- In DependencyManager: {inDependencyManager}, Service: {dmSystem != null}");
         }
 
-        [ContextMenu("🔗 Debug Active Links")]
+        [ContextMenu(BridgesMenuRoot + "Active Links")]
         public void DebugActiveLinks()
         {
             var bridges = GetComponents<ResourceLinkBridge>();
@@ -530,7 +683,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        [ContextMenu("🔄 Force Re-register Links")]
+        [ContextMenu(BridgesMenuRoot + "Force Re-register Links")]
         public void ForceReregisterLinks()
         {
             var bridges = GetComponents<ResourceLinkBridge>();
@@ -570,7 +723,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        [ContextMenu("📊 Debug Threshold Status")]
+        [ContextMenu(BridgesMenuRoot + "Threshold Status")]
         public void DebugThresholdStatus()
         {
             var bridges = GetComponents<ResourceThresholdBridge>();
@@ -604,7 +757,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        [ContextMenu("📊 Debug AutoFlow Status")]
+        [ContextMenu(BridgesMenuRoot + "AutoFlow Status")]
         public void DebugAutoFlowStatus()
         {
             var bridges = GetComponents<ResourceAutoFlowBridge>();
@@ -691,67 +844,5 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             return false;
         }
 
-        private bool TryPauseAutoFlow(out ResourceAutoFlowBridge bridge)
-        {
-            bridge = GetComponent<ResourceAutoFlowBridge>();
-            if (bridge == null || !bridge.HasAutoFlowService)
-            {
-                return false;
-            }
-
-            if (!bridge.IsAutoFlowActive)
-            {
-                return false;
-            }
-
-            bool paused = bridge.PauseAutoFlow();
-            if (paused)
-            {
-                DebugUtility.LogVerbose<EntityDebugUtility>("⏸️ Temporarily paused AutoFlow for manual resource adjustment.", null, this);
-            }
-            return paused;
-        }
-
-        private void ResumeAutoFlowWhenReady(ResourceAutoFlowBridge bridge, float currentValue, float maxValue)
-        {
-            if (bridge == null)
-            {
-                return;
-            }
-
-            bool shouldResume = currentValue < maxValue - 0.01f;
-            if (!shouldResume)
-            {
-                DebugUtility.LogVerbose<EntityDebugUtility>("✅ Resource filled to max — keeping AutoFlow paused until behavior handles the state change.", null, this);
-                return;
-            }
-
-            if (!isActiveAndEnabled)
-            {
-                bridge.ResumeAutoFlow();
-                return;
-            }
-
-            if (_pendingResumeRoutine != null)
-            {
-                StopCoroutine(_pendingResumeRoutine);
-            }
-
-            _pendingResumeRoutine = StartCoroutine(ResumeAutoFlowNextFrame(bridge));
-        }
-
-        private IEnumerator ResumeAutoFlowNextFrame(ResourceAutoFlowBridge bridge)
-        {
-            yield return null;
-            yield return null;
-
-            if (bridge != null && bridge.HasAutoFlowService)
-            {
-                bridge.ResumeAutoFlow();
-                DebugUtility.LogVerbose<EntityDebugUtility>("▶️ AutoFlow resumed after manual adjustment.", null, this);
-            }
-
-            _pendingResumeRoutine = null;
-        }
     }
 }
