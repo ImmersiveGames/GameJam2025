@@ -373,7 +373,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         }
 
         [ContextMenu("🔧 Debug Bridge Status")]
-        public void DebugBridgeStatus(InjectableEntityResourceBridge bridge)
+        public void DebugBridgeStatus()
+        {
+            if (!TryGetComponentForDebug(out InjectableEntityResourceBridge bridge, "Debug Bridge Status"))
+            {
+                return;
+            }
+
+            LogInjectableBridgeStatus(bridge);
+        }
+
+        private void LogInjectableBridgeStatus(InjectableEntityResourceBridge bridge)
         {
             var actorId = bridge.GetObjectId();
             var service = bridge.GetResourceSystem();
@@ -406,31 +416,30 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         }
 
         [ContextMenu("Debug/Print Resources")]
-        public void DebugPrintResources(ResourceSystem service, IActor actor)
+        public void DebugPrintResources()
         {
-            if (service == null)
+            if (!EnsureResourceSystem())
             {
-                DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem not available");
                 return;
             }
 
-            IReadOnlyDictionary<ResourceType, IResourceValue> all = service.GetAll();
+            IReadOnlyDictionary<ResourceType, IResourceValue> all = _resourceSystem.GetAll();
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"📊 RESOURCES FOR ACTOR: {actor?.ActorId}");
+            sb.AppendLine($"📊 RESOURCES FOR ACTOR: {_actor?.ActorId}");
             sb.AppendLine($"Total Resources: {all.Count}");
             sb.AppendLine("────────────────────────");
 
             foreach (KeyValuePair<ResourceType, IResourceValue> kv in all)
             {
                 var resource = kv.Value;
-                var instanceConfig = service.GetInstanceConfig(kv.Key);
+                var instanceConfig = _resourceSystem.GetInstanceConfig(kv.Key);
                 string canvasTarget = "Unknown";
 
                 if (instanceConfig != null)
                 {
                     canvasTarget = instanceConfig.canvasTargetMode switch
                     {
-                        CanvasTargetMode.ActorSpecific => $"{actor.ActorId}_Canvas",
+                        CanvasTargetMode.ActorSpecific => $"{_actor.ActorId}_Canvas",
                         CanvasTargetMode.Custom => instanceConfig.customCanvasId ?? "MainUI",
                         _ => "MainUI"
                     };
@@ -452,7 +461,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         }
 
         [ContextMenu("🔧 Debug Resource Bridge Base Status")]
-        public void DebugResourceBridgeStatus(ResourceBridgeBase bridge)
+        public void DebugResourceBridgeStatus()
+        {
+            var bridges = GetComponents<ResourceBridgeBase>();
+            if (bridges == null || bridges.Length == 0)
+            {
+                DebugUtility.LogWarning<EntityDebugUtility>("Nenhum ResourceBridgeBase encontrado para depurar.");
+                return;
+            }
+
+            foreach (var bridge in bridges)
+            {
+                LogResourceBridgeStatus(bridge);
+            }
+        }
+
+        private void LogResourceBridgeStatus(ResourceBridgeBase bridge)
         {
             string actorId = bridge.Actor?.ActorId ?? "null";
             bool orchestratorFound = DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator);
@@ -477,116 +501,150 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         }
 
         [ContextMenu("🔗 Debug Active Links")]
-        public void DebugActiveLinks(ResourceLinkBridge bridge)
+        public void DebugActiveLinks()
         {
-            var actorId = bridge.Actor?.ActorId;
-            var resourceLinks = bridge.GetAllLinks();
-            if (resourceLinks == null || actorId == null)
+            var bridges = GetComponents<ResourceLinkBridge>();
+            if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
                 return;
             }
 
-            DebugUtility.LogWarning<EntityDebugUtility>($"🔗 Active resource links for {actorId}:");
-            foreach (var linkConfig in resourceLinks)
+            foreach (var bridge in bridges)
             {
-                if (linkConfig == null) continue;
-                bool isActive = bridge.HasLink(linkConfig.sourceResource);
-                DebugUtility.LogWarning<EntityDebugUtility>($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "✅ ACTIVE" : "❌ INACTIVE")}");
+                var actorId = bridge.Actor?.ActorId;
+                var resourceLinks = bridge.GetAllLinks();
+                if (resourceLinks == null || actorId == null)
+                {
+                    DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
+                    continue;
+                }
+
+                DebugUtility.LogWarning<EntityDebugUtility>($"🔗 Active resource links for {actorId}:");
+                foreach (var linkConfig in resourceLinks)
+                {
+                    if (linkConfig == null) continue;
+                    bool isActive = bridge.HasLink(linkConfig.sourceResource);
+                    DebugUtility.LogWarning<EntityDebugUtility>($"  {linkConfig.sourceResource} -> {linkConfig.targetResource}: {(isActive ? "✅ ACTIVE" : "❌ INACTIVE")}");
+                }
             }
         }
 
         [ContextMenu("🔄 Force Re-register Links")]
-        public void ForceReregisterLinks(ResourceLinkBridge bridge)
+        public void ForceReregisterLinks()
         {
-            var actorId = bridge.Actor?.ActorId;
-            if (actorId == null)
+            var bridges = GetComponents<ResourceLinkBridge>();
+            if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
                 return;
             }
 
-            var resourceLinks = bridge.GetAllLinks();
-
-            // Remover todos os links primeiro usando DependencyManager para obter IResourceLinkService
-            if (DependencyManager.Instance.TryGetGlobal(out IResourceLinkService linkService))
-            {
-                linkService.UnregisterAllLinks(actorId);
-            }
-            else
+            if (!DependencyManager.Instance.TryGetGlobal(out IResourceLinkService linkService))
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("IResourceLinkService não encontrado no DependencyManager");
                 return;
             }
 
-            // Registrar novamente
-            foreach (var linkConfig in resourceLinks)
+            foreach (var bridge in bridges)
             {
-                if (linkConfig != null)
+                var actorId = bridge.Actor?.ActorId;
+                if (actorId == null)
                 {
-                    bridge.AddLink(linkConfig);
+                    DebugUtility.LogWarning<EntityDebugUtility>("Serviço de links não disponível ou não inicializado");
+                    continue;
                 }
-            }
 
-            DebugUtility.LogWarning<EntityDebugUtility>("🔄 Links re-registrados com sucesso");
+                var resourceLinks = bridge.GetAllLinks();
+                linkService.UnregisterAllLinks(actorId);
+
+                foreach (var linkConfig in resourceLinks)
+                {
+                    if (linkConfig != null)
+                    {
+                        bridge.AddLink(linkConfig);
+                    }
+                }
+
+                DebugUtility.LogWarning<EntityDebugUtility>($"🔄 Links re-registrados com sucesso para {actorId}");
+            }
         }
 
         [ContextMenu("📊 Debug Threshold Status")]
-        public void DebugThresholdStatus(ResourceThresholdBridge bridge)
+        public void DebugThresholdStatus()
         {
-            var resourceSystem = bridge.GetResourceSystem();
-            if (resourceSystem != null && bridge.isInitialized)
-            {
-                DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
-                DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
-
-                // Listar recursos com thresholds
-                foreach (var (resourceType, _) in resourceSystem.GetAll())
-                {
-                    var config = resourceSystem.GetInstanceConfig(resourceType);
-                    if (config?.thresholdConfig != null && config.thresholdConfig.thresholds.Length > 0)
-                    {
-                        DebugUtility.LogWarning<EntityDebugUtility>($"   - {resourceType}: {config.thresholdConfig.thresholds.Length} thresholds");
-                    }
-                }
-            }
-            else
+            var bridges = GetComponents<ResourceThresholdBridge>();
+            if (bridges == null || bridges.Length == 0)
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem não disponível ou não inicializado");
+                return;
+            }
+
+            foreach (var bridge in bridges)
+            {
+                var resourceSystem = bridge.GetResourceSystem();
+                if (resourceSystem != null && bridge.isInitialized)
+                {
+                    DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
+                    DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
+
+                    foreach (var (resourceType, _) in resourceSystem.GetAll())
+                    {
+                        var config = resourceSystem.GetInstanceConfig(resourceType);
+                        if (config?.thresholdConfig != null && config.thresholdConfig.thresholds.Length > 0)
+                        {
+                            DebugUtility.LogWarning<EntityDebugUtility>($"   - {resourceType}: {config.thresholdConfig.thresholds.Length} thresholds");
+                        }
+                    }
+                }
+                else
+                {
+                    DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem não disponível ou não inicializado");
+                }
             }
         }
 
         [ContextMenu("📊 Debug AutoFlow Status")]
-        public void DebugAutoFlowStatus(ResourceAutoFlowBridge bridge)
+        public void DebugAutoFlowStatus()
         {
-            var resourceSystem = bridge.GetResourceSystem();
-            if (resourceSystem != null && bridge.isInitialized)
+            var bridges = GetComponents<ResourceAutoFlowBridge>();
+            if (bridges == null || bridges.Length == 0)
             {
-                int autoFlowCount = CountAutoFlowResources(resourceSystem);
-                DebugUtility.LogWarning<EntityDebugUtility>($"📊 Recursos com AutoFlow: {autoFlowCount}");
+                DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem não disponível ou não inicializado");
+                return;
+            }
 
-                if (autoFlowCount > 0)
+            foreach (var bridge in bridges)
+            {
+                var resourceSystem = bridge.GetResourceSystem();
+                if (resourceSystem != null && bridge.isInitialized)
                 {
-                    DebugUtility.LogWarning<EntityDebugUtility>("🔧 Recursos com AutoFlow configurado:");
-                    foreach (var (resourceType, _) in resourceSystem.GetAll())
+                    int autoFlowCount = CountAutoFlowResources(resourceSystem);
+                    DebugUtility.LogWarning<EntityDebugUtility>($"📊 Recursos com AutoFlow: {autoFlowCount}");
+
+                    if (autoFlowCount > 0)
                     {
-                        var inst = resourceSystem.GetInstanceConfig(resourceType);
-                        if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
+                        DebugUtility.LogWarning<EntityDebugUtility>("🔧 Recursos com AutoFlow configurado:");
+                        foreach (var (resourceType, _) in resourceSystem.GetAll())
                         {
-                            var cfg = inst.autoFlowConfig;
-                            DebugUtility.LogWarning<EntityDebugUtility>($"   - {resourceType}: " +
-                                $"Fill: {cfg.autoFill}, " +
-                                $"Drain: {cfg.autoDrain}, " +
-                                $"Interval: {cfg.tickInterval}s, " +
-                                $"Amount: {cfg.amountPerTick}" +
-                                $"{(cfg.usePercentage ? "%" : "")}");
+                            var inst = resourceSystem.GetInstanceConfig(resourceType);
+                            if (inst is { hasAutoFlow: true } && inst.autoFlowConfig != null)
+                            {
+                                var cfg = inst.autoFlowConfig;
+                                DebugUtility.LogWarning<EntityDebugUtility>($"   - {resourceType}: " +
+                                    $"Fill: {cfg.autoFill}, " +
+                                    $"Drain: {cfg.autoDrain}, " +
+                                    $"Interval: {cfg.tickInterval}s, " +
+                                    $"Amount: {cfg.amountPerTick}" +
+                                    $"{(cfg.usePercentage ? "%" : "")}");
+                            }
                         }
                     }
                 }
-            }
-            else
-            {
-                DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem não disponível ou não inicializado");
+                else
+                {
+                    DebugUtility.LogWarning<EntityDebugUtility>("ResourceSystem não disponível ou não inicializado");
+                }
             }
         }
 
@@ -605,6 +663,21 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// Recupera um componente do ator atual e gera log amigável quando o componente não está presente.
+        /// </summary>
+        private bool TryGetComponentForDebug<T>(out T component, string context) where T : Component
+        {
+            component = GetComponent<T>();
+            if (component != null)
+            {
+                return true;
+            }
+
+            DebugUtility.LogWarning<EntityDebugUtility>($"⚠️ {context}: componente {typeof(T).Name} não encontrado em {gameObject.name}.");
+            return false;
         }
 
         private bool EnsureResourceSystem()
