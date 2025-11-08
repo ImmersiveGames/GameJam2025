@@ -76,6 +76,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
+        private void OnDestroy()
+        {
+            _lifecycle?.Dispose();
+            _lifecycle = null;
+        }
+
         private void EnsureStrategyConfiguration()
         {
             if (strategyPipeline == null || strategyPipeline.Count == 0)
