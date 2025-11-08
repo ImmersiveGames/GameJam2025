@@ -24,7 +24,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [RequireComponent(typeof(EaterMaster))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterBehavior : MonoBehaviour
     {
         [Header("Debug")]

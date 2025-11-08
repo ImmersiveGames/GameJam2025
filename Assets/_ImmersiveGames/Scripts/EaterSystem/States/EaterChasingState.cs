@@ -213,7 +213,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string planetName = GetPlanetDisplayName(planetActor);
-            DebugUtility.LogVerbose(
+            DebugUtility.Log(
                 $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
                 DebugUtility.Colors.Info,
                 Behavior,

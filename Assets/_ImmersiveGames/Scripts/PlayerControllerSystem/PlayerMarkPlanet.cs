@@ -1,7 +1,3 @@
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
-using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem
 {
     

@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -114,7 +113,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string availability = info.IsAvailable ? "disponível" : "indisponível";
-            DebugUtility.LogVerbose(
+            DebugUtility.Log(
                 $"Novo desejo selecionado: {resource} ({availability}, planetas={info.AvailableCount}, duração={info.Duration:F2}s)",
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,

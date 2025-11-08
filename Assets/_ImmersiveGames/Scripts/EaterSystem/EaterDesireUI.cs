@@ -304,7 +304,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             GameObject iconObject = desireIcon.gameObject;
-            CanvasRenderer canvasRenderer = desireIcon.canvasRenderer;
+            CanvasRenderer renderer = desireIcon.canvasRenderer;
 
             if (visible)
             {
@@ -318,9 +318,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     desireIcon.enabled = true;
                 }
 
-                if (canvasRenderer != null)
+                if (renderer != null)
                 {
-                    canvasRenderer.SetAlpha(1f);
+                    renderer.SetAlpha(1f);
                 }
 
                 return;
@@ -346,9 +346,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireIcon.enabled = false;
             }
 
-            if (canvasRenderer != null)
+            if (renderer != null)
             {
-                canvasRenderer.SetAlpha(0f);
+                renderer.SetAlpha(0f);
             }
         }
 

@@ -1,15 +1,12 @@
-using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
-    
     /// <summary>
     /// Estado base sem regras enquanto o comportamento completo é reimplementado.
     /// </summary>
-    
     internal abstract class EaterBehaviorState : IState
     {
         protected EaterBehaviorState(string stateName)
@@ -68,7 +65,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             string message = $"{description} no estado {StateName}.";
-            DebugUtility.LogVerbose(
+            DebugUtility.Log(
                 message,
                 DebugUtility.Colors.CrucialInfo,
                 Behavior,
