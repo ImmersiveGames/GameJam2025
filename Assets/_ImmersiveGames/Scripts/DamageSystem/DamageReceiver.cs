@@ -2,11 +2,13 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Utils;
 using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem.Commands;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -36,6 +38,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private DamageExplosionModule _explosion;
         private IDamageStrategy _strategy;
         private DamageCommandInvoker _commandInvoker;
+        private EventBinding<ResourceEventHub.ActorRegisteredEvent> _actorRegisteredBinding;
 
         [Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
@@ -49,12 +52,18 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_actor.ActorId);
+            _lifecycle.SetWatchedResource(targetResource);
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
 
             EnsureStrategyConfiguration();
             BuildStrategy();
             BuildCommandPipeline();
+
+            _actorRegisteredBinding = new EventBinding<ResourceEventHub.ActorRegisteredEvent>(OnActorRegistered);
+            EventBus<ResourceEventHub.ActorRegisteredEvent>.Register(_actorRegisteredBinding);
+
+            EnsureLifecycleBinding();
         }
 
 #if UNITY_EDITOR
@@ -65,15 +74,39 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             BuildCommandPipeline();
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
+
+            if (_lifecycle != null)
+            {
+                _lifecycle.SetWatchedResource(targetResource);
+            }
         }
 #endif
 
+        private void OnEnable()
+        {
+            EnsureLifecycleBinding();
+        }
+
         private void Start()
         {
+            EnsureLifecycleBinding();
+
             if (Application.isPlaying && spawnExplosionOnDeath)
             {
                 _explosion.Initialize();
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (_actorRegisteredBinding != null)
+            {
+                EventBus<ResourceEventHub.ActorRegisteredEvent>.Unregister(_actorRegisteredBinding);
+                _actorRegisteredBinding = null;
+            }
+
+            _lifecycle?.Dispose();
+            _lifecycle = null;
         }
 
         private void EnsureStrategyConfiguration()
@@ -183,6 +216,43 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 audioEmitter.Play(reviveSound, deathCtx);
             }
+        }
+
+        private void EnsureLifecycleBinding()
+        {
+            if (!isActiveAndEnabled || _lifecycle == null)
+            {
+                return;
+            }
+            TryBindLifecycleToResourceSystem();
+        }
+
+        private bool TryBindLifecycleToResourceSystem()
+        {
+            var resourceSystem = _bridge?.GetResourceSystem();
+            if (resourceSystem == null)
+            {
+                return false;
+            }
+
+            _lifecycle?.SetWatchedResource(targetResource);
+            _lifecycle.BindToResourceSystem(resourceSystem, targetResource);
+            return true;
+        }
+
+        private void OnActorRegistered(ResourceEventHub.ActorRegisteredEvent evt)
+        {
+            if (_actor == null || evt.actorId != _actor.ActorId)
+            {
+                return;
+            }
+
+            if (!isActiveAndEnabled || _lifecycle == null)
+            {
+                return;
+            }
+
+            TryBindLifecycleToResourceSystem();
         }
 
     }

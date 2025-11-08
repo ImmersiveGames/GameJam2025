@@ -17,6 +17,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             context.ResourceSystem = system;
+            context.LifecycleModule?.BindToResourceSystem(system, context.TargetResource);
             return true;
         }
 
