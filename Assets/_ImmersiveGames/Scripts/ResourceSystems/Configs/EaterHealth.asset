@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: EaterHealth
   m_EditorClassIdentifier: 
   type: 0
-  initialValue: 600
-  maxValue: 600
+  initialValue: 60
+  maxValue: 60
   enabled: 1
   icon: {fileID: 0}
