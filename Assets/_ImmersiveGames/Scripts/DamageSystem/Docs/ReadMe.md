@@ -72,6 +72,7 @@ Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `Dama
 ### `DamageReceiver`
 - Requer `ActorMaster` e `InjectableEntityResourceBridge` no mesmo objeto.
 - Configura `strategyPipeline`, cooldown e recurso alvo via Inspector.
+- Permite escolher se a skin deve ser desativada automaticamente ao morrer (`Disable Skin On Death`).
 - Constrói `DamageCommandInvoker` e pipeline de estratégias em `Awake`/`OnValidate`.
 - Orquestra o `DamageReceiverLifecycleHandler`, que observa o `ResourceSystem` e sincroniza morte/revive, explosões e áudio mesmo para alterações externas (auto-flow, links, editor).
 - API pública:
@@ -160,6 +161,7 @@ Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo p
 1. **DamageReceiver**
    - `Target Resource`: escolha o recurso alvo (ex.: Health).
    - `Damage Cooldown`: tempo mínimo entre acertos do mesmo atacante.
+   - `Disable Skin On Death`: defina `false` para manter o modelo ativo e executar animações de morte.
    - `Strategy Pipeline`: lista ordenada de estratégias (Basic, Critical, Resistance).
 2. **DamageDealer**
    - `Base Damage`, `Damage Type`, `Target Resource`.
