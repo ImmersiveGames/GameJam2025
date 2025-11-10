@@ -24,6 +24,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private PoolData explosionPoolData;
         [SerializeField] private Vector3 explosionOffset = Vector3.zero;
 
+        [Header("Ciclo de Vida")]
+        [SerializeField]
+        [Tooltip("Quando verdadeiro, desativa a skin do ator imediatamente após o DeathEvent.")]
+        private bool disableSkinOnDeath = true;
+
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
         {
@@ -51,8 +56,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _actor = GetComponent<IActor>();
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
-            _lifecycle = new DamageLifecycleModule(_actor.ActorId);
+            _lifecycle = new DamageLifecycleModule(_actor.ActorId)
+            {
+                DisableSkinOnDeath = disableSkinOnDeath
+            };
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
+            SyncLifecycleOptions();
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
 
             EnsureStrategyConfiguration();
@@ -73,6 +82,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             BuildCommandPipeline();
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            SyncLifecycleOptions();
         }
 #endif
 
@@ -208,6 +218,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
+            SyncLifecycleOptions();
+
             _lifecycleHandler ??= new DamageReceiverLifecycleHandler(
                 targetResource,
                 _lifecycle,
@@ -229,6 +241,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             else
             {
                 _waitingForLifecycleBinding = true;
+            }
+        }
+
+        private void SyncLifecycleOptions()
+        {
+            if (_lifecycle != null)
+            {
+                _lifecycle.DisableSkinOnDeath = disableSkinOnDeath;
             }
         }
 

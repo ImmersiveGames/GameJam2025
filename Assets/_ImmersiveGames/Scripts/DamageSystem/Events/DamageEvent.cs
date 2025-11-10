@@ -50,11 +50,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     {
         public readonly string EntityId;
         public readonly ResourceType ResourceType;
+        public readonly bool DisableSkin;
 
-        public DeathEvent(string entityId, ResourceType resourceType)
+        public DeathEvent(string entityId, ResourceType resourceType, bool disableSkin = true)
         {
             EntityId = entityId;
             ResourceType = resourceType;
+            DisableSkin = disableSkin;
         }
     }
 
