@@ -1,4 +1,5 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -18,6 +19,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Transform _currentTarget;
         private Vector3 _radialBasis;
         private float _currentAngle;
+        private EaterAnimationController _animationController;
+        private bool _missingAnimationLogged;
 
         private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
 
@@ -41,11 +44,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+
+            if (TryEnsureAnimationController())
+            {
+                _animationController.SetEating(true);
+            }
+
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
 
         public override void OnExit()
         {
+            if (TryEnsureAnimationController())
+            {
+                _animationController.SetEating(false);
+            }
+
             base.OnExit();
             StopTweens();
             _currentTarget = null;
@@ -209,6 +223,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _orbitTween.Kill();
             }
             _orbitTween = null;
+        }
+
+        private bool TryEnsureAnimationController()
+        {
+            if (_animationController != null)
+            {
+                return true;
+            }
+
+            if (Behavior == null)
+            {
+                return false;
+            }
+
+            if (Behavior.TryGetAnimationController(out EaterAnimationController controller))
+            {
+                _animationController = controller;
+                _missingAnimationLogged = false;
+                return true;
+            }
+
+            if (!_missingAnimationLogged)
+            {
+                DebugUtility.LogWarning(
+                    "EaterAnimationController não encontrado. Não será possível atualizar animação de alimentação.",
+                    Behavior,
+                    this);
+                _missingAnimationLogged = true;
+            }
+
+            return false;
         }
     }
 }

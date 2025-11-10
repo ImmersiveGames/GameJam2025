@@ -141,5 +141,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         public void PlayDeath() => PlayHash(DeathHash);
         public void PlayRevive() => PlayHash(ReviveHash);
         public void PlayIdle() => PlayHash(IdleHash);
+
+        public void SetEating(bool isEating)
+        {
+            if (animator == null || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            animator.SetBool(EatingHash, isEating);
+        }
     }
 }
