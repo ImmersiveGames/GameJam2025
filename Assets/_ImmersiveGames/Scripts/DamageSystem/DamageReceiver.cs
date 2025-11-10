@@ -4,9 +4,12 @@ using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem.Commands;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
+using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
@@ -28,6 +31,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField]
         [Tooltip("Quando verdadeiro, desativa a skin do ator imediatamente após o DeathEvent.")]
         private bool disableSkinOnDeath = true;
+        [SerializeField]
+        [Tooltip("Quando verdadeiro, dispara GameOver ao detectar a morte deste ator.")]
+        private bool triggerGameOverOnDeath;
 
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
@@ -249,6 +255,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (_lifecycle != null)
             {
                 _lifecycle.DisableSkinOnDeath = disableSkinOnDeath;
+                _lifecycle.TriggerGameOverOnDeath = triggerGameOverOnDeath;
             }
         }
 
@@ -289,6 +296,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void HandleLifecycleNotification(DamageLifecycleNotification notification)
         {
+            TryRaiseGameOver(notification);
+
             if (audioEmitter == null)
             {
                 return;
@@ -327,6 +336,22 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 audioEmitter.Play(reviveSound, deathCtx);
             }
+        }
+
+        private void TryRaiseGameOver(DamageLifecycleNotification notification)
+        {
+            if (!triggerGameOverOnDeath || !notification.DeathStateChanged || !notification.IsDead)
+            {
+                return;
+            }
+
+            var manager = GameManager.Instance;
+            if (manager == null || !manager.IsGameActive())
+            {
+                return;
+            }
+
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
         }
 
     }

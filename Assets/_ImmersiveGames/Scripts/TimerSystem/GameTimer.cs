@@ -33,6 +33,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private float _remainingTime;
         private bool _sessionActive;
         private bool _isPaused;
+        private bool _autoStartLocked;
         private int _lastLoggedSecond = -1;
 
         /// <summary>Duração configurada (segundos).</summary>
@@ -50,6 +51,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             _configuredDuration = LoadConfiguredDuration();
             _remainingTime = _configuredDuration;
+            _autoStartLocked = false;
             EnsureTimerInstance();
             PrepareTimer(_configuredDuration);
 
@@ -58,13 +60,13 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void OnEnable()
         {
-            _startBinding = new EventBinding<GameStartEvent>(_ => StartSession());
+            _startBinding = new EventBinding<GameStartEvent>(_ => HandleGameStart());
             EventBus<GameStartEvent>.Register(_startBinding);
 
             _pauseBinding = new EventBinding<GamePauseEvent>(HandlePauseEvent);
             EventBus<GamePauseEvent>.Register(_pauseBinding);
 
-            _gameOverBinding = new EventBinding<GameOverEvent>(_ => StopSession(false, reason: "GameOver recebido"));
+            _gameOverBinding = new EventBinding<GameOverEvent>(_ => HandleGameOver());
             EventBus<GameOverEvent>.Register(_gameOverBinding);
 
             _victoryBinding = new EventBinding<GameVictoryEvent>(_ =>
@@ -167,6 +169,24 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             DebugUtility.Log<GameTimer>($"Cronômetro iniciado com {_configuredDuration:F2}s.", context: this);
         }
 
+        /// <summary>
+        /// Reage ao GameStart unificando a liberação do lock de auto-start e inicializando uma nova sessão.
+        /// </summary>
+        private void HandleGameStart()
+        {
+            _autoStartLocked = false;
+            StartSession();
+        }
+
+        /// <summary>
+        /// Interrompe o cronômetro ao receber GameOver, preservando o tempo restante e bloqueando reinício automático.
+        /// </summary>
+        private void HandleGameOver()
+        {
+            StopSession(false, reason: "GameOver recebido");
+            _autoStartLocked = true;
+        }
+
         /// <summary>Pausa a contagem preservando o tempo restante.</summary>
         private void PauseSession()
         {
@@ -242,6 +262,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 _configuredDuration = LoadConfiguredDuration();
                 _remainingTime = Mathf.Max(_configuredDuration, 0f);
                 PrepareTimer(_configuredDuration);
+                _autoStartLocked = false;
             }
             else
             {
@@ -327,7 +348,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void TryStartWhenPlaying()
         {
-            if (_sessionActive)
+            if (_sessionActive || _autoStartLocked)
             {
                 return;
             }
@@ -345,6 +366,11 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             if (stateEvent.isGameActive)
             {
+                if (_autoStartLocked)
+                {
+                    return;
+                }
+
                 if (_sessionActive)
                 {
                     ResumeSession();

@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private readonly string _entityId;
         private bool _isDead;
         private bool _disableSkinOnDeath = true;
+        private bool _triggerGameOverOnDeath;
 
         public DamageLifecycleModule(string entityId)
         {
@@ -25,6 +26,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             get => _disableSkinOnDeath;
             set => _disableSkinOnDeath = value;
+        }
+
+        public bool TriggerGameOverOnDeath
+        {
+            get => _triggerGameOverOnDeath;
+            set => _triggerGameOverOnDeath = value;
         }
 
         public void CheckDeath(ResourceSystem system, ResourceType resourceType)
@@ -46,7 +53,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 _isDead = true;
                 FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath),
+                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath, _triggerGameOverOnDeath),
                     _entityId);
             }
         }
@@ -63,7 +70,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (_isDead)
             {
                 FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath),
+                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath, _triggerGameOverOnDeath),
                     _entityId);
             }
             else

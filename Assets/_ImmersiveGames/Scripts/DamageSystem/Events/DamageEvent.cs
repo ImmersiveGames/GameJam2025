@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 
@@ -51,12 +51,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public readonly string EntityId;
         public readonly ResourceType ResourceType;
         public readonly bool DisableSkin;
+        public readonly bool TriggersGameOver;
 
-        public DeathEvent(string entityId, ResourceType resourceType, bool disableSkin = true)
+        public DeathEvent(string entityId, ResourceType resourceType, bool disableSkin = true, bool triggersGameOver = false)
         {
             EntityId = entityId;
             ResourceType = resourceType;
             DisableSkin = disableSkin;
+            TriggersGameOver = triggersGameOver;
         }
     }
 

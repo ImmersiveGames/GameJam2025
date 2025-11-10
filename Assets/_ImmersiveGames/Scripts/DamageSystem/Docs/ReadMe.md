@@ -73,6 +73,7 @@ Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `Dama
 - Requer `ActorMaster` e `InjectableEntityResourceBridge` no mesmo objeto.
 - Configura `strategyPipeline`, cooldown e recurso alvo via Inspector.
 - Permite escolher se a skin deve ser desativada automaticamente ao morrer (`Disable Skin On Death`).
+- Pode sinalizar se a morte do ator dispara `GameOver` (`Trigger Game Over On Death`), respeitando o estado atual do `GameManager`.
 - Constrói `DamageCommandInvoker` e pipeline de estratégias em `Awake`/`OnValidate`.
 - Orquestra o `DamageReceiverLifecycleHandler`, que observa o `ResourceSystem` e sincroniza morte/revive, explosões e áudio mesmo para alterações externas (auto-flow, links, editor).
 - API pública:
@@ -137,6 +138,8 @@ Define `float CalculateDamage(DamageContext ctx)` permitindo implementar novas r
 
 Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo publicação tanto para atacante quanto para alvo (quando IDs válidos).
 
+> ℹ️ O campo `DeathEvent.TriggersGameOver` indica que o `DamageReceiver` solicitou `GameOverEvent`. O `GameManager` apenas processa o pedido se a sessão estiver ativa.
+
 ---
 
 ## ♻️ Undo e Reversões
@@ -162,6 +165,7 @@ Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo p
    - `Target Resource`: escolha o recurso alvo (ex.: Health).
    - `Damage Cooldown`: tempo mínimo entre acertos do mesmo atacante.
    - `Disable Skin On Death`: defina `false` para manter o modelo ativo e executar animações de morte.
+   - `Trigger Game Over On Death`: quando `true`, publica `GameOverEvent` caso o `GameManager` esteja em sessão ativa.
    - `Strategy Pipeline`: lista ordenada de estratégias (Basic, Critical, Resistance).
 2. **DamageDealer**
    - `Base Damage`, `Damage Type`, `Target Resource`.
