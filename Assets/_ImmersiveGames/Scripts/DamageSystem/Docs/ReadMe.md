@@ -40,14 +40,13 @@ DamageDealer (colisão / trigger)
                 ├─ ResolveResourceSystemCommand
                 ├─ DamageCooldownCommand
                 ├─ CalculateDamageCommand
-                ├─ ApplyDamageCommand
-                ├─ RaiseDamageEventsCommand
-                └─ CheckDeathCommand
+            ├─ ApplyDamageCommand
+            └─ RaiseDamageEventsCommand
 
 Eventos disparados:
     DamagePipelineStarted / Completed / Failed / Undone
     DamageEvent / DamageEventReverted
-    DeathEvent / ReviveEvent / ResetEvent
+    DeathEvent / ReviveEvent / ResetEvent (via DamageLifecycleModule)
 ```
 
 Cada comando trabalha em cima de um `DamageCommandContext` compartilhado, permitindo que serviços externos escutem os eventos emitidos e reajam sem acoplamento direto ao `DamageReceiver`.
@@ -63,7 +62,6 @@ Cada comando trabalha em cima de um `DamageCommandContext` compartilhado, permit
 | 3 | `CalculateDamageCommand` | Calcula o dano final aplicando pipeline de `IDamageStrategy`. | Restaura valor calculado anterior. |
 | 4 | `ApplyDamageCommand` | Salva snapshot e modifica o recurso (`ResourceSystem.Modify`). | Restaura snapshot completo e timestamp de dano. |
 | 5 | `RaiseDamageEventsCommand` | Dispara `DamageEvent` via `DamageEventDispatcher`. | Publica `DamageEventReverted` e limpa cache. |
-| 6 | `CheckDeathCommand` | Atualiza estado de vida via `DamageLifecycleModule`. | Restaura estado anterior emitindo eventos coerentes. |
 
 Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `DamagePipelineFailed`.
 
@@ -75,6 +73,7 @@ Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `Dama
 - Requer `ActorMaster` e `InjectableEntityResourceBridge` no mesmo objeto.
 - Configura `strategyPipeline`, cooldown e recurso alvo via Inspector.
 - Constrói `DamageCommandInvoker` e pipeline de estratégias em `Awake`/`OnValidate`.
+- Orquestra o `DamageReceiverLifecycleHandler`, que observa o `ResourceSystem` e sincroniza morte/revive, explosões e áudio mesmo para alterações externas (auto-flow, links, editor).
 - API pública:
   - `ReceiveDamage(DamageContext)` — inicia o pipeline.
   - `UndoLastDamage()` — reverte o último registro executado.
@@ -97,6 +96,7 @@ Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `Dama
 ### Módulos auxiliares
 - `DamageCooldownModule` — mapa local de cooldown por par atacante/alvo.
 - `DamageLifecycleModule` — avalia morte/revive/reset e dispara eventos dedicados.
+- `DamageReceiverLifecycleHandler` — liga o módulo de ciclo de vida ao `ResourceSystem` e gera notificações unificadas para feedbacks.
 
 ---
 
@@ -150,7 +150,7 @@ Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo p
 
 - `ResolveResourceSystemCommand` depende de `InjectableEntityResourceBridge` para obter o `ResourceSystem` já registrado no `DependencyManager`.
 - `ApplyDamageCommand` modifica diretamente o recurso configurado (`ResourceType targetResource`).
-- `DamageLifecycleModule` reutiliza o mesmo `ResourceSystem` para detectar morte/ressurreição.
+- `DamageLifecycleModule` é acionado pelo `DamageReceiverLifecycleHandler`, mantendo o estado atualizado mesmo quando o recurso é alterado fora do pipeline de dano.
 - Eventos resultantes podem ser consumidos por bridges do ResourceSystem (UI, thresholds, auto-flow) mantendo coerência reativa.
 
 ---
