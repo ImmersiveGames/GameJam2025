@@ -1,4 +1,5 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -23,8 +24,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _pendingHungryFallback;
         private bool _markedPlanetSubscribed;
         private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
+        private PlanetMotion _capturedPlanetMotion;
+        private float _orbitDistanceOverride;
+        private bool _hasOrbitDistanceOverride;
 
-        private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
+        private float OrbitDistance
+        {
+            get
+            {
+                if (_hasOrbitDistanceOverride)
+                {
+                    return Mathf.Max(_orbitDistanceOverride, 0.1f);
+                }
+
+                return Config?.OrbitDistance ?? DefaultOrbitDistance;
+            }
+        }
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -47,7 +62,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
             _pendingHungryFallback = false;
+            _capturedPlanetMotion = null;
+            _hasOrbitDistanceOverride = false;
+            _orbitDistanceOverride = 0f;
             SubscribeToMarkedPlanets();
+            ConfigureEatingContext();
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
 
@@ -56,8 +75,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnExit();
             UnsubscribeFromMarkedPlanets();
             StopTweens();
+            ResumeCapturedPlanetOrbit();
             _currentTarget = null;
             _pendingHungryFallback = false;
+            _capturedPlanetMotion = null;
+            _hasOrbitDistanceOverride = false;
+            _orbitDistanceOverride = 0f;
         }
 
         public override void Update()
@@ -293,6 +316,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _orbitTween.Kill();
             }
             _orbitTween = null;
+        }
+
+        private void ConfigureEatingContext()
+        {
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            if (!Behavior.TryConsumeEatingCapture(out PlanetMotion planetMotion, out float orbitDistance))
+            {
+                return;
+            }
+
+            _capturedPlanetMotion = planetMotion;
+
+            if (orbitDistance > Mathf.Epsilon)
+            {
+                _orbitDistanceOverride = orbitDistance;
+                _hasOrbitDistanceOverride = true;
+            }
+        }
+
+        private void ResumeCapturedPlanetOrbit()
+        {
+            if (_capturedPlanetMotion == null)
+            {
+                return;
+            }
+
+            _capturedPlanetMotion.ResumeMotion();
+            _capturedPlanetMotion = null;
         }
     }
 }

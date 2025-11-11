@@ -26,6 +26,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private DetectionType _planetProximityDetectionType;
         private bool _haltMovement;
         private Transform _haltedTarget;
+        private bool _pendingEatingTransition;
+        private PlanetMotion _pausedPlanetMotion;
+        private float _capturedOrbitDistance;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -37,6 +40,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _pendingHungryFallback = false;
             SubscribeToProximityEvents();
             SubscribeToMarkedPlanets();
+            _pendingEatingTransition = false;
+            _pausedPlanetMotion = null;
+            _capturedOrbitDistance = 0f;
         }
 
         public override void OnExit()
@@ -45,6 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             UnsubscribeFromMarkedPlanets();
             ResetMovementHalt();
             _pendingHungryFallback = false;
+            CancelEatingTransition("ChasingState.Exit", log: false);
             base.OnExit();
         }
 
@@ -205,6 +212,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void RequestHungryFallback(string reason)
         {
+            CancelEatingTransition(reason, log: false);
             if (_pendingHungryFallback)
             {
                 return;
@@ -275,7 +283,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Transform planetTransform = markedPlanet.transform;
             if (ReferenceEquals(Behavior.CurrentTargetPlanet, planetTransform))
             {
-                HaltChasingTarget(planetTransform);
+                OnTargetProximityReached(planetTransform, planetActor);
             }
         }
 
@@ -302,6 +310,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (ReferenceEquals(_haltedTarget, planetTransform))
             {
                 ResumeChasingTarget();
+                CancelEatingTransition("ChasingState.ProximityLost", log: false);
             }
         }
 
@@ -404,6 +413,129 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return markedPlanet.IsMarked;
+        }
+
+        private void OnTargetProximityReached(Transform planetTransform, IPlanetActor planetActor)
+        {
+            if (planetTransform == null)
+            {
+                return;
+            }
+
+            HaltChasingTarget(planetTransform);
+
+            float distance = Vector3.Distance(Transform.position, planetTransform.position);
+            _capturedOrbitDistance = Mathf.Max(distance, 0f);
+
+            PausePlanetOrbit(planetTransform, planetActor);
+            RequestEatingTransition();
+        }
+
+        private void PausePlanetOrbit(Transform planetTransform, IPlanetActor planetActor)
+        {
+            if (planetTransform == null)
+            {
+                return;
+            }
+
+            PlanetMotion planetMotion = ResolvePlanetMotion(planetTransform);
+            if (planetMotion == null)
+            {
+                if (Behavior.ShouldLogStateTransitions)
+                {
+                    string planetName = GetPlanetDisplayName(planetActor);
+                    DebugUtility.LogWarning(
+                        $"Planeta {planetName} não possui PlanetMotion para pausar órbita.",
+                        Behavior,
+                        this);
+                }
+
+                _pausedPlanetMotion = null;
+                return;
+            }
+
+            if (!planetMotion.IsMotionPaused)
+            {
+                planetMotion.PauseMotion();
+            }
+
+            _pausedPlanetMotion = planetMotion;
+        }
+
+        private static PlanetMotion ResolvePlanetMotion(Transform planetTransform)
+        {
+            if (planetTransform == null)
+            {
+                return null;
+            }
+
+            if (!planetTransform.TryGetComponent(out PlanetMotion planetMotion))
+            {
+                planetMotion = planetTransform.GetComponentInParent<PlanetMotion>();
+            }
+
+            return planetMotion;
+        }
+
+        private void RequestEatingTransition()
+        {
+            if (_pendingEatingTransition)
+            {
+                return;
+            }
+
+            _pendingEatingTransition = true;
+
+            if (Behavior.ShouldLogStateTransitions)
+            {
+                DebugUtility.Log(
+                    "Planeta alvo alcançado. Preparando transição para o estado de alimentação.",
+                    DebugUtility.Colors.Info,
+                    context: Behavior,
+                    instance: this);
+            }
+        }
+
+        internal bool ConsumeEatingTransitionRequest()
+        {
+            if (!_pendingEatingTransition)
+            {
+                return false;
+            }
+
+            Behavior.RegisterEatingCapture(_pausedPlanetMotion, _capturedOrbitDistance);
+
+            _pendingEatingTransition = false;
+            _pausedPlanetMotion = null;
+            _capturedOrbitDistance = 0f;
+            return true;
+        }
+
+        private void CancelEatingTransition(string reason, bool log)
+        {
+            if (!_pendingEatingTransition && _pausedPlanetMotion == null)
+            {
+                return;
+            }
+
+            if (_pausedPlanetMotion != null)
+            {
+                _pausedPlanetMotion.ResumeMotion();
+                _pausedPlanetMotion = null;
+            }
+
+            _capturedOrbitDistance = 0f;
+            _pendingEatingTransition = false;
+            Behavior.ClearEatingCapture();
+
+            if (log && Behavior.ShouldLogStateTransitions)
+            {
+                DebugUtility.Log(
+                    $"Transição para alimentação cancelada ({reason}).",
+                    DebugUtility.Colors.Warning,
+                    context: Behavior,
+                    instance: this);
+            }
         }
 
         private static string GetPlanetDisplayName(IPlanetActor planetActor)

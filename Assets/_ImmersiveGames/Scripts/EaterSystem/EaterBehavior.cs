@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -57,10 +58,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
         private ChasingHungryFallbackPredicate _chasingHungryFallbackPredicate;
+        private ChasingEatingPredicate _chasingEatingPredicate;
         private EatingHungryFallbackPredicate _eatingHungryFallbackPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
+        private PlanetMotion _pendingEatingPlanetMotion;
+        private float _pendingEatingOrbitDistance;
+        private bool _hasPendingEatingContext;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -188,6 +193,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
+            IPredicate chasingEatingPredicate = EnsureChasingEatingPredicate();
             IPredicate chasingHungryFallbackPredicate = EnsureChasingHungryFallbackPredicate();
             IPredicate eatingHungryFallbackPredicate = EnsureEatingHungryFallbackPredicate();
 
@@ -195,6 +201,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _eatingState, chasingEatingPredicate);
             builder.At(_chasingState, _hungryState, chasingHungryFallbackPredicate);
             builder.At(_eatingState, _hungryState, eatingHungryFallbackPredicate);
         }
@@ -220,6 +227,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureChasingEatingPredicate()
+        {
+            if (_chasingEatingPredicate != null)
+            {
+                return _chasingEatingPredicate;
+            }
+
+            if (_chasingState == null || _eatingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingEatingPredicate = new ChasingEatingPredicate(_chasingState);
+            return _chasingEatingPredicate;
         }
 
         private IPredicate EnsureChasingHungryFallbackPredicate()
@@ -517,6 +540,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             float baseSpeed = _config.MaxSpeed;
             return baseSpeed * _config.MultiplierChase;
+        }
+
+        internal void RegisterEatingCapture(PlanetMotion planetMotion, float orbitDistance)
+        {
+            _pendingEatingPlanetMotion = planetMotion;
+            _pendingEatingOrbitDistance = Mathf.Max(orbitDistance, 0f);
+            _hasPendingEatingContext = true;
+        }
+
+        internal bool TryConsumeEatingCapture(out PlanetMotion planetMotion, out float orbitDistance)
+        {
+            if (!_hasPendingEatingContext)
+            {
+                planetMotion = null;
+                orbitDistance = 0f;
+                return false;
+            }
+
+            planetMotion = _pendingEatingPlanetMotion;
+            orbitDistance = _pendingEatingOrbitDistance;
+            _pendingEatingPlanetMotion = null;
+            _pendingEatingOrbitDistance = 0f;
+            _hasPendingEatingContext = false;
+            return true;
+        }
+
+        internal void ClearEatingCapture()
+        {
+            _pendingEatingPlanetMotion = null;
+            _pendingEatingOrbitDistance = 0f;
+            _hasPendingEatingContext = false;
         }
 
         internal void Move(Vector3 direction, float speed, float deltaTime, bool respectPlayerBounds)

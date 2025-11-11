@@ -178,6 +178,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
     /// <summary>
+    /// Predicado que observa o estado de perseguição para iniciar a alimentação ao capturar o planeta alvo.
+    /// </summary>
+    internal sealed class ChasingEatingPredicate : IPredicate
+    {
+        private readonly EaterChasingState _chasingState;
+
+        public ChasingEatingPredicate(EaterChasingState chasingState)
+        {
+            _chasingState = chasingState ?? throw new ArgumentNullException(nameof(chasingState));
+        }
+
+        public bool Evaluate()
+        {
+            return _chasingState.ConsumeEatingTransitionRequest();
+        }
+    }
+
+    /// <summary>
     /// Predicado que observa o estado de perseguição para retornar à fome assim que o planeta marcado desaparecer.
     /// </summary>
     internal sealed class ChasingHungryFallbackPredicate : IPredicate
