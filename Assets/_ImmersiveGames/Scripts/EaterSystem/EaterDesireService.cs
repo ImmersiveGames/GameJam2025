@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float _currentDuration;
         private int _currentDesireAvailableCount;
         private float _currentDesireWeight;
+        private bool _desireLocked;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -51,7 +52,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         public bool IsActive => _active;
-        public bool HasActiveDesire => _active && _currentDesire.HasValue;
+        public bool HasActiveDesire => (_active || _desireLocked) && _currentDesire.HasValue;
         public PlanetResources? CurrentDesire => _currentDesire;
         public bool CurrentDesireAvailable => _currentDesireAvailable;
         public float CurrentDesireDuration => _currentDuration;
@@ -107,6 +108,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireAvailable = false;
             _currentDesireAvailableCount = 0;
             _currentDesireWeight = 0f;
+            _desireLocked = false;
 
             float delay = Mathf.Max(_config.DelayTimer, 0f);
             if (delay > 0f)
@@ -141,6 +143,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDuration = 0f;
             _currentDesireAvailableCount = 0;
             _currentDesireWeight = 0f;
+            _desireLocked = false;
 
             if (_timer != null)
             {
@@ -149,6 +152,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             DebugUtility.LogVerbose("🛑 Desejos do Eater pausados.", context: _master, instance: this);
             NotifyDesireChanged();
+            return true;
+        }
+
+        public bool Suspend()
+        {
+            if (!_active)
+            {
+                return false;
+            }
+
+            _active = false;
+            _waitingDelay = false;
+            _desireLocked = _currentDesire.HasValue;
+
+            if (_timer != null)
+            {
+                _timer.Stop();
+            }
+
+            DebugUtility.LogVerbose(
+                "⏸️ Desejos do Eater suspensos mantendo o desejo atual.",
+                context: _master,
+                instance: this);
+
             return true;
         }
 
@@ -484,20 +511,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private EaterDesireInfo BuildDesireInfo()
         {
-            bool hasDesire = HasActiveDesire;
+            bool serviceActive = _active || _desireLocked;
+            bool hasDesire = serviceActive && _currentDesire.HasValue;
             PlanetResources? resource = hasDesire ? _currentDesire : null;
             bool available = hasDesire && _currentDesireAvailable;
             int availableCount = hasDesire ? _currentDesireAvailableCount : 0;
             float weight = hasDesire ? _currentDesireWeight : 0f;
             float duration = hasDesire ? _currentDuration : 0f;
-            float remaining = _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
+            float remaining = _active && _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
 
             if (!hasDesire)
             {
                 remaining = 0f;
             }
 
-            return new EaterDesireInfo(_active, hasDesire, resource, available, availableCount, weight, duration, remaining);
+            return new EaterDesireInfo(serviceActive, hasDesire, resource, available, availableCount, weight, duration, remaining);
         }
 
         private readonly struct WeightedDesireCandidate

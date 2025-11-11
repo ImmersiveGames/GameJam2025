@@ -1,3 +1,5 @@
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -9,6 +11,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     internal sealed class EaterHungryState : EaterMoveState
     {
         private bool _listeningDesires;
+        private bool _listeningMarkedPlanets;
+        private bool _pendingChasingTransition;
+        private bool _desiresSuspended;
+        private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
 
         public EaterHungryState() : base("Hungry")
         {
@@ -17,6 +23,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            _pendingChasingTransition = false;
+            _desiresSuspended = false;
             if (Behavior != null)
             {
                 Behavior.EventDesireChanged += HandleDesireChanged;
@@ -24,6 +32,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 Behavior.BeginDesires("HungryState.OnEnter");
             }
 
+            SubscribeToMarkedPlanets();
+            EvaluateChasingOpportunity("HungryState.OnEnter");
             Behavior?.ResumeAutoFlow("HungryState.OnEnter");
         }
 
@@ -35,8 +45,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _listeningDesires = false;
             }
 
-            Behavior?.EndDesires("HungryState.OnExit");
-            Behavior?.EnsureNoActiveDesire("HungryState.OnExit");
+            UnsubscribeFromMarkedPlanets();
+            _pendingChasingTransition = false;
+            _desiresSuspended = false;
             Behavior?.PauseAutoFlow("HungryState.OnExit");
             base.OnExit();
         }
@@ -107,7 +118,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void HandleDesireChanged(EaterDesireInfo info)
         {
-            if (!Behavior.ShouldLogStateTransitions || !info.HasDesire || !info.TryGetResource(out var resource))
+            if (!info.HasDesire)
+            {
+                _pendingChasingTransition = false;
+                return;
+            }
+
+            EvaluateChasingOpportunity("HungryState.DesireChanged");
+
+            if (!Behavior.ShouldLogStateTransitions || !info.TryGetResource(out var resource))
             {
                 return;
             }
@@ -118,6 +137,117 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,
                 instance: this);
+        }
+
+        internal bool ConsumeChasingTransitionRequest()
+        {
+            if (!_pendingChasingTransition)
+            {
+                return false;
+            }
+
+            _pendingChasingTransition = false;
+            return true;
+        }
+
+        private void EvaluateChasingOpportunity(string reason)
+        {
+            if (_pendingChasingTransition || Behavior == null)
+            {
+                return;
+            }
+
+            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.HasDesire)
+            {
+                return;
+            }
+
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target == null)
+            {
+                return;
+            }
+
+            RequestChasingTransition(reason, desireInfo, target);
+        }
+
+        private void RequestChasingTransition(string reason, EaterDesireInfo desireInfo, Transform target)
+        {
+            if (_pendingChasingTransition)
+            {
+                return;
+            }
+
+            SuspendDesires(reason);
+            _pendingChasingTransition = true;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            string planetName = target != null ? target.name : "desconhecido";
+            string resourceLabel = desireInfo.TryGetResource(out var resource)
+                ? resource.ToString()
+                : "recurso indefinido";
+
+            DebugUtility.Log(
+                $"Desejo ativo ({resourceLabel}) alinhado a planeta marcado ({planetName}). Solicitando transição para perseguição ({reason}).",
+                DebugUtility.Colors.CrucialInfo,
+                context: Behavior,
+                instance: this);
+        }
+
+        private void SubscribeToMarkedPlanets()
+        {
+            if (_listeningMarkedPlanets)
+            {
+                return;
+            }
+
+            _planetMarkingChangedBinding ??= new EventBinding<PlanetMarkingChangedEvent>(HandlePlanetMarkingChanged);
+            EventBus<PlanetMarkingChangedEvent>.Register(_planetMarkingChangedBinding);
+            _listeningMarkedPlanets = true;
+        }
+
+        private void UnsubscribeFromMarkedPlanets()
+        {
+            if (!_listeningMarkedPlanets)
+            {
+                return;
+            }
+
+            if (_planetMarkingChangedBinding != null)
+            {
+                EventBus<PlanetMarkingChangedEvent>.Unregister(_planetMarkingChangedBinding);
+            }
+
+            _listeningMarkedPlanets = false;
+        }
+
+        private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
+        {
+            if (@event.NewMarkedPlanet == null)
+            {
+                return;
+            }
+
+            EvaluateChasingOpportunity("HungryState.PlanetMarked");
+        }
+
+        private void SuspendDesires(string reason)
+        {
+            if (_desiresSuspended || Behavior == null)
+            {
+                return;
+            }
+
+            bool suspended = Behavior.SuspendDesires(reason);
+            if (suspended)
+            {
+                _desiresSuspended = true;
+            }
         }
     }
 }
