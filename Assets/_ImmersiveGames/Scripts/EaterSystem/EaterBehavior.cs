@@ -625,6 +625,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return stopped;
         }
 
+        internal bool SuspendDesires(string reason)
+        {
+            if (_desireService == null)
+            {
+                return false;
+            }
+
+            bool suspended = _desireService.Suspend();
+            if (logStateTransitions && suspended)
+            {
+                DebugUtility.Log($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+            }
+
+            return suspended;
+        }
+
         internal void EnsureNoActiveDesire(string reason)
         {
             if (!_currentDesireInfo.ServiceActive && !_currentDesireInfo.HasDesire)

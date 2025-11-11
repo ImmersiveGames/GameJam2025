@@ -20,6 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            Behavior?.EndDesires("WanderingState.OnEnter");
             RestartHungryCountdown();
         }
 

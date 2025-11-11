@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _listeningDesires;
         private bool _listeningMarkedPlanets;
         private bool _pendingChasingTransition;
+        private bool _desiresSuspended;
         private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
 
         public EaterHungryState() : base("Hungry")
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
             _pendingChasingTransition = false;
+            _desiresSuspended = false;
             if (Behavior != null)
             {
                 Behavior.EventDesireChanged += HandleDesireChanged;
@@ -45,6 +47,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             UnsubscribeFromMarkedPlanets();
             _pendingChasingTransition = false;
+            _desiresSuspended = false;
             Behavior?.PauseAutoFlow("HungryState.OnExit");
             base.OnExit();
         }
@@ -176,6 +179,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
+            SuspendDesires(reason);
             _pendingChasingTransition = true;
 
             if (!Behavior.ShouldLogStateTransitions)
@@ -230,6 +234,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             EvaluateChasingOpportunity("HungryState.PlanetMarked");
+        }
+
+        private void SuspendDesires(string reason)
+        {
+            if (_desiresSuspended || Behavior == null)
+            {
+                return;
+            }
+
+            bool suspended = Behavior.SuspendDesires(reason);
+            if (suspended)
+            {
+                _desiresSuspended = true;
+            }
         }
     }
 }
