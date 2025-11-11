@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using ImprovedTimers;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -9,8 +10,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterWanderingState : EaterMoveState
     {
+        private CountdownTimer _hungryCountdown;
+        private bool _pendingHungryTransition;
+
         public EaterWanderingState() : base("Wandering")
         {
+        }
+
+        public override void OnEnter()
+        {
+            base.OnEnter();
+            RestartHungryCountdown();
+        }
+
+        public override void OnExit()
+        {
+            base.OnExit();
+            StopHungryCountdown();
+        }
+
+        public override void Update()
+        {
+            base.Update();
+            EvaluateHungryCountdown();
         }
 
         protected override float EvaluateSpeed()
@@ -69,6 +91,87 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 DebugUtility.Colors.CrucialInfo,
                 context: Behavior,
                 instance: this);
+        }
+
+        internal bool ConsumeHungryTransitionRequest()
+        {
+            if (!_pendingHungryTransition)
+            {
+                return false;
+            }
+
+            _pendingHungryTransition = false;
+            return true;
+        }
+
+        private void RestartHungryCountdown()
+        {
+            _pendingHungryTransition = false;
+
+            if (Config == null)
+            {
+                StopHungryCountdown();
+                return;
+            }
+
+            float duration = Mathf.Max(Config.WanderingHungryDelay, 0f);
+            if (duration <= Mathf.Epsilon)
+            {
+                StopHungryCountdown();
+                _pendingHungryTransition = true;
+                return;
+            }
+
+            EnsureHungryCountdown(duration);
+
+            float safeDuration = Mathf.Max(duration, 0.05f);
+            _hungryCountdown.Stop();
+            _hungryCountdown.Reset(safeDuration);
+            _hungryCountdown.Start();
+        }
+
+        private void StopHungryCountdown()
+        {
+            if (_hungryCountdown == null)
+            {
+                return;
+            }
+
+            _hungryCountdown.Stop();
+            _hungryCountdown = null;
+        }
+
+        private void EnsureHungryCountdown(float duration)
+        {
+            if (_hungryCountdown != null)
+            {
+                return;
+            }
+
+            float safeDuration = Mathf.Max(duration, 0.05f);
+            _hungryCountdown = new CountdownTimer(safeDuration);
+            _hungryCountdown.Stop();
+        }
+
+        private void EvaluateHungryCountdown()
+        {
+            if (_pendingHungryTransition || _hungryCountdown == null)
+            {
+                return;
+            }
+
+            if (_hungryCountdown.IsRunning)
+            {
+                return;
+            }
+
+            if (!_hungryCountdown.IsFinished)
+            {
+                return;
+            }
+
+            _pendingHungryTransition = true;
+            StopHungryCountdown();
         }
     }
 }

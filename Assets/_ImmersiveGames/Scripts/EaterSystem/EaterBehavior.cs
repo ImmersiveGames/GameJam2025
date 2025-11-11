@@ -35,11 +35,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private StateMachine _stateMachine;
         private DeathEventPredicate _deathPredicate;
         private ReviveEventPredicate _revivePredicate;
-        private EaterBehaviorState _wanderingState;
-        private EaterBehaviorState _hungryState;
-        private EaterBehaviorState _chasingState;
-        private EaterBehaviorState _eatingState;
-        private EaterBehaviorState _deathState;
+        private EaterWanderingState _wanderingState;
+        private EaterHungryState _hungryState;
+        private EaterChasingState _chasingState;
+        private EaterEatingState _eatingState;
+        private EaterDeathState _deathState;
 
         private EaterMaster _master;
         private EaterConfigSo _config;
@@ -54,6 +54,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
         private bool _missingDesireServiceLogged;
         private bool _missingMasterForPredicatesLogged;
+        private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
+        private HungryChasingPredicate _hungryChasingPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
@@ -182,9 +184,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             IPredicate deathPredicate = EnsureDeathPredicate();
             IPredicate revivePredicate = EnsureRevivePredicate();
+            IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
+            IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
 
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
+            builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
+            builder.At(_hungryState, _chasingState, hungryChasingPredicate);
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -192,6 +198,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             state.Attach(this);
             builder.AddState(state, out _);
             return state;
+        }
+
+        private IPredicate EnsureHungryChasingPredicate()
+        {
+            if (_hungryChasingPredicate != null)
+            {
+                return _hungryChasingPredicate;
+            }
+
+            if (_hungryState == null || _chasingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
+            return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureWanderingTimeoutPredicate()
+        {
+            if (_wanderingTimeoutPredicate != null)
+            {
+                return _wanderingTimeoutPredicate;
+            }
+
+            if (_wanderingState == null || _hungryState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _wanderingTimeoutPredicate = new WanderingTimeoutPredicate(_wanderingState);
+            return _wanderingTimeoutPredicate;
         }
 
         private IPredicate EnsureDeathPredicate()

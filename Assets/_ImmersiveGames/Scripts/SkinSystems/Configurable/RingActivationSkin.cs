@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private float ringChance = 0.3f;
         [SerializeField] private bool applyOnSkinChange = true;
         [SerializeField] private bool enableRandomRotation = true;
-        [SerializeField] private Vector2 rotationRange = new Vector2(0f, 360f);
+        [SerializeField] private Vector2 rotationRange = new(0f, 360f);
 
         [Header("Initial State")]
         [SerializeField] private bool randomizeOnStart = true;

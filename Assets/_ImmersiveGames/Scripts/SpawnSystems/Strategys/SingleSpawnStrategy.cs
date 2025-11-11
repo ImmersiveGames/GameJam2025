@@ -24,7 +24,8 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             SpawnFuzzyUtility.ApplyFuzzy(ref pos, ref dir, fuzzyPercent, fuzzyAngle);
 
-            return new List<SpawnData> { new SpawnData { position = pos, direction = dir } };
+            return new List<SpawnData> { new()
+                { position = pos, direction = dir } };
         }
     }
 }

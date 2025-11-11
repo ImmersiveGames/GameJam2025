@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
     [DefaultExecutionOrder(-90)]
     public sealed class PlayerManager : Singleton<PlayerManager>
     {
-        [SerializeField] private List<Transform> players = new List<Transform>();
+        [SerializeField] private List<Transform> players = new();
         public IReadOnlyList<Transform> Players => players.AsReadOnly();
 
         protected override void Awake()

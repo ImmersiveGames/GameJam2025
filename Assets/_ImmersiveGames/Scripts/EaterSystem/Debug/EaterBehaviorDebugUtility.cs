@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         [SerializeField]
         private EaterMaster master;
 
-        private readonly StringBuilder _builder = new StringBuilder(256);
+        private readonly StringBuilder _builder = new(256);
 
         private void Reset()
         {

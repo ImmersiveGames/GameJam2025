@@ -7,8 +7,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
     public class RandomTransformSkin : SkinConfigurable
     {
         [Header("Scale Settings")]
-        [SerializeField] private Vector3 minScale = new Vector3(0.8f, 0.8f, 0.8f);
-        [SerializeField] private Vector3 maxScale = new Vector3(1.2f, 1.2f, 1.2f);
+        [SerializeField] private Vector3 minScale = new(0.8f, 0.8f, 0.8f);
+        [SerializeField] private Vector3 maxScale = new(1.2f, 1.2f, 1.2f);
         [SerializeField] private bool uniformScaling = true;
         [SerializeField] private bool applyScaleOnStart = true;
         [SerializeField] private bool reapplyScaleOnNewSkin = true;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [Header("Rotation Settings")]
         [SerializeField] private bool applyRandomRotation = true;
         [SerializeField] private Vector3 minRotation = Vector3.zero;
-        [SerializeField] private Vector3 maxRotation = new Vector3(360f, 360f, 360f);
+        [SerializeField] private Vector3 maxRotation = new(360f, 360f, 360f);
         [SerializeField] private bool uniformRotation = false;
         [SerializeField] private bool applyRotationOnStart = true;
         [SerializeField] private bool reapplyRotationOnNewSkin = true;
@@ -28,8 +28,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = false;
 
-        private Dictionary<GameObject, Vector3> _originalScales = new Dictionary<GameObject, Vector3>();
-        private Dictionary<GameObject, Quaternion> _originalRotations = new Dictionary<GameObject, Quaternion>();
+        private Dictionary<GameObject, Vector3> _originalScales = new();
+        private Dictionary<GameObject, Quaternion> _originalRotations = new();
         
         private Vector3 _currentRandomScale;
         private Vector3 _currentRandomRotation;

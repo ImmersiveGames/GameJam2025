@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
         [Header("Raycast Settings")]
         [SerializeField] private float interactionDistance = 10f;
         [SerializeField] private LayerMask planetLayerMask = -1;
-        [SerializeField] private Vector3 raycastOffset = new Vector3(0, 0.5f, 0);
+        [SerializeField] private Vector3 raycastOffset = new(0, 0.5f, 0);
         [SerializeField] private bool debugRay = true;
         [SerializeField] private Color32 debugRayColor = Color.blue;
         

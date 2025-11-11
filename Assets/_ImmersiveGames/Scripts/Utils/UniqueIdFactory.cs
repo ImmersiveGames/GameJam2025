@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.Utils
     
     public class UniqueIdFactory : IUniqueIdFactory
     {
-        private readonly Dictionary<string, int> _instanceCounts = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> _instanceCounts = new();
 
         public string GenerateId(GameObject owner, string prefix = null)
         {

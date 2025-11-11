@@ -141,7 +141,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 strategyPipeline = new List<DamageStrategySelection>
                 {
-                    new DamageStrategySelection()
+                    new()
                 };
             }
 

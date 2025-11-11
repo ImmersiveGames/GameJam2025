@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 
@@ -137,6 +138,42 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private void OnDeath(DeathEvent deathEvent)
         {
             _shouldTrigger = false;
+        }
+    }
+
+    /// <summary>
+    /// Predicado que observa o término do tempo de exploração para ativar o estado faminto.
+    /// </summary>
+    internal sealed class WanderingTimeoutPredicate : IPredicate
+    {
+        private readonly EaterWanderingState _wanderingState;
+
+        public WanderingTimeoutPredicate(EaterWanderingState wanderingState)
+        {
+            _wanderingState = wanderingState ?? throw new ArgumentNullException(nameof(wanderingState));
+        }
+
+        public bool Evaluate()
+        {
+            return _wanderingState.ConsumeHungryTransitionRequest();
+        }
+    }
+
+    /// <summary>
+    /// Predicado que monitora o estado faminto para iniciar perseguição assim que existir um alvo marcado válido.
+    /// </summary>
+    internal sealed class HungryChasingPredicate : IPredicate
+    {
+        private readonly EaterHungryState _hungryState;
+
+        public HungryChasingPredicate(EaterHungryState hungryState)
+        {
+            _hungryState = hungryState ?? throw new ArgumentNullException(nameof(hungryState));
+        }
+
+        public bool Evaluate()
+        {
+            return _hungryState.ConsumeChasingTransitionRequest();
         }
     }
 }
