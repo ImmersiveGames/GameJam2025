@@ -1,4 +1,6 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -18,6 +20,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Transform _currentTarget;
         private Vector3 _radialBasis;
         private float _currentAngle;
+        private bool _pendingHungryFallback;
+        private bool _markedPlanetSubscribed;
+        private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
 
         private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
 
@@ -41,14 +46,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            _pendingHungryFallback = false;
+            SubscribeToMarkedPlanets();
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
 
         public override void OnExit()
         {
             base.OnExit();
+            UnsubscribeFromMarkedPlanets();
             StopTweens();
             _currentTarget = null;
+            _pendingHungryFallback = false;
         }
 
         public override void Update()
@@ -65,6 +74,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 LookAtTarget();
             }
+            else
+            {
+                RequestHungryFallback("EatingState.TargetMissing");
+            }
+        }
+
+        internal bool ConsumeHungryFallbackRequest()
+        {
+            if (!_pendingHungryFallback)
+            {
+                return false;
+            }
+
+            _pendingHungryFallback = false;
+            return true;
         }
 
         private void PrepareTarget(Transform target, bool restartOrbit)
@@ -74,6 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (_currentTarget == null)
             {
+                RequestHungryFallback("EatingState.TargetUnavailable");
                 if (Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogWarning<EaterEatingState>("Estado Eating sem planeta marcado.", Behavior);
@@ -190,6 +215,65 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             Behavior.LookAt(_currentTarget.position);
+        }
+
+        private void SubscribeToMarkedPlanets()
+        {
+            if (_markedPlanetSubscribed)
+            {
+                return;
+            }
+
+            _planetMarkingChangedBinding ??=
+                new EventBinding<PlanetMarkingChangedEvent>(HandlePlanetMarkingChanged);
+            EventBus<PlanetMarkingChangedEvent>.Register(_planetMarkingChangedBinding);
+            _markedPlanetSubscribed = true;
+        }
+
+        private void UnsubscribeFromMarkedPlanets()
+        {
+            if (!_markedPlanetSubscribed)
+            {
+                return;
+            }
+
+            if (_planetMarkingChangedBinding != null)
+            {
+                EventBus<PlanetMarkingChangedEvent>.Unregister(_planetMarkingChangedBinding);
+            }
+
+            _markedPlanetSubscribed = false;
+        }
+
+        private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
+        {
+            if (@event.NewMarkedPlanet != null)
+            {
+                return;
+            }
+
+            RequestHungryFallback("EatingState.PlanetUnmarked");
+        }
+
+        private void RequestHungryFallback(string reason)
+        {
+            if (_pendingHungryFallback)
+            {
+                return;
+            }
+
+            _pendingHungryFallback = true;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            DebugUtility.Log(
+                $"Planeta desmarcado durante a alimentação. Solicitando retorno ao estado faminto ({reason}).",
+                DebugUtility.Colors.Warning,
+                context: Behavior,
+                instance: this);
         }
 
         private void StopTweens()

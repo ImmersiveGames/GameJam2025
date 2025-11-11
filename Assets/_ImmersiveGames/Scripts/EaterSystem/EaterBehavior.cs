@@ -56,6 +56,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingMasterForPredicatesLogged;
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
+        private ChasingHungryFallbackPredicate _chasingHungryFallbackPredicate;
+        private EatingHungryFallbackPredicate _eatingHungryFallbackPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
@@ -186,11 +188,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
+            IPredicate chasingHungryFallbackPredicate = EnsureChasingHungryFallbackPredicate();
+            IPredicate eatingHungryFallbackPredicate = EnsureEatingHungryFallbackPredicate();
 
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _hungryState, chasingHungryFallbackPredicate);
+            builder.At(_eatingState, _hungryState, eatingHungryFallbackPredicate);
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -214,6 +220,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureChasingHungryFallbackPredicate()
+        {
+            if (_chasingHungryFallbackPredicate != null)
+            {
+                return _chasingHungryFallbackPredicate;
+            }
+
+            if (_chasingState == null || _hungryState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingHungryFallbackPredicate = new ChasingHungryFallbackPredicate(_chasingState);
+            return _chasingHungryFallbackPredicate;
+        }
+
+        private IPredicate EnsureEatingHungryFallbackPredicate()
+        {
+            if (_eatingHungryFallbackPredicate != null)
+            {
+                return _eatingHungryFallbackPredicate;
+            }
+
+            if (_eatingState == null || _hungryState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _eatingHungryFallbackPredicate = new EatingHungryFallbackPredicate(_eatingState);
+            return _eatingHungryFallbackPredicate;
         }
 
         private IPredicate EnsureWanderingTimeoutPredicate()

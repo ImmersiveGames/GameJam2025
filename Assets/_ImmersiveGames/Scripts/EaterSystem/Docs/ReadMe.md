@@ -29,13 +29,21 @@ de exploração.
 | `EaterDeathState` | `EaterWanderingState` | `ReviveEventPredicate` | Escuta `ReviveEvent` e `ResetEvent` do mesmo ator. Quando um desses eventos é recebido, o predicado retorna verdadeiro uma única vez para reativar o estado de exploração. O predicado também consome o evento e volta a aguardar o próximo sinal. |
 | `EaterWanderingState` | `EaterHungryState` | `WanderingTimeoutPredicate` | Inicia uma contagem regressiva (configurada em `EaterConfigSo.WanderingHungryDelay`) toda vez que o estado de exploração é ativado. Quando o tempo termina o predicado retorna verdadeiro uma única vez e habilita a transição para o estado faminto. |
 | `EaterHungryState` | `EaterChasingState` | `HungryChasingPredicate` | Observa o estado faminto para detectar quando existe um desejo ativo **e** há um planeta marcado. Assim que ambos os critérios são verdadeiros — seja porque o eater entrou faminto com um planeta já marcado, seja porque o jogador marcou durante a fome — o predicado consome o pedido de transição emitido pelo estado e aciona a perseguição do planeta selecionado pelo jogador. |
+| `EaterChasingState` | `EaterHungryState` | `ChasingHungryFallbackPredicate` | Vigia a perseguição para reagir sempre que o planeta marcado desaparece (por exemplo, após o jogador desmarcar). Quando o alvo some, o predicado consome a solicitação do estado e retorna imediatamente ao estágio faminto mantendo o desejo atual. |
+| `EaterEatingState` | `EaterHungryState` | `EatingHungryFallbackPredicate` | Garante que a alimentação só continue enquanto existir um planeta marcado. Ao detectar a remoção do alvo, solicita o retorno para a fome preservando o desejo selecionado anteriormente. |
 
-`DeathEventPredicate`, `ReviveEventPredicate`, `WanderingTimeoutPredicate` e `HungryChasingPredicate`
-estão definidos em `EaterPredicates.cs`. Os dois primeiros utilizam `FilteredEventBus` para limitar os
-eventos ao `ActorId` do `EaterMaster`. `WanderingTimeoutPredicate` consulta `EaterWanderingState`
-para saber quando a contagem regressiva terminou, enquanto `HungryChasingPredicate` consome o pedido
-emitido por `EaterHungryState` assim que o estado identifica um desejo ativo alinhado a um planeta
-marcado.
+`DeathEventPredicate`, `ReviveEventPredicate`, `WanderingTimeoutPredicate`, `HungryChasingPredicate`,
+`ChasingHungryFallbackPredicate` e `EatingHungryFallbackPredicate` estão definidos em
+`EaterPredicates.cs`. Os dois primeiros utilizam `FilteredEventBus` para limitar os eventos ao
+`ActorId` do `EaterMaster`. `WanderingTimeoutPredicate` consulta `EaterWanderingState` para saber
+quando a contagem regressiva terminou, enquanto `HungryChasingPredicate` consome o pedido emitido por
+`EaterHungryState` assim que o estado identifica um desejo ativo alinhado a um planeta marcado. Já os
+predicados de fallback monitoram `EaterChasingState` e `EaterEatingState`, consumindo a sinalização de
+que o planeta foi desmarcado e devolvendo o eater à fome para aguardar novas marcações.
+
+Essa lógica garante que apenas as transições relacionadas à marcação de planetas sejam afetadas pelos
+eventos do `PlanetMarkingManager`: o eater só persegue e se alimenta de um planeta ativo e volta ao
+estado faminto assim que o jogador cancela a marcação atual.
 
 Quando o estado faminto identifica um planeta válido para perseguir, ele suspende a rotação de desejos
 antes de solicitar a transição. Dessa forma, o último desejo selecionado permanece inalterado durante

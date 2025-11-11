@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -15,9 +16,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     internal sealed class EaterChasingState : EaterBehaviorState
     {
         private bool _reportedMissingTarget;
+        private bool _pendingHungryFallback;
+        private bool _markedPlanetSubscribed;
         private bool _proximityEventsSubscribed;
         private EventBinding<DetectionEnterEvent> _proximityEnterBinding;
         private EventBinding<DetectionExitEvent> _proximityExitBinding;
+        private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
         private EaterDetectionController _detectionController;
         private DetectionType _planetProximityDetectionType;
         private bool _haltMovement;
@@ -30,13 +34,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            _pendingHungryFallback = false;
             SubscribeToProximityEvents();
+            SubscribeToMarkedPlanets();
         }
 
         public override void OnExit()
         {
             UnsubscribeFromProximityEvents();
+            UnsubscribeFromMarkedPlanets();
             ResetMovementHalt();
+            _pendingHungryFallback = false;
             base.OnExit();
         }
 
@@ -47,6 +55,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Transform target = Behavior.CurrentTargetPlanet;
             if (target == null)
             {
+                RequestHungryFallback("ChasingState.TargetMissing");
                 ResetMovementHalt();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
@@ -105,6 +114,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
         }
 
+        internal bool ConsumeHungryFallbackRequest()
+        {
+            if (!_pendingHungryFallback)
+            {
+                return false;
+            }
+
+            _pendingHungryFallback = false;
+            return true;
+        }
+
         private void SubscribeToProximityEvents()
         {
             if (_proximityEventsSubscribed)
@@ -143,6 +163,65 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _proximityEventsSubscribed = false;
+        }
+
+        private void SubscribeToMarkedPlanets()
+        {
+            if (_markedPlanetSubscribed)
+            {
+                return;
+            }
+
+            _planetMarkingChangedBinding ??=
+                new EventBinding<PlanetMarkingChangedEvent>(HandlePlanetMarkingChanged);
+            EventBus<PlanetMarkingChangedEvent>.Register(_planetMarkingChangedBinding);
+            _markedPlanetSubscribed = true;
+        }
+
+        private void UnsubscribeFromMarkedPlanets()
+        {
+            if (!_markedPlanetSubscribed)
+            {
+                return;
+            }
+
+            if (_planetMarkingChangedBinding != null)
+            {
+                EventBus<PlanetMarkingChangedEvent>.Unregister(_planetMarkingChangedBinding);
+            }
+
+            _markedPlanetSubscribed = false;
+        }
+
+        private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
+        {
+            if (@event.NewMarkedPlanet != null)
+            {
+                return;
+            }
+
+            RequestHungryFallback("ChasingState.PlanetUnmarked");
+        }
+
+        private void RequestHungryFallback(string reason)
+        {
+            if (_pendingHungryFallback)
+            {
+                return;
+            }
+
+            _pendingHungryFallback = true;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            DebugUtility.Log(
+                $"Planeta desmarcado durante a perseguição. Solicitando retorno ao estado faminto ({reason}).",
+                DebugUtility.Colors.Warning,
+                context: Behavior,
+                instance: this);
         }
 
         private bool TryResolveProximityDependencies()
