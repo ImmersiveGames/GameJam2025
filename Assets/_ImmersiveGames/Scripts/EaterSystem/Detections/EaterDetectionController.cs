@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -19,6 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
         private readonly HashSet<IDetectable> _activeProximityDetections = new();
+        private readonly Dictionary<IDetectable, Transform> _activeProximityTargets = new();
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
 
@@ -38,14 +40,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                     continue;
                 }
 
-                Transform detectableTransform = ResolveDetectableTransform(detectable);
-                if (detectableTransform == null)
+                if (_activeProximityTargets.TryGetValue(detectable, out Transform planetTransform) &&
+                    IsSamePlanetTransform(planetTransform, target))
                 {
-                    continue;
+                    return true;
                 }
 
-                if (ReferenceEquals(detectableTransform, target) || target.IsChildOf(detectableTransform) ||
-                    detectableTransform.IsChildOf(target))
+                Transform detectableTransform = ResolveDetectableTransform(detectable);
+                if (IsMatchingDetectableTransform(detectableTransform, target))
                 {
                     return true;
                 }
@@ -103,6 +105,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private void HandlePlanetProximityDetection(IDetectable detectable)
         {
+            RegisterProximityPlanet(detectable);
+
             if (!_activeProximityDetections.Add(detectable))
             {
                 return;
@@ -128,6 +132,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
             {
                 return;
             }
+
+            _activeProximityTargets.Remove(detectable);
 
             if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
             {
@@ -184,6 +190,86 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 this);
         }
 
+        private void RegisterProximityPlanet(IDetectable detectable)
+        {
+            Transform planetTransform = ResolveProximityTransform(detectable);
+            if (planetTransform != null)
+            {
+                _activeProximityTargets[detectable] = planetTransform;
+            }
+            else
+            {
+                _activeProximityTargets.Remove(detectable);
+            }
+        }
+
+        private static bool IsSamePlanetTransform(Transform planetTransform, Transform target)
+        {
+            if (planetTransform == null || target == null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(planetTransform, target) || target.IsChildOf(planetTransform) ||
+                   planetTransform.IsChildOf(target);
+        }
+
+        private static bool IsMatchingDetectableTransform(Transform detectableTransform, Transform target)
+        {
+            if (detectableTransform == null || target == null)
+            {
+                return false;
+            }
+
+            return ReferenceEquals(detectableTransform, target) || detectableTransform.IsChildOf(target);
+        }
+
+        private Transform ResolveProximityTransform(IDetectable detectable)
+        {
+            MarkPlanet markPlanet = ResolveMarkPlanet(detectable);
+            if (markPlanet != null)
+            {
+                return markPlanet.transform;
+            }
+
+            if (TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            {
+                Transform actorTransform = planetMaster.PlanetActor?.Transform;
+                return actorTransform != null ? actorTransform : planetMaster.transform;
+            }
+
+            return null;
+        }
+
+        private static MarkPlanet ResolveMarkPlanet(IDetectable detectable)
+        {
+            if (detectable is Component detectableComponent)
+            {
+                if (detectableComponent.TryGetComponent(out MarkPlanet directMarkPlanet))
+                {
+                    return directMarkPlanet;
+                }
+
+                MarkPlanet parentMarkPlanet = detectableComponent.GetComponentInParent<MarkPlanet>();
+                if (parentMarkPlanet != null)
+                {
+                    return parentMarkPlanet;
+                }
+            }
+
+            if (detectable?.Owner is Component ownerComponent)
+            {
+                if (ownerComponent.TryGetComponent(out MarkPlanet ownerMarkPlanet))
+                {
+                    return ownerMarkPlanet;
+                }
+
+                return ownerComponent.GetComponentInParent<MarkPlanet>();
+            }
+
+            return null;
+        }
+
         private static Transform ResolveDetectableTransform(IDetectable detectable)
         {
             if (detectable is Component component)
@@ -203,6 +289,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         {
             _activeDefenseDetections.Clear();
             _activeProximityDetections.Clear();
+            _activeProximityTargets.Clear();
             base.OnCacheCleared();
         }
 

@@ -74,3 +74,8 @@ Esse documento será atualizado conforme novos predicados e transições forem i
 
 - Assim que o planeta marcado entra no sensor de proximidade do eater, `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando pela órbita enquanto o eater se aproxima, mantendo as animações e translações dependentes do `Transform`.
 - Ao sair do sensor, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.
+
+### Precisão adicional do sensor de proximidade
+
+- O `EaterDetectionController` agora associa cada detecção ativa ao `MarkPlanet` correspondente, garantindo que apenas o planeta efetivamente presente dentro do sensor seja considerado “próximo”. Isso evita falsos positivos quando múltiplos planetas compartilham o mesmo `PlanetsMaster` ou hierarquia.
+- Com esse mapeamento, a troca de alvo durante `EaterEatingState` reage imediatamente: se o novo planeta estiver fora do alcance real, o estado retorna à perseguição para reposicionar o eater até a borda do sensor; se já estiver dentro, a órbita reinicia na distância correta sem atravessar o alvo.
