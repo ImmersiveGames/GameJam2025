@@ -163,21 +163,53 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void ForceSetState(EaterBehaviorState targetState, string reason)
         {
+            SwitchState(targetState, reason, logWhenUnchanged: true);
+        }
+
+        internal bool TryEnterHungryState(string reason)
+        {
+            return SwitchState(_hungryState, reason, logWhenUnchanged: false);
+        }
+
+        internal bool TryEnterChasingState(string reason)
+        {
+            return SwitchState(_chasingState, reason, logWhenUnchanged: false);
+        }
+
+        internal bool TryEnterEatingState(string reason)
+        {
+            return SwitchState(_eatingState, reason, logWhenUnchanged: false);
+        }
+
+        private bool SwitchState(EaterBehaviorState targetState, string reason, bool logWhenUnchanged)
+        {
             if (_stateMachine == null || targetState == null)
             {
-                return;
+                return false;
             }
 
             IState previous = _stateMachine.CurrentState;
-            previous?.OnExit();
+            if (ReferenceEquals(previous, targetState))
+            {
+                if (logStateTransitions && logWhenUnchanged)
+                {
+                    string unchanged = $"Estado já era {GetStateName(targetState)} ({reason}).";
+                    DebugUtility.Log(unchanged, DebugUtility.Colors.CrucialInfo, this, this);
+                }
 
+                return true;
+            }
+
+            previous?.OnExit();
             _stateMachine.SetState(targetState);
+
             if (logStateTransitions)
             {
-                string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
+                string message = $"Transição direta: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
                 DebugUtility.Log(message, DebugUtility.Colors.CrucialInfo, this, this);
             }
 
+            return true;
         }
 
         private void ConfigureTransitions(StateMachineBuilder builder)

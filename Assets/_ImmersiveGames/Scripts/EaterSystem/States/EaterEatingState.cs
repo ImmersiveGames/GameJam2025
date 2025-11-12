@@ -1,5 +1,10 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
+using _ImmersiveGames.Scripts.EaterSystem.Detections;
+using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -21,6 +26,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _currentAngle;
         private EaterAnimationController _animationController;
         private bool _missingAnimationLogged;
+        private readonly PlanetOrbitFreezeHandle _orbitFreezeHandle;
+        private bool _proximityEventsSubscribed;
+        private EventBinding<DetectionEnterEvent> _proximityEnterBinding;
+        private EventBinding<DetectionExitEvent> _proximityExitBinding;
+        private EaterDetectionController _detectionController;
+        private DetectionType _planetProximityDetectionType;
 
         private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
 
@@ -39,6 +50,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public EaterEatingState() : base("Eating")
         {
+            _orbitFreezeHandle = new PlanetOrbitFreezeHandle(this);
         }
 
         public override void OnEnter()
@@ -50,7 +62,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _animationController.SetEating(true);
             }
 
-            PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
+            SubscribeToProximityEvents();
+            PrepareTarget(Behavior?.CurrentTargetPlanet, restartOrbit: true, reason: "EatingState.OnEnter");
         }
 
         public override void OnExit()
@@ -63,6 +76,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnExit();
             StopTweens();
             _currentTarget = null;
+            _orbitFreezeHandle.Release();
+            UnsubscribeFromProximityEvents();
         }
 
         public override void Update()
@@ -70,9 +85,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.Update();
 
             Transform target = Behavior.CurrentTargetPlanet;
-            if (target != _currentTarget)
+            if (target == null)
             {
-                PrepareTarget(target, restartOrbit: true);
+                HandleNoMarkedPlanet();
+                return;
+            }
+
+            if (!ReferenceEquals(target, _currentTarget))
+            {
+                PrepareTarget(target, restartOrbit: true, reason: "EatingState.Update.TargetChanged");
+            }
+            else if (!IsTargetWithinProximity(target))
+            {
+                HandleTargetOutsideSensor("EatingState.Update.TargetOutsideSensor");
+                return;
             }
 
             if (target != null)
@@ -81,19 +107,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
         }
 
-        private void PrepareTarget(Transform target, bool restartOrbit)
+        private void PrepareTarget(Transform target, bool restartOrbit, string reason)
         {
             _currentTarget = target;
             StopTweens();
 
             if (_currentTarget == null)
             {
-                if (Behavior.ShouldLogStateTransitions)
+                _orbitFreezeHandle.Release();
+                if (Behavior != null && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogWarning<EaterEatingState>("Estado Eating sem planeta marcado.", Behavior);
                 }
+                Behavior?.TryEnterHungryState($"{reason}.NoMarkedPlanet");
                 return;
             }
+
+            if (!IsTargetWithinProximity(_currentTarget))
+            {
+                HandleTargetOutsideSensor(reason);
+                return;
+            }
+
+            _orbitFreezeHandle.Request(_currentTarget, Behavior != null && Behavior.ShouldLogStateTransitions, Behavior, this);
 
             _radialBasis = ResolveRadialBasis();
             Vector3 desiredPosition = _currentTarget.position + _radialBasis * OrbitDistance;
@@ -254,6 +290,187 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return false;
+        }
+
+        private void SubscribeToProximityEvents()
+        {
+            if (_proximityEventsSubscribed)
+            {
+                return;
+            }
+
+            if (!TryResolveProximityDependencies())
+            {
+                return;
+            }
+
+            _proximityEnterBinding ??= new EventBinding<DetectionEnterEvent>(HandleProximityEnter);
+            _proximityExitBinding ??= new EventBinding<DetectionExitEvent>(HandleProximityExit);
+
+            EventBus<DetectionEnterEvent>.Register(_proximityEnterBinding);
+            EventBus<DetectionExitEvent>.Register(_proximityExitBinding);
+            _proximityEventsSubscribed = true;
+        }
+
+        private void UnsubscribeFromProximityEvents()
+        {
+            if (!_proximityEventsSubscribed)
+            {
+                return;
+            }
+
+            if (_proximityEnterBinding != null)
+            {
+                EventBus<DetectionEnterEvent>.Unregister(_proximityEnterBinding);
+            }
+
+            if (_proximityExitBinding != null)
+            {
+                EventBus<DetectionExitEvent>.Unregister(_proximityExitBinding);
+            }
+
+            _proximityEventsSubscribed = false;
+        }
+
+        private bool TryResolveProximityDependencies()
+        {
+            if (Behavior == null)
+            {
+                return false;
+            }
+
+            if (_detectionController == null && !Behavior.TryGetDetectionController(out _detectionController))
+            {
+                DebugUtility.LogWarning(
+                    "EaterDetectionController não encontrado para monitorar eventos de proximidade durante Eating.",
+                    Behavior,
+                    this);
+                return false;
+            }
+
+            _planetProximityDetectionType = _detectionController.PlanetProximityDetectionType;
+            if (_planetProximityDetectionType == null)
+            {
+                DebugUtility.LogWarning(
+                    "DetectionType de proximidade não configurado para Eating.",
+                    Behavior,
+                    this);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool IsRelevantProximityEvent(IDetector detector, DetectionType detectionType)
+        {
+            if (_detectionController == null || _planetProximityDetectionType == null)
+            {
+                return false;
+            }
+
+            if (!ReferenceEquals(detector, _detectionController))
+            {
+                return false;
+            }
+
+            return ReferenceEquals(detectionType, _planetProximityDetectionType);
+        }
+
+        private void HandleProximityEnter(DetectionEnterEvent enterEvent)
+        {
+            if (!IsRelevantProximityEvent(enterEvent.Detector, enterEvent.DetectionType))
+            {
+                return;
+            }
+
+            if (!EaterPlanetUtility.TryResolveMarkedPlanet(enterEvent.Detectable, out var planetActor, out var markedPlanet))
+            {
+                return;
+            }
+
+            Transform planetTransform = markedPlanet.transform;
+            if (!ReferenceEquals(Behavior?.CurrentTargetPlanet, planetTransform))
+            {
+                return;
+            }
+
+            _orbitFreezeHandle.Request(planetTransform, Behavior != null && Behavior.ShouldLogStateTransitions, Behavior, this);
+
+            if (!ReferenceEquals(_currentTarget, planetTransform))
+            {
+                PrepareTarget(planetTransform, restartOrbit: true, reason: "EatingState.ProximityEnter");
+            }
+        }
+
+        private void HandleProximityExit(DetectionExitEvent exitEvent)
+        {
+            if (!IsRelevantProximityEvent(exitEvent.Detector, exitEvent.DetectionType))
+            {
+                return;
+            }
+
+            if (!EaterPlanetUtility.TryResolveMarkedPlanet(exitEvent.Detectable, out var planetActor, out var markedPlanet))
+            {
+                return;
+            }
+
+            Transform planetTransform = markedPlanet.transform;
+            if (!ReferenceEquals(_currentTarget, planetTransform))
+            {
+                return;
+            }
+
+            string planetName = EaterPlanetUtility.GetPlanetDisplayName(planetActor);
+            DebugUtility.Log(
+                $"Planeta {planetName} saiu do sensor durante Eating.",
+                DebugUtility.Colors.Info,
+                Behavior,
+                this);
+
+            HandleTargetOutsideSensor("EatingState.ProximityExit");
+        }
+
+        private bool IsTargetWithinProximity(Transform target)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            if (_detectionController == null)
+            {
+                TryResolveProximityDependencies();
+            }
+
+            return _detectionController != null && _detectionController.IsTransformWithinProximity(target);
+        }
+
+        private void HandleTargetOutsideSensor(string reason)
+        {
+            _orbitFreezeHandle.Release();
+            StopTweens();
+
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target != null)
+            {
+                Behavior.TryEnterChasingState($"{reason}.ResumeChasing");
+            }
+            else
+            {
+                Behavior.TryEnterHungryState($"{reason}.NoMarkedPlanet");
+            }
+        }
+
+        private void HandleNoMarkedPlanet()
+        {
+            _orbitFreezeHandle.Release();
+            StopTweens();
+            Behavior?.TryEnterHungryState("EatingState.NoMarkedPlanet");
         }
     }
 }

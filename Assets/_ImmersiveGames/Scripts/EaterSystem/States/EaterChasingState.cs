@@ -22,17 +22,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private DetectionType _planetProximityDetectionType;
         private bool _haltMovement;
         private Transform _haltedTarget;
-        private PlanetMotion _haltedPlanetMotion;
-        private bool _loggedMissingPlanetMotion;
+        private bool _requestedHungryFallback;
+        private readonly PlanetOrbitFreezeHandle _orbitFreezeHandle;
 
         public EaterChasingState() : base("Chasing")
         {
+            _orbitFreezeHandle = new PlanetOrbitFreezeHandle(this);
         }
 
         public override void OnEnter()
         {
             base.OnEnter();
             SubscribeToProximityEvents();
+            _requestedHungryFallback = false;
+            EvaluateImmediateProximity();
         }
 
         public override void OnExit()
@@ -50,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (target == null)
             {
                 ResetMovementHalt();
+                TryReturnToHungryState();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogVerbose(
@@ -183,12 +187,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!TryResolveMarkedPlanet(enterEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
+            if (!EaterPlanetUtility.TryResolveMarkedPlanet(enterEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
             {
                 return;
             }
 
-            string planetName = GetPlanetDisplayName(planetActor);
+            string planetName = EaterPlanetUtility.GetPlanetDisplayName(planetActor);
             DebugUtility.Log(
                 $"Planeta {planetName} entrou no detector de proximidade durante a perseguição.",
                 DebugUtility.Colors.Info,
@@ -199,6 +203,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (ReferenceEquals(Behavior.CurrentTargetPlanet, planetTransform))
             {
                 HaltChasingTarget(planetTransform);
+                TryTransitionToEatingState("ChasingState.ProximityEnter");
             }
         }
 
@@ -209,12 +214,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!TryResolveMarkedPlanet(exitEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
+            if (!EaterPlanetUtility.TryResolveMarkedPlanet(exitEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
             {
                 return;
             }
 
-            string planetName = GetPlanetDisplayName(planetActor);
+            string planetName = EaterPlanetUtility.GetPlanetDisplayName(planetActor);
             DebugUtility.Log(
                 $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
                 DebugUtility.Colors.Info,
@@ -252,7 +257,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _haltMovement = true;
-            RequestPlanetOrbitFreeze(target);
+            _orbitFreezeHandle.Request(target, Behavior != null && Behavior.ShouldLogStateTransitions, Behavior, this);
         }
 
         private void ResumeChasingTarget()
@@ -262,155 +267,63 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void ResetMovementHalt()
         {
-            ReleasePlanetOrbitFreeze();
+            _orbitFreezeHandle.Release();
             _haltMovement = false;
             _haltedTarget = null;
-            _loggedMissingPlanetMotion = false;
         }
 
-        private void RequestPlanetOrbitFreeze(Transform planetTransform)
+        private void TryTransitionToEatingState(string reason)
         {
-            if (planetTransform == null)
+            if (Behavior == null)
             {
                 return;
             }
 
-            PlanetMotion planetMotion = ResolvePlanetMotion(planetTransform);
-            if (planetMotion == null)
-            {
-                if (!_loggedMissingPlanetMotion)
-                {
-                    DebugUtility.LogWarning(
-                        "Planeta marcado não possui PlanetMotion para congelar órbita durante a perseguição.",
-                        Behavior,
-                        this);
-                    _loggedMissingPlanetMotion = true;
-                }
-
-                return;
-            }
-
-            _loggedMissingPlanetMotion = false;
-
-            if (!ReferenceEquals(_haltedPlanetMotion, planetMotion))
-            {
-                ReleasePlanetOrbitFreeze();
-                _haltedPlanetMotion = planetMotion;
-            }
-
-            _haltedPlanetMotion.RequestOrbitFreeze(this);
+            Behavior.TryEnterEatingState(reason);
         }
 
-        private void ReleasePlanetOrbitFreeze()
+        private void EvaluateImmediateProximity()
         {
-            if (_haltedPlanetMotion == null)
+            if (Behavior == null || !TryResolveProximityDependencies())
             {
                 return;
             }
 
-            _haltedPlanetMotion.ReleaseOrbitFreeze(this);
-            _haltedPlanetMotion = null;
+            Transform target = Behavior.CurrentTargetPlanet;
+            if (target == null)
+            {
+                return;
+            }
+
+            if (!_detectionController.IsTransformWithinProximity(target))
+            {
+                return;
+            }
+
+            if (Behavior.ShouldLogStateTransitions)
+            {
+                DebugUtility.Log(
+                    $"Planeta {target.name} já estava dentro do sensor ao iniciar perseguição.",
+                    DebugUtility.Colors.Info,
+                    Behavior,
+                    this);
+            }
+
+            HaltChasingTarget(target);
+            TryTransitionToEatingState("ChasingState.ImmediateProximity");
         }
 
-        private static PlanetMotion ResolvePlanetMotion(Transform planetTransform)
+        private void TryReturnToHungryState()
         {
-            if (planetTransform == null)
+            if (_requestedHungryFallback || Behavior == null)
             {
-                return null;
+                return;
             }
 
-            if (planetTransform.TryGetComponent(out PlanetMotion directMotion))
+            if (Behavior.TryEnterHungryState("ChasingState.NoMarkedPlanets"))
             {
-                return directMotion;
+                _requestedHungryFallback = true;
             }
-
-            return planetTransform.GetComponentInParent<PlanetMotion>();
-        }
-
-        private bool TryResolveMarkedPlanet(IDetectable detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet)
-        {
-            markedPlanet = null;
-
-            if (!TryResolvePlanetActor(detectable, out planetActor))
-            {
-                return false;
-            }
-
-            return TryResolveMarkPlanet(planetActor, out markedPlanet);
-        }
-
-        private static bool TryResolvePlanetActor(IDetectable detectable, out IPlanetActor planetActor)
-        {
-            planetActor = null;
-
-            if (detectable == null)
-            {
-                return false;
-            }
-
-            if (detectable.Owner is IPlanetActor ownerPlanetActor)
-            {
-                planetActor = ownerPlanetActor;
-                return true;
-            }
-
-            if (detectable is Component component)
-            {
-                if (component.TryGetComponent(out ownerPlanetActor))
-                {
-                    planetActor = ownerPlanetActor;
-                    return true;
-                }
-
-                ownerPlanetActor = component.GetComponentInParent<IPlanetActor>();
-                if (ownerPlanetActor != null)
-                {
-                    planetActor = ownerPlanetActor;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool TryResolveMarkPlanet(IPlanetActor planetActor, out MarkPlanet markedPlanet)
-        {
-            markedPlanet = null;
-
-            Transform planetTransform = planetActor?.PlanetActor?.Transform;
-            if (planetTransform == null)
-            {
-                return false;
-            }
-
-            if (!planetTransform.TryGetComponent(out markedPlanet))
-            {
-                markedPlanet = planetTransform.GetComponentInParent<MarkPlanet>();
-            }
-
-            if (markedPlanet == null)
-            {
-                return false;
-            }
-
-            return markedPlanet.IsMarked;
-        }
-
-        private static string GetPlanetDisplayName(IPlanetActor planetActor)
-        {
-            if (planetActor?.PlanetActor == null)
-            {
-                return "desconhecido";
-            }
-
-            string actorName = planetActor.PlanetActor.ActorName;
-            if (!string.IsNullOrWhiteSpace(actorName))
-            {
-                return actorName;
-            }
-
-            Transform transform = planetActor.PlanetActor.Transform;
-            return transform != null ? transform.name : "desconhecido";
         }
     }
 }
