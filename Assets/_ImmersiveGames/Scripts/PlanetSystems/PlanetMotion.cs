@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
@@ -27,6 +29,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _currentOrbitAngle;
         private float _heightOffset;
         private bool _orbitConfigured;
+        private readonly HashSet<object> _orbitFreezeRequests = new HashSet<object>();
+
+        public bool IsOrbitFrozen => _orbitFreezeRequests.Count > 0;
 
         private Transform OrbitCenter => orbitCenter != null ? orbitCenter : transform.parent;
 
@@ -70,6 +75,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void UpdateOrbitAngle()
         {
+            if (IsOrbitFrozen)
+            {
+                return;
+            }
+
             if (Mathf.Approximately(orbitAngularSpeed, 0f))
             {
                 return;
@@ -78,6 +88,36 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             float direction = orbitClockwise ? -1f : 1f;
             _currentOrbitAngle += Mathf.Deg2Rad * orbitAngularSpeed * direction * Time.deltaTime;
             _currentOrbitAngle = Mathf.Repeat(_currentOrbitAngle, Mathf.PI * 2f);
+        }
+
+        /// <summary>
+        /// Interrompe a atualização do ângulo orbital enquanto houver alguma solicitação ativa.
+        /// </summary>
+        /// <param name="requester">Objeto responsável pelo congelamento, usado para evitar conflitos entre múltiplas origens.</param>
+        public void RequestOrbitFreeze(object requester)
+        {
+            if (requester == null)
+            {
+                DebugUtility.LogWarning<PlanetMotion>("Tentativa de congelar a órbita sem um solicitante válido.", this);
+                return;
+            }
+
+            _orbitFreezeRequests.Add(requester);
+        }
+
+        /// <summary>
+        /// Libera uma solicitação de congelamento da órbita. A órbita só volta a atualizar quando todas forem removidas.
+        /// </summary>
+        /// <param name="requester">Objeto que originalmente solicitou o congelamento.</param>
+        public void ReleaseOrbitFreeze(object requester)
+        {
+            if (requester == null)
+            {
+                DebugUtility.LogWarning<PlanetMotion>("Tentativa de liberar a órbita sem um solicitante válido.", this);
+                return;
+            }
+
+            _orbitFreezeRequests.Remove(requester);
         }
 
         private void ApplyOrbitPosition()

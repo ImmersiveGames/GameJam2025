@@ -10,7 +10,7 @@ poucos.
 | --- | --- |
 | `EaterWanderingState` | Movimento aleatório respeitando limites mínimos/máximos em relação aos jogadores. |
 | `EaterHungryState` | Movimento aleatório com bias mais forte em direção aos jogadores e integração com desejos. |
-| `EaterChasingState` | Persegue o planeta atualmente marcado e acompanha eventos de proximidade. |
+| `EaterChasingState` | Persegue o planeta atualmente marcado, acompanha eventos de proximidade e congela a órbita do alvo quando entra no sensor do eater. |
 | `EaterEatingState` | Orbita o planeta marcado utilizando DOTween enquanto mantém o foco visual. |
 | `EaterDeathState` | Dispara animação de morte ao entrar e restaura idle ao sair. |
 
@@ -63,3 +63,8 @@ limpo por meio de `EaterBehavior.EndDesires`, garantindo que um novo ciclo de so
 - Detecção e animação: resolvidos sob demanda para apoiar perseguição e morte.
 
 Esse documento será atualizado conforme novos predicados e transições forem introduzidos.
+
+### Congelamento de órbita durante a perseguição
+
+- Assim que o planeta marcado entra no sensor de proximidade do eater, `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando pela órbita enquanto o eater se aproxima, mantendo as animações e translações dependentes do `Transform`.
+- Ao sair do sensor, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.

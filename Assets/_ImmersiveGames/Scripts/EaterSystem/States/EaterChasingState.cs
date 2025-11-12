@@ -22,6 +22,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private DetectionType _planetProximityDetectionType;
         private bool _haltMovement;
         private Transform _haltedTarget;
+        private PlanetMotion _haltedPlanetMotion;
+        private bool _loggedMissingPlanetMotion;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -243,8 +245,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void HaltChasingTarget(Transform target)
         {
+            if (!ReferenceEquals(_haltedTarget, target))
+            {
+                ResetMovementHalt();
+                _haltedTarget = target;
+            }
+
             _haltMovement = true;
-            _haltedTarget = target;
+            RequestPlanetOrbitFreeze(target);
         }
 
         private void ResumeChasingTarget()
@@ -254,8 +262,69 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void ResetMovementHalt()
         {
+            ReleasePlanetOrbitFreeze();
             _haltMovement = false;
             _haltedTarget = null;
+            _loggedMissingPlanetMotion = false;
+        }
+
+        private void RequestPlanetOrbitFreeze(Transform planetTransform)
+        {
+            if (planetTransform == null)
+            {
+                return;
+            }
+
+            PlanetMotion planetMotion = ResolvePlanetMotion(planetTransform);
+            if (planetMotion == null)
+            {
+                if (!_loggedMissingPlanetMotion)
+                {
+                    DebugUtility.LogWarning(
+                        "Planeta marcado não possui PlanetMotion para congelar órbita durante a perseguição.",
+                        Behavior,
+                        this);
+                    _loggedMissingPlanetMotion = true;
+                }
+
+                return;
+            }
+
+            _loggedMissingPlanetMotion = false;
+
+            if (!ReferenceEquals(_haltedPlanetMotion, planetMotion))
+            {
+                ReleasePlanetOrbitFreeze();
+                _haltedPlanetMotion = planetMotion;
+            }
+
+            _haltedPlanetMotion.RequestOrbitFreeze(this);
+        }
+
+        private void ReleasePlanetOrbitFreeze()
+        {
+            if (_haltedPlanetMotion == null)
+            {
+                return;
+            }
+
+            _haltedPlanetMotion.ReleaseOrbitFreeze(this);
+            _haltedPlanetMotion = null;
+        }
+
+        private static PlanetMotion ResolvePlanetMotion(Transform planetTransform)
+        {
+            if (planetTransform == null)
+            {
+                return null;
+            }
+
+            if (planetTransform.TryGetComponent(out PlanetMotion directMotion))
+            {
+                return directMotion;
+            }
+
+            return planetTransform.GetComponentInParent<PlanetMotion>();
         }
 
         private bool TryResolveMarkedPlanet(IDetectable detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet)
