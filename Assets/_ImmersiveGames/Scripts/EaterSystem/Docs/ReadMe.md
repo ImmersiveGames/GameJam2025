@@ -10,8 +10,8 @@ poucos.
 | --- | --- |
 | `EaterWanderingState` | Movimento aleatório respeitando limites mínimos/máximos em relação aos jogadores. |
 | `EaterHungryState` | Movimento aleatório com bias mais forte em direção aos jogadores e integração com desejos. |
-| `EaterChasingState` | Persegue o planeta atualmente marcado e acompanha eventos de proximidade. |
-| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween enquanto mantém o foco visual. |
+| `EaterChasingState` | Persegue o planeta marcado, verifica continuamente se o alvo está dentro do sensor, congela a órbita assim que entra em alcance e transfere o eater para o estado de alimentação. |
+| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween enquanto mantém o foco visual e mantém o planeta parado enquanto permanecer no sensor. |
 | `EaterDeathState` | Dispara animação de morte ao entrar e restaura idle ao sair. |
 
 O estado inicial é `EaterWanderingState`. Os demais estados ainda não possuem transições automáticas
@@ -56,6 +56,12 @@ limpo por meio de `EaterBehavior.EndDesires`, garantindo que um novo ciclo de so
   iniciado a partir de um estado sem desejo ativo, respeitando o atraso (`DelayTimer`) e reiniciando a
   rotação de desejos.
 
+### Coordenação entre fome, perseguição e alimentação
+
+- **Fome garante perseguição apenas com alvo válido**: assim que existe um planeta marcado e um desejo compatível, `EaterHungryState` solicita a transição para perseguição. Caso o planeta seja desmarcado antes da perseguição começar, o estado retorna para fome automaticamente.
+- **Perseguição respeita o sensor antes de mover**: `EaterChasingState` interrompe o deslocamento se o planeta marcado já estiver dentro do sensor de proximidade, congelando a órbita e acionando imediatamente `EaterEatingState`. Caso o planeta seja desmarcado, o estado retorna à fome sem permanecer preso em perseguição. A checagem acontece a cada atualização, garantindo que oscilações eventuais dos eventos do sensor não façam o eater atravessar o alvo.
+- **Alimentação monitora saídas do sensor**: `EaterEatingState` mantém o congelamento da órbita enquanto o planeta permanece detectado. Se o alvo sair do sensor ou deixar de estar marcado, o eater retoma a perseguição (para o novo alvo) ou retorna à fome quando não houver planetas marcados.
+
 ## Serviços Internos
 
 - Desejos: `EaterDesireService` é inicializado sob demanda para acompanhar estados famintos.
@@ -63,3 +69,8 @@ limpo por meio de `EaterBehavior.EndDesires`, garantindo que um novo ciclo de so
 - Detecção e animação: resolvidos sob demanda para apoiar perseguição e morte.
 
 Esse documento será atualizado conforme novos predicados e transições forem introduzidos.
+
+### Congelamento de órbita durante a perseguição
+
+- Assim que o planeta marcado entra no sensor de proximidade do eater, `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando pela órbita enquanto o eater se aproxima, mantendo as animações e translações dependentes do `Transform`.
+- Ao sair do sensor, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.

@@ -24,6 +24,36 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         internal DetectionType PlanetProximityDetectionType => planetProximityDetectionType;
 
+        internal bool IsTransformWithinProximity(Transform target)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            foreach (IDetectable detectable in _activeProximityDetections)
+            {
+                if (detectable == null)
+                {
+                    continue;
+                }
+
+                Transform detectableTransform = ResolveDetectableTransform(detectable);
+                if (detectableTransform == null)
+                {
+                    continue;
+                }
+
+                if (ReferenceEquals(detectableTransform, target) || target.IsChildOf(detectableTransform) ||
+                    detectableTransform.IsChildOf(target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public override void OnDetected(IDetectable detectable, DetectionType detectionType)
         {
             if (detectionType == null)
@@ -152,6 +182,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 $"Planeta {planetMaster.ActorName} desativou defesas contra {detectorName}.",
                 null,
                 this);
+        }
+
+        private static Transform ResolveDetectableTransform(IDetectable detectable)
+        {
+            if (detectable is Component component)
+            {
+                return component.transform;
+            }
+
+            if (detectable?.Owner is Component ownerComponent)
+            {
+                return ownerComponent.transform;
+            }
+
+            return null;
         }
 
         protected override void OnCacheCleared()
