@@ -1,4 +1,6 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.DetectionsSystems;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -27,6 +29,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetMotion _capturedPlanetMotion;
         private float _orbitDistanceOverride;
         private bool _hasOrbitDistanceOverride;
+        private bool _proximityEventsSubscribed;
+        private EventBinding<DetectionExitEvent> _proximityExitBinding;
+        private EaterDetectionController _detectionController;
+        private DetectionType _planetProximityDetectionType;
 
         private float OrbitDistance
         {
@@ -66,6 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasOrbitDistanceOverride = false;
             _orbitDistanceOverride = 0f;
             SubscribeToMarkedPlanets();
+            SubscribeToProximityEvents();
             ConfigureEatingContext();
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
@@ -74,6 +81,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnExit();
             UnsubscribeFromMarkedPlanets();
+            UnsubscribeFromProximityEvents();
             StopTweens();
             ResumeCapturedPlanetOrbit();
             _currentTarget = null;
@@ -268,8 +276,131 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _markedPlanetSubscribed = false;
         }
 
+        private void SubscribeToProximityEvents()
+        {
+            if (_proximityEventsSubscribed)
+            {
+                return;
+            }
+
+            if (!TryResolveProximityDependencies())
+            {
+                return;
+            }
+
+            _proximityExitBinding ??= new EventBinding<DetectionExitEvent>(HandleProximityExit);
+            EventBus<DetectionExitEvent>.Register(_proximityExitBinding);
+            _proximityEventsSubscribed = true;
+        }
+
+        private void UnsubscribeFromProximityEvents()
+        {
+            if (!_proximityEventsSubscribed)
+            {
+                return;
+            }
+
+            if (_proximityExitBinding != null)
+            {
+                EventBus<DetectionExitEvent>.Unregister(_proximityExitBinding);
+            }
+
+            _proximityEventsSubscribed = false;
+        }
+
+        private bool TryResolveProximityDependencies()
+        {
+            if (Behavior == null)
+            {
+                return false;
+            }
+
+            if (_detectionController == null && !Behavior.TryGetDetectionController(out _detectionController))
+            {
+                if (Behavior.ShouldLogStateTransitions)
+                {
+                    DebugUtility.LogWarning(
+                        "EaterDetectionController não encontrado para monitorar saída de proximidade durante a alimentação.",
+                        Behavior,
+                        this);
+                }
+
+                return false;
+            }
+
+            _planetProximityDetectionType = _detectionController.PlanetProximityDetectionType;
+            if (_planetProximityDetectionType == null)
+            {
+                if (Behavior.ShouldLogStateTransitions)
+                {
+                    DebugUtility.LogWarning(
+                        "DetectionType de proximidade de planetas não configurado para o Eater em estado de alimentação.",
+                        Behavior,
+                        this);
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private void HandleProximityExit(DetectionExitEvent exitEvent)
+        {
+            if (!IsRelevantProximityEvent(exitEvent.Detector, exitEvent.DetectionType))
+            {
+                return;
+            }
+
+            Transform detectableTransform = ResolveDetectableTransform(exitEvent.Detectable);
+            if (detectableTransform == null || !ReferenceEquals(detectableTransform, _currentTarget))
+            {
+                return;
+            }
+
+            if (Behavior.ShouldLogStateTransitions)
+            {
+                DebugUtility.Log(
+                    "Planeta alvo saiu do sensor durante a alimentação. Retomando movimento e retornando à fome.",
+                    DebugUtility.Colors.Warning,
+                    context: Behavior,
+                    instance: this);
+            }
+
+            StopTweens();
+            ResumeCapturedPlanetOrbit();
+            _currentTarget = null;
+            RequestHungryFallback("EatingState.ProximityLost");
+        }
+
+        private bool IsRelevantProximityEvent(IDetector detector, DetectionType detectionType)
+        {
+            if (_detectionController == null || _planetProximityDetectionType == null)
+            {
+                return false;
+            }
+
+            if (!ReferenceEquals(detector, _detectionController))
+            {
+                return false;
+            }
+
+            return ReferenceEquals(detectionType, _planetProximityDetectionType);
+        }
+
+        private static Transform ResolveDetectableTransform(IDetectable detectable)
+        {
+            return detectable?.Owner?.Transform;
+        }
+
         private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
         {
+            if (@event.PreviousMarkedPlanet != null)
+            {
+                StopTweens();
+                ResumeCapturedPlanetOrbit();
+            }
+
             if (@event.NewMarkedPlanet != null)
             {
                 return;

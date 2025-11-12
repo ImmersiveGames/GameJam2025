@@ -202,6 +202,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
         {
+            if (@event.PreviousMarkedPlanet != null)
+            {
+                ResetMovementHalt();
+                CancelEatingTransition("ChasingState.MarkingChanged", log: false);
+            }
+
             if (@event.NewMarkedPlanet != null)
             {
                 return;

@@ -10,8 +10,8 @@ poucos.
 | --- | --- |
 | `EaterWanderingState` | Movimento aleatório respeitando limites mínimos/máximos em relação aos jogadores. |
 | `EaterHungryState` | Movimento aleatório com bias mais forte em direção aos jogadores e integração com desejos. |
-| `EaterChasingState` | Persegue o planeta marcado, interrompendo o próprio movimento e o orbital do alvo quando o sensor o captura. |
-| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween com base na distância medida no momento da captura, mantendo o foco visual. |
+| `EaterChasingState` | Persegue o planeta marcado, interrompendo o próprio movimento e o orbital do alvo quando o sensor o captura e retomando a órbita caso o planeta saia do alcance. |
+| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween com base na distância medida no momento da captura, retomando o movimento do planeta imediatamente se ele deixar o sensor ou for trocado/desmarcado. |
 | `EaterDeathState` | Dispara animação de morte ao entrar e restaura idle ao sair. |
 
 O estado inicial é `EaterWanderingState`. Os demais estados ainda não possuem transições automáticas
@@ -39,13 +39,14 @@ momento, os seguintes gatilhos automáticos estão registrados:
 quando a contagem regressiva terminou, enquanto `HungryChasingPredicate` consome o pedido emitido por
 `EaterHungryState` assim que o estado identifica um desejo ativo alinhado a um planeta marcado. Já os
 predicados voltados à perseguição monitoram `EaterChasingState`: `ChasingEatingPredicate` trata o momento em que o planeta é
-capturado para acionar a alimentação, enquanto `ChasingHungryFallbackPredicate` consome a sinalização de perda do alvo. Por fim,
-`EatingHungryFallbackPredicate` mantém a alimentação segura, devolvendo o eater à fome assim que o planeta é desmarcado.
+capturado para acionar a alimentação, garantindo que a órbita do alvo seja pausada e retomada caso o sensor o perca, enquanto `ChasingHungryFallbackPredicate` consome a sinalização de perda do alvo. Por fim,
+`EatingHungryFallbackPredicate` mantém a alimentação segura, devolvendo o eater à fome assim que o planeta é desmarcado e assegurando que qualquer planeta liberado volte a se mover.
 
 Essa lógica garante que apenas as transições relacionadas à marcação de planetas sejam afetadas pelos
-eventos do `PlanetMarkingManager`: o eater só persegue e se alimenta de um planeta ativo, interrompendo
-a órbita do alvo quando o sensor o captura e voltando ao estado faminto assim que o jogador cancela a
-marcação atual.
+eventos do `PlanetMarkingManager`: o eater só persegue e se alimenta de um planeta ativo, interrompe a
+órbita do alvo quando o sensor o captura, mas libera o movimento imediatamente ao perder o contato ou
+quando outro planeta é escolhido, retornando ao estado faminto assim que o jogador cancela a marcação
+atual.
 
 Quando o estado faminto identifica um planeta válido para perseguir, ele suspende a rotação de desejos
 antes de solicitar a transição. Dessa forma, o último desejo selecionado permanece inalterado durante
