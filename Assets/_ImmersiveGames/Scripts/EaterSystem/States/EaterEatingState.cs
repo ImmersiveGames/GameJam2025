@@ -95,6 +95,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
+            if (_pendingHungryFallback)
+            {
+                return;
+            }
+
             Transform target = Behavior.CurrentTargetPlanet;
             if (target != _currentTarget)
             {
@@ -403,9 +408,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (@event.NewMarkedPlanet != null)
             {
+                _currentTarget = null;
+                RequestHungryFallback("EatingState.PlanetReplaced");
                 return;
             }
 
+            _currentTarget = null;
             RequestHungryFallback("EatingState.PlanetUnmarked");
         }
 
