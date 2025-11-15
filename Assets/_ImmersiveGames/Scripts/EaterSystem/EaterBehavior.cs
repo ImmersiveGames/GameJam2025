@@ -56,6 +56,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingMasterForPredicatesLogged;
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
+        private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
+        private NoMarkedPlanetPredicate _noMarkedPlanetPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
@@ -186,11 +188,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
+            IPredicate planetUnmarkedPredicate = EnsurePlanetUnmarkedPredicate();
+            IPredicate noMarkedPlanetPredicate = EnsureNoMarkedPlanetPredicate();
 
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_hungryState, _eatingState, noMarkedPlanetPredicate);
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -214,6 +221,33 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsurePlanetUnmarkedPredicate()
+        {
+            if (_planetUnmarkedPredicate != null)
+            {
+                return _planetUnmarkedPredicate;
+            }
+
+            _planetUnmarkedPredicate = new PlanetUnmarkedPredicate();
+            return _planetUnmarkedPredicate;
+        }
+
+        private IPredicate EnsureNoMarkedPlanetPredicate()
+        {
+            if (_noMarkedPlanetPredicate != null)
+            {
+                return _noMarkedPlanetPredicate;
+            }
+
+            if (_planetMarkingManager == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _noMarkedPlanetPredicate = new NoMarkedPlanetPredicate(_planetMarkingManager);
+            return _noMarkedPlanetPredicate;
         }
 
         private IPredicate EnsureWanderingTimeoutPredicate()
@@ -710,6 +744,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _revivePredicate?.Dispose();
             _revivePredicate = null;
+
+            _planetUnmarkedPredicate?.Dispose();
+            _planetUnmarkedPredicate = null;
         }
 
         private sealed class FalsePredicate : IPredicate
