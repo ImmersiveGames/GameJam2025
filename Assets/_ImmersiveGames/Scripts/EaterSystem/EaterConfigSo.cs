@@ -74,6 +74,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Tipo de dano utilizado ao consumir um planeta.")]
         private DamageType eatingDamageType = DamageType.Physical;
 
+        [Header("Recuperação Durante Alimentação")]
+        [SerializeField, Tooltip("Recurso próprio do eater que será recuperado enquanto ele devora um planeta.")]
+        private ResourceType eatingRecoveryResource = ResourceType.Health;
+        [SerializeField, Tooltip("Quantidade recuperada em cada tique enquanto o eater se alimenta.")]
+        private float eatingRecoveryAmount = 5f;
+        [SerializeField, Tooltip("Intervalo (segundos) entre cada recuperação de recurso durante a alimentação.")]
+        private float eatingRecoveryInterval = 1f;
+
         public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
         public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
         public float DesireDuration => Mathf.Max(desireDurationSeconds, 0.1f);
@@ -100,5 +108,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float EatingDamageInterval => Mathf.Max(0.05f, eatingDamageInterval);
         public ResourceType EatingDamageResource => eatingDamageResource;
         public DamageType EatingDamageType => eatingDamageType;
+        public ResourceType EatingRecoveryResource => eatingRecoveryResource;
+        public float EatingRecoveryAmount => Mathf.Max(0f, eatingRecoveryAmount);
+        public float EatingRecoveryInterval => Mathf.Max(0.05f, eatingRecoveryInterval);
     }
 }
