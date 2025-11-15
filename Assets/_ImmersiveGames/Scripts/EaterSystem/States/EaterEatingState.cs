@@ -21,6 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _currentAngle;
         private EaterAnimationController _animationController;
         private bool _missingAnimationLogged;
+        private PlanetOrbitFreezeController _orbitFreezeController;
 
         private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
 
@@ -50,6 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _animationController.SetEating(true);
             }
 
+            EnsureOrbitFreezeController().TryFreeze(Behavior, Behavior.CurrentTargetPlanet);
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
 
@@ -62,6 +64,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             base.OnExit();
             StopTweens();
+            EnsureOrbitFreezeController().Release();
             _currentTarget = null;
         }
 
@@ -70,6 +73,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.Update();
 
             Transform target = Behavior.CurrentTargetPlanet;
+            EnsureOrbitFreezeController().TryFreeze(Behavior, target);
             if (target != _currentTarget)
             {
                 PrepareTarget(target, restartOrbit: true);
@@ -92,6 +96,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 {
                     DebugUtility.LogWarning<EaterEatingState>("Estado Eating sem planeta marcado.", Behavior);
                 }
+                EnsureOrbitFreezeController().Release();
                 return;
             }
 
@@ -223,6 +228,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _orbitTween.Kill();
             }
             _orbitTween = null;
+        }
+
+        private PlanetOrbitFreezeController EnsureOrbitFreezeController()
+        {
+            return _orbitFreezeController ??= new PlanetOrbitFreezeController(this);
         }
 
         private bool TryEnsureAnimationController()

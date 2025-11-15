@@ -22,6 +22,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
             Behavior?.EndDesires("WanderingState.OnEnter");
             RestartHungryCountdown();
+            RestartMovement(); // Reinicia o deslocamento sempre que o estado de passeio é reativado.
         }
 
         public override void OnExit()
