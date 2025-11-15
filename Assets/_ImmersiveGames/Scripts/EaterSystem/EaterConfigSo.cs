@@ -1,4 +1,6 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -61,6 +63,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
          Tooltip("Distância mínima entre o eater e a superfície do planeta marcado. Também define o raio da órbita ao comer.")]
         private float minimumSurfaceDistance = 1.5f;
 
+        [Header("Comportamento de Alimentação")]
+        [FormerlySerializedAs("biteDamage"), SerializeField,
+         Tooltip("Quantidade de dano aplicada em cada mordida enquanto o eater está no estado de alimentação.")]
+        private float eatingDamageAmount = 10f;
+        [SerializeField, Tooltip("Intervalo (segundos) entre cada aplicação de dano no planeta.")]
+        private float eatingDamageInterval = 1f;
+        [SerializeField, Tooltip("Recurso alvo que receberá o dano das mordidas do eater.")]
+        private ResourceType eatingDamageResource = ResourceType.Health;
+        [SerializeField, Tooltip("Tipo de dano utilizado ao consumir um planeta.")]
+        private DamageType eatingDamageType = DamageType.Physical;
+
         public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
         public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
         public float DesireDuration => Mathf.Max(desireDurationSeconds, 0.1f);
@@ -83,5 +96,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float MinimumChaseDistance => Mathf.Max(0f, minimumSurfaceDistance);
         public float OrbitDuration => Mathf.Max(0.25f, orbitDuration);
         public float OrbitApproachDuration => Mathf.Min(Mathf.Max(0.1f, orbitApproachDuration), OrbitDuration);
+        public float EatingDamageAmount => Mathf.Max(0f, eatingDamageAmount);
+        public float EatingDamageInterval => Mathf.Max(0.05f, eatingDamageInterval);
+        public ResourceType EatingDamageResource => eatingDamageResource;
+        public DamageType EatingDamageType => eatingDamageType;
     }
 }

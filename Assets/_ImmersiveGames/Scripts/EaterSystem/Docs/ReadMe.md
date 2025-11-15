@@ -10,7 +10,7 @@ integrações com animação, desejos e AutoFlow enquanto novas regras são impl
 | `EaterWanderingState` | Movimento aleatório respeitando limites mínimos/máximos em relação aos jogadores. |
 | `EaterHungryState` | Movimento aleatório com bias mais forte em direção aos jogadores e integração com desejos. |
 | `EaterChasingState` | Persegue o planeta atualmente marcado, calcula a distância até a superfície do colisor do alvo e congela a órbita quando atinge o limite configurado. |
-| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween enquanto mantém o foco visual. |
+| `EaterEatingState` | Orbita o planeta marcado utilizando DOTween, aplica dano periódico ao planeta consumido e mantém o foco visual voltado ao alvo. |
 | `EaterDeathState` | Dispara animação de morte ao entrar e restaura idle ao sair. |
 
 O estado inicial é `EaterWanderingState`. Os demais estados ainda não possuem transições automáticas
@@ -19,15 +19,21 @@ além das condições descritas abaixo.
 ## Condições de Transição e Predicados
 
 A configuração da `StateMachineBuilder` acontece em `EaterBehavior.ConfigureTransitions`. No
-momento existem três gatilhos automáticos registrados: morte, revive/reset e a contagem de tempo
-de exploração.
+momento existem gatilhos automáticos para morte, revive/reset, contagem de tempo de exploração,
+marcação/desmarcação de planetas e destruição do planeta consumido.
 
 | Origem | Destino | Predicado | Descrição |
 | --- | --- | --- | --- |
 | Qualquer estado | `EaterDeathState` | `DeathEventPredicate` | Escuta `DeathEvent` do ator configurado no `EaterMaster`. Assim que o evento chega, o predicado passa a retornar verdadeiro e a máquina migra para o estado de morte. |
-| `EaterDeathState` | `EaterWanderingState` | `ReviveEventPredicate` | Escuta `ReviveEvent` e `ResetEvent` do mesmo ator. Quando um desses eventos é recebido, o predicado retorna verdadeiro uma única vez para reativar o estado de exploração. O predicado também consome o evento e volta a aguardar o próximo sinal. |
+| `EaterDeathState` | `EaterWanderingState` | `ReviveEventPredicate` | Escuta `ReviveEvent` e `ResetEvent` do mesmo ator. Quando um desses eventos é recebido, o predicado retorna verdadeiro uma única vez para reativar o estado de exploração e volta a aguardar o próximo sinal. |
 | `EaterWanderingState` | `EaterHungryState` | `WanderingTimeoutPredicate` | Inicia uma contagem regressiva (configurada em `EaterConfigSo.WanderingHungryDelay`) toda vez que o estado de exploração é ativado. Quando o tempo termina o predicado retorna verdadeiro uma única vez e habilita a transição para o estado faminto. |
-| `EaterHungryState` | `EaterChasingState` | `HungryChasingPredicate` | Observa o estado faminto para detectar quando existe um desejo ativo **e** há um planeta marcado. Assim que ambos os critérios são verdadeiros — seja porque o eater entrou faminto com um planeta já marcado, seja porque o jogador marcou durante a fome — o predicado consome o pedido de transição emitido pelo estado e aciona a perseguição do planeta selecionado pelo jogador. |
+| `EaterHungryState` | `EaterChasingState` | `HungryChasingPredicate` | Observa o estado faminto para detectar quando existe um desejo ativo **e** há um planeta marcado. Assim que ambos os critérios são verdadeiros o predicado consome o pedido de transição emitido pelo estado e aciona a perseguição do planeta selecionado pelo jogador. |
+| `EaterChasingState` | `EaterEatingState` | `ChasingEatingPredicate` | Disparado quando a perseguição alcança a distância mínima (`EaterConfigSo.MinimumChaseDistance`), garantindo que somente a perseguição possa iniciar o estado de alimentação. |
+| `EaterChasingState` | `EaterHungryState` | `PlanetUnmarkedPredicate` | Reage a eventos de desmarcação enquanto o eater persegue um alvo, retornando imediatamente ao estado faminto. |
+| `EaterEatingState` | `EaterHungryState` | `PlanetUnmarkedPredicate` | Caso o planeta marcado seja trocado ou desmarcado durante a alimentação, o eater interrompe o consumo e volta para o estado faminto mantendo o desejo atual ativo. |
+| `EaterEatingState` | `EaterWanderingState` | `EatingWanderingPredicate` | Ativado quando o planeta consumido morre. O eater limpa a âncora registrada, solta o congelamento da órbita e retorna ao passeio. |
+
+
 
 `DeathEventPredicate`, `ReviveEventPredicate`, `WanderingTimeoutPredicate` e `HungryChasingPredicate`
 estão definidos em `EaterPredicates.cs`. Os dois primeiros utilizam `FilteredEventBus` para limitar os
@@ -78,3 +84,9 @@ Esse documento será atualizado conforme novos predicados e transições forem i
 
 - Assim que o planeta marcado entra no raio mínimo definido pela configuração (`EaterConfigSo.MinimumChaseDistance`), `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Esse mesmo raio é reutilizado por `EaterEatingState` como distância de órbita, garantindo continuidade visual entre a perseguição e a animação de alimentação.
 - Ao retomar a perseguição ou se afastar além do limite mínimo, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.
+
+### Alimentação e dano periódico
+
+- `EaterEatingState` aplica dano periódico ao planeta marcado com base em `EaterConfigSo.EatingDamageAmount`, `EatingDamageInterval`, `EatingDamageResource` e `EatingDamageType`.
+- Cada mordida bem-sucedida dispara `EaterMaster.OnEventEaterBite`, mantém a animação configurada em `EaterAnimationController` e respeita o raio mínimo registrado durante a perseguição.
+- Se o planeta consumido morrer durante o processo, o estado limpa a âncora registrada, libera o congelamento da órbita e solicita o retorno imediato para `EaterWanderingState` por meio de `EatingWanderingPredicate`.

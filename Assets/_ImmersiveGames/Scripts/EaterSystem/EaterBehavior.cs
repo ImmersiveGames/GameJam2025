@@ -58,6 +58,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private HungryChasingPredicate _hungryChasingPredicate;
         private ChasingEatingPredicate _chasingEatingPredicate;
         private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
+        private EatingWanderingPredicate _eatingWanderingPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
@@ -200,6 +201,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.At(_chasingState, _eatingState, chasingEatingPredicate);
             builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
             builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -250,6 +252,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _planetUnmarkedPredicate = new PlanetUnmarkedPredicate();
             return _planetUnmarkedPredicate;
+        }
+
+        private IPredicate EnsureEatingWanderingPredicate()
+        {
+            if (_eatingWanderingPredicate != null)
+            {
+                return _eatingWanderingPredicate;
+            }
+
+            if (_eatingState == null || _wanderingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _eatingWanderingPredicate = new EatingWanderingPredicate(_eatingState);
+            return _eatingWanderingPredicate;
         }
 
         private IPredicate EnsureWanderingTimeoutPredicate()
@@ -810,6 +828,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _planetUnmarkedPredicate?.Dispose();
             _planetUnmarkedPredicate = null;
+            _eatingWanderingPredicate = null;
         }
 
         private sealed class FalsePredicate : IPredicate

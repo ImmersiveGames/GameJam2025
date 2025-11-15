@@ -197,6 +197,25 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
     /// <summary>
+    /// Predicado que permite ao estado de alimentação solicitar retorno imediato ao passeio.
+    /// Utilizado quando o planeta alvo é destruído durante o processo de consumo.
+    /// </summary>
+    internal sealed class EatingWanderingPredicate : IPredicate
+    {
+        private readonly EaterEatingState _eatingState;
+
+        public EatingWanderingPredicate(EaterEatingState eatingState)
+        {
+            _eatingState = eatingState ?? throw new ArgumentNullException(nameof(eatingState));
+        }
+
+        public bool Evaluate()
+        {
+            return _eatingState.ConsumeWanderingTransitionRequest();
+        }
+    }
+
+    /// <summary>
     /// Predicado baseado em eventos de desmarcação de planeta.
     /// Aciona a transição sempre que qualquer planeta é desmarcado via PlanetMarkingManager.
     /// </summary>
