@@ -46,10 +46,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
 
-            if (TryEnsureAnimationController())
-            {
-                _animationController.SetEating(true);
-            }
+            UpdateEatingAnimation(isEating: true);
 
             EnsureOrbitFreezeController().TryFreeze(Behavior, Behavior.CurrentTargetPlanet);
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
@@ -57,11 +54,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public override void OnExit()
         {
-            if (TryEnsureAnimationController())
-            {
-                _animationController.SetEating(false);
-            }
-
+            UpdateEatingAnimation(isEating: false);
+            
             base.OnExit();
             StopTweens();
             EnsureOrbitFreezeController().Release();
@@ -264,6 +258,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return false;
+        }
+
+        private void UpdateEatingAnimation(bool isEating)
+        {
+            if (!TryEnsureAnimationController())
+            {
+                return;
+            }
+
+            _animationController.SetEating(isEating);
         }
     }
 }
