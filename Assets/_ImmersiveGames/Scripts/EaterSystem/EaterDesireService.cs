@@ -68,47 +68,35 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (_timer.IsRunning || !_timer.IsFinished)
+            float overflow = 0f;
+            float deltaTime = Mathf.Max(Time.deltaTime, 0f);
+
+            if (_timer.IsRunning && deltaTime > 0f)
+            {
+                overflow = AdvanceTimer(deltaTime);
+            }
+
+            if (!_timer.IsFinished)
             {
                 return;
             }
 
-            switch (_phase)
+            do
             {
-                case DesireCyclePhase.WaitingInitialDelay:
-                    DebugUtility.LogVerbose(
-                        "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
-                        context: _master,
-                        instance: this);
-                    _phase = DesireCyclePhase.Active;
-                    PickNextDesire();
+                bool shouldContinue = ProcessTimerCompletion();
+                if (!shouldContinue || _timer == null)
+                {
                     break;
-                case DesireCyclePhase.WaitingResumeDelay:
-                    float resumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
-                    _scheduledResumeDuration = 0f;
-                    string resumeLabel = _currentDesire.HasValue ? _currentDesire.Value.ToString() : "Desconhecido";
+                }
 
-                    DebugUtility.LogVerbose(
-                        $"▶️ Desejo {resumeLabel} retomado após atraso inicial por {resumeDuration:F2}s.",
-                        context: _master,
-                        instance: this);
+                if (overflow <= Mathf.Epsilon)
+                {
+                    break;
+                }
 
-                    BeginActiveCycle(resumeDuration);
-                    break;
-                case DesireCyclePhase.Active:
-                    if (HasActiveDesire)
-                    {
-                        DebugUtility.LogVerbose(
-                            $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
-                            context: _master,
-                            instance: this);
-                        PickNextDesire();
-                    }
-                    break;
-                case DesireCyclePhase.Inactive:
-                default:
-                    break;
+                overflow = AdvanceTimerWithOverflow(overflow);
             }
+            while (_timer != null && _timer.IsFinished);
         }
 
         public bool Start()
@@ -236,6 +224,73 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 instance: this);
 
             return true;
+        }
+
+        private float AdvanceTimer(float deltaTime)
+        {
+            if (_timer == null || deltaTime <= 0f || !_timer.IsRunning)
+            {
+                return 0f;
+            }
+
+            float remaining = Mathf.Max(_timer.CurrentTime, 0f);
+            _timer.Tick(deltaTime);
+            return Mathf.Max(deltaTime - remaining, 0f);
+        }
+
+        private float AdvanceTimerWithOverflow(float overflow)
+        {
+            if (_timer == null || overflow <= Mathf.Epsilon || !_timer.IsRunning)
+            {
+                return 0f;
+            }
+
+            float remaining = Mathf.Max(_timer.CurrentTime, 0f);
+            float consumption = Mathf.Min(overflow, remaining + Mathf.Epsilon);
+            _timer.Tick(consumption);
+            return Mathf.Max(overflow - consumption, 0f);
+        }
+
+        private bool ProcessTimerCompletion()
+        {
+            switch (_phase)
+            {
+                case DesireCyclePhase.WaitingInitialDelay:
+                    DebugUtility.LogVerbose(
+                        "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
+                        context: _master,
+                        instance: this);
+                    _phase = DesireCyclePhase.Active;
+                    PickNextDesire();
+                    break;
+                case DesireCyclePhase.WaitingResumeDelay:
+                    float resumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
+                    _scheduledResumeDuration = 0f;
+                    string resumeLabel = _currentDesire.HasValue ? _currentDesire.Value.ToString() : "Desconhecido";
+
+                    DebugUtility.LogVerbose(
+                        $"▶️ Desejo {resumeLabel} retomado após atraso inicial por {resumeDuration:F2}s.",
+                        context: _master,
+                        instance: this);
+
+                    BeginActiveCycle(resumeDuration);
+                    break;
+                case DesireCyclePhase.Active:
+                    if (HasActiveDesire)
+                    {
+                        DebugUtility.LogVerbose(
+                            $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
+                            context: _master,
+                            instance: this);
+                        PickNextDesire();
+                    }
+                    break;
+                case DesireCyclePhase.Inactive:
+                default:
+                    return false;
+            }
+
+            return _timer != null && _timer.IsRunning;
         }
 
         private void EnsureTimerInstance()
