@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             SubscribeToMarkedPlanets();
             EvaluateChasingOpportunity("HungryState.OnEnter");
             Behavior?.ResumeAutoFlow("HungryState.OnEnter");
+            RestartMovement(); // Garante que o deslocamento seja retomado ao entrar no estado de fome.
         }
 
         public override void OnExit()
