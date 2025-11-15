@@ -1,9 +1,3 @@
-using _ImmersiveGames.Scripts.DetectionsSystems;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.EaterSystem.Detections;
-using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.PlanetSystems.Core;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -14,16 +8,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterChasingState : EaterBehaviorState
     {
+        private const float DistanceTolerance = 0.05f;
+
         private bool _reportedMissingTarget;
-        private bool _proximityEventsSubscribed;
-        private EventBinding<DetectionEnterEvent> _proximityEnterBinding;
-        private EventBinding<DetectionExitEvent> _proximityExitBinding;
-        private EaterDetectionController _detectionController;
-        private DetectionType _planetProximityDetectionType;
         private bool _haltMovement;
         private Transform _haltedTarget;
-        private PlanetMotion _haltedPlanetMotion;
-        private bool _loggedMissingPlanetMotion;
+        private PlanetOrbitFreezeController _orbitFreezeController;
+        private bool _pendingEatingTransition;
+        private Collider _cachedTargetCollider;
+        private Transform _cachedColliderOwner;
+        private Collider _eaterCollider;
+        private bool _preserveOrbitAnchor;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -32,13 +27,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
-            SubscribeToProximityEvents();
+            _pendingEatingTransition = false;
+            _preserveOrbitAnchor = false;
         }
 
         public override void OnExit()
         {
-            UnsubscribeFromProximityEvents();
-            ResetMovementHalt();
+            ResetMovementHalt(_preserveOrbitAnchor);
+            ClearEatingTransitionRequest();
             base.OnExit();
         }
 
@@ -50,6 +46,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (target == null)
             {
                 ResetMovementHalt();
+                ClearEatingTransitionRequest();
+                ClearTargetColliderCache();
+                Behavior?.ClearOrbitAnchor();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogVerbose(
@@ -63,32 +62,91 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _reportedMissingTarget = false;
 
-            if (_haltMovement)
+            Collider targetCollider = ResolveTargetCollider(target);
+            Vector3 targetCenter = ResolveTargetCenter(target, targetCollider);
+            Behavior.LookAt(targetCenter);
+
+            if (_haltMovement && !ReferenceEquals(target, _haltedTarget))
             {
-                if (ReferenceEquals(target, _haltedTarget))
+                ResetMovementHalt();
+                ClearEatingTransitionRequest();
+            }
+
+            Vector3 toCenter = targetCenter - Transform.position;
+            Vector3 fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+            Vector3 centerDirection = toCenter.sqrMagnitude > Mathf.Epsilon
+                ? toCenter.normalized
+                : fallbackForward;
+
+            Vector3 surfaceDirection = centerDirection;
+            float surfaceDistance = CalculateSurfaceDistance(target, targetCollider, toCenter, centerDirection, out surfaceDirection);
+
+            if (surfaceDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                surfaceDirection = centerDirection;
+            }
+
+            float stopDistance = ResolveStopDistance();
+            float tolerance = Mathf.Max(DistanceTolerance, stopDistance * 0.1f);
+
+            if (stopDistance > 0f && surfaceDistance < stopDistance - tolerance)
+            {
+                Vector3 retreatDirection = surfaceDistance < 0f ? surfaceDirection : -surfaceDirection;
+                if (retreatDirection.sqrMagnitude <= Mathf.Epsilon)
                 {
-                    Behavior.LookAt(target.position);
-                    return;
+                    retreatDirection = -centerDirection;
                 }
 
-                ResetMovementHalt();
+                retreatDirection = retreatDirection.sqrMagnitude > Mathf.Epsilon
+                    ? retreatDirection.normalized
+                    : fallbackForward;
+
+                float correction = stopDistance - surfaceDistance;
+                Behavior.Translate(retreatDirection * correction, respectPlayerBounds: false);
+                surfaceDistance = stopDistance;
+                surfaceDirection = centerDirection;
             }
 
-            Vector3 toTarget = target.position - Transform.position;
-            float distance = toTarget.magnitude;
-            if (distance <= Mathf.Epsilon)
+            if (stopDistance <= 0f)
             {
+                ChaseTarget(target, targetCenter, surfaceDirection, Mathf.Max(surfaceDistance, 0f), 0f);
                 return;
             }
 
-            float stopDistance = Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
-            if (stopDistance > 0f && distance <= stopDistance)
+            if (surfaceDistance <= stopDistance + tolerance)
             {
-                Behavior.LookAt(target.position);
+                HaltChasingTarget(target, targetCenter, surfaceDirection, stopDistance, surfaceDistance);
+                RequestEatingTransition();
                 return;
             }
 
-            Vector3 direction = toTarget.normalized;
+            ChaseTarget(target, targetCenter, surfaceDirection, surfaceDistance, stopDistance);
+        }
+
+        internal bool ConsumeEatingTransitionRequest()
+        {
+            if (!_pendingEatingTransition)
+            {
+                return false;
+            }
+
+            _pendingEatingTransition = false;
+            return true;
+        }
+
+        private float ResolveStopDistance()
+        {
+            return Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
+        }
+
+        private void ChaseTarget(Transform target, Vector3 targetCenter, Vector3 direction, float distance, float stopDistance)
+        {
+            if (_haltMovement)
+            {
+                ResumeChasingTarget();
+            }
+
+            Behavior.LookAt(targetCenter);
             float speed = Behavior.GetChaseSpeed();
             float travelDistance = speed * Time.deltaTime;
 
@@ -100,6 +158,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (travelDistance <= 0f)
             {
+                HaltChasingTarget(target, targetCenter, direction, stopDistance, distance);
+                RequestEatingTransition();
                 return;
             }
 
@@ -107,143 +167,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
         }
 
-        private void SubscribeToProximityEvents()
-        {
-            if (_proximityEventsSubscribed)
-            {
-                return;
-            }
-
-            if (!TryResolveProximityDependencies())
-            {
-                return;
-            }
-
-            _proximityEnterBinding ??= new EventBinding<DetectionEnterEvent>(HandleProximityEnter);
-            _proximityExitBinding ??= new EventBinding<DetectionExitEvent>(HandleProximityExit);
-
-            EventBus<DetectionEnterEvent>.Register(_proximityEnterBinding);
-            EventBus<DetectionExitEvent>.Register(_proximityExitBinding);
-            _proximityEventsSubscribed = true;
-        }
-
-        private void UnsubscribeFromProximityEvents()
-        {
-            if (!_proximityEventsSubscribed)
-            {
-                return;
-            }
-
-            if (_proximityEnterBinding != null)
-            {
-                EventBus<DetectionEnterEvent>.Unregister(_proximityEnterBinding);
-            }
-
-            if (_proximityExitBinding != null)
-            {
-                EventBus<DetectionExitEvent>.Unregister(_proximityExitBinding);
-            }
-
-            _proximityEventsSubscribed = false;
-        }
-
-        private bool TryResolveProximityDependencies()
-        {
-            if (Behavior == null)
-            {
-                return false;
-            }
-
-            if (_detectionController == null && !Behavior.TryGetDetectionController(out _detectionController))
-            {
-                DebugUtility.LogWarning(
-                    "EaterDetectionController não encontrado para monitorar eventos de proximidade.",
-                    Behavior,
-                    this);
-                return false;
-            }
-
-            _planetProximityDetectionType = _detectionController.PlanetProximityDetectionType;
-            if (_planetProximityDetectionType == null)
-            {
-                DebugUtility.LogWarning(
-                    "DetectionType de proximidade de planetas não configurado para o Eater.",
-                    Behavior,
-                    this);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void HandleProximityEnter(DetectionEnterEvent enterEvent)
-        {
-            if (!IsRelevantProximityEvent(enterEvent.Detector, enterEvent.DetectionType))
-            {
-                return;
-            }
-
-            if (!TryResolveMarkedPlanet(enterEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
-            {
-                return;
-            }
-
-            string planetName = GetPlanetDisplayName(planetActor);
-            DebugUtility.Log(
-                $"Planeta {planetName} entrou no detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.Info,
-                Behavior,
-                this);
-
-            Transform planetTransform = markedPlanet.transform;
-            if (ReferenceEquals(Behavior.CurrentTargetPlanet, planetTransform))
-            {
-                HaltChasingTarget(planetTransform);
-            }
-        }
-
-        private void HandleProximityExit(DetectionExitEvent exitEvent)
-        {
-            if (!IsRelevantProximityEvent(exitEvent.Detector, exitEvent.DetectionType))
-            {
-                return;
-            }
-
-            if (!TryResolveMarkedPlanet(exitEvent.Detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet))
-            {
-                return;
-            }
-
-            string planetName = GetPlanetDisplayName(planetActor);
-            DebugUtility.Log(
-                $"Planeta {planetName} saiu do detector de proximidade durante a perseguição.",
-                DebugUtility.Colors.Info,
-                Behavior,
-                this);
-
-            Transform planetTransform = markedPlanet.transform;
-            if (ReferenceEquals(_haltedTarget, planetTransform))
-            {
-                ResumeChasingTarget();
-            }
-        }
-
-        private bool IsRelevantProximityEvent(IDetector detector, DetectionType detectionType)
-        {
-            if (_detectionController == null || _planetProximityDetectionType == null)
-            {
-                return false;
-            }
-
-            if (!ReferenceEquals(detector, _detectionController))
-            {
-                return false;
-            }
-
-            return ReferenceEquals(detectionType, _planetProximityDetectionType);
-        }
-
-        private void HaltChasingTarget(Transform target)
+        private void HaltChasingTarget(Transform target, Vector3 targetCenter, Vector3 surfaceDirection, float stopDistance, float surfaceDistance)
         {
             if (!ReferenceEquals(_haltedTarget, target))
             {
@@ -252,165 +176,216 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _haltMovement = true;
-            RequestPlanetOrbitFreeze(target);
+            Behavior.LookAt(targetCenter);
+            EnsureOrbitFreezeController().TryFreeze(Behavior, target);
+            AlignToMinimumDistance(surfaceDirection, stopDistance, surfaceDistance);
+            RegisterOrbitAnchor(target, targetCenter, stopDistance, surfaceDistance);
         }
 
         private void ResumeChasingTarget()
         {
             ResetMovementHalt();
+            ClearEatingTransitionRequest();
         }
 
-        private void ResetMovementHalt()
+        private void ResetMovementHalt(bool preserveOrbitAnchor = false)
         {
-            ReleasePlanetOrbitFreeze();
+            if (_haltMovement)
+            {
+                EnsureOrbitFreezeController().Release();
+            }
+
+            if (!preserveOrbitAnchor && Behavior != null && _haltedTarget != null)
+            {
+                Behavior.ClearOrbitAnchor(_haltedTarget);
+            }
+
             _haltMovement = false;
             _haltedTarget = null;
-            _loggedMissingPlanetMotion = false;
+            _preserveOrbitAnchor = false;
         }
 
-        private void RequestPlanetOrbitFreeze(Transform planetTransform)
+        private void ClearTargetColliderCache()
         {
-            if (planetTransform == null)
+            _cachedTargetCollider = null;
+            _cachedColliderOwner = null;
+        }
+
+        private PlanetOrbitFreezeController EnsureOrbitFreezeController()
+        {
+            return _orbitFreezeController ??= new PlanetOrbitFreezeController(this);
+        }
+
+        private void RequestEatingTransition()
+        {
+            if (_pendingEatingTransition)
             {
                 return;
             }
 
-            PlanetMotion planetMotion = ResolvePlanetMotion(planetTransform);
-            if (planetMotion == null)
-            {
-                if (!_loggedMissingPlanetMotion)
-                {
-                    DebugUtility.LogWarning(
-                        "Planeta marcado não possui PlanetMotion para congelar órbita durante a perseguição.",
-                        Behavior,
-                        this);
-                    _loggedMissingPlanetMotion = true;
-                }
+            _pendingEatingTransition = true;
+            _preserveOrbitAnchor = true;
 
-                return;
-            }
-
-            _loggedMissingPlanetMotion = false;
-
-            if (!ReferenceEquals(_haltedPlanetMotion, planetMotion))
-            {
-                ReleasePlanetOrbitFreeze();
-                _haltedPlanetMotion = planetMotion;
-            }
-
-            _haltedPlanetMotion.RequestOrbitFreeze(this);
-        }
-
-        private void ReleasePlanetOrbitFreeze()
-        {
-            if (_haltedPlanetMotion == null)
+            if (!Behavior.ShouldLogStateTransitions)
             {
                 return;
             }
 
-            _haltedPlanetMotion.ReleaseOrbitFreeze(this);
-            _haltedPlanetMotion = null;
+            DebugUtility.Log(
+                "Distância mínima alcançada. Solicitando transição para o estado de alimentação.",
+                DebugUtility.Colors.CrucialInfo,
+                Behavior,
+                this);
         }
 
-        private static PlanetMotion ResolvePlanetMotion(Transform planetTransform)
+        private void ClearEatingTransitionRequest()
         {
-            if (planetTransform == null)
+            _pendingEatingTransition = false;
+            _preserveOrbitAnchor = false;
+        }
+
+        private Collider ResolveTargetCollider(Transform target)
+        {
+            if (target == null)
             {
+                ClearTargetColliderCache();
                 return null;
             }
 
-            if (planetTransform.TryGetComponent(out PlanetMotion directMotion))
+            if (ReferenceEquals(_cachedColliderOwner, target) && _cachedTargetCollider != null)
             {
-                return directMotion;
+                return _cachedTargetCollider;
             }
 
-            return planetTransform.GetComponentInParent<PlanetMotion>();
+            Collider collider = target.GetComponent<Collider>();
+            if (collider == null)
+            {
+                collider = target.GetComponentInChildren<Collider>();
+            }
+
+            _cachedColliderOwner = target;
+            _cachedTargetCollider = collider;
+            return collider;
         }
 
-        private bool TryResolveMarkedPlanet(IDetectable detectable, out IPlanetActor planetActor, out MarkPlanet markedPlanet)
+        private Collider EnsureEaterCollider()
         {
-            markedPlanet = null;
-
-            if (!TryResolvePlanetActor(detectable, out planetActor))
+            if (_eaterCollider != null)
             {
-                return false;
+                return _eaterCollider;
             }
 
-            return TryResolveMarkPlanet(planetActor, out markedPlanet);
+            return Behavior != null && Behavior.TryGetComponent(out _eaterCollider)
+                ? _eaterCollider
+                : null;
         }
 
-        private static bool TryResolvePlanetActor(IDetectable detectable, out IPlanetActor planetActor)
+        /// <summary>
+        /// Calcula a distância até a superfície efetiva do planeta marcado considerando o colisor disponível.
+        /// Quando possível usa <see cref="Physics.ComputePenetration"/> para detectar sobreposição e gerar um vetor de separação.
+        /// </summary>
+        private float CalculateSurfaceDistance(
+            Transform target,
+            Collider targetCollider,
+            Vector3 toCenter,
+            Vector3 centerDirection,
+            out Vector3 directionToSurface)
         {
-            planetActor = null;
+            directionToSurface = centerDirection;
 
-            if (detectable == null)
+            if (target == null)
             {
-                return false;
+                return 0f;
             }
 
-            if (detectable.Owner is IPlanetActor ownerPlanetActor)
+            Vector3 normalizedCenterDirection = centerDirection.sqrMagnitude > Mathf.Epsilon
+                ? centerDirection
+                : (Transform != null ? Transform.forward : Vector3.forward);
+
+            if (targetCollider == null || !targetCollider.enabled)
             {
-                planetActor = ownerPlanetActor;
-                return true;
+                directionToSurface = normalizedCenterDirection;
+                return toCenter.magnitude;
             }
 
-            if (detectable is Component component)
-            {
-                if (component.TryGetComponent(out ownerPlanetActor))
-                {
-                    planetActor = ownerPlanetActor;
-                    return true;
-                }
+            Collider eaterCollider = EnsureEaterCollider();
+            Vector3 eaterReference = eaterCollider != null
+                ? eaterCollider.bounds.center
+                : Transform.position;
 
-                ownerPlanetActor = component.GetComponentInParent<IPlanetActor>();
-                if (ownerPlanetActor != null)
-                {
-                    planetActor = ownerPlanetActor;
-                    return true;
-                }
+            Vector3 closestPoint = targetCollider.ClosestPoint(eaterReference);
+            Vector3 toClosest = closestPoint - eaterReference;
+            if (toClosest.sqrMagnitude > Mathf.Epsilon)
+            {
+                directionToSurface = toClosest.normalized;
+                return toClosest.magnitude;
             }
 
-            return false;
+            if (eaterCollider != null && eaterCollider.enabled && Physics.ComputePenetration(
+                    eaterCollider,
+                    eaterCollider.transform.position,
+                    eaterCollider.transform.rotation,
+                    targetCollider,
+                    targetCollider.transform.position,
+                    targetCollider.transform.rotation,
+                    out Vector3 separationDirection,
+                    out float separationDistance))
+            {
+                directionToSurface = separationDirection.sqrMagnitude > Mathf.Epsilon
+                    ? separationDirection.normalized
+                    : normalizedCenterDirection;
+                return -separationDistance;
+            }
+
+            directionToSurface = normalizedCenterDirection;
+            return 0f;
         }
 
-        private static bool TryResolveMarkPlanet(IPlanetActor planetActor, out MarkPlanet markedPlanet)
+        private static Vector3 ResolveTargetCenter(Transform target, Collider targetCollider)
         {
-            markedPlanet = null;
-
-            Transform planetTransform = planetActor?.PlanetActor?.Transform;
-            if (planetTransform == null)
+            if (targetCollider != null)
             {
-                return false;
+                return targetCollider.bounds.center;
             }
 
-            if (!planetTransform.TryGetComponent(out markedPlanet))
-            {
-                markedPlanet = planetTransform.GetComponentInParent<MarkPlanet>();
-            }
-
-            if (markedPlanet == null)
-            {
-                return false;
-            }
-
-            return markedPlanet.IsMarked;
+            return target != null ? target.position : Vector3.zero;
         }
 
-        private static string GetPlanetDisplayName(IPlanetActor planetActor)
+        private void AlignToMinimumDistance(Vector3 surfaceDirection, float stopDistance, float surfaceDistance)
         {
-            if (planetActor?.PlanetActor == null)
+            if (Behavior == null || stopDistance <= 0f)
             {
-                return "desconhecido";
+                return;
             }
 
-            string actorName = planetActor.PlanetActor.ActorName;
-            if (!string.IsNullOrWhiteSpace(actorName))
+            Vector3 fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+            Vector3 direction = surfaceDirection.sqrMagnitude > Mathf.Epsilon
+                ? surfaceDirection.normalized
+                : fallbackForward.sqrMagnitude > Mathf.Epsilon
+                    ? fallbackForward.normalized
+                    : Vector3.forward;
+
+            float difference = surfaceDistance - stopDistance;
+            if (Mathf.Abs(difference) <= DistanceTolerance)
             {
-                return actorName;
+                return;
             }
 
-            Transform transform = planetActor.PlanetActor.Transform;
-            return transform != null ? transform.name : "desconhecido";
+            Behavior.Translate(direction * difference, respectPlayerBounds: false);
+        }
+
+        private void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float stopDistance, float surfaceDistance)
+        {
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            float referenceSurfaceDistance = stopDistance > 0f
+                ? Mathf.Max(0f, stopDistance)
+                : Mathf.Max(0f, surfaceDistance);
+
+            Behavior.RegisterOrbitAnchor(target, targetCenter, referenceSurfaceDistance);
         }
     }
 }
