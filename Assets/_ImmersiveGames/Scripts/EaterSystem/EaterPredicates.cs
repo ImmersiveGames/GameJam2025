@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 
@@ -219,27 +218,4 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 
-    /// <summary>
-    /// Predicado simples que identifica a ausência de qualquer planeta marcado.
-    /// Utiliza o PlanetMarkingManager para consultar o estado atual da marcação.
-    /// </summary>
-    internal sealed class NoMarkedPlanetPredicate : IPredicate
-    {
-        private readonly PlanetMarkingManager _planetMarkingManager;
-
-        public NoMarkedPlanetPredicate(PlanetMarkingManager planetMarkingManager)
-        {
-            _planetMarkingManager = planetMarkingManager ?? throw new ArgumentNullException(nameof(planetMarkingManager));
-        }
-
-        public bool Evaluate()
-        {
-            if (_planetMarkingManager == null)
-            {
-                return false;
-            }
-
-            return !_planetMarkingManager.HasMarkedPlanet;
-        }
-    }
 }
