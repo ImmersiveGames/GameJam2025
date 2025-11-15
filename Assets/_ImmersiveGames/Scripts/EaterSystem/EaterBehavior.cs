@@ -61,6 +61,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
+        private Transform _lastOrbitTarget;
+        private float _lastOrbitRadius = -1f;
+        private float _lastSurfaceStopDistance = -1f;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -445,6 +448,56 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             animationController = _animationController;
             return animationController != null;
+        }
+
+        /// <summary>
+        /// Registra informações sobre o último ponto em que a perseguição foi interrompida.
+        /// Mantém a distância radial calculada a partir do centro do planeta e a separação da superfície.
+        /// </summary>
+        internal void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float surfaceStopDistance)
+        {
+            if (target == null)
+            {
+                ClearOrbitAnchor();
+                return;
+            }
+
+            _lastOrbitTarget = target;
+            _lastSurfaceStopDistance = Mathf.Max(0f, surfaceStopDistance);
+            float computedRadius = Vector3.Distance(transform.position, targetCenter);
+            _lastOrbitRadius = Mathf.Max(computedRadius, 0f);
+        }
+
+        /// <summary>
+        /// Obtém o último ponto de parada registrado para o planeta informado.
+        /// </summary>
+        internal bool TryGetOrbitAnchor(Transform target, out float orbitRadius, out float surfaceStopDistance)
+        {
+            if (ReferenceEquals(target, _lastOrbitTarget) && _lastOrbitRadius > 0f)
+            {
+                orbitRadius = _lastOrbitRadius;
+                surfaceStopDistance = _lastSurfaceStopDistance;
+                return true;
+            }
+
+            orbitRadius = 0f;
+            surfaceStopDistance = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// Limpa o ponto de parada registrado, evitando reaproveitar dados obsoletos.
+        /// </summary>
+        internal void ClearOrbitAnchor(Transform target = null)
+        {
+            if (target != null && !ReferenceEquals(target, _lastOrbitTarget))
+            {
+                return;
+            }
+
+            _lastOrbitTarget = null;
+            _lastOrbitRadius = -1f;
+            _lastSurfaceStopDistance = -1f;
         }
 
         internal bool ResumeAutoFlow(string reason)

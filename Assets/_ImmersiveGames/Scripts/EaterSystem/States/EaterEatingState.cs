@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float DefaultOrbitDistance = 3f;
         private const float DefaultOrbitDuration = 4f;
         private const float DefaultOrbitApproachDuration = 0.5f;
+        private const float OrbitDistanceTolerance = 0.05f;
 
         private Tween _approachTween;
         private Tween _orbitTween;
@@ -22,8 +23,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private EaterAnimationController _animationController;
         private bool _missingAnimationLogged;
         private PlanetOrbitFreezeController _orbitFreezeController;
-
-        private float OrbitDistance => Config?.OrbitDistance ?? DefaultOrbitDistance;
+        private float _currentOrbitRadius;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -95,7 +95,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _radialBasis = ResolveRadialBasis();
-            Vector3 desiredPosition = _currentTarget.position + _radialBasis * OrbitDistance;
+            _currentOrbitRadius = ResolveOrbitRadius(_currentTarget);
+            Vector3 desiredPosition = _currentTarget.position + _radialBasis * _currentOrbitRadius;
             float distanceToDesired = Vector3.Distance(Transform.position, desiredPosition);
 
             if (distanceToDesired > 0.05f)
@@ -122,6 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _radialBasis = ResolveRadialBasis();
+            _currentOrbitRadius = ResolveOrbitRadius(_currentTarget);
             _currentAngle = 0f;
 
             _orbitTween = DOTween.To(() => _currentAngle, angle =>
@@ -163,7 +165,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Vector3 tangent = Vector3.Cross(axis, radial).normalized;
 
             float radians = angle * Mathf.Deg2Rad;
-            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * OrbitDistance;
+            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * _currentOrbitRadius;
             Transform.position = _currentTarget.position + offset;
         }
 
@@ -227,6 +229,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetOrbitFreezeController EnsureOrbitFreezeController()
         {
             return _orbitFreezeController ??= new PlanetOrbitFreezeController(this);
+        }
+
+        private float ResolveOrbitRadius(Transform target)
+        {
+            float fallback = Config?.OrbitDistance ?? DefaultOrbitDistance;
+
+            if (Behavior == null || target == null)
+            {
+                return fallback;
+            }
+
+            if (Behavior.TryGetOrbitAnchor(target, out float orbitRadius, out _))
+            {
+                if (orbitRadius > OrbitDistanceTolerance)
+                {
+                    return orbitRadius;
+                }
+
+                fallback = Mathf.Max(orbitRadius, fallback);
+            }
+
+            float currentDistance = Vector3.Distance(Transform.position, target.position);
+            if (currentDistance > OrbitDistanceTolerance)
+            {
+                return currentDistance;
+            }
+
+            return fallback;
         }
 
         private bool TryEnsureAnimationController()
