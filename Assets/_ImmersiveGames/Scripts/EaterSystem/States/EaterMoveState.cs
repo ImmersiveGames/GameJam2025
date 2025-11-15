@@ -25,8 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
-            _directionTimer = DirectionInterval;
-            ChooseNewDirection(force: true);
+            RestartMovement();
         }
 
         public override void Update()
@@ -90,6 +89,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             Behavior.RotateTowards(_currentDirection, deltaTime);
             Behavior.Move(_currentDirection, _currentSpeed, deltaTime, ShouldRespectPlayerBounds);
+        }
+
+        protected void RestartMovement()
+        {
+            ChooseNewDirection(force: true);
         }
 
         private void ChooseNewDirection(bool force = false)

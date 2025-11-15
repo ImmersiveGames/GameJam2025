@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.States;
+using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 
@@ -176,4 +177,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return _hungryState.ConsumeChasingTransitionRequest();
         }
     }
+
+    /// <summary>
+    /// Predicado baseado em eventos de desmarcação de planeta.
+    /// Aciona a transição sempre que qualquer planeta é desmarcado via PlanetMarkingManager.
+    /// </summary>
+    internal sealed class PlanetUnmarkedPredicate : IPredicate, IDisposable
+    {
+        private readonly EventBinding<PlanetUnmarkedEvent> _unmarkedBinding;
+        private bool _shouldTrigger;
+
+        public PlanetUnmarkedPredicate()
+        {
+            _unmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
+            EventBus<PlanetUnmarkedEvent>.Register(_unmarkedBinding);
+        }
+
+        public bool Evaluate()
+        {
+            if (!_shouldTrigger)
+            {
+                return false;
+            }
+
+            _shouldTrigger = false;
+            return true;
+        }
+
+        public void Dispose()
+        {
+            if (_unmarkedBinding != null)
+            {
+                EventBus<PlanetUnmarkedEvent>.Unregister(_unmarkedBinding);
+            }
+        }
+
+        private void HandlePlanetUnmarked(PlanetUnmarkedEvent planetUnmarkedEvent)
+        {
+            _shouldTrigger = true;
+        }
+    }
+
 }
