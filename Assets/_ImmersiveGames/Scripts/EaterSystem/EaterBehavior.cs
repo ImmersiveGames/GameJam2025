@@ -9,9 +9,10 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -461,7 +462,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_animationController == null)
             {
-                TryGetComponent(out _animationController);
+                string actorId = _master != null ? _master.ActorId : null;
+                if (!string.IsNullOrEmpty(actorId)
+                    && DependencyManager.Instance.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                {
+                    _animationController = resolvedController;
+                }
+                else if (!TryGetComponent(out _animationController))
+                {
+                    _animationController = null;
+                }
             }
 
             animationController = _animationController;

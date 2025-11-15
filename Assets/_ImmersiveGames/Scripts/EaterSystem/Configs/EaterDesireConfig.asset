@@ -13,21 +13,28 @@ MonoBehaviour:
   m_Name: EaterDesireConfig
   m_EditorClassIdentifier: 
   maxRecentDesires: 3
-  desireThreshold: 0.9
-  delayTimer: 2
+  desireDurationSeconds: 10
+  unavailableDesireDurationMultiplier: 0.5
+  availableDesireWeight: 3
+  perPlanetAvailableWeight: 1
+  unavailableDesireWeight: 0.5
+  recentDesireWeightMultiplier: 0.35
+  initialDesireDelaySeconds: 2
   desireSelectedSound: {fileID: 11400000, guid: 04449c5613ee426f947003fca010a017, type: 2}
-  satiationResourceType: 3
-  desireChangeInterval: 10
   directionChangeInterval: 4
   minSpeed: 2.5
   maxSpeed: 7
   multiplierChase: 2
   rotationSpeed: 5
-  wanderingDuration: 15
+  wanderingMinDistanceFromPlayer: 5
   wanderingMaxDistanceFromPlayer: 25
   wanderingReturnBias: 0.35
-  desiredHungerRestored: 50
-  nonDesiredHungerRestored: 25
-  desiredHealthRestored: 30
-  biteDamage: 20
-  minimumChaseDistance: 1.5
+  wanderingHungryDelay: 20
+  hungryPlayerAttraction: 0.75
+  orbitDuration: 4
+  orbitApproachDuration: 0.5
+  minimumSurfaceDistance: 3
+  eatingDamageAmount: 10
+  eatingDamageInterval: 1
+  eatingDamageResource: 0
+  eatingDamageType: 0
