@@ -59,6 +59,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float CurrentDesireRemainingTime => _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
         public int CurrentDesireAvailableCount => _currentDesireAvailableCount;
         public float CurrentDesireWeight => _currentDesireWeight;
+        public bool HasLockedDesire => !_active && _desireLocked && _currentDesire.HasValue;
 
         public void Update()
         {
@@ -126,6 +127,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 PickNextDesire();
             }
 
+            return true;
+        }
+
+        public bool TryResume()
+        {
+            if (_active)
+            {
+                return false;
+            }
+
+            if (!HasLockedDesire)
+            {
+                return false;
+            }
+
+            EnsureTimerInstance();
+
+            _active = true;
+            _waitingDelay = false;
+            _desireLocked = false;
+
+            float resumeDuration = Mathf.Max(_currentDuration, 0f);
+            if (resumeDuration <= 0f)
+            {
+                float fallback = Mathf.Max(_config.DesireDuration, 0.1f);
+                resumeDuration = Mathf.Max(fallback, 0.05f);
+            }
+
+            RestartTimer(resumeDuration);
+
+            if (_currentDesire.HasValue)
+            {
+                DebugUtility.LogVerbose(
+                    $"▶️ Desejo {_currentDesire.Value} retomado por {resumeDuration:F2}s.",
+                    context: _master,
+                    instance: this);
+            }
+
+            NotifyDesireChanged();
             return true;
         }
 

@@ -38,22 +38,27 @@ marcado.
 
 Quando o estado faminto identifica um planeta válido para perseguir, ele suspende a rotação de desejos
 antes de solicitar a transição. Dessa forma, o último desejo selecionado permanece inalterado durante
-`EaterChasingState` e `EaterEatingState`. Assim que o eater retorna para `EaterWanderingState` o desejo é
-limpo por meio de `EaterBehavior.EndDesires`, garantindo que um novo ciclo de sorteios só comece quando
-`EaterHungryState` for ativado novamente (respeitando o atraso configurado).
+`EaterChasingState` e `EaterEatingState`. Sempre que o eater retorna para `EaterHungryState` sem ter
+limpado o desejo (por exemplo, porque o planeta foi desmarcado), o serviço retoma o desejo anterior
+imediatamente, reiniciando o cronômetro com a duração completa configurada para aquele recurso.
+Somente ao voltar para `EaterWanderingState` é que o desejo é efetivamente limpo por meio de
+`EaterBehavior.EndDesires` — situação em que o ciclo volta ao estado inicial e o atraso configurado é
+respeitado novamente.
 
 ### Fluxo dos desejos entre estados
 
-- **Seleção exclusiva no estado faminto**: somente `EaterHungryState` ativa `EaterDesireService.Start`,
-  aguardando o atraso configurado antes de iniciar novos sorteios.
+- **Seleção exclusiva no estado faminto**: somente `EaterHungryState` controla a rotação de desejos,
+  acionando `EaterDesireService.Start` apenas quando não há desejo armazenado (primeira ativação ou
+  após limpeza).
 - **Persistência fora da fome**: ao solicitar perseguição, o estado faminto chama
   `EaterBehavior.SuspendDesires`, preservando o desejo atual para ser consumido durante os estados de
   perseguição e alimentação.
+- **Retomada sem atraso**: se houver um desejo pausado (casos de perseguição ou alimentação interrompida),
+  `EaterBehavior.BeginDesires` chama `EaterDesireService.TryResume`, recolocando o desejo anterior em
+  atividade e reiniciando o temporizador com a duração completa daquele recurso.
 - **Limpeza ao voltar a vagar**: toda entrada em `EaterWanderingState` chama `EaterBehavior.EndDesires`,
-  encerrando o serviço (caso ainda esteja ativo) e zerando o desejo armazenado.
-- **Reinício controlado**: quando `EaterHungryState` é ativado novamente, um novo ciclo de sorteios é
-  iniciado a partir de um estado sem desejo ativo, respeitando o atraso (`DelayTimer`) e reiniciando a
-  rotação de desejos.
+  encerrando o serviço (caso ainda esteja ativo) e zerando o desejo armazenado. O próximo retorno ao estado
+  faminto reinicia o ciclo a partir de um estado sem desejo, respeitando o atraso (`DelayTimer`).
 
 ## Serviços Internos
 

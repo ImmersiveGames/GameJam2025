@@ -628,6 +628,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
+            bool resumed = _desireService.TryResume();
+            if (resumed)
+            {
+                if (logStateTransitions)
+                {
+                    DebugUtility.Log($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+
+                return true;
+            }
+
             bool started = _desireService.Start();
             if (logStateTransitions && started)
             {
