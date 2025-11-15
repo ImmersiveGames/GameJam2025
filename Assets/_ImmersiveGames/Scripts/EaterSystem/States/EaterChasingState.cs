@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Collider _cachedTargetCollider;
         private Transform _cachedColliderOwner;
         private Collider _eaterCollider;
+        private bool _preserveOrbitAnchor;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -27,11 +28,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
             _pendingEatingTransition = false;
+            _preserveOrbitAnchor = false;
         }
 
         public override void OnExit()
         {
-            ResetMovementHalt();
+            ResetMovementHalt(_preserveOrbitAnchor);
             ClearEatingTransitionRequest();
             base.OnExit();
         }
@@ -46,6 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 ResetMovementHalt();
                 ClearEatingTransitionRequest();
                 ClearTargetColliderCache();
+                Behavior?.ClearOrbitAnchor();
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogVerbose(
@@ -112,7 +115,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (surfaceDistance <= stopDistance + tolerance)
             {
-                HaltChasingTarget(target, targetCenter);
+                HaltChasingTarget(target, targetCenter, surfaceDirection, stopDistance, surfaceDistance);
                 RequestEatingTransition();
                 return;
             }
@@ -155,7 +158,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (travelDistance <= 0f)
             {
-                HaltChasingTarget(target, targetCenter);
+                HaltChasingTarget(target, targetCenter, direction, stopDistance, distance);
                 RequestEatingTransition();
                 return;
             }
@@ -164,7 +167,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
         }
 
-        private void HaltChasingTarget(Transform target, Vector3 targetCenter)
+        private void HaltChasingTarget(Transform target, Vector3 targetCenter, Vector3 surfaceDirection, float stopDistance, float surfaceDistance)
         {
             if (!ReferenceEquals(_haltedTarget, target))
             {
@@ -175,6 +178,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _haltMovement = true;
             Behavior.LookAt(targetCenter);
             EnsureOrbitFreezeController().TryFreeze(Behavior, target);
+            AlignToMinimumDistance(surfaceDirection, stopDistance, surfaceDistance);
+            RegisterOrbitAnchor(target, targetCenter, stopDistance, surfaceDistance);
         }
 
         private void ResumeChasingTarget()
@@ -183,15 +188,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             ClearEatingTransitionRequest();
         }
 
-        private void ResetMovementHalt()
+        private void ResetMovementHalt(bool preserveOrbitAnchor = false)
         {
             if (_haltMovement)
             {
                 EnsureOrbitFreezeController().Release();
             }
 
+            if (!preserveOrbitAnchor && Behavior != null && _haltedTarget != null)
+            {
+                Behavior.ClearOrbitAnchor(_haltedTarget);
+            }
+
             _haltMovement = false;
             _haltedTarget = null;
+            _preserveOrbitAnchor = false;
         }
 
         private void ClearTargetColliderCache()
@@ -213,6 +224,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _pendingEatingTransition = true;
+            _preserveOrbitAnchor = true;
 
             if (!Behavior.ShouldLogStateTransitions)
             {
@@ -229,6 +241,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private void ClearEatingTransitionRequest()
         {
             _pendingEatingTransition = false;
+            _preserveOrbitAnchor = false;
         }
 
         private Collider ResolveTargetCollider(Transform target)
@@ -336,6 +349,43 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return target != null ? target.position : Vector3.zero;
+        }
+
+        private void AlignToMinimumDistance(Vector3 surfaceDirection, float stopDistance, float surfaceDistance)
+        {
+            if (Behavior == null || stopDistance <= 0f)
+            {
+                return;
+            }
+
+            Vector3 fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+            Vector3 direction = surfaceDirection.sqrMagnitude > Mathf.Epsilon
+                ? surfaceDirection.normalized
+                : fallbackForward.sqrMagnitude > Mathf.Epsilon
+                    ? fallbackForward.normalized
+                    : Vector3.forward;
+
+            float difference = surfaceDistance - stopDistance;
+            if (Mathf.Abs(difference) <= DistanceTolerance)
+            {
+                return;
+            }
+
+            Behavior.Translate(direction * difference, respectPlayerBounds: false);
+        }
+
+        private void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float stopDistance, float surfaceDistance)
+        {
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            float referenceSurfaceDistance = stopDistance > 0f
+                ? Mathf.Max(0f, stopDistance)
+                : Mathf.Max(0f, surfaceDistance);
+
+            Behavior.RegisterOrbitAnchor(target, targetCenter, referenceSurfaceDistance);
         }
     }
 }
