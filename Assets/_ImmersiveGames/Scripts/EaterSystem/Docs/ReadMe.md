@@ -88,4 +88,6 @@ Esse documento será atualizado conforme novos predicados e transições forem i
 
 - `EaterEatingState` aplica dano periódico ao planeta marcado com base em `EaterConfigSo.EatingDamageAmount`, `EatingDamageInterval`, `EatingDamageResource` e `EatingDamageType`.
 - Cada mordida bem-sucedida dispara `EaterMaster.OnEventEaterBite`, mantém a animação configurada em `EaterAnimationController` e respeita o raio mínimo registrado durante a perseguição.
+- Enquanto o eater devora um planeta, ele também recupera recursos próprios em intervalos configuráveis (`EaterConfigSo.EatingRecoveryResource`, `EatingRecoveryAmount` e `EatingRecoveryInterval`).
+- Ao consumir completamente um planeta compatível com o desejo atual, o eater recupera instantaneamente `EaterConfigSo.EatingCompatibleDevourHealAmount` de Health por meio do `DamageSystem`, garantindo integração com resistências e eventos de dano já existentes.
 - Se o planeta consumido morrer durante o processo, o estado limpa a âncora registrada, libera o congelamento da órbita e solicita o retorno imediato para `EaterWanderingState` por meio de `EatingWanderingPredicate`.

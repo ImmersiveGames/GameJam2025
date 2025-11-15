@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
@@ -53,6 +54,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
         private bool _missingResourceSystemLogged;
+        private IDamageReceiver _selfDamageReceiver;
+        private bool _missingSelfDamageReceiverLogged;
 
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
@@ -503,6 +506,69 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             audioEmitter = _audioEmitter;
             return audioEmitter != null;
+        }
+
+        internal bool TryApplySelfHealing(ResourceType resourceType, float amount,
+            DamageType healDamageType = DamageType.Pure)
+        {
+            if (amount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (!TryGetSelfDamageReceiver(out IDamageReceiver damageReceiver))
+            {
+                if (logStateTransitions && !_missingSelfDamageReceiverLogged)
+                {
+                    DebugUtility.LogWarning(
+                        "DamageReceiver do eater não encontrado. Não foi possível recuperar recursos via DamageSystem.",
+                        this,
+                        this);
+                    _missingSelfDamageReceiverLogged = true;
+                }
+
+                return false;
+            }
+
+            _missingSelfDamageReceiverLogged = false;
+
+            float clampedAmount = Mathf.Max(0f, amount);
+            if (clampedAmount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            string attackerId = _master != null ? _master.ActorId : string.Empty;
+            string targetId = damageReceiver.GetReceiverId();
+            Vector3 hitPosition = transform.position;
+
+            var context = new DamageContext(attackerId, targetId, -clampedAmount, resourceType, healDamageType, hitPosition);
+            damageReceiver.ReceiveDamage(context);
+            return true;
+        }
+
+        private bool TryGetSelfDamageReceiver(out IDamageReceiver damageReceiver)
+        {
+            if (_selfDamageReceiver == null)
+            {
+                if (_master != null)
+                {
+                    string actorId = _master.ActorId;
+                    if (!string.IsNullOrEmpty(actorId)
+                        && DependencyManager.Instance.TryGetForObject(actorId, out IDamageReceiver resolvedReceiver))
+                    {
+                        _selfDamageReceiver = resolvedReceiver;
+                    }
+                }
+
+                if (_selfDamageReceiver == null)
+                {
+                    TryGetComponent(out _selfDamageReceiver);
+                }
+            }
+
+            damageReceiver = _selfDamageReceiver;
+            return damageReceiver != null;
         }
 
         /// <summary>

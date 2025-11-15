@@ -26,6 +26,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float DefaultRecoveryInterval = 1f;
         private const ResourceType DefaultRecoveryResource = ResourceType.Health;
         private const float IncompatibleRecoveryMultiplier = 0.5f;
+        private const float DefaultDevourHealAmount = 25f;
 
         private Tween _approachTween;
         private Tween _orbitTween;
@@ -54,6 +55,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetResources _evaluatedDesiredResource;
         private PlanetResources _evaluatedPlanetResource;
         private bool _missingAudioEmitterLogged;
+        private bool _hasAppliedDevourReward;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -85,6 +87,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentDamageReceiver = null;
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
+            _hasAppliedDevourReward = false;
 
             if (Master != null)
             {
@@ -122,6 +125,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _recoveryTimer = 0f;
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
+            _hasAppliedDevourReward = false;
         }
 
         public override void Update()
@@ -167,6 +171,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 StopTweens();
                 _hasReportedDestroyedPlanet = false;
                 _hasReportedDevouredCompatibility = false;
+                _hasAppliedDevourReward = false;
             }
 
             if (target == null)
@@ -769,6 +774,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     this);
             }
 
+            TryApplyDevourReward(isCompatible);
+
             ResetCachedTargetResourceData();
         }
 
@@ -921,6 +928,53 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _cachedTargetResourceAsset = null;
             _cachedTargetResourceType = default;
             _hasCachedTargetResource = false;
+        }
+
+        private void TryApplyDevourReward(bool isCompatible)
+        {
+            if (_hasAppliedDevourReward)
+            {
+                return;
+            }
+
+            _hasAppliedDevourReward = true;
+
+            if (!isCompatible)
+            {
+                return;
+            }
+
+            float healAmount = Config != null
+                ? Config.EatingCompatibleDevourHealAmount
+                : DefaultDevourHealAmount;
+
+            if (healAmount <= Mathf.Epsilon || Behavior == null)
+            {
+                return;
+            }
+
+            bool restored = Behavior.TryApplySelfHealing(ResourceType.Health, healAmount);
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            if (restored)
+            {
+                DebugUtility.Log<EaterEatingState>(
+                    $"Recuperação aplicada ao eater ao devorar planeta compatível: +{healAmount:0.##} {ResourceType.Health}.",
+                    DebugUtility.Colors.Success,
+                    Behavior,
+                    this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<EaterEatingState>(
+                    $"Falha ao recuperar {ResourceType.Health} ao devorar planeta compatível. Valor esperado: {healAmount:0.##}.",
+                    Behavior,
+                    this);
+            }
         }
 
         private void RequestWanderingTransition(string reason)

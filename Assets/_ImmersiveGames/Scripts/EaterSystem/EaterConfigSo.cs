@@ -84,6 +84,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Intervalo (segundos) entre cada recuperação de recurso durante a alimentação.")]
         private float eatingRecoveryInterval = 1f;
 
+        [Header("Recompensas ao Devorar")]
+        [SerializeField, Tooltip("Quantidade de Health recuperada instantaneamente quando o eater devora um planeta compatível com o desejo atual.")]
+        private float eatingCompatibleDevourHealAmount = 25f;
+
         public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
         public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
         public float DesireDuration => Mathf.Max(desireDurationSeconds, 0.1f);
@@ -114,5 +118,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public ResourceType EatingRecoveryResource => eatingRecoveryResource;
         public float EatingRecoveryAmount => Mathf.Max(0f, eatingRecoveryAmount);
         public float EatingRecoveryInterval => Mathf.Max(0.05f, eatingRecoveryInterval);
+        public float EatingCompatibleDevourHealAmount => Mathf.Max(0f, eatingCompatibleDevourHealAmount);
     }
 }
