@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using ImprovedTimers;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     {
         private Vector3 _currentDirection;
         private float _currentSpeed;
-        private float _directionTimer;
+        private CountdownTimer _directionTimer;
 
         protected EaterMoveState(string stateName) : base(stateName)
         {
@@ -32,11 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            _directionTimer += Time.deltaTime;
-            if (_directionTimer >= DirectionInterval)
-            {
-                ChooseNewDirection();
-            }
+            TickDirectionTimer(Time.deltaTime);
 
             Move(Time.deltaTime);
         }
@@ -98,8 +95,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void ChooseNewDirection(bool force = false)
         {
-            _directionTimer = 0f;
-
             Vector3 direction = EvaluateDirection();
             Vector3 adjusted = AdjustDirection(direction);
             if (adjusted.sqrMagnitude > Mathf.Epsilon)
@@ -117,6 +112,67 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _currentSpeed = Mathf.Max(EvaluateSpeed(), 0f);
             OnDirectionChosen(_currentDirection, _currentSpeed, force);
+
+            ScheduleNextDirectionChange();
+        }
+
+        private void TickDirectionTimer(float deltaTime)
+        {
+            if (_directionTimer == null)
+            {
+                return;
+            }
+
+            float interval = Mathf.Max(DirectionInterval, 0.1f);
+            float remainingBeforeTick = _directionTimer.CurrentTime;
+
+            _directionTimer.Tick(deltaTime);
+
+            if (!_directionTimer.IsFinished)
+            {
+                return;
+            }
+
+            float overflow = Mathf.Max(deltaTime - remainingBeforeTick, 0f);
+            ChooseNewDirection();
+
+            if (_directionTimer == null)
+            {
+                return;
+            }
+
+            interval = Mathf.Max(DirectionInterval, 0.1f);
+            while (overflow >= interval)
+            {
+                overflow -= interval;
+                ChooseNewDirection();
+
+                if (_directionTimer == null)
+                {
+                    return;
+                }
+
+                interval = Mathf.Max(DirectionInterval, 0.1f);
+            }
+
+            if (overflow > Mathf.Epsilon)
+            {
+                _directionTimer.Tick(overflow);
+            }
+        }
+
+        private void ScheduleNextDirectionChange()
+        {
+            float interval = Mathf.Max(DirectionInterval, 0.1f);
+
+            if (_directionTimer == null)
+            {
+                _directionTimer = new CountdownTimer(interval);
+            }
+
+            _directionTimer.Stop();
+            _directionTimer.Reset(interval);
+            _directionTimer.Start();
         }
     }
 }

@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using ImprovedTimers;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const ResourceType DefaultRecoveryResource = ResourceType.Health;
         private const float IncompatibleRecoveryMultiplier = 0.5f;
         private const float DefaultDevourHealAmount = 25f;
+        private const float MinimumTimerInterval = 0.05f;
 
         private Tween _approachTween;
         private Tween _orbitTween;
@@ -39,8 +41,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _currentOrbitRadius;
         private PlanetsMaster _activePlanet;
         private IDamageReceiver _currentDamageReceiver;
-        private float _damageTimer;
-        private float _recoveryTimer;
+        private CountdownTimer _damageTimer;
+        private CountdownTimer _recoveryTimer;
         private bool _pendingWanderingTransition;
         private bool _missingDamageReceiverLogged;
         private bool _hasReportedDestroyedPlanet;
@@ -79,8 +81,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
 
             _pendingWanderingTransition = false;
-            _damageTimer = 0f;
-            _recoveryTimer = 0f;
+            StopDamageTimer();
+            StopRecoveryTimer();
             _hasReportedDestroyedPlanet = false;
             _hasReportedDevouredCompatibility = false;
             _missingDamageReceiverLogged = false;
@@ -114,6 +116,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             EnsureOrbitFreezeController().Release();
             UpdatePlanetMaster(null);
 
+            StopDamageTimer();
+            StopRecoveryTimer();
             _currentDamageReceiver = null;
             _currentTarget = null;
             _pendingWanderingTransition = false;
@@ -122,7 +126,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _cachedTargetResourceAsset = null;
             _cachedTargetResourceType = default;
             _hasCachedTargetResource = false;
-            _recoveryTimer = 0f;
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
@@ -191,8 +194,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 EnsureOrbitFreezeController().Release();
                 UpdatePlanetMaster(null);
                 _currentDamageReceiver = null;
-                _damageTimer = 0f;
-                _recoveryTimer = 0f;
+                StopDamageTimer();
+                StopRecoveryTimer();
                 _missingDamageReceiverLogged = false;
                 ResetCompatibility();
                 return;
@@ -203,8 +206,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             UpdatePlanetMaster(resolvedPlanet);
             _currentDamageReceiver = ResolveDamageReceiver(_currentTarget);
             _missingDamageReceiverLogged = false;
-            _damageTimer = 0f;
-            _recoveryTimer = 0f;
+            RearmDamageTimer();
+            RearmRecoveryTimer();
 
             if (targetChanged)
             {
@@ -434,27 +437,46 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             TryResolveTargetCompatibility();
 
-            float interval = Config != null ? Config.EatingDamageInterval : DefaultDamageInterval;
-            if (interval <= Mathf.Epsilon)
+            float interval = ResolveDamageInterval();
+
+            if (_damageTimer == null)
             {
-                interval = DefaultDamageInterval;
+                RearmDamageTimer(interval);
+                return;
             }
 
-            _damageTimer += Mathf.Max(deltaTime, 0f);
-            if (_damageTimer < interval)
+            float safeDelta = Mathf.Max(deltaTime, 0f);
+            float remainingBeforeTick = _damageTimer.CurrentTime;
+            _damageTimer.Tick(safeDelta);
+
+            if (!_damageTimer.IsFinished)
             {
                 return;
             }
 
-            while (_damageTimer >= interval)
+            float overflow = Mathf.Max(safeDelta - remainingBeforeTick, 0f);
+            float availableTime = overflow + interval;
+
+            RearmDamageTimer(interval);
+
+            while (availableTime >= interval)
             {
                 if (!TryApplyBiteDamage())
                 {
-                    _damageTimer = 0f;
+                    RearmDamageTimer(interval);
                     return;
                 }
 
-                _damageTimer -= interval;
+                availableTime -= interval;
+
+                float nextInterval = ResolveDamageInterval();
+                RearmDamageTimer(nextInterval);
+                interval = nextInterval;
+            }
+
+            if (_damageTimer != null && availableTime > Mathf.Epsilon)
+            {
+                _damageTimer.Tick(availableTime);
             }
         }
 
@@ -462,33 +484,65 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             if (!TryGetRecoveryConfig(out ResourceType resourceType, out float recoveryAmount, out float recoveryInterval))
             {
+                StopRecoveryTimer();
                 return;
             }
 
-            _recoveryTimer += Mathf.Max(deltaTime, 0f);
-            if (_recoveryTimer < recoveryInterval)
+            recoveryInterval = Mathf.Max(recoveryInterval, MinimumTimerInterval);
+
+            if (_recoveryTimer == null)
+            {
+                RearmRecoveryTimer(recoveryInterval);
+                return;
+            }
+
+            float safeDelta = Mathf.Max(deltaTime, 0f);
+            float remainingBeforeTick = _recoveryTimer.CurrentTime;
+            _recoveryTimer.Tick(safeDelta);
+
+            if (!_recoveryTimer.IsFinished)
             {
                 return;
             }
 
-            bool hasCompatibility = TryEvaluateCompatibility(out bool isCompatible);
-            float multiplier = hasCompatibility && isCompatible ? 1f : IncompatibleRecoveryMultiplier;
-            float adjustedAmount = recoveryAmount * multiplier;
-            if (adjustedAmount <= Mathf.Epsilon)
-            {
-                _recoveryTimer = 0f;
-                return;
-            }
+            float overflow = Mathf.Max(safeDelta - remainingBeforeTick, 0f);
+            float availableTime = overflow + recoveryInterval;
 
-            while (_recoveryTimer >= recoveryInterval)
+            RearmRecoveryTimer(recoveryInterval);
+
+            while (availableTime >= recoveryInterval)
             {
-                if (!TryApplyRecovery(resourceType, adjustedAmount))
+                bool hasCompatibility = TryEvaluateCompatibility(out bool isCompatible);
+                float multiplier = hasCompatibility && isCompatible ? 1f : IncompatibleRecoveryMultiplier;
+                float adjustedAmount = recoveryAmount * multiplier;
+
+                if (adjustedAmount <= Mathf.Epsilon)
                 {
-                    _recoveryTimer = 0f;
+                    RearmRecoveryTimer(recoveryInterval);
                     return;
                 }
 
-                _recoveryTimer -= recoveryInterval;
+                if (!TryApplyRecovery(resourceType, adjustedAmount))
+                {
+                    RearmRecoveryTimer(recoveryInterval);
+                    return;
+                }
+
+                availableTime -= recoveryInterval;
+
+                if (!TryGetRecoveryConfig(out resourceType, out recoveryAmount, out float nextInterval))
+                {
+                    StopRecoveryTimer();
+                    return;
+                }
+
+                recoveryInterval = Mathf.Max(nextInterval, MinimumTimerInterval);
+                RearmRecoveryTimer(recoveryInterval);
+            }
+
+            if (_recoveryTimer != null && availableTime > Mathf.Epsilon)
+            {
+                _recoveryTimer.Tick(availableTime);
             }
         }
 
@@ -544,6 +598,85 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return Behavior.TryRestoreResource(resourceType, amount);
+        }
+
+        private float ResolveDamageInterval()
+        {
+            float interval = Config != null ? Config.EatingDamageInterval : DefaultDamageInterval;
+            return Mathf.Max(interval, MinimumTimerInterval);
+        }
+
+        private void RearmDamageTimer()
+        {
+            RearmDamageTimer(ResolveDamageInterval());
+        }
+
+        private void RearmDamageTimer(float interval)
+        {
+            interval = Mathf.Max(interval, MinimumTimerInterval);
+
+            if (_damageTimer == null)
+            {
+                _damageTimer = new CountdownTimer(interval);
+            }
+
+            _damageTimer.Stop();
+            _damageTimer.Reset(interval);
+            _damageTimer.Start();
+        }
+
+        private void StopDamageTimer()
+        {
+            if (_damageTimer == null)
+            {
+                return;
+            }
+
+            _damageTimer.Stop();
+            _damageTimer = null;
+        }
+
+        private void RearmRecoveryTimer()
+        {
+            if (TryGetRecoveryConfig(out _, out _, out float interval))
+            {
+                RearmRecoveryTimer(interval);
+            }
+            else
+            {
+                StopRecoveryTimer();
+            }
+        }
+
+        private void RearmRecoveryTimer(float interval)
+        {
+            interval = Mathf.Max(interval, MinimumTimerInterval);
+
+            if (interval <= Mathf.Epsilon)
+            {
+                StopRecoveryTimer();
+                return;
+            }
+
+            if (_recoveryTimer == null)
+            {
+                _recoveryTimer = new CountdownTimer(interval);
+            }
+
+            _recoveryTimer.Stop();
+            _recoveryTimer.Reset(interval);
+            _recoveryTimer.Start();
+        }
+
+        private void StopRecoveryTimer()
+        {
+            if (_recoveryTimer == null)
+            {
+                return;
+            }
+
+            _recoveryTimer.Stop();
+            _recoveryTimer = null;
         }
 
         private bool TryGetRecoveryConfig(out ResourceType resourceType, out float amount, out float interval)
@@ -668,10 +801,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Behavior?.ClearOrbitAnchor(_currentTarget);
             UpdatePlanetMaster(null);
             _currentDamageReceiver = null;
-            _damageTimer = 0f;
+            StopDamageTimer();
             _missingDamageReceiverLogged = false;
             _currentTarget = null;
-            _recoveryTimer = 0f;
+            StopRecoveryTimer();
             ResetCompatibility();
 
             RequestWanderingTransition("PlanetDestroyed");
