@@ -1,5 +1,6 @@
 using DG.Tweening;
 using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
@@ -487,6 +488,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
+            ReportDevouredPlanetCompatibility();
+
             if (Behavior.ShouldLogStateTransitions && !_hasReportedDestroyedPlanet)
             {
                 DebugUtility.Log(
@@ -508,6 +511,53 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             StopTweens();
             EnsureOrbitFreezeController().Release();
+        }
+
+        private void ReportDevouredPlanetCompatibility()
+        {
+            if (_activePlanet == null || Behavior == null)
+            {
+                return;
+            }
+
+            PlanetResourcesSo resourceData = _activePlanet.AssignedResource;
+            if (resourceData == null)
+            {
+                DebugUtility.LogWarning<EaterEatingState>(
+                    "Planeta devorado não possui recurso configurado. Não foi possível verificar compatibilidade com o desejo.",
+                    Behavior,
+                    this);
+                return;
+            }
+
+            PlanetResources planetResource = resourceData.ResourceType;
+            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            {
+                DebugUtility.Log<EaterEatingState>(
+                    $"Planeta devorado possui recurso {planetResource}, porém o eater não tinha um desejo ativo para comparar.",
+                    DebugUtility.Colors.Info,
+                    Behavior,
+                    this);
+                return;
+            }
+
+            bool isCompatible = planetResource == desiredResource;
+            if (isCompatible)
+            {
+                DebugUtility.Log<EaterEatingState>(
+                    $"Planeta devorado é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
+                    DebugUtility.Colors.Success,
+                    Behavior,
+                    this);
+            }
+            else
+            {
+                DebugUtility.LogWarning<EaterEatingState>(
+                    $"Planeta devorado NÃO é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
+                    Behavior,
+                    this);
+            }
         }
 
         private void RequestWanderingTransition(string reason)
