@@ -56,8 +56,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Tempo em segundos para se aproximar da distância de órbita ao iniciar o estado de alimentação.")]
         private float orbitApproachDuration = 0.5f;
 
-        [Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
-        public float minimumChaseDistance = 1.5f;
+        [SerializeField, Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
+        private float minimumChaseDistance = 1.5f;
 
         public int MaxRecentDesires => maxRecentDesires;
         public float DelayTimer => delayTimer;

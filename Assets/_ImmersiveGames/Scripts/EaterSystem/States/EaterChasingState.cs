@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _reportedMissingTarget;
         private bool _haltMovement;
         private Transform _haltedTarget;
-        private float _stopDistance;
         private PlanetOrbitFreezeController _orbitFreezeController;
         private bool _pendingEatingTransition;
         private Collider _cachedTargetCollider;
@@ -27,7 +26,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
-            _stopDistance = Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
             _pendingEatingTransition = false;
         }
 
@@ -85,7 +83,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 surfaceDirection = centerDirection;
             }
 
-            float stopDistance = _stopDistance;
+            float stopDistance = ResolveStopDistance();
             float tolerance = Mathf.Max(DistanceTolerance, stopDistance * 0.1f);
 
             if (stopDistance > 0f && surfaceDistance < stopDistance - tolerance)
@@ -131,6 +129,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _pendingEatingTransition = false;
             return true;
+        }
+
+        private float ResolveStopDistance()
+        {
+            return Mathf.Max(Config?.MinimumChaseDistance ?? 0f, 0f);
         }
 
         private void ChaseTarget(Transform target, Vector3 targetCenter, Vector3 direction, float distance, float stopDistance)
