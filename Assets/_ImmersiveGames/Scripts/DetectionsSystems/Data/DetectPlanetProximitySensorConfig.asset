@@ -16,7 +16,7 @@ MonoBehaviour:
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  radius: 18
+  radius: 10
   minFrequency: 0.05
   maxFrequency: 0.2
   debugMode: 1
