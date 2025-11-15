@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -9,8 +10,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Configurações de Desejos do Eater")]
         [SerializeField, Tooltip("Número máximo de recursos recentes a evitar repetição")]
         private int maxRecentDesires = 3;
-        [SerializeField, Tooltip("Tempo base (segundos) que cada desejo permanece ativo antes de ser trocado.")]
-        private float desireChangeInterval = 10f;
+        [FormerlySerializedAs("desireChangeInterval"), SerializeField,
+         Tooltip("Tempo base (segundos) que cada desejo permanece ativo antes de ser trocado.")]
+        private float desireDurationSeconds = 10f;
         [SerializeField, Tooltip("Fator aplicado à duração do desejo quando nenhum planeta possui o recurso sorteado.")]
         private float unavailableDesireDurationMultiplier = 0.5f;
         [SerializeField, Tooltip("Peso base usado ao sortear desejos com recursos disponíveis em planetas ativos.")]
@@ -21,8 +23,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float unavailableDesireWeight = 0.5f;
         [SerializeField, Range(0f, 1f), Tooltip("Multiplicador aplicado ao peso de desejos recentes quando existem novas opções.")]
         private float recentDesireWeightMultiplier = 0.35f;
-        [SerializeField, Tooltip("Atraso para iniciar a escolha de desejos (segundos)")]
-        private float delayTimer = 2;
+        [FormerlySerializedAs("delayTimer"), SerializeField,
+         Tooltip("Atraso inicial (segundos) antes do primeiro desejo ser sorteado.")]
+        private float initialDesireDelaySeconds = 2f;
 
         [Header("Áudio")]
         [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
@@ -59,15 +62,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
         private float minimumChaseDistance = 1.5f;
 
-        public int MaxRecentDesires => maxRecentDesires;
-        public float DelayTimer => delayTimer;
-        public float DesireChangeInterval => desireChangeInterval;
-        public float DesireDuration => desireChangeInterval;
-        public float UnavailableDesireDurationMultiplier => unavailableDesireDurationMultiplier;
-        public float AvailableDesireWeight => availableDesireWeight;
-        public float PerPlanetAvailableWeight => perPlanetAvailableWeight;
-        public float UnavailableDesireWeight => unavailableDesireWeight;
-        public float RecentDesireWeightMultiplier => recentDesireWeightMultiplier;
+        public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
+        public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
+        public float DesireDuration => Mathf.Max(desireDurationSeconds, 0.1f);
+        public float UnavailableDesireDurationMultiplier => Mathf.Clamp(unavailableDesireDurationMultiplier, 0.05f, 1f);
+        public float AvailableDesireWeight => Mathf.Max(0f, availableDesireWeight);
+        public float PerPlanetAvailableWeight => Mathf.Max(0f, perPlanetAvailableWeight);
+        public float UnavailableDesireWeight => Mathf.Max(0f, unavailableDesireWeight);
+        public float RecentDesireWeightMultiplier => Mathf.Clamp01(recentDesireWeightMultiplier);
         public SoundData DesireSelectedSound => desireSelectedSound;
         public float DirectionChangeInterval => Mathf.Max(0.1f, directionChangeInterval);
         public float MinSpeed => Mathf.Max(0f, minSpeed);

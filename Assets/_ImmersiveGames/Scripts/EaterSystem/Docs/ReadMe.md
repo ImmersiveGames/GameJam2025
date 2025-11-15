@@ -58,7 +58,7 @@ respeitado novamente.
   atividade e reiniciando o temporizador com a duração completa daquele recurso.
 - **Limpeza ao voltar a vagar**: toda entrada em `EaterWanderingState` chama `EaterBehavior.EndDesires`,
   encerrando o serviço (caso ainda esteja ativo) e zerando o desejo armazenado. O próximo retorno ao estado
-  faminto reinicia o ciclo a partir de um estado sem desejo, respeitando o atraso (`DelayTimer`).
+  faminto reinicia o ciclo a partir de um estado sem desejo, respeitando o atraso (`InitialDesireDelay`).
 
 ## Serviços Internos
 
