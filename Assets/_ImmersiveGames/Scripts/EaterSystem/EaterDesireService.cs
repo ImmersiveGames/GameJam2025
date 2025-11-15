@@ -59,6 +59,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float CurrentDesireRemainingTime => _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
         public int CurrentDesireAvailableCount => _currentDesireAvailableCount;
         public float CurrentDesireWeight => _currentDesireWeight;
+        public bool HasLockedDesire => !_active && _desireLocked && _currentDesire.HasValue;
 
         public void Update()
         {
@@ -110,7 +111,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireWeight = 0f;
             _desireLocked = false;
 
-            float delay = Mathf.Max(_config.DelayTimer, 0f);
+            float delay = _config.InitialDesireDelay;
             if (delay > 0f)
             {
                 _waitingDelay = true;
@@ -126,6 +127,44 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 PickNextDesire();
             }
 
+            return true;
+        }
+
+        public bool TryResume()
+        {
+            if (_active)
+            {
+                return false;
+            }
+
+            if (!HasLockedDesire)
+            {
+                return false;
+            }
+
+            EnsureTimerInstance();
+
+            _active = true;
+            _waitingDelay = false;
+            _desireLocked = false;
+
+            float resumeDuration = Mathf.Max(_currentDuration, 0f);
+            if (resumeDuration <= 0f)
+            {
+                resumeDuration = Mathf.Max(_config.DesireDuration, 0.05f);
+            }
+
+            RestartTimer(resumeDuration);
+
+            if (_currentDesire.HasValue)
+            {
+                DebugUtility.LogVerbose(
+                    $"▶️ Desejo {_currentDesire.Value} retomado por {resumeDuration:F2}s.",
+                    context: _master,
+                    instance: this);
+            }
+
+            NotifyDesireChanged();
             return true;
         }
 
@@ -186,7 +225,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            float baseDuration = Mathf.Max(_config.DesireDuration, 0.1f);
+            float baseDuration = _config.DesireDuration;
             _timer = new CountdownTimer(baseDuration);
         }
 
@@ -230,8 +269,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _currentDesireAvailableCount = Mathf.Max(availableCount, 0);
             _currentDesireWeight = Mathf.Max(selectionWeight, 0f);
 
-            float baseDuration = Mathf.Max(_config.DesireDuration, 0.1f);
-            float unavailableFactor = Mathf.Clamp(_config.UnavailableDesireDurationMultiplier, 0.05f, 1f);
+            float baseDuration = _config.DesireDuration;
+            float unavailableFactor = _config.UnavailableDesireDurationMultiplier;
             _currentDuration = available ? baseDuration : Mathf.Max(baseDuration * unavailableFactor, 0.05f);
 
             RestartTimer(_currentDuration);
@@ -445,18 +484,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             float weight;
             if (hasAvailablePlanets)
             {
-                float baseWeight = Mathf.Max(_config.AvailableDesireWeight, 0f);
-                float perPlanet = Mathf.Max(_config.PerPlanetAvailableWeight, 0f);
+                float baseWeight = _config.AvailableDesireWeight;
+                float perPlanet = _config.PerPlanetAvailableWeight;
                 weight = baseWeight + Mathf.Max(availablePlanets, 0) * perPlanet;
             }
             else
             {
-                weight = Mathf.Max(_config.UnavailableDesireWeight, 0f);
+                weight = _config.UnavailableDesireWeight;
             }
 
             if (penalizeRecent)
             {
-                float multiplier = Mathf.Clamp01(_config.RecentDesireWeightMultiplier);
+                float multiplier = _config.RecentDesireWeightMultiplier;
                 weight *= multiplier;
             }
 

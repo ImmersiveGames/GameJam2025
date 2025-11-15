@@ -1,5 +1,8 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
@@ -9,8 +12,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Configurações de Desejos do Eater")]
         [SerializeField, Tooltip("Número máximo de recursos recentes a evitar repetição")]
         private int maxRecentDesires = 3;
-        [SerializeField, Tooltip("Tempo base (segundos) que cada desejo permanece ativo antes de ser trocado.")]
-        private float desireChangeInterval = 10f;
+        [FormerlySerializedAs("desireChangeInterval"), SerializeField,
+         Tooltip("Tempo base (segundos) que cada desejo permanece ativo antes de ser trocado.")]
+        private float desireDurationSeconds = 10f;
         [SerializeField, Tooltip("Fator aplicado à duração do desejo quando nenhum planeta possui o recurso sorteado.")]
         private float unavailableDesireDurationMultiplier = 0.5f;
         [SerializeField, Tooltip("Peso base usado ao sortear desejos com recursos disponíveis em planetas ativos.")]
@@ -21,8 +25,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float unavailableDesireWeight = 0.5f;
         [SerializeField, Range(0f, 1f), Tooltip("Multiplicador aplicado ao peso de desejos recentes quando existem novas opções.")]
         private float recentDesireWeightMultiplier = 0.35f;
-        [SerializeField, Tooltip("Atraso para iniciar a escolha de desejos (segundos)")]
-        private float delayTimer = 2;
+        [FormerlySerializedAs("delayTimer"), SerializeField,
+         Tooltip("Atraso inicial (segundos) antes do primeiro desejo ser sorteado.")]
+        private float initialDesireDelaySeconds = 2f;
 
         [Header("Áudio")]
         [SerializeField, Tooltip("Som reproduzido sempre que um novo desejo é sorteado.")]
@@ -49,25 +54,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float hungryPlayerAttraction = 0.75f;
 
         [Header("Órbita")]
-        [SerializeField, Tooltip("Distância base utilizada para orbitar planetas durante o estado de alimentação.")]
-        private float orbitDistance = 3f;
         [SerializeField, Tooltip("Tempo em segundos para completar uma volta ao orbitar um planeta.")]
         private float orbitDuration = 4f;
         [SerializeField, Tooltip("Tempo em segundos para se aproximar da distância de órbita ao iniciar o estado de alimentação.")]
         private float orbitApproachDuration = 0.5f;
 
-        [Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
-        public float minimumChaseDistance = 1.5f;
+        [FormerlySerializedAs("minimumChaseDistance"), FormerlySerializedAs("orbitDistance"), SerializeField,
+         Tooltip("Distância mínima entre o eater e a superfície do planeta marcado. Também define o raio da órbita ao comer.")]
+        private float minimumSurfaceDistance = 1.5f;
 
-        public int MaxRecentDesires => maxRecentDesires;
-        public float DelayTimer => delayTimer;
-        public float DesireChangeInterval => desireChangeInterval;
-        public float DesireDuration => desireChangeInterval;
-        public float UnavailableDesireDurationMultiplier => unavailableDesireDurationMultiplier;
-        public float AvailableDesireWeight => availableDesireWeight;
-        public float PerPlanetAvailableWeight => perPlanetAvailableWeight;
-        public float UnavailableDesireWeight => unavailableDesireWeight;
-        public float RecentDesireWeightMultiplier => recentDesireWeightMultiplier;
+        [Header("Comportamento de Alimentação")]
+        [FormerlySerializedAs("biteDamage"), SerializeField,
+         Tooltip("Quantidade de dano aplicada em cada mordida enquanto o eater está no estado de alimentação.")]
+        private float eatingDamageAmount = 10f;
+        [SerializeField, Tooltip("Intervalo (segundos) entre cada aplicação de dano no planeta.")]
+        private float eatingDamageInterval = 1f;
+        [SerializeField, Tooltip("Recurso alvo que receberá o dano das mordidas do eater.")]
+        private ResourceType eatingDamageResource = ResourceType.Health;
+        [SerializeField, Tooltip("Tipo de dano utilizado ao consumir um planeta.")]
+        private DamageType eatingDamageType = DamageType.Physical;
+
+        public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
+        public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
+        public float DesireDuration => Mathf.Max(desireDurationSeconds, 0.1f);
+        public float UnavailableDesireDurationMultiplier => Mathf.Clamp(unavailableDesireDurationMultiplier, 0.05f, 1f);
+        public float AvailableDesireWeight => Mathf.Max(0f, availableDesireWeight);
+        public float PerPlanetAvailableWeight => Mathf.Max(0f, perPlanetAvailableWeight);
+        public float UnavailableDesireWeight => Mathf.Max(0f, unavailableDesireWeight);
+        public float RecentDesireWeightMultiplier => Mathf.Clamp01(recentDesireWeightMultiplier);
         public SoundData DesireSelectedSound => desireSelectedSound;
         public float DirectionChangeInterval => Mathf.Max(0.1f, directionChangeInterval);
         public float MinSpeed => Mathf.Max(0f, minSpeed);
@@ -79,9 +93,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float WanderingReturnBias => Mathf.Clamp01(wanderingReturnBias);
         public float WanderingHungryDelay => Mathf.Max(0f, wanderingHungryDelay);
         public float HungryPlayerAttraction => Mathf.Clamp01(hungryPlayerAttraction);
-        public float MinimumChaseDistance => Mathf.Max(0f, minimumChaseDistance);
-        public float OrbitDistance => Mathf.Max(0.1f, orbitDistance);
+        public float MinimumChaseDistance => Mathf.Max(0f, minimumSurfaceDistance);
         public float OrbitDuration => Mathf.Max(0.25f, orbitDuration);
         public float OrbitApproachDuration => Mathf.Min(Mathf.Max(0.1f, orbitApproachDuration), OrbitDuration);
+        public float EatingDamageAmount => Mathf.Max(0f, eatingDamageAmount);
+        public float EatingDamageInterval => Mathf.Max(0.05f, eatingDamageInterval);
+        public ResourceType EatingDamageResource => eatingDamageResource;
+        public DamageType EatingDamageType => eatingDamageType;
     }
 }

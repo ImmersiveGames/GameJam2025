@@ -9,9 +9,10 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -56,9 +57,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingMasterForPredicatesLogged;
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
+        private ChasingEatingPredicate _chasingEatingPredicate;
+        private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
+        private EatingWanderingPredicate _eatingWanderingPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
+        private Transform _lastOrbitTarget;
+        private float _lastOrbitRadius = -1f;
+        private float _lastSurfaceStopDistance = -1f;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -186,11 +193,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
-
+            IPredicate chasingEatingPredicate = EnsureChasingEatingPredicate();
+            IPredicate planetUnmarkedPredicate = EnsurePlanetUnmarkedPredicate();
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _eatingState, chasingEatingPredicate);
+            builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -214,6 +226,49 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureChasingEatingPredicate()
+        {
+            if (_chasingEatingPredicate != null)
+            {
+                return _chasingEatingPredicate;
+            }
+
+            if (_chasingState == null || _eatingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingEatingPredicate = new ChasingEatingPredicate(_chasingState);
+            return _chasingEatingPredicate;
+        }
+
+        private IPredicate EnsurePlanetUnmarkedPredicate()
+        {
+            if (_planetUnmarkedPredicate != null)
+            {
+                return _planetUnmarkedPredicate;
+            }
+
+            _planetUnmarkedPredicate = new PlanetUnmarkedPredicate();
+            return _planetUnmarkedPredicate;
+        }
+
+        private IPredicate EnsureEatingWanderingPredicate()
+        {
+            if (_eatingWanderingPredicate != null)
+            {
+                return _eatingWanderingPredicate;
+            }
+
+            if (_eatingState == null || _wanderingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _eatingWanderingPredicate = new EatingWanderingPredicate(_eatingState);
+            return _eatingWanderingPredicate;
         }
 
         private IPredicate EnsureWanderingTimeoutPredicate()
@@ -407,11 +462,70 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_animationController == null)
             {
-                TryGetComponent(out _animationController);
+                string actorId = _master != null ? _master.ActorId : null;
+                if (!string.IsNullOrEmpty(actorId)
+                    && DependencyManager.Instance.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                {
+                    _animationController = resolvedController;
+                }
+                else if (!TryGetComponent(out _animationController))
+                {
+                    _animationController = null;
+                }
             }
 
             animationController = _animationController;
             return animationController != null;
+        }
+
+        /// <summary>
+        /// Registra informações sobre o último ponto em que a perseguição foi interrompida.
+        /// Mantém a distância radial calculada a partir do centro do planeta e a separação da superfície.
+        /// </summary>
+        internal void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float surfaceStopDistance)
+        {
+            if (target == null)
+            {
+                ClearOrbitAnchor();
+                return;
+            }
+
+            _lastOrbitTarget = target;
+            _lastSurfaceStopDistance = Mathf.Max(0f, surfaceStopDistance);
+            float computedRadius = Vector3.Distance(transform.position, targetCenter);
+            _lastOrbitRadius = Mathf.Max(computedRadius, 0f);
+        }
+
+        /// <summary>
+        /// Obtém o último ponto de parada registrado para o planeta informado.
+        /// </summary>
+        internal bool TryGetOrbitAnchor(Transform target, out float orbitRadius, out float surfaceStopDistance)
+        {
+            if (ReferenceEquals(target, _lastOrbitTarget) && _lastOrbitRadius > 0f)
+            {
+                orbitRadius = _lastOrbitRadius;
+                surfaceStopDistance = _lastSurfaceStopDistance;
+                return true;
+            }
+
+            orbitRadius = 0f;
+            surfaceStopDistance = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// Limpa o ponto de parada registrado, evitando reaproveitar dados obsoletos.
+        /// </summary>
+        internal void ClearOrbitAnchor(Transform target = null)
+        {
+            if (target != null && !ReferenceEquals(target, _lastOrbitTarget))
+            {
+                return;
+            }
+
+            _lastOrbitTarget = null;
+            _lastOrbitRadius = -1f;
+            _lastSurfaceStopDistance = -1f;
         }
 
         internal bool ResumeAutoFlow(string reason)
@@ -595,6 +709,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
+            bool resumed = _desireService.TryResume();
+            if (resumed)
+            {
+                if (logStateTransitions)
+                {
+                    DebugUtility.Log($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+
+                return true;
+            }
+
             bool started = _desireService.Start();
             if (logStateTransitions && started)
             {
@@ -710,6 +835,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _revivePredicate?.Dispose();
             _revivePredicate = null;
+
+            _planetUnmarkedPredicate?.Dispose();
+            _planetUnmarkedPredicate = null;
+            _eatingWanderingPredicate = null;
         }
 
         private sealed class FalsePredicate : IPredicate
