@@ -1,8 +1,7 @@
 # Eater System – Visão Geral Atual
 
 O `EaterBehavior` foi reconstruído em cima de uma máquina de estados simples. Ela centraliza
-integrações com animação, detecção, desejos e AutoFlow enquanto novas regras são implementadas aos
-poucos.
+integrações com animação, desejos e AutoFlow enquanto novas regras são implementadas aos poucos.
 
 ## Estados Registrados
 
@@ -10,7 +9,7 @@ poucos.
 | --- | --- |
 | `EaterWanderingState` | Movimento aleatório respeitando limites mínimos/máximos em relação aos jogadores. |
 | `EaterHungryState` | Movimento aleatório com bias mais forte em direção aos jogadores e integração com desejos. |
-| `EaterChasingState` | Persegue o planeta atualmente marcado, acompanha eventos de proximidade e congela a órbita do alvo quando entra no sensor do eater. |
+| `EaterChasingState` | Persegue o planeta atualmente marcado, calcula a distância até a superfície do colisor do alvo e congela a órbita quando atinge o limite configurado. |
 | `EaterEatingState` | Orbita o planeta marcado utilizando DOTween enquanto mantém o foco visual. |
 | `EaterDeathState` | Dispara animação de morte ao entrar e restaura idle ao sair. |
 
@@ -60,11 +59,17 @@ limpo por meio de `EaterBehavior.EndDesires`, garantindo que um novo ciclo de so
 
 - Desejos: `EaterDesireService` é inicializado sob demanda para acompanhar estados famintos.
 - AutoFlow: `ResourceAutoFlowBridge` é retomado ou pausado por chamadas internas dos estados.
-- Detecção e animação: resolvidos sob demanda para apoiar perseguição e morte.
+- Animação: controladores como `EaterAnimationController` são resolvidos sob demanda para sincronizar poses e eventos sonoros.
+
+### Perseguição baseada em distância
+
+- A perseguição ignora o **Detection System**. `EaterChasingState` consulta diretamente o planeta marcado via `PlanetMarkingManager`.
+- O deslocamento utiliza a distância entre os colisores do eater e do alvo (com suporte a `Physics.ComputePenetration`). Isso garante que planetas com diâmetros diferentes respeitem o mesmo limite mínimo.
+- Ao entrar novamente na perseguição, o estado reposiciona o eater caso já esteja muito perto, garantindo que a transição para `EaterEatingState` aconteça apenas quando atingir o raio seguro.
 
 Esse documento será atualizado conforme novos predicados e transições forem introduzidos.
 
 ### Congelamento de órbita durante a perseguição
 
-- Assim que o planeta marcado entra no sensor de proximidade do eater, `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando pela órbita enquanto o eater se aproxima, mantendo as animações e translações dependentes do `Transform`.
-- Ao sair do sensor, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.
+- Assim que o planeta marcado entra no raio mínimo definido pela configuração (`EaterConfigSo.MinimumChaseDistance`), `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando enquanto o eater realiza a transição para alimentação.
+- Ao retomar a perseguição ou se afastar além do limite mínimo, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.
