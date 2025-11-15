@@ -56,6 +56,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingMasterForPredicatesLogged;
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
+        private ChasingEatingPredicate _chasingEatingPredicate;
         private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
@@ -187,11 +188,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
+            IPredicate chasingEatingPredicate = EnsureChasingEatingPredicate();
             IPredicate planetUnmarkedPredicate = EnsurePlanetUnmarkedPredicate();
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _eatingState, chasingEatingPredicate);
             builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
             builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
         }
@@ -217,6 +220,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureChasingEatingPredicate()
+        {
+            if (_chasingEatingPredicate != null)
+            {
+                return _chasingEatingPredicate;
+            }
+
+            if (_chasingState == null || _eatingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingEatingPredicate = new ChasingEatingPredicate(_chasingState);
+            return _chasingEatingPredicate;
         }
 
         private IPredicate EnsurePlanetUnmarkedPredicate()

@@ -179,6 +179,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
     /// <summary>
+    /// Predicado que aguarda o pedido do estado de perseguição para avançar ao estado de alimentação.
+    /// </summary>
+    internal sealed class ChasingEatingPredicate : IPredicate
+    {
+        private readonly EaterChasingState _chasingState;
+
+        public ChasingEatingPredicate(EaterChasingState chasingState)
+        {
+            _chasingState = chasingState ?? throw new ArgumentNullException(nameof(chasingState));
+        }
+
+        public bool Evaluate()
+        {
+            return _chasingState.ConsumeEatingTransitionRequest();
+        }
+    }
+
+    /// <summary>
     /// Predicado baseado em eventos de desmarcação de planeta.
     /// Aciona a transição sempre que qualquer planeta é desmarcado via PlanetMarkingManager.
     /// </summary>
