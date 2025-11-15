@@ -76,5 +76,5 @@ Esse documento será atualizado conforme novos predicados e transições forem i
 
 ### Congelamento de órbita durante a perseguição
 
-- Assim que o planeta marcado entra no raio mínimo definido pela configuração (`EaterConfigSo.MinimumChaseDistance`), `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Isso evita que o planeta continue se deslocando enquanto o eater realiza a transição para alimentação.
+- Assim que o planeta marcado entra no raio mínimo definido pela configuração (`EaterConfigSo.MinimumChaseDistance`), `EaterChasingState` solicita ao `PlanetMotion` do alvo que congele a atualização do ângulo orbital. Esse mesmo raio é reutilizado por `EaterEatingState` como distância de órbita, garantindo continuidade visual entre a perseguição e a animação de alimentação.
 - Ao retomar a perseguição ou se afastar além do limite mínimo, o estado libera o congelamento, permitindo que a órbita retome seu movimento normal. O congelamento utiliza `PlanetMotion.RequestOrbitFreeze(object requester)` e `PlanetMotion.ReleaseOrbitFreeze(object requester)` para garantir desacoplamento entre múltiplas origens.

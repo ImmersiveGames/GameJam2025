@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterEatingState : EaterBehaviorState
     {
-        private const float DefaultOrbitDistance = 3f;
+        private const float DefaultMinimumSurfaceDistance = 1.5f;
         private const float DefaultOrbitDuration = 4f;
         private const float DefaultOrbitApproachDuration = 0.5f;
         private const float OrbitDistanceTolerance = 0.05f;
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private float ResolveOrbitRadius(Transform target)
         {
-            float fallback = Config?.OrbitDistance ?? DefaultOrbitDistance;
+            float fallback = Config?.MinimumChaseDistance ?? DefaultMinimumSurfaceDistance;
 
             if (Behavior == null || target == null)
             {
