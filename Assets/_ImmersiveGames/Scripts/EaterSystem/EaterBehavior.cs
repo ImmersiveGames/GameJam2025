@@ -9,6 +9,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -478,6 +479,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             animationController = _animationController;
             return animationController != null;
+        }
+
+        internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
+        {
+            if (_audioEmitter == null)
+            {
+                if (_master != null)
+                {
+                    string actorId = _master.ActorId;
+                    if (!string.IsNullOrEmpty(actorId)
+                        && DependencyManager.Instance.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
+                    {
+                        _audioEmitter = resolvedEmitter;
+                    }
+                }
+
+                if (_audioEmitter == null)
+                {
+                    TryGetComponent(out _audioEmitter);
+                }
+            }
+
+            audioEmitter = _audioEmitter;
+            return audioEmitter != null;
         }
 
         /// <summary>

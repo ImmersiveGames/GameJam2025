@@ -1,4 +1,6 @@
 using DG.Tweening;
+using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
@@ -51,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _hasEvaluatedPlanetResource;
         private PlanetResources _evaluatedDesiredResource;
         private PlanetResources _evaluatedPlanetResource;
+        private bool _missingAudioEmitterLogged;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -81,6 +84,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _missingDamageReceiverLogged = false;
             _currentDamageReceiver = null;
             ResetCompatibility();
+            _missingAudioEmitterLogged = false;
 
             if (Master != null)
             {
@@ -117,6 +121,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasCachedTargetResource = false;
             _recoveryTimer = 0f;
             ResetCompatibility();
+            _missingAudioEmitterLogged = false;
         }
 
         public override void Update()
@@ -521,6 +526,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 Master.OnEventEaterBite(_activePlanet);
             }
 
+            TryPlayBiteSound();
+
             return true;
         }
 
@@ -549,6 +556,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return true;
+        }
+
+        private void TryPlayBiteSound()
+        {
+            SoundData biteSound = Config != null ? Config.EatingBiteSound : null;
+            if (biteSound == null || biteSound.clip == null)
+            {
+                return;
+            }
+
+            if (Behavior == null)
+            {
+                return;
+            }
+
+            if (!Behavior.TryGetAudioEmitter(out EntityAudioEmitter emitter))
+            {
+                if (!_missingAudioEmitterLogged && Behavior.ShouldLogStateTransitions)
+                {
+                    DebugUtility.LogWarning<EaterEatingState>(
+                        "EntityAudioEmitter não encontrado para tocar som de mordida.",
+                        Behavior,
+                        this);
+                    _missingAudioEmitterLogged = true;
+                }
+
+                return;
+            }
+
+            _missingAudioEmitterLogged = false;
+
+            Vector3 position = _currentTarget != null ? _currentTarget.position : Transform.position;
+            AudioContext context = AudioContext.Default(position, emitter.UsesSpatialBlend);
+            emitter.Play(biteSound, context);
         }
 
         private bool TryEvaluateCompatibility(out bool isCompatible)
