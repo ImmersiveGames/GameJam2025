@@ -28,14 +28,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private readonly StringBuilder _debugBuilder = new();
 
         private CountdownTimer _timer;
-        private bool _active;
-        private bool _waitingDelay;
+        private DesireCyclePhase _phase = DesireCyclePhase.Inactive;
+        private float _scheduledResumeDuration;
         private PlanetResources? _currentDesire;
         private bool _currentDesireAvailable;
         private float _currentDuration;
         private int _currentDesireAvailableCount;
         private float _currentDesireWeight;
-        private bool _desireLocked;
+        private LockedDesireSnapshot? _lockedSnapshot;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -51,19 +51,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
 
-        public bool IsActive => _active;
-        public bool HasActiveDesire => (_active || _desireLocked) && _currentDesire.HasValue;
+        public bool IsActive => _phase != DesireCyclePhase.Inactive;
+        public bool HasActiveDesire => (_phase != DesireCyclePhase.Inactive && _currentDesire.HasValue) || HasLockedDesire;
         public PlanetResources? CurrentDesire => _currentDesire;
         public bool CurrentDesireAvailable => _currentDesireAvailable;
         public float CurrentDesireDuration => _currentDuration;
         public float CurrentDesireRemainingTime => _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
         public int CurrentDesireAvailableCount => _currentDesireAvailableCount;
         public float CurrentDesireWeight => _currentDesireWeight;
-        public bool HasLockedDesire => !_active && _desireLocked && _currentDesire.HasValue;
+        public bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()
         {
-            if (!_active || _timer == null)
+            if (!IsActive || _timer == null)
             {
                 return;
             }
@@ -73,48 +73,62 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (_waitingDelay)
+            switch (_phase)
             {
-                _waitingDelay = false;
-                DebugUtility.LogVerbose(
-                    "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
-                    context: _master,
-                    instance: this);
-                PickNextDesire();
-                return;
-            }
+                case DesireCyclePhase.WaitingInitialDelay:
+                    DebugUtility.LogVerbose(
+                        "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
+                        context: _master,
+                        instance: this);
+                    _phase = DesireCyclePhase.Active;
+                    PickNextDesire();
+                    break;
+                case DesireCyclePhase.WaitingResumeDelay:
+                    float resumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
+                    _scheduledResumeDuration = 0f;
+                    string resumeLabel = _currentDesire.HasValue ? _currentDesire.Value.ToString() : "Desconhecido";
 
-            if (HasActiveDesire)
-            {
-                DebugUtility.LogVerbose(
-                    $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
-                    context: _master,
-                    instance: this);
-                PickNextDesire();
+                    DebugUtility.LogVerbose(
+                        $"▶️ Desejo {resumeLabel} retomado após atraso inicial por {resumeDuration:F2}s.",
+                        context: _master,
+                        instance: this);
+
+                    BeginActiveCycle(resumeDuration);
+                    break;
+                case DesireCyclePhase.Active:
+                    if (HasActiveDesire)
+                    {
+                        DebugUtility.LogVerbose(
+                            $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
+                            context: _master,
+                            instance: this);
+                        PickNextDesire();
+                    }
+                    break;
+                case DesireCyclePhase.Inactive:
+                default:
+                    break;
             }
         }
 
         public bool Start()
         {
-            if (_active)
+            if (IsActive)
             {
                 return false;
             }
 
             EnsureTimerInstance();
 
-            _active = true;
-            _currentDesire = null;
-            _currentDuration = 0f;
-            _currentDesireAvailable = false;
-            _currentDesireAvailableCount = 0;
-            _currentDesireWeight = 0f;
-            _desireLocked = false;
+            _phase = DesireCyclePhase.Inactive;
+            _lockedSnapshot = null;
+            ClearCurrentDesire();
+            _scheduledResumeDuration = 0f;
 
             float delay = _config.InitialDesireDelay;
             if (delay > 0f)
             {
-                _waitingDelay = true;
+                _phase = DesireCyclePhase.WaitingInitialDelay;
                 RestartTimer(delay);
                 DebugUtility.LogVerbose(
                     $"⌛ Iniciando desejos após atraso de {delay:F2}s.",
@@ -124,6 +138,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
             else
             {
+                _phase = DesireCyclePhase.Active;
                 PickNextDesire();
             }
 
@@ -132,7 +147,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool TryResume()
         {
-            if (_active)
+            if (IsActive)
             {
                 return false;
             }
@@ -144,24 +159,33 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             EnsureTimerInstance();
 
-            _active = true;
-            _waitingDelay = false;
-            _desireLocked = false;
+            float resumeDuration = ApplySnapshot(_lockedSnapshot.Value);
+            _lockedSnapshot = null;
 
-            float resumeDuration = Mathf.Max(_currentDuration, 0f);
+            resumeDuration = Mathf.Max(resumeDuration, 0.05f);
             if (resumeDuration <= 0f)
             {
                 resumeDuration = Mathf.Max(_config.DesireDuration, 0.05f);
             }
 
-            RestartTimer(resumeDuration);
-
-            if (_currentDesire.HasValue)
+            float resumeDelay = _config.InitialDesireDelay;
+            if (resumeDelay > 0f)
             {
-                DebugUtility.LogVerbose(
-                    $"▶️ Desejo {_currentDesire.Value} retomado por {resumeDuration:F2}s.",
-                    context: _master,
-                    instance: this);
+                _phase = DesireCyclePhase.WaitingResumeDelay;
+                _scheduledResumeDuration = resumeDuration;
+                RestartTimer(resumeDelay);
+
+                if (_currentDesire.HasValue)
+                {
+                    DebugUtility.LogVerbose(
+                        $"⌛ Desejo {_currentDesire.Value} retomará o ciclo em {resumeDelay:F2}s.",
+                        context: _master,
+                        instance: this);
+                }
+            }
+            else
+            {
+                BeginActiveCycle(resumeDuration);
             }
 
             NotifyDesireChanged();
@@ -170,19 +194,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool Stop()
         {
-            if (!_active)
+            if (!IsActive)
             {
                 return false;
             }
 
-            _active = false;
-            _waitingDelay = false;
-            _currentDesire = null;
-            _currentDesireAvailable = false;
-            _currentDuration = 0f;
-            _currentDesireAvailableCount = 0;
-            _currentDesireWeight = 0f;
-            _desireLocked = false;
+            _phase = DesireCyclePhase.Inactive;
+            _lockedSnapshot = null;
+            ClearCurrentDesire();
+            _scheduledResumeDuration = 0f;
 
             if (_timer != null)
             {
@@ -196,14 +216,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool Suspend()
         {
-            if (!_active)
+            if (!IsActive)
             {
                 return false;
             }
 
-            _active = false;
-            _waitingDelay = false;
-            _desireLocked = _currentDesire.HasValue;
+            _phase = DesireCyclePhase.Inactive;
+            _lockedSnapshot = CaptureLockedSnapshot();
+            _scheduledResumeDuration = 0f;
 
             if (_timer != null)
             {
@@ -242,9 +262,25 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _timer.Start();
         }
 
+        private void BeginActiveCycle(float duration)
+        {
+            float safeDuration = Mathf.Max(duration, 0.05f);
+            _phase = DesireCyclePhase.Active;
+            _currentDuration = safeDuration;
+            RestartTimer(safeDuration);
+
+            if (_currentDesire.HasValue)
+            {
+                DebugUtility.LogVerbose(
+                    $"▶️ Desejo {_currentDesire.Value} retomado por {safeDuration:F2}s.",
+                    context: _master,
+                    instance: this);
+            }
+        }
+
         private void PickNextDesire()
         {
-            if (!_active)
+            if (_phase == DesireCyclePhase.Inactive)
             {
                 return;
             }
@@ -507,6 +543,44 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             EventDesireChanged?.Invoke(BuildDesireInfo());
         }
 
+        private void ClearCurrentDesire()
+        {
+            _currentDesire = null;
+            _currentDesireAvailable = false;
+            _currentDuration = 0f;
+            _currentDesireAvailableCount = 0;
+            _currentDesireWeight = 0f;
+        }
+
+        private LockedDesireSnapshot? CaptureLockedSnapshot()
+        {
+            if (!_currentDesire.HasValue)
+            {
+                return null;
+            }
+
+            float remaining = _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : Mathf.Max(_currentDuration, 0f);
+            float totalDuration = Mathf.Max(_currentDuration, 0f);
+
+            return new LockedDesireSnapshot(
+                _currentDesire.Value,
+                _currentDesireAvailable,
+                _currentDesireAvailableCount,
+                _currentDesireWeight,
+                remaining,
+                totalDuration);
+        }
+
+        private float ApplySnapshot(LockedDesireSnapshot snapshot)
+        {
+            _currentDesire = snapshot.Resource;
+            _currentDesireAvailable = snapshot.IsAvailable;
+            _currentDesireAvailableCount = snapshot.AvailableCount;
+            _currentDesireWeight = snapshot.Weight;
+            _currentDuration = Mathf.Max(snapshot.TotalDuration, 0f);
+            return Mathf.Max(snapshot.RemainingTime, 0f);
+        }
+
         private void PlayDesireSelectedAudio()
         {
             if (_config == null)
@@ -550,14 +624,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private EaterDesireInfo BuildDesireInfo()
         {
-            bool serviceActive = _active || _desireLocked;
+            bool serviceActive = IsActive || HasLockedDesire;
             bool hasDesire = serviceActive && _currentDesire.HasValue;
             PlanetResources? resource = hasDesire ? _currentDesire : null;
             bool available = hasDesire && _currentDesireAvailable;
             int availableCount = hasDesire ? _currentDesireAvailableCount : 0;
             float weight = hasDesire ? _currentDesireWeight : 0f;
             float duration = hasDesire ? _currentDuration : 0f;
-            float remaining = _active && _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
+            float remaining = IsActive && _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
 
             if (!hasDesire)
             {
@@ -565,6 +639,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             return new EaterDesireInfo(serviceActive, hasDesire, resource, available, availableCount, weight, duration, remaining);
+        }
+
+        private enum DesireCyclePhase
+        {
+            Inactive = 0,
+            WaitingInitialDelay = 1,
+            WaitingResumeDelay = 2,
+            Active = 3
+        }
+
+        private readonly struct LockedDesireSnapshot
+        {
+            public LockedDesireSnapshot(
+                PlanetResources resource,
+                bool isAvailable,
+                int availableCount,
+                float weight,
+                float remainingTime,
+                float totalDuration)
+            {
+                Resource = resource;
+                IsAvailable = isAvailable;
+                AvailableCount = availableCount;
+                Weight = weight;
+                RemainingTime = remainingTime;
+                TotalDuration = totalDuration;
+            }
+
+            public PlanetResources Resource { get; }
+            public bool IsAvailable { get; }
+            public int AvailableCount { get; }
+            public float Weight { get; }
+            public float RemainingTime { get; }
+            public float TotalDuration { get; }
         }
 
         private readonly struct WeightedDesireCandidate
