@@ -480,6 +480,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return animationController != null;
         }
 
+        internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
+        {
+            if (_audioEmitter == null)
+            {
+                if (_master != null)
+                {
+                    string actorId = _master.ActorId;
+                    if (!string.IsNullOrEmpty(actorId)
+                        && DependencyManager.Instance.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
+                    {
+                        _audioEmitter = resolvedEmitter;
+                    }
+                }
+
+                if (_audioEmitter == null)
+                {
+                    TryGetComponent(out _audioEmitter);
+                }
+            }
+
+            audioEmitter = _audioEmitter;
+            return audioEmitter != null;
+        }
+
         /// <summary>
         /// Registra informações sobre o último ponto em que a perseguição foi interrompida.
         /// Mantém a distância radial calculada a partir do centro do planeta e a separação da superfície.
