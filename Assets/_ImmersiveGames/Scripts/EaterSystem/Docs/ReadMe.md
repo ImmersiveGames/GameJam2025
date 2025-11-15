@@ -44,12 +44,10 @@ marcado.
 
 Quando o estado faminto identifica um planeta válido para perseguir, ele suspende a rotação de desejos
 antes de solicitar a transição. Dessa forma, o último desejo selecionado permanece inalterado durante
-`EaterChasingState` e `EaterEatingState`. Sempre que o eater retorna para `EaterHungryState` sem ter
-limpado o desejo (por exemplo, porque o planeta foi desmarcado), o serviço retoma o desejo anterior
-imediatamente, reiniciando o cronômetro com a duração completa configurada para aquele recurso.
-Somente ao voltar para `EaterWanderingState` é que o desejo é efetivamente limpo por meio de
-`EaterBehavior.EndDesires` — situação em que o ciclo volta ao estado inicial e o atraso configurado é
-respeitado novamente.
+`EaterChasingState`, `EaterEatingState` **e** `EaterWanderingState`. Sempre que o eater retorna para
+`EaterHungryState` sem ter limpado o desejo (por exemplo, porque o planeta foi desmarcado), o serviço
+retoma o desejo anterior imediatamente, reiniciando o cronômetro com a duração completa configurada
+para aquele recurso.
 
 ### Fluxo dos desejos entre estados
 
@@ -62,9 +60,10 @@ respeitado novamente.
 - **Retomada sem atraso**: se houver um desejo pausado (casos de perseguição ou alimentação interrompida),
   `EaterBehavior.BeginDesires` chama `EaterDesireService.TryResume`, recolocando o desejo anterior em
   atividade e reiniciando o temporizador com a duração completa daquele recurso.
-- **Limpeza ao voltar a vagar**: toda entrada em `EaterWanderingState` chama `EaterBehavior.EndDesires`,
-  encerrando o serviço (caso ainda esteja ativo) e zerando o desejo armazenado. O próximo retorno ao estado
-  faminto reinicia o ciclo a partir de um estado sem desejo, respeitando o atraso (`InitialDesireDelay`).
+- **Passeio preserva o desejo**: `EaterWanderingState` apenas congela o serviço através de
+  `EaterBehavior.SuspendDesires`, mantendo o último recurso selecionado até que o estado faminto retome
+  o ciclo. Dessa forma, o desejo só muda novamente quando `EaterHungryState` volta a ficar ativo e
+  executa uma nova rotação.
 
 ## Serviços Internos
 
