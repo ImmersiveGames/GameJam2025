@@ -8,6 +8,7 @@ using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -50,6 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private ResourceAutoFlowBridge _autoFlowBridge;
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
+        private bool _missingResourceSystemLogged;
 
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
@@ -654,6 +656,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _autoFlowBridge = bridge;
                 _missingAutoFlowBridgeLogged = false;
                 _autoFlowUnavailableLogged = false;
+                _missingResourceSystemLogged = false;
                 return true;
             }
 
@@ -686,6 +689,43 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogWarning(message, this, this);
             }
+        }
+
+        internal bool TryRestoreResource(ResourceType resourceType, float amount)
+        {
+            if (amount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue(
+                    "ResourceAutoFlowBridge não encontrado para recuperar recursos manualmente.",
+                    ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue(
+                    "ResourceAutoFlowBridge ainda não possui serviço inicializado para recuperar recursos manualmente.",
+                    ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            ResourceSystem resourceSystem = _autoFlowBridge.GetResourceSystem();
+            if (resourceSystem == null)
+            {
+                LogAutoFlowIssue(
+                    "ResourceSystem indisponível ao tentar recuperar recursos manualmente.",
+                    ref _missingResourceSystemLogged);
+                return false;
+            }
+
+            _missingResourceSystemLogged = false;
+            resourceSystem.Modify(resourceType, Mathf.Max(0f, amount));
+            return true;
         }
 
         internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)

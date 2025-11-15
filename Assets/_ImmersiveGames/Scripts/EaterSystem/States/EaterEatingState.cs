@@ -20,6 +20,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float OrbitDistanceTolerance = 0.05f;
         private const float DefaultDamageAmount = 10f;
         private const float DefaultDamageInterval = 1f;
+        private const float DefaultRecoveryAmount = 5f;
+        private const float DefaultRecoveryInterval = 1f;
+        private const ResourceType DefaultRecoveryResource = ResourceType.Health;
+        private const float IncompatibleRecoveryMultiplier = 0.5f;
 
         private Tween _approachTween;
         private Tween _orbitTween;
@@ -33,6 +37,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetsMaster _activePlanet;
         private IDamageReceiver _currentDamageReceiver;
         private float _damageTimer;
+        private float _recoveryTimer;
         private bool _pendingWanderingTransition;
         private bool _missingDamageReceiverLogged;
         private bool _hasReportedDestroyedPlanet;
@@ -40,6 +45,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetResourcesSo _cachedTargetResourceAsset;
         private PlanetResources _cachedTargetResourceType;
         private bool _hasCachedTargetResource;
+        private bool _hasCompatibilityResult;
+        private bool _isTargetCompatible;
+        private bool _hasEvaluatedDesiredResource;
+        private bool _hasEvaluatedPlanetResource;
+        private PlanetResources _evaluatedDesiredResource;
+        private PlanetResources _evaluatedPlanetResource;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -64,10 +75,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _pendingWanderingTransition = false;
             _damageTimer = 0f;
+            _recoveryTimer = 0f;
             _hasReportedDestroyedPlanet = false;
             _hasReportedDevouredCompatibility = false;
             _missingDamageReceiverLogged = false;
             _currentDamageReceiver = null;
+            ResetCompatibility();
 
             if (Master != null)
             {
@@ -102,6 +115,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _cachedTargetResourceAsset = null;
             _cachedTargetResourceType = default;
             _hasCachedTargetResource = false;
+            _recoveryTimer = 0f;
+            ResetCompatibility();
         }
 
         public override void Update()
@@ -136,11 +151,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             LookAtTarget();
             TickDamage(Time.deltaTime);
+            TickRecovery(Time.deltaTime);
         }
 
         private void PrepareTarget(Transform target, bool restartOrbit)
         {
-            if (!ReferenceEquals(_currentTarget, target))
+            bool targetChanged = !ReferenceEquals(_currentTarget, target);
+            if (targetChanged)
             {
                 StopTweens();
                 _hasReportedDestroyedPlanet = false;
@@ -149,7 +166,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (target == null)
             {
-                TryReportDevouredPlanetOnTargetCleared();
+                if (targetChanged)
+                {
+                    TryReportDevouredPlanetOnTargetCleared();
+                }
+
                 _currentTarget = null;
 
                 if (Behavior.ShouldLogStateTransitions)
@@ -161,7 +182,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 UpdatePlanetMaster(null);
                 _currentDamageReceiver = null;
                 _damageTimer = 0f;
+                _recoveryTimer = 0f;
                 _missingDamageReceiverLogged = false;
+                ResetCompatibility();
                 return;
             }
 
@@ -171,6 +194,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentDamageReceiver = ResolveDamageReceiver(_currentTarget);
             _missingDamageReceiverLogged = false;
             _damageTimer = 0f;
+            _recoveryTimer = 0f;
+
+            if (targetChanged)
+            {
+                ResetCompatibility();
+            }
+
+            TryResolveTargetCompatibility();
 
             _radialBasis = ResolveRadialBasis();
             _currentOrbitRadius = ResolveOrbitRadius(_currentTarget);
@@ -391,6 +422,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void TickDamage(float deltaTime)
         {
+            TryResolveTargetCompatibility();
+
             float interval = Config != null ? Config.EatingDamageInterval : DefaultDamageInterval;
             if (interval <= Mathf.Epsilon)
             {
@@ -412,6 +445,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 }
 
                 _damageTimer -= interval;
+            }
+        }
+
+        private void TickRecovery(float deltaTime)
+        {
+            if (!TryGetRecoveryConfig(out ResourceType resourceType, out float recoveryAmount, out float recoveryInterval))
+            {
+                return;
+            }
+
+            _recoveryTimer += Mathf.Max(deltaTime, 0f);
+            if (_recoveryTimer < recoveryInterval)
+            {
+                return;
+            }
+
+            bool hasCompatibility = TryEvaluateCompatibility(out bool isCompatible);
+            float multiplier = hasCompatibility && isCompatible ? 1f : IncompatibleRecoveryMultiplier;
+            float adjustedAmount = recoveryAmount * multiplier;
+            if (adjustedAmount <= Mathf.Epsilon)
+            {
+                _recoveryTimer = 0f;
+                return;
+            }
+
+            while (_recoveryTimer >= recoveryInterval)
+            {
+                if (!TryApplyRecovery(resourceType, adjustedAmount))
+                {
+                    _recoveryTimer = 0f;
+                    return;
+                }
+
+                _recoveryTimer -= recoveryInterval;
             }
         }
 
@@ -455,6 +522,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             return true;
+        }
+
+        private bool TryApplyRecovery(ResourceType resourceType, float amount)
+        {
+            if (Behavior == null)
+            {
+                return false;
+            }
+
+            return Behavior.TryRestoreResource(resourceType, amount);
+        }
+
+        private bool TryGetRecoveryConfig(out ResourceType resourceType, out float amount, out float interval)
+        {
+            resourceType = Config != null ? Config.EatingRecoveryResource : DefaultRecoveryResource;
+            amount = Config != null ? Config.EatingRecoveryAmount : DefaultRecoveryAmount;
+            interval = Config != null ? Config.EatingRecoveryInterval : DefaultRecoveryInterval;
+
+            amount = Mathf.Max(0f, amount);
+            interval = Mathf.Max(0f, interval);
+
+            if (amount <= Mathf.Epsilon || interval <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryEvaluateCompatibility(out bool isCompatible)
+        {
+            if (TryResolveTargetCompatibility())
+            {
+                isCompatible = _isTargetCompatible;
+                return true;
+            }
+
+            isCompatible = false;
+            return false;
         }
 
         private void UpdatePlanetMaster(PlanetsMaster newPlanet)
@@ -519,6 +625,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _damageTimer = 0f;
             _missingDamageReceiverLogged = false;
             _currentTarget = null;
+            _recoveryTimer = 0f;
+            ResetCompatibility();
 
             RequestWanderingTransition("PlanetDestroyed");
 
@@ -540,41 +648,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _hasReportedDevouredCompatibility = true;
 
-            PlanetResourcesSo resourceData = null;
-
-            if (_activePlanet != null)
-            {
-                try
-                {
-                    resourceData = _activePlanet.AssignedResource;
-                }
-                catch (MissingReferenceException)
-                {
-                    resourceData = null;
-                }
-            }
+            TryResolveTargetCompatibility();
 
             PlanetResources planetResource;
-            bool hasResource;
+            bool hasPlanetResource;
 
-            if (resourceData != null)
+            if (_hasEvaluatedPlanetResource)
             {
-                planetResource = resourceData.ResourceType;
-                hasResource = true;
-            }
-            else if (_hasCachedTargetResource && _cachedTargetResourceAsset != null)
-            {
-                resourceData = _cachedTargetResourceAsset;
-                planetResource = _cachedTargetResourceType;
-                hasResource = true;
+                planetResource = _evaluatedPlanetResource;
+                hasPlanetResource = true;
             }
             else
             {
-                hasResource = false;
-                planetResource = default;
+                hasPlanetResource = TryGetTargetResourceType(out planetResource);
             }
 
-            if (!hasResource)
+            if (!hasPlanetResource)
             {
                 DebugUtility.LogWarning<EaterEatingState>(
                     "Planeta devorado não possui recurso configurado. Não foi possível verificar compatibilidade com o desejo.",
@@ -584,8 +673,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
-            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            PlanetResources desiredResource;
+            bool hasDesiredResource;
+
+            if (_hasEvaluatedDesiredResource)
+            {
+                desiredResource = _evaluatedDesiredResource;
+                hasDesiredResource = true;
+            }
+            else
+            {
+                EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+                hasDesiredResource = desireInfo.TryGetResource(out desiredResource);
+            }
+
+            if (!hasDesiredResource)
             {
                 DebugUtility.Log<EaterEatingState>(
                     $"Planeta devorado possui recurso {planetResource}, porém o eater não tinha um desejo ativo para comparar.",
@@ -596,7 +698,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            bool isCompatible = planetResource == desiredResource;
+            bool isCompatible = _hasCompatibilityResult
+                ? _isTargetCompatible
+                : planetResource == desiredResource;
+
+            if (!_hasCompatibilityResult)
+            {
+                _isTargetCompatible = isCompatible;
+                _hasCompatibilityResult = true;
+                _hasEvaluatedPlanetResource = true;
+                _hasEvaluatedDesiredResource = true;
+                _evaluatedPlanetResource = planetResource;
+                _evaluatedDesiredResource = desiredResource;
+            }
+
             if (isCompatible)
             {
                 DebugUtility.Log<EaterEatingState>(
@@ -622,6 +737,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 return;
             }
+
+            TryResolveTargetCompatibility();
 
             if (_activePlanet == null)
             {
@@ -650,6 +767,80 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             ReportDevouredPlanetCompatibility();
+        }
+
+        private bool TryResolveTargetCompatibility()
+        {
+            if (_hasCompatibilityResult)
+            {
+                return true;
+            }
+
+            if (Behavior == null)
+            {
+                return false;
+            }
+
+            if (!TryGetTargetResourceType(out PlanetResources planetResource))
+            {
+                return false;
+            }
+
+            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            {
+                return false;
+            }
+
+            _isTargetCompatible = planetResource == desiredResource;
+            _hasCompatibilityResult = true;
+            _hasEvaluatedPlanetResource = true;
+            _hasEvaluatedDesiredResource = true;
+            _evaluatedPlanetResource = planetResource;
+            _evaluatedDesiredResource = desiredResource;
+            return true;
+        }
+
+        private bool TryGetTargetResourceType(out PlanetResources resource)
+        {
+            if (_activePlanet != null)
+            {
+                try
+                {
+                    PlanetResourcesSo resourceAsset = _activePlanet.AssignedResource;
+                    if (resourceAsset != null)
+                    {
+                        resource = resourceAsset.ResourceType;
+                        _cachedTargetResourceAsset = resourceAsset;
+                        _cachedTargetResourceType = resource;
+                        _hasCachedTargetResource = true;
+                        return true;
+                    }
+                }
+                catch (MissingReferenceException)
+                {
+                    // Ignora e tenta usar o cache.
+                }
+            }
+
+            if (_hasCachedTargetResource)
+            {
+                resource = _cachedTargetResourceType;
+                return true;
+            }
+
+            resource = default;
+            return false;
+        }
+
+        private void ResetCompatibility()
+        {
+            _hasCompatibilityResult = false;
+            _isTargetCompatible = false;
+            _hasEvaluatedDesiredResource = false;
+            _hasEvaluatedPlanetResource = false;
+            _evaluatedDesiredResource = default;
+            _evaluatedPlanetResource = default;
         }
 
         private void CacheTargetResourceData(PlanetsMaster planet)
