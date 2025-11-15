@@ -52,15 +52,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private float hungryPlayerAttraction = 0.75f;
 
         [Header("Órbita")]
-        [SerializeField, Tooltip("Distância base utilizada para orbitar planetas durante o estado de alimentação.")]
-        private float orbitDistance = 3f;
         [SerializeField, Tooltip("Tempo em segundos para completar uma volta ao orbitar um planeta.")]
         private float orbitDuration = 4f;
         [SerializeField, Tooltip("Tempo em segundos para se aproximar da distância de órbita ao iniciar o estado de alimentação.")]
         private float orbitApproachDuration = 0.5f;
 
-        [SerializeField, Tooltip("Distância mínima para considerar que o Eater chegou no planeta.")]
-        private float minimumChaseDistance = 1.5f;
+        [FormerlySerializedAs("minimumChaseDistance"), FormerlySerializedAs("orbitDistance"), SerializeField,
+         Tooltip("Distância mínima entre o eater e a superfície do planeta marcado. Também define o raio da órbita ao comer.")]
+        private float minimumSurfaceDistance = 1.5f;
 
         public int MaxRecentDesires => Mathf.Max(0, maxRecentDesires);
         public float InitialDesireDelay => Mathf.Max(0f, initialDesireDelaySeconds);
@@ -81,8 +80,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public float WanderingReturnBias => Mathf.Clamp01(wanderingReturnBias);
         public float WanderingHungryDelay => Mathf.Max(0f, wanderingHungryDelay);
         public float HungryPlayerAttraction => Mathf.Clamp01(hungryPlayerAttraction);
-        public float MinimumChaseDistance => Mathf.Max(0f, minimumChaseDistance);
-        public float OrbitDistance => Mathf.Max(0.1f, orbitDistance);
+        public float MinimumChaseDistance => Mathf.Max(0f, minimumSurfaceDistance);
         public float OrbitDuration => Mathf.Max(0.25f, orbitDuration);
         public float OrbitApproachDuration => Mathf.Min(Mathf.Max(0.1f, orbitApproachDuration), OrbitDuration);
     }
