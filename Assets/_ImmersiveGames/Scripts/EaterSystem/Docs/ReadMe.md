@@ -29,8 +29,10 @@ marcação/desmarcação de planetas e destruição do planeta consumido.
 | `EaterWanderingState` | `EaterHungryState` | `WanderingTimeoutPredicate` | Inicia uma contagem regressiva (configurada em `EaterConfigSo.WanderingHungryDelay`) toda vez que o estado de exploração é ativado. Quando o tempo termina o predicado retorna verdadeiro uma única vez e habilita a transição para o estado faminto. |
 | `EaterHungryState` | `EaterChasingState` | `HungryChasingPredicate` | Observa o estado faminto para detectar quando existe um desejo ativo **e** há um planeta marcado. Assim que ambos os critérios são verdadeiros o predicado consome o pedido de transição emitido pelo estado e aciona a perseguição do planeta selecionado pelo jogador. |
 | `EaterChasingState` | `EaterEatingState` | `ChasingEatingPredicate` | Disparado quando a perseguição alcança a distância mínima (`EaterConfigSo.MinimumChaseDistance`), garantindo que somente a perseguição possa iniciar o estado de alimentação. |
-| `EaterChasingState` | `EaterHungryState` | `PlanetUnmarkedPredicate` | Reage a eventos de desmarcação enquanto o eater persegue um alvo, retornando imediatamente ao estado faminto. |
-| `EaterEatingState` | `EaterHungryState` | `PlanetUnmarkedPredicate` | Caso o planeta marcado seja trocado ou desmarcado durante a alimentação, o eater interrompe o consumo e volta para o estado faminto mantendo o desejo atual ativo. |
+| `EaterChasingState` | `EaterHungryState` | `ChasingHungryFallbackPredicate` | O próprio estado solicita a transição quando o planeta marcado deixa de existir ou fica indisponível, garantindo limpeza das âncoras antes de retomar o ciclo faminto. |
+| `EaterEatingState` | `EaterHungryState` | `EatingHungryFallbackPredicate` | Acionado pelo estado de alimentação sempre que o planeta é desmarcado ou trocado durante o consumo, preservando o desejo atual até que a perseguição seja retomada. |
+
+Os predicados de fallback não dependem mais de `PlanetUnmarkedEvent`. Os próprios estados detectam a perda do alvo (por desmarcação, destruição ou troca) e disparam as transições, o que evita disputas com o retorno obrigatório ao passeio quando o planeta é completamente devorado.
 | `EaterEatingState` | `EaterWanderingState` | `EatingWanderingPredicate` | Ativado quando o planeta consumido morre. O eater limpa a âncora registrada, solta o congelamento da órbita e retorna ao passeio. |
 
 

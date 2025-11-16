@@ -63,7 +63,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
         private ChasingEatingPredicate _chasingEatingPredicate;
-        private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
+        private ChasingHungryFallbackPredicate _chasingHungryFallbackPredicate;
+        private EatingHungryFallbackPredicate _eatingHungryFallbackPredicate;
         private EatingWanderingPredicate _eatingWanderingPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
@@ -199,14 +200,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
             IPredicate chasingEatingPredicate = EnsureChasingEatingPredicate();
-            IPredicate planetUnmarkedPredicate = EnsurePlanetUnmarkedPredicate();
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
             builder.At(_chasingState, _eatingState, chasingEatingPredicate);
-            builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
-            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_chasingState, _hungryState, EnsureChasingHungryFallbackPredicate());
+            builder.At(_eatingState, _hungryState, EnsureEatingHungryFallbackPredicate());
             builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
         }
 
@@ -249,15 +249,36 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return _chasingEatingPredicate;
         }
 
-        private IPredicate EnsurePlanetUnmarkedPredicate()
+        private IPredicate EnsureChasingHungryFallbackPredicate()
         {
-            if (_planetUnmarkedPredicate != null)
+            if (_chasingHungryFallbackPredicate != null)
             {
-                return _planetUnmarkedPredicate;
+                return _chasingHungryFallbackPredicate;
             }
 
-            _planetUnmarkedPredicate = new PlanetUnmarkedPredicate();
-            return _planetUnmarkedPredicate;
+            if (_chasingState == null || _hungryState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingHungryFallbackPredicate = new ChasingHungryFallbackPredicate(_chasingState);
+            return _chasingHungryFallbackPredicate;
+        }
+
+        private IPredicate EnsureEatingHungryFallbackPredicate()
+        {
+            if (_eatingHungryFallbackPredicate != null)
+            {
+                return _eatingHungryFallbackPredicate;
+            }
+
+            if (_eatingState == null || _hungryState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _eatingHungryFallbackPredicate = new EatingHungryFallbackPredicate(_eatingState);
+            return _eatingHungryFallbackPredicate;
         }
 
         private IPredicate EnsureEatingWanderingPredicate()

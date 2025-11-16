@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.States;
-using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 
@@ -216,42 +215,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
     /// <summary>
-    /// Predicado baseado em eventos de desmarcação de planeta.
-    /// Aciona a transição sempre que qualquer planeta é desmarcado via PlanetMarkingManager.
+    /// Predicado que permite ao estado de perseguição retornar ao estado faminto
+    /// quando o planeta marcado é perdido (desmarcado pelo jogador ou destruído por outro evento).
     /// </summary>
-    internal sealed class PlanetUnmarkedPredicate : IPredicate, IDisposable
+    internal sealed class ChasingHungryFallbackPredicate : IPredicate
     {
-        private readonly EventBinding<PlanetUnmarkedEvent> _unmarkedBinding;
-        private bool _shouldTrigger;
+        private readonly EaterChasingState _chasingState;
 
-        public PlanetUnmarkedPredicate()
+        public ChasingHungryFallbackPredicate(EaterChasingState chasingState)
         {
-            _unmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
-            EventBus<PlanetUnmarkedEvent>.Register(_unmarkedBinding);
+            _chasingState = chasingState ?? throw new ArgumentNullException(nameof(chasingState));
         }
 
         public bool Evaluate()
         {
-            if (!_shouldTrigger)
-            {
-                return false;
-            }
+            return _chasingState.ConsumeHungryTransitionRequest();
+        }
+    }
 
-            _shouldTrigger = false;
-            return true;
+    /// <summary>
+    /// Predicado que permite ao estado de alimentação interromper o consumo
+    /// e retornar ao estado faminto quando o planeta é desmarcado ou trocado.
+    /// </summary>
+    internal sealed class EatingHungryFallbackPredicate : IPredicate
+    {
+        private readonly EaterEatingState _eatingState;
+
+        public EatingHungryFallbackPredicate(EaterEatingState eatingState)
+        {
+            _eatingState = eatingState ?? throw new ArgumentNullException(nameof(eatingState));
         }
 
-        public void Dispose()
+        public bool Evaluate()
         {
-            if (_unmarkedBinding != null)
-            {
-                EventBus<PlanetUnmarkedEvent>.Unregister(_unmarkedBinding);
-            }
-        }
-
-        private void HandlePlanetUnmarked(PlanetUnmarkedEvent planetUnmarkedEvent)
-        {
-            _shouldTrigger = true;
+            return _eatingState.ConsumeHungryTransitionRequest();
         }
     }
 

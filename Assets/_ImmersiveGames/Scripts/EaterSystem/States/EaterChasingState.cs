@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Transform _cachedColliderOwner;
         private Collider _eaterCollider;
         private bool _preserveOrbitAnchor;
+        private bool _pendingHungryTransition;
 
         public EaterChasingState() : base("Chasing")
         {
@@ -29,12 +30,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
             _pendingEatingTransition = false;
             _preserveOrbitAnchor = false;
+            _pendingHungryTransition = false;
         }
 
         public override void OnExit()
         {
             ResetMovementHalt(_preserveOrbitAnchor);
             ClearEatingTransitionRequest();
+            _pendingHungryTransition = false;
             base.OnExit();
         }
 
@@ -49,6 +52,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 ClearEatingTransitionRequest();
                 ClearTargetColliderCache();
                 Behavior?.ClearOrbitAnchor();
+                RequestHungryTransition("TargetLost");
                 if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
                 {
                     DebugUtility.LogVerbose(
@@ -131,6 +135,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _pendingEatingTransition = false;
+            return true;
+        }
+
+        internal bool ConsumeHungryTransitionRequest()
+        {
+            if (!_pendingHungryTransition)
+            {
+                return false;
+            }
+
+            _pendingHungryTransition = false;
             return true;
         }
 
@@ -242,6 +257,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             _pendingEatingTransition = false;
             _preserveOrbitAnchor = false;
+        }
+
+        private void RequestHungryTransition(string reason)
+        {
+            if (_pendingHungryTransition)
+            {
+                return;
+            }
+
+            _pendingHungryTransition = true;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            DebugUtility.Log(
+                $"Planeta perdido durante a perseguição. Solicitando retorno ao estado faminto: {reason}.",
+                DebugUtility.Colors.CrucialInfo,
+                Behavior,
+                this);
         }
 
         private Collider ResolveTargetCollider(Transform target)

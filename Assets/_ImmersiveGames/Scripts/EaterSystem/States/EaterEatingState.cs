@@ -44,6 +44,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private CountdownTimer _damageTimer;
         private CountdownTimer _recoveryTimer;
         private bool _pendingWanderingTransition;
+        private bool _pendingHungryTransition;
         private bool _missingDamageReceiverLogged;
         private bool _hasReportedDestroyedPlanet;
         private bool _hasReportedDevouredCompatibility;
@@ -81,6 +82,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             base.OnEnter();
 
             _pendingWanderingTransition = false;
+            _pendingHungryTransition = false;
             StopDamageTimer();
             StopRecoveryTimer();
             _hasReportedDestroyedPlanet = false;
@@ -121,6 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentDamageReceiver = null;
             _currentTarget = null;
             _pendingWanderingTransition = false;
+            _pendingHungryTransition = false;
             _missingDamageReceiverLogged = false;
             _hasReportedDevouredCompatibility = false;
             _cachedTargetResourceAsset = null;
@@ -135,17 +138,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            if (_pendingWanderingTransition)
+            if (_pendingWanderingTransition || _pendingHungryTransition)
             {
                 return;
             }
 
             Transform target = Behavior.CurrentTargetPlanet;
             EnsureOrbitFreezeController().TryFreeze(Behavior, target);
+            if (CheckForHungryFallback(target))
+            {
+                return;
+            }
             if (target != _currentTarget)
             {
                 PrepareTarget(target, restartOrbit: true);
-                if (_pendingWanderingTransition)
+                if (_pendingWanderingTransition || _pendingHungryTransition)
                 {
                     return;
                 }
@@ -184,6 +191,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     TryReportDevouredPlanetOnTargetCleared();
                 }
 
+                bool planetStillActive = _activePlanet != null && _activePlanet.IsActive;
+                if (_currentTarget != null)
+                {
+                    Behavior?.ClearOrbitAnchor(_currentTarget);
+                }
                 _currentTarget = null;
 
                 if (Behavior.ShouldLogStateTransitions)
@@ -198,6 +210,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 StopRecoveryTimer();
                 _missingDamageReceiverLogged = false;
                 ResetCompatibility();
+
+                if (planetStillActive && !_pendingWanderingTransition)
+                {
+                    RequestHungryTransition("TargetCleared");
+                }
+
                 return;
             }
 
@@ -381,6 +399,59 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return fallback;
         }
 
+        private bool CheckForHungryFallback(Transform target)
+        {
+            if (_currentTarget == null)
+            {
+                return false;
+            }
+
+            if (target == null)
+            {
+                bool planetStillActive = _activePlanet != null && _activePlanet.IsActive;
+                if (planetStillActive && !_pendingWanderingTransition)
+                {
+                    RequestHungryTransition("TargetLostDuringEating");
+                    ReleaseCurrentTargetForHungryFallback();
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (ReferenceEquals(target, _currentTarget))
+            {
+                return false;
+            }
+
+            bool shouldFallback = _activePlanet != null && _activePlanet.IsActive;
+            if (!shouldFallback)
+            {
+                return false;
+            }
+
+            RequestHungryTransition("TargetChangedDuringEating");
+            ReleaseCurrentTargetForHungryFallback();
+            return true;
+        }
+
+        private void ReleaseCurrentTargetForHungryFallback()
+        {
+            StopTweens();
+            EnsureOrbitFreezeController().Release();
+            if (_currentTarget != null)
+            {
+                Behavior?.ClearOrbitAnchor(_currentTarget);
+            }
+            UpdatePlanetMaster(null);
+            _currentDamageReceiver = null;
+            StopDamageTimer();
+            StopRecoveryTimer();
+            _missingDamageReceiverLogged = false;
+            ResetCompatibility();
+            _currentTarget = null;
+        }
+
         internal bool ConsumeWanderingTransitionRequest()
         {
             if (!_pendingWanderingTransition)
@@ -389,6 +460,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _pendingWanderingTransition = false;
+            return true;
+        }
+
+        internal bool ConsumeHungryTransitionRequest()
+        {
+            if (!_pendingHungryTransition)
+            {
+                return false;
+            }
+
+            _pendingHungryTransition = false;
             return true;
         }
 
@@ -1097,6 +1179,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             DebugUtility.Log(
                 $"Solicitando retorno ao estado de passeio: {reason}.",
+                DebugUtility.Colors.CrucialInfo,
+                Behavior,
+                this);
+        }
+
+        private void RequestHungryTransition(string reason)
+        {
+            if (_pendingHungryTransition)
+            {
+                return;
+            }
+
+            _pendingHungryTransition = true;
+
+            if (!Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            DebugUtility.Log(
+                $"Planeta marcado foi perdido durante a alimentação. Retornando ao estado faminto ({reason}).",
                 DebugUtility.Colors.CrucialInfo,
                 Behavior,
                 this);
