@@ -162,8 +162,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             LookAtTarget();
-            TickDamage(Time.deltaTime);
-            TickRecovery(Time.deltaTime);
+            TickDamage();
+            TickRecovery();
         }
 
         private void PrepareTarget(Transform target, bool restartOrbit)
@@ -433,7 +433,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _animationController.SetEating(isEating);
         }
 
-        private void TickDamage(float deltaTime)
+        private void TickDamage()
         {
             TryResolveTargetCompatibility();
 
@@ -445,42 +445,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            float safeDelta = Mathf.Max(deltaTime, 0f);
-            float remainingBeforeTick = _damageTimer.CurrentTime;
-            _damageTimer.Tick(safeDelta);
+            if (_damageTimer.IsRunning)
+            {
+                _damageTimer.Tick();
+            }
 
             if (!_damageTimer.IsFinished)
             {
                 return;
             }
 
-            float overflow = Mathf.Max(safeDelta - remainingBeforeTick, 0f);
-            float availableTime = overflow + interval;
-
-            RearmDamageTimer(interval);
-
-            while (availableTime >= interval)
+            if (!TryApplyBiteDamage())
             {
-                if (!TryApplyBiteDamage())
-                {
-                    RearmDamageTimer(interval);
-                    return;
-                }
-
-                availableTime -= interval;
-
-                float nextInterval = ResolveDamageInterval();
-                RearmDamageTimer(nextInterval);
-                interval = nextInterval;
+                RearmDamageTimer(interval);
+                return;
             }
 
-            if (_damageTimer != null && availableTime > Mathf.Epsilon)
-            {
-                _damageTimer.Tick(availableTime);
-            }
+            float nextInterval = ResolveDamageInterval();
+            RearmDamageTimer(nextInterval);
         }
 
-        private void TickRecovery(float deltaTime)
+        private void TickRecovery()
         {
             if (!TryGetRecoveryConfig(out ResourceType resourceType, out float recoveryAmount, out float recoveryInterval))
             {
@@ -496,54 +481,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            float safeDelta = Mathf.Max(deltaTime, 0f);
-            float remainingBeforeTick = _recoveryTimer.CurrentTime;
-            _recoveryTimer.Tick(safeDelta);
+            if (_recoveryTimer.IsRunning)
+            {
+                _recoveryTimer.Tick();
+            }
 
             if (!_recoveryTimer.IsFinished)
             {
                 return;
             }
 
-            float overflow = Mathf.Max(safeDelta - remainingBeforeTick, 0f);
-            float availableTime = overflow + recoveryInterval;
+            bool hasCompatibility = TryEvaluateCompatibility(out bool isCompatible);
+            float multiplier = hasCompatibility && isCompatible ? 1f : IncompatibleRecoveryMultiplier;
+            float adjustedAmount = recoveryAmount * multiplier;
 
-            RearmRecoveryTimer(recoveryInterval);
-
-            while (availableTime >= recoveryInterval)
+            if (adjustedAmount <= Mathf.Epsilon)
             {
-                bool hasCompatibility = TryEvaluateCompatibility(out bool isCompatible);
-                float multiplier = hasCompatibility && isCompatible ? 1f : IncompatibleRecoveryMultiplier;
-                float adjustedAmount = recoveryAmount * multiplier;
-
-                if (adjustedAmount <= Mathf.Epsilon)
-                {
-                    RearmRecoveryTimer(recoveryInterval);
-                    return;
-                }
-
-                if (!TryApplyRecovery(resourceType, adjustedAmount))
-                {
-                    RearmRecoveryTimer(recoveryInterval);
-                    return;
-                }
-
-                availableTime -= recoveryInterval;
-
-                if (!TryGetRecoveryConfig(out resourceType, out recoveryAmount, out float nextInterval))
-                {
-                    StopRecoveryTimer();
-                    return;
-                }
-
-                recoveryInterval = Mathf.Max(nextInterval, MinimumTimerInterval);
                 RearmRecoveryTimer(recoveryInterval);
+                return;
             }
 
-            if (_recoveryTimer != null && availableTime > Mathf.Epsilon)
+            if (!TryApplyRecovery(resourceType, adjustedAmount))
             {
-                _recoveryTimer.Tick(availableTime);
+                RearmRecoveryTimer(recoveryInterval);
+                return;
             }
+
+            if (!TryGetRecoveryConfig(out resourceType, out recoveryAmount, out float nextInterval))
+            {
+                StopRecoveryTimer();
+                return;
+            }
+
+            recoveryInterval = Mathf.Max(nextInterval, MinimumTimerInterval);
+            RearmRecoveryTimer(recoveryInterval);
         }
 
         private bool TryApplyBiteDamage()

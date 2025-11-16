@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void Update()
         {
             base.Update();
-            UpdateHungryCountdown(Time.deltaTime);
+            UpdateHungryCountdown();
         }
 
         protected override float EvaluateSpeed()
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hungryCountdown.Stop();
         }
 
-        private void UpdateHungryCountdown(float deltaTime)
+        private void UpdateHungryCountdown()
         {
             if (_pendingHungryTransition || _hungryCountdown == null)
             {
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (_hungryCountdown.IsRunning)
             {
                 // Garante que o cronômetro avance a cada frame enquanto o eater está vagando.
-                _hungryCountdown.Tick(deltaTime);
+                _hungryCountdown.Tick();
             }
 
             if (!_hungryCountdown.IsFinished)

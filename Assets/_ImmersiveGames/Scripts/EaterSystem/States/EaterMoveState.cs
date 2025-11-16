@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            TickDirectionTimer(Time.deltaTime);
+            TickDirectionTimer();
 
             Move(Time.deltaTime);
         }
@@ -116,49 +116,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             ScheduleNextDirectionChange();
         }
 
-        private void TickDirectionTimer(float deltaTime)
+        private void TickDirectionTimer()
         {
             if (_directionTimer == null)
             {
                 return;
             }
 
-            float interval = Mathf.Max(DirectionInterval, 0.1f);
-            float remainingBeforeTick = _directionTimer.CurrentTime;
-
-            _directionTimer.Tick(deltaTime);
+            if (_directionTimer.IsRunning)
+            {
+                _directionTimer.Tick();
+            }
 
             if (!_directionTimer.IsFinished)
             {
                 return;
             }
 
-            float overflow = Mathf.Max(deltaTime - remainingBeforeTick, 0f);
             ChooseNewDirection();
-
-            if (_directionTimer == null)
-            {
-                return;
-            }
-
-            interval = Mathf.Max(DirectionInterval, 0.1f);
-            while (overflow >= interval)
-            {
-                overflow -= interval;
-                ChooseNewDirection();
-
-                if (_directionTimer == null)
-                {
-                    return;
-                }
-
-                interval = Mathf.Max(DirectionInterval, 0.1f);
-            }
-
-            if (overflow > Mathf.Epsilon)
-            {
-                _directionTimer.Tick(overflow);
-            }
         }
 
         private void ScheduleNextDirectionChange()

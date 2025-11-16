@@ -68,35 +68,26 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            float overflow = 0f;
-            float deltaTime = Mathf.Max(Time.deltaTime, 0f);
-
-            if (_timer.IsRunning && deltaTime > 0f)
+            if (!_timer.IsRunning)
             {
-                overflow = AdvanceTimer(deltaTime);
+                return;
             }
+
+            _timer.Tick();
 
             if (!_timer.IsFinished)
             {
                 return;
             }
 
-            do
+            if (!ProcessTimerCompletion() || _timer == null)
             {
-                bool shouldContinue = ProcessTimerCompletion();
-                if (!shouldContinue || _timer == null)
-                {
-                    break;
-                }
-
-                if (overflow <= Mathf.Epsilon)
-                {
-                    break;
-                }
-
-                overflow = AdvanceTimerWithOverflow(overflow);
+                return;
             }
-            while (_timer != null && _timer.IsFinished);
+
+            // Quando o temporizador é reiniciado durante o processamento, encerramos o ciclo
+            // imediatamente. O ImprovedTimers se encarrega de reiniciar a contagem com o tempo
+            // configurado, dispensando cálculos de overflow.
         }
 
         public bool Start()
@@ -224,31 +215,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 instance: this);
 
             return true;
-        }
-
-        private float AdvanceTimer(float deltaTime)
-        {
-            if (_timer == null || deltaTime <= 0f || !_timer.IsRunning)
-            {
-                return 0f;
-            }
-
-            float remaining = Mathf.Max(_timer.CurrentTime, 0f);
-            _timer.Tick(deltaTime);
-            return Mathf.Max(deltaTime - remaining, 0f);
-        }
-
-        private float AdvanceTimerWithOverflow(float overflow)
-        {
-            if (_timer == null || overflow <= Mathf.Epsilon || !_timer.IsRunning)
-            {
-                return 0f;
-            }
-
-            float remaining = Mathf.Max(_timer.CurrentTime, 0f);
-            float consumption = Mathf.Min(overflow, remaining + Mathf.Epsilon);
-            _timer.Tick(consumption);
-            return Mathf.Max(overflow - consumption, 0f);
         }
 
         private bool ProcessTimerCompletion()
