@@ -68,15 +68,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!_timer.IsRunning)
+            // Os timers do ImprovedTimers já avançam internamente. Chamamos Tick apenas quando
+            // o cronômetro está ativo para manter a compatibilidade com execuções fora do
+            // serviço global, mas não bloqueamos o processamento quando o plugin já encerrou a
+            // contagem e sinalizou o término via IsFinished.
+            if (_timer.IsRunning)
             {
-                return;
+                _timer.Tick();
+
+                if (!_timer.IsFinished)
+                {
+                    return;
+                }
             }
-
-            _timer.Tick();
-
-            if (!_timer.IsFinished)
+            else if (!_timer.IsFinished)
             {
+                // Timer pausado antes do fim — nenhuma mudança de desejo deve ocorrer.
                 return;
             }
 
