@@ -20,8 +20,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
-            Behavior?.EndDesires("WanderingState.OnEnter");
+            Behavior?.SuspendDesires("WanderingState.OnEnter");
             RestartHungryCountdown();
+            RestartMovement(); // Reinicia o deslocamento sempre que o estado de passeio é reativado.
         }
 
         public override void OnExit()
@@ -33,7 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void Update()
         {
             base.Update();
-            EvaluateHungryCountdown();
+            UpdateHungryCountdown();
         }
 
         protected override float EvaluateSpeed()
@@ -154,7 +155,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hungryCountdown.Stop();
         }
 
-        private void EvaluateHungryCountdown()
+        private void UpdateHungryCountdown()
         {
             if (_pendingHungryTransition || _hungryCountdown == null)
             {
@@ -163,7 +164,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (_hungryCountdown.IsRunning)
             {
-                return;
+                // Garante que o cronômetro avance a cada frame enquanto o eater está vagando.
+                _hungryCountdown.Tick();
             }
 
             if (!_hungryCountdown.IsFinished)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
@@ -8,10 +9,12 @@ using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.Predicates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -49,6 +52,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private ResourceAutoFlowBridge _autoFlowBridge;
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
+        private bool _missingResourceSystemLogged;
+        private IDamageReceiver _selfDamageReceiver;
+        private bool _missingSelfDamageReceiverLogged;
 
         private EaterDesireService _desireService;
         private EaterDesireInfo _currentDesireInfo = EaterDesireInfo.Inactive;
@@ -56,9 +62,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingMasterForPredicatesLogged;
         private WanderingTimeoutPredicate _wanderingTimeoutPredicate;
         private HungryChasingPredicate _hungryChasingPredicate;
+        private ChasingEatingPredicate _chasingEatingPredicate;
+        private PlanetUnmarkedPredicate _planetUnmarkedPredicate;
+        private EatingWanderingPredicate _eatingWanderingPredicate;
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
+        private Transform _lastOrbitTarget;
+        private float _lastOrbitRadius = -1f;
+        private float _lastSurfaceStopDistance = -1f;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -186,11 +198,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             IPredicate revivePredicate = EnsureRevivePredicate();
             IPredicate wanderingTimeoutPredicate = EnsureWanderingTimeoutPredicate();
             IPredicate hungryChasingPredicate = EnsureHungryChasingPredicate();
-
+            IPredicate chasingEatingPredicate = EnsureChasingEatingPredicate();
+            IPredicate planetUnmarkedPredicate = EnsurePlanetUnmarkedPredicate();
             builder.Any(_deathState, deathPredicate);
             builder.At(_deathState, _wanderingState, revivePredicate);
             builder.At(_wanderingState, _hungryState, wanderingTimeoutPredicate);
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
+            builder.At(_chasingState, _eatingState, chasingEatingPredicate);
+            builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
+            builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -214,6 +231,49 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _hungryChasingPredicate = new HungryChasingPredicate(_hungryState);
             return _hungryChasingPredicate;
+        }
+
+        private IPredicate EnsureChasingEatingPredicate()
+        {
+            if (_chasingEatingPredicate != null)
+            {
+                return _chasingEatingPredicate;
+            }
+
+            if (_chasingState == null || _eatingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _chasingEatingPredicate = new ChasingEatingPredicate(_chasingState);
+            return _chasingEatingPredicate;
+        }
+
+        private IPredicate EnsurePlanetUnmarkedPredicate()
+        {
+            if (_planetUnmarkedPredicate != null)
+            {
+                return _planetUnmarkedPredicate;
+            }
+
+            _planetUnmarkedPredicate = new PlanetUnmarkedPredicate();
+            return _planetUnmarkedPredicate;
+        }
+
+        private IPredicate EnsureEatingWanderingPredicate()
+        {
+            if (_eatingWanderingPredicate != null)
+            {
+                return _eatingWanderingPredicate;
+            }
+
+            if (_eatingState == null || _wanderingState == null)
+            {
+                return FalsePredicate.Instance;
+            }
+
+            _eatingWanderingPredicate = new EatingWanderingPredicate(_eatingState);
+            return _eatingWanderingPredicate;
         }
 
         private IPredicate EnsureWanderingTimeoutPredicate()
@@ -407,11 +467,157 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_animationController == null)
             {
-                TryGetComponent(out _animationController);
+                string actorId = _master != null ? _master.ActorId : null;
+                if (!string.IsNullOrEmpty(actorId)
+                    && DependencyManager.Instance.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                {
+                    _animationController = resolvedController;
+                }
+                else if (!TryGetComponent(out _animationController))
+                {
+                    _animationController = null;
+                }
             }
 
             animationController = _animationController;
             return animationController != null;
+        }
+
+        internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
+        {
+            if (_audioEmitter == null)
+            {
+                if (_master != null)
+                {
+                    string actorId = _master.ActorId;
+                    if (!string.IsNullOrEmpty(actorId)
+                        && DependencyManager.Instance.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
+                    {
+                        _audioEmitter = resolvedEmitter;
+                    }
+                }
+
+                if (_audioEmitter == null)
+                {
+                    TryGetComponent(out _audioEmitter);
+                }
+            }
+
+            audioEmitter = _audioEmitter;
+            return audioEmitter != null;
+        }
+
+        internal bool TryApplySelfHealing(ResourceType resourceType, float amount,
+            DamageType healDamageType = DamageType.Pure)
+        {
+            if (amount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (!TryGetSelfDamageReceiver(out IDamageReceiver damageReceiver))
+            {
+                if (logStateTransitions && !_missingSelfDamageReceiverLogged)
+                {
+                    DebugUtility.LogWarning(
+                        "DamageReceiver do eater não encontrado. Não foi possível recuperar recursos via DamageSystem.",
+                        this,
+                        this);
+                    _missingSelfDamageReceiverLogged = true;
+                }
+
+                return false;
+            }
+
+            _missingSelfDamageReceiverLogged = false;
+
+            float clampedAmount = Mathf.Max(0f, amount);
+            if (clampedAmount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            string attackerId = _master != null ? _master.ActorId : string.Empty;
+            string targetId = damageReceiver.GetReceiverId();
+            Vector3 hitPosition = transform.position;
+
+            var context = new DamageContext(attackerId, targetId, -clampedAmount, resourceType, healDamageType, hitPosition);
+            damageReceiver.ReceiveDamage(context);
+            return true;
+        }
+
+        private bool TryGetSelfDamageReceiver(out IDamageReceiver damageReceiver)
+        {
+            if (_selfDamageReceiver == null)
+            {
+                if (_master != null)
+                {
+                    string actorId = _master.ActorId;
+                    if (!string.IsNullOrEmpty(actorId)
+                        && DependencyManager.Instance.TryGetForObject(actorId, out IDamageReceiver resolvedReceiver))
+                    {
+                        _selfDamageReceiver = resolvedReceiver;
+                    }
+                }
+
+                if (_selfDamageReceiver == null)
+                {
+                    TryGetComponent(out _selfDamageReceiver);
+                }
+            }
+
+            damageReceiver = _selfDamageReceiver;
+            return damageReceiver != null;
+        }
+
+        /// <summary>
+        /// Registra informações sobre o último ponto em que a perseguição foi interrompida.
+        /// Mantém a distância radial calculada a partir do centro do planeta e a separação da superfície.
+        /// </summary>
+        internal void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float surfaceStopDistance)
+        {
+            if (target == null)
+            {
+                ClearOrbitAnchor();
+                return;
+            }
+
+            _lastOrbitTarget = target;
+            _lastSurfaceStopDistance = Mathf.Max(0f, surfaceStopDistance);
+            float computedRadius = Vector3.Distance(transform.position, targetCenter);
+            _lastOrbitRadius = Mathf.Max(computedRadius, 0f);
+        }
+
+        /// <summary>
+        /// Obtém o último ponto de parada registrado para o planeta informado.
+        /// </summary>
+        internal bool TryGetOrbitAnchor(Transform target, out float orbitRadius, out float surfaceStopDistance)
+        {
+            if (ReferenceEquals(target, _lastOrbitTarget) && _lastOrbitRadius > 0f)
+            {
+                orbitRadius = _lastOrbitRadius;
+                surfaceStopDistance = _lastSurfaceStopDistance;
+                return true;
+            }
+
+            orbitRadius = 0f;
+            surfaceStopDistance = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// Limpa o ponto de parada registrado, evitando reaproveitar dados obsoletos.
+        /// </summary>
+        internal void ClearOrbitAnchor(Transform target = null)
+        {
+            if (target != null && !ReferenceEquals(target, _lastOrbitTarget))
+            {
+                return;
+            }
+
+            _lastOrbitTarget = null;
+            _lastOrbitRadius = -1f;
+            _lastSurfaceStopDistance = -1f;
         }
 
         internal bool ResumeAutoFlow(string reason)
@@ -540,6 +746,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 _autoFlowBridge = bridge;
                 _missingAutoFlowBridgeLogged = false;
                 _autoFlowUnavailableLogged = false;
+                _missingResourceSystemLogged = false;
                 return true;
             }
 
@@ -574,6 +781,43 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
         }
 
+        internal bool TryRestoreResource(ResourceType resourceType, float amount)
+        {
+            if (amount <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (!TryEnsureAutoFlowBridge())
+            {
+                LogAutoFlowIssue(
+                    "ResourceAutoFlowBridge não encontrado para recuperar recursos manualmente.",
+                    ref _missingAutoFlowBridgeLogged);
+                return false;
+            }
+
+            if (!_autoFlowBridge.HasAutoFlowService)
+            {
+                LogAutoFlowIssue(
+                    "ResourceAutoFlowBridge ainda não possui serviço inicializado para recuperar recursos manualmente.",
+                    ref _autoFlowUnavailableLogged);
+                return false;
+            }
+
+            ResourceSystem resourceSystem = _autoFlowBridge.GetResourceSystem();
+            if (resourceSystem == null)
+            {
+                LogAutoFlowIssue(
+                    "ResourceSystem indisponível ao tentar recuperar recursos manualmente.",
+                    ref _missingResourceSystemLogged);
+                return false;
+            }
+
+            _missingResourceSystemLogged = false;
+            resourceSystem.Modify(resourceType, Mathf.Max(0f, amount));
+            return true;
+        }
+
         internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)
         {
             if (TryGetClosestPlayer(out Transform player, out float sqrDistance))
@@ -593,6 +837,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (!EnsureDesireService())
             {
                 return false;
+            }
+
+            bool resumed = _desireService.TryResume();
+            if (resumed)
+            {
+                if (logStateTransitions)
+                {
+                    DebugUtility.Log($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+
+                return true;
             }
 
             bool started = _desireService.Start();
@@ -710,6 +965,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _revivePredicate?.Dispose();
             _revivePredicate = null;
+
+            _planetUnmarkedPredicate?.Dispose();
+            _planetUnmarkedPredicate = null;
+            _eatingWanderingPredicate = null;
         }
 
         private sealed class FalsePredicate : IPredicate
