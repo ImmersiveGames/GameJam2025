@@ -10,6 +10,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterWanderingState : EaterMoveState
     {
+        private const float MinimumHungryInterval = 0.05f;
+
         private CountdownTimer _hungryCountdown;
         private bool _pendingHungryTransition;
 
@@ -20,8 +22,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
-            Behavior?.EndDesires("WanderingState.OnEnter");
+            Behavior?.SuspendDesires("WanderingState.OnEnter");
             RestartHungryCountdown();
+            RestartMovement(); // Reinicia o deslocamento sempre que o estado de passeio é reativado.
         }
 
         public override void OnExit()
@@ -33,7 +36,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void Update()
         {
             base.Update();
-            EvaluateHungryCountdown();
+            UpdateHungryCountdown();
         }
 
         protected override float EvaluateSpeed()
@@ -123,11 +126,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            EnsureHungryCountdown(duration);
-
-            float safeDuration = Mathf.Max(duration, 0.05f);
-            _hungryCountdown.Stop();
-            _hungryCountdown.Reset(safeDuration);
+            float safeDuration = Mathf.Max(duration, MinimumHungryInterval);
+            StopHungryCountdown();
+            _hungryCountdown = new CountdownTimer(safeDuration);
             _hungryCountdown.Start();
         }
 
@@ -142,19 +143,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hungryCountdown = null;
         }
 
-        private void EnsureHungryCountdown(float duration)
-        {
-            if (_hungryCountdown != null)
-            {
-                return;
-            }
-
-            float safeDuration = Mathf.Max(duration, 0.05f);
-            _hungryCountdown = new CountdownTimer(safeDuration);
-            _hungryCountdown.Stop();
-        }
-
-        private void EvaluateHungryCountdown()
+        private void UpdateHungryCountdown()
         {
             if (_pendingHungryTransition || _hungryCountdown == null)
             {
@@ -163,7 +152,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (_hungryCountdown.IsRunning)
             {
-                return;
+                // Garante que o cronômetro avance a cada frame enquanto o eater está vagando.
+                _hungryCountdown.Tick();
             }
 
             if (!_hungryCountdown.IsFinished)
