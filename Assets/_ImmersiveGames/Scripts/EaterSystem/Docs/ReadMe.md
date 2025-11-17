@@ -46,24 +46,23 @@ Quando o estado faminto identifica um planeta válido para perseguir, ele suspen
 antes de solicitar a transição. Dessa forma, o último desejo selecionado permanece inalterado durante
 `EaterChasingState`, `EaterEatingState` **e** `EaterWanderingState`. Sempre que o eater retorna para
 `EaterHungryState` sem ter limpado o desejo (por exemplo, porque o planeta foi desmarcado), o serviço
-retoma o desejo anterior imediatamente, reiniciando o cronômetro com a duração completa configurada
-para aquele recurso.
+retoma o desejo anterior a partir do tempo que restava no ciclo (snapshot salvo pelo `EaterDesireService`).
+Se existir atraso inicial configurado, ele é reaplicado antes de continuar a contagem do desejo retomado.
 
 ### Fluxo dos desejos entre estados
 
-- **Seleção exclusiva no estado faminto**: somente `EaterHungryState` controla a rotação de desejos,
-  acionando `EaterDesireService.Start` apenas quando não há desejo armazenado (primeira ativação ou
-  após limpeza).
+- **Seleção exclusiva no estado faminto**: somente `EaterHungryState` controla a rotação de desejos. Ao
+  entrar, ele chama `EaterBehavior.BeginDesires`, que inicia o ciclo quando não há seleção ativa ou tenta
+  retomar o snapshot salvo se o serviço estava suspenso.
 - **Persistência fora da fome**: ao solicitar perseguição, o estado faminto chama
-  `EaterBehavior.SuspendDesires`, preservando o desejo atual para ser consumido durante os estados de
-  perseguição e alimentação.
-- **Retomada sem atraso**: se houver um desejo pausado (casos de perseguição ou alimentação interrompida),
-  `EaterBehavior.BeginDesires` chama `EaterDesireService.TryResume`, recolocando o desejo anterior em
-  atividade e reiniciando o temporizador com a duração completa daquele recurso.
-- **Passeio preserva o desejo**: `EaterWanderingState` apenas congela o serviço através de
-  `EaterBehavior.SuspendDesires`, mantendo o último recurso selecionado até que o estado faminto retome
-  o ciclo. Dessa forma, o desejo só muda novamente quando `EaterHungryState` volta a ficar ativo e
-  executa uma nova rotação.
+  `EaterBehavior.SuspendDesires`, preservando o desejo atual enquanto o eater persegue ou se alimenta. O
+  passeio também mantém a seleção congelada, mas não gera novos desejos enquanto a suspensão durar.
+- **Retomada com tempo restante**: `EaterBehavior.BeginDesires` usa `EaterDesireService.TryResume` para
+  recuperar o desejo suspenso. O serviço reabre o ciclo com o tempo restante capturado no snapshot e, se
+  houver atraso inicial configurado, espera esse atraso antes de continuar a contagem restante.
+- **Troca só na fome**: o desejo volta a ser sorteado ou rotacionado apenas quando `EaterHungryState` é
+  reativado e não há snapshot válido para retomar, mantendo a última seleção inalterada nos demais
+  estados.
 
 ## Serviços Internos
 
@@ -88,6 +87,6 @@ Esse documento será atualizado conforme novos predicados e transições forem i
 
 - `EaterEatingState` aplica dano periódico ao planeta marcado com base em `EaterConfigSo.EatingDamageAmount`, `EatingDamageInterval`, `EatingDamageResource` e `EatingDamageType`.
 - Cada mordida bem-sucedida dispara `EaterMaster.OnEventEaterBite`, mantém a animação configurada em `EaterAnimationController` e respeita o raio mínimo registrado durante a perseguição.
-- Enquanto o eater devora um planeta, ele também recupera recursos próprios em intervalos configuráveis (`EaterConfigSo.EatingRecoveryResource`, `EatingRecoveryAmount` e `EatingRecoveryInterval`).
+- Enquanto o eater devora um planeta, ele também recupera recursos próprios em intervalos configuráveis (`EaterConfigSo.EatingRecoveryResource`, `EatingRecoveryAmount` e `EatingRecoveryInterval`). Se o recurso do planeta for compatível com o desejo atual, aplica 100% do valor configurado; em caso de incompatibilidade ou sem avaliação, aplica apenas 50%.
 - Ao consumir completamente um planeta compatível com o desejo atual, o eater recupera instantaneamente `EaterConfigSo.EatingCompatibleDevourHealAmount` de Health por meio do `DamageSystem`, garantindo integração com resistências e eventos de dano já existentes.
 - Se o planeta consumido morrer durante o processo, o estado limpa a âncora registrada, libera o congelamento da órbita e solicita o retorno imediato para `EaterWanderingState` por meio de `EatingWanderingPredicate`.
