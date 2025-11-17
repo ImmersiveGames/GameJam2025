@@ -29,7 +29,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 Behavior.EventDesireChanged += HandleDesireChanged;
                 _listeningDesires = true;
-                Behavior.BeginDesires("HungryState.OnEnter");
+
+                bool restarted = Behavior.RestartDesires("HungryState.OnEnter");
+                if (!restarted)
+                {
+                    Behavior.BeginDesires("HungryState.OnEnter");
+                }
             }
 
             SubscribeToMarkedPlanets();

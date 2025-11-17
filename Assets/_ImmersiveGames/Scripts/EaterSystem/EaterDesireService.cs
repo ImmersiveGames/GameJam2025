@@ -214,6 +214,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return true;
         }
 
+        public bool RestartCycle()
+        {
+            EnsureTimerInstance();
+
+            switch (_phase)
+            {
+                case DesireCyclePhase.Inactive:
+                    if (HasLockedDesire)
+                    {
+                        return TryResume();
+                    }
+
+                    return Start();
+                case DesireCyclePhase.WaitingInitialDelay:
+                    RestartTimer(Mathf.Max(_config.InitialDesireDelay, 0.05f));
+                    return true;
+                case DesireCyclePhase.WaitingResumeDelay:
+                    _scheduledResumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
+                    RestartTimer(Mathf.Max(_config.InitialDesireDelay, 0.05f));
+                    return true;
+                case DesireCyclePhase.Active:
+                    float duration = _currentDuration > 0f
+                        ? _currentDuration
+                        : Mathf.Max(_config.DesireDuration, 0.05f);
+
+                    RestartTimer(duration);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         public bool Suspend()
         {
             if (!IsActive)

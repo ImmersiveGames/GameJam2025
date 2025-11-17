@@ -840,6 +840,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
+            if (_desireService.RestartCycle())
+            {
+                if (logStateTransitions)
+                {
+                    DebugUtility.Log($"Desejos reiniciados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                }
+
+                return true;
+            }
+
             bool resumed = _desireService.TryResume();
             if (resumed)
             {
