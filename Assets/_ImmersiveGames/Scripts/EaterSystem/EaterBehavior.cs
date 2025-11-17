@@ -833,24 +833,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return false;
         }
 
-        internal bool BeginDesires(string reason)
+        internal bool BeginDesires(string reason, bool forceRestart = false)
         {
             if (!EnsureDesireService())
             {
                 return false;
             }
 
-            if (_desireService.RestartCycle())
+            if (forceRestart)
             {
-                if (logStateTransitions)
-                {
-                    DebugUtility.Log($"Desejos reiniciados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
-                }
-
-                return true;
+                _desireService.Stop();
             }
 
-            bool resumed = _desireService.TryResume();
+            bool resumed = !forceRestart && _desireService.TryResume();
             if (resumed)
             {
                 if (logStateTransitions)

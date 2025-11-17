@@ -31,6 +31,9 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         }
 
         private void ChangeState(IState state) {
+            if (_currentNode != null && state == _currentNode.State)
+                return;
+
             var nextNode = GetNodeOrThrow(state.GetType());
             var previousState = _currentNode?.State;
             var nextState = nextNode.State;
