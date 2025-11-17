@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
     /// Banco de dados simples para buscar configurações visuais por tipo de alvo.
     /// </summary>
-    [CreateAssetMenu(fileName = "CompassVisualDatabase", menuName = "ImmersiveGames/UI/Compass/Visual Database")]
+    [CreateAssetMenu(fileName = "CompassVisualDatabase", menuName = "Game/UI/Compass/Visual Database")]
     public class CompassVisualDatabase : ScriptableObject
     {
         [Tooltip("Lista de configurações visuais disponíveis para a bússola.")]

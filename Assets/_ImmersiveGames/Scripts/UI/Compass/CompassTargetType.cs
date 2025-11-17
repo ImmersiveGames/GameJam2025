@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
