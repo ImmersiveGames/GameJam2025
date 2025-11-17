@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
     /// <summary>
     /// Configuração visual para um tipo específico de alvo rastreável pela bússola.
     /// </summary>
-    [CreateAssetMenu(fileName = "CompassTargetVisualConfig", menuName = "Game/UI/Compass/Target Visual Config")]
+    [CreateAssetMenu(fileName = "CompassTargetVisualConfig", menuName = "ImmersiveGames/UI/Compass/Target Visual Config")]
     public class CompassTargetVisualConfig : ScriptableObject
     {
         [Header("Identificação")]

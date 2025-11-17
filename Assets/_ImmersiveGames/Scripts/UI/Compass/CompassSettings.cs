@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
     /// <summary>
     /// Configurações gerais de comportamento da bússola, desacopladas da cena.
     /// </summary>
-    [CreateAssetMenu(fileName = "CompassSettings", menuName = "Game/UI/Compass/Settings")]
+    [CreateAssetMenu(fileName = "CompassSettings", menuName = "ImmersiveGames/UI/Compass/Settings")]
     public class CompassSettings : ScriptableObject
     {
         [Header("Campo angular da bússola")]
