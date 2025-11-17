@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Game.UI.Compass
+namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
     /// Configuração visual para um tipo específico de alvo rastreável pela bússola.

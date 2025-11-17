@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Game.UI.Compass
+namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
     /// Representa os tipos básicos de alvos rastreáveis pela bússola.
