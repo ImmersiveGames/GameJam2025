@@ -212,6 +212,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             TryResolveTargetCompatibility();
+            ReportDesiredResourceMatch();
 
             _radialBasis = ResolveRadialBasis();
             _currentOrbitRadius = ResolveOrbitRadius(_currentTarget);
@@ -889,6 +890,44 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasEvaluatedPlanetResource = false;
             _evaluatedDesiredResource = default;
             _evaluatedPlanetResource = default;
+        }
+
+        private void ReportDesiredResourceMatch()
+        {
+            if (Behavior == null || !Behavior.ShouldLogStateTransitions)
+            {
+                return;
+            }
+
+            if (!TryGetTargetResourceType(out PlanetResources planetResource))
+            {
+                DebugUtility.LogWarning<EaterEatingState>(
+                    "Não foi possível identificar o recurso do planeta enquanto iniciava a alimentação.",
+                    Behavior,
+                    this);
+                return;
+            }
+
+            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            {
+                DebugUtility.LogWarning<EaterEatingState>(
+                    "Nenhum desejo de recurso definido ao começar a comer.",
+                    Behavior,
+                    this);
+                return;
+            }
+
+            bool matches = planetResource == desiredResource;
+            string message = matches
+                ? $"Recurso do planeta compatível com o desejo atual: {planetResource}."
+                : $"Recurso do planeta ({planetResource}) difere do desejo atual ({desiredResource}).";
+
+            DebugUtility.Log(
+                message,
+                matches ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
+                Behavior,
+                this);
         }
 
         private void CacheTargetResourceData(PlanetsMaster planet)
