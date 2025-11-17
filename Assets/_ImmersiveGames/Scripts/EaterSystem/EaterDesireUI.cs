@@ -277,22 +277,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireIcon.overrideSprite = fallbackSprite;
                 SetIconVisibility(true);
 
-                DebugUtility.LogWarning(
-                    _currentInfo.HasResource
-                        ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
-                        : "Ícone de desejo indisponível. Utilizando fallback.",
-                    context: this,
-                    instance: this);
+                if (_currentInfo.Resource != null)
+                    DebugUtility.LogWarning(
+                        _currentInfo.HasResource
+                            ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
+                            : "Ícone de desejo indisponível. Utilizando fallback.",
+                        context: this,
+                        instance: this);
             }
             else
             {
                 SetIconVisibility(false);
-                DebugUtility.LogWarning(
-                    _currentInfo.HasResource
-                        ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
-                        : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
-                    context: this,
-                    instance: this);
+                if (_currentInfo.Resource != null)
+                    DebugUtility.LogWarning(
+                        _currentInfo.HasResource
+                            ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
+                            : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
+                        context: this,
+                        instance: this);
             }
         }
 
@@ -304,7 +306,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             GameObject iconObject = desireIcon.gameObject;
-            CanvasRenderer renderer = desireIcon.canvasRenderer;
+            CanvasRenderer canvasRenderer = desireIcon.canvasRenderer;
 
             if (visible)
             {
@@ -318,9 +320,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     desireIcon.enabled = true;
                 }
 
-                if (renderer != null)
+                if (canvasRenderer != null)
                 {
-                    renderer.SetAlpha(1f);
+                    canvasRenderer.SetAlpha(1f);
                 }
 
                 return;
@@ -346,9 +348,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 desireIcon.enabled = false;
             }
 
-            if (renderer != null)
+            if (canvasRenderer != null)
             {
-                renderer.SetAlpha(0f);
+                canvasRenderer.SetAlpha(0f);
             }
         }
 

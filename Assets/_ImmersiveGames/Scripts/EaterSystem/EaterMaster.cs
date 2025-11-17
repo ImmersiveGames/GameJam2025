@@ -19,10 +19,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public event Action<IActor> EventEaterTakeDamage;
 
         public EaterConfigSo Config => config;
-        public EaterConfigSo GetConfig => config;
-
-        public bool InHungry { get; internal set; }
-        public bool IsEating { get; internal set; }
 
         public IActor EaterActor => this;
 
@@ -34,11 +30,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void OnEventEndEatPlanet(PlanetsMaster planet)
         {
             EventEndEatPlanet?.Invoke(planet);
-        }
-
-        public void OnEventConsumeResource(PlanetsMaster planet, bool desireSatisfied, IActor byActor)
-        {
-            EventConsumeResource?.Invoke(planet, desireSatisfied, byActor);
         }
 
         public void OnEventEaterBite(PlanetsMaster planet)

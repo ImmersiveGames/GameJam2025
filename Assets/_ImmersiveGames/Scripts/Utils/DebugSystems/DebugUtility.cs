@@ -36,6 +36,8 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             public const string CrucialInfo = "#00BCD4";
             public const string Info = "#A8DEED";
             public const string Success = "#4CAF50";
+            public const string Warning ="yellow";
+            public const string Error = "red";
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

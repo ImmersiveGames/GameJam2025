@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.Scripts.PlanetSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
@@ -6,7 +7,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     /// Representa o estado atual dos desejos do Eater, permitindo que consumidores externos
     /// descubram qual recurso está sendo desejado e se ele está disponível.
     /// </summary>
-    public readonly struct EaterDesireInfo
+    public readonly struct EaterDesireInfo : IEquatable<EaterDesireInfo>
     {
         public static readonly EaterDesireInfo Inactive = new(false, false, null, false, 0, 0f, 0f, 0f);
 
@@ -63,7 +64,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// <summary>
         /// Peso calculado para o desejo durante o sorteio.
         /// </summary>
-        public float Weight { get; }
+        private float Weight { get; }
 
         /// <summary>
         /// Duração prevista do desejo atual em segundos.
@@ -73,7 +74,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         /// <summary>
         /// Tempo restante do desejo atual em segundos.
         /// </summary>
-        public float RemainingTime { get; }
+        private float RemainingTime { get; }
 
         /// <summary>
         /// Obtém o recurso desejado quando disponível.
@@ -88,6 +89,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             resource = default;
             return false;
+        }
+        public bool Equals(EaterDesireInfo other)
+        {
+            return ServiceActive == other.ServiceActive && HasDesire == other.HasDesire && Resource == other.Resource && IsAvailable == other.IsAvailable && AvailableCount == other.AvailableCount && Weight.Equals(other.Weight) && Duration.Equals(other.Duration) && RemainingTime.Equals(other.RemainingTime);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is EaterDesireInfo other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(ServiceActive, HasDesire, Resource, IsAvailable, AvailableCount, Weight, Duration, RemainingTime);
         }
     }
 }

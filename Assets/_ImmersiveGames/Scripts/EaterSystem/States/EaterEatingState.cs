@@ -1,8 +1,6 @@
 using DG.Tweening;
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.EaterSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
@@ -45,7 +43,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _missingDamageReceiverLogged;
         private bool _hasReportedDestroyedPlanet;
         private bool _hasReportedDevouredCompatibility;
-        private PlanetResourcesSo _cachedTargetResourceAsset;
         private PlanetResources _cachedTargetResourceType;
         private bool _hasCachedTargetResource;
         private bool _hasCompatibilityResult;
@@ -56,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetResources _evaluatedPlanetResource;
         private bool _missingAudioEmitterLogged;
         private bool _hasAppliedDevourReward;
+        private bool _hasLoggedRecoveryCompatibility;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -88,11 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
-
-            if (Master != null)
-            {
-                Master.IsEating = true;
-            }
+            _hasLoggedRecoveryCompatibility = false;
 
             UpdateEatingAnimation(isEating: true);
 
@@ -103,11 +97,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnExit()
         {
             UpdateEatingAnimation(isEating: false);
-
-            if (Master != null)
-            {
-                Master.IsEating = false;
-            }
+            
 
             base.OnExit();
             StopTweens();
@@ -119,13 +109,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _pendingWanderingTransition = false;
             _missingDamageReceiverLogged = false;
             _hasReportedDevouredCompatibility = false;
-            _cachedTargetResourceAsset = null;
             _cachedTargetResourceType = default;
             _hasCachedTargetResource = false;
             _recoveryTimer = 0f;
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
+            _hasLoggedRecoveryCompatibility = false;
         }
 
         public override void Update()
@@ -137,7 +127,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            Transform target = Behavior.CurrentTargetPlanet;
+            var target = Behavior.CurrentTargetPlanet;
             EnsureOrbitFreezeController().TryFreeze(Behavior, target);
             if (target != _currentTarget)
             {
@@ -172,6 +162,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _hasReportedDestroyedPlanet = false;
                 _hasReportedDevouredCompatibility = false;
                 _hasAppliedDevourReward = false;
+                _hasLoggedRecoveryCompatibility = false;
             }
 
             if (target == null)
@@ -199,7 +190,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _currentTarget = target;
-            PlanetsMaster resolvedPlanet = ResolvePlanetMaster(_currentTarget);
+            var resolvedPlanet = ResolvePlanetMaster(_currentTarget);
             UpdatePlanetMaster(resolvedPlanet);
             _currentDamageReceiver = ResolveDamageReceiver(_currentTarget);
             _missingDamageReceiverLogged = false;
@@ -216,7 +207,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _radialBasis = ResolveRadialBasis();
             _currentOrbitRadius = ResolveOrbitRadius(_currentTarget);
-            Vector3 desiredPosition = _currentTarget.position + _radialBasis * _currentOrbitRadius;
+            var desiredPosition = _currentTarget.position + _radialBasis * _currentOrbitRadius;
             float distanceToDesired = Vector3.Distance(Transform.position, desiredPosition);
 
             if (distanceToDesired > 0.05f)
@@ -274,18 +265,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            Vector3 axis = ResolveOrbitAxis();
-            Vector3 radial = Vector3.ProjectOnPlane(_radialBasis, axis);
+            var axis = ResolveOrbitAxis();
+            var radial = Vector3.ProjectOnPlane(_radialBasis, axis);
             if (radial.sqrMagnitude <= Mathf.Epsilon)
             {
                 radial = ResolveRadialBasis();
             }
             radial = radial.normalized;
             _radialBasis = radial;
-            Vector3 tangent = Vector3.Cross(axis, radial).normalized;
+            var tangent = Vector3.Cross(axis, radial).normalized;
 
             float radians = angle * Mathf.Deg2Rad;
-            Vector3 offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * _currentOrbitRadius;
+            var offset = (radial * Mathf.Cos(radians) + tangent * Mathf.Sin(radians)) * _currentOrbitRadius;
             Transform.position = _currentTarget.position + offset;
         }
 
@@ -296,9 +287,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return Transform.forward.sqrMagnitude > Mathf.Epsilon ? Transform.forward.normalized : Vector3.forward;
             }
 
-            Vector3 axis = ResolveOrbitAxis();
-            Vector3 offset = Transform.position - _currentTarget.position;
-            Vector3 planarOffset = Vector3.ProjectOnPlane(offset, axis);
+            var axis = ResolveOrbitAxis();
+            var offset = Transform.position - _currentTarget.position;
+            var planarOffset = Vector3.ProjectOnPlane(offset, axis);
             if (planarOffset.sqrMagnitude <= Mathf.Epsilon)
             {
                 planarOffset = Vector3.ProjectOnPlane(Transform.forward, axis);
@@ -402,7 +393,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return false;
             }
 
-            if (Behavior.TryGetAnimationController(out EaterAnimationController controller))
+            if (Behavior.TryGetAnimationController(out var controller))
             {
                 _animationController = controller;
                 _missingAnimationLogged = false;
@@ -461,7 +452,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void TickRecovery(float deltaTime)
         {
-            if (!TryGetRecoveryConfig(out ResourceType resourceType, out float recoveryAmount, out float recoveryInterval))
+            if (!TryGetRecoveryConfig(out var resourceType, out float recoveryAmount, out float recoveryInterval))
             {
                 return;
             }
@@ -481,6 +472,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
+            if (Behavior != null && Behavior.ShouldLogStateTransitions && !_hasLoggedRecoveryCompatibility)
+            {
+                string status = hasCompatibility
+                    ? (isCompatible ? "compatível" : "incompatível")
+                    : "sem avaliação de compatibilidade";
+
+                DebugUtility.Log(
+                    $"Recuperação durante alimentação ({status}). Quantidade aplicada por ciclo: {adjustedAmount:0.##} {resourceType}.",
+                    hasCompatibility && isCompatible ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
+                    Behavior,
+                    this);
+
+                _hasLoggedRecoveryCompatibility = true;
+            }
+
             while (_recoveryTimer >= recoveryInterval)
             {
                 if (!TryApplyRecovery(resourceType, adjustedAmount))
@@ -495,7 +501,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private bool TryApplyBiteDamage()
         {
-            IDamageReceiver receiver = _currentDamageReceiver ??= ResolveDamageReceiver(_currentTarget);
+            var receiver = _currentDamageReceiver ??= ResolveDamageReceiver(_currentTarget);
             if (receiver == null)
             {
                 if (!_missingDamageReceiverLogged && Behavior.ShouldLogStateTransitions)
@@ -520,9 +526,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             string attackerId = Master != null ? Master.ActorId : string.Empty;
             string targetId = receiver.GetReceiverId();
-            ResourceType resource = Config != null ? Config.EatingDamageResource : ResourceType.Health;
-            DamageType damageType = Config != null ? Config.EatingDamageType : DamageType.Physical;
-            Vector3 hitPosition = _currentTarget.position;
+            var resource = Config != null ? Config.EatingDamageResource : ResourceType.Health;
+            var damageType = Config != null ? Config.EatingDamageType : DamageType.Physical;
+            var hitPosition = _currentTarget.position;
 
             var context = new DamageContext(attackerId, targetId, damage, resource, damageType, hitPosition);
             receiver.ReceiveDamage(context);
@@ -566,7 +572,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void TryPlayBiteSound()
         {
-            SoundData biteSound = Config != null ? Config.EatingBiteSound : null;
+            var biteSound = Config != null ? Config.EatingBiteSound : null;
             if (biteSound == null || biteSound.clip == null)
             {
                 return;
@@ -577,11 +583,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!Behavior.TryGetAudioEmitter(out EntityAudioEmitter emitter))
+            if (!Behavior.TryGetAudioEmitter(out var emitter))
             {
                 if (!_missingAudioEmitterLogged && Behavior.ShouldLogStateTransitions)
                 {
-                    DebugUtility.LogWarning<EaterEatingState>(
+                    DebugUtility.LogWarning(
                         "EntityAudioEmitter não encontrado para tocar som de mordida.",
                         Behavior,
                         this);
@@ -593,8 +599,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _missingAudioEmitterLogged = false;
 
-            Vector3 position = _currentTarget != null ? _currentTarget.position : Transform.position;
-            AudioContext context = AudioContext.Default(position, emitter.UsesSpatialBlend);
+            var position = _currentTarget != null ? _currentTarget.position : Transform.position;
+            var context = AudioContext.Default(position, emitter.UsesSpatialBlend);
             emitter.Play(biteSound, context);
         }
 
@@ -712,7 +718,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (!hasPlanetResource)
             {
-                DebugUtility.LogWarning<EaterEatingState>(
+                DebugUtility.LogWarning(
                     "Planeta devorado não possui recurso configurado. Não foi possível verificar compatibilidade com o desejo.",
                     Behavior,
                     this);
@@ -730,13 +736,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             else
             {
-                EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+                var desireInfo = Behavior.GetCurrentDesireInfo();
                 hasDesiredResource = desireInfo.TryGetResource(out desiredResource);
             }
 
             if (!hasDesiredResource)
             {
-                DebugUtility.Log<EaterEatingState>(
+                DebugUtility.Log(
                     $"Planeta devorado possui recurso {planetResource}, porém o eater não tinha um desejo ativo para comparar.",
                     DebugUtility.Colors.Info,
                     Behavior,
@@ -761,7 +767,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (isCompatible)
             {
-                DebugUtility.Log<EaterEatingState>(
+                DebugUtility.Log(
                     $"Planeta devorado é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
                     DebugUtility.Colors.Success,
                     Behavior,
@@ -769,7 +775,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             else
             {
-                DebugUtility.LogWarning<EaterEatingState>(
+                DebugUtility.LogWarning(
                     $"Planeta devorado NÃO é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
                     Behavior,
                     this);
@@ -830,13 +836,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return false;
             }
 
-            if (!TryGetTargetResourceType(out PlanetResources planetResource))
+            if (!TryGetTargetResourceType(out var planetResource))
             {
                 return false;
             }
 
-            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
-            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            var desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.TryGetResource(out var desiredResource))
             {
                 return false;
             }
@@ -856,11 +862,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 try
                 {
-                    PlanetResourcesSo resourceAsset = _activePlanet.AssignedResource;
+                    var resourceAsset = _activePlanet.AssignedResource;
                     if (resourceAsset != null)
                     {
                         resource = resourceAsset.ResourceType;
-                        _cachedTargetResourceAsset = resourceAsset;
                         _cachedTargetResourceType = resource;
                         _hasCachedTargetResource = true;
                         return true;
@@ -899,19 +904,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            if (!TryGetTargetResourceType(out PlanetResources planetResource))
+            if (!TryGetTargetResourceType(out var planetResource))
             {
-                DebugUtility.LogWarning<EaterEatingState>(
+                DebugUtility.LogWarning(
                     "Não foi possível identificar o recurso do planeta enquanto iniciava a alimentação.",
                     Behavior,
                     this);
                 return;
             }
 
-            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
-            if (!desireInfo.TryGetResource(out PlanetResources desiredResource))
+            var desireInfo = Behavior.GetCurrentDesireInfo();
+            if (!desireInfo.TryGetResource(out var desiredResource))
             {
-                DebugUtility.LogWarning<EaterEatingState>(
+                DebugUtility.LogWarning(
                     "Nenhum desejo de recurso definido ao começar a comer.",
                     Behavior,
                     this);
@@ -948,8 +953,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 resourceAsset = null;
             }
 
-            _cachedTargetResourceAsset = resourceAsset;
-
             if (resourceAsset != null)
             {
                 _cachedTargetResourceType = resourceAsset.ResourceType;
@@ -964,7 +967,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void ResetCachedTargetResourceData()
         {
-            _cachedTargetResourceAsset = null;
             _cachedTargetResourceType = default;
             _hasCachedTargetResource = false;
         }
@@ -1001,7 +1003,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (restored)
             {
-                DebugUtility.Log<EaterEatingState>(
+                DebugUtility.Log(
                     $"Recuperação aplicada ao eater ao devorar planeta compatível: +{healAmount:0.##} {ResourceType.Health}.",
                     DebugUtility.Colors.Success,
                     Behavior,
@@ -1009,7 +1011,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             else
             {
-                DebugUtility.LogWarning<EaterEatingState>(
+                DebugUtility.LogWarning(
                     $"Falha ao recuperar {ResourceType.Health} ao devorar planeta compatível. Valor esperado: {healAmount:0.##}.",
                     Behavior,
                     this);

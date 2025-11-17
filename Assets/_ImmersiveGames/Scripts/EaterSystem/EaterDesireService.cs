@@ -51,14 +51,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
 
-        public bool IsActive => _phase != DesireCyclePhase.Inactive;
+        private bool IsActive => _phase != DesireCyclePhase.Inactive;
         public bool HasActiveDesire => (_phase != DesireCyclePhase.Inactive && _currentDesire.HasValue) || HasLockedDesire;
-        public PlanetResources? CurrentDesire => _currentDesire;
-        public bool CurrentDesireAvailable => _currentDesireAvailable;
-        public float CurrentDesireDuration => _currentDuration;
-        public float CurrentDesireRemainingTime => _timer != null ? Mathf.Max(_timer.CurrentTime, 0f) : 0f;
-        public int CurrentDesireAvailableCount => _currentDesireAvailableCount;
-        public float CurrentDesireWeight => _currentDesireWeight;
         public bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()
@@ -98,10 +92,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 case DesireCyclePhase.Active:
                     if (HasActiveDesire)
                     {
-                        DebugUtility.LogVerbose(
-                            $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
-                            context: _master,
-                            instance: this);
+                        if (_currentDesire != null)
+                            DebugUtility.LogVerbose(
+                                $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
+                                context: _master,
+                                instance: this);
                         PickNextDesire();
                     }
                     break;
@@ -159,33 +154,36 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             EnsureTimerInstance();
 
-            float resumeDuration = ApplySnapshot(_lockedSnapshot.Value);
-            _lockedSnapshot = null;
-
-            resumeDuration = Mathf.Max(resumeDuration, 0.05f);
-            if (resumeDuration <= 0f)
+            if (_lockedSnapshot != null)
             {
-                resumeDuration = Mathf.Max(_config.DesireDuration, 0.05f);
-            }
+                float resumeDuration = ApplySnapshot(_lockedSnapshot.Value);
+                _lockedSnapshot = null;
 
-            float resumeDelay = _config.InitialDesireDelay;
-            if (resumeDelay > 0f)
-            {
-                _phase = DesireCyclePhase.WaitingResumeDelay;
-                _scheduledResumeDuration = resumeDuration;
-                RestartTimer(resumeDelay);
-
-                if (_currentDesire.HasValue)
+                resumeDuration = Mathf.Max(resumeDuration, 0.05f);
+                if (resumeDuration <= 0f)
                 {
-                    DebugUtility.LogVerbose(
-                        $"⌛ Desejo {_currentDesire.Value} retomará o ciclo em {resumeDelay:F2}s.",
-                        context: _master,
-                        instance: this);
+                    resumeDuration = Mathf.Max(_config.DesireDuration, 0.05f);
                 }
-            }
-            else
-            {
-                BeginActiveCycle(resumeDuration);
+
+                float resumeDelay = _config.InitialDesireDelay;
+                if (resumeDelay > 0f)
+                {
+                    _phase = DesireCyclePhase.WaitingResumeDelay;
+                    _scheduledResumeDuration = resumeDuration;
+                    RestartTimer(resumeDelay);
+
+                    if (_currentDesire.HasValue)
+                    {
+                        DebugUtility.LogVerbose(
+                            $"⌛ Desejo {_currentDesire.Value} retomará o ciclo em {resumeDelay:F2}s.",
+                            context: _master,
+                            instance: this);
+                    }
+                }
+                else
+                {
+                    BeginActiveCycle(resumeDuration);
+                }
             }
 
             NotifyDesireChanged();
@@ -257,6 +255,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             float safeDuration = Mathf.Max(duration, 0.05f);
+            if (_timer == null) return;
             _timer.Stop();
             _timer.Reset(safeDuration);
             _timer.Start();

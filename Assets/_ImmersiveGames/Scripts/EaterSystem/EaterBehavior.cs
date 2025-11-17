@@ -111,16 +111,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _stateMachine?.Update();
         }
 
-        private void EnsureStateMachine()
-        {
-            _stateMachine?.FixedUpdate();
-        }
-
-        private bool EnsureStatesInitialized()
+        private void EnsureStatesInitialized()
         {
             if (_stateMachine != null)
             {
-                return true;
+                return;
             }
 
             var builder = new StateMachineBuilder();
@@ -136,7 +131,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.StateInitial(_wanderingState);
             _stateMachine = builder.Build();
 
-            return _stateMachine != null;
         }
 
         [ContextMenu("Eater States/Set Wandering")]
@@ -695,7 +689,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            Vector3 displacement = direction.normalized * speed * deltaTime;
+            Vector3 displacement = direction.normalized * (speed * deltaTime);
             Translate(displacement, respectPlayerBounds);
         }
 
@@ -902,9 +896,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return suspended;
         }
 
-        internal void EnsureNoActiveDesire(string reason)
+        private void EnsureNoActiveDesire(string reason)
         {
-            if (!_currentDesireInfo.ServiceActive && !_currentDesireInfo.HasDesire)
+            if (_currentDesireInfo is { ServiceActive: false, HasDesire: false })
             {
                 return;
             }

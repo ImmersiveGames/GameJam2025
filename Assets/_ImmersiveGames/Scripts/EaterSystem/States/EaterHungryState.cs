@@ -69,12 +69,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected override Vector3 AdjustDirection(Vector3 direction)
         {
-            if (!Behavior.TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance))
+            if (!Behavior.TryGetClosestPlayerAnchor(out var anchor, out float distance))
             {
                 return direction;
             }
 
-            Vector3 toAnchor = anchor - Transform.position;
+            var toAnchor = anchor - Transform.position;
             if (toAnchor.sqrMagnitude <= Mathf.Epsilon)
             {
                 return direction;
@@ -100,8 +100,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 attraction = Mathf.Clamp01(attraction + (1f - attraction) * (1f - normalizedDistance));
             }
 
-            Vector3 normalized = toAnchor.normalized;
-            Vector3 blended = Vector3.Slerp(direction, normalized, attraction);
+            var normalized = toAnchor.normalized;
+            var blended = Vector3.Slerp(direction, normalized, attraction);
             return blended.sqrMagnitude > Mathf.Epsilon ? blended.normalized : normalized;
         }
 
@@ -162,13 +162,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            EaterDesireInfo desireInfo = Behavior.GetCurrentDesireInfo();
+            var desireInfo = Behavior.GetCurrentDesireInfo();
             if (!desireInfo.HasDesire)
             {
                 return;
             }
 
-            Transform target = Behavior.CurrentTargetPlanet;
+            var target = Behavior.CurrentTargetPlanet;
             if (target == null)
             {
                 return;

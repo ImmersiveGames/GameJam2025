@@ -44,12 +44,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected override Vector3 AdjustDirection(Vector3 direction)
         {
-            if (!Behavior.TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance))
+            if (!Behavior.TryGetClosestPlayerAnchor(out var anchor, out float distance))
             {
                 return direction;
             }
 
-            Vector3 toAnchor = anchor - Transform.position;
+            var toAnchor = anchor - Transform.position;
             if (toAnchor.sqrMagnitude <= Mathf.Epsilon)
             {
                 return direction;
@@ -74,8 +74,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return direction;
             }
 
-            Vector3 normalized = toAnchor.normalized;
-            Vector3 blended = Vector3.Slerp(direction, normalized, bias);
+            var normalized = toAnchor.normalized;
+            var blended = Vector3.Slerp(direction, normalized, bias);
             return blended.sqrMagnitude > Mathf.Epsilon ? blended.normalized : normalized;
         }
 

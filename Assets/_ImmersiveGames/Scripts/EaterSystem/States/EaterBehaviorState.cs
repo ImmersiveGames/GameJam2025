@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public string StateName { get; }
 
-        public EaterBehavior Behavior { get; private set; }
+        protected EaterBehavior Behavior { get; private set; }
 
         protected Transform Transform => Behavior != null ? Behavior.transform : null;
 
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
-        protected void LogStateEvent(string description)
+        private void LogStateEvent(string description)
         {
             if (Behavior == null || !Behavior.ShouldLogStateTransitions)
             {

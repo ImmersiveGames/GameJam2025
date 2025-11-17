@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return false;
             }
 
-            if (Behavior.TryGetAnimationController(out EaterAnimationController controller))
+            if (Behavior.TryGetAnimationController(out var controller))
             {
                 _animationController = controller;
                 _missingAnimationLogged = false;

@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return false;
             }
 
-            PlanetMotion motion = ResolvePlanetMotion(target);
+            var motion = ResolvePlanetMotion(target);
             if (motion == null)
             {
                 LogMissingPlanetMotion(behavior);

@@ -42,76 +42,35 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.Update();
 
-            Transform target = Behavior.CurrentTargetPlanet;
-            if (target == null)
+            var target = Behavior.CurrentTargetPlanet;
+            if (!HasTarget(target))
             {
-                ResetMovementHalt();
-                ClearEatingTransitionRequest();
-                ClearTargetColliderCache();
-                Behavior?.ClearOrbitAnchor();
-                if (!_reportedMissingTarget && Behavior.ShouldLogStateTransitions)
-                {
-                    DebugUtility.LogVerbose(
-                        "Nenhum planeta marcado para perseguir.",
-                        context: Behavior,
-                        instance: this);
-                    _reportedMissingTarget = true;
-                }
                 return;
             }
 
-            _reportedMissingTarget = false;
-
-            Collider targetCollider = ResolveTargetCollider(target);
-            Vector3 targetCenter = ResolveTargetCenter(target, targetCollider);
+            var targetCollider = ResolveTargetCollider(target);
+            var targetCenter = ResolveTargetCenter(target, targetCollider);
             Behavior.LookAt(targetCenter);
 
-            if (_haltMovement && !ReferenceEquals(target, _haltedTarget))
-            {
-                ResetMovementHalt();
-                ClearEatingTransitionRequest();
-            }
+            EnsureHaltConsistency(target);
 
-            Vector3 toCenter = targetCenter - Transform.position;
-            Vector3 fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
-            Vector3 centerDirection = toCenter.sqrMagnitude > Mathf.Epsilon
-                ? toCenter.normalized
-                : fallbackForward;
-
-            Vector3 surfaceDirection = centerDirection;
-            float surfaceDistance = CalculateSurfaceDistance(target, targetCollider, toCenter, centerDirection, out surfaceDirection);
-
-            if (surfaceDirection.sqrMagnitude <= Mathf.Epsilon)
-            {
-                surfaceDirection = centerDirection;
-            }
+            var nav = ComputeNavigationVectors(target, targetCollider, targetCenter);
+            var centerDirection = nav.centerDir;
+            var surfaceDistance = nav.surfaceDist;
+            var surfaceDirection = nav.surfaceDir;
 
             float stopDistance = ResolveStopDistance();
-            float tolerance = Mathf.Max(DistanceTolerance, stopDistance * 0.1f);
-
-            if (stopDistance > 0f && surfaceDistance < stopDistance - tolerance)
-            {
-                Vector3 retreatDirection = surfaceDistance < 0f ? surfaceDirection : -surfaceDirection;
-                if (retreatDirection.sqrMagnitude <= Mathf.Epsilon)
-                {
-                    retreatDirection = -centerDirection;
-                }
-
-                retreatDirection = retreatDirection.sqrMagnitude > Mathf.Epsilon
-                    ? retreatDirection.normalized
-                    : fallbackForward;
-
-                float correction = stopDistance - surfaceDistance;
-                Behavior.Translate(retreatDirection * correction, respectPlayerBounds: false);
-                surfaceDistance = stopDistance;
-                surfaceDirection = centerDirection;
-            }
-
             if (stopDistance <= 0f)
             {
+                // Com distância mínima zero, apenas perseguição contínua (com distância não negativa)
                 ChaseTarget(target, targetCenter, surfaceDirection, Mathf.Max(surfaceDistance, 0f), 0f);
                 return;
             }
+
+            float tolerance = Mathf.Max(DistanceTolerance, stopDistance * 0.1f);
+
+            // Se estiver mais dentro do que o permitido (além da tolerância), recua para a borda mínima
+            RetreatIfTooClose(stopDistance, tolerance, ref surfaceDistance, ref surfaceDirection, centerDirection);
 
             if (surfaceDistance <= stopDistance + tolerance)
             {
@@ -121,6 +80,83 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             ChaseTarget(target, targetCenter, surfaceDirection, surfaceDistance, stopDistance);
+
+            // -------- Funções locais para reduzir complexidade --------
+
+            bool HasTarget(Transform t)
+            {
+                if (t != null)
+                {
+                    _reportedMissingTarget = false;
+                    return true;
+                }
+
+                ResetMovementHalt();
+                ClearEatingTransitionRequest();
+                ClearTargetColliderCache();
+                Behavior?.ClearOrbitAnchor();
+
+                if (!_reportedMissingTarget && Behavior is { ShouldLogStateTransitions: true })
+                {
+                    DebugUtility.LogVerbose(
+                        "Nenhum planeta marcado para perseguir.",
+                        context: Behavior,
+                        instance: this);
+                    _reportedMissingTarget = true;
+                }
+
+                return false;
+            }
+
+            void EnsureHaltConsistency(Transform t)
+            {
+                if (_haltMovement && !ReferenceEquals(t, _haltedTarget))
+                {
+                    ResetMovementHalt();
+                    ClearEatingTransitionRequest();
+                }
+            }
+
+            (Vector3 centerDir, float surfaceDist, Vector3 surfaceDir) ComputeNavigationVectors(Transform t, Collider tCollider, Vector3 tCenter)
+            {
+                var toCenter = tCenter - Transform.position;
+                var fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+                var centerDir = toCenter.sqrMagnitude > Mathf.Epsilon
+                    ? toCenter.normalized
+                    : fallbackForward;
+
+                float surfaceDist = CalculateSurfaceDistance(t, tCollider, toCenter, centerDir, out var surfaceDir);
+                if (surfaceDir.sqrMagnitude <= Mathf.Epsilon)
+                {
+                    surfaceDir = centerDir;
+                }
+
+                return (centerDir, surfaceDist, surfaceDir);
+            }
+
+            void RetreatIfTooClose(float stopDist, float tol, ref float surfDist, ref Vector3 surfDir, Vector3 centerDir)
+            {
+                if (stopDist <= 0f || surfDist >= stopDist - tol)
+                {
+                    return;
+                }
+
+                var retreatDir = surfDist < 0f ? surfDir : -surfDir;
+                if (retreatDir.sqrMagnitude <= Mathf.Epsilon)
+                {
+                    retreatDir = -centerDir;
+                }
+
+                var fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+                retreatDir = retreatDir.sqrMagnitude > Mathf.Epsilon
+                    ? retreatDir.normalized
+                    : fallbackForward;
+
+                float correction = stopDist - surfDist;
+                Behavior.Translate(retreatDir * correction, respectPlayerBounds: false);
+                surfDist = stopDist;
+                surfDir = centerDir;
+            }
         }
 
         internal bool ConsumeEatingTransitionRequest()
@@ -257,7 +293,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return _cachedTargetCollider;
             }
 
-            Collider collider = target.GetComponent<Collider>();
+            var collider = target.GetComponent<Collider>();
             if (collider == null)
             {
                 collider = target.GetComponentInChildren<Collider>();
@@ -298,7 +334,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return 0f;
             }
 
-            Vector3 normalizedCenterDirection = centerDirection.sqrMagnitude > Mathf.Epsilon
+            var normalizedCenterDirection = centerDirection.sqrMagnitude > Mathf.Epsilon
                 ? centerDirection
                 : (Transform != null ? Transform.forward : Vector3.forward);
 
@@ -308,13 +344,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return toCenter.magnitude;
             }
 
-            Collider eaterCollider = EnsureEaterCollider();
-            Vector3 eaterReference = eaterCollider != null
+            var eaterCollider = EnsureEaterCollider();
+            var eaterReference = eaterCollider != null
                 ? eaterCollider.bounds.center
                 : Transform.position;
 
-            Vector3 closestPoint = targetCollider.ClosestPoint(eaterReference);
-            Vector3 toClosest = closestPoint - eaterReference;
+            var closestPoint = targetCollider.ClosestPoint(eaterReference);
+            var toClosest = closestPoint - eaterReference;
             if (toClosest.sqrMagnitude > Mathf.Epsilon)
             {
                 directionToSurface = toClosest.normalized;
@@ -328,7 +364,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     targetCollider,
                     targetCollider.transform.position,
                     targetCollider.transform.rotation,
-                    out Vector3 separationDirection,
+                    out var separationDirection,
                     out float separationDistance))
             {
                 directionToSurface = separationDirection.sqrMagnitude > Mathf.Epsilon
@@ -358,8 +394,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            Vector3 fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
-            Vector3 direction = surfaceDirection.sqrMagnitude > Mathf.Epsilon
+            var fallbackForward = Transform != null ? Transform.forward : Vector3.forward;
+            var direction = surfaceDirection.sqrMagnitude > Mathf.Epsilon
                 ? surfaceDirection.normalized
                 : fallbackForward.sqrMagnitude > Mathf.Epsilon
                     ? fallbackForward.normalized

@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected virtual Vector3 EvaluateDirection()
         {
-            Vector2 random = Random.insideUnitCircle;
+            var random = Random.insideUnitCircle;
             Vector3 direction = new(random.x, 0f, random.y);
             return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Transform.forward;
         }
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            Vector3 adjustedDirection = AdjustDirection(_currentDirection);
+            var adjustedDirection = AdjustDirection(_currentDirection);
             if (adjustedDirection.sqrMagnitude > Mathf.Epsilon)
             {
                 _currentDirection = adjustedDirection.normalized;
@@ -102,8 +102,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void ChooseNewDirection(bool force = false)
         {
-            Vector3 direction = EvaluateDirection();
-            Vector3 adjusted = AdjustDirection(direction);
+            var direction = EvaluateDirection();
+            var adjusted = AdjustDirection(direction);
             if (adjusted.sqrMagnitude > Mathf.Epsilon)
             {
                 _currentDirection = adjusted.normalized;
