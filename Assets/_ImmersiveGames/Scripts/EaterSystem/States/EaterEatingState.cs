@@ -56,6 +56,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private PlanetResources _evaluatedPlanetResource;
         private bool _missingAudioEmitterLogged;
         private bool _hasAppliedDevourReward;
+        private bool _hasLoggedRecoveryCompatibility;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -88,6 +89,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
+            _hasLoggedRecoveryCompatibility = false;
 
             if (Master != null)
             {
@@ -126,6 +128,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             ResetCompatibility();
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
+            _hasLoggedRecoveryCompatibility = false;
         }
 
         public override void Update()
@@ -172,6 +175,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 _hasReportedDestroyedPlanet = false;
                 _hasReportedDevouredCompatibility = false;
                 _hasAppliedDevourReward = false;
+                _hasLoggedRecoveryCompatibility = false;
             }
 
             if (target == null)
@@ -479,6 +483,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             {
                 _recoveryTimer = 0f;
                 return;
+            }
+
+            if (Behavior != null && Behavior.ShouldLogStateTransitions && !_hasLoggedRecoveryCompatibility)
+            {
+                string status = hasCompatibility
+                    ? (isCompatible ? "compatível" : "incompatível")
+                    : "sem avaliação de compatibilidade";
+
+                DebugUtility.Log(
+                    $"Recuperação durante alimentação ({status}). Quantidade aplicada por ciclo: {adjustedAmount:0.##} {resourceType}.",
+                    hasCompatibility && isCompatible ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
+                    Behavior,
+                    this);
+
+                _hasLoggedRecoveryCompatibility = true;
             }
 
             while (_recoveryTimer >= recoveryInterval)
