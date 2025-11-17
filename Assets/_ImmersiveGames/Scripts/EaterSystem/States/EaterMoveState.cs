@@ -129,8 +129,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            _directionTimer.Update(Time.deltaTime);
-
             if (!_directionTimer.IsFinished)
             {
                 return;
