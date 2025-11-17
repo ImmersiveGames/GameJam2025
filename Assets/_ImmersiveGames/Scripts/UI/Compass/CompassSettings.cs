@@ -1,0 +1,26 @@
+using UnityEngine;
+
+namespace Game.UI.Compass
+{
+    /// <summary>
+    /// Configurações gerais de comportamento da bússola, desacopladas da cena.
+    /// </summary>
+    [CreateAssetMenu(fileName = "CompassSettings", menuName = "Game/UI/Compass/Settings")]
+    public class CompassSettings : ScriptableObject
+    {
+        [Header("Campo angular da bússola")]
+        [Tooltip("Metade do campo de visão horizontal em graus. O valor representa o ângulo máximo para esquerda e direita.")]
+        public float compassHalfAngleDegrees = 180f;
+
+        [Header("Limites de distância")]
+        [Tooltip("Distância máxima para exibir alvos na bússola.")]
+        public float maxDistance = 250f;
+
+        [Tooltip("Distância mínima para exibir alvos na bússola.")]
+        public float minDistance = 0f;
+
+        [Header("Comportamento visual")]
+        [Tooltip("Quando verdadeiro, ícones fora do campo angular são fixados na borda da bússola.")]
+        public bool clampIconsAtEdges = true;
+    }
+}
