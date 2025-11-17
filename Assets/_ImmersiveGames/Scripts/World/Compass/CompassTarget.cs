@@ -12,6 +12,16 @@ namespace _ImmersiveGames.Scripts.World.Compass
         [Tooltip("Tipo de alvo exibido na bússola.")]
         public CompassTargetType targetType = CompassTargetType.PointOfInterest;
 
+        private void OnEnable()
+        {
+            CompassRuntimeService.RegisterTarget(this);
+        }
+
+        private void OnDisable()
+        {
+            CompassRuntimeService.UnregisterTarget(this);
+        }
+
         Transform ICompassTrackable.Transform => transform;
 
         CompassTargetType ICompassTrackable.TargetType => targetType;
