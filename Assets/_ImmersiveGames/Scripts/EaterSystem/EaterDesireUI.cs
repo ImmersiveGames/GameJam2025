@@ -305,52 +305,36 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            GameObject iconObject = desireIcon.gameObject;
-            CanvasRenderer canvasRenderer = desireIcon.canvasRenderer;
+            var iconObject = desireIcon.gameObject;
+            var canvasRenderer = desireIcon.canvasRenderer;
 
-            if (visible)
+            // Determina estado desejado de ativação do GameObject
+            bool shouldBeActive = visible || !(hideWhenNoDesire && !SharesGameObjectWithIcon);
+
+            // Aplica ativação somente se necessário
+            if (iconObject.activeSelf != shouldBeActive)
             {
-                if (!iconObject.activeSelf)
-                {
-                    iconObject.SetActive(true);
-                }
+                iconObject.SetActive(shouldBeActive);
+            }
 
-                if (!desireIcon.enabled)
-                {
-                    desireIcon.enabled = true;
-                }
-
-                if (canvasRenderer != null)
-                {
-                    canvasRenderer.SetAlpha(1f);
-                }
-
+            // Se deve ficar inativo, não há mais nada a fazer
+            if (!shouldBeActive)
+            {
                 return;
             }
 
-            if (hideWhenNoDesire && !SharesGameObjectWithIcon)
-            {
-                if (iconObject.activeSelf)
-                {
-                    iconObject.SetActive(false);
-                }
+            // Quando ativo, ajusta habilitação e alpha conforme visibilidade
+            bool shouldBeEnabled = visible;
+            float targetAlpha = visible ? 1f : 0f;
 
-                return;
-            }
-
-            if (!iconObject.activeSelf)
+            if (desireIcon.enabled != shouldBeEnabled)
             {
-                iconObject.SetActive(true);
-            }
-
-            if (desireIcon.enabled)
-            {
-                desireIcon.enabled = false;
+                desireIcon.enabled = shouldBeEnabled;
             }
 
             if (canvasRenderer != null)
             {
-                canvasRenderer.SetAlpha(0f);
+                canvasRenderer.SetAlpha(targetAlpha);
             }
         }
 

@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -8,21 +7,6 @@ using _ImmersiveGames.Scripts.Utils.Predicates;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    public sealed class PredicateTargetIsNull : IPredicate
-    {
-        private readonly Func<IDetectable> _getTarget;
-
-        public PredicateTargetIsNull(Func<IDetectable> getTarget)
-        {
-            _getTarget = getTarget ?? throw new ArgumentNullException(nameof(getTarget));
-        }
-
-        public bool Evaluate()
-        {
-            return _getTarget() == null;
-        }
-    }
-
     /// <summary>
     /// Predicado que monitora eventos de morte, revive e reset para determinar o estado de vida do ator.
     /// </summary>
