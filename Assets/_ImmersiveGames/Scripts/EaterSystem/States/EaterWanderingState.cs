@@ -34,6 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void Update()
         {
             base.Update();
+            UpdateHungryCountdown(Time.deltaTime);
             EvaluateHungryCountdown();
         }
 
@@ -153,6 +154,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             float safeDuration = Mathf.Max(duration, 0.05f);
             _hungryCountdown = new CountdownTimer(safeDuration);
             _hungryCountdown.Stop();
+        }
+
+        private void UpdateHungryCountdown(float deltaTime)
+        {
+            if (_hungryCountdown == null)
+            {
+                return;
+            }
+
+            _hungryCountdown.Update(deltaTime);
         }
 
         private void EvaluateHungryCountdown()

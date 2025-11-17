@@ -30,7 +30,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 Behavior.EventDesireChanged += HandleDesireChanged;
                 _listeningDesires = true;
 
-                Behavior.BeginDesires("HungryState.OnEnter", forceRestart: true);
+                // Retoma o ciclo mantendo o último desejo selecionado (quando houver),
+                // garantindo que o atraso inicial e os temporizadores reiniciem a partir
+                // do estado previamente armazenado.
+                Behavior.BeginDesires("HungryState.OnEnter");
             }
 
             SubscribeToMarkedPlanets();
