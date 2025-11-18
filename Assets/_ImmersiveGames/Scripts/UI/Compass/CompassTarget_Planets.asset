@@ -19,3 +19,4 @@ MonoBehaviour:
   dynamicMode: 1
   hideUntilDiscovered: 1
   undiscoveredPlanetIcon: {fileID: -1950868070, guid: ef87da240041c174497a82c3249049a7, type: 3}
+  planetResourceStyleDatabase: {fileID: 11400000, guid: 6634dc6e165ccbf44a253597fc82de2a, type: 2}

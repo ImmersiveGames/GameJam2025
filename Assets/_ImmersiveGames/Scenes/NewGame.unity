@@ -1452,6 +1452,7 @@ GameObject:
   - component: {fileID: 1533458242}
   - component: {fileID: 1533458241}
   - component: {fileID: 1533458243}
+  - component: {fileID: 1533458244}
   m_Layer: 0
   m_Name: Center
   m_TagString: Untagged
@@ -1505,6 +1506,22 @@ MonoBehaviour:
   assignResourceKey: 49
   revealResourceKey: 50
   hideResourceKey: 51
+--- !u!114 &1533458244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533458240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e86c99074353ea46ad227867ead6316, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  styleDatabase: {fileID: 0}
+  testResourceType: 0
+  defaultColor: {r: 1, g: 1, b: 1, a: 1}
+  queryKey: 99
 --- !u!1 &1555126166
 GameObject:
   m_ObjectHideFlags: 0
