@@ -1,5 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.World.Compass;
 using UnityEngine;
 
@@ -7,9 +12,14 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
     /// HUD da bússola responsável por instanciar e manter ícones para alvos rastreáveis.
+    /// Integra-se ao pipeline de canvas implementando <see cref="ICanvasBinder"/> e
+    /// registrando-se no <see cref="CanvasPipelineManager"/> após a injeção de dependências.
     /// </summary>
-    public class CompassHUD : MonoBehaviour
+    public class CompassHUD : MonoBehaviour, ICanvasBinder
     {
+        private static readonly IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> EmptyActorSlots =
+            new Dictionary<string, Dictionary<ResourceType, ResourceUISlot>>();
+
         [Header("Compass UI")]
         [Tooltip("Área da UI onde os ícones da bússola serão posicionados.")]
         public RectTransform compassRectTransform;
@@ -23,30 +33,64 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Tooltip("Prefab do ícone utilizado para cada alvo rastreável.")]
         public CompassIcon iconPrefab;
 
+        [Header("Canvas Pipeline")]
+        [SerializeField] private string canvasId = "CompassHUD";
+        [SerializeField] private bool autoGenerateCanvasId = true;
+        [SerializeField] private CanvasType canvasType = CanvasType.Scene;
+        [SerializeField] private bool registerInPipeline = true;
+
+        [Inject] private IUniqueIdFactory _idFactory;
+
         private Dictionary<ICompassTrackable, CompassIcon> _iconsByTarget;
-        public int IconCount => _iconsByTarget?.Count ?? 0;
+
+        public string CanvasId { get; private set; }
+        public CanvasType Type => canvasType;
+        public CanvasInitializationState State { get; private set; }
+        public DependencyInjectionState InjectionState { get; set; }
+
+        public string GetObjectId() => CanvasId;
 
         private void Awake()
         {
+            InjectionState = DependencyInjectionState.Pending;
+            State = CanvasInitializationState.Pending;
+
+            SetupCanvasId();
             _iconsByTarget = new Dictionary<ICompassTrackable, CompassIcon>();
+
+            // Registra para receber injeção via ResourceInitializationManager, replicando o padrão dos demais HUDs.
+            ResourceInitializationManager.Instance.RegisterForInjection(this);
+        }
+
+        public void OnDependenciesInjected()
+        {
+            InjectionState = DependencyInjectionState.Injecting;
+            State = CanvasInitializationState.Injecting;
+
+            if (registerInPipeline && CanvasPipelineManager.HasInstance)
+            {
+                CanvasPipelineManager.Instance.RegisterCanvas(this);
+            }
+
+            State = CanvasInitializationState.Ready;
+            InjectionState = DependencyInjectionState.Ready;
+
+            DebugUtility.Log<CompassHUD>($"✅ CompassHUD registrado no pipeline com id '{CanvasId}'");
+        }
+
+        private void OnDestroy()
+        {
+            if (!string.IsNullOrEmpty(CanvasId) && CanvasPipelineManager.HasInstance)
+            {
+                CanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
+            }
         }
 
         private void Update()
         {
             UpdateCompass();
         }
-        public float CalculateXFromAngle(float angle)
-        {
-            float halfAngle = settings != null ? settings.compassHalfAngleDegrees : 180f;
-            float width = compassRectTransform != null ? compassRectTransform.rect.width : 0f;
-            float halfWidth = width * 0.5f;
 
-            if (halfAngle <= 0f || halfWidth <= 0f)
-                return 0f;
-
-            float normalized = Mathf.Clamp(angle / halfAngle, -1f, 1f);
-            return normalized * halfWidth;
-        }
         private void SynchronizeIcons(IReadOnlyList<ICompassTrackable> trackables)
         {
             if (trackables == null)
@@ -215,6 +259,18 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             }
         }
 
+        private void SetupCanvasId()
+        {
+            if (autoGenerateCanvasId)
+            {
+                CanvasId = _idFactory?.GenerateId(gameObject, prefix: "CompassHUD") ?? gameObject.name;
+            }
+            else
+            {
+                CanvasId = string.IsNullOrWhiteSpace(canvasId) ? gameObject.name : canvasId;
+            }
+        }
+
         private static void SetIconPosition(CompassIcon icon, float angle, float halfAngle, float halfWidth)
         {
             if (icon.rectTransform == null)
@@ -228,5 +284,15 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             anchoredPos.x = x;
             icon.rectTransform.anchoredPosition = anchoredPos;
         }
+
+        // As interfaces abaixo mantêm compatibilidade com o pipeline de Canvas, mesmo sem binds de recursos.
+        public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
+        {
+            // CompassHUD não utiliza binds de recursos; método mantido para aderir ao contrato do pipeline.
+        }
+
+        public bool CanAcceptBinds() => State == CanvasInitializationState.Ready;
+
+        public IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots() => EmptyActorSlots;
     }
 }
