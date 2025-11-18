@@ -1,0 +1,40 @@
+using UnityEngine;
+
+namespace _ImmersiveGames.Scripts.UI.Compass
+{
+    /// <summary>
+    /// Configuração visual para um tipo específico de alvo rastreável pela bússola.
+    /// </summary>
+    [CreateAssetMenu(fileName = "CompassTargetVisualConfig", menuName = "ImmersiveGames/UI/Compass/Target Visual Config")]
+    public class CompassTargetVisualConfig : ScriptableObject
+    {
+        [Header("Identificação")]
+        [Tooltip("Tipo de alvo que utilizará esta configuração visual.")]
+        public CompassTargetType targetType = CompassTargetType.Objective;
+
+        [Header("Aparência")]
+        [Tooltip("Ícone a ser exibido na bússola.")]
+        public Sprite iconSprite;
+
+        [Tooltip("Cor base utilizada para o ícone do alvo.")]
+        public Color baseColor = Color.white;
+
+        [Tooltip("Tamanho base do ícone na bússola.")]
+        public float baseSize = 24f;
+
+        [Header("Modo Dinâmico")]
+        [Tooltip("Define se o ícone é estático ou derivado dinamicamente (ex.: recurso de planeta).")]
+        public CompassIconDynamicMode dynamicMode = CompassIconDynamicMode.Static;
+
+        [Tooltip("Se true, o ícone do planeta só aparece depois que o recurso for descoberto.")]
+        public bool hideUntilDiscovered = true;
+
+        [Tooltip("Ícone opcional a ser usado para planetas antes do recurso ser descoberto, caso hideUntilDiscovered seja false.")]
+        public Sprite undiscoveredPlanetIcon;
+
+        // Recomenda-se configurar planetas criando uma config com:
+        // targetType = Planet, dynamicMode = PlanetResourceIcon, hideUntilDiscovered = true.
+        // Nesse modo, iconSprite pode ficar nulo e undiscoveredPlanetIcon pode ser usado
+        // futuramente caso se deseje um ícone genérico antes da descoberta do recurso.
+    }
+}
