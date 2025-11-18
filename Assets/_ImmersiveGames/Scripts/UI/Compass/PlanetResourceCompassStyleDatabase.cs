@@ -5,7 +5,8 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
-    /// Define cor e tamanho multiplicador para cada tipo de recurso de planeta exibido na bússola.
+    /// Define a cor aplicada a cada tipo de recurso de planeta exibido na bússola.
+    /// O tamanho permanece definido pelo CompassTargetVisualConfig do tipo de alvo.
     /// </summary>
     [CreateAssetMenu(fileName = "PlanetResourceCompassStyleDatabase", menuName = "ImmersiveGames/UI/Compass/Planet Resource Style Database")]
     public class PlanetResourceCompassStyleDatabase : ScriptableObject
@@ -18,25 +19,19 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             [Tooltip("Cor final aplicada ao ícone do recurso.")]
             public Color iconColor = Color.white;
-
-            [Tooltip("Multiplicador de tamanho aplicado ao tamanho base configurado na bússola.")]
-            public float sizeMultiplier = 1f;
         }
 
         [Tooltip("Lista de estilos aplicáveis por tipo de recurso.")]
         public List<PlanetResourceCompassStyleEntry> entries = new List<PlanetResourceCompassStyleEntry>();
 
         /// <summary>
-        /// Retorna cor e tamanho calculados a partir do recurso informado, ou os valores base caso não exista estilo específico.
+        /// Retorna a cor configurada para o tipo de recurso informado ou a cor padrão quando não há entrada.
         /// </summary>
-        public void GetStyleForResource(PlanetResources resourceType, Color baseColor, float baseSize, out Color finalColor, out float finalSize)
+        public Color GetColorForResource(PlanetResources resourceType, Color defaultColor)
         {
-            finalColor = baseColor;
-            finalSize = baseSize;
-
             if (entries == null || entries.Count == 0)
             {
-                return;
+                return defaultColor;
             }
 
             for (int i = 0; i < entries.Count; i++)
@@ -44,11 +39,11 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 PlanetResourceCompassStyleEntry entry = entries[i];
                 if (entry != null && entry.resourceType == resourceType)
                 {
-                    finalColor = entry.iconColor;
-                    finalSize = baseSize * entry.sizeMultiplier;
-                    return;
+                    return entry.iconColor;
                 }
             }
+
+            return defaultColor;
         }
     }
 }

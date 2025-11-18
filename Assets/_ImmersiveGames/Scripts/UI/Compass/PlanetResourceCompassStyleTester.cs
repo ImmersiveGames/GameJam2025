@@ -4,7 +4,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
-    /// Tester simples para validar estilos de cor/tamanho por tipo de recurso na bússola.
+    /// Tester simples para validar estilos de cor por tipo de recurso na bússola.
     /// </summary>
     public class PlanetResourceCompassStyleTester : MonoBehaviour
     {
@@ -15,7 +15,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Header("Test Input")]
         public PlanetResources testResourceType = PlanetResources.Metal;
         public Color defaultColor = Color.white;
-        public float defaultSize = 32f;
 
         [Header("Key Binding")]
         public KeyCode queryKey = KeyCode.C;
@@ -29,8 +28,8 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             if (Input.GetKeyDown(queryKey))
             {
-                styleDatabase.GetStyleForResource(testResourceType, defaultColor, defaultSize, out Color finalColor, out float finalSize);
-                Debug.Log($"[PlanetResourceCompassStyleTester] Resource: {testResourceType}, Color: {finalColor}, Size: {finalSize}");
+                Color finalColor = styleDatabase.GetColorForResource(testResourceType, defaultColor);
+                Debug.Log($"[PlanetResourceCompassStyleTester] Resource: {testResourceType}, Color: {finalColor}");
             }
         }
     }
