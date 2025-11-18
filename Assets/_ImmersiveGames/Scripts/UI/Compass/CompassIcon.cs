@@ -149,45 +149,50 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return;
             }
 
+            Sprite targetSprite = null;
+
             if (_planetMaster == null)
             {
-                iconImage.sprite = _visualConfig.iconSprite;
-                iconImage.enabled = _visualConfig.iconSprite != null;
-                return;
+                targetSprite = _visualConfig.iconSprite;
             }
-
-            if (!_isDiscovered)
+            else
             {
-                if (_visualConfig.hideUntilDiscovered)
+                if (!_isDiscovered)
                 {
-                    iconImage.enabled = false;
-                    if (distanceLabel != null)
+                    if (_visualConfig.hideUntilDiscovered)
                     {
-                        distanceLabel.enabled = false;
+                        targetSprite = _visualConfig.undiscoveredPlanetIcon;
+                        if (targetSprite == null)
+                        {
+                            targetSprite = _visualConfig.iconSprite;
+                        }
                     }
-
-                    return;
+                    else
+                    {
+                        targetSprite = _visualConfig.iconSprite;
+                        if (targetSprite == null)
+                        {
+                            targetSprite = _visualConfig.undiscoveredPlanetIcon;
+                        }
+                    }
                 }
-
-                Sprite targetSprite = _visualConfig.undiscoveredPlanetIcon;
-                iconImage.sprite = targetSprite;
-                iconImage.enabled = targetSprite != null;
-
-                if (distanceLabel != null)
+                else
                 {
-                    distanceLabel.enabled = targetSprite != null;
+                    targetSprite = _currentResource != null ? _currentResource.ResourceIcon : null;
+                    if (targetSprite == null)
+                    {
+                        targetSprite = _visualConfig.iconSprite;
+                    }
                 }
-
-                return;
             }
 
-            Sprite discoveredSprite = _currentResource != null ? _currentResource.ResourceIcon : null;
-            iconImage.sprite = discoveredSprite;
-            iconImage.enabled = discoveredSprite != null;
+            iconImage.sprite = targetSprite;
+            bool hasSprite = targetSprite != null;
+            iconImage.enabled = hasSprite;
 
             if (distanceLabel != null)
             {
-                distanceLabel.enabled = discoveredSprite != null;
+                distanceLabel.enabled = hasSprite;
             }
         }
 

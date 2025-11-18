@@ -26,15 +26,15 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Tooltip("Define se o ícone é estático ou derivado dinamicamente (ex.: recurso de planeta).")]
         public CompassIconDynamicMode dynamicMode = CompassIconDynamicMode.Static;
 
-        [Tooltip("Se true, o ícone do planeta só aparece depois que o recurso for descoberto.")]
+        [Tooltip("Se true, usa o ícone de planeta não descoberto até revelar o recurso; caso contrário, usa o ícone padrão.")]
         public bool hideUntilDiscovered = true;
 
-        [Tooltip("Ícone opcional a ser usado para planetas antes do recurso ser descoberto, caso hideUntilDiscovered seja false.")]
+        [Tooltip("Ícone opcional a ser usado para planetas antes do recurso ser descoberto (ícone genérico)." )]
         public Sprite undiscoveredPlanetIcon;
 
         // Recomenda-se configurar planetas criando uma config com:
         // targetType = Planet, dynamicMode = PlanetResourceIcon, hideUntilDiscovered = true.
-        // Nesse modo, iconSprite pode ficar nulo e undiscoveredPlanetIcon pode ser usado
-        // futuramente caso se deseje um ícone genérico antes da descoberta do recurso.
+        // Nesse modo, iconSprite pode ficar nulo e undiscoveredPlanetIcon define o ícone genérico
+        // exibido antes da descoberta do recurso; após revelado, o ícone muda para o ResourceIcon do planeta.
     }
 }
