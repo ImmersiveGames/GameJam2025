@@ -34,13 +34,14 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         public Sprite undiscoveredPlanetIcon;
 
         [Header("Planet Resource Styles")]
-        [Tooltip("Database opcional para aplicar cor e tamanho específicos de acordo com o tipo de recurso do planeta.")]
+        [Tooltip("Database opcional para aplicar cor específica de acordo com o tipo de recurso do planeta (tamanho continua definido pelo tipo de alvo).")]
         public PlanetResourceCompassStyleDatabase planetResourceStyleDatabase;
 
         // Recomenda-se configurar planetas criando uma config com:
         // targetType = Planet, dynamicMode = PlanetResourceIcon, hideUntilDiscovered = true.
         // Nesse modo, iconSprite pode ficar nulo e undiscoveredPlanetIcon define o ícone genérico exibido antes
         // da descoberta do recurso; após revelado, o ícone muda para o ResourceIcon do planeta e pode aplicar
-        // estilos adicionais via PlanetResourceCompassStyleDatabase (cor/tamanho por tipo de recurso).
+        // estilos adicionais via PlanetResourceCompassStyleDatabase (apenas cor por tipo de recurso). O tamanho
+        // permanece definido pelo baseSize desta configuração de target type.
     }
 }

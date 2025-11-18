@@ -203,18 +203,17 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             float baseSize = _visualConfig.baseSize;
 
             Color finalColor = baseColor;
-            float finalSize = baseSize;
 
             PlanetResources resourceType = _currentResource != null ? _currentResource.ResourceType : default;
 
             if (_visualConfig.planetResourceStyleDatabase != null)
             {
-                _visualConfig.planetResourceStyleDatabase.GetStyleForResource(resourceType, baseColor, baseSize, out finalColor, out finalSize);
+                finalColor = _visualConfig.planetResourceStyleDatabase.GetColorForResource(resourceType, baseColor);
             }
 
             if (rectTransform != null)
             {
-                rectTransform.sizeDelta = Vector2.one * finalSize;
+                rectTransform.sizeDelta = Vector2.one * baseSize;
             }
 
             if (iconImage != null)
