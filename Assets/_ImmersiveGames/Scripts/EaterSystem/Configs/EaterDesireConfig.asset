@@ -38,3 +38,8 @@ MonoBehaviour:
   eatingDamageInterval: 1
   eatingDamageResource: 0
   eatingDamageType: 0
+  eatingBiteSound: {fileID: 11400000, guid: 38b8df94c05e905459e3b48e88d61d8c, type: 2}
+  eatingRecoveryResource: 3
+  eatingRecoveryAmount: 5
+  eatingRecoveryInterval: 1
+  eatingCompatibleDevourHealAmount: 25

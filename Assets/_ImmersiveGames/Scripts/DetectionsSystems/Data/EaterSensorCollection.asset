@@ -14,4 +14,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sensors:
   - {fileID: 11400000, guid: a4f8472f7a9241079e1a05cf1a68026a, type: 2}
-  - {fileID: 11400000, guid: 5bff59a5991f4f5a9b927352edc3d62a, type: 2}
