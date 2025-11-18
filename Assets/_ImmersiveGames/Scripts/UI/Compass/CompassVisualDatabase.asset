@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60cd5ce8282dc9d45800a29cb7c7d455, type: 3}
   m_Name: CompassVisualDatabase
   m_EditorClassIdentifier: 
-  visualConfigs: []
+  visualConfigs:
+  - {fileID: 11400000, guid: 207bcff0fcd91704ea0aeffe0669f7c6, type: 2}
+  - {fileID: 11400000, guid: 4f81836be82c1e141b2fbc8e339a15e6, type: 2}
+  - {fileID: 11400000, guid: 6fbbaeadd39e0f7468bf158b6e5f059f, type: 2}

@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: 81636598692984422}
   - component: {fileID: 3388031708181859575}
   - component: {fileID: 743985210123456788}
+  - component: {fileID: -2776814566296248560}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Untagged
@@ -162,8 +163,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ef8167bef3e440289ec6c2a10cb4726, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   myDetectionType: {fileID: 11400000, guid: 6a267baacedb4dff9a098996007f138d, type: 2}
   audioEmitter: {fileID: 743985210123456788}
   discoverySound: {fileID: 11400000, guid: 71f68fbf5f7142b0beb4abda71fb50b5, type: 2}
@@ -177,8 +178,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3f64dd52ca7e4b5dbcc9b6fa49cc5ce2, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   planetsMaster: {fileID: 3945190765558734642}
 --- !u!114 &2819374650281937465
 MonoBehaviour:
@@ -190,8 +191,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fcb6f6b6b5148f1b006aa9de6c21e6f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   myDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
   defenseController: {fileID: 5359047152701732458}
 --- !u!114 &299314230134813839
@@ -241,6 +242,8 @@ MonoBehaviour:
   spawnExplosionOnDeath: 1
   explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}
   explosionOffset: {x: 0, y: 0, z: 0}
+  disableSkinOnDeath: 1
+  triggerGameOverOnDeath: 0
   strategyPipeline:
   - type: 0
     criticalSettings:
@@ -283,3 +286,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
   poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
+--- !u!114 &-2776814566296248560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f79c9b4b9f4376745bcf42b9ffdf4663, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetType: 3
