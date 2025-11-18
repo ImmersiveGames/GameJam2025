@@ -24,8 +24,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         public CompassIcon iconPrefab;
 
         private Dictionary<ICompassTrackable, CompassIcon> _iconsByTarget;
-        public int IconCount => _iconsByTarget != null ? _iconsByTarget.Count : 0;
-
+        public int IconCount => _iconsByTarget?.Count ?? 0;
 
         private void Awake()
         {
@@ -34,17 +33,20 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void Update()
         {
-            if (CompassRuntimeService.PlayerTransform == null || compassRectTransform == null || iconPrefab == null)
-            {
-                return;
-            }
-
-            IReadOnlyList<ICompassTrackable> trackables = CompassRuntimeService.Trackables;
-            SynchronizeIcons(trackables);
-
-            // TODO: Atualizar posição e rotação dos ícones com base no ângulo relativo ao jogador.
+            UpdateCompass();
         }
+        public float CalculateXFromAngle(float angle)
+        {
+            float halfAngle = settings != null ? settings.compassHalfAngleDegrees : 180f;
+            float width = compassRectTransform != null ? compassRectTransform.rect.width : 0f;
+            float halfWidth = width * 0.5f;
 
+            if (halfAngle <= 0f || halfWidth <= 0f)
+                return 0f;
+
+            float normalized = Mathf.Clamp(angle / halfAngle, -1f, 1f);
+            return normalized * halfWidth;
+        }
         private void SynchronizeIcons(IReadOnlyList<ICompassTrackable> trackables)
         {
             if (trackables == null)
@@ -71,12 +73,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
                 CompassIcon iconInstance = Instantiate(iconPrefab, compassRectTransform);
                 iconInstance.Initialize(target, visualConfig);
-
-                // Por enquanto, mantemos os ícones centralizados até que a lógica de posição seja implementada.
-                if (iconInstance.rectTransform != null)
-                {
-                    iconInstance.rectTransform.anchoredPosition = Vector2.zero;
-                }
 
                 _iconsByTarget[target] = iconInstance;
             }
@@ -115,6 +111,122 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                     _iconsByTarget.Remove(target);
                 }
             }
+        }
+
+        /// <summary>
+        /// Atualiza a bússola calculando ângulo, posição e distância para cada alvo rastreável.
+        /// </summary>
+        private void UpdateCompass()
+        {
+            if (compassRectTransform == null || iconPrefab == null)
+            {
+                return;
+            }
+
+            Transform playerTransform = CompassRuntimeService.PlayerTransform;
+            IReadOnlyList<ICompassTrackable> trackables = CompassRuntimeService.Trackables;
+
+            SynchronizeIcons(trackables);
+
+            if (playerTransform == null || _iconsByTarget.Count == 0)
+            {
+                return;
+            }
+
+            Vector3 playerForward = playerTransform.forward;
+            playerForward.y = 0f;
+            if (playerForward.sqrMagnitude < 0.0001f)
+            {
+                playerForward = Vector3.forward;
+            }
+
+            float halfAngle = settings != null ? Mathf.Abs(settings.compassHalfAngleDegrees) : 180f;
+            float width = compassRectTransform.rect.width;
+            float halfWidth = width * 0.5f;
+            bool clampIcons = settings != null && settings.clampIconsAtEdges;
+
+            List<ICompassTrackable> toRemove = null;
+
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget.ToList())
+            {
+                ICompassTrackable target = pair.Key;
+                CompassIcon icon = pair.Value;
+
+                if (target == null || icon == null || target.Transform == null)
+                {
+                    toRemove ??= new List<ICompassTrackable>();
+                    toRemove.Add(target);
+                    continue;
+                }
+
+                Vector3 toTarget = target.Transform.position - playerTransform.position;
+                toTarget.y = 0f;
+                float distance = toTarget.magnitude;
+
+                if (toTarget.sqrMagnitude < 0.0001f)
+                {
+                    icon.gameObject.SetActive(true);
+                    SetIconPosition(icon, 0f, halfAngle, halfWidth);
+                    icon.UpdateDistance(distance);
+                    continue;
+                }
+
+                float angle = Vector3.SignedAngle(playerForward, toTarget, Vector3.up);
+
+                if (halfAngle <= 0f)
+                {
+                    icon.gameObject.SetActive(false);
+                    continue;
+                }
+
+                if (Mathf.Abs(angle) > halfAngle)
+                {
+                    if (!clampIcons)
+                    {
+                        icon.gameObject.SetActive(false);
+                        continue;
+                    }
+
+                    angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
+                }
+
+                icon.gameObject.SetActive(true);
+                SetIconPosition(icon, angle, halfAngle, halfWidth);
+                icon.UpdateDistance(distance);
+            }
+
+            if (toRemove == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < toRemove.Count; i++)
+            {
+                ICompassTrackable target = toRemove[i];
+                if (_iconsByTarget.TryGetValue(target, out CompassIcon icon))
+                {
+                    if (icon != null)
+                    {
+                        Destroy(icon.gameObject);
+                    }
+
+                    _iconsByTarget.Remove(target);
+                }
+            }
+        }
+
+        private static void SetIconPosition(CompassIcon icon, float angle, float halfAngle, float halfWidth)
+        {
+            if (icon.rectTransform == null)
+            {
+                return;
+            }
+
+            float normalized = Mathf.Approximately(halfAngle, 0f) ? 0f : angle / halfAngle;
+            float x = normalized * halfWidth;
+            Vector2 anchoredPos = icon.rectTransform.anchoredPosition;
+            anchoredPos.x = x;
+            icon.rectTransform.anchoredPosition = anchoredPos;
         }
     }
 }

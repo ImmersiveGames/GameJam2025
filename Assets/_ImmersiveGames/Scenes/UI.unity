@@ -311,6 +311,7 @@ GameObject:
   - component: {fileID: 1045513797}
   - component: {fileID: 1045513799}
   - component: {fileID: 1045513798}
+  - component: {fileID: 1045513800}
   m_Layer: 5
   m_Name: CompassHUDController
   m_TagString: Untagged
@@ -366,6 +367,19 @@ MonoBehaviour:
   settings: {fileID: 11400000, guid: 1a9fb9cb721a3dc45a0d1042df14b4d0, type: 2}
   visualDatabase: {fileID: 11400000, guid: 2df1295584fd69e4b8d825f5cbb13a1b, type: 2}
   iconPrefab: {fileID: 5647805734083796111, guid: dd67e86718b4dc843ae13b169bd0330d, type: 3}
+--- !u!114 &1045513800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1045513796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c0f7d1a463af474eb5b3e8d9dd524b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  logDetailsKey: 103
 --- !u!1 &1778014023
 GameObject:
   m_ObjectHideFlags: 0

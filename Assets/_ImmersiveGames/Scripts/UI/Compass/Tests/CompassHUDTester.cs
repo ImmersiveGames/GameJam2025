@@ -3,7 +3,7 @@ using UnityEngine;
 
 // Script temporário para inspecionar o CompassHUD em runtime.
 // Deve ser colocado no MESMO GameObject que possui o CompassHUD.
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UI.Compass.Tests
 {
     [RequireComponent(typeof(CompassHUD))]
     public class CompassHUDTester : MonoBehaviour
