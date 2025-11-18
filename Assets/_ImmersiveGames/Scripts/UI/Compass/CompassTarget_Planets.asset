@@ -12,7 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3554ca8e70d2b3a4dada52a822f06e10, type: 3}
   m_Name: CompassTarget_Planets
   m_EditorClassIdentifier: 
-  targetType: 3
-  icon: {fileID: -1816320006, guid: 0fa908af57a0c3e43b411c85f8e3dcfe, type: 3}
-  baseColor: {r: 0.7830189, g: 0.35264215, b: 0.19575472, a: 1}
+  targetType: 4
+  iconSprite: {fileID: -1950868070, guid: ef87da240041c174497a82c3249049a7, type: 3}
+  baseColor: {r: 1, g: 1, b: 1, a: 1}
   baseSize: 24
+  dynamicMode: 1
+  hideUntilDiscovered: 1
+  undiscoveredPlanetIcon: {fileID: -1950868070, guid: ef87da240041c174497a82c3249049a7, type: 3}

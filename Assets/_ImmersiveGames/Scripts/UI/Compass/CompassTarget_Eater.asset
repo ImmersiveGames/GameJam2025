@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: CompassTarget_Eater
   m_EditorClassIdentifier: 
   targetType: 2
-  icon: {fileID: 21300000, guid: 800de5d4e1395a141a825d65cb6c4527, type: 3}
-  baseColor: {r: 0.107467055, g: 0.3530184, b: 0.6509434, a: 1}
+  iconSprite: {fileID: 21300000, guid: 800de5d4e1395a141a825d65cb6c4527, type: 3}
+  baseColor: {r: 1, g: 1, b: 1, a: 1}
   baseSize: 30
+  dynamicMode: 0
+  hideUntilDiscovered: 0
+  undiscoveredPlanetIcon: {fileID: 0}

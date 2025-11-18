@@ -13,6 +13,9 @@ MonoBehaviour:
   m_Name: CompassTarget_Objetive
   m_EditorClassIdentifier: 
   targetType: 0
-  icon: {fileID: -1816320006, guid: 0fa908af57a0c3e43b411c85f8e3dcfe, type: 3}
+  iconSprite: {fileID: -1816320006, guid: 0fa908af57a0c3e43b411c85f8e3dcfe, type: 3}
   baseColor: {r: 1, g: 1, b: 1, a: 1}
   baseSize: 24
+  dynamicMode: 0
+  hideUntilDiscovered: 0
+  undiscoveredPlanetIcon: {fileID: 0}
