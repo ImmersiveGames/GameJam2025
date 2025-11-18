@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             {
                 if (iconImage != null)
                 {
-                    iconImage.sprite = _visualConfig.icon;
+                    iconImage.sprite = _visualConfig.iconSprite;
                     iconImage.color = _visualConfig.baseColor;
                 }
 

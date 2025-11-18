@@ -14,6 +14,11 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         private List<CompassTargetVisualConfig> visualConfigs = new();
 
         /// <summary>
+        /// Quantidade de configurações registradas (facilita validações e testes).
+        /// </summary>
+        public int ConfigsCount => visualConfigs?.Count ?? 0;
+
+        /// <summary>
         /// Retorna a configuração visual associada ao tipo de alvo informado.
         /// </summary>
         /// <param name="targetType">Tipo de alvo rastreável.</param>

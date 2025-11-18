@@ -8,6 +8,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         Objective = 0,
         Enemy = 1,
         Ally = 2,
-        PointOfInterest = 3
+        PointOfInterest = 3,
+        Planet = 4
     }
 }
