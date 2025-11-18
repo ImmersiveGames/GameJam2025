@@ -285,6 +285,19 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             icon.rectTransform.anchoredPosition = anchoredPos;
         }
 
+        /// <summary>
+        /// Permite que outros componentes (ex.: highlight de planetas) inspecionem os ícones atualmente ativos.
+        /// </summary>
+        public IEnumerable<(ICompassTrackable target, CompassIcon icon)> EnumerateIcons()
+        {
+            if (_iconsByTarget == null || _iconsByTarget.Count == 0)
+            {
+                return Enumerable.Empty<(ICompassTrackable, CompassIcon)>();
+            }
+
+            return _iconsByTarget.Select(pair => (pair.Key, pair.Value)).ToList();
+        }
+
         // As interfaces abaixo mantêm compatibilidade com o pipeline de Canvas, mesmo sem binds de recursos.
         public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
         {

@@ -29,6 +29,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         private PlanetResourcesSo _currentResource;
         private bool _isDiscovered;
         private Vector3 _baseScale;
+        private Color _currentColor = Color.white;
 
         /// <summary>
         /// Alvo rastreável associado a este ícone.
@@ -78,6 +79,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             if (iconImage != null)
             {
                 iconImage.color = _visualConfig.baseColor;
+                _currentColor = _visualConfig.baseColor;
             }
         }
 
@@ -154,36 +156,30 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             if (_planetMaster == null)
             {
                 targetSprite = _visualConfig.iconSprite;
+                ApplyBaseVisuals();
             }
-            else
+            else if (!_isDiscovered)
             {
-                if (!_isDiscovered)
+                if (_visualConfig.hideUntilDiscovered)
                 {
-                    if (_visualConfig.hideUntilDiscovered)
-                    {
-                        targetSprite = _visualConfig.undiscoveredPlanetIcon;
-                        if (targetSprite == null)
-                        {
-                            targetSprite = _visualConfig.iconSprite;
-                        }
-                    }
-                    else
-                    {
-                        targetSprite = _visualConfig.iconSprite;
-                        if (targetSprite == null)
-                        {
-                            targetSprite = _visualConfig.undiscoveredPlanetIcon;
-                        }
-                    }
+                    targetSprite = _visualConfig.undiscoveredPlanetIcon ?? _visualConfig.iconSprite;
                 }
                 else
                 {
-                    targetSprite = _currentResource != null ? _currentResource.ResourceIcon : null;
-                    if (targetSprite == null)
-                    {
-                        targetSprite = _visualConfig.iconSprite;
-                    }
+                    targetSprite = _visualConfig.iconSprite ?? _visualConfig.undiscoveredPlanetIcon;
                 }
+
+                ApplyBaseVisuals();
+            }
+            else
+            {
+                targetSprite = _currentResource != null ? _currentResource.ResourceIcon : null;
+                if (targetSprite == null)
+                {
+                    targetSprite = _visualConfig.iconSprite ?? _visualConfig.undiscoveredPlanetIcon;
+                }
+
+                ApplyPlanetResourceStyle();
             }
 
             iconImage.sprite = targetSprite;
@@ -193,6 +189,57 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             if (distanceLabel != null)
             {
                 distanceLabel.enabled = hasSprite;
+            }
+        }
+
+        private void ApplyPlanetResourceStyle()
+        {
+            if (_visualConfig == null)
+            {
+                return;
+            }
+
+            Color baseColor = _visualConfig.baseColor;
+            float baseSize = _visualConfig.baseSize;
+
+            Color finalColor = baseColor;
+            float finalSize = baseSize;
+
+            PlanetResources resourceType = _currentResource != null ? _currentResource.ResourceType : default;
+
+            if (_visualConfig.planetResourceStyleDatabase != null)
+            {
+                _visualConfig.planetResourceStyleDatabase.GetStyleForResource(resourceType, baseColor, baseSize, out finalColor, out finalSize);
+            }
+
+            if (rectTransform != null)
+            {
+                rectTransform.sizeDelta = Vector2.one * finalSize;
+            }
+
+            if (iconImage != null)
+            {
+                iconImage.color = finalColor;
+                _currentColor = finalColor;
+            }
+        }
+
+        /// <summary>
+        /// Aplica ou remove destaque visual para ícones de planeta marcado.
+        /// </summary>
+        /// <param name="isMarked">Indica se o ícone representa o planeta marcado atualmente.</param>
+        /// <param name="scaleMultiplier">Multiplicador opcional aplicado à escala do ícone quando marcado.</param>
+        /// <param name="colorTint">Cor opcional multiplicada ao ícone ao marcar.</param>
+        public void SetMarked(bool isMarked, float scaleMultiplier = 1.3f, Color? colorTint = null)
+        {
+            if (rectTransform != null)
+            {
+                rectTransform.localScale = isMarked ? _baseScale * scaleMultiplier : _baseScale;
+            }
+
+            if (iconImage != null && colorTint.HasValue)
+            {
+                iconImage.color = isMarked ? _currentColor * colorTint.Value : _currentColor;
             }
         }
 
