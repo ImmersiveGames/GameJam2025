@@ -202,8 +202,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             builder.At(_hungryState, _chasingState, hungryChasingPredicate);
             builder.At(_chasingState, _eatingState, chasingEatingPredicate);
             builder.At(_chasingState, _hungryState, planetUnmarkedPredicate);
-            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
             builder.At(_eatingState, _wanderingState, EnsureEatingWanderingPredicate());
+            builder.At(_eatingState, _hungryState, planetUnmarkedPredicate);
         }
 
         private T RegisterState<T>(StateMachineBuilder builder, T state) where T : EaterBehaviorState
@@ -883,10 +883,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
             }
 
-            if (!stopped)
-            {
-                EnsureNoActiveDesire(reason);
-            }
+            EnsureNoActiveDesire(reason);
 
             return stopped;
         }
