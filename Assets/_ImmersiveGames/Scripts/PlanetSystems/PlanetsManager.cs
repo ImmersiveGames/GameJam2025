@@ -6,6 +6,7 @@ using UnityUtils;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -392,12 +393,29 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
+            ForceUnmarkPlanet(planet);
             _planetsByActorId.Remove(planet.ActorId);
             _planetResourcesMap.Remove(planet);
             _spawnedPlanets.Remove(planet);
             UnregisterActiveDetectables(planet);
 
             DebugUtility.LogVerbose<PlanetsManager>($"Planeta removido do gerenciamento: {planet.ActorName}.");
+        }
+
+        private static void ForceUnmarkPlanet(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            var markPlanet = planet.GetComponentInChildren<MarkPlanet>(true);
+            if (markPlanet == null)
+            {
+                return;
+            }
+
+            markPlanet.Unmark();
         }
 
         private void RegisterActiveDetectables(PlanetsMaster planet)

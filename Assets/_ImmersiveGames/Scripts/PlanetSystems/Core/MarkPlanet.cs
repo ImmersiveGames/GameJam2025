@@ -127,6 +127,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             }
         }
 
+        private void OnDisable()
+        {
+            if (_isMarked)
+            {
+                Unmark();
+            }
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (!_isMarked) return;
