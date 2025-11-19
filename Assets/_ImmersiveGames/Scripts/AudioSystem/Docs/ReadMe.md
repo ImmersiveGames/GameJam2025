@@ -18,6 +18,7 @@ Sistema modular e extensível de áudio para Unity, com suporte a:
 | **`SoundEmitter`** | Objeto reutilizável (via pool) responsável por tocar SFX. |
 | **`AudioSystemInitializer`** | Garante que o sistema e dependências de áudio estejam prontos no runtime. |
 | **`AudioMathUtility`** | Serviço central de cálculos de volume, dB e pitch. |
+| **`AudioVolumeService`** | Orquestra a combinação de volumes (clip/config/categoria/master/contexto) de forma consistente. |
 | **`AudioServiceSettings`** | ScriptableObject global com multiplicadores e volumes padrão. |
 | **`AudioConfig`** | Configurações padrão de áudio por entidade. |
 | **`SoundData`** | Asset individual com dados de cada som (clip, mixer, volume, etc). |
@@ -27,20 +28,19 @@ Sistema modular e extensível de áudio para Unity, com suporte a:
 
 ## 🔊 Hierarquia de Volume
 
-O volume final de um som é calculado levando em conta vários níveis de controle:
+O volume final de um som é calculado pelo `AudioVolumeService`, que combina as camadas de forma previsível usando o `AudioMathUtility`:
 
 ```
-
 FinalVolume = SoundData.volume
 × AudioConfig.defaultVolume
 × AudioServiceSettings.(bgmMultiplier | sfxMultiplier)
 × AudioServiceSettings.(bgmVolume | sfxVolume)
 × AudioServiceSettings.masterVolume
 × AudioContext.volumeMultiplier
+(⊕ AudioContext.volumeOverride, quando fornecido)
+```
 
-````
-
-Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais.
+Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais, com possibilidade de override contextual por som.
 
 ---
 
@@ -233,7 +233,9 @@ O sistema exibirá no console:
 
     * `IAudioService` (gerenciamento de BGM)
     * `IAudioMathService` (conversões e cálculos)
-4. Controllers e SoundEmitters usam esses serviços automaticamente.
+    * `IAudioVolumeService` (orquestra composição de volume BGM/SFX)
+    * `AudioServiceSettings` (quando fornecido pelo AudioManager configurado na cena)
+4. Controllers e SoundEmitters usam esses serviços automaticamente, garantindo consistência entre BGM e SFX.
 
 ---
 
@@ -285,7 +287,7 @@ Assets/
 ## 🧠 Observação
 
 O sistema foi projetado para ser **escalável e desacoplado**.
-O `AudioMathUtility` centraliza toda a lógica de volume/pitch, permitindo ajustes perceptuais futuros sem alterar controladores.
+O `AudioVolumeService` mantém a composição de volume em um ponto único (SRP) enquanto o `AudioMathUtility` foca nas conversões e cálculos perceptuais, permitindo ajustes futuros sem alterar controladores ou emissores.
 
 ---
 
@@ -332,6 +334,6 @@ Com este sistema, o áudio fica:
 ---
 
 > **Autor:** Equipe Immersive Games
-> **Versão:** 1.0
-> **Compatível com:** Unity 2022+
+> **Versão:** 1.1
+> **Compatível com:** Unity 6+
 > **Licença:** Interna / Proprietária
