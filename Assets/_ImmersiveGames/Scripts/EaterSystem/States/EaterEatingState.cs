@@ -54,6 +54,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _missingAudioEmitterLogged;
         private bool _hasAppliedDevourReward;
         private bool _hasLoggedRecoveryCompatibility;
+        private bool _planetDestroyedDuringState;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -87,6 +88,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
+            _planetDestroyedDuringState = false;
 
             UpdateEatingAnimation(isEating: true);
 
@@ -97,7 +99,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnExit()
         {
             UpdateEatingAnimation(isEating: false);
-            
+
+            if (!_planetDestroyedDuringState)
+            {
+                Behavior?.RegisterEatingOutcome(false);
+            }
+
 
             base.OnExit();
             StopTweens();
@@ -151,6 +158,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             LookAtTarget();
             TickDamage(Time.deltaTime);
             TickRecovery(Time.deltaTime);
+        }
+
+        internal void SyncDestroyedTargetForTransitions()
+        {
+            if (_pendingWanderingTransition || _planetDestroyedDuringState)
+            {
+                return;
+            }
+
+            if (_activePlanet == null)
+            {
+                return;
+            }
+
+            bool planetActive;
+            try
+            {
+                planetActive = _activePlanet.IsActive;
+            }
+            catch (MissingReferenceException)
+            {
+                planetActive = false;
+            }
+
+            if (!planetActive)
+            {
+                HandleDestroyedPlanet();
+            }
         }
 
         private void PrepareTarget(Transform target, bool restartOrbit)
@@ -687,6 +722,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             StopTweens();
             EnsureOrbitFreezeController().Release();
+
+            _planetDestroyedDuringState = true;
+            Behavior?.RegisterEatingOutcome(true);
         }
 
         private void ReportDevouredPlanetCompatibility()
@@ -1040,6 +1078,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 Behavior,
                 this);
         }
+
+        internal bool HasDestroyedPlanetDuringState => _planetDestroyedDuringState;
 
         private static IDamageReceiver ResolveDamageReceiver(Transform target)
         {

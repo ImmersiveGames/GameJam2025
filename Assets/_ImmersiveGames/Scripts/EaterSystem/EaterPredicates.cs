@@ -195,7 +195,39 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool Evaluate()
         {
+            _eatingState.SyncDestroyedTargetForTransitions();
+
             return _eatingState.ConsumeWanderingTransitionRequest();
+        }
+    }
+
+    /// <summary>
+    /// Predicado que direciona a saída do estado de alimentação para a fome sempre que
+    /// um planeta é desmarcado e o alvo atual não foi destruído.
+    /// </summary>
+    internal sealed class EatingHungryPredicate : IPredicate
+    {
+        private readonly EaterEatingState _eatingState;
+        private readonly IPredicate _unmarkedPredicate;
+
+        public EatingHungryPredicate(EaterEatingState eatingState, IPredicate unmarkedPredicate)
+        {
+            _eatingState = eatingState ?? throw new ArgumentNullException(nameof(eatingState));
+            _unmarkedPredicate = unmarkedPredicate ?? throw new ArgumentNullException(nameof(unmarkedPredicate));
+        }
+
+        public bool Evaluate()
+        {
+            _eatingState.SyncDestroyedTargetForTransitions();
+
+            if (_eatingState.HasDestroyedPlanetDuringState)
+            {
+                // Consumir o evento de desmarcação, mas priorizar a transição para passeio quando o planeta foi destruído.
+                _unmarkedPredicate.Evaluate();
+                return false;
+            }
+
+            return _unmarkedPredicate.Evaluate();
         }
     }
 
