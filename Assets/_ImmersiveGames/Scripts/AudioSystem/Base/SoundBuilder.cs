@@ -30,11 +30,32 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _audioConfig = audioCfg;
         }
 
-        public SoundBuilder WithSoundData(SoundData sd) { _sound = sd; return this; }
-        public SoundBuilder AtPosition(Vector3 pos, bool spatial = true) { _position = pos; _useSpatial = spatial; return this; }
-        public SoundBuilder WithRandomPitch(bool v = true) { _randomPitch = v; return this; }
-        public SoundBuilder WithVolumeMultiplier(float m) { _volumeMultiplier = m; return this; }
-        public SoundBuilder WithFadeIn(float seconds) { _fadeIn = seconds; return this; }
+        public SoundBuilder WithSoundData(SoundData sd)
+        {
+            _sound = sd;
+            return this;
+        }
+        public SoundBuilder AtPosition(Vector3 pos, bool spatial = true)
+        {
+            _position = pos;
+            _useSpatial = spatial;
+            return this;
+        }
+        public SoundBuilder WithRandomPitch(bool v = true)
+        {
+            _randomPitch = v;
+            return this;
+        }
+        public SoundBuilder WithVolumeMultiplier(float m)
+        {
+            _volumeMultiplier = m;
+            return this;
+        }
+        public SoundBuilder WithFadeIn(float seconds)
+        {
+            _fadeIn = seconds;
+            return this;
+        }
 
         public void Play()
         {

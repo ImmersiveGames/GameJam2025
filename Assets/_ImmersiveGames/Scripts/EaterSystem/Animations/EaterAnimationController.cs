@@ -30,9 +30,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             _reviveBinding = new EventBinding<ReviveEvent>(OnReviveEvent);
         }
 
-        protected override void OnEnable()
+        protected void OnEnable()
         {
-            base.OnEnable();
             RegisterDamageListeners();
         }
 

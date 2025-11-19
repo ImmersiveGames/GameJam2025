@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         public Vector3 position;
         public bool useSpatial;
         public float volumeMultiplier; // multiplicador habitual
-        public float volumeOverride;   // se >=0 substitui (0..1)
+        public float volumeOverride; // se >=0 substitui (0..1)
 
         public static AudioContext Default(Vector3 pos, bool useSpatial = true, float volMult = 1f, float volOverride = -1f)
         {

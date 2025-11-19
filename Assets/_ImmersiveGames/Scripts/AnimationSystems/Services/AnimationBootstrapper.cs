@@ -9,17 +9,17 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
         public static void Initialize()
         {
             var configProvider = new AnimationConfigProvider();
-            
+
             // Registra configs padrão
-            configProvider.RegisterConfig("PlayerAnimationController", 
+            configProvider.RegisterConfig("PlayerAnimationController",
                 Resources.Load<AnimationConfig>($"DefaultPlayerAnimationConfig"));
-            configProvider.RegisterConfig("EaterAnimationController", 
+            configProvider.RegisterConfig("EaterAnimationController",
                 Resources.Load<AnimationConfig>($"DefaultEaterAnimationConfig"));
-            configProvider.RegisterConfig("EnemyAnimationController", 
+            configProvider.RegisterConfig("EnemyAnimationController",
                 Resources.Load<AnimationConfig>($"DefaultEnemyAnimationConfig"));
-                
+
             configProvider.Initialize();
-            
+
             var globalAnimationService = new GlobalAnimationService();
             globalAnimationService.Initialize();
         }

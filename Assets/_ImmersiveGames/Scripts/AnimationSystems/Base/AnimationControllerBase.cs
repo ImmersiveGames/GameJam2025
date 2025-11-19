@@ -1,6 +1,7 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Components;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
+using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.AnimationSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -8,18 +9,15 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 {
-    
     public abstract class AnimationControllerBase : MonoBehaviour
     {
         [SerializeField] protected AnimationConfig animationConfig;
 
         protected Animator animator;
-        protected AnimationResolver animationResolver;
+        private AnimationResolver _animationResolver;
         protected ActorMaster Actor { get; private set; }
-        private bool _hasStarted;
         private bool _dependencyRegistered;
 
-        // Propriedades para hashs
         protected int IdleHash => animationConfig?.IdleHash ?? Animator.StringToHash("Idle");
         protected int HitHash => animationConfig?.HitHash ?? Animator.StringToHash("GetHit");
         protected int DeathHash => animationConfig?.DeathHash ?? Animator.StringToHash("Die");
@@ -27,13 +25,13 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 
         protected virtual void Awake()
         {
+            // Injeção sem ActorId — como no original que funcionava
             DependencyManager.Provider.InjectDependencies(this);
 
-            animationResolver = GetComponent<AnimationResolver>();
-            if (animationResolver == null)
+            _animationResolver = GetComponent<AnimationResolver>();
+            if (_animationResolver == null)
             {
-                DebugUtility.LogError<AnimationControllerBase>(
-                    $"AnimationResolver não encontrado em {name}. O componente será desativado.");
+                DebugUtility.LogError<AnimationControllerBase>($"AnimationResolver não encontrado em {name}");
                 enabled = false;
                 return;
             }
@@ -41,87 +39,34 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             Actor = GetComponent<ActorMaster>();
             if (Actor == null)
             {
-                DebugUtility.LogError<AnimationControllerBase>(
-                    $"ActorMaster não encontrado em {name}. O componente será desativado.");
+                DebugUtility.LogError<AnimationControllerBase>($"ActorMaster não encontrado em {name}");
                 enabled = false;
                 return;
             }
 
-            animationResolver.OnAnimatorChanged += OnAnimatorChanged;
+            _animationResolver.OnAnimatorChanged += OnAnimatorChanged;
 
             if (animationConfig == null)
             {
-                DependencyManager.Provider.TryGetGlobal<AnimationConfigProvider>(out var configProvider);
-                if (configProvider != null)
+                if (DependencyManager.Provider.TryGetGlobal<AnimationConfigProvider>(out var provider))
                 {
-                    string configKey = GetType().Name;
-                    animationConfig = configProvider.GetConfig(configKey);
+                    animationConfig = provider.GetConfig(GetType().Name);
                 }
             }
 
             if (animationConfig == null)
             {
                 animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
-                DebugUtility.LogWarning<AnimationControllerBase>(
-                    $"Usando AnimationConfig padrão para {name}.");
+                DebugUtility.LogWarning<AnimationControllerBase>($"Config padrão para {name}");
             }
-        }
 
-        protected virtual void Start()
-        {
-            InitializeAnimator();
+            animator = _animationResolver.GetAnimator();
             RegisterDependencies();
-            _hasStarted = true;
-        }
-
-        protected virtual void OnEnable()
-        {
-            if (_hasStarted && animator == null)
-            {
-                InitializeAnimator();
-            }
-
-            if (_hasStarted && !_dependencyRegistered)
-            {
-                RegisterDependencies();
-            }
-        }
-
-        private void InitializeAnimator()
-        {
-            animator = animationResolver.GetAnimator();
-
-            if (animator == null)
-            {
-                DebugUtility.LogError<AnimationControllerBase>(
-                    $"Nenhum Animator encontrado via AnimationResolver em {name}. O componente será desativado.");
-                enabled = false;
-                return;
-            }
-
-            DebugUtility.LogVerbose<AnimationControllerBase>(
-                $"Animator obtido via AnimationResolver em {name}.");
         }
 
         private void RegisterDependencies()
         {
-            if (Actor == null)
-            {
-                DebugUtility.LogError<AnimationControllerBase>(
-                    $"ActorMaster não configurado em {name}. Dependências não serão registradas.");
-                return;
-            }
-
-            if (string.IsNullOrEmpty(Actor.ActorId))
-            {
-                DebugUtility.LogWarning<AnimationControllerBase>(
-                    $"ActorId inválido em {name}. Dependências não serão registradas.");
-                return;
-            }
-
-            DebugUtility.Log<AnimationControllerBase>(
-                $"Registrando controlador de animação para ID: {Actor.ActorId}.",
-                DebugUtility.Colors.CrucialInfo);
+            if (string.IsNullOrEmpty(Actor.ActorId)) return;
 
             DependencyManager.Provider.RegisterForObject(Actor.ActorId, this);
             _dependencyRegistered = true;
@@ -129,31 +74,23 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 
         protected virtual void OnDisable()
         {
-            if (_dependencyRegistered && Actor != null && !string.IsNullOrEmpty(Actor.ActorId))
+            if (_dependencyRegistered && !string.IsNullOrEmpty(Actor.ActorId))
             {
                 DependencyManager.Provider.ClearObjectServices(Actor.ActorId);
-                DebugUtility.Log<AnimationControllerBase>(
-                    $"Serviços removidos do objeto {Actor.ActorId}.",
-                    DebugUtility.Colors.Success);
+                _dependencyRegistered = false;
             }
-
-            _dependencyRegistered = false;
         }
 
         public virtual void OnAnimatorChanged(Animator newAnimator)
         {
             animator = newAnimator;
-            DebugUtility.LogVerbose<AnimationControllerBase>(
-                Actor != null
-                    ? $"Animator atualizado para {Actor.ActorId}"
-                    : "Animator atualizado para objeto desconhecido");
         }
 
         protected virtual void OnDestroy()
         {
-            if (animationResolver != null)
+            if (_animationResolver != null)
             {
-                animationResolver.OnAnimatorChanged -= OnAnimatorChanged;
+                _animationResolver.OnAnimatorChanged -= OnAnimatorChanged;
             }
         }
 

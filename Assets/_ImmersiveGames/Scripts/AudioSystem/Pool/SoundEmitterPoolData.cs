@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Pool
     {
         [Header("Audio Pool Settings")]
         [SerializeField] private int maxSoundInstances = 30;
-        
+
         public int MaxSoundInstances => maxSoundInstances;
 
 #if UNITY_EDITOR

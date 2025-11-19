@@ -127,8 +127,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DebugUtility.Colors.Success);
         }
 
-        public void PauseBGM() { if (bgmAudioSource != null && bgmAudioSource.isPlaying) bgmAudioSource.Pause(); }
-        public void ResumeBGM() { if (bgmAudioSource != null && !bgmAudioSource.isPlaying && _currentBgm != null) bgmAudioSource.Play(); }
+        public void PauseBGM()
+        {
+            if (bgmAudioSource != null && bgmAudioSource.isPlaying) bgmAudioSource.Pause();
+        }
+        public void ResumeBGM()
+        {
+            if (bgmAudioSource != null && !bgmAudioSource.isPlaying && _currentBgm != null) bgmAudioSource.Play();
+        }
 
         public void SetBGMVolume(float volume)
         {

@@ -148,7 +148,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             if (soundData.randomPitch)
                 src.pitch = _math?.ApplyRandomPitch(1f, soundData.pitchVariation) ??
-                           Random.Range(1f - soundData.pitchVariation, 1f + soundData.pitchVariation);
+                    Random.Range(1f - soundData.pitchVariation, 1f + soundData.pitchVariation);
 
             if (fadeInSeconds > 0f)
             {
@@ -176,13 +176,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             float configDefault = defaults != null ? defaults.defaultVolume : 1f;
 
             return _math?.CalculateFinalVolume(
-                       clipVolume,
-                       configDefault,
-                       categoryVol,
-                       categoryMul,
-                       master,
-                       contextMultiplier,
-                       overrideVolume) ?? Mathf.Clamp01(clipVolume * configDefault * categoryVol * master * contextMultiplier);
+                clipVolume,
+                configDefault,
+                categoryVol,
+                categoryMul,
+                master,
+                contextMultiplier,
+                overrideVolume) ?? Mathf.Clamp01(clipVolume * configDefault * categoryVol * master * contextMultiplier);
         }
 
         private System.Collections.IEnumerator FadeVolume(AudioSource src, float from, float to, float dur)

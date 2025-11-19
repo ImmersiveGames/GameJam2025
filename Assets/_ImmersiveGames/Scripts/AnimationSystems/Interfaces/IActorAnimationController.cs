@@ -11,6 +11,5 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Interfaces
     public interface IAnimatorProvider
     {
         Animator GetAnimator();
-        event System.Action<Animator> OnAnimatorChanged;
     }
 }

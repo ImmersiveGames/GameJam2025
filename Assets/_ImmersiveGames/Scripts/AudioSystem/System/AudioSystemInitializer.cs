@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private static void CreateAudioManagerFromResources()
         {
-            var audioManagerPrefab = Resources.Load<AudioManager>("Audio/Prefabs/AudioManager");
+            var audioManagerPrefab = Resources.Load<AudioManager>($"Audio/Prefabs/AudioManager");
             if (audioManagerPrefab == null)
             {
                 DebugUtility.LogError(typeof(AudioSystemInitializer),
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DebugUtility.Colors.Success);
         }
 
-        public static bool IsInitialized() => DependencyManager.Provider?.TryGetGlobal<IAudioService>(out _) ?? false;
+        private static bool IsInitialized() => DependencyManager.Provider?.TryGetGlobal<IAudioService>(out _) ?? false;
 
         public static IAudioService GetAudioService()
         {
