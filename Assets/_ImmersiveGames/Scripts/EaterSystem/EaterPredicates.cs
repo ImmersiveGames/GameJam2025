@@ -195,6 +195,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool Evaluate()
         {
+            _eatingState.SyncDestroyedTargetForTransitions();
+
             return _eatingState.ConsumeWanderingTransitionRequest();
         }
     }
@@ -216,6 +218,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public bool Evaluate()
         {
+            _eatingState.SyncDestroyedTargetForTransitions();
+
             if (_eatingState.HasDestroyedPlanetDuringState)
             {
                 // Consumir o evento de desmarcação, mas priorizar a transição para passeio quando o planeta foi destruído.

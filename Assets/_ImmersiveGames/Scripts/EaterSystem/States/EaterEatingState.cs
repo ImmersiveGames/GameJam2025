@@ -160,6 +160,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             TickRecovery(Time.deltaTime);
         }
 
+        internal void SyncDestroyedTargetForTransitions()
+        {
+            if (_pendingWanderingTransition || _planetDestroyedDuringState)
+            {
+                return;
+            }
+
+            if (_activePlanet == null)
+            {
+                return;
+            }
+
+            bool planetActive;
+            try
+            {
+                planetActive = _activePlanet.IsActive;
+            }
+            catch (MissingReferenceException)
+            {
+                planetActive = false;
+            }
+
+            if (!planetActive)
+            {
+                HandleDestroyedPlanet();
+            }
+        }
+
         private void PrepareTarget(Transform target, bool restartOrbit)
         {
             bool targetChanged = !ReferenceEquals(_currentTarget, target);
