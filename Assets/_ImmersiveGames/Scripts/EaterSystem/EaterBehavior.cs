@@ -252,7 +252,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             _planetUnmarkedPredicate = new PlanetUnmarkedPredicate(
-                () => _eatingState != null && _eatingState.HasPendingWanderingRequest);
+                () => _eatingState != null && _eatingState.HasPendingWanderingRequest,
+                () => GetCurrentDesireInfo().HasDesire);
             return _planetUnmarkedPredicate;
         }
 
