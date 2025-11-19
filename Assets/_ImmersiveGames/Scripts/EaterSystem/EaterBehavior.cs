@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
@@ -253,7 +254,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             _planetUnmarkedPredicate = new PlanetUnmarkedPredicate(
                 () => _eatingState != null && _eatingState.HasPendingWanderingRequest,
-                () => GetCurrentDesireInfo().HasDesire);
+                () => GetCurrentDesireInfo().HasDesire,
+                planetUnmarkedEvent =>
+                {
+                    var planet = planetUnmarkedEvent.PlanetObject != null
+                        ? planetUnmarkedEvent.PlanetObject.GetComponentInParent<PlanetsMaster>(true)
+                        : null;
+
+                    return planet == null || planet.IsActive;
+                });
             return _planetUnmarkedPredicate;
         }
 

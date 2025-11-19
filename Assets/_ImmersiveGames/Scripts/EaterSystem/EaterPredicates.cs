@@ -208,6 +208,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private readonly EventBinding<PlanetUnmarkedEvent> _unmarkedBinding;
         private bool _shouldTrigger;
         private readonly Func<bool> _shouldIgnoreTrigger;
+        private readonly Func<PlanetUnmarkedEvent, bool> _shouldProcessEvent;
 
         /// <summary>
         /// Avalia se o predicado deve processar o evento de desmarcação. Permite
@@ -218,10 +219,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         public PlanetUnmarkedPredicate(
             Func<bool> shouldIgnoreTrigger = null,
-            Func<bool> shouldProcessTrigger = null)
+            Func<bool> shouldProcessTrigger = null,
+            Func<PlanetUnmarkedEvent, bool> shouldProcessEvent = null)
         {
             _shouldIgnoreTrigger = shouldIgnoreTrigger;
             _shouldProcessTrigger = shouldProcessTrigger;
+            _shouldProcessEvent = shouldProcessEvent;
             _unmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_unmarkedBinding);
         }
@@ -259,6 +262,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void HandlePlanetUnmarked(PlanetUnmarkedEvent planetUnmarkedEvent)
         {
+            if (_shouldProcessEvent != null && !_shouldProcessEvent.Invoke(planetUnmarkedEvent))
+            {
+                return;
+            }
+
             _shouldTrigger = true;
         }
     }
