@@ -12,6 +12,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     {
         private CountdownTimer _hungryCountdown;
         private bool _pendingHungryTransition;
+        private float _hungryDelayDeadline;
+        private bool _hungryDelayActive;
 
         public EaterWanderingState() : base("Wandering")
         {
@@ -20,6 +22,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+            _hungryDelayActive = false;
+            _hungryDelayDeadline = 0f;
             Behavior?.SuspendDesires("WanderingState.OnEnter");
             RestartHungryCountdown();
             RestartMovement(); // Reinicia o deslocamento sempre que o estado de passeio é reativado.
@@ -109,6 +113,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private void RestartHungryCountdown()
         {
             _pendingHungryTransition = false;
+            _hungryDelayActive = false;
+            _hungryDelayDeadline = 0f;
 
             if (Config == null)
             {
@@ -130,17 +136,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hungryCountdown.Stop();
             _hungryCountdown.Reset(safeDuration);
             _hungryCountdown.Start();
+
+            _hungryDelayActive = true;
+            _hungryDelayDeadline = Time.time + safeDuration;
         }
 
         private void StopHungryCountdown()
         {
             if (_hungryCountdown == null)
             {
+                _hungryDelayActive = false;
+                _hungryDelayDeadline = 0f;
                 return;
             }
 
             _hungryCountdown.Stop();
             _hungryCountdown = null;
+            _hungryDelayActive = false;
+            _hungryDelayDeadline = 0f;
         }
 
         private void EnsureHungryCountdown(float duration)
@@ -157,17 +170,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void EvaluateHungryCountdown()
         {
-            if (_pendingHungryTransition || _hungryCountdown == null)
+            if (_pendingHungryTransition)
             {
                 return;
             }
 
-            if (_hungryCountdown.IsRunning)
-            {
-                return;
-            }
+            bool waitingWithTimer = _hungryCountdown != null;
+            bool timerFinished = waitingWithTimer && !_hungryCountdown.IsRunning && _hungryCountdown.IsFinished;
+            bool deadlineReached = _hungryDelayActive && Time.time >= _hungryDelayDeadline;
 
-            if (!_hungryCountdown.IsFinished)
+            if (!timerFinished && !deadlineReached)
             {
                 return;
             }
