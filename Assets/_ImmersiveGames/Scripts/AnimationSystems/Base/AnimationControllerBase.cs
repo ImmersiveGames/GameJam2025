@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 
         protected virtual void Awake()
         {
-            DependencyManager.Instance.InjectDependencies(this);
+            DependencyManager.Provider.InjectDependencies(this);
 
             animationResolver = GetComponent<AnimationResolver>();
             if (animationResolver == null)
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 
             if (animationConfig == null)
             {
-                DependencyManager.Instance.TryGetGlobal<AnimationConfigProvider>(out var configProvider);
+                DependencyManager.Provider.TryGetGlobal<AnimationConfigProvider>(out var configProvider);
                 if (configProvider != null)
                 {
                     string configKey = GetType().Name;
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
                 $"Registrando controlador de animação para ID: {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
 
-            DependencyManager.Instance.RegisterForObject(Actor.ActorId, this);
+            DependencyManager.Provider.RegisterForObject(Actor.ActorId, this);
             _dependencyRegistered = true;
         }
 
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
         {
             if (_dependencyRegistered && Actor != null && !string.IsNullOrEmpty(Actor.ActorId))
             {
-                DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
+                DependencyManager.Provider.ClearObjectServices(Actor.ActorId);
                 DebugUtility.Log<AnimationControllerBase>(
                     $"Serviços removidos do objeto {Actor.ActorId}.",
                     DebugUtility.Colors.Success);

@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             // Tentar encontrar via DependencyManager primeiro
             if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                if (DependencyManager.Instance.TryGetForObject<SkinController>(_actor.ActorId, out var controller))
+                if (DependencyManager.Provider.TryGetForObject<SkinController>(_actor.ActorId, out var controller))
                 {
                     _skinController = controller;
                 }
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                DependencyManager.Instance.RegisterForObject(_actor.ActorId, this);
+                DependencyManager.Provider.RegisterForObject(_actor.ActorId, this);
             }
         }
 
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             // Notificar via DependencyManager
             if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                if (DependencyManager.Instance.TryGetForObject<AnimationControllerBase>(_actor.ActorId, out var controller))
+                if (DependencyManager.Provider.TryGetForObject<AnimationControllerBase>(_actor.ActorId, out var controller))
                 {
                     var localController = GetComponent<AnimationControllerBase>();
                     if (controller != null && controller != localController)

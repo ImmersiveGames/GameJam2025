@@ -75,10 +75,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             base.Awake();
             ConfigureDebug();
-            if (!DependencyManager.Instance.TryGetGlobal(out _orchestrator))
+            if (!DependencyManager.Provider.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
-                DependencyManager.Instance.RegisterGlobal(_orchestrator);
+                DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
             if (!SceneManager.GetSceneByName("UI").isLoaded)
             {

@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             try
             {
-                DependencyManager.Instance.InjectDependencies(component, objectId);
+                DependencyManager.Provider.InjectDependencies(component, objectId);
                 component.OnDependenciesInjected();
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             try
             {
-                DependencyManager.Instance.InjectDependencies(component, objectId);
+                DependencyManager.Provider.InjectDependencies(component, objectId);
                 component.OnDependenciesInjected();
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);

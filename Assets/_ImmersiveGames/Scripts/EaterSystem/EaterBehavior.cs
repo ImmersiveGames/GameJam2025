@@ -464,7 +464,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 string actorId = _master != null ? _master.ActorId : null;
                 if (!string.IsNullOrEmpty(actorId)
-                    && DependencyManager.Instance.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                    && DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
                 {
                     _animationController = resolvedController;
                 }
@@ -486,7 +486,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     string actorId = _master.ActorId;
                     if (!string.IsNullOrEmpty(actorId)
-                        && DependencyManager.Instance.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
+                        && DependencyManager.Provider.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
                     {
                         _audioEmitter = resolvedEmitter;
                     }
@@ -549,7 +549,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     string actorId = _master.ActorId;
                     if (!string.IsNullOrEmpty(actorId)
-                        && DependencyManager.Instance.TryGetForObject(actorId, out IDamageReceiver resolvedReceiver))
+                        && DependencyManager.Provider.TryGetForObject(actorId, out IDamageReceiver resolvedReceiver))
                     {
                         _selfDamageReceiver = resolvedReceiver;
                     }

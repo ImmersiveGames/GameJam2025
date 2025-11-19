@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
             _interactService = new PlanetInteractService();
-            DependencyManager.Instance.InjectDependencies(this);
+            DependencyManager.Provider.InjectDependencies(this);
             
             if (_playerInput == null)
             {

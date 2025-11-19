@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (_initialized || actor == null) return;
 
-            if (!DependencyManager.Instance.TryGetGlobal(out orchestrator))
+            if (!DependencyManager.Provider.TryGetGlobal(out orchestrator))
             {
                 DebugUtility.LogWarning<ResourceBridgeBase>("Orchestrator não disponível no DependencyManager.");
                 enabled = false;

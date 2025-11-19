@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 
         public void Initialize()
         {
-            DependencyManager.Instance.RegisterGlobal(this);
+            DependencyManager.Provider.RegisterGlobal(this);
         }
     }
 }

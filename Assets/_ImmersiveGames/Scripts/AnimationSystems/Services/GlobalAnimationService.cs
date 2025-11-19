@@ -27,12 +27,12 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 
         public void Initialize()
         {
-            DependencyManager.Instance.RegisterGlobal(this);
+            DependencyManager.Provider.RegisterGlobal(this);
         }
 
         public static bool TryGet(out GlobalAnimationService service)
         {
-            return DependencyManager.Instance.TryGetGlobal(out service);
+            return DependencyManager.Provider.TryGetGlobal(out service);
         }
     }
 }

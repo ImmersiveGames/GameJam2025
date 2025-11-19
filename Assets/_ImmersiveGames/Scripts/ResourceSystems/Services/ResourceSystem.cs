@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             EntityId = string.IsNullOrEmpty(entityId) ? Guid.NewGuid().ToString() : entityId;
             
-            if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
+            if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
             }

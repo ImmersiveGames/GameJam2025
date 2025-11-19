@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [ContextMenu("🔍 Debug Style Flow")]
         public void DebugStyleFlow()
         {
-            if (!DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
+            if (!DependencyManager.Provider.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
             {
                 DebugUtility.LogWarning<CanvasDebugUtility>("Orchestrator not found for style flow debug");
                 return;

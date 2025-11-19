@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         {
             // Garante que o AudioManager exista antes de solicitar dependências.
             AudioSystemInitializer.EnsureAudioSystemInitialized();
-            DependencyManager.Instance.InjectDependencies(this);
+            DependencyManager.Provider.InjectDependencies(this);
         }
 
         private void Start()

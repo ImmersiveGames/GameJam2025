@@ -40,10 +40,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _resourceSystem = resourceSystem ?? throw new ArgumentNullException(nameof(resourceSystem));
             IsPaused = startPaused;
 
-            if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
+            if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
-                DependencyManager.Instance.RegisterGlobal(_linkService);
+                DependencyManager.Provider.RegisterGlobal(_linkService);
             }
 
             RefreshConfigs();

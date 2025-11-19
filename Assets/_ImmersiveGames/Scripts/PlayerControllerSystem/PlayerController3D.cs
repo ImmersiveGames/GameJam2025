@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             _rb = GetComponentInChildren<Rigidbody>();
             _actor = GetComponent<IActor>();
             _inputActions = new PlayerInputActions();
-            DependencyManager.Instance.InjectDependencies(this);
+            DependencyManager.Provider.InjectDependencies(this);
 
             if (mainCamera) return;
             mainCamera = Camera.main;

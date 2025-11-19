@@ -151,9 +151,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         private bool ValidateSceneName(string sceneName)
         {
-            if (DependencyManager.Instance.IsInTestMode)
-                return true; // Relaxado para testes
-
             for (int i = 0; i < SceneManager.sceneCountInBuildSettings; i++)
             {
                 string path = SceneUtility.GetScenePathByBuildIndex(i);

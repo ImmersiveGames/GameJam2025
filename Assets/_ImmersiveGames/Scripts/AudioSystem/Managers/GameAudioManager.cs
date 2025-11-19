@@ -22,9 +22,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             // Garantir que o sistema global de áudio esteja pronto antes da injeção.
             AudioSystemInitializer.EnsureAudioSystemInitialized();
 
-            if (DependencyManager.Instance != null)
+            if (DependencyManager.Provider != null)
             {
-                DependencyManager.Instance.InjectDependencies(this);
+                DependencyManager.Provider.InjectDependencies(this);
             }
             else
             {

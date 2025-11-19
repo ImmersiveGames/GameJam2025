@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             _actor = GetComponent<IActor>();
             _audioEmitter = GetComponent<EntityAudioEmitter>();
 
-            DependencyManager.Instance.InjectDependencies(this);
+            DependencyManager.Provider.InjectDependencies(this);
         }
 
         private void OnEnable()

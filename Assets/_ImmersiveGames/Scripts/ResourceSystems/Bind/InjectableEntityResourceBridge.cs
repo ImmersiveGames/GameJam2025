@@ -43,10 +43,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             try
             {
-                if (!DependencyManager.Instance.TryGetForObject(_actor.ActorId, out _service))
+                if (!DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _service))
                 {
                     _service = new ResourceSystem(_actor.ActorId, resourceInstances);
-                    DependencyManager.Instance.RegisterForObject(_actor.ActorId, _service);
+                    DependencyManager.Provider.RegisterForObject(_actor.ActorId, _service);
                 }
 
                 if (_orchestrator != null && !_orchestrator.IsActorRegistered(_actor.ActorId))
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 if (_actor != null)
                 {
                     _orchestrator?.UnregisterActor(_actor.ActorId);
-                    DependencyManager.Instance.ClearObjectServices(_actor.ActorId);
+                    DependencyManager.Provider.ClearObjectServices(_actor.ActorId);
                 }
 
                 _service?.Dispose();

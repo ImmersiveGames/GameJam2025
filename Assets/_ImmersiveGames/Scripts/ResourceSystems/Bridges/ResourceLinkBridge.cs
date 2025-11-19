@@ -25,10 +25,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
 
             // Obtem ou cria o serviço global
-            if (!DependencyManager.Instance.TryGetGlobal(out _linkService))
+            if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
-                DependencyManager.Instance.RegisterGlobal(_linkService);
+                DependencyManager.Provider.RegisterGlobal(_linkService);
             }
 
             foreach (var link in resourceLinks)

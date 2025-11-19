@@ -32,10 +32,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             AudioSystemInitializer.EnsureAudioSystemInitialized();
 
-            if (DependencyManager.Instance != null)
+            if (DependencyManager.Provider != null)
             {
-                DependencyManager.Instance.TryGetGlobal(out _math);
-                DependencyManager.Instance.TryGetGlobal(out _serviceSettings);
+                DependencyManager.Provider.TryGetGlobal(out _math);
+                DependencyManager.Provider.TryGetGlobal(out _serviceSettings);
             }
 
             if (poolData != null)

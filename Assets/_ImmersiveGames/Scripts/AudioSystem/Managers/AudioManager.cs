@@ -40,15 +40,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (IsInitialized) return;
 
             // DI: obter math (AudioSystemInitializer garante registro)
-            if (DependencyManager.Instance != null)
-                DependencyManager.Instance.TryGetGlobal(out _math);
+            if (DependencyManager.Provider != null)
+                DependencyManager.Provider.TryGetGlobal(out _math);
 
-            DependencyManager.Instance?.RegisterGlobal<IAudioService>(this);
+            DependencyManager.Provider?.RegisterGlobal<IAudioService>(this);
 
             // torna settings disponível via DI se for configurado
             if (settings != null)
             {
-                DependencyManager.Instance?.RegisterGlobal(settings);
+                DependencyManager.Provider?.RegisterGlobal(settings);
             }
 
             if (bgmAudioSource == null)
@@ -193,10 +193,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (!IsInitialized || soundData == null || soundData.clip == null) return;
 
             // obter math e settings via DI (se não já injetados)
-            if (_math == null && DependencyManager.Instance != null)
-                DependencyManager.Instance.TryGetGlobal(out _math);
+            if (_math == null && DependencyManager.Provider != null)
+                DependencyManager.Provider.TryGetGlobal(out _math);
 
-            var settingsLocal = DependencyManager.Instance != null && DependencyManager.Instance.TryGetGlobal<AudioServiceSettings>(out var s) ? s : settings;
+            var settingsLocal = DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal<AudioServiceSettings>(out var s) ? s : settings;
 
             float master = settingsLocal != null ? settingsLocal.masterVolume : 1f;
             float categoryVol = settingsLocal != null ? settingsLocal.sfxVolume : 1f;

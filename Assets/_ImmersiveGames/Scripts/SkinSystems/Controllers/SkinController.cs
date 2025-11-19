@@ -97,7 +97,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             
             try
             {
-                DependencyManager.Instance.RegisterForObject(_objectId, this);
+                DependencyManager.Provider.RegisterForObject(_objectId, this);
                 _isRegistered = true;
                 
                 DebugUtility.LogVerbose<SkinController>($"SkinController registered in DependencyManager with ID: {_objectId}");
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (_isRegistered && !string.IsNullOrEmpty(_objectId))
             {
-                DependencyManager.Instance.ClearObjectServices(_objectId);
+                DependencyManager.Provider.ClearObjectServices(_objectId);
                 _isRegistered = false;
             }
         }

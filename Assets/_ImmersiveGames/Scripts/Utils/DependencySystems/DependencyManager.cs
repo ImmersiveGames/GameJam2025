@@ -1,4 +1,5 @@
-﻿using System;
+﻿// Arquivo: DependencyManager.cs (versão melhorada)
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -8,9 +9,10 @@ using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     [DisallowMultipleComponent]
-    
-    public class DependencyManager : RegulatorSingleton<DependencyManager>
+    public class DependencyManager : RegulatorSingleton<DependencyManager>, IDependencyProvider
     {
+        public static IDependencyProvider Provider => Instance;
+
         [SerializeField] private int maxSceneServices = 2;
 
         private DependencyInjector _injector;
@@ -36,6 +38,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 DebugUtility.Colors.CrucialInfo);
         }
 
+        // Métodos da interface (apenas encaminham)
         public void RegisterGlobal<T>(T service) where T : class => _globalRegistry.Register(null, service);
         public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);
 

@@ -16,8 +16,8 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems
 
         protected virtual void Register()
         {
-            if (DependencyManager.Instance != null)
-                DependencyManager.Instance.InjectDependencies(this);
+            if (DependencyManager.Provider != null)
+                DependencyManager.Provider.InjectDependencies(this);
             
             eventBinding = new EventBinding<TEvent>(HandleEvent);
             EventBus<TEvent>.Register(eventBinding);

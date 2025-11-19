@@ -585,7 +585,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 DebugUtility.Log<EntityDebugUtility>($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
             }
 
-            if (DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
+            if (DependencyManager.Provider.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
             {
                 bool isRegistered = orchestrator.IsActorRegistered(actorId);
                 DebugUtility.Log<EntityDebugUtility>($"- Registered in Orchestrator: {isRegistered}");
@@ -597,7 +597,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 }
             }
 
-            bool hasInDm = DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem dmService);
+            bool hasInDm = DependencyManager.Provider.TryGetForObject(actorId, out ResourceSystem dmService);
             DebugUtility.Log<EntityDebugUtility>($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
         }
 
@@ -665,7 +665,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         private void LogResourceBridgeStatus(ResourceBridgeBase bridge)
         {
             string actorId = bridge.Actor?.ActorId ?? "null";
-            bool orchestratorFound = DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator);
+            bool orchestratorFound = DependencyManager.Provider.TryGetGlobal(out IActorResourceOrchestrator orchestrator);
             bool actorRegistered = orchestratorFound && orchestrator.IsActorRegistered(actorId);
 
             DebugUtility.LogWarning<EntityDebugUtility>(
@@ -674,7 +674,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 $" - Orchestrator: {orchestratorFound}\n" +
                 $" - Actor Registrado: {actorRegistered}\n" +
                 $" - ResourceSystem: {bridge.GetResourceSystem() != null}\n" +
-                $" - DependencyManager Ready: {DependencyManager.Instance}");
+                $" - DependencyManager Ready: {DependencyManager.Provider}");
 
             if (orchestratorFound)
             {
@@ -682,7 +682,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 DebugUtility.LogWarning<EntityDebugUtility>($"📋 Atores registrados: {string.Join(", ", actorIds)}");
             }
 
-            bool inDependencyManager = DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem dmSystem);
+            bool inDependencyManager = DependencyManager.Provider.TryGetForObject(actorId, out ResourceSystem dmSystem);
             DebugUtility.LogWarning<EntityDebugUtility>($"- In DependencyManager: {inDependencyManager}, Service: {dmSystem != null}");
         }
 
@@ -726,7 +726,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 return;
             }
 
-            if (!DependencyManager.Instance.TryGetGlobal(out IResourceLinkService linkService))
+            if (!DependencyManager.Provider.TryGetGlobal(out IResourceLinkService linkService))
             {
                 DebugUtility.LogWarning<EntityDebugUtility>("IResourceLinkService não encontrado no DependencyManager");
                 return;

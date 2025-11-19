@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _binding = new EventBinding<ResourceUpdateEvent>(OnResourceUpdated);
             EventBus<ResourceUpdateEvent>.Register(_binding);
 
-            DependencyManager.Instance.RegisterGlobal<IResourceLinkService>(this);
+            DependencyManager.Provider.RegisterGlobal<IResourceLinkService>(this);
             DebugUtility.LogVerbose<ResourceLinkService>("ResourceLinkService inicializado e registrado globalmente.");
         }
 

@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             // Garantir criação do DependencyManager
             if (!DependencyManager.HasInstance)
             {
-                var _ = DependencyManager.Instance; // força criação
+                var _ = DependencyManager.Provider; // força criação
             }
 
             Instance.RegisterEssentialServices();
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 // Registrar injeções para serviços globais no initManager (garante que receberão DI se precisarem)
                 initManager.RegisterForInjection(pipelineManager);
-                if (DependencyManager.Instance.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator))
+                if (DependencyManager.Provider.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator))
                 {
                     initManager.RegisterForInjection((IInjectableComponent)orchestrator);
                 }
@@ -78,10 +78,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         // Garante registro global idempotente com fábrica
         private void EnsureGlobal<T>(Func<T> factory) where T : class
         {
-            if (!DependencyManager.Instance.TryGetGlobal<T>(out var existing) || existing == null)
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var existing) || existing == null)
             {
                 var implementation = factory();
-                DependencyManager.Instance.RegisterGlobal(implementation);
+                DependencyManager.Provider.RegisterGlobal(implementation);
                 DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered global service: {typeof(T).Name}");
             }
             else
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     {
                         // invoca TryGetGlobal<T>(out T existing)
                         var parameters = new object[] { null };
-                        var result = (bool)genericTryGet.Invoke(DependencyManager.Instance, parameters);
+                        var result = (bool)genericTryGet.Invoke(DependencyManager.Provider, parameters);
                         exists = result;
                     }
 
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         object busInstance = Activator.CreateInstance(busImplType);
                         var registerMethodGeneric = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
                         var genericRegister = registerMethodGeneric?.MakeGenericMethod(busInterfaceType);
-                        genericRegister?.Invoke(DependencyManager.Instance, new[] { busInstance });
+                        genericRegister?.Invoke(DependencyManager.Provider, new[] { busInstance });
                         DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered EventBus for {eventType.Name}");
                     }
                 }

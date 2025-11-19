@@ -88,10 +88,10 @@ namespace _ImmersiveGames.Scripts.ActorSystems
                 return;
             }
 
-            if (!DependencyManager.Instance.TryGetGlobal(out IUniqueIdFactory factory))
+            if (!DependencyManager.Provider.TryGetGlobal(out IUniqueIdFactory factory))
             {
                 factory = new UniqueIdFactory();
-                DependencyManager.Instance.RegisterGlobal(factory);
+                DependencyManager.Provider.RegisterGlobal(factory);
             }
 
             _actorId = factory.GenerateId(gameObject, "");

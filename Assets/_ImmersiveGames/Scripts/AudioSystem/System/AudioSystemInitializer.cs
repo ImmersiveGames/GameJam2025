@@ -17,9 +17,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         public static void EnsureAudioSystemInitialized()
         {
             // registra math service se DI disponível e ainda não registrado
-            if (DependencyManager.Instance != null && !DependencyManager.Instance.TryGetGlobal<IAudioMathService>(out _))
+            if (DependencyManager.Provider != null && !DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out _))
             {
-                DependencyManager.Instance.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
+                DependencyManager.Provider.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
                 DebugUtility.Log(
                     typeof(AudioSystemInitializer),
                     "AudioMathUtility registrado no DI",
@@ -56,11 +56,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DebugUtility.Colors.Success);
         }
 
-        public static bool IsInitialized() => DependencyManager.Instance?.TryGetGlobal<IAudioService>(out _) ?? false;
+        public static bool IsInitialized() => DependencyManager.Provider?.TryGetGlobal<IAudioService>(out _) ?? false;
 
         public static IAudioService GetAudioService()
         {
-            return DependencyManager.Instance == null ? null : (DependencyManager.Instance.TryGetGlobal<IAudioService>(out var s) ? s : null);
+            return DependencyManager.Provider == null ? null : (DependencyManager.Provider.TryGetGlobal<IAudioService>(out var s) ? s : null);
         }
     }
 }
