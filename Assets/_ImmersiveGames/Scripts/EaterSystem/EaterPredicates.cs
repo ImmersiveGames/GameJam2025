@@ -207,9 +207,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         private readonly EventBinding<PlanetUnmarkedEvent> _unmarkedBinding;
         private bool _shouldTrigger;
+        private readonly Func<bool> _shouldIgnoreTrigger;
 
-        public PlanetUnmarkedPredicate()
+        public PlanetUnmarkedPredicate(Func<bool> shouldIgnoreTrigger = null)
         {
+            _shouldIgnoreTrigger = shouldIgnoreTrigger;
             _unmarkedBinding = new EventBinding<PlanetUnmarkedEvent>(HandlePlanetUnmarked);
             EventBus<PlanetUnmarkedEvent>.Register(_unmarkedBinding);
         }
@@ -218,6 +220,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (!_shouldTrigger)
             {
+                return false;
+            }
+
+            if (_shouldIgnoreTrigger != null && _shouldIgnoreTrigger.Invoke())
+            {
+                _shouldTrigger = false;
                 return false;
             }
 

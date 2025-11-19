@@ -381,6 +381,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
+        internal bool HasPendingWanderingRequest => _pendingWanderingTransition;
+
         private bool TryEnsureAnimationController()
         {
             if (_animationController != null)
