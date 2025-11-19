@@ -1,6 +1,7 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.AudioSystem.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private ObjectPool _localPool;
         private IAudioMathService _math;
+        private IAudioVolumeService _volumeService;
         private AudioServiceSettings _serviceSettings;
 
         public AudioConfig Defaults => defaults;
@@ -35,8 +37,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _math);
+                DependencyManager.Provider.TryGetGlobal(out _volumeService);
                 DependencyManager.Provider.TryGetGlobal(out _serviceSettings);
             }
+
+            _math ??= new AudioMathUtility();
+            _volumeService ??= new AudioVolumeService(_math);
 
             if (poolData != null)
             {
@@ -89,7 +95,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 return null;
             }
 
-            return new SoundBuilder(_localPool, _math, _serviceSettings, defaults);
+            return new SoundBuilder(_localPool, _math, _volumeService, _serviceSettings, defaults);
         }
 
         private void PlayWithPool(SoundData soundData, AudioContext ctx, float fadeInSeconds)
@@ -112,7 +118,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             var mixer = soundData.mixerGroup ?? defaults?.defaultMixerGroup;
             emitter.SetMixerGroup(mixer);
 
-            float finalVol = CalculateFinalVolume(soundData.volume, ctx.volumeMultiplier, ctx.volumeOverride);
+            float finalVol = _volumeService.CalculateSfxVolume(soundData, defaults, _serviceSettings, ctx);
 
             float multiplier = soundData.volume > 0f ? Mathf.Clamp01(finalVol / soundData.volume) : Mathf.Clamp01(finalVol);
             emitter.SetVolumeMultiplier(multiplier);
@@ -144,7 +150,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             src.spatialBlend = ctx.useSpatial ? soundData.spatialBlend : 0f;
             src.maxDistance = defaults != null ? defaults.maxDistance : soundData.maxDistance;
 
-            float finalVol = CalculateFinalVolume(soundData.volume, ctx.volumeMultiplier, ctx.volumeOverride);
+            float finalVol = _volumeService.CalculateSfxVolume(soundData, defaults, _serviceSettings, ctx);
 
             if (soundData.randomPitch)
                 src.pitch = _math?.ApplyRandomPitch(1f, soundData.pitchVariation) ??
@@ -166,23 +172,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             {
                 Destroy(tempGo, soundData.clip.length + fadeInSeconds + 0.1f);
             }
-        }
-
-        private float CalculateFinalVolume(float clipVolume, float contextMultiplier, float overrideVolume)
-        {
-            float master = _serviceSettings != null ? _serviceSettings.masterVolume : 1f;
-            float categoryVol = _serviceSettings != null ? _serviceSettings.sfxVolume : 1f;
-            float categoryMul = _serviceSettings != null ? _serviceSettings.sfxMultiplier : 1f;
-            float configDefault = defaults != null ? defaults.defaultVolume : 1f;
-
-            return _math?.CalculateFinalVolume(
-                clipVolume,
-                configDefault,
-                categoryVol,
-                categoryMul,
-                master,
-                contextMultiplier,
-                overrideVolume) ?? Mathf.Clamp01(clipVolume * configDefault * categoryVol * master * contextMultiplier);
         }
 
         private System.Collections.IEnumerator FadeVolume(AudioSource src, float from, float to, float dur)

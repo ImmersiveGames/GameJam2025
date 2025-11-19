@@ -12,6 +12,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
     {
         private readonly ObjectPool _pool;
         private readonly IAudioMathService _math;
+        private readonly IAudioVolumeService _volumeService;
         private readonly AudioServiceSettings _settings;
         private readonly AudioConfig _audioConfig;
 
@@ -22,10 +23,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private float _volumeMultiplier = 1f;
         private float _fadeIn;
 
-        public SoundBuilder(ObjectPool pool, IAudioMathService math, AudioServiceSettings settings, AudioConfig audioCfg)
+        public SoundBuilder(ObjectPool pool, IAudioMathService math, IAudioVolumeService volumeService, AudioServiceSettings settings, AudioConfig audioCfg)
         {
             _pool = pool;
             _math = math;
+            _volumeService = volumeService;
             _settings = settings;
             _audioConfig = audioCfg;
         }
@@ -75,7 +77,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             float catMul = _settings != null ? _settings.sfxMultiplier : 1f;
             float configDefault = _audioConfig != null ? _audioConfig.defaultVolume : 1f;
 
-            float finalVol = _math?.CalculateFinalVolume(_sound.volume, configDefault, catVol, catMul, master, ctx.volumeMultiplier, ctx.volumeOverride) ?? Mathf.Clamp01(_sound.volume * configDefault * catVol * master * ctx.volumeMultiplier);
+            float finalVol = _volumeService?.CalculateSfxVolume(_sound, _audioConfig, _settings, ctx) ??
+                             _math?.CalculateFinalVolume(_sound.volume, configDefault, catVol, catMul, master, ctx.volumeMultiplier, ctx.volumeOverride) ??
+                             Mathf.Clamp01(_sound.volume * configDefault * catVol * master * ctx.volumeMultiplier);
 
             float multiplier = _sound.volume > 0f ? Mathf.Clamp01(finalVol / _sound.volume) : Mathf.Clamp01(finalVol);
             emitter.SetVolumeMultiplier(multiplier);

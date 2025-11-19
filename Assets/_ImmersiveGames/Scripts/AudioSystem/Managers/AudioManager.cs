@@ -1,6 +1,7 @@
 using System.Collections;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.AudioSystem.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         // injected
         private IAudioMathService _math;
+        private IAudioVolumeService _volumeService;
+        private AudioServiceSettings _resolvedSettings;
 
         private Coroutine _bgmFadeCoroutine;
         private SoundData _currentBgm;
@@ -41,7 +44,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             // DI: obter math (AudioSystemInitializer garante registro)
             if (DependencyManager.Provider != null)
+            {
                 DependencyManager.Provider.TryGetGlobal(out _math);
+                DependencyManager.Provider.TryGetGlobal(out _volumeService);
+                DependencyManager.Provider.TryGetGlobal(out _resolvedSettings);
+            }
+
+            _math ??= new AudioMathUtility();
+            _volumeService ??= new AudioVolumeService(_math);
+            _resolvedSettings ??= settings;
 
             DependencyManager.Provider?.RegisterGlobal<IAudioService>(this);
 
@@ -77,13 +88,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             ApplyBgmData(bgmData, loop);
 
-            // calcula volume final pelo math (se math disponível), caso contrário aplica básico
-            float master = settings != null ? settings.masterVolume : 1f;
-            float catVol = settings != null ? settings.bgmVolume : 1f;
-            float catMul = settings != null ? settings.bgmMultiplier : 1f;
-            float ctxMul = 1f;
-
-            float targetVolume = _math?.CalculateFinalVolume(bgmData.volume, 1f, catVol, catMul, master, ctxMul) ?? Mathf.Clamp01(bgmData.volume * catVol * master);
+            // cálculo de volume centralizado no service para manter SRP/OCP
+            float targetVolume = _volumeService.CalculateBgmVolume(bgmData, ResolveSettings());
 
             if (fadeInDuration > 0f)
             {
@@ -157,10 +163,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             ApplyBgmData(newBgmData, true);
             bgmAudioSource.volume = 0f;
             bgmAudioSource.Play();
-            float master = settings != null ? settings.masterVolume : 1f;
-            float catVol = settings != null ? settings.bgmVolume : 1f;
-            float catMul = settings != null ? settings.bgmMultiplier : 1f;
-            float target = _math?.CalculateFinalVolume(newBgmData.volume, 1f, catVol, catMul, master, 1f) ?? newBgmData.volume * catVol * master;
+            float target = _volumeService.CalculateBgmVolume(newBgmData, ResolveSettings());
             yield return StartCoroutine(FadeVolume(bgmAudioSource, 0f, target, half));
             _currentBgm = newBgmData;
         }
@@ -200,18 +203,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             // obter math e settings via DI (se não já injetados)
             if (_math == null && DependencyManager.Provider != null)
+            {
                 DependencyManager.Provider.TryGetGlobal(out _math);
+                DependencyManager.Provider.TryGetGlobal(out _volumeService);
+            }
 
-            var settingsLocal = DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal<AudioServiceSettings>(out var s) ? s : settings;
+            _math ??= new AudioMathUtility();
+            _volumeService ??= new AudioVolumeService(_math);
 
-            float master = settingsLocal != null ? settingsLocal.masterVolume : 1f;
-            float categoryVol = settingsLocal != null ? settingsLocal.sfxVolume : 1f;
-            float categoryMul = settingsLocal != null ? settingsLocal.sfxMultiplier : 1f;
-            float configDefault = config != null ? config.defaultVolume : 1f;
-            float ctxMul = context.volumeMultiplier;
-            float overrideVol = context.volumeOverride;
-
-            float finalVol = _math?.CalculateFinalVolume(soundData.volume, configDefault, categoryVol, categoryMul, master, ctxMul, overrideVol) ?? Mathf.Clamp01(soundData.volume * configDefault * categoryVol * master * ctxMul);
+            float finalVol = _volumeService.CalculateSfxVolume(soundData, config, ResolveSettings(), context);
 
             // cria AudioSource temporário (usa mixer-group do SoundData ou do config)
             var go = new GameObject($"OneShot_{soundData.clip.name}");
@@ -234,5 +234,21 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
 
         #endregion
+
+        private AudioServiceSettings ResolveSettings()
+        {
+            if (_resolvedSettings != null) return _resolvedSettings;
+
+            if (DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal(out AudioServiceSettings settingsFromDi))
+            {
+                _resolvedSettings = settingsFromDi;
+            }
+            else
+            {
+                _resolvedSettings = settings;
+            }
+
+            return _resolvedSettings;
+        }
     }
 }
