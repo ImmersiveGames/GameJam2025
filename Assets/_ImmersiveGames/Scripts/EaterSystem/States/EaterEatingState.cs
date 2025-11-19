@@ -681,6 +681,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _recoveryTimer = 0f;
             ResetCompatibility();
 
+            Behavior?.EndDesires("EatingState.PlanetDestroyed");
+
             RequestWanderingTransition("PlanetDestroyed");
 
             StopTweens();
