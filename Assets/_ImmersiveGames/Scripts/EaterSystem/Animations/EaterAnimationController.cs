@@ -2,6 +2,7 @@ using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -14,7 +15,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         private EventBinding<DamageEvent> _damageBinding;
         private EventBinding<DeathEvent> _deathBinding;
         private EventBinding<ReviveEvent> _reviveBinding;
+        private EaterMaster _eaterMaster;
         private bool _listenersRegistered;
+        private bool _biteListenerRegistered;
 
         protected override void Awake()
         {
@@ -25,6 +28,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
+            _eaterMaster = Actor as EaterMaster ?? GetComponent<EaterMaster>();
             _damageBinding = new EventBinding<DamageEvent>(OnDamageEvent);
             _deathBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             _reviveBinding = new EventBinding<ReviveEvent>(OnReviveEvent);
@@ -33,10 +37,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         protected void OnEnable()
         {
             RegisterDamageListeners();
+            RegisterBiteListener();
         }
 
         protected override void OnDisable()
         {
+            UnregisterBiteListener();
             UnregisterDamageListeners();
             base.OnDisable();
         }
@@ -73,6 +79,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         }
         protected new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
         protected int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
+        protected int BiteHash => EaterAnimationConfig?.BiteHash ?? Animator.StringToHash("Bite");
         protected int HappyHash => EaterAnimationConfig?.HappyHash ?? Animator.StringToHash("Happy");
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
         
@@ -114,6 +121,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             PlayHit();
         }
 
+        private void RegisterBiteListener()
+        {
+            if (_biteListenerRegistered)
+            {
+                return;
+            }
+
+            if (_eaterMaster == null)
+            {
+                return;
+            }
+
+            _eaterMaster.EventEaterBite += OnEaterBite;
+            _biteListenerRegistered = true;
+        }
+
+        private void UnregisterBiteListener()
+        {
+            if (!_biteListenerRegistered || _eaterMaster == null)
+            {
+                _biteListenerRegistered = false;
+                return;
+            }
+
+            _eaterMaster.EventEaterBite -= OnEaterBite;
+            _biteListenerRegistered = false;
+        }
+
         private void OnDeathEvent(DeathEvent evt)
         {
             if (evt.EntityId != Actor?.ActorId)
@@ -140,6 +175,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         public void PlayDeath() => PlayHash(DeathHash);
         public void PlayRevive() => PlayHash(ReviveHash);
         public void PlayIdle() => PlayHash(IdleHash);
+        public void PlayBite() => PlayHash(BiteHash);
 
         public void SetEating(bool isEating)
         {
@@ -149,6 +185,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             }
 
             animator.SetBool(EatingHash, isEating);
+        }
+
+        private void OnEaterBite(PlanetsMaster planet)
+        {
+            DebugUtility.LogVerbose<EaterAnimationController>("Recebido evento de mordida. Executando animação de Bite.");
+            PlayBite();
         }
     }
 }

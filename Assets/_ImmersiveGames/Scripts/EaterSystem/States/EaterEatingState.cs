@@ -26,6 +26,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float IncompatibleRecoveryMultiplier = 0.5f;
         private const float DefaultDevourHealAmount = 25f;
 
+        private struct EatingTuningCache
+        {
+            public float OrbitDuration;
+            public float OrbitApproachDuration;
+            public float MinimumSurfaceDistance;
+            public float DamageAmount;
+            public float DamageInterval;
+            public ResourceType DamageResource;
+            public DamageType DamageType;
+            public float RecoveryAmount;
+            public float RecoveryInterval;
+            public ResourceType RecoveryResource;
+            public float DevourHealAmount;
+            public SoundData BiteSound;
+        }
+
         private Tween _approachTween;
         private Tween _orbitTween;
         private Transform _currentTarget;
@@ -54,19 +70,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _missingAudioEmitterLogged;
         private bool _hasAppliedDevourReward;
         private bool _hasLoggedRecoveryCompatibility;
+        private bool _planetDestroyedDuringState;
+        private EatingTuningCache _tuning;
 
-        private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
+        private float OrbitDuration => _tuning.OrbitDuration;
 
-        private float OrbitApproachDuration
-        {
-            get
-            {
-                float duration = OrbitDuration;
-                float approach = Config?.OrbitApproachDuration ?? DefaultOrbitApproachDuration;
-                approach = Mathf.Max(0.1f, approach);
-                return Mathf.Min(approach, duration);
-            }
-        }
+        private float OrbitApproachDuration => _tuning.OrbitApproachDuration;
 
         public EaterEatingState() : base("Eating")
         {
@@ -75,6 +84,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         public override void OnEnter()
         {
             base.OnEnter();
+
+            CacheConfigValues();
 
             _pendingWanderingTransition = false;
             _damageTimer = 0f;
@@ -87,6 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
+            _planetDestroyedDuringState = false;
 
             UpdateEatingAnimation(isEating: true);
 
@@ -94,10 +106,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
         }
 
+        private void CacheConfigValues()
+        {
+            var config = Config;
+
+            _tuning = new EatingTuningCache
+            {
+                OrbitDuration = config != null ? config.OrbitDuration : DefaultOrbitDuration,
+                OrbitApproachDuration = config != null ? config.OrbitApproachDuration : DefaultOrbitApproachDuration,
+                MinimumSurfaceDistance = config != null ? config.MinimumChaseDistance : DefaultMinimumSurfaceDistance,
+                DamageAmount = config != null ? config.EatingDamageAmount : DefaultDamageAmount,
+                DamageInterval = config != null ? config.EatingDamageInterval : DefaultDamageInterval,
+                DamageResource = config != null ? config.EatingDamageResource : ResourceType.Health,
+                DamageType = config != null ? config.EatingDamageType : DamageType.Physical,
+                RecoveryAmount = config != null ? config.EatingRecoveryAmount : DefaultRecoveryAmount,
+                RecoveryInterval = config != null ? config.EatingRecoveryInterval : DefaultRecoveryInterval,
+                RecoveryResource = config != null ? config.EatingRecoveryResource : DefaultRecoveryResource,
+                DevourHealAmount = config != null ? config.EatingCompatibleDevourHealAmount : DefaultDevourHealAmount,
+                BiteSound = config != null ? config.EatingBiteSound : null
+            };
+
+            _tuning.OrbitDuration = Mathf.Max(0.25f, _tuning.OrbitDuration);
+            _tuning.OrbitApproachDuration = Mathf.Clamp(_tuning.OrbitApproachDuration, 0.1f, _tuning.OrbitDuration);
+            _tuning.MinimumSurfaceDistance = Mathf.Max(DefaultMinimumSurfaceDistance, _tuning.MinimumSurfaceDistance);
+            _tuning.DamageAmount = Mathf.Max(0f, _tuning.DamageAmount);
+            _tuning.DamageInterval = Mathf.Max(0.05f, _tuning.DamageInterval);
+            _tuning.RecoveryAmount = Mathf.Max(0f, _tuning.RecoveryAmount);
+            _tuning.RecoveryInterval = Mathf.Max(0.05f, _tuning.RecoveryInterval);
+            _tuning.DevourHealAmount = Mathf.Max(0f, _tuning.DevourHealAmount);
+        }
+
         public override void OnExit()
         {
             UpdateEatingAnimation(isEating: false);
-            
+
+            if (!_planetDestroyedDuringState)
+            {
+                Behavior?.RegisterEatingOutcome(false);
+            }
+
 
             base.OnExit();
             StopTweens();
@@ -151,6 +198,34 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             LookAtTarget();
             TickDamage(Time.deltaTime);
             TickRecovery(Time.deltaTime);
+        }
+
+        internal void SyncDestroyedTargetForTransitions()
+        {
+            if (_pendingWanderingTransition || _planetDestroyedDuringState)
+            {
+                return;
+            }
+
+            if (_activePlanet == null)
+            {
+                return;
+            }
+
+            bool planetActive;
+            try
+            {
+                planetActive = _activePlanet.IsActive;
+            }
+            catch (MissingReferenceException)
+            {
+                planetActive = false;
+            }
+
+            if (!planetActive)
+            {
+                HandleDestroyedPlanet();
+            }
         }
 
         private void PrepareTarget(Transform target, bool restartOrbit)
@@ -344,7 +419,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private float ResolveOrbitRadius(Transform target)
         {
-            float fallback = Config?.MinimumChaseDistance ?? DefaultMinimumSurfaceDistance;
+            float fallback = _tuning.MinimumSurfaceDistance;
 
             if (Behavior == null || target == null)
             {
@@ -426,7 +501,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             TryResolveTargetCompatibility();
 
-            float interval = Config != null ? Config.EatingDamageInterval : DefaultDamageInterval;
+            float interval = _tuning.DamageInterval;
             if (interval <= Mathf.Epsilon)
             {
                 interval = DefaultDamageInterval;
@@ -518,7 +593,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             _missingDamageReceiverLogged = false;
 
-            float damage = Config != null ? Config.EatingDamageAmount : DefaultDamageAmount;
+            float damage = _tuning.DamageAmount;
             if (damage <= Mathf.Epsilon)
             {
                 return false;
@@ -526,8 +601,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             string attackerId = Master != null ? Master.ActorId : string.Empty;
             string targetId = receiver.GetReceiverId();
-            var resource = Config != null ? Config.EatingDamageResource : ResourceType.Health;
-            var damageType = Config != null ? Config.EatingDamageType : DamageType.Physical;
+            var resource = _tuning.DamageResource;
+            var damageType = _tuning.DamageType;
             var hitPosition = _currentTarget.position;
 
             var context = new DamageContext(attackerId, targetId, damage, resource, damageType, hitPosition);
@@ -555,12 +630,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private bool TryGetRecoveryConfig(out ResourceType resourceType, out float amount, out float interval)
         {
-            resourceType = Config != null ? Config.EatingRecoveryResource : DefaultRecoveryResource;
-            amount = Config != null ? Config.EatingRecoveryAmount : DefaultRecoveryAmount;
-            interval = Config != null ? Config.EatingRecoveryInterval : DefaultRecoveryInterval;
-
-            amount = Mathf.Max(0f, amount);
-            interval = Mathf.Max(0f, interval);
+            resourceType = _tuning.RecoveryResource;
+            amount = _tuning.RecoveryAmount;
+            interval = _tuning.RecoveryInterval;
 
             if (amount <= Mathf.Epsilon || interval <= Mathf.Epsilon)
             {
@@ -572,7 +644,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void TryPlayBiteSound()
         {
-            var biteSound = Config != null ? Config.EatingBiteSound : null;
+            var biteSound = _tuning.BiteSound;
             if (biteSound == null || biteSound.clip == null)
             {
                 return;
@@ -687,6 +759,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             StopTweens();
             EnsureOrbitFreezeController().Release();
+
+            _planetDestroyedDuringState = true;
+            Behavior?.RegisterEatingOutcome(true);
         }
 
         private void ReportDevouredPlanetCompatibility()
@@ -987,9 +1062,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            float healAmount = Config != null
-                ? Config.EatingCompatibleDevourHealAmount
-                : DefaultDevourHealAmount;
+            float healAmount = _tuning.DevourHealAmount;
 
             if (healAmount <= Mathf.Epsilon || Behavior == null)
             {
@@ -1040,6 +1113,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 Behavior,
                 this);
         }
+
+        internal bool HasDestroyedPlanetDuringState => _planetDestroyedDuringState;
 
         private static IDamageReceiver ResolveDamageReceiver(Transform target)
         {
