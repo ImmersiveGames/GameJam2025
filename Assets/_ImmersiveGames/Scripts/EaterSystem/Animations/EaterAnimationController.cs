@@ -4,6 +4,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            _eaterMaster = Actor as EaterMaster ?? GetComponent<EaterMaster>();
+            TryResolveEaterMaster();
             _damageBinding = new EventBinding<DamageEvent>(OnDamageEvent);
             _deathBinding = new EventBinding<DeathEvent>(OnDeathEvent);
             _reviveBinding = new EventBinding<ReviveEvent>(OnReviveEvent);
@@ -128,7 +129,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 return;
             }
 
-            if (_eaterMaster == null)
+            if (!TryResolveEaterMaster())
             {
                 return;
             }
@@ -175,7 +176,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         public void PlayDeath() => PlayHash(DeathHash);
         public void PlayRevive() => PlayHash(ReviveHash);
         public void PlayIdle() => PlayHash(IdleHash);
-        public void PlayBite() => PlayHash(BiteHash);
 
         public void SetEating(bool isEating)
         {
@@ -189,8 +189,40 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         private void OnEaterBite(PlanetsMaster planet)
         {
-            DebugUtility.LogVerbose<EaterAnimationController>("Recebido evento de mordida. Executando animação de Bite.");
-            PlayBite();
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                "Recebido evento de mordida. Mantendo animação de Eating ativa.");
+            SetEating(true);
+        }
+
+        private bool TryResolveEaterMaster()
+        {
+            if (_eaterMaster != null)
+            {
+                return true;
+            }
+
+            if (Actor is EaterMaster eaterActor)
+            {
+                _eaterMaster = eaterActor;
+                return true;
+            }
+
+            if (Actor != null
+                && DependencyManager.Provider.TryGetForObject(Actor.ActorId, out EaterMaster resolvedMaster))
+            {
+                _eaterMaster = resolvedMaster;
+                return true;
+            }
+
+            if (TryGetComponent(out resolvedMaster))
+            {
+                _eaterMaster = resolvedMaster;
+                return true;
+            }
+
+            DebugUtility.LogWarning<EaterAnimationController>(
+                "EaterMaster não encontrado. Evento de mordida não será ouvido.");
+            return false;
         }
     }
 }
