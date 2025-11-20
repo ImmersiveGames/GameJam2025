@@ -80,7 +80,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         }
         protected new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
         protected int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
-        protected int BiteHash => EaterAnimationConfig?.BiteHash ?? Animator.StringToHash("Bite");
         protected int HappyHash => EaterAnimationConfig?.HappyHash ?? Animator.StringToHash("Happy");
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
         
