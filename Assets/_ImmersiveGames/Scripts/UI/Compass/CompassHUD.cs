@@ -21,6 +21,10 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         private static readonly IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> EmptyActorSlots =
             new Dictionary<string, Dictionary<ResourceType, ResourceUISlot>>();
 
+        private readonly Dictionary<ICompassTrackable, CompassIcon> _iconsByTarget = new();
+        private readonly HashSet<ICompassTrackable> _activeTrackablesCache = new();
+        private readonly List<ICompassTrackable> _removalBuffer = new();
+
         [Header("Compass UI")]
         [Tooltip("Área da UI onde os ícones da bússola serão posicionados.")]
         public RectTransform compassRectTransform;
@@ -42,8 +46,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         [Inject] private IUniqueIdFactory _idFactory;
 
-        private Dictionary<ICompassTrackable, CompassIcon> _iconsByTarget;
-
         public string CanvasId { get; private set; }
         public CanvasType Type => canvasType;
         public CanvasInitializationState State { get; private set; }
@@ -57,7 +59,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             State = CanvasInitializationState.Pending;
 
             SetupCanvasId();
-            _iconsByTarget = new Dictionary<ICompassTrackable, CompassIcon>();
 
             // Registra para receber injeção via ResourceInitializationManager, replicando o padrão dos demais HUDs.
             ResourceInitializationManager.Instance.RegisterForInjection(this);
@@ -94,58 +95,73 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void SynchronizeIcons(IReadOnlyList<ICompassTrackable> trackables)
         {
-            if (trackables == null)
+            bool hasSnapshot = trackables != null;
+            _activeTrackablesCache.Clear();
+
+            if (hasSnapshot)
+            {
+                for (int i = 0; i < trackables.Count; i++)
+                {
+                    ICompassTrackable target = trackables[i];
+                    if (target == null || !target.IsActive || target.Transform == null)
+                    {
+                        continue;
+                    }
+
+                    if (_activeTrackablesCache.Add(target))
+                    {
+                        EnsureIconForTarget(target);
+                    }
+                }
+            }
+
+            RemoveStaleIcons(hasSnapshot);
+        }
+
+        private void EnsureIconForTarget(ICompassTrackable target)
+        {
+            if (_iconsByTarget.ContainsKey(target))
             {
                 return;
             }
 
-            for (int i = 0; i < trackables.Count; i++)
-            {
-                ICompassTrackable target = trackables[i];
-                if (target == null || !target.IsActive)
-                {
-                    continue;
-                }
+            CompassTargetVisualConfig visualConfig = visualDatabase != null
+                ? visualDatabase.GetConfig(target.TargetType)
+                : null;
 
-                if (_iconsByTarget.ContainsKey(target))
-                {
-                    continue;
-                }
+            CompassIcon iconInstance = Instantiate(iconPrefab, compassRectTransform);
+            iconInstance.Initialize(target, visualConfig);
 
-                CompassTargetVisualConfig visualConfig = visualDatabase != null
-                    ? visualDatabase.GetConfig(target.TargetType)
-                    : null;
+            _iconsByTarget[target] = iconInstance;
+        }
 
-                CompassIcon iconInstance = Instantiate(iconPrefab, compassRectTransform);
-                iconInstance.Initialize(target, visualConfig);
-
-                _iconsByTarget[target] = iconInstance;
-            }
-
+        private void RemoveStaleIcons(bool enforceActiveSnapshot)
+        {
             if (_iconsByTarget.Count == 0)
             {
                 return;
             }
 
-            List<ICompassTrackable> toRemove = null;
+            _removalBuffer.Clear();
+
             foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 ICompassTrackable target = pair.Key;
-                if (target == null || !target.IsActive || !trackables.Contains(target))
+                CompassIcon icon = pair.Value;
+
+                bool missingTarget = target == null || target.Transform == null || !target.IsActive;
+                bool missingIcon = icon == null;
+                bool notTracked = enforceActiveSnapshot && !_activeTrackablesCache.Contains(target);
+
+                if (missingTarget || missingIcon || notTracked)
                 {
-                    toRemove ??= new List<ICompassTrackable>();
-                    toRemove.Add(target);
+                    _removalBuffer.Add(target);
                 }
             }
 
-            if (toRemove == null)
+            for (int i = 0; i < _removalBuffer.Count; i++)
             {
-                return;
-            }
-
-            for (int i = 0; i < toRemove.Count; i++)
-            {
-                ICompassTrackable target = toRemove[i];
+                ICompassTrackable target = _removalBuffer[i];
                 if (_iconsByTarget.TryGetValue(target, out CompassIcon icon))
                 {
                     if (icon != null)
@@ -156,6 +172,8 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                     _iconsByTarget.Remove(target);
                 }
             }
+
+            _removalBuffer.Clear();
         }
 
         /// <summary>
@@ -195,17 +213,16 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             float halfWidth = width * 0.5f;
             bool clampIcons = settings != null && settings.clampIconsAtEdges;
 
-            List<ICompassTrackable> toRemove = null;
+            _removalBuffer.Clear();
 
-            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget.ToList())
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 ICompassTrackable target = pair.Key;
                 CompassIcon icon = pair.Value;
 
                 if (target == null || icon == null || target.Transform == null)
                 {
-                    toRemove ??= new List<ICompassTrackable>();
-                    toRemove.Add(target);
+                    _removalBuffer.Add(target);
                     continue;
                 }
 
@@ -245,14 +262,14 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 icon.UpdateDistance(distance);
             }
 
-            if (toRemove == null)
+            if (_removalBuffer.Count == 0)
             {
                 return;
             }
 
-            for (int i = 0; i < toRemove.Count; i++)
+            for (int i = 0; i < _removalBuffer.Count; i++)
             {
-                ICompassTrackable target = toRemove[i];
+                ICompassTrackable target = _removalBuffer[i];
                 if (_iconsByTarget.TryGetValue(target, out CompassIcon icon))
                 {
                     if (icon != null)
@@ -298,10 +315,13 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         {
             if (_iconsByTarget == null || _iconsByTarget.Count == 0)
             {
-                return Enumerable.Empty<(ICompassTrackable, CompassIcon)>();
+                yield return default;
             }
 
-            return _iconsByTarget.Select(pair => (pair.Key, pair.Value)).ToList();
+            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
+            {
+                yield return (pair.Key, pair.Value);
+            }
         }
 
         // As interfaces abaixo mantêm compatibilidade com o pipeline de Canvas, mesmo sem binds de recursos.

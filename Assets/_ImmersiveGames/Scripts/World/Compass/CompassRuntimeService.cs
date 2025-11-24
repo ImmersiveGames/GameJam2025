@@ -8,13 +8,13 @@ namespace _ImmersiveGames.Scripts.World.Compass
 {
     /// <summary>
     /// Serviço de runtime da bússola registrado via DependencyManager (escopo global).
-    /// Evita uso de classe estática para respeitar o pipeline de injeção do projeto,
-    /// mantendo a responsabilidade de rastrear player e alvos.
+    /// Evita uso de classe estática pura, mas mantém um fallback seguro para cenas
+    /// que ainda não inicializaram o pipeline de injeção. Mantém player e trackables.
     /// </summary>
-    public sealed class CompassRuntimeService : ICompassRuntimeService
+    public sealed class CompassRuntimeService : MonoBehaviour, ICompassRuntimeService
     {
-        private static CompassRuntimeService _cachedInstance;
-        private readonly List<ICompassTrackable> _trackables = new();
+        private static CompassRuntimeService _instance;
+        private readonly List<ICompassTrackable> _trackables = new List<ICompassTrackable>();
 
         /// <summary>
         /// Transform do jogador utilizado como referência de direção na bússola.
@@ -27,13 +27,52 @@ namespace _ImmersiveGames.Scripts.World.Compass
         public IReadOnlyList<ICompassTrackable> Trackables => _trackables;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void Initialize()
+        private static void Bootstrap()
         {
-            EnsureInstance();
+            // Garante que exista uma instância viva antes das cenas serem carregadas.
+            if (_instance != null)
+            {
+                return;
+            }
+
+            GameObject runtimeRoot = new GameObject("CompassRuntimeService");
+            DontDestroyOnLoad(runtimeRoot);
+            runtimeRoot.AddComponent<CompassRuntimeService>();
+        }
+
+        private void Awake()
+        {
+            if (_instance != null && _instance != this)
+            {
+                Destroy(this);
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            RegisterInDependencyManager();
+        }
+
+        private void RegisterInDependencyManager()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning<CompassRuntimeService>(
+                    "DependencyManager.Provider indisponível; serviço ficará acessível apenas via fallback estático.",
+                    this);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<ICompassRuntimeService>(this);
+            DebugUtility.Log<CompassRuntimeService>(
+                "CompassRuntimeService registrado no escopo global (DependencyManager).",
+                DebugUtility.Colors.Success,
+                this);
         }
 
         /// <summary>
-        /// Tenta recuperar o serviço a partir do DependencyManager ou do cache local.
+        /// Tenta recuperar o serviço a partir do DependencyManager ou da instância ativa.
         /// </summary>
         public static bool TryGet(out ICompassRuntimeService service)
         {
@@ -42,47 +81,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return true;
             }
 
-            service = _cachedInstance;
+            service = _instance;
             return service != null;
-        }
-
-        /// <summary>
-        /// Obtém o serviço, lançando exceção se não estiver disponível. Útil para pontos críticos.
-        /// </summary>
-        public static ICompassRuntimeService Require()
-        {
-            if (TryGet(out ICompassRuntimeService service))
-            {
-                return service;
-            }
-
-            throw new InvalidOperationException("CompassRuntimeService não foi inicializado pelo DependencyManager.");
-        }
-
-        private static void EnsureInstance()
-        {
-            if (_cachedInstance != null)
-            {
-                return;
-            }
-
-            _cachedInstance = new CompassRuntimeService();
-            RegisterGlobal(_cachedInstance);
-        }
-
-        private static void RegisterGlobal(ICompassRuntimeService service)
-        {
-            if (DependencyManager.Provider == null)
-            {
-                DebugUtility.LogWarning<CompassRuntimeService>(
-                    "DependencyManager.Provider indisponível; serviço será usado apenas via cache local.");
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal(service);
-            DebugUtility.Log<CompassRuntimeService>(
-                "CompassRuntimeService registrado no escopo global (DependencyManager).",
-                DebugUtility.Colors.Success);
         }
 
         /// <summary>
@@ -127,7 +127,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
             _trackables.Add(target);
 
             DebugUtility.LogVerbose<CompassRuntimeService>(
-                $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}");
+                $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}",
+                DebugUtility.Colors.Success);
         }
 
         /// <summary>
@@ -144,7 +145,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
             if (_trackables.Remove(target))
             {
                 DebugUtility.LogVerbose<CompassRuntimeService>(
-                    $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}");
+                    $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}",
+                    DebugUtility.Colors.Error);
             }
 
             RemoveNullEntries();

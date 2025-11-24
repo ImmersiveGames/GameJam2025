@@ -1,10 +1,9 @@
-
-
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.World.Compass
 {
     /// <summary>
@@ -88,7 +87,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             DebugUtility.LogVerbose<CompassDamageLifecycleAdapter>(
                 $"🧭 Bridge registrado para {_entityId} (registrado na bússola: {_isRegisteredWithCompass}).",
-                "green");
+                DebugUtility.Colors.Success);
         }
 
         private void UnregisterEventBindings()
