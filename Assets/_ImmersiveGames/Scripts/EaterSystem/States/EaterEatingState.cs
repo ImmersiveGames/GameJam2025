@@ -1,7 +1,6 @@
 using DG.Tweening;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -751,9 +750,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (!hasDesiredResource)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     $"Planeta devorado possui recurso {planetResource}, porém o eater não tinha um desejo ativo para comparar.",
-                    DebugUtility.Colors.Info,
+                    DebugUtility.Colors.Warning,
                     Behavior,
                     this);
                 ResetCachedTargetResourceData();
@@ -784,8 +783,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             else
             {
-                DebugUtility.LogWarning(
+                DebugUtility.Log(
                     $"Planeta devorado NÃO é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
+                    DebugUtility.Colors.Warning,
                     Behavior,
                     this);
             }

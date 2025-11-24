@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Interfaces
 {

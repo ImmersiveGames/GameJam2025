@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             DebugUtility.LogVerbose<CompassDamageLifecycleAdapter>(
                 $"🧭 Bridge registrado para {_entityId} (registrado na bússola: {_isRegisteredWithCompass}).",
-                this);
+                "green");
         }
 
         private void UnregisterEventBindings()

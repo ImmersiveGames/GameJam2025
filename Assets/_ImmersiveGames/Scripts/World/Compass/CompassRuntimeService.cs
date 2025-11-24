@@ -61,9 +61,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            _trackablesSnapshot.Add(target);
-
-            DebugUtility.LogVerbose<CompassRuntimeService>(
+            DebugUtility.LogVerbose(typeof(CompassRuntimeService),
                 $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}");
         }
 
@@ -80,8 +78,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             if (_trackables.Remove(target))
             {
-                _trackablesSnapshot.Remove(target);
-                DebugUtility.LogVerbose<CompassRuntimeService>(
+                DebugUtility.LogVerbose(typeof(CompassRuntimeService),
                     $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}");
             }
         }

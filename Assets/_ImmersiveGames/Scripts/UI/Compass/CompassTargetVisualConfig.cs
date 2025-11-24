@@ -1,5 +1,4 @@
 using UnityEngine;
-using _ImmersiveGames.Scripts.PlanetSystems;
 
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
