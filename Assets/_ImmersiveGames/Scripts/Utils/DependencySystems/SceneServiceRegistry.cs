@@ -57,8 +57,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 }
             }
 
-            if (services.ContainsKey(type) && allowOverride)
+            if (services.TryGetValue(type, out object existing) && allowOverride)
             {
+                DisposeServiceIfNeeded(existing);
                 DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Sobrescrevendo serviço {type.Name} para a cena {key}.");
             }
 
@@ -115,6 +116,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 int count = services.Count;
                 _sceneServices.Remove(key);
                 ReturnDictionaryToPool(services);
@@ -131,6 +137,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             int totalCount = 0;
             foreach (Dictionary<Type, object> services in _sceneServices.Values)
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 totalCount += services.Count;
                 ReturnDictionaryToPool(services);
             }

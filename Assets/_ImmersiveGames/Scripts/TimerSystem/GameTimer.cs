@@ -426,7 +426,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             GameManager manager = GameManager.Instance;
             if (manager != null && manager.GameConfig != null)
             {
-                return Mathf.Max(manager.GameConfig.timerGame, 0f);
+                return Mathf.Max(manager.GameConfig.TimerSeconds, 0f);
             }
 
             return Mathf.Max(_configuredDuration, 0f);

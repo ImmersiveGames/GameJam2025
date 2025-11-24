@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using System;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
@@ -38,7 +39,8 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             return _isGameActive;
         }
     }
-    public interface IStateDependentService
+
+    public interface IStateDependentService : IDisposable
     {
         bool CanExecuteAction(ActionType action);
         bool IsGameActive();

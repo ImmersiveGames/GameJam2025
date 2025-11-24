@@ -41,6 +41,21 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             DebugUtility.LogVerbose(typeof(ServiceRegistry), $"Dicionário retornado ao pool. Tamanho do pool: {_dictionaryPool.Count}.");
         }
 
+        protected static void DisposeServiceIfNeeded(object service)
+        {
+            if (service is IDisposable disposable)
+            {
+                try
+                {
+                    disposable.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError(typeof(ServiceRegistry), $"Falha ao descartar serviço {service.GetType().Name}: {ex}");
+                }
+            }
+        }
+
         protected bool ValidateService(Type type, object service, string method, string key)
         {
             if (service == null)
