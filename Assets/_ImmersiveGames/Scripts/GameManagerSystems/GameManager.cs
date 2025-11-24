@@ -29,6 +29,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
         private IActorResourceOrchestrator _orchestrator;
 
+        private const string StateGuardLogPrefix = "Solicitação ignorada: ciclo de jogo não está em estado de gameplay.";
+
         [ContextMenu("Game Loop/Request Start")]
         private void ContextRequestStart()
         {
@@ -60,15 +62,15 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [ContextMenu("Game Loop/Force Game Over")]
         private void ContextForceGameOver()
         {
-            // Dispara diretamente o evento de game over para testes.
-            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            // Dispara game over respeitando validação de estado.
+            TryTriggerGameOver("Context menu");
         }
 
         [ContextMenu("Game Loop/Force Victory")]
         private void ContextForceVictory()
         {
-            // Dispara diretamente o evento de vitória para validar fluxos.
-            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
+            // Dispara vitória respeitando validação de estado.
+            TryTriggerVictory("Context menu");
         }
 
         protected override void Awake()
@@ -133,6 +135,32 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private bool IsCurrentState<TState>() where TState : class, IState
         {
             return GameManagerStateMachine.Instance.CurrentState is TState;
+        }
+
+        public bool TryTriggerGameOver(string reason = null)
+        {
+            if (!IsCurrentState<PlayingState>())
+            {
+                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
+                return false;
+            }
+
+            DebugUtility.LogVerbose<GameManager>($"Disparando GameOver. Razão: {reason ?? "(não informada)"}.");
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            return true;
+        }
+
+        public bool TryTriggerVictory(string reason = null)
+        {
+            if (!IsCurrentState<PlayingState>())
+            {
+                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
+                return false;
+            }
+
+            DebugUtility.LogVerbose<GameManager>($"Disparando Victory. Razão: {reason ?? "(não informada)"}.");
+            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
+            return true;
         }
 
         public void ResetGame()
