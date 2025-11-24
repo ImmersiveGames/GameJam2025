@@ -432,7 +432,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             DebugUtility.LogVerbose<EaterEatingState>(
-                $"Alterando animação de alimentação para {isEating} (controller={controller != null}, actorId={Behavior?.Master?.ActorId}).");
+                $"Alterando animação de alimentação para {isEating} (controller={controller != null}, actorId={Behavior?.Master?.ActorId}).",
+                Behavior);
             controller.SetEating(isEating);
         }
 

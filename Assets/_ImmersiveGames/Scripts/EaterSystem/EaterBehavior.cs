@@ -496,19 +496,21 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     if (DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
                     {
                         _animationController = resolvedController;
-                        DebugUtility.LogVerbose<EaterBehavior>(
-                            $"EaterAnimationController resolvido via DependencyManager para ActorId={actorId}.");
+                        DebugUtility.LogVerbose(
+                            $"EaterAnimationController resolvido via DependencyManager para ActorId={actorId}.",
+                            this);
                     }
                     else if (DependencyManager.Provider.TryGetForObject(actorId, out AnimationControllerBase baseController)
                         && baseController is EaterAnimationController eaterController)
                     {
                         _animationController = eaterController;
-                        DebugUtility.LogVerbose<EaterBehavior>(
-                            $"AnimationControllerBase resolvido e convertido para EaterAnimationController (ActorId={actorId}).");
+                        DebugUtility.LogVerbose(
+                            $"AnimationControllerBase resolvido e convertido para EaterAnimationController (ActorId={actorId}).",
+                            this);
                     }
                     else
                     {
-                        DebugUtility.LogWarning<EaterBehavior>(
+                        DebugUtility.LogWarning(
                             $"EaterAnimationController não encontrado no DependencyManager para ActorId={actorId}. Tentando GetComponent.",
                             this,
                             this);

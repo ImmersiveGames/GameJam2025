@@ -153,12 +153,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         public override void OnAnimatorChanged(Animator newAnimator)
         {
             base.OnAnimatorChanged(newAnimator);
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Animator alterado via AnimationResolver. Nulo={newAnimator == null} (actorId={Actor?.ActorId}).");
             ApplyEatingState();
         }
 
         private void ApplyEatingState()
         {
-            if (animator == null || !gameObject.activeInHierarchy)
+            if (!EnsureAnimatorResolved())
             {
                 DebugUtility.LogWarning<EaterAnimationController>(
                     $"Não foi possível aplicar o estado de alimentação. Animator nulo={animator == null}, ativo no hierarchy={gameObject.activeInHierarchy}.");
@@ -168,6 +170,35 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             animator.SetBool(EatingHash, _isEating);
             DebugUtility.LogVerbose<EaterAnimationController>(
                 $"Animator.SetBool(EatingHash={EatingHash}, {_isEating}) aplicado com sucesso.");
+        }
+
+        private bool EnsureAnimatorResolved()
+        {
+            if (animator != null && gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+
+            if (Actor != null && !string.IsNullOrEmpty(Actor.ActorId)
+                && DependencyManager.Provider.TryGetForObject<IAnimatorProvider>(Actor.ActorId, out var provider))
+            {
+                var resolvedAnimator = provider.GetAnimator();
+                if (resolvedAnimator != null)
+                {
+                    OnAnimatorChanged(resolvedAnimator);
+                }
+            }
+
+            if (animator == null)
+            {
+                var localAnimator = GetComponentInChildren<Animator>(true);
+                if (localAnimator != null)
+                {
+                    OnAnimatorChanged(localAnimator);
+                }
+            }
+
+            return animator != null && gameObject.activeInHierarchy;
         }
     }
 }
