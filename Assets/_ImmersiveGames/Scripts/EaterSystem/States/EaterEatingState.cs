@@ -53,7 +53,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _hasAppliedDevourReward;
         private bool _hasLoggedRecoveryCompatibility;
         private bool _planetDestroyedDuringState;
-        private bool _missingAnimationControllerLogged;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -88,7 +87,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
             _planetDestroyedDuringState = false;
-            _missingAnimationControllerLogged = false;
 
             TrySetEatingAnimation(true);
 
@@ -123,7 +121,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
-            _missingAnimationControllerLogged = false;
         }
 
         public override void Update()
@@ -421,19 +418,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             if (Behavior == null || !Behavior.TryGetAnimationController(out var controller))
             {
-                if (!_missingAnimationControllerLogged)
-                {
-                    DebugUtility.LogWarning<EaterEatingState>(
-                        "AnimationController não encontrado para aplicar o estado de alimentação via AnimationSystems.",
-                        Behavior);
-                    _missingAnimationControllerLogged = true;
-                }
                 return;
             }
 
-            DebugUtility.LogVerbose<EaterEatingState>(
-                $"Alterando animação de alimentação para {isEating} (controller={controller != null}, actorId={Behavior?.Master?.ActorId}).",
-                Behavior);
             controller.SetEating(isEating);
         }
 
