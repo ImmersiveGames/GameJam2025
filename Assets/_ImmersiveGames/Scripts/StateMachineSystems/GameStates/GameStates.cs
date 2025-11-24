@@ -17,6 +17,26 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             allowedActions = new HashSet<ActionType>();
         }
 
+        /// <summary>
+        /// Atalho para compor ações permitidas sem acoplamento com UI específica.
+        /// </summary>
+        /// <param name="actions">Ações liberadas para o estado.</param>
+        protected void AllowActions(params ActionType[] actions)
+        {
+            foreach (ActionType action in actions)
+            {
+                allowedActions.Add(action);
+            }
+        }
+
+        /// <summary>
+        /// Perfil comum para telas que exibem UI e pausam o jogo, mas precisam aceitar navegação.
+        /// </summary>
+        protected void AllowMenuNavigationWithExitShortcuts()
+        {
+            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel, ActionType.RequestReset, ActionType.RequestQuit);
+        }
+
         public virtual void OnEnter() { }
         public virtual void OnExit() { }
         public virtual void Update() { }
@@ -33,7 +53,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public MenuState(GameManager gameManager) : base(gameManager)
         {
             // Definir ações permitidas no estado Menu
-            allowedActions.Add(ActionType.Navigate);
+            AllowMenuNavigationWithExitShortcuts();
         }
 
         public override void OnEnter()
@@ -59,10 +79,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
     {
         public PlayingState(GameManager gameManager) : base(gameManager)
         {
-            allowedActions.Add(ActionType.Move);
-            allowedActions.Add(ActionType.Shoot);
-            allowedActions.Add(ActionType.Spawn);
-            allowedActions.Add(ActionType.Interact);
+            AllowActions(ActionType.Move, ActionType.Shoot, ActionType.Spawn, ActionType.Interact);
         }
 
         public override void OnEnter()
@@ -79,7 +96,8 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
     {
         public PausedState(GameManager gameManager) : base(gameManager)
         {
-            allowedActions.Add(ActionType.None); // Nenhuma ação permitida
+            // Nenhuma ação de gameplay, mas o usuário pode navegar na UI ou solicitar reset/quit.
+            AllowMenuNavigationWithExitShortcuts();
         }
 
         public override void OnEnter()
@@ -104,7 +122,11 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
     public class GameOverState : GameStateBase
     {
-        public GameOverState(GameManager gameManager) : base(gameManager) { }
+        public GameOverState(GameManager gameManager) : base(gameManager)
+        {
+            // Permite navegação e confirmação em menus de pós-jogo (reiniciar, sair, etc.).
+            AllowMenuNavigationWithExitShortcuts();
+        }
         public override bool IsGameActive() => false;
         public override void OnEnter()
         {
@@ -124,7 +146,11 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
     public class VictoryState : GameStateBase
     {
-        public VictoryState(GameManager gameManager) : base(gameManager) { }
+        public VictoryState(GameManager gameManager) : base(gameManager)
+        {
+            // Permite navegação e confirmação em menus de pós-jogo (reiniciar, sair, etc.).
+            AllowMenuNavigationWithExitShortcuts();
+        }
         public override bool IsGameActive() => false;
 
         public override void OnEnter()

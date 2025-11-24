@@ -59,6 +59,20 @@ Essa separação garante que qualquer camada (UI, IA, automação) possa pilotar
 
 Todos os estados partilham a base `GameStateBase`, responsável por avisar UI e serviços dependentes quando entram ou saem.
 
+### Ações permitidas por estado (`ActionType`)
+
+- `Navigate`: navegação de UI (menus, overlays de pausa/pós-jogo).
+- `UiSubmit` / `UiCancel`: confirma ou cancela interações de UI.
+- `RequestReset` / `RequestQuit`: comandos genéricos para reiniciar ou sair (permanecem desacoplados da implementação da tela).
+
+| Estado | Ações liberadas |
+| ------ | --------------- |
+| `MenuState` | Navegação, submit/cancel, pedidos de reset/quit. |
+| `PlayingState` | `Move`, `Shoot`, `Spawn`, `Interact`. |
+| `PausedState` | Navegação, submit/cancel, pedidos de reset/quit (sem ações de gameplay). |
+| `GameOverState` | Navegação, submit/cancel, pedidos de reset/quit. |
+| `VictoryState` | Navegação, submit/cancel, pedidos de reset/quit. |
+
 ---
 
 ## Fluxo de Eventos

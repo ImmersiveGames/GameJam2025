@@ -20,6 +20,10 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         Shoot,
         Interact,
         Navigate,
-        None
+        None,
+        UiSubmit,
+        UiCancel,
+        RequestReset,
+        RequestQuit
     }
 }
