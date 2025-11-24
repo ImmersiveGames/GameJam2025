@@ -235,11 +235,21 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             float halfAngle = settings != null ? Mathf.Abs(settings.compassHalfAngleDegrees) : 180f;
             float halfWidth = compassRectTransform.rect.width * 0.5f;
             bool clampIcons = settings != null && settings.clampIconsAtEdges;
+            var (minDistance, maxDistance) = GetDistanceLimits();
 
             // Atualiza cada ícone
             foreach (var pair in _iconsByTarget)
             {
-                UpdateIconForTarget(pair.Key, pair.Value, playerTransform.position, playerForward, halfAngle, halfWidth, clampIcons);
+                UpdateIconForTarget(
+                    pair.Key,
+                    pair.Value,
+                    playerTransform.position,
+                    playerForward,
+                    halfAngle,
+                    halfWidth,
+                    clampIcons,
+                    minDistance,
+                    maxDistance);
             }
 
             // Limpa quaisquer ícones/targets inválidos detectados durante o ciclo
@@ -264,7 +274,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             Vector3 horizontalForward,
             float halfAngle,
             float halfWidth,
-            bool clampAtEdges)
+            bool clampAtEdges,
+            float minDistance,
+            float maxDistance)
         {
             if (target == null || icon == null || target.Transform == null || !target.IsActive)
             {
@@ -275,13 +287,21 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             var toTarget = target.Transform.position - playerPos;
             toTarget.y = 0f;
             float distance = toTarget.magnitude;
+            float displayDistance = Mathf.Max(distance, minDistance);
+
+            // Respeita o limite máximo configurado para exibição
+            if (maxDistance > 0f && distance > maxDistance)
+            {
+                icon.gameObject.SetActive(false);
+                return;
+            }
 
             // Se praticamente em cima do player
             if (toTarget.sqrMagnitude < 0.0001f)
             {
                 icon.gameObject.SetActive(true);
                 SetIconPosition(icon, 0f, halfAngle, halfWidth);
-                icon.UpdateDistance(distance);
+                icon.UpdateDistance(displayDistance);
                 return;
             }
 
@@ -308,7 +328,20 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             icon.gameObject.SetActive(true);
             SetIconPosition(icon, angle, halfAngle, halfWidth);
-            icon.UpdateDistance(distance);
+            icon.UpdateDistance(displayDistance);
+        }
+
+        /// <summary>
+        /// Recupera limites de distância aplicados à bússola, garantindo valores não negativos.
+        /// </summary>
+        /// <returns>Tupla com distância mínima (clampada para evitar negativos) e máxima.</returns>
+        private (float minDistance, float maxDistance) GetDistanceLimits()
+        {
+            // Distância mínima é apenas normalizada para evitar valores negativos; não oculta ícones próximos.
+            float minDistance = settings != null ? Mathf.Max(0f, settings.minDistance) : 0f;
+            float maxDistance = settings != null ? Mathf.Max(0f, settings.maxDistance) : 0f;
+
+            return (minDistance, maxDistance);
         }
 
         private void SetupCanvasId()
