@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         private EventBinding<DeathEvent> _deathBinding;
         private EventBinding<ReviveEvent> _reviveBinding;
         private bool _listenersRegistered;
+        private bool _isEating;
 
         protected override void Awake()
         {
@@ -143,12 +144,61 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         public void SetEating(bool isEating)
         {
-            if (animator == null || !gameObject.activeInHierarchy)
+            _isEating = isEating;
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Aplicando estado de alimentação: {_isEating} (Animator disponível: {animator != null}, Ativo: {gameObject.activeInHierarchy}).");
+            ApplyEatingState();
+        }
+
+        public override void OnAnimatorChanged(Animator newAnimator)
+        {
+            base.OnAnimatorChanged(newAnimator);
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Animator alterado via AnimationResolver. Nulo={newAnimator == null} (actorId={Actor?.ActorId}).");
+            ApplyEatingState();
+        }
+
+        private void ApplyEatingState()
+        {
+            if (!EnsureAnimatorResolved())
             {
+                DebugUtility.LogWarning<EaterAnimationController>(
+                    $"Não foi possível aplicar o estado de alimentação. Animator nulo={animator == null}, ativo no hierarchy={gameObject.activeInHierarchy}.");
                 return;
             }
 
-            animator.SetBool(EatingHash, isEating);
+            animator.SetBool(EatingHash, _isEating);
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Animator.SetBool(EatingHash={EatingHash}, {_isEating}) aplicado com sucesso.");
+        }
+
+        private bool EnsureAnimatorResolved()
+        {
+            if (animator != null && gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+
+            if (Actor != null && !string.IsNullOrEmpty(Actor.ActorId)
+                && DependencyManager.Provider.TryGetForObject<IAnimatorProvider>(Actor.ActorId, out var provider))
+            {
+                var resolvedAnimator = provider.GetAnimator();
+                if (resolvedAnimator != null)
+                {
+                    OnAnimatorChanged(resolvedAnimator);
+                }
+            }
+
+            if (animator == null)
+            {
+                var localAnimator = GetComponentInChildren<Animator>(true);
+                if (localAnimator != null)
+                {
+                    OnAnimatorChanged(localAnimator);
+                }
+            }
+
+            return animator != null && gameObject.activeInHierarchy;
         }
     }
 }

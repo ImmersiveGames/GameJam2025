@@ -31,8 +31,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Transform _currentTarget;
         private Vector3 _radialBasis;
         private float _currentAngle;
-        private EaterAnimationController _animationController;
-        private bool _missingAnimationLogged;
         private PlanetOrbitFreezeController _orbitFreezeController;
         private float _currentOrbitRadius;
         private PlanetsMaster _activePlanet;
@@ -55,6 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _hasAppliedDevourReward;
         private bool _hasLoggedRecoveryCompatibility;
         private bool _planetDestroyedDuringState;
+        private bool _missingAnimationControllerLogged;
 
         private float OrbitDuration => Config?.OrbitDuration ?? DefaultOrbitDuration;
 
@@ -89,8 +88,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
             _planetDestroyedDuringState = false;
+            _missingAnimationControllerLogged = false;
 
-            UpdateEatingAnimation(isEating: true);
+            TrySetEatingAnimation(true);
 
             EnsureOrbitFreezeController().TryFreeze(Behavior, Behavior.CurrentTargetPlanet);
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public override void OnExit()
         {
-            UpdateEatingAnimation(isEating: false);
+            TrySetEatingAnimation(false);
 
             if (!_planetDestroyedDuringState)
             {
@@ -123,6 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _missingAudioEmitterLogged = false;
             _hasAppliedDevourReward = false;
             _hasLoggedRecoveryCompatibility = false;
+            _missingAnimationControllerLogged = false;
         }
 
         public override void Update()
@@ -416,45 +417,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
-        private bool TryEnsureAnimationController()
+        private void TrySetEatingAnimation(bool isEating)
         {
-            if (_animationController != null)
+            if (Behavior == null || !Behavior.TryGetAnimationController(out var controller))
             {
-                return true;
-            }
-
-            if (Behavior == null)
-            {
-                return false;
-            }
-
-            if (Behavior.TryGetAnimationController(out var controller))
-            {
-                _animationController = controller;
-                _missingAnimationLogged = false;
-                return true;
-            }
-
-            if (!_missingAnimationLogged)
-            {
-                DebugUtility.LogWarning(
-                    "EaterAnimationController não encontrado. Não será possível atualizar animação de alimentação.",
-                    Behavior,
-                    this);
-                _missingAnimationLogged = true;
-            }
-
-            return false;
-        }
-
-        private void UpdateEatingAnimation(bool isEating)
-        {
-            if (!TryEnsureAnimationController())
-            {
+                if (!_missingAnimationControllerLogged)
+                {
+                    DebugUtility.LogWarning<EaterEatingState>(
+                        "AnimationController não encontrado para aplicar o estado de alimentação via AnimationSystems.",
+                        Behavior);
+                    _missingAnimationControllerLogged = true;
+                }
                 return;
             }
 
-            _animationController.SetEating(isEating);
+            DebugUtility.LogVerbose<EaterEatingState>(
+                $"Alterando animação de alimentação para {isEating} (controller={controller != null}, actorId={Behavior?.Master?.ActorId}).",
+                Behavior);
+            controller.SetEating(isEating);
         }
 
         private void TickDamage(float deltaTime)

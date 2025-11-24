@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
@@ -28,6 +29,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     [RequireComponent(typeof(EaterMaster))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
+    [RequireComponent(typeof(_ImmersiveGames.Scripts.AnimationSystems.Components.AnimationResolver))]
+    [RequireComponent(typeof(EaterAnimationController))]
     public sealed class EaterBehavior : MonoBehaviour
     {
         [Header("Debug")]
@@ -488,13 +491,38 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_animationController == null)
             {
                 string actorId = _master != null ? _master.ActorId : null;
-                if (!string.IsNullOrEmpty(actorId)
-                    && DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                if (!string.IsNullOrEmpty(actorId))
                 {
-                    _animationController = resolvedController;
+                    if (DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                    {
+                        _animationController = resolvedController;
+                        DebugUtility.LogVerbose(
+                            $"EaterAnimationController resolvido via DependencyManager para ActorId={actorId}.",
+                            this);
+                    }
+                    else if (DependencyManager.Provider.TryGetForObject(actorId, out AnimationControllerBase baseController)
+                        && baseController is EaterAnimationController eaterController)
+                    {
+                        _animationController = eaterController;
+                        DebugUtility.LogVerbose(
+                            $"AnimationControllerBase resolvido e convertido para EaterAnimationController (ActorId={actorId}).",
+                            this);
+                    }
+                    else
+                    {
+                        DebugUtility.LogWarning(
+                            $"EaterAnimationController não encontrado no DependencyManager para ActorId={actorId}. Tentando GetComponent.",
+                            this,
+                            this);
+                    }
                 }
-                else if (!TryGetComponent(out _animationController))
+
+                if (_animationController == null && !TryGetComponent(out _animationController))
                 {
+                    DebugUtility.LogWarning(
+                        "EaterAnimationController não localizado via DependencyManager ou GetComponent.",
+                        this,
+                        this);
                     _animationController = null;
                 }
             }

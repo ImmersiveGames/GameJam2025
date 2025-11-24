@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
@@ -8,9 +7,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterDeathState : EaterBehaviorState
     {
-        private EaterAnimationController _animationController;
-        private bool _missingAnimationLogged;
-
         public EaterDeathState() : base("Death")
         {
         }
@@ -19,53 +15,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
 
-            if (!TryEnsureAnimationController())
+            if (Behavior == null || !Behavior.TryGetAnimationController(out var controller))
             {
                 return;
             }
 
-            _animationController.PlayDeath();
+            controller.PlayDeath();
         }
 
         public override void OnExit()
         {
-            if (TryEnsureAnimationController())
+            if (Behavior != null && Behavior.TryGetAnimationController(out var controller))
             {
-                _animationController.PlayIdle();
+                controller.PlayIdle();
             }
 
             base.OnExit();
-        }
-
-        private bool TryEnsureAnimationController()
-        {
-            if (_animationController != null)
-            {
-                return true;
-            }
-
-            if (Behavior == null)
-            {
-                return false;
-            }
-
-            if (Behavior.TryGetAnimationController(out var controller))
-            {
-                _animationController = controller;
-                _missingAnimationLogged = false;
-                return true;
-            }
-
-            if (!_missingAnimationLogged)
-            {
-                DebugUtility.LogWarning(
-                    "EaterAnimationController não encontrado. Não será possível reproduzir animações de morte/idle.",
-                    Behavior,
-                    this);
-                _missingAnimationLogged = true;
-            }
-
-            return false;
         }
     }
 }
