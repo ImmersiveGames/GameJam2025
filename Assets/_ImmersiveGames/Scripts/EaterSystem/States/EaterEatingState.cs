@@ -31,8 +31,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Transform _currentTarget;
         private Vector3 _radialBasis;
         private float _currentAngle;
-        private EaterAnimationController _animationController;
-        private bool _missingAnimationLogged;
         private PlanetOrbitFreezeController _orbitFreezeController;
         private float _currentOrbitRadius;
         private PlanetsMaster _activePlanet;
@@ -418,33 +416,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private bool TryEnsureAnimationController()
         {
-            if (_animationController != null)
-            {
-                return true;
-            }
-
             if (Behavior == null)
             {
                 return false;
             }
 
-            if (Behavior.TryGetAnimationController(out var controller))
-            {
-                _animationController = controller;
-                _missingAnimationLogged = false;
-                return true;
-            }
-
-            if (!_missingAnimationLogged)
-            {
-                DebugUtility.LogWarning(
-                    "EaterAnimationController não encontrado. Não será possível atualizar animação de alimentação.",
-                    Behavior,
-                    this);
-                _missingAnimationLogged = true;
-            }
-
-            return false;
+            return Behavior.TryGetAnimationDriver(out _);
         }
 
         private void TrySetEatingAnimation(bool isEating)
@@ -454,7 +431,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            _animationController.SetEating(isEating);
+            Behavior.TryGetAnimationDriver(out var driver);
+            driver.SetEating(isEating);
         }
 
         private void TickDamage(float deltaTime)
