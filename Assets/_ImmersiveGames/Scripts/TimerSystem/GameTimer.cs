@@ -239,7 +239,12 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             DebugUtility.Log<GameTimer>("Tempo esgotado. Disparando GameOver.", context: this);
 
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDuration));
-            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+
+            GameManager manager = GameManager.Instance;
+            if (manager == null || !manager.TryTriggerGameOver("Timer expired"))
+            {
+                DebugUtility.LogWarning<GameTimer>("GameManager indisponível ou estado atual não permite GameOver.", context: this);
+            }
         }
 
         /// <summary>Interrompe a sessão atual e opcionalmente restaura o valor configurado.</summary>

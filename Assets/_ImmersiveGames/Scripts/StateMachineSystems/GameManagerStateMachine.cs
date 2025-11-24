@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityUtils;
 
@@ -172,9 +173,29 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void OnResetRequested(GameResetRequestedEvent _) => _resetRequestedPredicate?.Trigger();
 
-        private void OnGameOver(GameOverEvent _) => _gameOverPredicate?.Trigger();
+        private void OnGameOver(GameOverEvent _)
+        {
+            if (!IsPlaying())
+            {
+                DebugUtility.LogWarning<GameManagerStateMachine>("GameOverEvent ignorado: estado atual não é Playing.");
+                return;
+            }
 
-        private void OnVictory(GameVictoryEvent _) => _victoryPredicate?.Trigger();
+            _gameOverPredicate?.Trigger();
+        }
+
+        private void OnVictory(GameVictoryEvent _)
+        {
+            if (!IsPlaying())
+            {
+                DebugUtility.LogWarning<GameManagerStateMachine>("GameVictoryEvent ignorado: estado atual não é Playing.");
+                return;
+            }
+
+            _victoryPredicate?.Trigger();
+        }
+
+        private bool IsPlaying() => _stateMachine?.CurrentState is PlayingState;
     }
 
 }

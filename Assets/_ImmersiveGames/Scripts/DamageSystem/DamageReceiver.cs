@@ -346,12 +346,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
 
             var manager = GameManager.Instance;
-            if (manager == null || !manager.IsGameActive())
+            if (manager == null)
             {
                 return;
             }
 
-            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            manager.TryTriggerGameOver("Death event");
         }
 
     }
