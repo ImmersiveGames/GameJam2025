@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: CompassSettings
   m_EditorClassIdentifier: 
   compassHalfAngleDegrees: 180
-  maxDistance: 250
+  maxDistance: 90
   minDistance: 0
   clampIconsAtEdges: 1
