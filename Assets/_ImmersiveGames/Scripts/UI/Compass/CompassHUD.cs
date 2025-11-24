@@ -168,8 +168,13 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return;
             }
 
-            Transform playerTransform = CompassRuntimeService.PlayerTransform;
-            IReadOnlyList<ICompassTrackable> trackables = CompassRuntimeService.Trackables;
+            if (!CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            {
+                return;
+            }
+
+            Transform playerTransform = runtimeService.PlayerTransform;
+            IReadOnlyList<ICompassTrackable> trackables = runtimeService.Trackables;
 
             SynchronizeIcons(trackables);
 

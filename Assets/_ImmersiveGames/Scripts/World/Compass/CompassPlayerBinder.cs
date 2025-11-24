@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.World.Compass
@@ -10,12 +11,22 @@ namespace _ImmersiveGames.Scripts.World.Compass
     {
         private void OnEnable()
         {
-            CompassRuntimeService.SetPlayer(transform);
+            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            {
+                runtimeService.SetPlayer(transform);
+            }
+            else
+            {
+                DebugUtility.LogError<CompassPlayerBinder>("CompassRuntimeService indisponível para registrar player.");
+            }
         }
 
         private void OnDisable()
         {
-            CompassRuntimeService.ClearPlayer(transform);
+            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            {
+                runtimeService.ClearPlayer(transform);
+            }
         }
     }
 }
