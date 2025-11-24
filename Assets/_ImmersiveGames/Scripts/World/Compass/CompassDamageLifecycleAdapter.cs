@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         private ICompassTrackable _trackable;
         private string _entityId;
         private bool _isRegisteredWithCompass;
+        private bool _eventsRegistered;
 
         private EventBinding<DeathEvent> _deathBinding;
         private EventBinding<ReviveEvent> _reviveBinding;
@@ -25,9 +26,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void Awake()
         {
-            _actor = GetComponent<ActorMaster>();
-            _trackable = GetComponentInChildren<ICompassTrackable>();
-            _entityId = _actor?.ActorId;
+            CacheDependencies();
 
             if (_actor == null)
             {
@@ -45,6 +44,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void OnEnable()
         {
+            CacheDependencies();
+
             if (string.IsNullOrEmpty(_entityId) || _trackable == null)
             {
                 return;
@@ -68,7 +69,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void RegisterEventBindings()
         {
-            if (string.IsNullOrEmpty(_entityId))
+            if (_eventsRegistered || string.IsNullOrEmpty(_entityId))
             {
                 return;
             }
@@ -81,6 +82,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
             FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _entityId);
             FilteredEventBus<ResetEvent>.Register(_resetBinding, _entityId);
 
+            _eventsRegistered = true;
+
             DebugUtility.LogVerbose<CompassDamageLifecycleAdapter>(
                 $"🧭 Bridge registrado para {_entityId} (registrado na bússola: {_isRegisteredWithCompass}).",
                 this);
@@ -88,7 +91,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void UnregisterEventBindings()
         {
-            if (string.IsNullOrEmpty(_entityId))
+            if (!_eventsRegistered || string.IsNullOrEmpty(_entityId))
             {
                 return;
             }
@@ -96,6 +99,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
             FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _entityId);
             FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _entityId);
             FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _entityId);
+
+            _eventsRegistered = false;
         }
 
         private void OnDeathEvent(DeathEvent evt)
@@ -134,7 +139,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void RegisterWithCompass()
         {
-            if (_trackable == null || _isRegisteredWithCompass)
+            if (_trackable == null || _isRegisteredWithCompass || !_trackable.IsActive)
             {
                 return;
             }
@@ -157,6 +162,13 @@ namespace _ImmersiveGames.Scripts.World.Compass
         private bool IsMatchingEntity(string entityId)
         {
             return !string.IsNullOrEmpty(_entityId) && _entityId == entityId;
+        }
+
+        private void CacheDependencies()
+        {
+            _actor ??= GetComponent<ActorMaster>();
+            _trackable ??= GetComponentInChildren<ICompassTrackable>();
+            _entityId = _actor?.ActorId;
         }
     }
 }

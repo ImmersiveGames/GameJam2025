@@ -11,7 +11,8 @@ namespace _ImmersiveGames.Scripts.World.Compass
     /// </summary>
     public static class CompassRuntimeService
     {
-        private static readonly List<ICompassTrackable> _trackables = new();
+        private static readonly HashSet<ICompassTrackable> _trackables = new();
+        private static readonly List<ICompassTrackable> _trackablesSnapshot = new();
 
         /// <summary>
         /// Transform do jogador utilizado como referência de direção na bússola.
@@ -19,9 +20,9 @@ namespace _ImmersiveGames.Scripts.World.Compass
         public static Transform PlayerTransform { get; private set; }
 
         /// <summary>
-        /// Lista somente leitura de alvos rastreáveis registrados.
+        /// Lista somente leitura de alvos rastreáveis registrados (ordem de registro).
         /// </summary>
-        public static IReadOnlyList<ICompassTrackable> Trackables => _trackables;
+        public static IReadOnlyList<ICompassTrackable> Trackables => _trackablesSnapshot;
 
         /// <summary>
         /// Define o transform do jogador atual.
@@ -50,12 +51,17 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// <param name="target">Instância do alvo.</param>
         public static void RegisterTarget(ICompassTrackable target)
         {
-            if (target == null || _trackables.Contains(target))
+            if (target == null)
             {
                 return;
             }
 
-            _trackables.Add(target);
+            if (!_trackables.Add(target))
+            {
+                return;
+            }
+
+            _trackablesSnapshot.Add(target);
 
             DebugUtility.LogVerbose<CompassRuntimeService>(
                 $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}");
@@ -74,6 +80,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             if (_trackables.Remove(target))
             {
+                _trackablesSnapshot.Remove(target);
                 DebugUtility.LogVerbose<CompassRuntimeService>(
                     $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}");
             }
