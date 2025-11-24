@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.World.Compass
@@ -55,6 +56,9 @@ namespace _ImmersiveGames.Scripts.World.Compass
             }
 
             _trackables.Add(target);
+
+            DebugUtility.LogVerbose<CompassRuntimeService>(
+                $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}");
         }
 
         /// <summary>
@@ -68,7 +72,11 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            _trackables.Remove(target);
+            if (_trackables.Remove(target))
+            {
+                DebugUtility.LogVerbose<CompassRuntimeService>(
+                    $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}");
+            }
         }
     }
 }
