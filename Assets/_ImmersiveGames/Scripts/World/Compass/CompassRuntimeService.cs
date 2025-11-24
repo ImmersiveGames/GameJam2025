@@ -11,8 +11,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
     /// </summary>
     public static class CompassRuntimeService
     {
-        private static readonly HashSet<ICompassTrackable> _trackables = new();
-        private static readonly List<ICompassTrackable> _trackablesSnapshot = new();
+        private static readonly List<ICompassTrackable> _trackables = new();
 
         /// <summary>
         /// Transform do jogador utilizado como referência de direção na bússola.
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// <summary>
         /// Lista somente leitura de alvos rastreáveis registrados (ordem de registro).
         /// </summary>
-        public static IReadOnlyList<ICompassTrackable> Trackables => _trackablesSnapshot;
+        public static IReadOnlyList<ICompassTrackable> Trackables => _trackables;
 
         /// <summary>
         /// Define o transform do jogador atual.
@@ -56,12 +55,14 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            if (!_trackables.Add(target))
+            RemoveNullEntries();
+
+            if (_trackables.Contains(target))
             {
                 return;
             }
 
-            _trackablesSnapshot.Add(target);
+            _trackables.Add(target);
 
             DebugUtility.LogVerbose<CompassRuntimeService>(
                 $"🎯 Trackable registrado na bússola: {target.Transform?.name ?? target.ToString()}");
@@ -80,9 +81,24 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             if (_trackables.Remove(target))
             {
-                _trackablesSnapshot.Remove(target);
                 DebugUtility.LogVerbose<CompassRuntimeService>(
                     $"🧭 Trackable removido da bússola: {target.Transform?.name ?? target.ToString()}");
+            }
+
+            RemoveNullEntries();
+        }
+
+        /// <summary>
+        /// Remove entradas nulas que possam ter ficado na lista após destruição de objetos Unity.
+        /// </summary>
+        private static void RemoveNullEntries()
+        {
+            for (int i = _trackables.Count - 1; i >= 0; i--)
+            {
+                if (_trackables[i] == null)
+                {
+                    _trackables.RemoveAt(i);
+                }
             }
         }
     }

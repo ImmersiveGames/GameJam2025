@@ -38,7 +38,7 @@ A bússola conecta a cena de gameplay à HUD carregada de forma aditiva sem depe
 
 - Use `CompassDamageLifecycleAdapter` em qualquer ator que combine `ActorMaster`, `DamageReceiver` e `CompassTarget` para manter a bússola em sincronia com `DeathEvent`, `ReviveEvent` e `ResetEvent`.
 - O adaptador registra o trackable ao habilitar (honrando `ICompassTrackable.IsActive`) e remove da bússola ao receber `DeathEvent` filtrado pelo `ActorId`, voltando a registrar em `ReviveEvent`/`ResetEvent`.
-- `CompassRuntimeService.RegisterTarget/UnregisterTarget` são idempotentes e utilizam cache interno para evitar duplicatas, permitindo coexistir com o registro automático do `CompassTarget`.
+- `CompassRuntimeService.RegisterTarget/UnregisterTarget` são idempotentes, limpam referências destruídas e utilizam cache interno para evitar duplicatas, permitindo coexistir com o registro automático do `CompassTarget`.
 
 ## Fluxo em Runtime
 
