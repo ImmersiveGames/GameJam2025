@@ -39,14 +39,15 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         }
 
         // Métodos da interface (apenas encaminham)
-        public void RegisterGlobal<T>(T service) where T : class => _globalRegistry.Register(null, service);
+        public void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class =>
+            _globalRegistry.Register(null, service, allowOverride);
         public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);
 
-        public void RegisterForObject<T>(string objectId, T service) where T : class
+        public void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class
         {
             if (string.IsNullOrEmpty(objectId))
                 throw new ArgumentNullException(nameof(objectId), "objectId é nulo ou vazio.");
-            _objectRegistry.Register(objectId, service);
+            _objectRegistry.Register(objectId, service, allowOverride);
         }
 
         public bool TryGetForObject<T>(string objectId, out T service) where T : class => _objectRegistry.TryGet(objectId, out service);

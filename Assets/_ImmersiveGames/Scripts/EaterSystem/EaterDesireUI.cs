@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +23,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private Sprite fallbackSprite;
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
         private bool hideWhenNoDesire = true;
+
+        [Inject] private IGameManager _gameManager;
 
         private bool _pendingIconResolve;
         private bool _warnedMissingIcon;
@@ -43,6 +46,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Awake()
         {
+            DependencyManager.Provider.InjectDependencies(this);
+
             if (desireIcon == null && TryGetComponent(out Image resolvedIcon))
             {
                 desireIcon = resolvedIcon;
@@ -492,7 +497,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            Transform eaterTransform = GameManager.Instance != null ? GameManager.Instance.WorldEater : null;
+            Transform eaterTransform = (_gameManager ?? GameManager.Instance)?.WorldEater;
             if (eaterTransform != null)
             {
                 if (!eaterTransform.TryGetComponent(out eaterBehavior))

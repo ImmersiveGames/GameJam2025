@@ -8,6 +8,7 @@ using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
@@ -20,6 +21,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
     [DefaultExecutionOrder(-90)]
     public sealed class GameTimer : Singleton<GameTimer>
     {
+        [Inject] private IGameManager _gameManager;
+        [Inject] private GameConfig _gameConfig;
+
         private CountdownTimer _timer;
 
         private EventBinding<GameStartEvent> _startBinding;
@@ -45,9 +49,14 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         /// <summary>Indica se o cronômetro está contando no momento.</summary>
         public bool IsRunning => _sessionActive && !_isPaused;
 
+        private IGameManager ResolvedGameManager => _gameManager ?? GameManager.Instance;
+        private GameConfig Config => _gameConfig ?? ResolvedGameManager?.GameConfig;
+
         protected override void Awake()
         {
             base.Awake();
+
+            DependencyManager.Provider.InjectDependencies(this);
 
             _configuredDuration = LoadConfiguredDuration();
             _remainingTime = _configuredDuration;
@@ -240,7 +249,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDuration));
 
-            GameManager manager = GameManager.Instance;
+            IGameManager manager = ResolvedGameManager;
             if (manager == null || !manager.TryTriggerGameOver("Timer expired"))
             {
                 DebugUtility.LogWarning<GameTimer>("GameManager indisponível ou estado atual não permite GameOver.", context: this);
@@ -423,10 +432,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private float LoadConfiguredDuration()
         {
-            GameManager manager = GameManager.Instance;
-            if (manager != null && manager.GameConfig != null)
+            if (Config != null)
             {
-                return Mathf.Max(manager.GameConfig.timerGame, 0f);
+                return Mathf.Max(Config.TimerSeconds, 0f);
             }
 
             return Mathf.Max(_configuredDuration, 0f);

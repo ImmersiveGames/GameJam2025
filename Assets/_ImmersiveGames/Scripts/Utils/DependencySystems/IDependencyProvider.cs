@@ -6,10 +6,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
     public interface IDependencyProvider
     {
-        void RegisterGlobal<T>(T service) where T : class;
+        void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class;
         bool TryGetGlobal<T>(out T service) where T : class;
 
-        void RegisterForObject<T>(string objectId, T service) where T : class;
+        void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class;
         bool TryGetForObject<T>(string objectId, out T service) where T : class;
 
         void RegisterForScene<T>(string sceneName, T service, bool allowOverride = false) where T : class;
