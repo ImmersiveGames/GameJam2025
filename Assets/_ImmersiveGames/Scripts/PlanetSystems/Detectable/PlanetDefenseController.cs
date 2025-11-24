@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -54,6 +56,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
+
+            EventBus<PlanetDefenseEngagedEvent>.Raise(new PlanetDefenseEngagedEvent(planetsMaster, detector, detectionType));
         }
 
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
@@ -70,6 +74,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                     $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
                     null,
                     this);
+
+                EventBus<PlanetDefenseDisengagedEvent>.Raise(new PlanetDefenseDisengagedEvent(planetsMaster, detector, detectionType));
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_activeDetectors.Count > 0 && planetsMaster != null)
+            {
+                _activeDetectors.Clear();
+                EventBus<PlanetDefenseDisabledEvent>.Raise(new PlanetDefenseDisabledEvent(planetsMaster));
             }
         }
 
