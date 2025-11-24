@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.UI
 {
@@ -11,12 +12,19 @@ namespace _ImmersiveGames.Scripts.UI
         [SerializeField] Transform indicatorObject;
         [SerializeField] Sprite eaterIcon;
 
+        [Inject] private IGameManager _gameManager;
+
         private Transform _eaterTransform;
         private bool _hasSpawnedPlanets;
 
+        private void Awake()
+        {
+            DependencyManager.Provider.InjectDependencies(this);
+        }
+
         private void Start()
         {
-            _eaterTransform = GameManager.Instance.WorldEater;
+            _eaterTransform = (_gameManager ?? GameManager.Instance)?.WorldEater;
             SpawnIndicator(_eaterTransform, eaterIcon, false);
             SpawnPlanetsIndicators();
         }

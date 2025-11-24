@@ -85,6 +85,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 _orchestrator = new ActorResourceOrchestratorService();
                 DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
+            RegisterGameServices();
             if (!SceneManager.GetSceneByName("UI").isLoaded)
             {
                 DebugUtility.LogVerbose<GameManager>($"Carregando cena de UI em modo aditivo.");
@@ -241,6 +242,23 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 DebugUtility.LogWarning<GameManager>(
                     "DebugManager não encontrado; aplicando configuração padrão do DebugUtility.");
+            }
+        }
+
+        private void RegisterGameServices()
+        {
+            var provider = DependencyManager.Provider;
+
+            provider.RegisterGlobal<IGameManager>(this, allowOverride: true);
+
+            if (gameConfig != null)
+            {
+                provider.RegisterGlobal(gameConfig, allowOverride: true);
+            }
+
+            if (!provider.TryGetGlobal<GameManagerStateMachine>(out _))
+            {
+                provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
             }
         }
 

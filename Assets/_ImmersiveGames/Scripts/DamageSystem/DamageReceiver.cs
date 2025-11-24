@@ -10,6 +10,7 @@ using _ImmersiveGames.Scripts.ResourceSystems.Bind;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
@@ -57,8 +58,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private SoundData deathSound;
         [SerializeField] private SoundData reviveSound;
 
+        [Inject] private IGameManager _gameManager;
+
         private void Awake()
         {
+            DependencyManager.Provider.InjectDependencies(this);
+
             _actor = GetComponent<IActor>();
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
@@ -345,7 +350,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            var manager = GameManager.Instance;
+            var manager = _gameManager ?? GameManager.Instance;
             if (manager == null)
             {
                 return;
