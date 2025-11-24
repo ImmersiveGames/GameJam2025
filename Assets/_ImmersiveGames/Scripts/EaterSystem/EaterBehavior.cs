@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
@@ -490,12 +491,20 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (_animationController == null)
             {
                 string actorId = _master != null ? _master.ActorId : null;
-                if (!string.IsNullOrEmpty(actorId)
-                    && DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                if (!string.IsNullOrEmpty(actorId))
                 {
-                    _animationController = resolvedController;
+                    if (DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
+                    {
+                        _animationController = resolvedController;
+                    }
+                    else if (DependencyManager.Provider.TryGetForObject(actorId, out AnimationControllerBase baseController)
+                        && baseController is EaterAnimationController eaterController)
+                    {
+                        _animationController = eaterController;
+                    }
                 }
-                else if (!TryGetComponent(out _animationController))
+
+                if (_animationController == null && !TryGetComponent(out _animationController))
                 {
                     _animationController = null;
                 }
