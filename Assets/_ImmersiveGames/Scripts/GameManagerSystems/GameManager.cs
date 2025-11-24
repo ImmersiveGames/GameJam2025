@@ -1,3 +1,4 @@
+using System.Collections;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -28,6 +29,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
         private IActorResourceOrchestrator _orchestrator;
+        private Coroutine _resetRoutine;
+        private bool _resetInProgress;
 
         private const string StateGuardLogPrefix = "Solicitação ignorada: ciclo de jogo não está em estado de gameplay.";
 
@@ -120,6 +123,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnDestroy()
         {
+            if (_resetRoutine != null)
+            {
+                StopCoroutine(_resetRoutine);
+                _resetRoutine = null;
+                _resetInProgress = false;
+            }
+
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<GamePauseRequestedEvent>.Unregister(_pauseRequestedBinding);
@@ -165,9 +175,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public void ResetGame()
         {
-            DebugUtility.LogVerbose<GameManager>("Resetando o jogo.");
-            GameManagerStateMachine.Instance.Rebuild(this); // Reinicializa a FSM sem recriar o singleton
-            SceneLoader.Instance.ReloadCurrentScene();
+            if (_resetInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>("Solicitação de reset ignorada: já existe um reset em andamento.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline robusto).");
+            _resetRoutine = StartCoroutine(ResetGameRoutine());
         }
 
         private void OnGameStart(GameStartEvent evt)
@@ -244,6 +259,47 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             debugManager = FindObjectOfType<DebugManager>();
             return debugManager;
+        }
+
+        private IEnumerator ResetGameRoutine()
+        {
+            _resetInProgress = true;
+
+            // Permite que sistemas persistentes (ex.: pools, placares) limpem estado antes do reload.
+            EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
+
+            // Dá uma folga para que os handlers do GameResetRequestedEvent processem paradas (timers, spawns, etc.).
+            yield return new WaitForEndOfFrame();
+
+            // Aguarda a FSM voltar para o menu para garantir execução de OnExit/OnEnter dos estados atuais.
+            yield return WaitForMenuState();
+
+            // Garante que o tempo global não fique travado após sair de estados que pausam o timeScale.
+            Time.timeScale = 1f;
+
+            // Recria a FSM para limpar bindings antigos antes de recarregar a cena.
+            GameManagerStateMachine.Instance.Rebuild(this);
+
+            // Recarrega a cena ativa e reanexa a UI.
+            yield return SceneLoader.Instance.ReloadCurrentSceneAsync();
+
+            EventBus<GameResetCompletedEvent>.Raise(new GameResetCompletedEvent());
+
+            _resetInProgress = false;
+            _resetRoutine = null;
+        }
+
+        private IEnumerator WaitForMenuState()
+        {
+            // Usa deltaTime não escalonado para respeitar pausas.
+            const float timeoutSeconds = 1.5f;
+            float elapsed = 0f;
+
+            while (!IsCurrentState<MenuState>() && elapsed < timeoutSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
     }
 }

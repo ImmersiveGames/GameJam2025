@@ -37,6 +37,16 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
         // Solicitado por UI/controles para reiniciar a sessão
     }
 
+    // Evento disparado para sinalizar o início de um pipeline de reset
+    public class GameResetStartedEvent : IEvent
+    {
+    }
+
+    // Evento disparado após conclusão do reset e recarga de cena
+    public class GameResetCompletedEvent : IEvent
+    {
+    }
+
     // Evento disparado quando o jogo termina com derrota
     public class GameOverEvent : IEvent
     {
