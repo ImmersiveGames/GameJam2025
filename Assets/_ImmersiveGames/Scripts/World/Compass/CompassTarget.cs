@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.UI.Compass;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.World.Compass
@@ -12,14 +13,39 @@ namespace _ImmersiveGames.Scripts.World.Compass
         [Tooltip("Tipo de alvo exibido na bússola.")]
         public CompassTargetType targetType = CompassTargetType.PointOfInterest;
 
+        private ICompassRuntimeService _runtimeService;
+
+        private void Awake()
+        {
+            ResolveService();
+        }
+
         private void OnEnable()
         {
-            CompassRuntimeService.RegisterTarget(this);
+            ResolveService();
+            _runtimeService?.RegisterTarget(this);
         }
 
         private void OnDisable()
         {
-            CompassRuntimeService.UnregisterTarget(this);
+            _runtimeService?.UnregisterTarget(this);
+        }
+
+        private void ResolveService()
+        {
+            if (_runtimeService != null)
+            {
+                return;
+            }
+
+            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            {
+                _runtimeService = runtimeService;
+            }
+            else
+            {
+                DebugUtility.LogError<CompassTarget>("CompassRuntimeService não encontrado para registrar target.");
+            }
         }
 
         Transform ICompassTrackable.Transform => transform;

@@ -1,9 +1,10 @@
+
+
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.World.Compass
 {
     /// <summary>
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
     {
         private ActorMaster _actor;
         private ICompassTrackable _trackable;
+        private ICompassRuntimeService _runtimeService;
         private string _entityId;
         private bool _isRegisteredWithCompass;
         private bool _eventsRegistered;
@@ -46,7 +48,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         {
             CacheDependencies();
 
-            if (string.IsNullOrEmpty(_entityId) || _trackable == null)
+            if (string.IsNullOrEmpty(_entityId) || _trackable == null || !TryResolveRuntimeService())
             {
                 return;
             }
@@ -112,7 +114,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
             if (_isRegisteredWithCompass)
             {
-                CompassRuntimeService.UnregisterTarget(_trackable);
+                _runtimeService?.UnregisterTarget(_trackable);
                 _isRegisteredWithCompass = false;
             }
         }
@@ -144,7 +146,12 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            CompassRuntimeService.RegisterTarget(_trackable);
+            if (!TryResolveRuntimeService())
+            {
+                return;
+            }
+
+            _runtimeService.RegisterTarget(_trackable);
             _isRegisteredWithCompass = true;
         }
 
@@ -155,7 +162,12 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            CompassRuntimeService.UnregisterTarget(_trackable);
+            if (!TryResolveRuntimeService())
+            {
+                return;
+            }
+
+            _runtimeService.UnregisterTarget(_trackable);
             _isRegisteredWithCompass = false;
         }
 
@@ -169,6 +181,25 @@ namespace _ImmersiveGames.Scripts.World.Compass
             _actor ??= GetComponent<ActorMaster>();
             _trackable ??= GetComponentInChildren<ICompassTrackable>();
             _entityId = _actor?.ActorId;
+        }
+
+        private bool TryResolveRuntimeService()
+        {
+            if (_runtimeService != null)
+            {
+                return true;
+            }
+
+            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            {
+                _runtimeService = runtimeService;
+                return true;
+            }
+
+            DebugUtility.LogError<CompassDamageLifecycleAdapter>(
+                "CompassRuntimeService não encontrado para sincronizar ciclo de vida da bússola.",
+                this);
+            return false;
         }
     }
 }

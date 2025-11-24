@@ -1,33 +1,95 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.World.Compass
 {
     /// <summary>
-    /// Serviço estático que centraliza dados da bússola em tempo de execução.
-    /// Mantém referência ao jogador e aos alvos rastreáveis, permitindo que
-    /// sistemas de HUD acessem essas informações sem dependências diretas na cena.
+    /// Serviço de runtime da bússola registrado via DependencyManager (escopo global).
+    /// Evita uso de classe estática para respeitar o pipeline de injeção do projeto,
+    /// mantendo a responsabilidade de rastrear player e alvos.
     /// </summary>
-    public static class CompassRuntimeService
+    public sealed class CompassRuntimeService : ICompassRuntimeService
     {
-        private static readonly List<ICompassTrackable> _trackables = new();
+        private static CompassRuntimeService _cachedInstance;
+        private readonly List<ICompassTrackable> _trackables = new();
 
         /// <summary>
         /// Transform do jogador utilizado como referência de direção na bússola.
         /// </summary>
-        public static Transform PlayerTransform { get; private set; }
+        public Transform PlayerTransform { get; private set; }
 
         /// <summary>
         /// Lista somente leitura de alvos rastreáveis registrados (ordem de registro).
         /// </summary>
-        public static IReadOnlyList<ICompassTrackable> Trackables => _trackables;
+        public IReadOnlyList<ICompassTrackable> Trackables => _trackables;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void Initialize()
+        {
+            EnsureInstance();
+        }
+
+        /// <summary>
+        /// Tenta recuperar o serviço a partir do DependencyManager ou do cache local.
+        /// </summary>
+        public static bool TryGet(out ICompassRuntimeService service)
+        {
+            if (DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal(out service))
+            {
+                return true;
+            }
+
+            service = _cachedInstance;
+            return service != null;
+        }
+
+        /// <summary>
+        /// Obtém o serviço, lançando exceção se não estiver disponível. Útil para pontos críticos.
+        /// </summary>
+        public static ICompassRuntimeService Require()
+        {
+            if (TryGet(out ICompassRuntimeService service))
+            {
+                return service;
+            }
+
+            throw new InvalidOperationException("CompassRuntimeService não foi inicializado pelo DependencyManager.");
+        }
+
+        private static void EnsureInstance()
+        {
+            if (_cachedInstance != null)
+            {
+                return;
+            }
+
+            _cachedInstance = new CompassRuntimeService();
+            RegisterGlobal(_cachedInstance);
+        }
+
+        private static void RegisterGlobal(ICompassRuntimeService service)
+        {
+            if (DependencyManager.Provider == null)
+            {
+                DebugUtility.LogWarning<CompassRuntimeService>(
+                    "DependencyManager.Provider indisponível; serviço será usado apenas via cache local.");
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal(service);
+            DebugUtility.Log<CompassRuntimeService>(
+                "CompassRuntimeService registrado no escopo global (DependencyManager).",
+                DebugUtility.Colors.Success);
+        }
 
         /// <summary>
         /// Define o transform do jogador atual.
         /// </summary>
         /// <param name="playerTransform">Transform do jogador.</param>
-        public static void SetPlayer(Transform playerTransform)
+        public void SetPlayer(Transform playerTransform)
         {
             PlayerTransform = playerTransform;
         }
@@ -36,7 +98,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// Remove a referência do jogador se corresponder ao transform informado.
         /// </summary>
         /// <param name="playerTransform">Transform associado ao jogador a ser removido.</param>
-        public static void ClearPlayer(Transform playerTransform)
+        public void ClearPlayer(Transform playerTransform)
         {
             if (PlayerTransform == playerTransform)
             {
@@ -48,7 +110,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// Registra um alvo rastreável na bússola.
         /// </summary>
         /// <param name="target">Instância do alvo.</param>
-        public static void RegisterTarget(ICompassTrackable target)
+        public void RegisterTarget(ICompassTrackable target)
         {
             if (target == null)
             {
@@ -72,7 +134,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// Remove um alvo rastreável previamente registrado.
         /// </summary>
         /// <param name="target">Instância do alvo.</param>
-        public static void UnregisterTarget(ICompassTrackable target)
+        public void UnregisterTarget(ICompassTrackable target)
         {
             if (target == null)
             {
@@ -91,7 +153,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
         /// <summary>
         /// Remove entradas nulas que possam ter ficado na lista após destruição de objetos Unity.
         /// </summary>
-        private static void RemoveNullEntries()
+        private void RemoveNullEntries()
         {
             for (int i = _trackables.Count - 1; i >= 0; i--)
             {
