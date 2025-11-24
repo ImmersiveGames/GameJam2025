@@ -72,7 +72,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
-        private EaterAnimationDriver _animationDriver;
         private Transform _lastOrbitTarget;
         private float _lastOrbitRadius = -1f;
         private float _lastSurfaceStopDistance = -1f;
@@ -87,7 +86,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
-            _animationDriver = new EaterAnimationDriver(this);
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
             TryEnsureAutoFlowBridge();
@@ -108,7 +106,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
-            _animationDriver ??= new EaterAnimationDriver(this);
         }
 #endif
 
@@ -506,13 +503,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             animationController = _animationController;
             return animationController != null;
-        }
-
-        internal bool TryGetAnimationDriver(out EaterAnimationDriver animationDriver)
-        {
-            _animationDriver ??= new EaterAnimationDriver(this);
-            animationDriver = _animationDriver;
-            return true;
         }
 
         internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)

@@ -414,25 +414,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
-        private bool TryEnsureAnimationController()
-        {
-            if (Behavior == null)
-            {
-                return false;
-            }
-
-            return Behavior.TryGetAnimationDriver(out _);
-        }
-
         private void TrySetEatingAnimation(bool isEating)
         {
-            if (!TryEnsureAnimationController())
+            if (Behavior == null || !Behavior.TryGetAnimationController(out var controller))
             {
                 return;
             }
 
-            Behavior.TryGetAnimationDriver(out var driver);
-            driver.SetEating(isEating);
+            controller.SetEating(isEating);
         }
 
         private void TickDamage(float deltaTime)

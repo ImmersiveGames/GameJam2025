@@ -15,34 +15,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             base.OnEnter();
 
-            if (!TryEnsureAnimationController())
+            if (Behavior == null || !Behavior.TryGetAnimationController(out var controller))
             {
                 return;
             }
 
-            Behavior.TryGetAnimationDriver(out var driver);
-            driver.PlayDeath();
+            controller.PlayDeath();
         }
 
         public override void OnExit()
         {
-            if (TryEnsureAnimationController())
+            if (Behavior != null && Behavior.TryGetAnimationController(out var controller))
             {
-                Behavior.TryGetAnimationDriver(out var driver);
-                driver.PlayIdle();
+                controller.PlayIdle();
             }
 
             base.OnExit();
-        }
-
-        private bool TryEnsureAnimationController()
-        {
-            if (Behavior == null)
-            {
-                return false;
-            }
-
-            return Behavior.TryGetAnimationDriver(out _);
         }
     }
 }
