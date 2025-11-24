@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -8,8 +9,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
+        [SerializeField] private MonoBehaviour[] activationListenerSources;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
+        private readonly List<IPlanetDefenseActivationListener> _activationListeners = new();
 
         private void Awake()
         {
@@ -23,6 +26,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 DebugUtility.LogError<PlanetDefenseController>(
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
             }
+
+            CacheActivationListeners();
         }
 
 #if UNITY_EDITOR
@@ -32,6 +37,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 planetsMaster = GetComponentInParent<PlanetsMaster>();
             }
+
+            CacheActivationListeners();
         }
 #endif
 
@@ -54,6 +61,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
+
+            NotifyDefenseEngaged(detector, role);
         }
 
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
@@ -70,7 +79,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                     $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
                     null,
                     this);
+
+                NotifyDefenseDisengaged(detector, role);
             }
+        }
+
+        public void RegisterActivationListener(IPlanetDefenseActivationListener listener)
+        {
+            if (listener == null)
+            {
+                return;
+            }
+
+            if (_activationListeners.Contains(listener))
+            {
+                return;
+            }
+
+            _activationListeners.Add(listener);
         }
 
         private string GetPlanetName()
@@ -119,6 +145,52 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 DefenseRole.Eater => $"o Eater ({detectorName})",
                 _ => detectorName
             };
+        }
+
+        private void CacheActivationListeners()
+        {
+            if (activationListenerSources == null || activationListenerSources.Length == 0)
+            {
+                return;
+            }
+
+            foreach (MonoBehaviour source in activationListenerSources)
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+
+                if (source is IPlanetDefenseActivationListener listener)
+                {
+                    if (!_activationListeners.Contains(listener))
+                    {
+                        RegisterActivationListener(listener);
+                    }
+                }
+                else
+                {
+                    DebugUtility.LogError<PlanetDefenseController>(
+                        $"{source.name} não implementa IPlanetDefenseActivationListener em {gameObject.name}.",
+                        source);
+                }
+            }
+        }
+
+        private void NotifyDefenseEngaged(IDetector detector, DefenseRole role)
+        {
+            for (int i = 0; i < _activationListeners.Count; i++)
+            {
+                _activationListeners[i].OnDefenseEngaged(detector, role);
+            }
+        }
+
+        private void NotifyDefenseDisengaged(IDetector detector, DefenseRole role)
+        {
+            for (int i = 0; i < _activationListeners.Count; i++)
+            {
+                _activationListeners[i].OnDefenseDisengaged(detector, role);
+            }
         }
     }
 }
