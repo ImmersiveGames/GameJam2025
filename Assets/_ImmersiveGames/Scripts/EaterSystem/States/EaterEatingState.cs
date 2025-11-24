@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _hasLoggedRecoveryCompatibility = false;
             _planetDestroyedDuringState = false;
 
-            UpdateEatingAnimation(isEating: true);
+            TrySetEatingAnimation(true);
 
             EnsureOrbitFreezeController().TryFreeze(Behavior, Behavior.CurrentTargetPlanet);
             PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public override void OnExit()
         {
-            UpdateEatingAnimation(isEating: false);
+            TrySetEatingAnimation(false);
 
             if (!_planetDestroyedDuringState)
             {
@@ -447,7 +447,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return false;
         }
 
-        private void UpdateEatingAnimation(bool isEating)
+        private void TrySetEatingAnimation(bool isEating)
         {
             if (!TryEnsureAnimationController())
             {

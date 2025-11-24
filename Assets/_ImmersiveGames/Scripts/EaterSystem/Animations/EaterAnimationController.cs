@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         private EventBinding<DeathEvent> _deathBinding;
         private EventBinding<ReviveEvent> _reviveBinding;
         private bool _listenersRegistered;
+        private bool _isEating;
 
         protected override void Awake()
         {
@@ -143,12 +144,24 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         public void SetEating(bool isEating)
         {
+            _isEating = isEating;
+            ApplyEatingState();
+        }
+
+        public override void OnAnimatorChanged(Animator newAnimator)
+        {
+            base.OnAnimatorChanged(newAnimator);
+            ApplyEatingState();
+        }
+
+        private void ApplyEatingState()
+        {
             if (animator == null || !gameObject.activeInHierarchy)
             {
                 return;
             }
 
-            animator.SetBool(EatingHash, isEating);
+            animator.SetBool(EatingHash, _isEating);
         }
     }
 }
