@@ -496,11 +496,15 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     if (DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
                     {
                         _animationController = resolvedController;
+                        DebugUtility.LogVerbose<EaterBehavior>(
+                            $"EaterAnimationController resolvido via DependencyManager para ActorId={actorId}.");
                     }
                     else if (DependencyManager.Provider.TryGetForObject(actorId, out AnimationControllerBase baseController)
                         && baseController is EaterAnimationController eaterController)
                     {
                         _animationController = eaterController;
+                        DebugUtility.LogVerbose<EaterBehavior>(
+                            $"AnimationControllerBase resolvido e convertido para EaterAnimationController (ActorId={actorId}).");
                     }
                 }
 
