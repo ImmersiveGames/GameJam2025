@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         public float maxDistance = 250f;
 
         [Tooltip("Distância mínima para exibir alvos na bússola.")]
-        public float minDistance = 0f;
+        public float minDistance;
 
         [Header("Comportamento visual")]
         [Tooltip("Quando verdadeiro, ícones fora do campo angular são fixados na borda da bússola.")]

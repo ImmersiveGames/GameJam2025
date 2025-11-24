@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 
@@ -22,10 +23,10 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         }
 
         [Tooltip("Lista de estilos aplicáveis por tipo de recurso.")]
-        public List<PlanetResourceCompassStyleEntry> entries = new List<PlanetResourceCompassStyleEntry>();
+        public List<PlanetResourceCompassStyleEntry> entries = new();
 
         /// <summary>
-        /// Retorna a cor configurada para o tipo de recurso informado ou a cor padrão quando não há entrada.
+        /// Retorna a cor configurada para o tipo de recurso informado ou a cor padrão, quando não há entrada.
         /// </summary>
         public Color GetColorForResource(PlanetResources resourceType, Color defaultColor)
         {
@@ -34,13 +35,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return defaultColor;
             }
 
-            for (int i = 0; i < entries.Count; i++)
+            foreach (var entry in entries.Where(entry => entry != null && entry.resourceType == resourceType))
             {
-                PlanetResourceCompassStyleEntry entry = entries[i];
-                if (entry != null && entry.resourceType == resourceType)
-                {
-                    return entry.iconColor;
-                }
+                return entry.iconColor;
             }
 
             return defaultColor;

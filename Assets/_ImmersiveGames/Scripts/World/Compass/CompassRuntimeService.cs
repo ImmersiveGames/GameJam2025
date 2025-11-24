@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
     public sealed class CompassRuntimeService : MonoBehaviour, ICompassRuntimeService
     {
         private static CompassRuntimeService _instance;
-        private readonly List<ICompassTrackable> _trackables = new List<ICompassTrackable>();
+        private readonly List<ICompassTrackable> _trackables = new();
 
         /// <summary>
         /// Transform do jogador utilizado como referência de direção na bússola.
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            GameObject runtimeRoot = new GameObject("CompassRuntimeService");
+            var runtimeRoot = new GameObject("CompassRuntimeService");
             DontDestroyOnLoad(runtimeRoot);
             runtimeRoot.AddComponent<CompassRuntimeService>();
         }

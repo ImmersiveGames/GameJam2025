@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -100,10 +99,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             if (hasSnapshot)
             {
-                for (int i = 0; i < trackables.Count; i++)
+                foreach (var target in trackables)
                 {
-                    ICompassTrackable target = trackables[i];
-                    if (target == null || !target.IsActive || target.Transform == null)
+                    if (target is not { IsActive: true } || target.Transform == null)
                     {
                         continue;
                     }
@@ -125,11 +123,11 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return;
             }
 
-            CompassTargetVisualConfig visualConfig = visualDatabase != null
+            var visualConfig = visualDatabase != null
                 ? visualDatabase.GetConfig(target.TargetType)
                 : null;
 
-            CompassIcon iconInstance = Instantiate(iconPrefab, compassRectTransform);
+            var iconInstance = Instantiate(iconPrefab, compassRectTransform);
             iconInstance.Initialize(target, visualConfig);
 
             _iconsByTarget[target] = iconInstance;
@@ -144,142 +142,173 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             _removalBuffer.Clear();
 
-            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
+            foreach (var pair in _iconsByTarget)
             {
-                ICompassTrackable target = pair.Key;
-                CompassIcon icon = pair.Value;
+                var target = pair.Key;
+                var icon = pair.Value;
 
-                bool missingTarget = target == null || target.Transform == null || !target.IsActive;
-                bool missingIcon = icon == null;
-                bool notTracked = enforceActiveSnapshot && !_activeTrackablesCache.Contains(target);
-
-                if (missingTarget || missingIcon || notTracked)
+                if (ShouldRemove(target, icon, enforceActiveSnapshot, _activeTrackablesCache))
                 {
                     _removalBuffer.Add(target);
                 }
             }
 
-            for (int i = 0; i < _removalBuffer.Count; i++)
+            foreach (var target in _removalBuffer)
             {
-                ICompassTrackable target = _removalBuffer[i];
-                if (_iconsByTarget.TryGetValue(target, out CompassIcon icon))
-                {
-                    if (icon != null)
-                    {
-                        Destroy(icon.gameObject);
-                    }
-
-                    _iconsByTarget.Remove(target);
-                }
+                DestroyIconForTarget(target);
             }
 
             _removalBuffer.Clear();
         }
 
+        private static bool ShouldRemove(
+            ICompassTrackable target,
+            CompassIcon icon,
+            bool enforceActiveSnapshot,
+            HashSet<ICompassTrackable> activeSnapshot)
+        {
+            if (target == null || icon == null)
+            {
+                return true;
+            }
+
+            if (target.Transform == null || !target.IsActive)
+            {
+                return true;
+            }
+
+            if (enforceActiveSnapshot && (activeSnapshot == null || !activeSnapshot.Contains(target)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void DestroyIconForTarget(ICompassTrackable target)
+        {
+            if (!_iconsByTarget.TryGetValue(target, out var icon))
+            {
+                return;
+            }
+
+            if (icon != null)
+            {
+                Destroy(icon.gameObject);
+            }
+
+            _iconsByTarget.Remove(target);
+        }
+
         /// <summary>
         /// Atualiza a bússola calculando ângulo, posição e distância para cada alvo rastreável.
+        /// Refatorado para reduzir a complexidade e melhorar legibilidade, extraindo helpers reutilizáveis.
         /// </summary>
         private void UpdateCompass()
         {
+            // Guard clauses de configuração básica
             if (compassRectTransform == null || iconPrefab == null)
             {
                 return;
             }
 
-            if (!CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            // Serviço de runtime
+            if (!CompassRuntimeService.TryGet(out var runtimeService))
             {
                 return;
             }
 
-            Transform playerTransform = runtimeService.PlayerTransform;
+            var playerTransform = runtimeService.PlayerTransform;
             IReadOnlyList<ICompassTrackable> trackables = runtimeService.Trackables;
 
+            // Sincroniza alvos e ícones existentes
             SynchronizeIcons(trackables);
 
+            // Sem player ou sem ícones, nada para atualizar
             if (playerTransform == null || _iconsByTarget.Count == 0)
             {
                 return;
             }
 
-            Vector3 playerForward = playerTransform.forward;
-            playerForward.y = 0f;
-            if (playerForward.sqrMagnitude < 0.0001f)
-            {
-                playerForward = Vector3.forward;
-            }
-
+            // Parâmetros comuns de cálculo
+            var playerForward = GetHorizontalForward(playerTransform);
             float halfAngle = settings != null ? Mathf.Abs(settings.compassHalfAngleDegrees) : 180f;
-            float width = compassRectTransform.rect.width;
-            float halfWidth = width * 0.5f;
+            float halfWidth = compassRectTransform.rect.width * 0.5f;
             bool clampIcons = settings != null && settings.clampIconsAtEdges;
 
-            _removalBuffer.Clear();
-
-            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
+            // Atualiza cada ícone
+            foreach (var pair in _iconsByTarget)
             {
-                ICompassTrackable target = pair.Key;
-                CompassIcon icon = pair.Value;
-
-                if (target == null || icon == null || target.Transform == null)
-                {
-                    _removalBuffer.Add(target);
-                    continue;
-                }
-
-                Vector3 toTarget = target.Transform.position - playerTransform.position;
-                toTarget.y = 0f;
-                float distance = toTarget.magnitude;
-
-                if (toTarget.sqrMagnitude < 0.0001f)
-                {
-                    icon.gameObject.SetActive(true);
-                    SetIconPosition(icon, 0f, halfAngle, halfWidth);
-                    icon.UpdateDistance(distance);
-                    continue;
-                }
-
-                float angle = Vector3.SignedAngle(playerForward, toTarget, Vector3.up);
-
-                if (halfAngle <= 0f)
-                {
-                    icon.gameObject.SetActive(false);
-                    continue;
-                }
-
-                if (Mathf.Abs(angle) > halfAngle)
-                {
-                    if (!clampIcons)
-                    {
-                        icon.gameObject.SetActive(false);
-                        continue;
-                    }
-
-                    angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
-                }
-
-                icon.gameObject.SetActive(true);
-                SetIconPosition(icon, angle, halfAngle, halfWidth);
-                icon.UpdateDistance(distance);
+                UpdateIconForTarget(pair.Key, pair.Value, playerTransform.position, playerForward, halfAngle, halfWidth, clampIcons);
             }
 
-            if (_removalBuffer.Count == 0)
+            // Limpa quaisquer ícones/targets inválidos detectados durante o ciclo
+            RemoveStaleIcons(false);
+        }
+
+        private static Vector3 GetHorizontalForward(Transform t)
+        {
+            var fwd = t.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 0.0001f)
             {
+                return Vector3.forward;
+            }
+            return fwd;
+        }
+
+        private void UpdateIconForTarget(
+            ICompassTrackable target,
+            CompassIcon icon,
+            Vector3 playerPos,
+            Vector3 horizontalForward,
+            float halfAngle,
+            float halfWidth,
+            bool clampAtEdges)
+        {
+            if (target == null || icon == null || target.Transform == null || !target.IsActive)
+            {
+                // Deixa a remoção para RemoveStaleIcons(false)
                 return;
             }
 
-            for (int i = 0; i < _removalBuffer.Count; i++)
-            {
-                ICompassTrackable target = _removalBuffer[i];
-                if (_iconsByTarget.TryGetValue(target, out CompassIcon icon))
-                {
-                    if (icon != null)
-                    {
-                        Destroy(icon.gameObject);
-                    }
+            var toTarget = target.Transform.position - playerPos;
+            toTarget.y = 0f;
+            float distance = toTarget.magnitude;
 
-                    _iconsByTarget.Remove(target);
-                }
+            // Se praticamente em cima do player
+            if (toTarget.sqrMagnitude < 0.0001f)
+            {
+                icon.gameObject.SetActive(true);
+                SetIconPosition(icon, 0f, halfAngle, halfWidth);
+                icon.UpdateDistance(distance);
+                return;
             }
+
+            float angle = Vector3.SignedAngle(horizontalForward, toTarget, Vector3.up);
+
+            // Sem ângulo útil, apenas oculta
+            if (halfAngle <= 0f)
+            {
+                icon.gameObject.SetActive(false);
+                return;
+            }
+
+            // Fora do FOV da bússola
+            if (Mathf.Abs(angle) > halfAngle)
+            {
+                if (!clampAtEdges)
+                {
+                    icon.gameObject.SetActive(false);
+                    return;
+                }
+
+                angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
+            }
+
+            icon.gameObject.SetActive(true);
+            SetIconPosition(icon, angle, halfAngle, halfWidth);
+            icon.UpdateDistance(distance);
         }
 
         private void SetupCanvasId()
@@ -303,7 +332,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
             float normalized = Mathf.Approximately(halfAngle, 0f) ? 0f : angle / halfAngle;
             float x = normalized * halfWidth;
-            Vector2 anchoredPos = icon.rectTransform.anchoredPosition;
+            var anchoredPos = icon.rectTransform.anchoredPosition;
             anchoredPos.x = x;
             icon.rectTransform.anchoredPosition = anchoredPos;
         }
@@ -318,6 +347,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 yield return default;
             }
 
+            if (_iconsByTarget == null) yield break;
             foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
             {
                 yield return (pair.Key, pair.Value);

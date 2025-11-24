@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.UI.Compass
@@ -25,15 +26,8 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         /// <returns>Config visual correspondente ou null se não encontrada.</returns>
         public CompassTargetVisualConfig GetConfig(CompassTargetType targetType)
         {
-            foreach (CompassTargetVisualConfig config in visualConfigs)
-            {
-                if (config != null && config.targetType == targetType)
-                {
-                    return config;
-                }
-            }
+            return visualConfigs.FirstOrDefault(config => config != null && config.targetType == targetType);
 
-            return null;
         }
     }
 }

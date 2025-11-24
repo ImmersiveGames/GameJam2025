@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private float _currentOrbitAngle;
         private float _heightOffset;
         private bool _orbitConfigured;
-        private readonly HashSet<object> _orbitFreezeRequests = new HashSet<object>();
+        private readonly HashSet<object> _orbitFreezeRequests = new();
 
         public bool IsOrbitFrozen => _orbitFreezeRequests.Count > 0;
 

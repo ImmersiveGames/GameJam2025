@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [SerializeField] private Color markedColorTint = Color.white;
 
         [Tooltip("Se true, aplica o tint de cor ao ícone marcado; caso contrário, apenas escala.")]
-        [SerializeField] private bool tintMarkedIcon = false;
+        [SerializeField] private bool tintMarkedIcon;
 
         private EventBinding<PlanetMarkingChangedEvent> _planetMarkingBinding;
         private PlanetsMaster _markedPlanet;
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void HandlePlanetMarkingChanged(PlanetMarkingChangedEvent @event)
         {
-            PlanetsMaster newMarked = @event.NewMarkedPlanet?.Transform?.GetComponentInParent<PlanetsMaster>();
+            var newMarked = @event.NewMarkedPlanet?.Transform?.GetComponentInParent<PlanetsMaster>();
             SetMarkedPlanet(newMarked);
         }
 
@@ -75,15 +75,15 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             }
 
             IEnumerable<(ICompassTrackable target, CompassIcon icon)> icons = compassHUD.EnumerateIcons();
-            foreach ((ICompassTrackable target, CompassIcon icon) in icons)
+            foreach ((var target, var icon) in icons)
             {
                 if (target == null || icon == null)
                 {
                     continue;
                 }
 
-                Transform targetTransform = target.Transform;
-                PlanetsMaster planetMaster = targetTransform != null ? targetTransform.GetComponentInParent<PlanetsMaster>() : null;
+                var targetTransform = target.Transform;
+                var planetMaster = targetTransform != null ? targetTransform.GetComponentInParent<PlanetsMaster>() : null;
                 bool isMarked = planetMaster != null && planetMaster == _markedPlanet;
 
                 Color? tint = tintMarkedIcon ? markedColorTint : (Color?)null;

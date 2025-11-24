@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
                 return;
             }
 
-            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            if (CompassRuntimeService.TryGet(out var runtimeService))
             {
                 _runtimeService = runtimeService;
             }

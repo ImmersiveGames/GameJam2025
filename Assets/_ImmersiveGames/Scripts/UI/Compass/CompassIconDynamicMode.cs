@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         Static = 0,
 
         /// <summary>
-        /// Usa o ícone de recurso do planeta associado (PlanetResourcesSo.ResourceIcon).
+        /// Usa o ícone de recurso do planeta associado (PlanetResourcesSo. ResourceIcon).
         /// </summary>
         PlanetResourceIcon = 1
     }

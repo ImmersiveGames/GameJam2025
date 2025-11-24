@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return;
             }
 
-            Sprite targetSprite = null;
+            Sprite targetSprite;
 
             if (_planetMaster == null)
             {
@@ -199,12 +199,12 @@ namespace _ImmersiveGames.Scripts.UI.Compass
                 return;
             }
 
-            Color baseColor = _visualConfig.baseColor;
+            var baseColor = _visualConfig.baseColor;
             float baseSize = _visualConfig.baseSize;
 
-            Color finalColor = baseColor;
+            var finalColor = baseColor;
 
-            PlanetResources resourceType = _currentResource != null ? _currentResource.ResourceType : default;
+            var resourceType = _currentResource != null ? _currentResource.ResourceType : default;
 
             if (_visualConfig.planetResourceStyleDatabase != null)
             {

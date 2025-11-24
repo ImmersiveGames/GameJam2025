@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
     {
         private void OnEnable()
         {
-            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            if (CompassRuntimeService.TryGet(out var runtimeService))
             {
                 runtimeService.SetPlayer(transform);
             }
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.World.Compass
 
         private void OnDisable()
         {
-            if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtimeService))
+            if (CompassRuntimeService.TryGet(out var runtimeService))
             {
                 runtimeService.ClearPlayer(transform);
             }
