@@ -110,12 +110,14 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             // Mostrar tela de game over
             // Mostrar pontuação final
+            Time.timeScale = 0f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
 
             DebugUtility.LogVerbose<GameOverState>("game over!");
         }
         public override void OnExit()
         {
+            Time.timeScale = 1f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
         }
     }
@@ -129,11 +131,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             // Mostrar tela de vitória
             // Mostrar estatísticas
+            Time.timeScale = 0f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
             DebugUtility.LogVerbose<VictoryState>("Terminou o jogo!");
         }
         public override void OnExit()
         {
+            Time.timeScale = 1f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
         }
     }
