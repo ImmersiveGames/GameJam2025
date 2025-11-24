@@ -145,6 +145,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         public void SetEating(bool isEating)
         {
             _isEating = isEating;
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Aplicando estado de alimentação: {_isEating} (Animator disponível: {animator != null}, Ativo: {gameObject.activeInHierarchy}).");
             ApplyEatingState();
         }
 
@@ -158,10 +160,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         {
             if (animator == null || !gameObject.activeInHierarchy)
             {
+                DebugUtility.LogWarning<EaterAnimationController>(
+                    $"Não foi possível aplicar o estado de alimentação. Animator nulo={animator == null}, ativo no hierarchy={gameObject.activeInHierarchy}.");
                 return;
             }
 
             animator.SetBool(EatingHash, _isEating);
+            DebugUtility.LogVerbose<EaterAnimationController>(
+                $"Animator.SetBool(EatingHash={EatingHash}, {_isEating}) aplicado com sucesso.");
         }
     }
 }
