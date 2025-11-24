@@ -10,7 +10,7 @@ A bússola conecta a cena de gameplay à HUD carregada de forma aditiva sem depe
 
 | Componente | Papel |
 | --- | --- |
-| `CompassRuntimeService` | Serviço estático com o `PlayerTransform` e lista somente leitura de alvos registrados, tratando nulos e duplicatas ao registrar/desregistrar. |
+| `CompassRuntimeService` | Serviço global registrado via `DependencyManager` (e com fallback estático). É criado automaticamente via `RuntimeInitializeOnLoadMethod`, expõe `PlayerTransform` e a lista somente leitura de alvos, tratando nulos e duplicatas ao registrar/desregistrar. |
 | `CompassPlayerBinder` | Colocado no jogador; publica o `transform` ao habilitar e limpa ao desabilitar, mantendo a referência ao trocar de personagem. |
 | `ICompassTrackable` / `CompassTarget` | Contrato base de alvos (Transform, tipo, estado). `CompassTarget` registra-se automaticamente no serviço. |
 | `CompassSettings` | Define campo angular, distâncias e clamp de bordas para posicionamento dos ícones. |
@@ -34,13 +34,21 @@ A bússola conecta a cena de gameplay à HUD carregada de forma aditiva sem depe
    - No Canvas carregado via pipeline, adicione `CompassHUD`, referencie `compassRectTransform`, `settings`, `visualDatabase` e o prefab `CompassIcon`.
    - A HUD segue o padrão de bind (`ICanvasBinder`) e se registra no `CanvasPipelineManager`, mantendo IDs únicos via `IUniqueIdFactory` quando `autoGenerateCanvasId` está ativo.
 
+## Integração com ciclo de vida de dano
+
+- Use `CompassDamageLifecycleAdapter` em qualquer ator que combine `ActorMaster`, `DamageReceiver` e `CompassTarget` para manter a bússola em sincronia com `DeathEvent`, `ReviveEvent` e `ResetEvent`.
+- O adaptador registra o trackable ao habilitar (honrando `ICompassTrackable.IsActive`) e remove da bússola ao receber `DeathEvent` filtrado pelo `ActorId`, voltando a registrar em `ReviveEvent`/`ResetEvent`.
+- `CompassRuntimeService.RegisterTarget/UnregisterTarget` são idempotentes, limpam referências destruídas e utilizam cache interno para evitar duplicatas, permitindo coexistir com o registro automático do `CompassTarget`.
+
 ## Fluxo em Runtime
 
-1. `CompassPlayerBinder` publica o player no `CompassRuntimeService` ao habilitar.
+1. `CompassPlayerBinder` publica o player no `CompassRuntimeService` (via `DependencyManager`) ao habilitar.
 2. Cada `CompassTarget` registra-se no serviço durante seu ciclo de vida, e a HUD sincroniza o dicionário de ícones a cada frame.
 3. Para cada alvo ativo, a HUD calcula o ângulo relativo ao forward do jogador, aplica clamp conforme `CompassSettings`, converte em posição X no `RectTransform` e atualiza distância.
 4. Planetas em `dynamicMode = PlanetResourceIcon` trocam o sprite de genérico → `ResourceIcon` ao serem descobertos e podem ter cor ajustada por `PlanetResourceCompassStyleDatabase`; o tamanho permanece definido pelo `baseSize` do tipo `Planet`. O highlight altera apenas o `localScale` do ícone selecionado.
 5. `CompassPlanetHighlightController` reage à marcação de planetas e chama `SetMarked` nos ícones correspondentes para ampliar o destaque sem alterar posicionamento.
+
+> Organização interna: o `CompassHUD` mantém um `HashSet` cacheado dos `ICompassTrackable` ativos por frame e reaproveita uma lista de remoção para evitar alocações e buscas O(n²) ao sincronizar ícones. Ícones órfãos (alvo destruído, transform nulo ou ícone removido) são limpos automaticamente.
 
 ## Exemplos Rápidos
 
@@ -55,8 +63,21 @@ public class EnemyCompassTracker : MonoBehaviour, ICompassTrackable
     [SerializeField] private bool showOnCompass = true;
     [SerializeField] private CompassTargetType type = CompassTargetType.Enemy;
 
-    private void OnEnable() => CompassRuntimeService.RegisterTarget(this);
-    private void OnDisable() => CompassRuntimeService.UnregisterTarget(this);
+    private void OnEnable()
+    {
+        if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtime))
+        {
+            runtime.RegisterTarget(this);
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtime))
+        {
+            runtime.UnregisterTarget(this);
+        }
+    }
 
     public Transform Transform => transform;
     public CompassTargetType TargetType => type;
@@ -85,8 +106,9 @@ public class EnemyCompassTracker : MonoBehaviour, ICompassTrackable
 - **Tamanho por tipo**: ajuste `baseSize` em `CompassTargetVisualConfig` por tipo de alvo. Estilos de recurso afetam apenas cor, não tamanho.
 - **Clamp vs. ocultação**: use `clampIconsAtEdges` para decidir se ícones fora do FOV colam na borda ou somem.
 - **Prefabs completos**: garanta `RectTransform`, `Image` e (opcional) `TextMeshProUGUI` no prefab de ícone para evitar sprites nulos.
-- **Multiplayer local**: como o serviço é estático, trocas de player (respawn ou split-screen local) devem substituir o transform via `CompassPlayerBinder` ativo no personagem correto.
+- **Multiplayer local**: o serviço é global (escopo DependencyManager), então trocas de player (respawn ou split-screen local) devem substituir o transform via `CompassPlayerBinder` ativo no personagem correto.
 - **Highlight não invasivo**: `SetMarked` altera apenas `localScale`, preservando tamanho base e cálculo de posição.
+- **Pastas limpas**: scripts de teste da bússola foram removidos da pasta `Scripts/UI/Compass` para manter apenas runtime e configurações, alinhando a organização à build final.
 
 ## Solução de Problemas
 
