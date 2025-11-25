@@ -119,7 +119,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
                 return;
             }
 
-            DebugUtility.Log<AnimationControllerBase>(
+            DebugUtility.LogVerbose<AnimationControllerBase>(
                 $"Registrando controlador de animação para ID: {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
 
@@ -132,7 +132,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             if (_dependencyRegistered && Actor != null && !string.IsNullOrEmpty(Actor.ActorId))
             {
                 DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
-                DebugUtility.Log<AnimationControllerBase>(
+                DebugUtility.LogVerbose<AnimationControllerBase>(
                     $"Serviços removidos do objeto {Actor.ActorId}.",
                     DebugUtility.Colors.Success);
             }

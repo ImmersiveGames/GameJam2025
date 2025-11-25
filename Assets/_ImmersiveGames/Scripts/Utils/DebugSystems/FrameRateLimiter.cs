@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems {
             if (Input.GetKeyDown(KeyCode.F3)) Application.targetFrameRate = 30;
             if (Input.GetKeyDown(KeyCode.F4)) Application.targetFrameRate = 60;
             if (Input.GetKeyDown(KeyCode.F5)) Application.targetFrameRate = 900;
-            DebugUtility.Log<FrameRateLimiter>($"Frame Rate: {Time.frameCount} FPS");
+            DebugUtility.LogVerbose<FrameRateLimiter>($"Frame Rate: {Time.frameCount} FPS");
         }
     }
 }

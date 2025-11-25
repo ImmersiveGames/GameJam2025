@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem
             }
 
             _interactAction.performed += OnInteractPerformed;
-            DebugUtility.Log<InputInteractComponent>(
+            DebugUtility.LogVerbose<InputInteractComponent>(
                 $"InputInteractComponent inicializado em '{name}' com ação '{actionName}'.",
                 DebugUtility.Colors.CrucialInfo,
                 this);

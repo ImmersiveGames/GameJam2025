@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             pool.SetData(poolData);
             pool.Initialize();
             _localPool = pool;
-            DebugUtility.Log<EntityAudioEmitter>(
+            DebugUtility.LogVerbose<EntityAudioEmitter>(
                 $"Pool local '{poolData.ObjectName}' criado para {name}",
                 DebugUtility.Colors.Success,
                 this);

@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             CaptureDefaultColors();
             ApplyDisplay(_configuredDuration);
 
-            DebugUtility.Log<TimerDisplay>(
+            DebugUtility.LogVerbose<TimerDisplay>(
                 $"TimerDisplay pronto com duração inicial {_configuredDuration:F2}s.",
                 context: this);
         }

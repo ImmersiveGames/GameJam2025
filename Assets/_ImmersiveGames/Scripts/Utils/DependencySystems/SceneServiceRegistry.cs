@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             services[type] = service;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceRegistry),
                 $"Serviço {type.Name} registrado para a cena {key}.",
                 DebugUtility.Colors.Success);
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 int count = services.Count;
                 _sceneServices.Remove(key);
                 ReturnDictionaryToPool(services);
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(SceneServiceRegistry),
                     $"Removidos {count} serviços para a cena {key}.",
                     DebugUtility.Colors.Success);
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 ReturnDictionaryToPool(services);
             }
             _sceneServices.Clear();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceRegistry),
                 $"Removidos {totalCount} serviços de todas as cenas.",
                 DebugUtility.Colors.Success);

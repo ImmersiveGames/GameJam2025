@@ -267,7 +267,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 "Distância mínima alcançada. Solicitando transição para o estado de alimentação.",
                 DebugUtility.Colors.CrucialInfo,
                 Behavior,

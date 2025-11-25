@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 CanvasPipelineManager.Instance.RegisterCanvas(this);
                 ResourceEventHub.NotifyCanvasRegistered(CanvasId);
 
-                DebugUtility.Log<DynamicCanvasBinder>(
+                DebugUtility.LogVerbose<DynamicCanvasBinder>(
                     $"✅ Dynamic Canvas '{CanvasId}' registered & notified",
                     DebugUtility.Colors.Success);
             }
