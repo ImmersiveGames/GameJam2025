@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11b4bd1454444c1486a01758f23664aa, type: 3}
+  m_Name: SkinSpaceShip
+  m_EditorClassIdentifier: 
+  configName: Space Ships
+  modelType: 0
+  prefabs:
+  - {fileID: 3888492592174658699, guid: 4b41eaa5a5c87924a94e208bce0584f5, type: 3}
+  - {fileID: 7652988491447358196, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+  - {fileID: 5709824488846910556, guid: 1c8d0783213527744b706ebf88b8d8b4, type: 3}
+  instantiationMode: 1
+  specificIndex: 0
+  position: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0}
+  scale: {x: 1, y: 1, z: 1}
+  activeState: 1

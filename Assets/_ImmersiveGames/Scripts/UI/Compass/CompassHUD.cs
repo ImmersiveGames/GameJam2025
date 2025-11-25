@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.CompassSystems;
+using _ImmersiveGames.Scripts.CompassSystems.Compass;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Configs;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.World.Compass;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.UI.Compass

@@ -1,4 +1,4 @@
-﻿# 🧩 Damage System Integration Manual (`m.md`)
+﻿# 🧩 Damage System Integration Manual
 
 ## 📘 Sumário
 

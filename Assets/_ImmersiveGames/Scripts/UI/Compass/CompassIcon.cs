@@ -1,5 +1,6 @@
+using _ImmersiveGames.Scripts.CompassSystems;
+using _ImmersiveGames.Scripts.CompassSystems.Compass;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.World.Compass;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

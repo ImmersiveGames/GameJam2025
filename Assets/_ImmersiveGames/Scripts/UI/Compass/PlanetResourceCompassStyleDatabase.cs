@@ -9,6 +9,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
     /// Define a cor aplicada a cada tipo de recurso de planeta exibido na bússola.
     /// O tamanho permanece definido pelo CompassTargetVisualConfig do tipo de alvo.
     /// </summary>
+    /// TODO: tornar mais generico
     [CreateAssetMenu(fileName = "PlanetResourceCompassStyleDatabase", menuName = "ImmersiveGames/UI/Compass/Planet Resource Style Database")]
     public class PlanetResourceCompassStyleDatabase : ScriptableObject
     {

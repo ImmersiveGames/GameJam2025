@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.CompassSystems;
+using _ImmersiveGames.Scripts.CompassSystems.Compass;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.World.Compass;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.UI.Compass
