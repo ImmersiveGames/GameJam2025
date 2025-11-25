@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -30,8 +32,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// defesas planetárias. Ele mantém um flag por planeta para evitar
     /// múltiplos loops de debug e utiliza o ciclo de Update do Unity para
     /// emitir mensagens apenas enquanto o jogo está rodando.
+    ///
+    /// A contagem de detectores ativos vem do controlador de defesa; se um
+    /// planeta já estiver ativo, novos detectores apenas atualizam a contagem
+    /// sem disparar uma nova ativação. O desligamento só ocorre quando o
+    /// último detector sair.
     /// </summary>
-    [DebugLevel(level:DebugLevel.Verbose)]
+    [DisallowMultipleComponent]
     public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
     {
         private readonly Dictionary<PlanetsMaster, ActiveDefenseState> _activeDefenses = new();
@@ -75,8 +82,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_activeDefenses.ContainsKey(engagedEvent.Planet))
+            if (_activeDefenses.TryGetValue(engagedEvent.Planet, out var existing))
             {
+                existing.ActiveDetectors = Mathf.Max(existing.ActiveDetectors, engagedEvent.ActiveDetectors);
                 return;
             }
 
@@ -84,7 +92,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 engagedEvent.Planet,
                 engagedEvent.DetectionType,
                 FormatDetector(engagedEvent.Detector),
-                Time.time + _config.DebugLoopIntervalSeconds);
+                Time.time + _config.DebugLoopIntervalSeconds,
+                Mathf.Max(1, engagedEvent.ActiveDetectors));
 
             _activeDefenses.Add(engagedEvent.Planet, state);
 
@@ -100,10 +109,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_activeDefenses.Remove(disengagedEvent.Planet, out var state))
+            if (_activeDefenses.TryGetValue(disengagedEvent.Planet, out var state))
             {
-                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                    $"Defesas do planeta {state.Planet.ActorName} encerradas; {FormatDetector(disengagedEvent.Detector)} saiu do sensor {disengagedEvent.DetectionType?.TypeName ?? "Unknown"}.");
+                int remainingDetectors = Mathf.Max(disengagedEvent.ActiveDetectors, state.ActiveDetectors - 1);
+
+                if (remainingDetectors <= 0 || disengagedEvent.IsLastDisengagement)
+                {
+                    _activeDefenses.Remove(disengagedEvent.Planet);
+
+                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                        $"Defesas do planeta {state.Planet.ActorName} encerradas; {FormatDetector(disengagedEvent.Detector)} saiu do sensor {disengagedEvent.DetectionType?.TypeName ?? "Unknown"}.");
+                }
+                else
+                {
+                    state.ActiveDetectors = remainingDetectors;
+                }
             }
         }
 
@@ -123,6 +143,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 return;
             }
+
+#if UNITY_EDITOR
+            if (EditorApplication.isPaused)
+            {
+                return;
+            }
+#endif
 
             if (_activeDefenses.Count == 0)
             {
@@ -190,18 +217,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private sealed class ActiveDefenseState
         {
-            public ActiveDefenseState(PlanetsMaster planet, DetectionType detectionType, string detectorName, float nextLogTime)
+            public ActiveDefenseState(PlanetsMaster planet, DetectionType detectionType, string detectorName, float nextLogTime, int activeDetectors)
             {
                 Planet = planet;
                 DetectionType = detectionType;
                 DetectorName = detectorName;
                 NextLogTime = nextLogTime;
+                ActiveDetectors = activeDetectors;
             }
 
             public PlanetsMaster Planet { get; }
             public DetectionType DetectionType { get; }
             public string DetectorName { get; }
             public float NextLogTime { get; set; }
+            public int ActiveDetectors { get; set; }
         }
     }
 }
