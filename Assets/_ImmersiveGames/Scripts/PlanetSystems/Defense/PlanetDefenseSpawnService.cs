@@ -33,6 +33,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public bool StopWavesOnDisable { get; set; } = true;
     }
 
+    /// <summary>
+    /// Serviço "puro" responsável por ligar/desligar pools e ondas de defesa
+    /// com base nos eventos emitidos pelo PlanetDefenseController. Ele mantém
+    /// o código de spawn desacoplado de MonoBehaviours, seguindo o princípio
+    /// de inversão de dependência e delegando rastreamento de detectores ao
+    /// próprio controlador que já conhece o contexto de cena.
+    /// </summary>
     public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent, IDisposable
     {
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
@@ -63,7 +70,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             InjectionState = DependencyInjectionState.Ready;
             EnsureConfig();
-            DebugUtility.Log<PlanetDefenseSpawnService>("PlanetDefenseSpawnService pronto para receber eventos.");
+            DebugUtility.Log<PlanetDefenseSpawnService>(
+                "PlanetDefenseSpawnService pronto para receber eventos e sem duplicar contagem de detectores.");
         }
 
         public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -75,6 +83,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (engagedEvent.IsFirstEngagement)
             {
+                // Não guardamos estado aqui: confiamos no metadado de primeira detecção
+                // enviado pelo controller para iniciar as defesas apenas uma vez.
                 StartDefense(engagedEvent);
             }
         }
@@ -88,6 +98,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (disengagedEvent.IsLastDisengagement)
             {
+                // Interrompe somente quando o próprio controller indicar que não há
+                // mais detectores. Isso evita duplicidade com a lógica de sensor.
                 StopDefense(disengagedEvent.Planet, disengagedEvent.DetectionType, reason: "Último detector saiu");
             }
         }
@@ -104,6 +116,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (hasActiveDetectors || wavesRunning)
             {
+                // Este hook cobre o caso do planeta ser removido da cena ou desativado
+                // enquanto ainda há detectores ou ondas em execução, evitando corrotinas
+                // órfãs e respeitando o ciclo de vida da cena.
                 StopDefense(disabledEvent.Planet, null, reason: "Planeta desativado");
             }
         }

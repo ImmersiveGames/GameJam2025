@@ -37,6 +37,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         }
 #endif
 
+        /// <summary>
+        /// Entrada principal a partir do sensor. Publica eventos com metadados
+        /// de contagem para que outros serviços (ex.: spawner) não precisem
+        /// reimplementar a mesma lógica de rastrear detectores.
+        /// </summary>
         public void EngageDefense(IDetector detector, DetectionType detectionType)
         {
             if (detector == null)
@@ -67,6 +72,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                     activeDetectors: activeCount));
         }
 
+        /// <summary>
+        /// Complementa o fluxo de entrada, garantindo que a contagem e o flag
+        /// de última saída sejam emitidos para os listeners responderem uma
+        /// única vez ao desligamento.
+        /// </summary>
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
         {
             if (detector == null)

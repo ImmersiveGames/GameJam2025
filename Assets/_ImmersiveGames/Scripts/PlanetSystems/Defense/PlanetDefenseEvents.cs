@@ -4,6 +4,12 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    /// <summary>
+    /// Evento disparado quando um planeta inicia defesas contra um detector.
+    /// Inclui metadados para sabermos se esta foi a primeira detecção ativa
+    /// e a contagem total de detectores rastreados, evitando duplicar estado
+    /// em outros serviços.
+    /// </summary>
     public readonly struct PlanetDefenseEngagedEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
@@ -27,6 +33,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 
+    /// <summary>
+    /// Evento disparado quando um detector deixa o planeta. Também traz
+    /// metadados suficientes para sabermos se esta foi a última saída e a
+    /// contagem de detectores restantes, permitindo que listeners decidam se
+    /// devem interromper defesas sem manter contadores locais.
+    /// </summary>
     public readonly struct PlanetDefenseDisengagedEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
@@ -50,6 +62,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 
+    /// <summary>
+    /// Evento disparado quando o planeta é desabilitado. Permite que serviços
+    /// desliguem loops de defesa mesmo que ainda existam detectores ativos.
+    /// </summary>
     public readonly struct PlanetDefenseDisabledEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
