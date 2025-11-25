@@ -22,8 +22,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         public bool WarmUpPools { get; set; } = true;
         public bool StopWavesOnDisable { get; set; } = true;
-        public float DebugLoopIntervalSeconds { get; set; } = 3f;
+
+        // Intervalo de log; se não for definido, usa a duração da onda para manter paridade com o ciclo de spawn.
+        public float DebugLoopIntervalSeconds { get; set; } = 0f;
+
+        // Duração "esperada" de uma onda de spawn para fins de telemetria/debug.
         public float DebugWaveDurationSeconds { get; set; } = 12f;
+
+        // Quantidade estimada de spawns por onda (apenas para log).
         public int DebugWaveSpawnCount { get; set; } = 6;
     }
 
@@ -56,6 +62,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void Awake()
         {
             _config ??= new PlanetDefenseSpawnConfig();
+
+            // Se o intervalo não foi configurado explicitamente, seguir a duração da onda
+            // para alinhar o log periódico ao ritmo de spawn esperado.
+            if (_config.DebugLoopIntervalSeconds <= 0f)
+            {
+                _config.DebugLoopIntervalSeconds = _config.DebugWaveDurationSeconds;
+            }
         }
 
         private void OnEnable()
@@ -73,6 +86,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             InjectionState = DependencyInjectionState.Ready;
             _config ??= new PlanetDefenseSpawnConfig();
+
+            if (_config.DebugLoopIntervalSeconds <= 0f)
+            {
+                _config.DebugLoopIntervalSeconds = _config.DebugWaveDurationSeconds;
+            }
         }
 
         public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
