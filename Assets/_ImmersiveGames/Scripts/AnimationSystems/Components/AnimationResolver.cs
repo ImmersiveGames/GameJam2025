@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                DependencyManager.Provider.TryGetForObject<SkinController>(_actor.ActorId, out _skinController);
+                DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _skinController);
             }
 
             if (_skinController == null)

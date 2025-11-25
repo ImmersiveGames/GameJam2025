@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.CompassSystems.Compass
+namespace _ImmersiveGames.Scripts.CompassSystems
 {
     /// <summary>
     /// Adaptador genérico que sincroniza o ciclo de vida de DamageSystem com a bússola.
