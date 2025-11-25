@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -65,7 +66,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                DebugUtility.LogVerbose<DependencyBootstrapper>(
+                // Serviço de spawn/ativação de defesas planetárias (puro, sem MonoBehaviour)
+                EnsureGlobal<IPlanetDefenseActivationListener>(() =>
+                {
+                    var service = new PlanetDefenseSpawnService();
+                    DependencyManager.Provider.InjectDependencies(service);
+                    service.OnDependenciesInjected();
+                    return service;
+                });
+
+                DebugUtility.Log<DependencyBootstrapper>(
                     "✅ Essential dependency services registered",
                     DebugUtility.Colors.Success);
             }
