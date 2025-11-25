@@ -4,10 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -35,6 +35,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         public bool WarmUpPools { get; set; } = true;
         public bool StopWavesOnDisable { get; set; } = true;
+        public float DebugLoopIntervalSeconds { get; set; } = 3f;
+        public float DebugWaveDurationSeconds { get; set; } = 12f;
+        public int DebugWaveSpawnCount { get; set; } = 6;
     }
 
     /// <summary>
@@ -44,7 +47,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// de inversão de dependência e delegando rastreamento de detectores ao
     /// próprio controlador que já conhece o contexto de cena.
     /// </summary>
-    [DebugLevel(level:DebugLevel.Verbose)]
     public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent, IDisposable
     {
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
@@ -107,7 +109,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 // Interrompe somente quando o próprio controller indicar que não há
                 // mais detectores. Isso evita duplicidade com a lógica de sensor.
-                StopDefense(disengagedEvent.Planet, disengagedEvent.DetectionType, reason: "Último detector saiu");
+                StopDefense(
+                    disengagedEvent.Planet,
+                    disengagedEvent.DetectionType,
+                    disengagedEvent.Detector,
+                    reason: "Último detector saiu");
             }
         }
 
@@ -126,7 +132,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // Este hook cobre o caso do planeta ser removido da cena ou desativado
                 // enquanto ainda há detectores ou ondas em execução, evitando corrotinas
                 // órfãs e respeitando o ciclo de vida da cena.
-                StopDefense(disabledEvent.Planet, null, reason: "Planeta desativado");
+                StopDefense(disabledEvent.Planet, null, null, reason: "Planeta desativado");
             }
         }
 
@@ -172,9 +178,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             var planet = engagedEvent.Planet;
             var detectionType = engagedEvent.DetectionType;
+            var detector = engagedEvent.Detector;
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"Iniciando defesa de {planet.ActorName} para {detectionType?.TypeName ?? "Unknown"}.",
+                $"{FormatDetector(detector)} ativou as defesas do planeta {planet.ActorName} (sensor: {detectionType?.TypeName ?? "Unknown"}).",
                 DebugUtility.Colors.CrucialInfo);
 
             if (_config?.WarmUpPools == true)
@@ -190,10 +197,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             StartActiveLoop(planet, detectionType);
         }
 
-        private void StopDefense(PlanetsMaster planet, DetectionType detectionType, string reason)
+        private void StopDefense(PlanetsMaster planet, DetectionType detectionType, IDetector detector, string reason)
         {
+            string detectorInfo = detector != null
+                ? $" saindo do sensor {detectionType?.TypeName ?? "Unknown"} de {FormatDetector(detector)}"
+                : string.Empty;
+
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"Encerrando defesa de {planet.ActorName}: {reason}.");
+                $"Encerrando defesa de {planet.ActorName}{detectorInfo}: {reason}.");
 
             StopActiveLoop(planet, reason);
 
@@ -214,6 +225,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (planet == null || _activeLoops.ContainsKey(planet))
             {
+                if (planet != null)
+                {
+                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                        $"Defesas de {planet.ActorName} já ativas; ignorando nova solicitação.");
+                }
                 return;
             }
 
@@ -221,7 +237,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _activeLoops[planet] = cancellation;
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[Debug] Loop de defesa ativo para {planet.ActorName}; emitindo mensagem a cada 3s.");
+                $"[Debug] Loop de defesa ativo para {planet.ActorName}; emitindo mensagem a cada {_config.DebugLoopIntervalSeconds:0.##}s.");
 
             _ = RunActiveLoopAsync(planet, detectionType, cancellation.Token);
         }
@@ -232,15 +248,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 while (!token.IsCancellationRequested)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(3), token);
+                    await Task.Delay(TimeSpan.FromSeconds(_config.DebugLoopIntervalSeconds), token);
 
                     if (token.IsCancellationRequested)
                     {
                         break;
                     }
 
-                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                        $"[Debug] Defesa ativa em {planet.ActorName} contra {detectionType?.TypeName ?? "Unknown"}.");
+                    // Respeita o pause do jogo: se estiver pausado (timeScale == 0),
+                    // não imprime logs periódicos para evitar ruído fora de contexto.
+                    if (Time.timeScale > 0f)
+                    {
+                        DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                            $"[Debug] Defesa ativa em {planet.ActorName} contra {detectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}.");
+                    }
                 }
             }
             catch (TaskCanceledException)
@@ -279,6 +300,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _activeLoops.Clear();
+        }
+
+        private static string FormatDetector(IDetector detector)
+        {
+            if (detector == null)
+            {
+                return "Um detector desconhecido";
+            }
+
+            string actorName = detector.Owner?.ActorName ?? detector.ToString();
+            return actorName.Contains("Eater", StringComparison.OrdinalIgnoreCase)
+                ? $"O Eater ({actorName})"
+                : actorName.Contains("Player", StringComparison.OrdinalIgnoreCase)
+                    ? $"O Player ({actorName})"
+                    : actorName;
         }
     }
 }
