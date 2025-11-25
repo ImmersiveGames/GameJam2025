@@ -10,6 +10,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
+        [SerializeField]
+        [Tooltip("Configuração de spawn usada pelo PlanetDefenseSpawnService para este planeta.")]
+        private PlanetDefenseSpawnConfig spawnConfig = new();
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -25,6 +28,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 DebugUtility.LogError<PlanetDefenseController>(
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
             }
+
+            spawnConfig ??= new PlanetDefenseSpawnConfig();
         }
 
 #if UNITY_EDITOR
@@ -34,6 +39,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 planetsMaster = GetComponentInParent<PlanetsMaster>();
             }
+
+            spawnConfig ??= new PlanetDefenseSpawnConfig();
         }
 #endif
 
@@ -68,6 +75,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                     planetsMaster,
                     detector,
                     detectionType,
+                    spawnConfig,
                     isFirstEngagement: activeCount == 1,
                     activeDetectors: activeCount));
         }

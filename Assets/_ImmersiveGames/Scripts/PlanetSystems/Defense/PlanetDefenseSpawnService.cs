@@ -103,10 +103,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
     {
         private readonly Dictionary<PlanetsMaster, ActiveDefenseState> _activeDefenses = new();
-
-        [Inject] [SerializeField] private PlanetDefenseSpawnConfig _config = new();
-        private ObjectPool _defensePool;
-        private bool _poolErrorLogged;
+        private readonly Dictionary<PoolData, ObjectPool> _pools = new();
+        private readonly HashSet<PoolData> _poolErrors = new();
 
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
@@ -115,18 +113,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => nameof(PlanetDefenseSpawnService);
-
-        private void Awake()
-        {
-            _config ??= new PlanetDefenseSpawnConfig();
-
-            // Se o intervalo não foi configurado explicitamente, seguir a duração da onda
-            // para alinhar o log periódico ao ritmo de spawn esperado.
-            if (_config.SpawnIntervalSeconds <= 0f)
-            {
-                _config.SpawnIntervalSeconds = _config.WaveDurationSeconds;
-            }
-        }
 
         private void OnEnable()
         {
@@ -142,12 +128,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            _config ??= new PlanetDefenseSpawnConfig();
-
-            if (_config.SpawnIntervalSeconds <= 0f)
-            {
-                _config.SpawnIntervalSeconds = _config.WaveDurationSeconds;
-            }
         }
 
         public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -157,9 +137,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            var normalizedConfig = NormalizeConfig(engagedEvent.SpawnConfig);
+
             if (_activeDefenses.TryGetValue(engagedEvent.Planet, out var existing))
             {
                 int updatedCount = Mathf.Max(existing.ActiveDetectors, engagedEvent.ActiveDetectors);
+                if (normalizedConfig != null)
+                {
+                    existing.Config = normalizedConfig;
+                }
                 if (updatedCount != existing.ActiveDetectors)
                 {
                     existing.ActiveDetectors = updatedCount;
@@ -175,7 +161,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 engagedEvent.DetectionType,
                 FormatDetector(engagedEvent.Detector),
                 Time.time,
-                Mathf.Max(1, engagedEvent.ActiveDetectors));
+                Mathf.Max(1, engagedEvent.ActiveDetectors),
+                normalizedConfig);
 
             _activeDefenses.Add(engagedEvent.Planet, state);
 
@@ -188,7 +175,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             // Primeira onda registrada imediatamente após a ativação; o próximo ciclo respeita o intervalo configurado.
             SpawnWaveAndLog(state, Time.time);
-            state.NextSpawnTime = Time.time + _config.SpawnIntervalSeconds;
+            state.NextSpawnTime = Time.time + normalizedConfig.SpawnIntervalSeconds;
         }
 
         public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
@@ -257,63 +244,105 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
 
                 SpawnWaveAndLog(state, now);
-                state.NextSpawnTime = now + _config.SpawnIntervalSeconds;
+                state.NextSpawnTime = now + state.Config.SpawnIntervalSeconds;
             }
         }
 
         private void SpawnWaveAndLog(ActiveDefenseState state, float timestamp)
         {
-            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.WaveDurationSeconds:0.##}s | Spawns previstos: {_config.WaveSpawnCount}. (@ {timestamp:0.00}s)");
+            var config = state.Config;
 
-            if (!TryEnsurePool())
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {config.WaveDurationSeconds:0.##}s | Spawns previstos: {config.WaveSpawnCount}. (@ {timestamp:0.00}s)");
+
+            if (!TryEnsurePool(config, out var pool))
             {
                 return;
             }
 
-            int spawnCount = Mathf.Max(1, _config.WaveSpawnCount);
+            int spawnCount = Mathf.Max(1, config.WaveSpawnCount);
             Vector3 spawnPosition = state.Planet.transform.position;
-            var spawned = _defensePool.GetMultipleObjects(spawnCount, spawnPosition, state.Planet);
+            var spawned = pool.GetMultipleObjects(spawnCount, spawnPosition, state.Planet);
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[Spawn] {spawned.Count}/{spawnCount} objetos da pool '{_config.DefensePoolData.ObjectName}' instanciados para defender {state.Planet.ActorName}. (@ {timestamp:0.00}s)");
+                $"[Spawn] {spawned.Count}/{spawnCount} objetos da pool '{config.DefensePoolData.ObjectName}' instanciados para defender {state.Planet.ActorName}. (@ {timestamp:0.00}s)");
         }
 
-        private bool TryEnsurePool()
+        private bool TryEnsurePool(PlanetDefenseSpawnConfig config, out ObjectPool pool)
         {
             var manager = PoolManager.Instance;
             if (manager == null)
             {
-                LogPoolErrorOnce("PoolManager não encontrado — spawns de defesa não serão executados.");
+                LogPoolErrorOnce(null, "PoolManager não encontrado — spawns de defesa não serão executados.");
+                pool = null;
                 return false;
             }
 
-            if (_config?.DefensePoolData == null)
+            if (config?.DefensePoolData == null)
             {
-                LogPoolErrorOnce("PoolData de defesa não configurado no PlanetDefenseSpawnService.");
+                LogPoolErrorOnce(null, "PoolData de defesa não configurado no PlanetDefenseSpawnService.");
+                pool = null;
                 return false;
             }
 
-            _defensePool = manager.RegisterPool(_config.DefensePoolData);
-            if (_defensePool == null || !_defensePool.IsInitialized)
+            if (_pools.TryGetValue(config.DefensePoolData, out var cached) && cached != null)
             {
-                LogPoolErrorOnce($"Falha ao inicializar a pool '{_config.DefensePoolData.ObjectName}' para defesas planetárias.");
+                if (cached.IsInitialized)
+                {
+                    _poolErrors.Remove(config.DefensePoolData);
+                    pool = cached;
+                    return true;
+                }
+
+                _pools.Remove(config.DefensePoolData);
+            }
+
+            pool = manager.RegisterPool(config.DefensePoolData);
+            if (pool == null || !pool.IsInitialized)
+            {
+                LogPoolErrorOnce(config.DefensePoolData, $"Falha ao inicializar a pool '{config.DefensePoolData.ObjectName}' para defesas planetárias.");
+                pool = null;
                 return false;
             }
 
-            _poolErrorLogged = false;
+            _pools[config.DefensePoolData] = pool;
+            _poolErrors.Remove(config.DefensePoolData);
             return true;
         }
 
-        private void LogPoolErrorOnce(string message)
+        private void LogPoolErrorOnce(PoolData poolData, string message)
         {
-            if (_poolErrorLogged)
+            if (poolData != null && _poolErrors.Contains(poolData))
             {
                 return;
             }
 
             DebugUtility.LogError<PlanetDefenseSpawnService>(message);
-            _poolErrorLogged = true;
+            if (poolData != null)
+            {
+                _poolErrors.Add(poolData);
+            }
+        }
+
+        private static PlanetDefenseSpawnConfig NormalizeConfig(PlanetDefenseSpawnConfig incoming)
+        {
+            var source = incoming ?? new PlanetDefenseSpawnConfig();
+            var normalized = new PlanetDefenseSpawnConfig
+            {
+                WarmUpPools = source.WarmUpPools,
+                StopWavesOnDisable = source.StopWavesOnDisable,
+                DefensePoolData = source.DefensePoolData,
+                SpawnIntervalSeconds = Mathf.Max(0.1f, source.SpawnIntervalSeconds),
+                WaveDurationSeconds = Mathf.Max(0.1f, source.WaveDurationSeconds),
+                WaveSpawnCount = Mathf.Max(1, source.WaveSpawnCount)
+            };
+
+            if (normalized.SpawnIntervalSeconds <= 0f)
+            {
+                normalized.SpawnIntervalSeconds = normalized.WaveDurationSeconds;
+            }
+
+            return normalized;
         }
 
         private void RegisterBindings()
@@ -365,13 +394,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private sealed class ActiveDefenseState
         {
-            public ActiveDefenseState(PlanetsMaster planet, DetectionType detectionType, string detectorName, float nextSpawnTime, int activeDetectors)
+            public ActiveDefenseState(PlanetsMaster planet, DetectionType detectionType, string detectorName, float nextSpawnTime, int activeDetectors, PlanetDefenseSpawnConfig config)
             {
                 Planet = planet;
                 DetectionType = detectionType;
                 DetectorName = detectorName;
                 NextSpawnTime = nextSpawnTime;
                 ActiveDetectors = activeDetectors;
+                Config = config ?? new PlanetDefenseSpawnConfig();
             }
 
             public PlanetsMaster Planet { get; }
@@ -379,6 +409,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             public string DetectorName { get; }
             public float NextSpawnTime { get; set; }
             public int ActiveDetectors { get; set; }
+            public PlanetDefenseSpawnConfig Config { get; set; }
         }
     }
 }
