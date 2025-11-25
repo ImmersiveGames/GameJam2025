@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             EventBus<DetectionEnterEvent>.Register(_enterBinding);
             EventBus<DetectionExitEvent>.Register(_exitBinding);
 
-            DebugUtility.LogVerbose<AbstractDetectable>($"Inicializado em {gameObject.name} com tipo: {myDetectionType.TypeName}");
+            DebugUtility.Log<AbstractDetectable>($"Inicializado em {gameObject.name} com tipo: {myDetectionType.TypeName}");
         }
 
         protected virtual void OnEnable()
@@ -63,6 +63,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             DetectableRegistry.Register(this, myDetectionType);
             _isRegisteredInRegistry = true;
+
+            DebugUtility.Log<AbstractDetectable>(
+                $"Registrado no DetectableRegistry com tipo {myDetectionType.TypeName} em {gameObject.name}");
         }
 
         protected virtual void OnDisable()

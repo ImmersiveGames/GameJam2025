@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             _service = new DetectorService(transform, _detector, collection);
 
-            DebugUtility.LogVerbose<SensorController>($"Configurado com {collection.Sensors.Count} sensores em {gameObject.name}");
+            DebugUtility.Log<SensorController>($"Configurado com {collection.Sensors.Count} sensores em {gameObject.name}");
         }
 
         private void Start()

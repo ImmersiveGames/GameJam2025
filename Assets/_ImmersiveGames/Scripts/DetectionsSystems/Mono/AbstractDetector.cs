@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             EventBus<DetectionEnterEvent>.Register(_enterBinding);
             EventBus<DetectionExitEvent>.Register(_exitBinding);
 
-            DebugUtility.LogVerbose<AbstractDetector>($"Inicializado em {gameObject.name}");
+            DebugUtility.Log<AbstractDetector>($"Inicializado em {gameObject.name}");
         }
 
         protected virtual void OnDestroy()

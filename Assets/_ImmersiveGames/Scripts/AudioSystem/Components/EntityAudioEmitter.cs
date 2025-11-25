@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
             else
             {
-                DebugUtility.LogVerbose<EntityAudioEmitter>(
+                DebugUtility.Log<EntityAudioEmitter>(
                     $"{name} sem pool configurado — utilizando fontes temporárias para SFX locais.",
                     context: this);
             }
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             pool.SetData(poolData);
             pool.Initialize();
             _localPool = pool;
-            DebugUtility.LogVerbose<EntityAudioEmitter>(
+            DebugUtility.Log<EntityAudioEmitter>(
                 $"Pool local '{poolData.ObjectName}' criado para {name}",
                 DebugUtility.Colors.Success,
                 this);
