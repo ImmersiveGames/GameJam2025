@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private bool applyRandomRotation = true;
         [SerializeField] private Vector3 minRotation = Vector3.zero;
         [SerializeField] private Vector3 maxRotation = new(360f, 360f, 360f);
-        [SerializeField] private bool uniformRotation = false;
+        [SerializeField] private bool uniformRotation;
         [SerializeField] private bool applyRotationOnStart = true;
         [SerializeField] private bool reapplyRotationOnNewSkin = true;
 
@@ -26,14 +27,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private bool randomizeOnSkinInstances = true;
 
         [Header("Debug")]
-        [SerializeField] private bool showDebugLogs = false;
+        [SerializeField] private bool showDebugLogs;
 
-        private Dictionary<GameObject, Vector3> _originalScales = new();
-        private Dictionary<GameObject, Quaternion> _originalRotations = new();
+        private readonly Dictionary<GameObject, Vector3> _originalScales = new();
+        private readonly Dictionary<GameObject, Quaternion> _originalRotations = new();
         
         private Vector3 _currentRandomScale;
         private Vector3 _currentRandomRotation;
-        private bool _isInitialized = false;
+
 
         #region Unity Lifecycle
         protected override void Start()
@@ -44,8 +45,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             {
                 ApplyRandomTransform();
             }
-            
-            _isInitialized = true;
             if (showDebugLogs) DebugUtility.LogVerbose<RandomTransformSkin>($"Initialized");
         }
         #endregion
@@ -84,10 +83,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #region Core Functionality
         private void CacheOriginalTransforms(List<GameObject> instances)
         {
-            foreach (var instance in instances)
+            foreach (var instance in instances.Where(instance => instance != null))
             {
-                if (instance == null) continue;
-
                 if (preserveOriginalScale && !_originalScales.ContainsKey(instance))
                 {
                     _originalScales[instance] = instance.transform.localScale;
@@ -137,8 +134,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             if (uniformRotation)
             {
-                float uniformRotation = Random.Range(minRotation.x, maxRotation.x);
-                _currentRandomRotation = new Vector3(uniformRotation, uniformRotation, uniformRotation);
+                float rotation = Random.Range(minRotation.x, maxRotation.x);
+                _currentRandomRotation = new Vector3(rotation, rotation, rotation);
             }
             else
             {
@@ -152,7 +149,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private void ApplyTransformToInstances()
         {
-            var instances = GetSkinInstances();
+            List<GameObject> instances = GetSkinInstances();
             if (instances == null) 
             {
                 if (showDebugLogs) DebugUtility.LogWarning<RandomTransformSkin>("[RandomTransformSkin] No instances found");
@@ -165,13 +162,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private void ApplyCurrentTransformToInstances()
         {
-            var instances = GetSkinInstances();
+            List<GameObject> instances = GetSkinInstances();
             if (instances == null) return;
 
-            foreach (var instance in instances)
+            foreach (var instance in instances.Where(instance => instance != null))
             {
-                if (instance == null) continue;
-
                 ApplyScaleToInstance(instance);
                 ApplyRotationToInstance(instance);
             }
@@ -265,7 +260,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [ContextMenu("Reset Transform")]
         public void ResetToOriginalTransform()
         {
-            foreach (var kvp in _originalScales)
+            foreach (KeyValuePair<GameObject, Vector3> kvp in _originalScales)
             {
                 if (kvp.Key != null)
                 {
@@ -273,7 +268,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 }
             }
 
-            foreach (var kvp in _originalRotations)
+            foreach (KeyValuePair<GameObject, Quaternion> kvp in _originalRotations)
             {
                 if (kvp.Key != null)
                 {
@@ -291,8 +286,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             return new TransformState
             {
-                Scale = _currentRandomScale,
-                Rotation = _currentRandomRotation
+                scale = _currentRandomScale,
+                rotation = _currentRandomRotation
             };
         }
         #endregion
@@ -300,7 +295,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #region Utility Methods
         private void ApplyScaleToInstances()
         {
-            var instances = GetSkinInstances();
+            List<GameObject> instances = GetSkinInstances();
             if (instances == null) return;
 
             foreach (var instance in instances)
@@ -311,7 +306,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private void ApplyRotationToInstances()
         {
-            var instances = GetSkinInstances();
+            List<GameObject> instances = GetSkinInstances();
             if (instances == null) return;
 
             foreach (var instance in instances)
@@ -327,7 +322,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void EditorLogState()
         {
             var state = GetCurrentTransformState();
-            DebugUtility.LogVerbose<RandomTransformSkin>($"Scale: {state.Scale}, Rotation: {state.Rotation}");
+            DebugUtility.LogVerbose<RandomTransformSkin>($"Scale: {state.scale}, Rotation: {state.rotation}");
         }
         #endif
         #endregion
@@ -336,12 +331,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
     [System.Serializable]
     public struct TransformState
     {
-        public Vector3 Scale;
-        public Vector3 Rotation;
+        public Vector3 scale;
+        public Vector3 rotation;
 
         public override string ToString()
         {
-            return $"Scale: {Scale}, Rotation: {Rotation}";
+            return $"Scale: {scale}, Rotation: {rotation}";
         }
     }
 }

@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Examples
         [SerializeField] private bool showDebugMessages = true;
         [SerializeField] private bool logOnStart = true;
 
-        private int _currentMaterialIndex = 0;
+        private int _currentMaterialIndex;
 
         private void Start()
         {

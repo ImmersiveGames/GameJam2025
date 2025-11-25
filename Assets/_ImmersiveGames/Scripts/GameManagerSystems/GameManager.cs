@@ -275,7 +275,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return debugManager;
             }
 
-            debugManager = FindObjectOfType<DebugManager>();
+            debugManager = FindFirstObjectByType<DebugManager>();
             return debugManager;
         }
 

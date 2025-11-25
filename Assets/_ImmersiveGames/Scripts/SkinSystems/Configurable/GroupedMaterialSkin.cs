@@ -16,10 +16,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private bool randomizeOnNewInstances = true;
 
         [Header("Debug")]
-        [SerializeField] private bool showDebugLogs = false;
+        [SerializeField] private bool showDebugLogs;
 
         private Dictionary<MaterialGroupConfig, List<MaterialSlot>> _groupedSlots;
-        private bool _isInitialized = false;
+        private bool _isInitialized;
 
         #region Unity Lifecycle
         protected override void Start()
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Organized into {_groupedSlots.Count} groups:");
-                foreach (var group in _groupedSlots)
+                foreach (KeyValuePair<MaterialGroupConfig, List<MaterialSlot>> group in _groupedSlots)
                 {
                     DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {group.Key.GroupName}: {group.Value.Count} slots");
                 }
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             if (showDebugLogs) 
             {
-                var materialsUsed = _groupedSlots[group]
+                string[] materialsUsed = _groupedSlots[group]
                     .Select(s => s.CurrentAppliedMaterial?.name ?? "None")
                     .Distinct()
                     .ToArray();
@@ -168,7 +168,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             if (showDebugLogs) 
             {
-                var totalMaterialsUsed = materialSlots
+                int totalMaterialsUsed = materialSlots
                     .Where(s => s != null && s.CurrentAppliedMaterial != null)
                     .Select(s => s.CurrentAppliedMaterial.name)
                     .Distinct()
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (_groupedSlots == null) return;
 
-            foreach (var group in _groupedSlots)
+            foreach (KeyValuePair<MaterialGroupConfig, List<MaterialSlot>> group in _groupedSlots)
             {
                 var material = group.Key.GetMaterialByIndex(materialIndex);
                 if (material != null)
@@ -259,13 +259,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         public GroupedMaterialState GetGroupedMaterialState()
         {
-            var groups = GetUniqueGroups();
+            MaterialGroupConfig[] groups = GetUniqueGroups();
             var groupStates = new List<GroupState>();
 
             foreach (var group in groups)
             {
-                var slots = GetSlotsForGroup(group);
-                var uniqueMaterials = slots
+                MaterialSlot[] slots = GetSlotsForGroup(group);
+                string[] uniqueMaterials = slots
                     .Where(s => s.CurrentAppliedMaterial != null)
                     .Select(s => s.CurrentAppliedMaterial.name)
                     .Distinct()
@@ -324,7 +324,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [ContextMenu("Log Detailed Slot Info")]
         private void EditorLogDetailedInfo()
         {
-            var slotInfos = GetAllSlotInfos();
+            SlotInfo[] slotInfos = GetAllSlotInfos();
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Detailed Slot Info ({slotInfos.Length} slots):");
             
             foreach (var info in slotInfos)
@@ -345,7 +345,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             foreach (var groupState in state.GroupStates)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {groupState.Group.GroupName}: {groupState.SlotCount} slots, {groupState.UniqueMaterialsCount} unique materials");
-                foreach (var material in groupState.UniqueMaterials)
+                foreach (string material in groupState.UniqueMaterials)
                 {
                     DebugUtility.LogVerbose<GroupedMaterialSkin>($"    * {material}");
                 }
@@ -365,7 +365,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         public override string ToString()
         {
-            var uniqueMaterials = GroupStates.Sum(gs => gs.UniqueMaterialsCount);
+            int uniqueMaterials = GroupStates.Sum(gs => gs.UniqueMaterialsCount);
             return $"Groups: {TotalGroups}, Slots: {ValidSlots}/{TotalSlots}, Unique Materials: {uniqueMaterials}";
         }
     }

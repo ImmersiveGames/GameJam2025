@@ -22,19 +22,19 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         private bool verboseInEditor = true;
 
         [SerializeField]
-        private bool verboseInPlayer = false;
+        private bool verboseInPlayer;
 
         [SerializeField]
         private bool fallbacksInEditor = true;
 
         [SerializeField]
-        private bool fallbacksInPlayer = false;
+        private bool fallbacksInPlayer;
 
         [SerializeField]
         private bool repeatedCallVerboseInEditor = true;
 
         [SerializeField]
-        private bool repeatedCallVerboseInPlayer = false;
+        private bool repeatedCallVerboseInPlayer;
 
         [Header("Default Levels")]
         [SerializeField]

@@ -18,11 +18,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private bool randomizeOnSkinInstances = true;
 
         [Header("Debug")]
-        [SerializeField] private bool showDebugLogs = false;
+        [SerializeField] private bool showDebugLogs;
 
-        private bool _hasRing = false;
-        private float _currentRotation = 0f;
-        private bool _isInitialized = false;
+        private bool _hasRing;
+        private float _currentRotation;
+        private bool _isInitialized;
 
         #region Unity Lifecycle
         protected override void Start()

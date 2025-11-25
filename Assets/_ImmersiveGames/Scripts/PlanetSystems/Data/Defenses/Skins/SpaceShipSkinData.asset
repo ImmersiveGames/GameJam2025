@@ -12,11 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11b4bd1454444c1486a01758f23664aa, type: 3}
   m_Name: SpaceShipSkinData
   m_EditorClassIdentifier: 
-  configName: Simple Bullet
+  configName: Space Ships
   modelType: 0
   prefabs:
-  - {fileID: 6004305604637168715, guid: 654b85b1e885a6544842aed1ff033e3b, type: 3}
-  - {fileID: 1542112267451166134, guid: 1846ee979c1a55b41bbc9ebadc832631, type: 3}
-  - {fileID: 5783526897520017423, guid: 5ea5d3582dbcd1b4097aa8714d505492, type: 3}
-  instantiationMode: 2
+  - {fileID: 3888492592174658699, guid: 4b41eaa5a5c87924a94e208bce0584f5, type: 3}
+  - {fileID: 7652988491447358196, guid: e79d05dbbc5ad0c41bafe27d7835724b, type: 3}
+  - {fileID: 5709824488846910556, guid: 1c8d0783213527744b706ebf88b8d8b4, type: 3}
+  instantiationMode: 1
   specificIndex: 0
+  position: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0}
+  scale: {x: 1, y: 1, z: 1}
+  activeState: 1

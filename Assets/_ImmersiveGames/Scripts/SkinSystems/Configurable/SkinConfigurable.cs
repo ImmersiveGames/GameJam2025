@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -15,7 +16,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         
         protected SkinController skinController;
         protected IActor ownerActor;
-        protected bool isInitialized = false;
+        protected bool isInitialized;
 
         // Event bindings para eventos globais
         private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
@@ -149,7 +150,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (skinController != null)
             {
-                var instances = GetSkinInstances();
+                List<GameObject> instances = GetSkinInstances();
                 if (instances is { Count: > 0 })
                 {
                     ApplyDynamicModifications();

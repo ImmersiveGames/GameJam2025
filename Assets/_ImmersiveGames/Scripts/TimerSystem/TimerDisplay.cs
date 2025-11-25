@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         [SerializeField] private Color dangerColor = Color.red;
 
         [Header("Text Settings")]
-        [SerializeField] private bool useTextColorStates = false;
+        [SerializeField] private bool useTextColorStates;
         [SerializeField] private Color textNormalColor = Color.white;
         [SerializeField] private Color textWarningColor = Color.yellow;
         [SerializeField] private Color textDangerColor = Color.red;

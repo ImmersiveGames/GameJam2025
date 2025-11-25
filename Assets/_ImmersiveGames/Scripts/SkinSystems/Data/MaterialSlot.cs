@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     {
         [Header("Target References")]
         [SerializeField] private Renderer[] targetRenderers;
-        [SerializeField] private int materialIndex = 0;
+        [SerializeField] private int materialIndex;
 
         [Header("Group Assignment")]
         [SerializeField] private MaterialGroupConfig materialGroup;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         // Cache dos materiais originais (um por renderer)
         private Material[][] _originalMaterials;
         private Material _currentAppliedMaterial;
-        private bool _isInitialized = false;
+        private bool _isInitialized;
 
         public Renderer[] TargetRenderers => targetRenderers;
         public int MaterialIndex => materialIndex;

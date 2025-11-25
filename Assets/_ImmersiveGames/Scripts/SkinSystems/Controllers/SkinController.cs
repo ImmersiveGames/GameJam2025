@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
         // Registro no DependencyManager
         private string _objectId;
-        private bool _isRegistered = false;
+        private bool _isRegistered;
 
         public bool IsInitialized { get; private set; }
         public IActor OwnerActor => _ownerActor;
