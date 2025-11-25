@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 var implementation = factory();
                 DependencyManager.Provider.RegisterGlobal(implementation);
-                DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered global service: {typeof(T).Name}");
+                DebugUtility.Log<DependencyBootstrapper>($"Registered global service: {typeof(T).Name}");
             }
             else
             {
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         var registerMethodGeneric = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
                         var genericRegister = registerMethodGeneric?.MakeGenericMethod(busInterfaceType);
                         genericRegister?.Invoke(DependencyManager.Provider, new[] { busInstance });
-                        DebugUtility.LogVerbose<DependencyBootstrapper>($"Registered EventBus for {eventType.Name}");
+                        DebugUtility.Log<DependencyBootstrapper>($"Registered EventBus for {eventType.Name}");
                     }
                 }
             }
