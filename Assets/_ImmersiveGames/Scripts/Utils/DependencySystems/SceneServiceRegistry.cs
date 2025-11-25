@@ -57,13 +57,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 }
             }
 
-            if (services.ContainsKey(type) && allowOverride)
+            if (services.TryGetValue(type, out object existing) && allowOverride)
             {
+                DisposeServiceIfNeeded(existing);
                 DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Sobrescrevendo serviço {type.Name} para a cena {key}.");
             }
 
             services[type] = service;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceRegistry),
                 $"Serviço {type.Name} registrado para a cena {key}.",
                 DebugUtility.Colors.Success);
@@ -115,10 +116,15 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 int count = services.Count;
                 _sceneServices.Remove(key);
                 ReturnDictionaryToPool(services);
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(SceneServiceRegistry),
                     $"Removidos {count} serviços para a cena {key}.",
                     DebugUtility.Colors.Success);
@@ -131,11 +137,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             int totalCount = 0;
             foreach (Dictionary<Type, object> services in _sceneServices.Values)
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 totalCount += services.Count;
                 ReturnDictionaryToPool(services);
             }
             _sceneServices.Clear();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceRegistry),
                 $"Removidos {totalCount} serviços de todas as cenas.",
                 DebugUtility.Colors.Success);

@@ -96,22 +96,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
                 _builder.AppendLine($"- Último ponto de contato: {snapshot.LastProximityPoint}");
             }*/
 
-            DebugUtility.Log(_builder.ToString(), instance: this);
+            DebugUtility.LogVerbose(_builder.ToString(), instance: this);
         }
 
         private void OnStateChanged(IState previous, IState current)
         {
-            DebugUtility.Log($"🔄 Estado alterado: {previous} → {current}", instance: this);
+            DebugUtility.LogVerbose($"🔄 Estado alterado: {previous} → {current}", instance: this);
         }
 
         private void OnStartEatPlanet(PlanetsMaster planet)
         {
-            DebugUtility.Log($"🍽️ Início do consumo: {DescribeTarget(planet)}", instance: this);
+            DebugUtility.LogVerbose($"🍽️ Início do consumo: {DescribeTarget(planet)}", instance: this);
         }
 
         private void OnEndEatPlanet(PlanetsMaster planet)
         {
-            DebugUtility.Log($"✅ Fim do consumo: {DescribeTarget(planet)}", instance: this);
+            DebugUtility.LogVerbose($"✅ Fim do consumo: {DescribeTarget(planet)}", instance: this);
         }
 
         private static string DescribeTarget(PlanetsMaster planet)

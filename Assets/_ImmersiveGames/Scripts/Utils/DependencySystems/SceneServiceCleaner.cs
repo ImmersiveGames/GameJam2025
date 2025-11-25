@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         private void OnSceneUnloaded(Scene scene)
         {
             _sceneRegistry.Clear(scene.name);
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceCleaner),
                 $"Cena {scene.name} descarregada, serviços limpos.",
                 DebugUtility.Colors.Success);
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         public void Dispose()
         {
             SceneManager.sceneUnloaded -= OnSceneUnloaded;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceCleaner),
                 "SceneServiceCleaner finalizado.",
                 DebugUtility.Colors.Success);

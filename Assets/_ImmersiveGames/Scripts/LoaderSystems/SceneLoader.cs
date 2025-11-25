@@ -60,9 +60,23 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         }
         public void ReloadCurrentScene()
         {
+            // Wrapper para compatibilidade: inicia a coroutine e não bloqueia o chamador.
+            StartCoroutine(ReloadCurrentSceneAsync());
+        }
+
+        public IEnumerator ReloadCurrentSceneAsync()
+        {
             string currentScene = SceneManager.GetActiveScene().name;
             DebugUtility.LogVerbose<SceneLoader>($"Recarregando cena atual {currentScene}.");
-            SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Single);
+
+            AsyncOperation reloadOperation = SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Single);
+            while (reloadOperation is { isDone: false })
+            {
+                yield return null;
+            }
+
+            // Recarrega a UI (separada) após o gameplay para restabelecer handlers de eventos.
+            yield return LoadUISceneAdditive(uiScene);
         }
     }
 }

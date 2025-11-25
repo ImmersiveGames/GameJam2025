@@ -59,6 +59,20 @@ Essa separação garante que qualquer camada (UI, IA, automação) possa pilotar
 
 Todos os estados partilham a base `GameStateBase`, responsável por avisar UI e serviços dependentes quando entram ou saem.
 
+### Ações permitidas por estado (`ActionType`)
+
+- `Navigate`: navegação de UI (menus, overlays de pausa/pós-jogo).
+- `UiSubmit` / `UiCancel`: confirma ou cancela interações de UI.
+- `RequestReset` / `RequestQuit`: comandos genéricos para reiniciar ou sair (permanecem desacoplados da implementação da tela).
+
+| Estado | Ações liberadas |
+| ------ | --------------- |
+| `MenuState` | Navegação, submit/cancel, pedidos de reset/quit. |
+| `PlayingState` | `Move`, `Shoot`, `Spawn`, `Interact`. |
+| `PausedState` | Navegação, submit/cancel, pedidos de reset/quit (sem ações de gameplay). |
+| `GameOverState` | Navegação, submit/cancel, pedidos de reset/quit. |
+| `VictoryState` | Navegação, submit/cancel, pedidos de reset/quit. |
+
 ---
 
 ## Fluxo de Eventos
@@ -77,6 +91,10 @@ Eventos disponíveis no `GameEventsBus`:
   - `GameOverEvent`
   - `GameVictoryEvent`
 
+- **Sinalizadores de reset** (pipeline de reinicialização):
+  - `GameResetStartedEvent` (permite que sistemas persistentes limpem/flush antes do reload)
+  - `GameResetCompletedEvent` (recarregamento concluído e FSM reconstruída)
+
 - **Notificações auxiliares**:
   - `StateChangedEvent` (indica se o jogo está ativo).
   - Eventos de atores (`ActorDeathEvent`, `ActorReviveEvent`, `ActorStateChangedEvent`).
@@ -89,8 +107,9 @@ Eventos disponíveis no `GameEventsBus`:
 
 ### Ordem típica para resetar
 1. UI ou QA dispara `GameResetRequestedEvent` (ou via menu de contexto).
-2. FSM retorna para `MenuState` e executa `Rebuild` via `GameManager.ResetGame`.
-3. Cena é recarregada e estados voltam ao padrão.
+2. `GameManager` publica `GameResetStartedEvent` e aguarda a FSM voltar ao `MenuState` para garantir que `OnExit` de cada estado seja aplicado (timeScale, eventos, etc.).
+3. A FSM é reconstruída e a cena ativa é recarregada (UI é reanexada se for uma cena separada).
+4. `GameResetCompletedEvent` confirma que a nova sessão está pronta.
 
 ---
 

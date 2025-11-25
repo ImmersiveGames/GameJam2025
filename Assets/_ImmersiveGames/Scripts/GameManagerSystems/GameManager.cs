@@ -1,3 +1,4 @@
+using System.Collections;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -28,6 +29,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
         private IActorResourceOrchestrator _orchestrator;
+        private Coroutine _resetRoutine;
+        private bool _resetInProgress;
+
+        private const string StateGuardLogPrefix = "Solicitação ignorada: ciclo de jogo não está em estado de gameplay.";
 
         [ContextMenu("Game Loop/Request Start")]
         private void ContextRequestStart()
@@ -60,15 +65,15 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [ContextMenu("Game Loop/Force Game Over")]
         private void ContextForceGameOver()
         {
-            // Dispara diretamente o evento de game over para testes.
-            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            // Dispara game over respeitando validação de estado.
+            TryTriggerGameOver("Context menu");
         }
 
         [ContextMenu("Game Loop/Force Victory")]
         private void ContextForceVictory()
         {
-            // Dispara diretamente o evento de vitória para validar fluxos.
-            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
+            // Dispara vitória respeitando validação de estado.
+            TryTriggerVictory("Context menu");
         }
 
         protected override void Awake()
@@ -80,6 +85,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 _orchestrator = new ActorResourceOrchestratorService();
                 DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
+            RegisterGameServices();
             if (!SceneManager.GetSceneByName("UI").isLoaded)
             {
                 DebugUtility.LogVerbose<GameManager>($"Carregando cena de UI em modo aditivo.");
@@ -118,6 +124,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnDestroy()
         {
+            if (_resetRoutine != null)
+            {
+                StopCoroutine(_resetRoutine);
+                _resetRoutine = null;
+                _resetInProgress = false;
+            }
+
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<GamePauseRequestedEvent>.Unregister(_pauseRequestedBinding);
@@ -135,11 +148,42 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             return GameManagerStateMachine.Instance.CurrentState is TState;
         }
 
+        public bool TryTriggerGameOver(string reason = null)
+        {
+            if (!IsCurrentState<PlayingState>())
+            {
+                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
+                return false;
+            }
+
+            DebugUtility.LogVerbose<GameManager>($"Disparando GameOver. Razão: {reason ?? "(não informada)"}.");
+            EventBus<GameOverEvent>.Raise(new GameOverEvent());
+            return true;
+        }
+
+        public bool TryTriggerVictory(string reason = null)
+        {
+            if (!IsCurrentState<PlayingState>())
+            {
+                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
+                return false;
+            }
+
+            DebugUtility.LogVerbose<GameManager>($"Disparando Victory. Razão: {reason ?? "(não informada)"}.");
+            EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
+            return true;
+        }
+
         public void ResetGame()
         {
-            DebugUtility.LogVerbose<GameManager>("Resetando o jogo.");
-            GameManagerStateMachine.Instance.Rebuild(this); // Reinicializa a FSM sem recriar o singleton
-            SceneLoader.Instance.ReloadCurrentScene();
+            if (_resetInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>("Solicitação de reset ignorada: já existe um reset em andamento.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline robusto).");
+            _resetRoutine = StartCoroutine(ResetGameRoutine());
         }
 
         private void OnGameStart(GameStartEvent evt)
@@ -201,6 +245,23 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
         }
 
+        private void RegisterGameServices()
+        {
+            var provider = DependencyManager.Provider;
+
+            provider.RegisterGlobal<IGameManager>(this, allowOverride: true);
+
+            if (gameConfig != null)
+            {
+                provider.RegisterGlobal(gameConfig, allowOverride: true);
+            }
+
+            if (!provider.TryGetGlobal<GameManagerStateMachine>(out _))
+            {
+                provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
+            }
+        }
+
         private DebugManager ResolveDebugManager()
         {
             if (debugManager != null)
@@ -216,6 +277,47 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             debugManager = FindObjectOfType<DebugManager>();
             return debugManager;
+        }
+
+        private IEnumerator ResetGameRoutine()
+        {
+            _resetInProgress = true;
+
+            // Permite que sistemas persistentes (ex.: pools, placares) limpem estado antes do reload.
+            EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
+
+            // Dá uma folga para que os handlers do GameResetRequestedEvent processem paradas (timers, spawns, etc.).
+            yield return new WaitForEndOfFrame();
+
+            // Aguarda a FSM voltar para o menu para garantir execução de OnExit/OnEnter dos estados atuais.
+            yield return WaitForMenuState();
+
+            // Garante que o tempo global não fique travado após sair de estados que pausam o timeScale.
+            Time.timeScale = 1f;
+
+            // Recria a FSM para limpar bindings antigos antes de recarregar a cena.
+            GameManagerStateMachine.Instance.Rebuild(this);
+
+            // Recarrega a cena ativa e reanexa a UI.
+            yield return SceneLoader.Instance.ReloadCurrentSceneAsync();
+
+            EventBus<GameResetCompletedEvent>.Raise(new GameResetCompletedEvent());
+
+            _resetInProgress = false;
+            _resetRoutine = null;
+        }
+
+        private IEnumerator WaitForMenuState()
+        {
+            // Usa deltaTime não escalonado para respeitar pausas.
+            const float timeoutSeconds = 1.5f;
+            float elapsed = 0f;
+
+            while (!IsCurrentState<MenuState>() && elapsed < timeoutSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
         }
     }
 }

@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (logStateTransitions)
             {
                 string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
-                DebugUtility.Log(message, DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose(message, DebugUtility.Colors.CrucialInfo, this, this);
             }
 
         }
@@ -808,7 +808,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (success)
             {
-                DebugUtility.Log(message, DebugUtility.Colors.Success, this, this);
+                DebugUtility.LogVerbose(message, DebugUtility.Colors.Success, this, this);
             }
             else
             {
@@ -884,7 +884,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (logStateTransitions)
                 {
-                    DebugUtility.Log($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                    DebugUtility.LogVerbose($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
                 }
 
                 return true;
@@ -893,7 +893,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool started = _desireService.Start();
             if (logStateTransitions && started)
             {
-                DebugUtility.Log($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return started;
@@ -908,7 +908,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 stopped = _desireService.Stop();
                 if (logStateTransitions && stopped)
                 {
-                    DebugUtility.Log($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                    DebugUtility.LogVerbose($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
                 }
             }
 
@@ -930,7 +930,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool suspended = _desireService.Suspend();
             if (logStateTransitions && suspended)
             {
-                DebugUtility.Log($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return suspended;
@@ -945,7 +945,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (logStateTransitions)
             {
-                DebugUtility.Log($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             UpdateDesireInfo(EaterDesireInfo.Inactive);

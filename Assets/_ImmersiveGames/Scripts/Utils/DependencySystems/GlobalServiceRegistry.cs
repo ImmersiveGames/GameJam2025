@@ -16,14 +16,19 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             var type = typeof(T);
-            if (_services.ContainsKey(type) && !allowOverride)
+            if (_services.TryGetValue(type, out object existing) && !allowOverride)
             {
                 DebugUtility.LogError(typeof(GlobalServiceRegistry), $"Serviço {type.Name} já registrado no escopo global.");
                 throw new InvalidOperationException($"Serviço {type.Name} já registrado no escopo global.");
             }
 
+            if (allowOverride && existing != null && !ReferenceEquals(existing, service))
+            {
+                DisposeServiceIfNeeded(existing);
+            }
+
             _services[type] = service;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(GlobalServiceRegistry),
                 $"Serviço {type.Name} registrado no escopo global.",
                 DebugUtility.Colors.Success);
@@ -55,9 +60,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         public override void Clear(string key)
         {
+            foreach (object service in _services.Values)
+            {
+                DisposeServiceIfNeeded(service);
+            }
+
             int count = _services.Count;
             _services.Clear();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(GlobalServiceRegistry),
                 $"Removidos {count} serviços do escopo global.",
                 DebugUtility.Colors.Success);

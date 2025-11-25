@@ -27,14 +27,19 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
 
             var type = typeof(T);
-            if (services.ContainsKey(type) && !allowOverride)
+            if (services.TryGetValue(type, out object existing) && !allowOverride)
             {
                 DebugUtility.LogError(typeof(ObjectServiceRegistry), $"Serviço {type.Name} já registrado para o ID {key}.");
                 throw new InvalidOperationException($"Serviço {type.Name} já registrado para o ID {key}.");
             }
 
+            if (allowOverride && existing != null && !ReferenceEquals(existing, service))
+            {
+                DisposeServiceIfNeeded(existing);
+            }
+
             services[type] = service;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ObjectServiceRegistry),
                 $"Serviço {type.Name} registrado para o ID {key}.",
                 DebugUtility.Colors.Success);
@@ -79,10 +84,15 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             if (_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 int count = services.Count;
                 _objectServices.Remove(key);
                 ReturnDictionaryToPool(services);
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ObjectServiceRegistry),
                     $"Removidos {count} serviços para o ID {key}.",
                     DebugUtility.Colors.Success);
@@ -95,11 +105,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             int totalCount = 0;
             foreach (Dictionary<Type, object> services in _objectServices.Values)
             {
+                foreach (object service in services.Values)
+                {
+                    DisposeServiceIfNeeded(service);
+                }
+
                 totalCount += services.Count;
                 ReturnDictionaryToPool(services);
             }
             _objectServices.Clear();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ObjectServiceRegistry),
                 $"Removidos {totalCount} serviços de todos os objetos.",
                 DebugUtility.Colors.Success);
