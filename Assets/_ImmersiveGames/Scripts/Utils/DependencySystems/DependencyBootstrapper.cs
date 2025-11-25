@@ -66,10 +66,13 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                // Serviço de spawn/ativação de defesas planetárias (puro, sem MonoBehaviour)
+                // Configuração e serviço de defesa planetária (modo simples de logs)
+                EnsureGlobal<PlanetDefenseSpawnConfig>(() => new PlanetDefenseSpawnConfig());
                 EnsureGlobal<IPlanetDefenseActivationListener>(() =>
                 {
-                    var service = new PlanetDefenseSpawnService();
+                    var go = new GameObject(nameof(PlanetDefenseSpawnService));
+                    GameObject.DontDestroyOnLoad(go);
+                    var service = go.AddComponent<PlanetDefenseSpawnService>();
                     DependencyManager.Provider.InjectDependencies(service);
                     service.OnDependenciesInjected();
                     return service;
