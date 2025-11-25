@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         public void FindAndDebugAllSlots()
         {
             var slots = FindObjectsByType<ResourceUISlot>(FindObjectsSortMode.None);
-            DebugUtility.Log<CanvasDebugUtility>($"🎯 Found {slots.Length} ResourceUISlots in scene");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"🎯 Found {slots.Length} ResourceUISlots in scene");
 
             foreach (var slot in slots)
             {
@@ -32,14 +32,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             {
                 slot.ForceVisualUpdate();
             }
-            DebugUtility.Log<CanvasDebugUtility>($"🔧 Force updated {slots.Length} slots");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"🔧 Force updated {slots.Length} slots");
         }
 
         [ContextMenu("📊 Check Canvas Components")]
         public void CheckCanvasComponents()
         {
             var canvasBinders = FindObjectsByType<InjectableCanvasResourceBinder>(FindObjectsSortMode.None);
-            DebugUtility.Log<CanvasDebugUtility>($"🎨 Found {canvasBinders.Length} Canvas Binders");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 Found {canvasBinders.Length} Canvas Binders");
 
             foreach (var binder in canvasBinders)
             {
@@ -63,15 +63,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             IReadOnlyCollection<string> actorIds = orchestrator.GetRegisteredActorIds();
-            DebugUtility.Log<CanvasDebugUtility>($"🎨 STYLE FLOW DEBUG: {actorIds.Count} actors registered");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 STYLE FLOW DEBUG: {actorIds.Count} actors registered");
 
             foreach (string actorId in actorIds)
             {
-                DebugUtility.Log<CanvasDebugUtility>($"\n👤 Actor: {actorId}");
+                DebugUtility.LogVerbose<CanvasDebugUtility>($"\n👤 Actor: {actorId}");
                 foreach (ResourceType resourceType in System.Enum.GetValues(typeof(ResourceType)))
                 {
                     var config = ResolveInstanceConfig(actorId, resourceType);
-                    DebugUtility.Log<CanvasDebugUtility>($"   - {resourceType}: Config={config != null}, Style={config?.slotStyle != null} ({config?.slotStyle?.name})");
+                    DebugUtility.LogVerbose<CanvasDebugUtility>($"   - {resourceType}: Config={config != null}, Style={config?.slotStyle != null} ({config?.slotStyle?.name})");
 
                     if (config == null) continue;
 
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                         if (binder.TryGetSlot(actorId, resourceType, out var slot) && slot != null)
                         {
                             var slotConfig = slot.InstanceConfig;
-                            DebugUtility.Log<CanvasDebugUtility>($"     Slot Style in {binder.CanvasId}: {slotConfig?.slotStyle != null} ({slotConfig?.slotStyle?.name})");
+                            DebugUtility.LogVerbose<CanvasDebugUtility>($"     Slot Style in {binder.CanvasId}: {slotConfig?.slotStyle != null} ({slotConfig?.slotStyle?.name})");
                         }
                     }
                 }
@@ -90,22 +90,22 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
         private void DebugCanvas(InjectableCanvasResourceBinder binder)
         {
-            DebugUtility.Log<CanvasDebugUtility>($"🎨 CANVAS DEBUG: '{binder.CanvasId}'");
-            DebugUtility.Log<CanvasDebugUtility>($"- State: {binder.State}, Injection: {binder.InjectionState}");
-            DebugUtility.Log<CanvasDebugUtility>($"- Type: {binder.Type}, CanAcceptBinds: {binder.CanAcceptBinds()}");
-            DebugUtility.Log<CanvasDebugUtility>($"- Actor Slots: {binder.GetActorSlotsCount()} actors");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 CANVAS DEBUG: '{binder.CanvasId}'");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"- State: {binder.State}, Injection: {binder.InjectionState}");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"- Type: {binder.Type}, CanAcceptBinds: {binder.CanAcceptBinds()}");
+            DebugUtility.LogVerbose<CanvasDebugUtility>($"- Actor Slots: {binder.GetActorSlotsCount()} actors");
 
             foreach ((string actorId, var slots) in binder.GetActorSlots())
             {
-                DebugUtility.Log<CanvasDebugUtility>($"  - Actor '{actorId}': {slots.Count} slots");
+                DebugUtility.LogVerbose<CanvasDebugUtility>($"  - Actor '{actorId}': {slots.Count} slots");
                 foreach (var (resourceType, slot) in slots)
                 {
-                    DebugUtility.Log<CanvasDebugUtility>($"    - {resourceType}: {(slot != null ? "Active" : "Null")}");
+                    DebugUtility.LogVerbose<CanvasDebugUtility>($"    - {resourceType}: {(slot != null ? "Active" : "Null")}");
                     if (slot != null)
                     {
                         var rect = slot.GetComponent<RectTransform>();
                         var canvas = slot.GetComponent<Canvas>();
-                        DebugUtility.Log<CanvasDebugUtility>($"      - Pos: {rect?.anchoredPosition}, Order: {canvas?.sortingOrder ?? 0}");
+                        DebugUtility.LogVerbose<CanvasDebugUtility>($"      - Pos: {rect?.anchoredPosition}, Order: {canvas?.sortingOrder ?? 0}");
                     }
                 }
             }

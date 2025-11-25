@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             ClearAllSceneServices();
             ClearGlobalServices();
             StopAllCoroutines();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(DependencyManager),
                 "DependencyManager destruído e serviços limpos.",
                 DebugUtility.Colors.Success);
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             ClearAllObjectServices();
             ClearAllSceneServices();
             ClearGlobalServices();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(DependencyManager),
                 "Serviços limpos no fechamento do jogo.",
                 DebugUtility.Colors.Success);

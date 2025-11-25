@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            DebugUtility.Log<ActorResourceOrchestratorService>(
+            DebugUtility.LogVerbose<ActorResourceOrchestratorService>(
                 "✅ Orchestrator Service fully initialized with dependencies",
                 DebugUtility.Colors.CrucialInfo);
 
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 return;
             }
 
-            DebugUtility.Log<ActorResourceOrchestratorService>(
+            DebugUtility.LogVerbose<ActorResourceOrchestratorService>(
                 $"✅ Canvas '{canvas.CanvasId}' registered",
                 DebugUtility.Colors.Success);
 

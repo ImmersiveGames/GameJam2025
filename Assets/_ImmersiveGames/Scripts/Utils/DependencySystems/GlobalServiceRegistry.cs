@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             int count = _services.Count;
             _services.Clear();
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(GlobalServiceRegistry),
                 $"Removidos {count} serviços do escopo global.",
                 DebugUtility.Colors.Success);

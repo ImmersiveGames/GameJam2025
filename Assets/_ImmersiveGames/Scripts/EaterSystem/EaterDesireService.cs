@@ -70,40 +70,60 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             switch (_phase)
             {
                 case DesireCyclePhase.WaitingInitialDelay:
-                    DebugUtility.LogVerbose(
-                        "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
-                        context: _master,
-                        instance: this);
-                    _phase = DesireCyclePhase.Active;
-                    PickNextDesire();
+                    HandleWaitingInitialDelay();
                     break;
                 case DesireCyclePhase.WaitingResumeDelay:
-                    float resumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
-                    _scheduledResumeDuration = 0f;
-                    string resumeLabel = _currentDesire.HasValue ? _currentDesire.Value.ToString() : "Desconhecido";
-
-                    DebugUtility.LogVerbose(
-                        $"▶️ Desejo {resumeLabel} retomado após atraso inicial por {resumeDuration:F2}s.",
-                        context: _master,
-                        instance: this);
-
-                    BeginActiveCycle(resumeDuration);
+                    HandleWaitingResumeDelay();
                     break;
                 case DesireCyclePhase.Active:
-                    if (HasActiveDesire)
-                    {
-                        if (_currentDesire != null)
-                            DebugUtility.LogVerbose(
-                                $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
-                                context: _master,
-                                instance: this);
-                        PickNextDesire();
-                    }
+                    HandleActivePhase();
                     break;
                 case DesireCyclePhase.Inactive:
                 default:
                     break;
             }
+        }
+
+        private void HandleWaitingInitialDelay()
+        {
+            DebugUtility.LogVerbose(
+                "⏱️ Atraso inicial concluído, selecionando primeiro desejo.",
+                context: _master,
+                instance: this);
+            _phase = DesireCyclePhase.Active;
+            PickNextDesire();
+        }
+
+        private void HandleWaitingResumeDelay()
+        {
+            float resumeDuration = Mathf.Max(_scheduledResumeDuration, 0.05f);
+            _scheduledResumeDuration = 0f;
+            string resumeLabel = _currentDesire.HasValue ? _currentDesire.Value.ToString() : "Desconhecido";
+
+            DebugUtility.LogVerbose(
+                $"▶️ Desejo {resumeLabel} retomado após atraso inicial por {resumeDuration:F2}s.",
+                context: _master,
+                instance: this);
+
+            BeginActiveCycle(resumeDuration);
+        }
+
+        private void HandleActivePhase()
+        {
+            if (!HasActiveDesire)
+            {
+                return;
+            }
+
+            if (_currentDesire != null)
+            {
+                DebugUtility.LogVerbose(
+                    $"⏳ Desejo {_currentDesire.Value} expirou, sorteando outro.",
+                    context: _master,
+                    instance: this);
+            }
+
+            PickNextDesire();
         }
 
         public bool Start()
@@ -202,10 +222,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             ClearCurrentDesire();
             _scheduledResumeDuration = 0f;
 
-            if (_timer != null)
-            {
-                _timer.Stop();
-            }
+            StopTimer();
 
             DebugUtility.LogVerbose("🛑 Desejos do Eater pausados.", context: _master, instance: this);
             NotifyDesireChanged();
@@ -223,10 +240,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _lockedSnapshot = CaptureLockedSnapshot();
             _scheduledResumeDuration = 0f;
 
-            if (_timer != null)
-            {
-                _timer.Stop();
-            }
+            StopTimer();
 
             DebugUtility.LogVerbose(
                 "⏸️ Desejos do Eater suspensos mantendo o desejo atual.",
@@ -249,16 +263,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void RestartTimer(float duration)
         {
-            if (_timer == null)
-            {
-                EnsureTimerInstance();
-            }
-
+            EnsureTimerInstance();
             float safeDuration = Mathf.Max(duration, 0.05f);
-            if (_timer == null) return;
             _timer.Stop();
             _timer.Reset(safeDuration);
             _timer.Start();
+        }
+
+        private void StopTimer()
+        {
+            _timer?.Stop();
         }
 
         private void BeginActiveCycle(float duration)
@@ -328,7 +342,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 ? $"disponível ({_currentDesireAvailableCount} planeta(s))"
                 : "indisponível";
             float timestamp = Time.timeSinceLevelLoad;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 $"✨ {actorName} deseja {desire} ({availability}) por {_currentDuration:F2}s (peso {_currentDesireWeight:F2}, t={timestamp:F2}s).",
                 context: _master,
                 instance: this);

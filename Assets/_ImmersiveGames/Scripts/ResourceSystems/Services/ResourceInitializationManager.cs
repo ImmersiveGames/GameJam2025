@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.Log<ResourceInitializationManager>(
+                DebugUtility.LogVerbose<ResourceInitializationManager>(
                     $"✅ Dependências injetadas para {component.GetType().Name} ({objectId})",
                     DebugUtility.Colors.Success);
             }
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.Log<ResourceInitializationManager>(
+                DebugUtility.LogVerbose<ResourceInitializationManager>(
                     $"✅ (Retry) Dependências injetadas para {component.GetType().Name} ({objectId}) on attempt {attemptIndex}",
                     DebugUtility.Colors.Success);
             }
