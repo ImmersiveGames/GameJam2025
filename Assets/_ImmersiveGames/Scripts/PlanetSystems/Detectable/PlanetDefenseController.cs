@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -8,6 +10,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
+
+        [Header("Config Profile (obrigatório)")]
+        [SerializeField]
+        [Tooltip("Perfil reutilizável que expõe as configurações de spawn das defesas.")]
+        private PlanetDefenseSpawnProfile spawnProfile;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -23,6 +30,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 DebugUtility.LogError<PlanetDefenseController>(
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
             }
+
+            WarnIfProfileMissing();
         }
 
 #if UNITY_EDITOR
@@ -32,9 +41,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 planetsMaster = GetComponentInParent<PlanetsMaster>();
             }
+
+            WarnIfProfileMissing();
         }
 #endif
 
+        /// <summary>
+        /// Entrada principal a partir do sensor. Publica eventos com metadados
+        /// de contagem para que outros serviços (ex.: spawner) não precisem
+        /// reimplementar a mesma lógica de rastrear detectores.
+        /// </summary>
         public void EngageDefense(IDetector detector, DetectionType detectionType)
         {
             if (detector == null)
@@ -49,13 +65,28 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             DefenseRole role = ResolveDefenseRole(detector);
             _activeDetectors.Add(detector, role);
+            int activeCount = _activeDetectors.Count;
 
             DebugUtility.LogVerbose<PlanetDefenseController>(
                 $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
+
+            EventBus<PlanetDefenseEngagedEvent>.Raise(
+                new PlanetDefenseEngagedEvent(
+                    planetsMaster,
+                    detector,
+                    detectionType,
+                    ResolveSpawnConfig(),
+                    isFirstEngagement: activeCount == 1,
+                    activeDetectors: activeCount));
         }
 
+        /// <summary>
+        /// Complementa o fluxo de entrada, garantindo que a contagem e o flag
+        /// de última saída sejam emitidos para os listeners responderem uma
+        /// única vez ao desligamento.
+        /// </summary>
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
         {
             if (detector == null)
@@ -66,16 +97,60 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             if (_activeDetectors.TryGetValue(detector, out DefenseRole role))
             {
                 _activeDetectors.Remove(detector);
+                int activeCount = _activeDetectors.Count;
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
                     null,
                     this);
+
+                EventBus<PlanetDefenseDisengagedEvent>.Raise(
+                    new PlanetDefenseDisengagedEvent(
+                        planetsMaster,
+                        detector,
+                        detectionType,
+                        isLastDisengagement: activeCount == 0,
+                        activeDetectors: activeCount));
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_activeDetectors.Count > 0 && planetsMaster != null)
+            {
+                int activeCount = _activeDetectors.Count;
+                _activeDetectors.Clear();
+                EventBus<PlanetDefenseDisabledEvent>.Raise(
+                    new PlanetDefenseDisabledEvent(planetsMaster, activeCount));
             }
         }
 
         private string GetPlanetName()
         {
             return planetsMaster?.ActorName ?? gameObject.name;
+        }
+
+        private PlanetDefenseSpawnConfig ResolveSpawnConfig()
+        {
+            if (spawnProfile != null)
+            {
+                return spawnProfile.CreateRuntimeConfig();
+            }
+
+            DebugUtility.LogWarning<PlanetDefenseController>(
+                $"SpawnProfile não configurado para {GetPlanetName()}. Usando configuração padrão.",
+                this);
+
+            return new PlanetDefenseSpawnConfig();
+        }
+
+        private void WarnIfProfileMissing()
+        {
+            if (spawnProfile == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseController>(
+                    $"Assign um PlanetDefenseSpawnProfile para configurar as defesas de {GetPlanetName()}.",
+                    this);
+            }
         }
 
         private static string GetDetectorName(IDetector detector)
