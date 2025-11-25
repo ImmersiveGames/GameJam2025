@@ -9,8 +9,8 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
     /// Controla o destaque do planeta atualmente marcado, ampliando o ícone na bússola.
-    /// Escuta o evento PlanetMarkingChangedEvent e aplica SetMarked nos ícones correspondentes.
     /// </summary>
+    [RequireComponent(typeof(CompassHUD))]
     public class CompassPlanetHighlightController : MonoBehaviour
     {
         [Header("References")]
@@ -21,21 +21,24 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Tooltip("Multiplicador de escala aplicado ao ícone do planeta marcado.")]
         [SerializeField] private float markedScaleMultiplier = 1.3f;
 
-        [Tooltip("Cor opcional para dar destaque ao planeta marcado. Se não definida, mantém a cor do ícone.")]
+        [Tooltip("Cor opcional para dar destaque ao planeta marcado.")]
         [SerializeField] private Color markedColorTint = Color.white;
 
-        [Tooltip("Se true, aplica o tint de cor ao ícone marcado; caso contrário, apenas escala.")]
+        [Tooltip("Se true, aplica o tint de cor ao ícone marcado.")]
         [SerializeField] private bool tintMarkedIcon;
 
         private EventBinding<PlanetMarkingChangedEvent> _planetMarkingBinding;
         private PlanetsMaster _markedPlanet;
 
-        private void Awake()
+        private void Reset()
+        {
+            compassHUD = GetComponent<CompassHUD>();
+        }
+
+        private void OnValidate()
         {
             if (compassHUD == null)
-            {
                 compassHUD = GetComponent<CompassHUD>();
-            }
         }
 
         private void OnEnable()
@@ -52,9 +55,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             }
         }
 
-        /// <summary>
-        /// Permite testes manuais ou integrações externas alterarem o planeta marcado.
-        /// </summary>
         public void SetMarkedPlanet(PlanetsMaster planet)
         {
             _markedPlanet = planet;
@@ -69,26 +69,20 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void UpdateIconHighlights()
         {
-            if (compassHUD == null)
-            {
+            if (compassHUD == null || _markedPlanet == null && !tintMarkedIcon && markedScaleMultiplier <= 1f)
                 return;
-            }
 
-            IEnumerable<(ICompassTrackable target, CompassIcon icon)> icons = compassHUD.EnumerateIcons();
-            foreach ((var target, var icon) in icons)
+            compassHUD.ForEachIcon((target, icon) =>
             {
-                if (target == null || icon == null)
-                {
-                    continue;
-                }
+                var planetMaster = target.Transform != null
+                    ? target.Transform.GetComponentInParent<PlanetsMaster>()
+                    : null;
 
-                var targetTransform = target.Transform;
-                var planetMaster = targetTransform != null ? targetTransform.GetComponentInParent<PlanetsMaster>() : null;
                 bool isMarked = planetMaster != null && planetMaster == _markedPlanet;
 
                 Color? tint = tintMarkedIcon ? markedColorTint : (Color?)null;
                 icon.SetMarked(isMarked, markedScaleMultiplier, tint);
-            }
+            });
         }
     }
 }

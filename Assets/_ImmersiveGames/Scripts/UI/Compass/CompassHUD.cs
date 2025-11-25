@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.CompassSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -11,10 +12,10 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.UI.Compass
 {
     /// <summary>
-    /// HUD da bússola responsável por instanciar e manter ícones para alvos rastreáveis.
-    /// Integra-se ao pipeline de canvas implementando <see cref="ICanvasBinder"/> e
-    /// registrando-se no <see cref="CanvasPipelineManager"/> após a injeção de dependências.
+    /// HUD da bússola otimizada, responsiva e totalmente configurável.
+    /// Funciona perfeitamente com cenas aditivas e multiplayer local.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class CompassHUD : MonoBehaviour, ICanvasBinder
     {
         private static readonly IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> EmptyActorSlots =
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Tooltip("Área da UI onde os ícones da bússola serão posicionados.")]
         public RectTransform compassRectTransform;
 
-        [Tooltip("Configurações gerais da bússola.")]
+        [Tooltip("Configurações gerais da bússola (ângulo, distância, etc.).")]
         public CompassSettings settings;
 
         [Tooltip("Banco de dados com as configurações visuais por tipo de alvo.")]
@@ -36,6 +37,15 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         [Tooltip("Prefab do ícone utilizado para cada alvo rastreável.")]
         public CompassIcon iconPrefab;
+
+        [Header("Performance & Responsividade")]
+        [Tooltip("Intervalo em segundos entre atualizações da bússola.\n" +
+                 "Valores recomendados:\n" +
+                 "• 0.016 → 60 FPS (muito fluido)\n" +
+                 "• 0.033 → 30 FPS (equilíbrio)\n" +
+                 "• 0.066 → 15 FPS (leve, mas perceptível)")]
+        [Range(0.008f, 0.2f)]
+        public float updateInterval = 0.016f; // ~60 FPS por padrão → super suave
 
         [Header("Canvas Pipeline")]
         [SerializeField] private string canvasId = "CompassHUD";
@@ -50,16 +60,13 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         public CanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => CanvasId;
+        private float _updateTimer;
 
         private void Awake()
         {
             InjectionState = DependencyInjectionState.Pending;
             State = CanvasInitializationState.Pending;
-
             SetupCanvasId();
-
-            // Registra para receber injeção via ResourceInitializationManager, replicando o padrão dos demais HUDs.
             ResourceInitializationManager.Instance.RegisterForInjection(this);
         }
 
@@ -76,8 +83,10 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             State = CanvasInitializationState.Ready;
             InjectionState = DependencyInjectionState.Ready;
 
-            DebugUtility.Log<CompassHUD>($"✅ CompassHUD registrado no pipeline com id '{CanvasId}'");
+            DebugUtility.Log<CompassHUD>($"CompassHUD registrado com sucesso (Update: {1f/updateInterval:F1} FPS)");
         }
+
+        public string GetObjectId() => CanvasId;
 
         private void OnDestroy()
         {
@@ -89,259 +98,147 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void Update()
         {
-            UpdateCompass();
-        }
-
-        private void SynchronizeIcons(IReadOnlyList<ICompassTrackable> trackables)
-        {
-            bool hasSnapshot = trackables != null;
-            _activeTrackablesCache.Clear();
-
-            if (hasSnapshot)
+            _updateTimer += Time.deltaTime;
+            if (_updateTimer >= updateInterval)
             {
-                foreach (var target in trackables)
-                {
-                    if (target is not { IsActive: true } || target.Transform == null)
-                    {
-                        continue;
-                    }
-
-                    if (_activeTrackablesCache.Add(target))
-                    {
-                        EnsureIconForTarget(target);
-                    }
-                }
+                _updateTimer -= updateInterval;
+                UpdateCompass();
             }
-
-            RemoveStaleIcons(hasSnapshot);
         }
 
-        private void EnsureIconForTarget(ICompassTrackable target)
+        private void UpdateCompass()
         {
-            if (_iconsByTarget.ContainsKey(target))
-            {
+            if (settings == null || compassRectTransform == null || iconPrefab == null || visualDatabase == null)
                 return;
-            }
 
-            var visualConfig = visualDatabase != null
-                ? visualDatabase.GetConfig(target.TargetType)
-                : null;
-
-            var iconInstance = Instantiate(iconPrefab, compassRectTransform);
-            iconInstance.Initialize(target, visualConfig);
-
-            _iconsByTarget[target] = iconInstance;
-        }
-
-        private void RemoveStaleIcons(bool enforceActiveSnapshot)
-        {
-            if (_iconsByTarget.Count == 0)
-            {
+            if (!CompassRuntimeService.TryGet(out var service) || service.PlayerTransform == null)
                 return;
-            }
 
-            _removalBuffer.Clear();
+            var trackables = service.Trackables;
+            if (trackables == null) return;
+
+            SynchronizeIcons(trackables);
+
+            float halfAngle = settings.compassHalfAngleDegrees * 0.5f;
+            float halfWidth = compassRectTransform.rect.width * 0.5f;
+            bool clampAtEdges = settings.clampIconsAtEdges;
+            var (minDistance, maxDistance) = GetDistanceLimits();
+
+            var playerPos = service.PlayerTransform.position;
+            var forward = service.PlayerTransform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude > 0.01f) forward.Normalize();
 
             foreach (var pair in _iconsByTarget)
             {
                 var target = pair.Key;
                 var icon = pair.Value;
 
-                if (ShouldRemove(target, icon, enforceActiveSnapshot, _activeTrackablesCache))
-                {
-                    _removalBuffer.Add(target);
-                }
-            }
-
-            foreach (var target in _removalBuffer)
-            {
-                DestroyIconForTarget(target);
-            }
-
-            _removalBuffer.Clear();
-        }
-
-        private static bool ShouldRemove(
-            ICompassTrackable target,
-            CompassIcon icon,
-            bool enforceActiveSnapshot,
-            HashSet<ICompassTrackable> activeSnapshot)
-        {
-            if (target == null || icon == null)
-            {
-                return true;
-            }
-
-            if (target.Transform == null || !target.IsActive)
-            {
-                return true;
-            }
-
-            if (enforceActiveSnapshot && (activeSnapshot == null || !activeSnapshot.Contains(target)))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private void DestroyIconForTarget(ICompassTrackable target)
-        {
-            if (!_iconsByTarget.TryGetValue(target, out var icon))
-            {
-                return;
-            }
-
-            if (icon != null)
-            {
-                Destroy(icon.gameObject);
-            }
-
-            _iconsByTarget.Remove(target);
-        }
-
-        /// <summary>
-        /// Atualiza a bússola calculando ângulo, posição e distância para cada alvo rastreável.
-        /// Refatorado para reduzir a complexidade e melhorar legibilidade, extraindo helpers reutilizáveis.
-        /// </summary>
-        private void UpdateCompass()
-        {
-            // Guard clauses de configuração básica
-            if (compassRectTransform == null || iconPrefab == null)
-            {
-                return;
-            }
-
-            // Serviço de runtime
-            if (!CompassRuntimeService.TryGet(out var runtimeService))
-            {
-                return;
-            }
-
-            var playerTransform = runtimeService.PlayerTransform;
-            IReadOnlyList<ICompassTrackable> trackables = runtimeService.Trackables;
-
-            // Sincroniza alvos e ícones existentes
-            SynchronizeIcons(trackables);
-
-            // Sem player ou sem ícones, nada para atualizar
-            if (playerTransform == null || _iconsByTarget.Count == 0)
-            {
-                return;
-            }
-
-            // Parâmetros comuns de cálculo
-            var playerForward = GetHorizontalForward(playerTransform);
-            float halfAngle = settings != null ? Mathf.Abs(settings.compassHalfAngleDegrees) : 180f;
-            float halfWidth = compassRectTransform.rect.width * 0.5f;
-            bool clampIcons = settings != null && settings.clampIconsAtEdges;
-            var (minDistance, maxDistance) = GetDistanceLimits();
-
-            // Atualiza cada ícone
-            foreach (var pair in _iconsByTarget)
-            {
-                UpdateIconForTarget(
-                    pair.Key,
-                    pair.Value,
-                    playerTransform.position,
-                    playerForward,
-                    halfAngle,
-                    halfWidth,
-                    clampIcons,
-                    minDistance,
-                    maxDistance);
-            }
-
-            // Limpa quaisquer ícones/targets inválidos detectados durante o ciclo
-            RemoveStaleIcons(false);
-        }
-
-        private static Vector3 GetHorizontalForward(Transform t)
-        {
-            var fwd = t.forward;
-            fwd.y = 0f;
-            if (fwd.sqrMagnitude < 0.0001f)
-            {
-                return Vector3.forward;
-            }
-            return fwd;
-        }
-
-        private void UpdateIconForTarget(
-            ICompassTrackable target,
-            CompassIcon icon,
-            Vector3 playerPos,
-            Vector3 horizontalForward,
-            float halfAngle,
-            float halfWidth,
-            bool clampAtEdges,
-            float minDistance,
-            float maxDistance)
-        {
-            if (target == null || icon == null || target.Transform == null || !target.IsActive)
-            {
-                // Deixa a remoção para RemoveStaleIcons(false)
-                return;
-            }
-
-            var toTarget = target.Transform.position - playerPos;
-            toTarget.y = 0f;
-            float distance = toTarget.magnitude;
-            float displayDistance = Mathf.Max(distance, minDistance);
-
-            // Respeita o limite máximo configurado para exibição
-            if (maxDistance > 0f && distance > maxDistance)
-            {
-                icon.gameObject.SetActive(false);
-                return;
-            }
-
-            // Se praticamente em cima do player
-            if (toTarget.sqrMagnitude < 0.0001f)
-            {
-                icon.gameObject.SetActive(true);
-                SetIconPosition(icon, 0f, halfAngle, halfWidth);
-                icon.UpdateDistance(displayDistance);
-                return;
-            }
-
-            float angle = Vector3.SignedAngle(horizontalForward, toTarget, Vector3.up);
-
-            // Sem ângulo útil, apenas oculta
-            if (halfAngle <= 0f)
-            {
-                icon.gameObject.SetActive(false);
-                return;
-            }
-
-            // Fora do FOV da bússola
-            if (Mathf.Abs(angle) > halfAngle)
-            {
-                if (!clampAtEdges)
+                if (target == null || !target.IsActive || target.Transform == null || icon == null)
                 {
                     icon.gameObject.SetActive(false);
-                    return;
+                    continue;
                 }
 
-                angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
-            }
+                var toTarget = target.Transform.position - playerPos;
+                toTarget.y = 0f;
+                float distance = toTarget.magnitude;
+                float displayDistance = Mathf.Max(distance, minDistance);
 
-            icon.gameObject.SetActive(true);
-            SetIconPosition(icon, angle, halfAngle, halfWidth);
-            icon.UpdateDistance(displayDistance);
+                if (maxDistance > 0f && distance > maxDistance)
+                {
+                    icon.gameObject.SetActive(false);
+                    continue;
+                }
+
+                if (toTarget.sqrMagnitude < 0.0001f)
+                {
+                    SetIconPosition(icon, 0f, halfAngle, halfWidth);
+                    icon.UpdateDistance(displayDistance);
+                    icon.gameObject.SetActive(true);
+                    continue;
+                }
+
+                float angle = Vector3.SignedAngle(forward, toTarget, Vector3.up);
+
+                bool shouldShow = halfAngle > 0f && (Mathf.Abs(angle) <= halfAngle || clampAtEdges);
+
+                if (!shouldShow)
+                {
+                    icon.gameObject.SetActive(false);
+                    continue;
+                }
+
+                if (clampAtEdges && Mathf.Abs(angle) > halfAngle)
+                    angle = Mathf.Clamp(angle, -halfAngle, halfAngle);
+
+                icon.gameObject.SetActive(true);
+                SetIconPosition(icon, angle, halfAngle, halfWidth);
+                icon.UpdateDistance(displayDistance);
+            }
         }
 
-        /// <summary>
-        /// Recupera limites de distância aplicados à bússola, garantindo valores não negativos.
-        /// </summary>
-        /// <returns>Tupla com distância mínima (clampada para evitar negativos) e máxima.</returns>
+        private void SynchronizeIcons(IReadOnlyList<ICompassTrackable> trackables)
+        {
+            _activeTrackablesCache.Clear();
+            _removalBuffer.Clear();
+
+            foreach (var trackable in trackables)
+            {
+                if (trackable == null || !trackable.IsActive || trackable.Transform == null)
+                    continue;
+
+                _activeTrackablesCache.Add(trackable);
+
+                if (!_iconsByTarget.ContainsKey(trackable))
+                {
+                    CreateIconFor(trackable);
+                }
+            }
+
+            foreach (var pair in _iconsByTarget)
+            {
+                if (!_activeTrackablesCache.Contains(pair.Key))
+                    _removalBuffer.Add(pair.Key);
+            }
+
+            foreach (var toRemove in _removalBuffer)
+            {
+                if (_iconsByTarget.TryGetValue(toRemove, out var icon) && icon != null)
+                {
+                    Destroy(icon.gameObject);
+                }
+                _iconsByTarget.Remove(toRemove);
+            }
+        }
+
+        private void CreateIconFor(ICompassTrackable trackable)
+        {
+            var config = visualDatabase.GetConfig(trackable.TargetType);
+            if (config == null)
+            {
+                DebugUtility.LogWarning<CompassHUD>($"Sem config visual para alvo do tipo: {trackable.TargetType}");
+                return;
+            }
+
+            var iconObj = Instantiate(iconPrefab, compassRectTransform);
+            var icon = iconObj.GetComponent<CompassIcon>();
+            if (icon != null)
+            {
+                icon.Initialize(trackable, config);
+                _iconsByTarget[trackable] = icon;
+            }
+            else
+            {
+                Destroy(iconObj);
+            }
+        }
+
         private (float minDistance, float maxDistance) GetDistanceLimits()
         {
-            // Distância mínima é apenas normalizada para evitar valores negativos; não oculta ícones próximos.
-            float minDistance = settings != null ? Mathf.Max(0f, settings.minDistance) : 0f;
-            float maxDistance = settings != null ? Mathf.Max(0f, settings.maxDistance) : 0f;
-
-            return (minDistance, maxDistance);
+            float min = settings != null ? Mathf.Max(0f, settings.minDistance) : 0f;
+            float max = settings != null ? Mathf.Max(0f, settings.maxDistance) : 0f;
+            return (min, max);
         }
 
         private void SetupCanvasId()
@@ -358,43 +255,29 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private static void SetIconPosition(CompassIcon icon, float angle, float halfAngle, float halfWidth)
         {
-            if (icon.rectTransform == null)
-            {
-                return;
-            }
+            if (icon.rectTransform == null) return;
 
             float normalized = Mathf.Approximately(halfAngle, 0f) ? 0f : angle / halfAngle;
             float x = normalized * halfWidth;
-            var anchoredPos = icon.rectTransform.anchoredPosition;
-            anchoredPos.x = x;
-            icon.rectTransform.anchoredPosition = anchoredPos;
+            var pos = icon.rectTransform.anchoredPosition;
+            pos.x = x;
+            icon.rectTransform.anchoredPosition = pos;
         }
 
-        /// <summary>
-        /// Permite que outros componentes (ex.: highlight de planetas) inspecionem os ícones atualmente ativos.
-        /// </summary>
-        public IEnumerable<(ICompassTrackable target, CompassIcon icon)> EnumerateIcons()
+        public void ForEachIcon(Action<ICompassTrackable, CompassIcon> action)
         {
-            if (_iconsByTarget == null || _iconsByTarget.Count == 0)
-            {
-                yield return default;
-            }
+            if (action == null || _iconsByTarget == null) return;
 
-            if (_iconsByTarget == null) yield break;
-            foreach (KeyValuePair<ICompassTrackable, CompassIcon> pair in _iconsByTarget)
+            foreach (var pair in _iconsByTarget)
             {
-                yield return (pair.Key, pair.Value);
+                if (pair.Key != null && pair.Value != null)
+                    action(pair.Key, pair.Value);
             }
         }
 
-        // As interfaces abaixo mantêm compatibilidade com o pipeline de Canvas, mesmo sem binds de recursos.
-        public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data)
-        {
-            // CompassHUD não utiliza binds de recursos; método mantido para aderir ao contrato do pipeline.
-        }
-
+        // ICanvasBinder
+        public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data) { }
         public bool CanAcceptBinds() => State == CanvasInitializationState.Ready;
-
         public IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots() => EmptyActorSlots;
     }
 }

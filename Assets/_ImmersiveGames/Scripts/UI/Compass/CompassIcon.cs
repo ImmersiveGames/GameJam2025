@@ -233,12 +233,20 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         {
             if (rectTransform != null)
             {
-                rectTransform.localScale = isMarked ? _baseScale * scaleMultiplier : _baseScale;
+                var targetScale = isMarked ? _baseScale * scaleMultiplier : _baseScale;
+                if (!rectTransform.localScale.Equals(targetScale))
+                {
+                    rectTransform.localScale = targetScale;
+                }
             }
 
             if (iconImage != null && colorTint.HasValue)
             {
-                iconImage.color = isMarked ? _currentColor * colorTint.Value : _currentColor;
+                var targetColor = isMarked ? _currentColor * colorTint.Value : _currentColor;
+                if (!iconImage.color.Equals(targetColor))
+                {
+                    iconImage.color = targetColor;
+                }
             }
         }
 

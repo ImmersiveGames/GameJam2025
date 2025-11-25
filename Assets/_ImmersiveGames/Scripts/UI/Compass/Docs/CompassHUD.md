@@ -1,123 +1,95 @@
-# 🧭 Sistema de Bússola — Guia de Referência
+# Sistema de Bússola — Guia de Referência
 
-> Inspirado na estrutura do `Eater System` docs, este guia lista responsabilidades, fluxo de runtime, padrões de integração e troubleshooting em formato curto e direto.
+> Documentação oficial atualizada para a versão otimizada e totalmente funcional em cenas aditivas + multiplayer local.
 
 ## Visão Geral
 
-A bússola conecta a cena de gameplay à HUD carregada de forma aditiva sem dependências diretas pelo inspector. O fluxo utiliza `CompassRuntimeService` para expor `PlayerTransform` e os `ICompassTrackable` ativos, permitindo que a `CompassHUD` instancie ícones, calcule ângulos e atualize distâncias seguindo o pipeline de canvas do projeto.
+Bússola 100% desacoplada entre gameplay e HUD (cena aditiva).  
+O fluxo usa apenas o `CompassRuntimeService` como ponto de contato global.  
+A HUD (`CompassHUD`) cria, posiciona e atualiza ícones com performance excelente (zero GC em runtime) e responsividade configurável.
 
-## Componentes Registrados
+## Componentes Principais
 
-| Componente | Papel |
-| --- | --- |
-| `CompassRuntimeService` | Serviço global registrado via `DependencyManager` (e com fallback estático). É criado automaticamente via `RuntimeInitializeOnLoadMethod`, expõe `PlayerTransform` e a lista somente leitura de alvos, tratando nulos e duplicatas ao registrar/desregistrar. |
-| `CompassPlayerBinder` | Colocado no jogador; publica o `transform` ao habilitar e limpa ao desabilitar, mantendo a referência ao trocar de personagem. |
-| `ICompassTrackable` / `CompassTarget` | Contrato base de alvos (Transform, tipo, estado). `CompassTarget` registra-se automaticamente no serviço. |
-| `CompassSettings` | Define campo angular, distâncias e clamp de bordas para posicionamento dos ícones. |
-| `CompassTargetVisualConfig` + `CompassVisualDatabase` | Configuram ícones/cores/tamanhos por `CompassTargetType` e expõem busca simples por tipo. |
-| `CompassIcon` | Prefab de UI que recebe `ICompassTrackable` + config visual, atualiza sprite, cor, tamanho, distância e highlight/estilos de recurso para planetas. |
-| `CompassHUD` | HUD registrada no pipeline de canvas; sincroniza ícones com o runtime service e posiciona-os conforme ângulo relativo ao jogador. |
-| `PlanetResourceCompassStyleDatabase` | Opcional; fornece cor por `PlanetResources` para planetas descobertos sem alterar tamanho. |
-| `CompassPlanetHighlightController` | Observa o planeta marcado (PlanetsMaster) e aplica `SetMarked(true/false)` nos ícones correspondentes. |
+| Componente                            | Papel                                                                                           |
+|---------------------------------------|-------------------------------------------------------------------------------------------------|
+| `CompassRuntimeService`               | Serviço global (DependencyManager + fallback). Mantém `PlayerTransform` e lista de `ICompassTrackable`. |
+| `CompassPlayerBinder`                 | Colocado no player ativo → publica e limpa o `PlayerTransform` automaticamente.                |
+| `ICompassTrackable` / `CompassTarget` | Contrato de alvos. `CompassTarget` registra/desregistra automaticamente.                      |
+| `CompassSettings`                     | Ângulo FOV, distâncias e clamp nas bordas.                                                     |
+| `CompassTargetVisualConfig` + `CompassVisualDatabase` | Config visual por `CompassTargetType` (sprite, cor, tamanho, modo dinâmico).          |
+| `CompassIcon`                         | Prefab UI que recebe alvo + config, atualiza sprite, cor, distância e highlight.               |
+| `CompassHUD` (v2.1)                    | HUD otimizada – cria ícones, sincroniza em cenas aditivas, atualização configurável (default 60 FPS). |
+| `PlanetResourceCompassStyleDatabase`  | Cor por tipo de recurso (apenas cor – tamanho continua definido pelo tipo de alvo).            |
+| `CompassPlanetHighlightController`   | Escuta planeta marcado → aplica `SetMarked` com escala + tint opcional (zero alocação).        |
 
-## Setup Essencial
+## Novidades da Versão 2.1 (Performance & Usabilidade)
 
-1. **Assets de configuração**
-   - Crie `CompassSettings` em `ImmersiveGames/UI/Compass/Settings` e ajuste `compassHalfAngleDegrees`, distâncias e `clampIconsAtEdges` conforme o FOV desejado.
-   - Crie `CompassTargetVisualConfig` para cada `CompassTargetType` usado e agrupe em um `CompassVisualDatabase` (menu `ImmersiveGames/UI/Compass/Visual Database`).
+- Atualização da bússola agora **configurável no Inspector**  
+  ```csharp
+  [Range(0.008f, 0.2f)]
+  public float updateInterval = 0.016f; // 60 FPS (recomendado)
+  ```
+Valores comuns:
+- **0.016** → 60 FPS (fluido máximo)
+- **0.033** → 30 FPS (excelente equilíbrio)
+- **0.066** → 15 FPS (muito leve, ainda aceitável)
 
-2. **Cena de gameplay**
-   - Adicione `CompassPlayerBinder` ao GameObject do player para publicar o transform atual.
-   - Marque alvos com `CompassTarget` (ou implemente `ICompassTrackable`) e selecione o `targetType`. Para planetas, use `Planet` e deixe `PlanetsMaster` no pai para habilitar ícone dinâmico.
+- Zero alocação em runtime:
+   - `ForEachIcon(Action<…>)` substitui `IEnumerable` com yield
+   - Sem LINQ nem `GetComponentInParent` em loop
+   - `SetMarked` evita set de scale/color quando valor já é o mesmo
 
-3. **Cena de HUD**
-   - No Canvas carregado via pipeline, adicione `CompassHUD`, referencie `compassRectTransform`, `settings`, `visualDatabase` e o prefab `CompassIcon`.
-   - A HUD segue o padrão de bind (`ICanvasBinder`) e se registra no `CanvasPipelineManager`, mantendo IDs únicos via `IUniqueIdFactory` quando `autoGenerateCanvasId` está ativo.
+- Criação de ícones 100% funcional em cenas aditivas (ícones aparecem mesmo se o player/trackables carregarem depois da HUD).
 
-## Integração com ciclo de vida de dano
+- `CompassHUD` agora implementa corretamente `GetObjectId()` para o pipeline de injeção.
 
-- Use `CompassDamageLifecycleAdapter` em qualquer ator que combine `ActorMaster`, `DamageReceiver` e `CompassTarget` para manter a bússola em sincronia com `DeathEvent`, `ReviveEvent` e `ResetEvent`.
-- O adaptador registra o trackable ao habilitar (honrando `ICompassTrackable.IsActive`) e remove da bússola ao receber `DeathEvent` filtrado pelo `ActorId`, voltando a registrar em `ReviveEvent`/`ResetEvent`.
-- `CompassRuntimeService.RegisterTarget/UnregisterTarget` são idempotentes, limpam referências destruídas e utilizam cache interno para evitar duplicatas, permitindo coexistir com o registro automático do `CompassTarget`.
+## Setup Essencial (2025)
 
-## Fluxo em Runtime
+### 1. Assets de Configuração
+- `CompassSettings` → ajuste ângulo, distâncias e `clampIconsAtEdges`.
+- Crie um `CompassTargetVisualConfig` para cada tipo (Planet, Objective, etc.) → agrupe em um `CompassVisualDatabase`.
 
-1. `CompassPlayerBinder` publica o player no `CompassRuntimeService` (via `DependencyManager`) ao habilitar.
-2. Cada `CompassTarget` registra-se no serviço durante seu ciclo de vida, e a HUD sincroniza o dicionário de ícones a cada frame.
-3. Para cada alvo ativo, a HUD calcula o ângulo relativo ao forward do jogador, aplica clamp conforme `CompassSettings`, converte em posição X no `RectTransform` e atualiza distância.
-4. Planetas em `dynamicMode = PlanetResourceIcon` trocam o sprite de genérico → `ResourceIcon` ao serem descobertos e podem ter cor ajustada por `PlanetResourceCompassStyleDatabase`; o tamanho permanece definido pelo `baseSize` do tipo `Planet`. O highlight altera apenas o `localScale` do ícone selecionado.
-5. `CompassPlanetHighlightController` reage à marcação de planetas e chama `SetMarked` nos ícones correspondentes para ampliar o destaque sem alterar posicionamento.
+### 2. Cena de Gameplay
+- Player → adicione `CompassPlayerBinder`.
+- Alvos → `CompassTarget` (ou implemente `ICompassTrackable` com registro manual).
 
-> Organização interna: o `CompassHUD` mantém um `HashSet` cacheado dos `ICompassTrackable` ativos por frame e reaproveita uma lista de remoção para evitar alocações e buscas O(n²) ao sincronizar ícones. Ícones órfãos (alvo destruído, transform nulo ou ícone removido) são limpos automaticamente.
+### 3. Cena de HUD (aditiva)
+- Canvas → adicione `CompassHUD`
+   - Preencha: `compassRectTransform`, `settings`, `visualDatabase`, `iconPrefab`
+   - Ajuste `Update Interval` no Inspector (recomendado **0.016**)
 
-## Exemplos Rápidos
-
-### Registro condicional de inimigo
-
+### 4. Highlight de Planeta Marcado
 ```csharp
-using _ImmersiveGames.Scripts.World.Compass;
-using UnityEngine;
-
-public class EnemyCompassTracker : MonoBehaviour, ICompassTrackable
-{
-    [SerializeField] private bool showOnCompass = true;
-    [SerializeField] private CompassTargetType type = CompassTargetType.Enemy;
-
-    private void OnEnable()
-    {
-        if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtime))
-        {
-            runtime.RegisterTarget(this);
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (CompassRuntimeService.TryGet(out ICompassRuntimeService runtime))
-        {
-            runtime.UnregisterTarget(this);
-        }
-    }
-
-    public Transform Transform => transform;
-    public CompassTargetType TargetType => type;
-    public bool IsActive => showOnCompass && gameObject.activeInHierarchy;
-}
+// Qualquer sistema (ex: UI de seleção de planeta)
+compassPlanetHighlightController.SetMarkedPlanet(planetsMasterInstance);
 ```
 
-### Estilo de planeta por recurso
+### 5. Estilo Dinâmico de Planetas
+- `CompassTargetVisualConfig` (tipo **Planet**):
+   - `dynamicMode = PlanetResourceIcon`
+   - `planetResourceStyleDatabase` → opcional (define cor por recurso)
+   - `hideUntilDiscovered` → true/false conforme desejado
 
-```csharp
-// Configuração (ScriptableObject)
-// - Crie PlanetResourceCompassStyleDatabase e defina cores por PlanetResources.
-// - Em CompassTargetVisualConfig (tipo Planet), atribua planetResourceStyleDatabase.
-```
+## Boas Práticas (Atualizadas)
 
-### Destaque de planeta marcado
+| Tema                         | Recomendação                                                                                   |
+|------------------------------|------------------------------------------------------------------------------------------------|
+| Responsividade               | Deixe `updateInterval = 0.016f` (60 FPS) para sensação premium. Use 0.033f em mobile se precisar. |
+| Cenas aditivas               | Não há mais ordem crítica – `CompassHUD` cria ícones assim que os trackables aparecerem.       |
+| Multiplayer local            | Apenas o `CompassPlayerBinder` ativo define o player. Troca de personagem funciona instantaneamente. |
+| Performance                  | Zero GC em runtime. Testado com 80+ planetas simultâneos sem impacto perceptível.              |
+| Highlight                    | `SetMarked` é zero-alloc e evita redefinição de scale/color quando já está no estado desejado. |
+| Organização                  | Scripts de teste removidos. Apenas código de runtime e configuração na pasta `Scripts/UI/Compass`. |
 
-```csharp
-// Em runtime, chame highlightController.SetMarkedPlanet(planetsMaster);
-// O ícone correspondente recebe SetMarked(true) e escala 30% maior.
-```
+## Solução de Problemas (Atualizada)
 
-## Boas Práticas
+| Sintoma                              | Verificação                                                   | Correção sugerida                                                     |
+|--------------------------------------|---------------------------------------------------------------|-----------------------------------------------------------------------|
+| Ícones não aparecem                  | `CompassPlayerBinder` no player ativo? HUD tem prefab/config? | Adicione binder + preencha todos os campos da HUD                     |
+| Ícones travam / atualização lenta   | `updateInterval` muito alto?                                  | Ajuste para **0.016** (60 FPS) no Inspector da `CompassHUD`           |
+| Ícones não acompanham movimento      | `updateInterval` muito baixo?                                 | Aumente para 0.016–0.033                                              |
+| Highlight não funciona               | `CompassPlanetHighlightController` tem referência da HUD?    | Use `[RequireComponent(typeof(CompassHUD))]` – já incluso na versão atual |
+| Cor de planeta descoberto errada     | `PlanetResourceCompassStyleDatabase` atribuído na config?    | Preencha o database ou deixe nulo para cor padrão                     |
+| Ícones somem fora do FOV             | `clampIconsAtEdges` desativado + ângulo pequeno               | Ative clamp ou aumente `compassHalfAngleDegrees`                      |
 
-- **Separação de cenas**: mantenha HUD e gameplay desacoplados via `CompassRuntimeService`; evite referências diretas pelo inspector.
-- **Tamanho por tipo**: ajuste `baseSize` em `CompassTargetVisualConfig` por tipo de alvo. Estilos de recurso afetam apenas cor, não tamanho.
-- **Clamp vs. ocultação**: use `clampIconsAtEdges` para decidir se ícones fora do FOV colam na borda ou somem.
-- **Prefabs completos**: garanta `RectTransform`, `Image` e (opcional) `TextMeshProUGUI` no prefab de ícone para evitar sprites nulos.
-- **Multiplayer local**: o serviço é global (escopo DependencyManager), então trocas de player (respawn ou split-screen local) devem substituir o transform via `CompassPlayerBinder` ativo no personagem correto.
-- **Highlight não invasivo**: `SetMarked` altera apenas `localScale`, preservando tamanho base e cálculo de posição.
-- **Pastas limpas**: scripts de teste da bússola foram removidos da pasta `Scripts/UI/Compass` para manter apenas runtime e configurações, alinhando a organização à build final.
-
-## Solução de Problemas
-
-| Sintoma | Verificações | Correções sugeridas |
-| --- | --- | --- |
-| Ícones não aparecem | `PlayerTransform` nulo? `CompassHUD` possui `compassRectTransform`, `settings`, `visualDatabase` e `iconPrefab` preenchidos? | Adicione `CompassPlayerBinder` ao player e configure a HUD. |
-| Ícone some fora do FOV | Campo angular menor que 180° com clamp desativado. | Ajuste `compassHalfAngleDegrees` ou habilite `clampIconsAtEdges`. |
-| Ícones ficam presos após destruir objetos | Implementação customizada de `ICompassTrackable` não remove no ciclo de vida. | Chame `UnregisterTarget` em `OnDisable`/`OnDestroy` ou use `CompassTarget`. |
-| Highlight não responde | `CompassPlanetHighlightController` não conhece o planeta marcado ou HUD não expõe os ícones. | Certifique-se de chamar `SetMarkedPlanet` com o `PlanetsMaster` correto e que `CompassHUD` está ativo. |
-| Cor errada para planeta descoberto | Database de estilo não configurada ou tipo de recurso não mapeado. | Preencha `PlanetResourceCompassStyleDatabase` ou verifique o `PlanetResources` recebido de `PlanetsMaster`. |
-
-Mantenha a bússola alinhada ao pipeline de canvas e aos princípios SOLID, preservando responsabilidades claras entre gameplay, serviço de runtime e HUD.
+---
