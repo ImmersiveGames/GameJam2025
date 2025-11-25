@@ -97,12 +97,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         {
             TrySetEatingAnimation(false);
 
-            if (!_planetDestroyedDuringState)
-            {
-                Behavior?.RegisterEatingOutcome(false);
-            }
-
-
             base.OnExit();
             StopTweens();
             EnsureOrbitFreezeController().Release();
@@ -282,7 +276,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (Behavior.ShouldLogStateTransitions)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     "Órbita iniciada.",
                     DebugUtility.Colors.Success,
                     context: Behavior,
@@ -481,7 +475,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     ? (isCompatible ? "compatível" : "incompatível")
                     : "sem avaliação de compatibilidade";
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     $"Recuperação durante alimentação ({status}). Quantidade aplicada por ciclo: {adjustedAmount:0.##} {resourceType}.",
                     hasCompatibility && isCompatible ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
                     Behavior,
@@ -667,7 +661,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (Behavior.ShouldLogStateTransitions && !_hasReportedDestroyedPlanet)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     "Planeta consumido foi destruído. Retornando ao estado de passeio.",
                     DebugUtility.Colors.CrucialInfo,
                     Behavior,
@@ -692,7 +686,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             EnsureOrbitFreezeController().Release();
 
             _planetDestroyedDuringState = true;
-            Behavior?.RegisterEatingOutcome(true);
         }
 
         private void ReportDevouredPlanetCompatibility()
@@ -775,7 +768,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (isCompatible)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     $"Planeta devorado é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
                     DebugUtility.Colors.Success,
                     Behavior,
@@ -783,7 +776,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
             else
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     $"Planeta devorado NÃO é compatível com o desejo atual. Desejo: {desiredResource}. Planeta: {planetResource}.",
                     DebugUtility.Colors.Warning,
                     Behavior,
@@ -937,7 +930,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 ? $"Recurso do planeta compatível com o desejo atual: {planetResource}."
                 : $"Recurso do planeta ({planetResource}) difere do desejo atual ({desiredResource}).";
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 message,
                 matches ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
                 Behavior,
@@ -1012,7 +1005,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             if (restored)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     $"Recuperação aplicada ao eater ao devorar planeta compatível: +{healAmount:0.##} {ResourceType.Health}.",
                     DebugUtility.Colors.Success,
                     Behavior,
@@ -1041,7 +1034,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 $"Solicitando retorno ao estado de passeio: {reason}.",
                 DebugUtility.Colors.CrucialInfo,
                 Behavior,

@@ -26,11 +26,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     /// Controle básico do comportamento do Eater.
     /// Cria os estados conhecidos e permite alterná-los manualmente via menu de contexto.
     /// </summary>
-    [RequireComponent(typeof(EaterMaster))]
+    [RequireComponent(typeof(EaterMaster), typeof(EaterAnimationController), typeof(AnimationSystems.Components.AnimationResolver))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
-    [RequireComponent(typeof(_ImmersiveGames.Scripts.AnimationSystems.Components.AnimationResolver))]
-    [RequireComponent(typeof(EaterAnimationController))]
     public sealed class EaterBehavior : MonoBehaviour
     {
         [Header("Debug")]
@@ -76,7 +74,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private Transform _lastOrbitTarget;
         private float _lastOrbitRadius = -1f;
         private float _lastSurfaceStopDistance = -1f;
-        private bool _wasPlanetDestroyedWhileEating;
 
         public event Action<EaterDesireInfo> EventDesireChanged;
 
@@ -187,7 +184,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             if (logStateTransitions)
             {
                 string message = $"Estado definido: {GetStateName(previous)} -> {GetStateName(targetState)} ({reason}).";
-                DebugUtility.Log(message, DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose(message, DebugUtility.Colors.CrucialInfo, this, this);
             }
 
         }
@@ -291,13 +288,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _eatingWanderingPredicate = new EatingWanderingPredicate(_eatingState);
             return _eatingWanderingPredicate;
         }
-
-        internal void RegisterEatingOutcome(bool planetDestroyed)
-        {
-            _wasPlanetDestroyedWhileEating = planetDestroyed;
-        }
-
-        internal bool WasPlanetDestroyedWhileEating() => _wasPlanetDestroyedWhileEating;
+        
 
         private IPredicate EnsureWanderingTimeoutPredicate()
         {
@@ -808,7 +799,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (success)
             {
-                DebugUtility.Log(message, DebugUtility.Colors.Success, this, this);
+                DebugUtility.LogVerbose(message, DebugUtility.Colors.Success, this, this);
             }
             else
             {
@@ -884,7 +875,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (logStateTransitions)
                 {
-                    DebugUtility.Log($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                    DebugUtility.LogVerbose($"Desejos retomados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
                 }
 
                 return true;
@@ -893,7 +884,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool started = _desireService.Start();
             if (logStateTransitions && started)
             {
-                DebugUtility.Log($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos ativados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return started;
@@ -908,7 +899,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 stopped = _desireService.Stop();
                 if (logStateTransitions && stopped)
                 {
-                    DebugUtility.Log($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                    DebugUtility.LogVerbose($"Desejos pausados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
                 }
             }
 
@@ -930,7 +921,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             bool suspended = _desireService.Suspend();
             if (logStateTransitions && suspended)
             {
-                DebugUtility.Log($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos suspensos mantendo seleção atual ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             return suspended;
@@ -945,7 +936,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (logStateTransitions)
             {
-                DebugUtility.Log($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
+                DebugUtility.LogVerbose($"Desejos finalizados ({reason}).", DebugUtility.Colors.CrucialInfo, this, this);
             }
 
             UpdateDesireInfo(EaterDesireInfo.Inactive);

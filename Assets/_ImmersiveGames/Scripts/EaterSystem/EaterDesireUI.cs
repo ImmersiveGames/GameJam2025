@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DefaultExecutionOrder(50)]
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterDesireUI : MonoBehaviour
     {
         [Header("Referências")]

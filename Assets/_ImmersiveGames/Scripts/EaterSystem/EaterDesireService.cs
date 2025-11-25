@@ -342,7 +342,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 ? $"disponível ({_currentDesireAvailableCount} planeta(s))"
                 : "indisponível";
             float timestamp = Time.timeSinceLevelLoad;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 $"✨ {actorName} deseja {desire} ({availability}) por {_currentDuration:F2}s (peso {_currentDesireWeight:F2}, t={timestamp:F2}s).",
                 context: _master,
                 instance: this);
