@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         protected override void Awake()
         {
             base.Awake();
-            DebugUtility.Log<PoolManager>(
+            DebugUtility.LogVerbose<PoolManager>(
                 "PoolManager initialized.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 return null;
             }
             _pools.Add(data.ObjectName, pool);
-            DebugUtility.Log<PoolManager>(
+            DebugUtility.LogVerbose<PoolManager>(
                 $"Pool '{data.ObjectName}' registered successfully.",
                 DebugUtility.Colors.Success,
                 this);
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 }
             }
             _pools.Clear();
-            DebugUtility.Log<PoolManager>(
+            DebugUtility.LogVerbose<PoolManager>(
                 "All pools cleared.",
                 DebugUtility.Colors.Success,
                 this);

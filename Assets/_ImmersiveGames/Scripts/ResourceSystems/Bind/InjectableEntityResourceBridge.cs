@@ -53,7 +53,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                     _orchestrator.RegisterActor(_service);
 
                 InjectionState = DependencyInjectionState.Ready;
-                DebugUtility.Log<InjectableEntityResourceBridge>(
+                DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
                     $"✅ Bridge initialized for '{_actor.ActorId}'",
                     DebugUtility.Colors.CrucialInfo);
             }
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 _service?.Dispose();
                 _service = null;
 
-                DebugUtility.Log<InjectableEntityResourceBridge>(
+                DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
                     $"Cleaned up bridge for '{_actor?.ActorId}'",
                     DebugUtility.Colors.Success);
             }

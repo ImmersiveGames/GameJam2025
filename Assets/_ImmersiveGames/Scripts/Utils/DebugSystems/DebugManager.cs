@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
             DebugUtility.SetRepeatedCallVerbose(repeatedCallVerbose);
             DebugUtility.SetDefaultDebugLevel(defaultLevel);
 
-            DebugUtility.Log<DebugManager>(
+            DebugUtility.LogVerbose<DebugManager>(
                 $"Configuração de debug aplicada (Level: {defaultLevel}, Verbose: {verboseEnabled}, Fallbacks: {fallbacksEnabled}, Repeated: {repeatedCallVerbose}).",
                 DebugUtility.Colors.CrucialInfo);
         }

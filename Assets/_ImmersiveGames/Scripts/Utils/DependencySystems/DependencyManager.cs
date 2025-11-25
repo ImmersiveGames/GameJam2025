@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             _globalRegistry = new();
             _injector = new(_objectRegistry, _sceneRegistry, _globalRegistry);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(DependencyManager),
                 $"DependencyManager inicializado ({gameObject.scene.name}).",
                 DebugUtility.Colors.CrucialInfo);

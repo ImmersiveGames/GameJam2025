@@ -104,7 +104,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _currentBgm = bgmData;
-            DebugUtility.Log<AudioManager>(
+            DebugUtility.LogVerbose<AudioManager>(
                 $"BGM iniciado: {bgmData.clip?.name} (targetVolume={targetVolume:F3})",
                 DebugUtility.Colors.Success);
         }
@@ -121,14 +121,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 bgmAudioSource.Stop();
 
             _currentBgm = null;
-            DebugUtility.Log<AudioManager>(
+            DebugUtility.LogVerbose<AudioManager>(
                 "BGM parado",
                 DebugUtility.Colors.Success);
         }
         public void StopBGMImmediate()
         {
             bgmAudioSource.Stop();
-            DebugUtility.Log<AudioManager>(
+            DebugUtility.LogVerbose<AudioManager>(
                 "BGM parado",
                 DebugUtility.Colors.Success);
         }

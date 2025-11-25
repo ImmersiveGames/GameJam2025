@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             _sceneRegistry = sceneRegistry;
             SceneManager.sceneUnloaded += OnSceneUnloaded;
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SceneServiceCleaner),
                 "SceneServiceCleaner inicializado.",
                 DebugUtility.Colors.CrucialInfo);

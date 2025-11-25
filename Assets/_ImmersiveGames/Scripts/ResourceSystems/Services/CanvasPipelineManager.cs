@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             base.InitializeSingleton();
             ResourceInitializationManager.Instance.RegisterForInjection(this);
-            DebugUtility.Log<CanvasPipelineManager>(
+            DebugUtility.LogVerbose<CanvasPipelineManager>(
                 "✅ Canvas Pipeline Manager initialized",
                 DebugUtility.Colors.CrucialInfo);
         }
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             _canvasRegisteredBinding = new EventBinding<ResourceEventHub.CanvasRegisteredEvent>(OnCanvasRegisteredHandler);
             EventBus<ResourceEventHub.CanvasRegisteredEvent>.Register(_canvasRegisteredBinding);
 
-            DebugUtility.Log<CanvasPipelineManager>(
+            DebugUtility.LogVerbose<CanvasPipelineManager>(
                 "✅ Dependencies injected and event bindings registered",
                 DebugUtility.Colors.Success);
         }
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             // Notificar o hub para reemitir binds pendentes
             ResourceEventHub.NotifyCanvasRegistered(canvas.CanvasId);
 
-            DebugUtility.Log<CanvasPipelineManager>(
+            DebugUtility.LogVerbose<CanvasPipelineManager>(
                 $"✅ Canvas '{canvas.CanvasId}' registrado no pipeline",
                 DebugUtility.Colors.Success);
         }
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             if (_canvasRegistry.Remove(canvasId))
             {
                 ResourceEventHub.NotifyCanvasUnregistered(canvasId);
-                DebugUtility.Log<CanvasPipelineManager>(
+                DebugUtility.LogVerbose<CanvasPipelineManager>(
                     $"Canvas '{canvasId}' removido do pipeline",
                     DebugUtility.Colors.Success);
             }

@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _binding = new EventBinding<ResourceThresholdEvent>(OnThresholdEvent);
             FilteredEventBus<ResourceThresholdEvent>.Register(_binding, actor.ActorId);
 
-            DebugUtility.Log<ResourceThresholdBridge>(
+            DebugUtility.LogVerbose<ResourceThresholdBridge>(
                 $"✅ ThresholdBridge ativo para {actor.ActorId}",
                 DebugUtility.Colors.Success);
             _service.ForceCheck();

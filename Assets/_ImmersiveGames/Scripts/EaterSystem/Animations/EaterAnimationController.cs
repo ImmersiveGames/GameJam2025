@@ -69,7 +69,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
-            DebugUtility.Log<EaterAnimationController>(
+            DebugUtility.LogVerbose<EaterAnimationController>(
                 $"Eventos de dano registrados para {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
         }

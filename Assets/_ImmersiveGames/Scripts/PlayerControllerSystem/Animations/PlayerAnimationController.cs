@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
             FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
-            DebugUtility.Log<PlayerAnimationController>(
+            DebugUtility.LogVerbose<PlayerAnimationController>(
                 $"Eventos de dano registrados para {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
         }

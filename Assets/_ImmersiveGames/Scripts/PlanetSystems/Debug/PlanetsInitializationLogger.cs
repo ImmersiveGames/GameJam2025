@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
             var assignments = evt.PlanetResourcesMap ?? new Dictionary<IPlanetActor, PlanetResources>();
             if (assignments.Count == 0)
             {
-                DebugUtility.Log<PlanetsInitializationLogger>("Nenhum planeta foi instanciado neste ciclo inicial.");
+                DebugUtility.LogVerbose<PlanetsInitializationLogger>("Nenhum planeta foi instanciado neste ciclo inicial.");
                 return;
             }
 
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
                 .Where(pair => pair.Key?.PlanetActor != null)
                 .Select(pair => $"{pair.Key.PlanetActor.ActorName} -> {pair.Value}"));
 
-            DebugUtility.Log<PlanetsInitializationLogger>($"Total de planetas: {assignments.Count}. Objetos: {planetNames}.");
+            DebugUtility.LogVerbose<PlanetsInitializationLogger>($"Total de planetas: {assignments.Count}. Objetos: {planetNames}.");
         }
     }
 }

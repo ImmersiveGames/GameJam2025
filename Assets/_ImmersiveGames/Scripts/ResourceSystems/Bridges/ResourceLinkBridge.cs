@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 DebugUtility.LogVerbose<ResourceLinkBridge>($"🔗 {link.sourceResource} → {link.targetResource} registrado");
             }
 
-            DebugUtility.Log<ResourceLinkBridge>(
+            DebugUtility.LogVerbose<ResourceLinkBridge>(
                 $"✅ ResourceLinkBridge ativo com {resourceLinks.Length} links para {actor.ActorId}",
                 DebugUtility.Colors.Success);
         }
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (_linkService == null || actor == null) return;
             _linkService.UnregisterAllLinks(actor.ActorId);
-            DebugUtility.Log<ResourceLinkBridge>(
+            DebugUtility.LogVerbose<ResourceLinkBridge>(
                 "🗑️ Todos os links removidos",
                 DebugUtility.Colors.Success);
         }

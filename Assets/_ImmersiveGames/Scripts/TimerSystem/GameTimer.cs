@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             EnsureTimerInstance();
             PrepareTimer(_configuredDuration);
 
-            DebugUtility.Log<GameTimer>($"Timer configurado com {_configuredDuration:F2}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Timer configurado com {_configuredDuration:F2}s.", context: this);
         }
 
         private void OnEnable()
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             {
                 float snapshot = Mathf.Max(_remainingTime, 0f);
                 StopSession(false, snapshot, "Victory recebido");
-                DebugUtility.Log<GameTimer>($"Vitória detectada. Cronômetro finalizado em {snapshot:F2}s.", context: this);
+                DebugUtility.LogVerbose<GameTimer>($"Vitória detectada. Cronômetro finalizado em {snapshot:F2}s.", context: this);
             });
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _timer?.Start();
 
             EventBus<EventTimerStarted>.Raise(new EventTimerStarted(_configuredDuration));
-            DebugUtility.Log<GameTimer>($"Cronômetro iniciado com {_configuredDuration:F2}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Cronômetro iniciado com {_configuredDuration:F2}s.", context: this);
         }
 
         /// <summary>
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
 
             _isPaused = true;
-            DebugUtility.Log<GameTimer>($"Cronômetro pausado em {_remainingTime:F2}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Cronômetro pausado em {_remainingTime:F2}s.", context: this);
         }
 
         /// <summary>Retoma a contagem após uma pausa.</summary>
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             _isPaused = false;
             _lastLoggedSecond = Mathf.CeilToInt(_remainingTime);
-            DebugUtility.Log<GameTimer>($"Cronômetro retomado com {_remainingTime:F2}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Cronômetro retomado com {_remainingTime:F2}s.", context: this);
         }
 
         /// <summary>Finaliza a sessão atual e dispara o GameOver.</summary>
@@ -245,7 +245,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             StopSession(false, 0f, "Tempo esgotado");
 
-            DebugUtility.Log<GameTimer>("Tempo esgotado. Disparando GameOver.", context: this);
+            DebugUtility.LogVerbose<GameTimer>("Tempo esgotado. Disparando GameOver.", context: this);
 
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDuration));
 
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             }
 
             string label = string.IsNullOrEmpty(reason) ? "sem motivo" : reason;
-            DebugUtility.Log<GameTimer>($"Cronômetro parado ({label}). Reset={resetToConfigured}, restante={_remainingTime:F2}s.", context: this);
+            DebugUtility.LogVerbose<GameTimer>($"Cronômetro parado ({label}). Reset={resetToConfigured}, restante={_remainingTime:F2}s.", context: this);
         }
 
         private void HandlePauseEvent(GamePauseEvent pauseEvent)

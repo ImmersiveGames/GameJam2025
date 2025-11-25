@@ -67,7 +67,18 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
         {
             if (string.IsNullOrEmpty(Actor.ActorId)) return;
 
-            DependencyManager.Provider.RegisterForObject(Actor.ActorId, this);
+            if (string.IsNullOrEmpty(Actor.ActorId))
+            {
+                DebugUtility.LogWarning<AnimationControllerBase>(
+                    $"ActorId inválido em {name}. Dependências não serão registradas.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<AnimationControllerBase>(
+                $"Registrando controlador de animação para ID: {Actor.ActorId}.",
+                DebugUtility.Colors.CrucialInfo);
+
+            DependencyManager.Instance.RegisterForObject(Actor.ActorId, this);
             _dependencyRegistered = true;
         }
 
@@ -75,8 +86,10 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
         {
             if (_dependencyRegistered && !string.IsNullOrEmpty(Actor.ActorId))
             {
-                DependencyManager.Provider.ClearObjectServices(Actor.ActorId);
-                _dependencyRegistered = false;
+                DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
+                DebugUtility.LogVerbose<AnimationControllerBase>(
+                    $"Serviços removidos do objeto {Actor.ActorId}.",
+                    DebugUtility.Colors.Success);
             }
         }
 

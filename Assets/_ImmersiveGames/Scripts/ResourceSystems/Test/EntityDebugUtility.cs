@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
         private IEnumerator DelayedTestRoutine()
         {
-            DebugUtility.Log<EntityDebugUtility>($"🔄 Starting delayed test for {_actor?.ActorId} (mode={testMode})");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🔄 Starting delayed test for {_actor?.ActorId} (mode={testMode})");
 
             yield return new WaitForSeconds(initializationDelay);
 
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 if (_resourceSystem != null)
                 {
                     _resourceSystemResolved = true;
-                    DebugUtility.Log<EntityDebugUtility>($"✅ ResourceSystem resolved for {_actor.ActorId}");
+                    DebugUtility.LogVerbose<EntityDebugUtility>($"✅ ResourceSystem resolved for {_actor.ActorId}");
                     yield break;
                 }
 
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
         private IEnumerator PassiveObservationRoutine(float observationTime)
         {
-            DebugUtility.Log<EntityDebugUtility>($"🕵️ Passive observation for {_actor.ActorId} ({observationTime}s)");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🕵️ Passive observation for {_actor.ActorId} ({observationTime}s)");
             _resourceUpdateEventsSeen = 0;
             _canvasBindRequestsSeen = 0;
 
@@ -156,12 +156,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 yield return null;
             }
 
-            DebugUtility.Log<EntityDebugUtility>($"🕵️ Passive observation finished. ResourceUpdates={_resourceUpdateEventsSeen}, CanvasBindRequests={_canvasBindRequestsSeen}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🕵️ Passive observation finished. ResourceUpdates={_resourceUpdateEventsSeen}, CanvasBindRequests={_canvasBindRequestsSeen}");
         }
 
         private IEnumerator ActiveTestRoutine()
         {
-            DebugUtility.Log<EntityDebugUtility>($"🔨 Active test for {_actor.ActorId}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🔨 Active test for {_actor.ActorId}");
             yield return LogState("INITIAL");
 
             if (!ExecuteDamagePipeline(testDamage, damageResourceType, "Active Test - First Damage"))
@@ -186,12 +186,12 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             float passiveTime = Mathf.Min(1.0f, overallTimeout * 0.4f);
             float remaining = overallTimeout - passiveTime;
 
-            DebugUtility.Log<EntityDebugUtility>($"Hybrid: passive {passiveTime}s then active (if needed)");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"Hybrid: passive {passiveTime}s then active (if needed)");
             yield return StartCoroutine(PassiveObservationRoutine(passiveTime));
 
             if (_resourceUpdateEventsSeen > 0)
             {
-                DebugUtility.Log<EntityDebugUtility>("🔁 Observed natural resource updates — skipping active steps");
+                DebugUtility.LogVerbose<EntityDebugUtility>("🔁 Observed natural resource updates — skipping active steps");
                 yield break;
             }
 
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 sb.AppendLine($"  Re-check via Orchestrator: {temp != null}");
             }
 
-            DebugUtility.Log<EntityDebugUtility>(sb.ToString());
+            DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
             yield return null;
         }
 
@@ -354,7 +354,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             float after = resource.GetCurrentValue();
             float delta = after - before;
 
-            DebugUtility.Log<EntityDebugUtility>($"🧪 {contextLabel}: {resolvedResource} {before:F1} → {after:F1} (Δ={delta:+0.0;-0.0;0.0})");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🧪 {contextLabel}: {resolvedResource} {before:F1} → {after:F1} (Δ={delta:+0.0;-0.0;0.0})");
 
             if (resolvedResource != requestedResource)
             {
@@ -483,7 +483,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         {
             if (evt.actorId != _actor.ActorId) return;
             _actorRegisteredEventSeen = true;
-            if (verboseEvents) DebugUtility.Log<EntityDebugUtility>($"➕ ActorRegistered observed for {evt.actorId}");
+            if (verboseEvents) DebugUtility.LogVerbose<EntityDebugUtility>($"➕ ActorRegistered observed for {evt.actorId}");
         }
 
         private void ReportSummary()
@@ -522,37 +522,37 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
 
             var health = _resourceSystem.Get(ResourceType.Health);
-            DebugUtility.Log<EntityDebugUtility>($"📋 Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"📋 Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
         }
 
         [ContextMenu(DiagnosticsMenuRoot + "Re-resolve ResourceSystem")]
         public void ReresolveResourceSystem()
         {
             _resourceSystem = _orchestrator?.GetActorResourceSystem(_actor.ActorId);
-            DebugUtility.Log<EntityDebugUtility>($"Re-resolved ResourceSystem for {_actor.ActorId}: {_resourceSystem != null}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"Re-resolved ResourceSystem for {_actor.ActorId}: {_resourceSystem != null}");
         }
 
         [ContextMenu(DiagnosticsMenuRoot + "Debug Orchestrator Access")]
         public void DebugOrchestratorAccess()
         {
-            DebugUtility.Log<EntityDebugUtility>($"📋 ORCHESTRATOR ACCESS DEBUG for {_actor.ActorId}");
-            DebugUtility.Log<EntityDebugUtility>($"- Orchestrator: {_orchestrator != null}");
-            DebugUtility.Log<EntityDebugUtility>($"- Local ResourceSystem: {_resourceSystem != null}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"📋 ORCHESTRATOR ACCESS DEBUG for {_actor.ActorId}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Orchestrator: {_orchestrator != null}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Local ResourceSystem: {_resourceSystem != null}");
 
             if (_orchestrator != null)
             {
                 bool isRegistered = _orchestrator.IsActorRegistered(_actor.ActorId);
-                DebugUtility.Log<EntityDebugUtility>($"- Actor Registered in Orchestrator: {isRegistered}");
+                DebugUtility.LogVerbose<EntityDebugUtility>($"- Actor Registered in Orchestrator: {isRegistered}");
 
                 if (isRegistered)
                 {
                     var orchestratorSystem = _orchestrator.GetActorResourceSystem(_actor.ActorId);
-                    DebugUtility.Log<EntityDebugUtility>($"- ResourceSystem from Orchestrator: {orchestratorSystem != null}");
+                    DebugUtility.LogVerbose<EntityDebugUtility>($"- ResourceSystem from Orchestrator: {orchestratorSystem != null}");
 
                     if (orchestratorSystem != null)
                     {
                         var health = orchestratorSystem.Get(ResourceType.Health);
-                        DebugUtility.Log<EntityDebugUtility>($"- Health from Orchestrator: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
+                        DebugUtility.LogVerbose<EntityDebugUtility>($"- Health from Orchestrator: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
                     }
                 }
             }
@@ -574,31 +574,31 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             var actorId = bridge.GetObjectId();
             var service = bridge.GetResourceSystem();
 
-            DebugUtility.Log<EntityDebugUtility>($"🔧 ENTITY BRIDGE STATUS: {actorId}");
-            DebugUtility.Log<EntityDebugUtility>($"- Actor: {actorId}");
-            DebugUtility.Log<EntityDebugUtility>($"- Service: {service != null}");
-            DebugUtility.Log<EntityDebugUtility>($"- Injection: {bridge.InjectionState}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"🔧 ENTITY BRIDGE STATUS: {actorId}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Actor: {actorId}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Service: {service != null}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Injection: {bridge.InjectionState}");
 
             if (service != null)
             {
                 var health = service.Get(ResourceType.Health);
-                DebugUtility.Log<EntityDebugUtility>($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
+                DebugUtility.LogVerbose<EntityDebugUtility>($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
             }
 
             if (DependencyManager.Provider.TryGetGlobal(out IActorResourceOrchestrator orchestrator))
             {
                 bool isRegistered = orchestrator.IsActorRegistered(actorId);
-                DebugUtility.Log<EntityDebugUtility>($"- Registered in Orchestrator: {isRegistered}");
+                DebugUtility.LogVerbose<EntityDebugUtility>($"- Registered in Orchestrator: {isRegistered}");
 
                 if (isRegistered)
                 {
                     var orchestratorService = orchestrator.GetActorResourceSystem(actorId);
-                    DebugUtility.Log<EntityDebugUtility>($"- Orchestrator Service: {orchestratorService != null}");
+                    DebugUtility.LogVerbose<EntityDebugUtility>($"- Orchestrator Service: {orchestratorService != null}");
                 }
             }
 
-            bool hasInDm = DependencyManager.Provider.TryGetForObject(actorId, out ResourceSystem dmService);
-            DebugUtility.Log<EntityDebugUtility>($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
+            bool hasInDm = DependencyManager.Instance.TryGetForObject(actorId, out ResourceSystem dmService);
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- In DependencyManager: {hasInDm}, Service: {dmService != null}");
         }
 
         [ContextMenu(DiagnosticsMenuRoot + "Print Resources")]
@@ -643,7 +643,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                     sb.AppendLine($"   Thresholds: ✅ ({instanceConfig.thresholdConfig?.thresholds.Length ?? 0} thresholds)");
             }
 
-            DebugUtility.Log<EntityDebugUtility>(sb.ToString());
+            DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
         }
 
         [ContextMenu(BridgesMenuRoot + "Resource Bridge Status")]
