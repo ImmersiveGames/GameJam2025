@@ -4,6 +4,19 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    public interface IPlanetDefensePoolRunner
+    {
+        void WarmUp(PlanetsMaster planet, DetectionType detectionType);
+        void Release(PlanetsMaster planet);
+    }
+
+    public interface IPlanetDefenseWaveRunner
+    {
+        void StartWaves(PlanetsMaster planet, DetectionType detectionType);
+        void StopWaves(PlanetsMaster planet);
+        bool IsRunning(PlanetsMaster planet);
+    }
+
     /// <summary>
     /// Implementação de fallback para pools de defesa planetária.
     /// Serve apenas para remover erros de DI enquanto os sistemas reais

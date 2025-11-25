@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -18,19 +15,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent);
     }
 
-    public interface IPlanetDefensePoolRunner
-    {
-        void WarmUp(PlanetsMaster planet, DetectionType detectionType);
-        void Release(PlanetsMaster planet);
-    }
-
-    public interface IPlanetDefenseWaveRunner
-    {
-        void StartWaves(PlanetsMaster planet, DetectionType detectionType);
-        void StopWaves(PlanetsMaster planet);
-        bool IsRunning(PlanetsMaster planet);
-    }
-
     public sealed class PlanetDefenseSpawnConfig
     {
         public bool WarmUpPools { get; set; } = true;
@@ -41,46 +25,46 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     }
 
     /// <summary>
-    /// Serviço "puro" responsável por ligar/desligar pools e ondas de defesa
-    /// com base nos eventos emitidos pelo PlanetDefenseController. Ele mantém
-    /// o código de spawn desacoplado de MonoBehaviours, seguindo o princípio
-    /// de inversão de dependência e delegando rastreamento de detectores ao
-    /// próprio controlador que já conhece o contexto de cena.
+    /// Serviço simples de log para acompanhar a ativação e desativação das
+    /// defesas planetárias. Ele mantém um flag por planeta para evitar
+    /// múltiplos loops de debug e utiliza o ciclo de Update do Unity para
+    /// emitir mensagens apenas enquanto o jogo está rodando.
     /// </summary>
-    public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent, IDisposable
+    [DisallowMultipleComponent]
+    public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
     {
+        private readonly Dictionary<PlanetsMaster, ActiveDefenseState> _activeDefenses = new();
+
+        [Inject] [SerializeField] private PlanetDefenseSpawnConfig _config = new();
+
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
         private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
 
-        private readonly Dictionary<PlanetsMaster, CancellationTokenSource> _activeLoops = new();
-
-        [Inject] private IPlanetDefensePoolRunner _poolRunner;
-        [Inject] private IPlanetDefenseWaveRunner _waveRunner;
-        [Inject] private PlanetDefenseSpawnConfig _config;
-
         public DependencyInjectionState InjectionState { get; set; }
 
-        public PlanetDefenseSpawnService(
-            IPlanetDefensePoolRunner poolRunner = null,
-            IPlanetDefenseWaveRunner waveRunner = null,
-            PlanetDefenseSpawnConfig config = null)
-        {
-            _poolRunner = poolRunner;
-            _waveRunner = waveRunner;
-            _config = config ?? new PlanetDefenseSpawnConfig();
+        public string GetObjectId() => nameof(PlanetDefenseSpawnService);
 
+        private void Awake()
+        {
+            _config ??= new PlanetDefenseSpawnConfig();
+        }
+
+        private void OnEnable()
+        {
             RegisterBindings();
         }
 
-        public string GetObjectId() => nameof(PlanetDefenseSpawnService);
+        private void OnDisable()
+        {
+            UnregisterBindings();
+            _activeDefenses.Clear();
+        }
 
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            EnsureConfig();
-            DebugUtility.Log<PlanetDefenseSpawnService>(
-                "PlanetDefenseSpawnService pronto para receber eventos e sem duplicar contagem de detectores.");
+            _config ??= new PlanetDefenseSpawnConfig();
         }
 
         public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -90,12 +74,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (engagedEvent.IsFirstEngagement)
+            if (_activeDefenses.ContainsKey(engagedEvent.Planet))
             {
-                // Não guardamos estado aqui: confiamos no metadado de primeira detecção
-                // enviado pelo controller para iniciar as defesas apenas uma vez.
-                StartDefense(engagedEvent);
+                return;
             }
+
+            var state = new ActiveDefenseState(
+                engagedEvent.Planet,
+                engagedEvent.DetectionType,
+                FormatDetector(engagedEvent.Detector),
+                Time.time + _config.DebugLoopIntervalSeconds);
+
+            _activeDefenses.Add(engagedEvent.Planet, state);
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"{state.DetectorName} ativou as defesas do planeta {state.Planet.ActorName} (sensor: {state.DetectionType?.TypeName ?? "Unknown"}).",
+                DebugUtility.Colors.CrucialInfo);
         }
 
         public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
@@ -105,15 +99,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (disengagedEvent.IsLastDisengagement)
+            if (_activeDefenses.Remove(disengagedEvent.Planet, out var state))
             {
-                // Interrompe somente quando o próprio controller indicar que não há
-                // mais detectores. Isso evita duplicidade com a lógica de sensor.
-                StopDefense(
-                    disengagedEvent.Planet,
-                    disengagedEvent.DetectionType,
-                    disengagedEvent.Detector,
-                    reason: "Último detector saiu");
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"Defesas do planeta {state.Planet.ActorName} encerradas; {FormatDetector(disengagedEvent.Detector)} saiu do sensor {disengagedEvent.DetectionType?.TypeName ?? "Unknown"}.");
             }
         }
 
@@ -124,29 +113,41 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            bool hasActiveDetectors = disabledEvent.ActiveDetectors > 0;
-            bool wavesRunning = _waveRunner?.IsRunning(disabledEvent.Planet) == true;
-
-            if (hasActiveDetectors || wavesRunning)
-            {
-                // Este hook cobre o caso do planeta ser removido da cena ou desativado
-                // enquanto ainda há detectores ou ondas em execução, evitando corrotinas
-                // órfãs e respeitando o ciclo de vida da cena.
-                StopDefense(disabledEvent.Planet, null, null, reason: "Planeta desativado");
-            }
+            _activeDefenses.Remove(disabledEvent.Planet);
         }
 
-        public void Dispose()
+        private void Update()
         {
-            StopAllLoops("Serviço descartado");
-            UnregisterBindings();
+            if (!Application.isPlaying || Time.timeScale <= 0f)
+            {
+                return;
+            }
+
+            if (_activeDefenses.Count == 0)
+            {
+                return;
+            }
+
+            float now = Time.time;
+            foreach (var state in _activeDefenses.Values)
+            {
+                if (now < state.NextLogTime)
+                {
+                    continue;
+                }
+
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}.");
+
+                state.NextLogTime = now + _config.DebugLoopIntervalSeconds;
+            }
         }
 
         private void RegisterBindings()
         {
-            _engagedBinding = new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
-            _disengagedBinding = new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
-            _disabledBinding = new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
+            _engagedBinding ??= new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
+            _disengagedBinding ??= new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
+            _disabledBinding ??= new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
 
             EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
             EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
@@ -158,162 +159,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (_engagedBinding != null)
             {
                 EventBus<PlanetDefenseEngagedEvent>.Unregister(_engagedBinding);
-                _engagedBinding = null;
             }
 
             if (_disengagedBinding != null)
             {
                 EventBus<PlanetDefenseDisengagedEvent>.Unregister(_disengagedBinding);
-                _disengagedBinding = null;
             }
 
             if (_disabledBinding != null)
             {
                 EventBus<PlanetDefenseDisabledEvent>.Unregister(_disabledBinding);
-                _disabledBinding = null;
             }
-        }
-
-        private void StartDefense(PlanetDefenseEngagedEvent engagedEvent)
-        {
-            var planet = engagedEvent.Planet;
-            var detectionType = engagedEvent.DetectionType;
-            var detector = engagedEvent.Detector;
-
-            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"{FormatDetector(detector)} ativou as defesas do planeta {planet.ActorName} (sensor: {detectionType?.TypeName ?? "Unknown"}).",
-                DebugUtility.Colors.CrucialInfo);
-
-            if (_config?.WarmUpPools == true)
-            {
-                _poolRunner?.WarmUp(planet, detectionType);
-            }
-
-            if (_waveRunner != null && (_waveRunner.IsRunning(planet) == false))
-            {
-                _waveRunner.StartWaves(planet, detectionType);
-            }
-
-            StartActiveLoop(planet, detectionType);
-        }
-
-        private void StopDefense(PlanetsMaster planet, DetectionType detectionType, IDetector detector, string reason)
-        {
-            string detectorInfo = detector != null
-                ? $" saindo do sensor {detectionType?.TypeName ?? "Unknown"} de {FormatDetector(detector)}"
-                : string.Empty;
-
-            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"Encerrando defesa de {planet.ActorName}{detectorInfo}: {reason}.");
-
-            StopActiveLoop(planet, reason);
-
-            if (_waveRunner != null && (_config?.StopWavesOnDisable != false))
-            {
-                _waveRunner.StopWaves(planet);
-            }
-
-            _poolRunner?.Release(planet);
-        }
-
-        private void EnsureConfig()
-        {
-            _config ??= new PlanetDefenseSpawnConfig();
-        }
-
-        private void StartActiveLoop(PlanetsMaster planet, DetectionType detectionType)
-        {
-            if (planet == null || _activeLoops.ContainsKey(planet))
-            {
-                if (planet != null)
-                {
-                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                        $"Defesas de {planet.ActorName} já ativas; ignorando nova solicitação.");
-                }
-                return;
-            }
-
-            var cancellation = new CancellationTokenSource();
-            _activeLoops[planet] = cancellation;
-
-            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[Debug] Loop de defesa ativo para {planet.ActorName}; emitindo mensagem a cada {_config.DebugLoopIntervalSeconds:0.##}s.");
-
-            _ = RunActiveLoopAsync(planet, detectionType, cancellation.Token);
-        }
-
-        private async Task RunActiveLoopAsync(PlanetsMaster planet, DetectionType detectionType, CancellationToken token)
-        {
-            try
-            {
-                while (!token.IsCancellationRequested)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(_config.DebugLoopIntervalSeconds), token);
-
-                    if (token.IsCancellationRequested)
-                    {
-                        break;
-                    }
-
-                    // Respeita o pause do jogo: se estiver pausado ou com timescale zerado,
-                    // não imprime logs periódicos para evitar ruído fora de contexto.
-                    if (ShouldLogDebugLoop())
-                    {
-                        DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                            $"[Debug] Defesa ativa em {planet.ActorName} contra {detectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}.");
-                    }
-                }
-            }
-            catch (TaskCanceledException)
-            {
-                // Ignorado: cancelamento esperado ao encerrar a defesa.
-            }
-        }
-
-        private void StopActiveLoop(PlanetsMaster planet, string reason)
-        {
-            if (planet == null)
-            {
-                return;
-            }
-
-            if (_activeLoops.TryGetValue(planet, out var cancellation))
-            {
-                cancellation.Cancel();
-                cancellation.Dispose();
-                _activeLoops.Remove(planet);
-
-                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                    $"[Debug] Loop de defesa encerrado para {planet.ActorName}: {reason}.");
-            }
-        }
-
-        private void StopAllLoops(string reason)
-        {
-            foreach (var kvp in _activeLoops)
-            {
-                kvp.Value.Cancel();
-                kvp.Value.Dispose();
-
-                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                    $"[Debug] Loop de defesa encerrado para {kvp.Key.ActorName}: {reason}.");
-            }
-
-            _activeLoops.Clear();
-        }
-
-        private static bool ShouldLogDebugLoop()
-        {
-            return Application.isPlaying && Time.timeScale > 0f && !IsEditorPaused();
-        }
-
-        private static bool IsEditorPaused()
-        {
-#if UNITY_EDITOR
-            return UnityEditor.EditorApplication.isPaused;
-#else
-            return false;
-#endif
         }
 
         private static string FormatDetector(IDetector detector)
@@ -324,11 +180,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             string actorName = detector.Owner?.ActorName ?? detector.ToString();
-            return actorName.Contains("Eater", StringComparison.OrdinalIgnoreCase)
+            return actorName.Contains("Eater")
                 ? $"O Eater ({actorName})"
-                : actorName.Contains("Player", StringComparison.OrdinalIgnoreCase)
+                : actorName.Contains("Player")
                     ? $"O Player ({actorName})"
                     : actorName;
+        }
+
+        private sealed class ActiveDefenseState
+        {
+            public ActiveDefenseState(PlanetsMaster planet, DetectionType detectionType, string detectorName, float nextLogTime)
+            {
+                Planet = planet;
+                DetectionType = detectionType;
+                DetectorName = detectorName;
+                NextLogTime = nextLogTime;
+            }
+
+            public PlanetsMaster Planet { get; }
+            public DetectionType DetectionType { get; }
+            public string DetectorName { get; }
+            public float NextLogTime { get; set; }
         }
     }
 }
