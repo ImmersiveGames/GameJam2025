@@ -14,6 +14,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         [Tooltip("Configuração de spawn usada pelo PlanetDefenseSpawnService para este planeta.")]
         private PlanetDefenseSpawnConfig spawnConfig = new();
 
+        [Header("Config Profile (opcional)")]
+        [SerializeField]
+        [Tooltip("Perfil reutilizável para popular a configuração de spawn acima.")]
+        private PlanetDefenseSpawnProfile spawnProfile;
+
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
         private void Awake()
@@ -29,7 +34,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
             }
 
-            spawnConfig ??= new PlanetDefenseSpawnConfig();
+            spawnConfig = ResolveSpawnConfig();
         }
 
 #if UNITY_EDITOR
@@ -40,7 +45,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 planetsMaster = GetComponentInParent<PlanetsMaster>();
             }
 
-            spawnConfig ??= new PlanetDefenseSpawnConfig();
+            spawnConfig = ResolveSpawnConfig();
         }
 #endif
 
@@ -65,17 +70,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             _activeDetectors.Add(detector, role);
             int activeCount = _activeDetectors.Count;
 
-            DebugUtility.LogVerbose<PlanetDefenseController>(
-                $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
-                DebugUtility.Colors.CrucialInfo,
-                this);
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
+                    DebugUtility.Colors.CrucialInfo,
+                    this);
 
             EventBus<PlanetDefenseEngagedEvent>.Raise(
                 new PlanetDefenseEngagedEvent(
                     planetsMaster,
                     detector,
                     detectionType,
-                    spawnConfig,
+                    ResolveSpawnConfig(),
                     isFirstEngagement: activeCount == 1,
                     activeDetectors: activeCount));
         }
@@ -125,6 +130,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         private string GetPlanetName()
         {
             return planetsMaster?.ActorName ?? gameObject.name;
+        }
+
+        private PlanetDefenseSpawnConfig ResolveSpawnConfig()
+        {
+            if (spawnProfile != null)
+            {
+                return spawnProfile.CreateRuntimeConfig();
+            }
+
+            spawnConfig ??= new PlanetDefenseSpawnConfig();
+            return spawnConfig;
         }
 
         private static string GetDetectorName(IDetector detector)
