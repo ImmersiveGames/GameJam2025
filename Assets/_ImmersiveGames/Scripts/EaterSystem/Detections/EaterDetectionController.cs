@@ -9,20 +9,16 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 {
     /// <summary>
     /// Controlador simples responsável por interpretar os sensores do Eater.
-    /// Monitora apenas dois tipos de detecção: proximidade de planetas e ativação de defesas.
+    /// Após a simplificação das proximidades, monitora apenas ativações de defesas de planetas.
     /// </summary>
     public class EaterDetectionController : AbstractDetector, IDefenseRoleProvider
     {
         [Header("Detection Types")]
         [SerializeField] private DetectionType planetDefenseDetectionType;
-        [SerializeField] private DetectionType planetProximityDetectionType;
 
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
-        private readonly HashSet<IDetectable> _activeProximityDetections = new();
 
         public DefenseRole DefenseRole => DefenseRole.Eater;
-
-        internal DetectionType PlanetProximityDetectionType => planetProximityDetectionType;
 
         public override void OnDetected(IDetectable detectable, DetectionType detectionType)
         {
@@ -31,12 +27,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 DebugUtility.LogWarning<EaterDetectionController>(
                     "Evento de detecção recebido sem DetectionType válido.",
                     this);
-                return;
-            }
-
-            if (detectionType == planetProximityDetectionType)
-            {
-                HandlePlanetProximityDetection(detectable);
                 return;
             }
 
@@ -59,53 +49,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            if (detectionType == planetProximityDetectionType)
-            {
-                HandlePlanetProximityLost(detectable);
-                return;
-            }
-
             if (detectionType == planetDefenseDetectionType)
             {
                 HandlePlanetDefenseLost(detectable);
-            }
-        }
-
-        private void HandlePlanetProximityDetection(IDetectable detectable)
-        {
-            if (!_activeProximityDetections.Add(detectable))
-            {
-                return;
-            }
-
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
-            {
-                DebugUtility.LogWarning<EaterDetectionController>(
-                    "Detecção de proximidade sem PlanetsMaster associado.",
-                    this);
                 return;
             }
 
             DebugUtility.LogVerbose<EaterDetectionController>(
-                $"Planeta {planetMaster.ActorName} entrou na área de proximidade do Eater.",
-                DebugUtility.Colors.Info,
-                this);
-        }
-
-        private void HandlePlanetProximityLost(IDetectable detectable)
-        {
-            if (!_activeProximityDetections.Remove(detectable))
-            {
-                return;
-            }
-
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<EaterDetectionController>(
-                $"Planeta {planetMaster.ActorName} saiu da área de proximidade do Eater.",
+                $"Perda de detecção não tratada para {detectionType.TypeName}.",
                 null,
                 this);
         }
@@ -157,7 +108,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
         protected override void OnCacheCleared()
         {
             _activeDefenseDetections.Clear();
-            _activeProximityDetections.Clear();
             base.OnCacheCleared();
         }
 
