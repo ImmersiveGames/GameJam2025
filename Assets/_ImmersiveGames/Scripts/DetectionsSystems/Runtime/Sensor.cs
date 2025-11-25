@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             Config = config;
 
             string mode = config.DetectionMode == SensorDetectionMode.Spherical ? "Esférico" : "Cônico";
-            DebugUtility.LogVerbose<Sensor>($"Criado em {origin.name}: Tipo={config.DetectionType?.TypeName}, Modo={mode}, Raio={config.Radius}");
+            DebugUtility.Log<Sensor>($"Criado em {origin.name}: Tipo={config.DetectionType?.TypeName}, Modo={mode}, Raio={config.Radius}");
         }
 
         public void Update(float deltaTime)

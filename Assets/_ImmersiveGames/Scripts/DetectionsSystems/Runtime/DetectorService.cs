@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public DetectorService(Transform origin, IDetector detector, SensorCollection collection)
         {
-            DebugUtility.LogVerbose<DetectorService>($"Criando serviço com {collection.Sensors.Count} configurações em {origin.name}");
+            DebugUtility.Log<DetectorService>($"Criando serviço com {collection.Sensors.Count} configurações em {origin.name}");
 
             foreach (var config in collection.Sensors)
             {
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 _sensors.Add(new Sensor(origin, detector, config));
             }
 
-            DebugUtility.LogVerbose<DetectorService>($"Serviço criado com {_sensors.Count} sensores ativos em {origin.name}");
+            DebugUtility.Log<DetectorService>($"Serviço criado com {_sensors.Count} sensores ativos em {origin.name}");
         }
 
         public void Update(float deltaTime)

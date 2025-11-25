@@ -401,7 +401,6 @@ GameObject:
   - component: {fileID: 1432878150}
   - component: {fileID: 1432878151}
   - component: {fileID: 1432878153}
-  - component: {fileID: 1432878154}
   - component: {fileID: 1432878158}
   - component: {fileID: 1432878159}
   - component: {fileID: 1432878161}
@@ -670,25 +669,6 @@ MonoBehaviour:
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
     sortOrder: 0
---- !u!114 &1432878154
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432878126}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4daba9e0e4f741d094feb2eeeee469c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  autoTestOnReady: 0
-  testMode: 2
-  testDamage: 20
-  damageResourceType: 0
-  initializationDelay: 0.5
-  overallTimeout: 5
-  verboseEvents: 1
 --- !u!114 &1432878158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1252,7 +1232,7 @@ MonoBehaviour:
   verboseInPlayer: 0
   fallbacksInEditor: 1
   fallbacksInPlayer: 0
-  repeatedCallVerboseInEditor: 0
+  repeatedCallVerboseInEditor: 1
   repeatedCallVerboseInPlayer: 0
   editorDefaultLevel: 3
   playerDefaultLevel: 2
