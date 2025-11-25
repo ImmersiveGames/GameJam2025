@@ -23,11 +23,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public bool WarmUpPools { get; set; } = true;
         public bool StopWavesOnDisable { get; set; } = true;
 
-        // Intervalo de log; se não for definido, usa a duração da onda para manter paridade com o ciclo de spawn.
-        public float DebugLoopIntervalSeconds { get; set; } = 0f;
+        // Intervalo de log; por padrão 5s para simular ciclos de spawn mais curtos.
+        public float DebugLoopIntervalSeconds { get; set; } = 5f;
 
         // Duração "esperada" de uma onda de spawn para fins de telemetria/debug.
-        public float DebugWaveDurationSeconds { get; set; } = 12f;
+        public float DebugWaveDurationSeconds { get; set; } = 5f;
 
         // Quantidade estimada de spawns por onda (apenas para log).
         public int DebugWaveSpawnCount { get; set; } = 6;
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 engagedEvent.Planet,
                 engagedEvent.DetectionType,
                 FormatDetector(engagedEvent.Detector),
-                Time.time + _config.DebugLoopIntervalSeconds,
+                Time.time,
                 Mathf.Max(1, engagedEvent.ActiveDetectors));
 
             _activeDefenses.Add(engagedEvent.Planet, state);
@@ -128,6 +128,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"[Debug] Detectores ativos em {state.Planet.ActorName}: {state.ActiveDetectors} (último detector: {state.DetectorName}).");
+
+            // Primeira "onda" registrada imediatamente após a ativação; o próximo log respeita o intervalo.
+            LogWaveDebug(state, Time.time);
+            state.NextLogTime = Time.time + _config.DebugLoopIntervalSeconds;
         }
 
         public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
@@ -195,11 +199,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     continue;
                 }
 
-                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                    $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}.");
-
+                LogWaveDebug(state, now);
                 state.NextLogTime = now + _config.DebugLoopIntervalSeconds;
             }
+        }
+
+        private void LogWaveDebug(ActiveDefenseState state, float timestamp)
+        {
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}. (@ {timestamp:0.00}s)");
         }
 
         private void RegisterBindings()
