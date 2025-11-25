@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -36,8 +35,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
     public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent, IDisposable
     {
-        private readonly Dictionary<PlanetsMaster, HashSet<IDetector>> _activeDetectors = new();
-
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
         private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
@@ -76,15 +73,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            EnsureConfig();
-
-            HashSet<IDetector> detectors = GetOrCreateDetectorSet(engagedEvent.Planet);
-            if (!detectors.Add(engagedEvent.Detector))
-            {
-                return;
-            }
-
-            if (detectors.Count == 1)
+            if (engagedEvent.IsFirstEngagement)
             {
                 StartDefense(engagedEvent);
             }
@@ -97,17 +86,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (!_activeDetectors.TryGetValue(disengagedEvent.Planet, out var detectors))
-            {
-                return;
-            }
-
-            if (!detectors.Remove(disengagedEvent.Detector))
-            {
-                return;
-            }
-
-            if (detectors.Count == 0)
+            if (disengagedEvent.IsLastDisengagement)
             {
                 StopDefense(disengagedEvent.Planet, disengagedEvent.DetectionType, reason: "Último detector saiu");
             }
@@ -120,14 +99,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            StopDefense(disabledEvent.Planet, null, reason: "Planeta desativado");
-            _activeDetectors.Remove(disabledEvent.Planet);
+            bool hasActiveDetectors = disabledEvent.ActiveDetectors > 0;
+            bool wavesRunning = _waveRunner?.IsRunning(disabledEvent.Planet) == true;
+
+            if (hasActiveDetectors || wavesRunning)
+            {
+                StopDefense(disabledEvent.Planet, null, reason: "Planeta desativado");
+            }
         }
 
         public void Dispose()
         {
             UnregisterBindings();
-            _activeDetectors.Clear();
         }
 
         private void RegisterBindings()
@@ -193,17 +176,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _poolRunner?.Release(planet);
-        }
-
-        private HashSet<IDetector> GetOrCreateDetectorSet(PlanetsMaster planet)
-        {
-            if (!_activeDetectors.TryGetValue(planet, out var detectors))
-            {
-                detectors = new HashSet<IDetector>();
-                _activeDetectors[planet] = detectors;
-            }
-
-            return detectors;
         }
 
         private void EnsureConfig()

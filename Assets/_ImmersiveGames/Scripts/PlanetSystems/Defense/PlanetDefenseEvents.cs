@@ -9,12 +9,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public IDetector Detector { get; }
         public DetectionType DetectionType { get; }
+        public bool IsFirstEngagement { get; }
+        public int ActiveDetectors { get; }
 
-        public PlanetDefenseEngagedEvent(PlanetsMaster planet, IDetector detector, DetectionType detectionType)
+        public PlanetDefenseEngagedEvent(
+            PlanetsMaster planet,
+            IDetector detector,
+            DetectionType detectionType,
+            bool isFirstEngagement,
+            int activeDetectors)
         {
             Planet = planet;
             Detector = detector;
             DetectionType = detectionType;
+            IsFirstEngagement = isFirstEngagement;
+            ActiveDetectors = activeDetectors;
         }
     }
 
@@ -23,22 +32,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public IDetector Detector { get; }
         public DetectionType DetectionType { get; }
+        public bool IsLastDisengagement { get; }
+        public int ActiveDetectors { get; }
 
-        public PlanetDefenseDisengagedEvent(PlanetsMaster planet, IDetector detector, DetectionType detectionType)
+        public PlanetDefenseDisengagedEvent(
+            PlanetsMaster planet,
+            IDetector detector,
+            DetectionType detectionType,
+            bool isLastDisengagement,
+            int activeDetectors)
         {
             Planet = planet;
             Detector = detector;
             DetectionType = detectionType;
+            IsLastDisengagement = isLastDisengagement;
+            ActiveDetectors = activeDetectors;
         }
     }
 
     public readonly struct PlanetDefenseDisabledEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
+        public int ActiveDetectors { get; }
 
-        public PlanetDefenseDisabledEvent(PlanetsMaster planet)
+        public PlanetDefenseDisabledEvent(PlanetsMaster planet, int activeDetectors)
         {
             Planet = planet;
+            ActiveDetectors = activeDetectors;
         }
     }
 }

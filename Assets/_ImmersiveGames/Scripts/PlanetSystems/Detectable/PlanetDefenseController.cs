@@ -51,13 +51,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             DefenseRole role = ResolveDefenseRole(detector);
             _activeDetectors.Add(detector, role);
+            int activeCount = _activeDetectors.Count;
 
             DebugUtility.LogVerbose<PlanetDefenseController>(
                 $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
 
-            EventBus<PlanetDefenseEngagedEvent>.Raise(new PlanetDefenseEngagedEvent(planetsMaster, detector, detectionType));
+            EventBus<PlanetDefenseEngagedEvent>.Raise(
+                new PlanetDefenseEngagedEvent(
+                    planetsMaster,
+                    detector,
+                    detectionType,
+                    isFirstEngagement: activeCount == 1,
+                    activeDetectors: activeCount));
         }
 
         public void DisengageDefense(IDetector detector, DetectionType detectionType)
@@ -70,12 +77,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             if (_activeDetectors.TryGetValue(detector, out DefenseRole role))
             {
                 _activeDetectors.Remove(detector);
+                int activeCount = _activeDetectors.Count;
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
                     null,
                     this);
 
-                EventBus<PlanetDefenseDisengagedEvent>.Raise(new PlanetDefenseDisengagedEvent(planetsMaster, detector, detectionType));
+                EventBus<PlanetDefenseDisengagedEvent>.Raise(
+                    new PlanetDefenseDisengagedEvent(
+                        planetsMaster,
+                        detector,
+                        detectionType,
+                        isLastDisengagement: activeCount == 0,
+                        activeDetectors: activeCount));
             }
         }
 
@@ -83,8 +97,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         {
             if (_activeDetectors.Count > 0 && planetsMaster != null)
             {
+                int activeCount = _activeDetectors.Count;
                 _activeDetectors.Clear();
-                EventBus<PlanetDefenseDisabledEvent>.Raise(new PlanetDefenseDisabledEvent(planetsMaster));
+                EventBus<PlanetDefenseDisabledEvent>.Raise(
+                    new PlanetDefenseDisabledEvent(planetsMaster, activeCount));
             }
         }
 
