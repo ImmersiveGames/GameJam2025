@@ -102,7 +102,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (_activeDefenses.TryGetValue(engagedEvent.Planet, out var existing))
             {
-                existing.ActiveDetectors = Mathf.Max(existing.ActiveDetectors, engagedEvent.ActiveDetectors);
+                int updatedCount = Mathf.Max(existing.ActiveDetectors, engagedEvent.ActiveDetectors);
+                if (updatedCount != existing.ActiveDetectors)
+                {
+                    existing.ActiveDetectors = updatedCount;
+
+                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                        $"[Debug] Detectores ativos em {existing.Planet.ActorName}: {existing.ActiveDetectors} (último detector: {FormatDetector(engagedEvent.Detector)}).");
+                }
                 return;
             }
 
@@ -118,6 +125,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"{state.DetectorName} ativou as defesas do planeta {state.Planet.ActorName} (sensor: {state.DetectionType?.TypeName ?? "Unknown"}).",
                 DebugUtility.Colors.CrucialInfo);
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Debug] Detectores ativos em {state.Planet.ActorName}: {state.ActiveDetectors} (último detector: {state.DetectorName}).");
         }
 
         public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
@@ -130,6 +140,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (_activeDefenses.TryGetValue(disengagedEvent.Planet, out var state))
             {
                 int remainingDetectors = Mathf.Max(disengagedEvent.ActiveDetectors, state.ActiveDetectors - 1);
+
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"[Debug] Detectores ativos em {state.Planet.ActorName}: {remainingDetectors} após saída de {FormatDetector(disengagedEvent.Detector)}.");
 
                 if (remainingDetectors <= 0 || disengagedEvent.IsLastDisengagement)
                 {
