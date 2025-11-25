@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ProjectilesSystems
 {
-    [CreateAssetMenu(fileName = "BulletObjectData", menuName = "ImmersiveGames/BulletObjectData")]
+    [CreateAssetMenu(fileName = "BulletObjectData", menuName = "ImmersiveGames/PoolSystem/ObjectData/Bullets")]
     public class BulletObjectData : PoolableObjectData
     {
         [SerializeField] private float speed = 10f;

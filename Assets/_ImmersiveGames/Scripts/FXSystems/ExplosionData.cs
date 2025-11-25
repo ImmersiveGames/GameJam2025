@@ -2,7 +2,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.FXSystems
 {
-    [CreateAssetMenu(fileName = "ExplosionData", menuName = "ImmersiveGames/PoolableObjectData/Explosions")]
+    [CreateAssetMenu(fileName = "ExplosionData", menuName = "ImmersiveGames/PoolSystem/ObjectData/Explosions")]
     public class ExplosionData : PoolableObjectData
     {
         

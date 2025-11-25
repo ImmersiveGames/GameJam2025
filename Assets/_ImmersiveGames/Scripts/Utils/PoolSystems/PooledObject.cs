@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    
     public abstract class PooledObject : MonoBehaviour, IPoolable
     {
         private PoolableObjectData _config;

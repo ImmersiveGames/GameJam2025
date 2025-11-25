@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/PoolData")]
+    [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/PoolSystem/PoolData")]
     public class PoolData : ScriptableObject
     {
         [SerializeField] private string objectName;
