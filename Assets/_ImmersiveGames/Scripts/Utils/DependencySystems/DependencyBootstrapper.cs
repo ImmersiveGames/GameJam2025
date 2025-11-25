@@ -66,6 +66,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
+                // Runners de defesa planetária (stubs seguros até implementação real)
+                EnsureGlobal<IPlanetDefensePoolRunner>(() => new NullPlanetDefensePoolRunner());
+                EnsureGlobal<IPlanetDefenseWaveRunner>(() => new NullPlanetDefenseWaveRunner());
+                EnsureGlobal<PlanetDefenseSpawnConfig>(() => new PlanetDefenseSpawnConfig());
+
                 // Serviço de spawn/ativação de defesas planetárias (puro, sem MonoBehaviour)
                 EnsureGlobal<IPlanetDefenseActivationListener>(() =>
                 {

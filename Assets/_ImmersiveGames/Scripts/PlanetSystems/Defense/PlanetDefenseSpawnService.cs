@@ -255,9 +255,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         break;
                     }
 
-                    // Respeita o pause do jogo: se estiver pausado (timeScale == 0),
+                    // Respeita o pause do jogo: se estiver pausado ou com timescale zerado,
                     // não imprime logs periódicos para evitar ruído fora de contexto.
-                    if (Time.timeScale > 0f)
+                    if (ShouldLogDebugLoop())
                     {
                         DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                             $"[Debug] Defesa ativa em {planet.ActorName} contra {detectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}.");
@@ -300,6 +300,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _activeLoops.Clear();
+        }
+
+        private static bool ShouldLogDebugLoop()
+        {
+            return Application.isPlaying && Time.timeScale > 0f && !IsEditorPaused();
+        }
+
+        private static bool IsEditorPaused()
+        {
+#if UNITY_EDITOR
+            return UnityEditor.EditorApplication.isPaused;
+#else
+            return false;
+#endif
         }
 
         private static string FormatDetector(IDetector detector)
