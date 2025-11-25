@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -47,6 +50,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
         private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
+
+        private readonly Dictionary<PlanetsMaster, CancellationTokenSource> _activeLoops = new();
 
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
@@ -127,6 +132,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public void Dispose()
         {
+            StopAllLoops("Serviço descartado");
             UnregisterBindings();
         }
 
@@ -180,12 +186,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 _waveRunner.StartWaves(planet, detectionType);
             }
+
+            StartActiveLoop(planet, detectionType);
         }
 
         private void StopDefense(PlanetsMaster planet, DetectionType detectionType, string reason)
         {
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"Encerrando defesa de {planet.ActorName}: {reason}.");
+
+            StopActiveLoop(planet, reason);
 
             if (_waveRunner != null && (_config?.StopWavesOnDisable != false))
             {
@@ -198,6 +208,77 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void EnsureConfig()
         {
             _config ??= new PlanetDefenseSpawnConfig();
+        }
+
+        private void StartActiveLoop(PlanetsMaster planet, DetectionType detectionType)
+        {
+            if (planet == null || _activeLoops.ContainsKey(planet))
+            {
+                return;
+            }
+
+            var cancellation = new CancellationTokenSource();
+            _activeLoops[planet] = cancellation;
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Debug] Loop de defesa ativo para {planet.ActorName}; emitindo mensagem a cada 3s.");
+
+            _ = RunActiveLoopAsync(planet, detectionType, cancellation.Token);
+        }
+
+        private async Task RunActiveLoopAsync(PlanetsMaster planet, DetectionType detectionType, CancellationToken token)
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), token);
+
+                    if (token.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                        $"[Debug] Defesa ativa em {planet.ActorName} contra {detectionType?.TypeName ?? "Unknown"}.");
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Ignorado: cancelamento esperado ao encerrar a defesa.
+            }
+        }
+
+        private void StopActiveLoop(PlanetsMaster planet, string reason)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            if (_activeLoops.TryGetValue(planet, out var cancellation))
+            {
+                cancellation.Cancel();
+                cancellation.Dispose();
+                _activeLoops.Remove(planet);
+
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"[Debug] Loop de defesa encerrado para {planet.ActorName}: {reason}.");
+            }
+        }
+
+        private void StopAllLoops(string reason)
+        {
+            foreach (var kvp in _activeLoops)
+            {
+                kvp.Value.Cancel();
+                kvp.Value.Dispose();
+
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"[Debug] Loop de defesa encerrado para {kvp.Key.ActorName}: {reason}.");
+            }
+
+            _activeLoops.Clear();
         }
     }
 }

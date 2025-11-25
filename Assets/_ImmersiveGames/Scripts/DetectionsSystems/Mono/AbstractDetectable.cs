@@ -9,7 +9,6 @@ using System.Linq;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
-    [DebugLevel(level:DebugLevel.Verbose)]
     public abstract class AbstractDetectable : MonoBehaviour, IDetectable
     {
         [SerializeField] protected DetectionType myDetectionType;

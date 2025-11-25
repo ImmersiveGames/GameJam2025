@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
-    [DebugLevel(level:DebugLevel.Verbose)]
     public class PlanetDefenseDetectable : AbstractDetectable
     {
         [SerializeField] private PlanetDefenseController defenseController;
