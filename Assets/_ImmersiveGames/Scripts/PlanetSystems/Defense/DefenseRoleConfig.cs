@@ -11,17 +11,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         order = 100)]
     public class DefenseRoleConfig : ScriptableObject
     {
-        [SerializeField] private DefenseRole defaultRole = DefenseRole.Unknown;
-        [SerializeField] private List<DefenseRoleBinding> bindings = new();
+        [Tooltip("Role de fallback aplicado quando nenhum mapeamento corresponde ao identifier.")]
+        [SerializeField]
+        private DefenseRole fallbackRole = DefenseRole.Unknown;
+
+        [Tooltip("Mapeamentos de um identifier (ex.: ActorName) para um DefenseRole específico.")]
+        [SerializeField]
+        private List<DefenseRoleBinding> roleMappings = new();
 
         public DefenseRole ResolveRole(string identifier)
         {
             if (string.IsNullOrWhiteSpace(identifier))
             {
-                return defaultRole;
+                return fallbackRole;
             }
 
-            foreach (DefenseRoleBinding binding in bindings)
+            foreach (DefenseRoleBinding binding in roleMappings)
             {
                 if (binding == null || string.IsNullOrWhiteSpace(binding.Identifier))
                 {
@@ -34,14 +39,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
             }
 
-            return defaultRole;
+            return fallbackRole;
         }
 
         [Serializable]
         private class DefenseRoleBinding
         {
-            [SerializeField] private string identifier;
-            [SerializeField] private DefenseRole role = DefenseRole.Unknown;
+            [Tooltip("Chave string que identifica o ator ou detector (ex.: ActorName).")]
+            [SerializeField]
+            private string identifier;
+
+            [Tooltip("DefenseRole associado ao identifier informado.")]
+            [SerializeField]
+            private DefenseRole role = DefenseRole.Unknown;
 
             public string Identifier => identifier;
             public DefenseRole Role => role;
