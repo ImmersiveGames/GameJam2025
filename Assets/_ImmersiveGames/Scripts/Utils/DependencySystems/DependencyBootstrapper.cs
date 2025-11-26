@@ -75,6 +75,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     var service = go.AddComponent<PlanetDefenseSpawnService>();
                     DependencyManager.Provider.InjectDependencies(service);
                     service.OnDependenciesInjected();
+                    DependencyManager.Provider.RegisterGlobal<IDefenseEngagedListener>(service);
+                    DependencyManager.Provider.RegisterGlobal<IDefenseDisengagedListener>(service);
+                    DependencyManager.Provider.RegisterGlobal<IDefenseDisabledListener>(service);
                     return service;
                 });
 

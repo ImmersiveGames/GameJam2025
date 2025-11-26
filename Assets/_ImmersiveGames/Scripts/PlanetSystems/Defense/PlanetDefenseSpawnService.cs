@@ -11,11 +11,27 @@ using UnityEditor;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
-    public interface IPlanetDefenseActivationListener
+    public interface IDefenseEngagedListener
     {
         void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent);
+    }
+
+    public interface IDefenseDisengagedListener
+    {
         void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent);
+    }
+
+    public interface IDefenseDisabledListener
+    {
         void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent);
+    }
+
+    /// <summary>
+    /// Interface agregadora mantida para compatibilidade; listeners podem implementar
+    /// apenas os eventos necessários através das interfaces segmentadas.
+    /// </summary>
+    public interface IPlanetDefenseActivationListener : IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener
+    {
     }
 
     public sealed class PlanetDefenseSpawnConfig
