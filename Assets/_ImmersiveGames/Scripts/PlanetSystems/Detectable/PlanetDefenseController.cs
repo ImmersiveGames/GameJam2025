@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
+        [SerializeField] private DefenseRoleConfig defenseRoleConfig;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -124,14 +125,81 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             return detector.Owner?.ActorName ?? detector.ToString();
         }
 
-        private static DefenseRole ResolveDefenseRole(IDetector detector)
+        private DefenseRole ResolveDefenseRole(IDetector detector)
+        {
+            DefenseRole explicitRole = TryResolveFromDetector(detector);
+            if (explicitRole != DefenseRole.Unknown)
+            {
+                return explicitRole;
+            }
+
+            DefenseRole ownerRole = TryResolveFromOwner(detector);
+            if (ownerRole != DefenseRole.Unknown)
+            {
+                return ownerRole;
+            }
+
+            DefenseRole configuredRole = TryResolveFromConfig(detector);
+            if (configuredRole != DefenseRole.Unknown)
+            {
+                return configuredRole;
+            }
+
+            return ResolveLegacyRole(detector);
+        }
+
+        private static DefenseRole TryResolveFromDetector(IDetector detector)
         {
             if (detector is IDefenseRoleProvider provider)
             {
-                return provider.DefenseRole;
+                return NormalizeRole(provider.GetDefenseRole());
             }
 
-            string actorName = detector.Owner?.ActorName;
+            if (detector is Component detectorComponent &&
+                detectorComponent.TryGetComponent(out IDefenseRoleProvider componentProvider))
+            {
+                return NormalizeRole(componentProvider.GetDefenseRole());
+            }
+
+            return DefenseRole.Unknown;
+        }
+
+        private static DefenseRole TryResolveFromOwner(IDetector detector)
+        {
+            if (detector?.Owner is IDefenseRoleProvider provider)
+            {
+                return NormalizeRole(provider.GetDefenseRole());
+            }
+
+            if (detector?.Owner is Component ownerComponent &&
+                ownerComponent.TryGetComponent(out IDefenseRoleProvider providerComponent))
+            {
+                return NormalizeRole(providerComponent.GetDefenseRole());
+            }
+
+            return DefenseRole.Unknown;
+        }
+
+        private DefenseRole TryResolveFromConfig(IDetector detector)
+        {
+            if (defenseRoleConfig == null)
+            {
+                return DefenseRole.Unknown;
+            }
+
+            string identifier = detector?.Owner?.ActorName;
+
+            if (string.IsNullOrEmpty(identifier) && detector is Component detectorComponent)
+            {
+                identifier = detectorComponent.gameObject.name;
+            }
+
+            return defenseRoleConfig.ResolveRole(identifier);
+        }
+
+        private static DefenseRole ResolveLegacyRole(IDetector detector)
+        {
+            string actorName = detector?.Owner?.ActorName;
             if (string.IsNullOrEmpty(actorName))
             {
                 return DefenseRole.Unknown;
@@ -148,6 +216,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             return DefenseRole.Unknown;
+        }
+
+        private static DefenseRole NormalizeRole(DefenseRole role)
+        {
+            return role == DefenseRole.Unknown ? DefenseRole.Unknown : role;
         }
 
         private static string FormatDetector(IDetector detector, DefenseRole role)

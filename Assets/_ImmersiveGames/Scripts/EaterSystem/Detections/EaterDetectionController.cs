@@ -18,7 +18,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
 
-        public DefenseRole DefenseRole => DefenseRole.Eater;
+        public DefenseRole GetDefenseRole()
+        {
+            return DefenseRole.Eater;
+        }
 
         public override void OnDetected(IDetectable detectable, DetectionType detectionType)
         {

@@ -17,7 +17,10 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         private SensorController _sensorController;
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
 
-        public DefenseRole DefenseRole => DefenseRole.Player;
+        public DefenseRole GetDefenseRole()
+        {
+            return DefenseRole.Player;
+        }
 
         protected override void Awake()
         {
