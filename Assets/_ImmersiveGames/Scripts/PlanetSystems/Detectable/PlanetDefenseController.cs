@@ -130,18 +130,30 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             DefenseRole explicitRole = TryResolveFromDetector(detector);
             if (explicitRole != DefenseRole.Unknown)
             {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"Role resolvido via provider explícito (detector): {explicitRole}",
+                    null,
+                    this);
                 return explicitRole;
             }
 
             DefenseRole ownerRole = TryResolveFromOwner(detector);
             if (ownerRole != DefenseRole.Unknown)
             {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"Role resolvido via provider explícito (Owner): {ownerRole}",
+                    null,
+                    this);
                 return ownerRole;
             }
 
             DefenseRole configuredRole = TryResolveFromConfig(detector);
             if (configuredRole != DefenseRole.Unknown)
             {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"Role via config (DefenseRoleConfig): {configuredRole}",
+                    null,
+                    this);
                 return configuredRole;
             }
 
@@ -197,6 +209,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             return defenseRoleConfig.ResolveRole(identifier);
         }
 
+        // TODO: Remover fallback legacy após migração completa de providers.
         private static DefenseRole ResolveLegacyRole(IDetector detector)
         {
             string actorName = detector?.Owner?.ActorName;
@@ -207,11 +220,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             if (actorName.Contains("Player"))
             {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    "Fallback legacy usado (TODO: remover): Player",
+                    null,
+                    detector as Component,
+                    isFallback: true);
                 return DefenseRole.Player;
             }
 
             if (actorName.Contains("Eater"))
             {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    "Fallback legacy usado (TODO: remover): Eater",
+                    null,
+                    detector as Component,
+                    isFallback: true);
                 return DefenseRole.Eater;
             }
 
