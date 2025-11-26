@@ -11,7 +11,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     {
         [SerializeField] private PlanetsMaster planetsMaster;
 
-        private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
+        private readonly HashSet<IDetector> _activeDetectors = new();
+        private readonly Dictionary<IDetector, int> _detectorTypeCount = new();
+        private readonly Dictionary<DetectionType, HashSet<IDetector>> _detectorsByType = new();
+        private readonly Dictionary<IDetector, DefenseRole> _detectorRoles = new();
 
         private void Awake()
         {
@@ -22,8 +25,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             if (planetsMaster == null)
             {
-                DebugUtility.LogError<PlanetDefenseController>(
-                    $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
+                DefenseUtils.LogMissingPlanetMaster(this, gameObject.name);
             }
         }
 
@@ -46,20 +48,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         {
             if (detector == null)
             {
+                DefenseUtils.LogIgnoredNullDetector(this);
                 return;
             }
 
-            if (_activeDetectors.ContainsKey(detector))
+            if (detectionType == null)
             {
+                DebugUtility.LogWarning<PlanetDefenseController>(
+                    $"DetectionType ausente para detector {DefenseUtils.GetDetectorName(detector)}.", this);
                 return;
             }
 
-            DefenseRole role = ResolveDefenseRole(detector);
-            _activeDetectors.Add(detector, role);
+            if (!DefenseUtils.TryAddToLookup(_detectorsByType, detectionType, detector))
+            {
+                DefenseUtils.LogDuplicateDetector(detector, detectionType);
+                return;
+            }
+
+            DefenseRole role = CacheRole(detector);
+            _activeDetectors.Add(detector);
+            _detectorTypeCount[detector] = _detectorTypeCount.TryGetValue(detector, out int count)
+                ? count + 1
+                : 1;
+
             int activeCount = _activeDetectors.Count;
 
             DebugUtility.LogVerbose<PlanetDefenseController>(
-                $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
+                $"Planeta {GetPlanetName()} iniciou defesas contra {DefenseUtils.FormatDetector(detector, role)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
 
@@ -81,26 +96,51 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         {
             if (detector == null)
             {
+                DefenseUtils.LogIgnoredNullDetector(this);
                 return;
             }
 
-            if (_activeDetectors.TryGetValue(detector, out DefenseRole role))
+            if (detectionType == null)
             {
-                _activeDetectors.Remove(detector);
-                int activeCount = _activeDetectors.Count;
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
-                    null,
-                    this);
-
-                EventBus<PlanetDefenseDisengagedEvent>.Raise(
-                    new PlanetDefenseDisengagedEvent(
-                        planetsMaster,
-                        detector,
-                        detectionType,
-                        isLastDisengagement: activeCount == 0,
-                        activeDetectors: activeCount));
+                DebugUtility.LogWarning<PlanetDefenseController>(
+                    $"DetectionType ausente para detector {DefenseUtils.GetDetectorName(detector)}.", this);
+                return;
             }
+
+            if (!DefenseUtils.TryRemoveFromLookup(_detectorsByType, detectionType, detector))
+            {
+                return;
+            }
+
+            if (_detectorTypeCount.TryGetValue(detector, out int count))
+            {
+                count--;
+                if (count <= 0)
+                {
+                    _detectorTypeCount.Remove(detector);
+                    _activeDetectors.Remove(detector);
+                }
+                else
+                {
+                    _detectorTypeCount[detector] = count;
+                }
+            }
+
+            _detectorRoles.TryGetValue(detector, out DefenseRole role);
+
+            int activeCount = _activeDetectors.Count;
+            DebugUtility.LogVerbose<PlanetDefenseController>(
+                $"Planeta {GetPlanetName()} encerrou defesas contra {DefenseUtils.FormatDetector(detector, role)}.",
+                null,
+                this);
+
+            EventBus<PlanetDefenseDisengagedEvent>.Raise(
+                new PlanetDefenseDisengagedEvent(
+                    planetsMaster,
+                    detector,
+                    detectionType,
+                    isLastDisengagement: activeCount == 0,
+                    activeDetectors: activeCount));
         }
 
         private void OnDisable()
@@ -109,6 +149,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 int activeCount = _activeDetectors.Count;
                 _activeDetectors.Clear();
+                _detectorsByType.Clear();
+                _detectorTypeCount.Clear();
+                _detectorRoles.Clear();
                 EventBus<PlanetDefenseDisabledEvent>.Raise(
                     new PlanetDefenseDisabledEvent(planetsMaster, activeCount));
             }
@@ -119,47 +162,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             return planetsMaster?.ActorName ?? gameObject.name;
         }
 
-        private static string GetDetectorName(IDetector detector)
+        private DefenseRole CacheRole(IDetector detector)
         {
-            return detector.Owner?.ActorName ?? detector.ToString();
-        }
-
-        private static DefenseRole ResolveDefenseRole(IDetector detector)
-        {
-            if (detector is IDefenseRoleProvider provider)
+            if (!_detectorRoles.TryGetValue(detector, out var role))
             {
-                return provider.DefenseRole;
+                role = DefenseUtils.ResolveDefenseRole(detector);
+                _detectorRoles[detector] = role;
             }
 
-            string actorName = detector.Owner?.ActorName;
-            if (string.IsNullOrEmpty(actorName))
-            {
-                return DefenseRole.Unknown;
-            }
-
-            if (actorName.Contains("Player"))
-            {
-                return DefenseRole.Player;
-            }
-
-            if (actorName.Contains("Eater"))
-            {
-                return DefenseRole.Eater;
-            }
-
-            return DefenseRole.Unknown;
-        }
-
-        private static string FormatDetector(IDetector detector, DefenseRole role)
-        {
-            string detectorName = GetDetectorName(detector);
-
-            return role switch
-            {
-                DefenseRole.Player => $"o Player ({detectorName})",
-                DefenseRole.Eater => $"o Eater ({detectorName})",
-                _ => detectorName
-            };
+            return role;
         }
     }
 }

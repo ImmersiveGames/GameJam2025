@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         [SerializeField] private PlanetDefenseController defenseController;
 
         private readonly HashSet<IDetector> _engagedDetectors = new();
+        private readonly Dictionary<DetectionType, HashSet<IDetector>> _detectorsByType = new();
 
         protected override void Awake()
         {
@@ -23,8 +25,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             if (defenseController == null)
             {
-                DebugUtility.LogError<PlanetDefenseDetectable>(
-                    $"PlanetDefenseController não encontrado em {gameObject.name}.", this);
+                DefenseUtils.LogMissingDefenseController(this, gameObject.name);
             }
         }
 
@@ -42,11 +43,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         {
             if (detector == null)
             {
+                DefenseUtils.LogIgnoredNullDetector(this);
+                return;
+            }
+
+            if (detectionType == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseDetectable>($"DetectionType ausente em {name}.", this);
                 return;
             }
 
             // Garante que a defesa seja ativada apenas na transição de entrada.
-            if (_engagedDetectors.Add(detector))
+            if (_engagedDetectors.Add(detector) | DefenseUtils.TryAddToLookup(_detectorsByType, detectionType, detector))
             {
                 defenseController?.EngageDefense(detector, detectionType);
             }
@@ -56,11 +64,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         {
             if (detector == null)
             {
+                DefenseUtils.LogIgnoredNullDetector(this);
+                return;
+            }
+
+            if (detectionType == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseDetectable>($"DetectionType ausente em {name}.", this);
                 return;
             }
 
             // Só desativa se de fato acompanhávamos esse detector.
-            if (_engagedDetectors.Remove(detector))
+            if (_engagedDetectors.Remove(detector) || DefenseUtils.TryRemoveFromLookup(_detectorsByType, detectionType, detector))
             {
                 defenseController?.DisengageDefense(detector, detectionType);
             }
@@ -76,6 +91,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 }
 
                 _engagedDetectors.Clear();
+                _detectorsByType.Clear();
             }
 
             base.OnDisable();

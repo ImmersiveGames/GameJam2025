@@ -191,6 +191,12 @@ MonoBehaviour opcional (`Mono/SensorDebugVisualizer.cs`):
 
 ## 🧯 Troubleshooting
 
+## 🗒️ Atualizações — 26/11/2025
+
+- **Defesas planetárias modularizadas**: controlador e detectável agora usam `DefenseUtils` e `DefenseStateManager` com `HashSet`/`Dictionary` para suportar múltiplos detectores por tipo sem duplicar eventos.
+- **Novos runners reais**: `RealPlanetDefensePoolRunner` e `RealPlanetDefenseWaveRunner` preparados para integrar PoolSystem e coroutines de ondas, mantendo compatibilidade com os stubs nativos.
+- **Orquestração refeita**: `PlanetDefenseSpawnService` passou a compor `DefenseDebugLogger`, estratégia (`IDefenseStrategy`) e runners via DI, substituindo `Update` por coroutines por planeta e adicionando configuração de minions por onda.
+
 | Sintoma | Causa Provável | Ação Recomendada |
 | --- | --- | --- |
 | Detector nunca dispara callbacks | `SensorController` sem `SensorCollection` válida ou `IDetector` ausente | Valide logs de erro em `Awake` e atribua referências corretas. |

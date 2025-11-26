@@ -6,13 +6,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     public interface IPlanetDefensePoolRunner
     {
-        void WarmUp(PlanetsMaster planet, DetectionType detectionType);
+        void ConfigureForPlanet(PlanetsMaster planet, DefenseStrategyResult strategy);
+        void WarmUp(PlanetsMaster planet, DetectionType detectionType, DefenseStrategyResult strategy);
         void Release(PlanetsMaster planet);
     }
 
     public interface IPlanetDefenseWaveRunner
     {
-        void StartWaves(PlanetsMaster planet, DetectionType detectionType);
+        void ConfigureForPlanet(PlanetsMaster planet, DefenseStrategyResult strategy);
+        void StartWaves(PlanetsMaster planet, DetectionType detectionType, DefenseStrategyResult strategy);
         void StopWaves(PlanetsMaster planet);
         bool IsRunning(PlanetsMaster planet);
     }
@@ -24,7 +26,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     public sealed class NullPlanetDefensePoolRunner : IPlanetDefensePoolRunner
     {
-        public void WarmUp(PlanetsMaster planet, DetectionType detectionType)
+        public void ConfigureForPlanet(PlanetsMaster planet, DefenseStrategyResult strategy)
+        {
+            WarmUp(planet, strategy.DetectionType, strategy);
+        }
+
+        public void WarmUp(PlanetsMaster planet, DetectionType detectionType, DefenseStrategyResult strategy)
         {
             DebugUtility.LogVerbose<NullPlanetDefensePoolRunner>(
                 $"[Stub] WarmUp ignorado para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
@@ -46,7 +53,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private readonly HashSet<PlanetsMaster> _running = new();
 
-        public void StartWaves(PlanetsMaster planet, DetectionType detectionType)
+        public void ConfigureForPlanet(PlanetsMaster planet, DefenseStrategyResult strategy)
+        {
+            // Nenhuma configuração necessária no stub.
+        }
+
+        public void StartWaves(PlanetsMaster planet, DetectionType detectionType, DefenseStrategyResult strategy)
         {
             if (planet == null)
             {
