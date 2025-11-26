@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -74,6 +75,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             Planet = planet;
             ActiveDetectors = activeDetectors;
+        }
+    }
+
+    /// <summary>
+    /// Evento emitido a cada minion spawnado por uma onda, facilitando
+    /// telemetria ou efeitos adicionais sem acoplamento direto ao runner.
+    /// </summary>
+    public readonly struct PlanetDefenseMinionSpawnedEvent : IEvent
+    {
+        public PlanetsMaster Planet { get; }
+        public DetectionType DetectionType { get; }
+        public IPoolable SpawnedMinion { get; }
+
+        public PlanetDefenseMinionSpawnedEvent(PlanetsMaster planet, DetectionType detectionType, IPoolable spawnedMinion)
+        {
+            Planet = planet;
+            DetectionType = detectionType;
+            SpawnedMinion = spawnedMinion;
         }
     }
 }
