@@ -157,7 +157,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 return configuredRole;
             }
 
-            return ResolveLegacyRole(detector);
+            DebugUtility.LogVerbose<PlanetDefenseController>(
+                "Role não resolvido; retornando Unknown.",
+                null,
+                this);
+
+            // TODO: Monitorar logs para Unknown e adicionar providers se necessário.
+            return DefenseRole.Unknown;
         }
 
         private static DefenseRole TryResolveFromDetector(IDetector detector)
@@ -207,38 +213,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             return defenseRoleConfig.ResolveRole(identifier);
-        }
-
-        // TODO: Remover fallback legacy após migração completa de providers.
-        private static DefenseRole ResolveLegacyRole(IDetector detector)
-        {
-            string actorName = detector?.Owner?.ActorName;
-            if (string.IsNullOrEmpty(actorName))
-            {
-                return DefenseRole.Unknown;
-            }
-
-            if (actorName.Contains("Player"))
-            {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    "Fallback legacy usado (TODO: remover): Player",
-                    null,
-                    detector as Component,
-                    isFallback: true);
-                return DefenseRole.Player;
-            }
-
-            if (actorName.Contains("Eater"))
-            {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    "Fallback legacy usado (TODO: remover): Eater",
-                    null,
-                    detector as Component,
-                    isFallback: true);
-                return DefenseRole.Eater;
-            }
-
-            return DefenseRole.Unknown;
         }
 
         private static DefenseRole NormalizeRole(DefenseRole role)
