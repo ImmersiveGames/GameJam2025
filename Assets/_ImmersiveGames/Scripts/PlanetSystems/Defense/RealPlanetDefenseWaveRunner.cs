@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, detectionType, pool, strategy);
 
-            var timer = new FrequencyTimer(Mathf.Max(config.DebugWaveDurationSeconds, 0.05f));
+            var timer = new FrequencyTimer(GetIntervalMilliseconds(config.DebugWaveDurationSeconds));
             SubscribeToTick(timer, () => SpawnWave(planet, detectionType, pool, strategy));
             timer.Start();
 
@@ -140,6 +140,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private IDefenseStrategy ResolveStrategy(PlanetsMaster planet)
         {
             return _strategies.TryGetValue(planet, out var strategy) ? strategy : null;
+        }
+
+        private static int GetIntervalMilliseconds(float seconds)
+        {
+            // FrequencyTimer espera um valor inteiro; convertemos segundos em milissegundos para maior precisão.
+            var clampedSeconds = Mathf.Max(seconds, 0.05f);
+            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds * 1000f));
         }
 
         private static void SubscribeToTick(FrequencyTimer timer, Action callback)
