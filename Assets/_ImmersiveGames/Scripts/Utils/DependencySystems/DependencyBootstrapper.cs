@@ -12,7 +12,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    
+
     public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private static bool _initialized;
@@ -66,8 +66,20 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                // Configuração e serviço de defesa planetária (modo simples de logs)
+                // Configuração e componentes de defesa planetária
                 EnsureGlobal(() => new PlanetDefenseSpawnConfig());
+                EnsureGlobal(() => new DefenseStateManager());
+                EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
+                EnsureGlobal<IPlanetDefenseWaveRunner>(() =>
+                {
+                    var go = new GameObject(nameof(RealPlanetDefenseWaveRunner));
+                    GameObject.DontDestroyOnLoad(go);
+                    var runner = go.AddComponent<RealPlanetDefenseWaveRunner>();
+                    DependencyManager.Provider.InjectDependencies(runner);
+                    runner.OnDependenciesInjected();
+                    return runner;
+                });
+
                 EnsureGlobal<IPlanetDefenseActivationListener>(() =>
                 {
                     var go = new GameObject(nameof(PlanetDefenseSpawnService));
@@ -105,7 +117,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 DebugUtility.LogVerbose<DependencyBootstrapper>($"Global service already present: {typeof(T).Name}");
             }
         }
-        
+
 
         private static void RegisterEventBuses()
         {
