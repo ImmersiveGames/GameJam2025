@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var timer = new FrequencyTimer(GetIntervalMilliseconds(_config.DebugLoopIntervalSeconds));
+            var timer = new FrequencyTimer(GetIntervalSeconds(_config.DebugLoopIntervalSeconds));
             SubscribeToTick(timer, () => LogWaveDebug(state, Time.time));
             timer.Start();
 
@@ -78,11 +78,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}. (@ {timestamp:0.00}s)");
         }
 
-        private static int GetIntervalMilliseconds(float seconds)
+        private static int GetIntervalSeconds(float seconds)
         {
-            // FrequencyTimer aceita apenas int; convertemos segundos em milissegundos para preservar a precisão configurável.
-            var clampedSeconds = Mathf.Max(seconds, 0.05f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds * 1000f));
+            // FrequencyTimer espera o intervalo em segundos como inteiro.
+            var clampedSeconds = Mathf.Max(seconds, 1f);
+            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
         }
 
         private static void SubscribeToTick(FrequencyTimer timer, Action callback)

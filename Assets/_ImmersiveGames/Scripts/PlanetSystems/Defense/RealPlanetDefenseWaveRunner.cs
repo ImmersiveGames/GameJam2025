@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, detectionType, pool, strategy);
 
-            var timer = new FrequencyTimer(GetIntervalMilliseconds(config.DebugWaveDurationSeconds));
+            var timer = new FrequencyTimer(GetIntervalSeconds(config.DebugWaveDurationSeconds));
             SubscribeToTick(timer, () => SpawnWave(planet, detectionType, pool, strategy));
             timer.Start();
 
@@ -142,11 +142,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out var strategy) ? strategy : null;
         }
 
-        private static int GetIntervalMilliseconds(float seconds)
+        private static int GetIntervalSeconds(float seconds)
         {
-            // FrequencyTimer espera um valor inteiro; convertemos segundos em milissegundos para maior precisão.
-            var clampedSeconds = Mathf.Max(seconds, 0.05f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds * 1000f));
+            // FrequencyTimer espera o intervalo em segundos como inteiro.
+            var clampedSeconds = Mathf.Max(seconds, 1f);
+            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
         }
 
         private static void SubscribeToTick(FrequencyTimer timer, Action callback)
