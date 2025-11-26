@@ -11,17 +11,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
     /// Controlador simples responsável por interpretar os sensores do Eater.
     /// Após a simplificação das proximidades, monitora apenas ativações de defesas de planetas.
     /// </summary>
-    public class EaterDetectionController : AbstractDetector, IDefenseRoleProvider
+    public class EaterDetectionController : AbstractDetector
     {
         [Header("Detection Types")]
         [SerializeField] private DetectionType planetDefenseDetectionType;
 
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
-
-        public DefenseRole GetDefenseRole()
-        {
-            return DefenseRole.Eater;
-        }
 
         public override void OnDetected(IDetectable detectable, DetectionType detectionType)
         {

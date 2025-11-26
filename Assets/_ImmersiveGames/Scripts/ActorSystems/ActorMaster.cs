@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -14,6 +15,9 @@ namespace _ImmersiveGames.Scripts.ActorSystems
     {
         [Header("Actor Identity")]
         [SerializeField] private string customActorId;
+
+        [Header("Defense Role")]
+        [SerializeField] private DefenseRole actorDefenseRole = DefenseRole.Unknown;
 
         private ModelRoot _modelRoot;
         private string _actorId;
@@ -108,6 +112,12 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             IsActive = true;
             _modelRoot = this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");
             SetSkinActive(true);
+        }
+
+        public DefenseRole GetDefenseRole()
+        {
+            // Default to Unknown when not configured, allowing explicit override per actor.
+            return actorDefenseRole;
         }
 
         public void SetSkinActive(bool active)
