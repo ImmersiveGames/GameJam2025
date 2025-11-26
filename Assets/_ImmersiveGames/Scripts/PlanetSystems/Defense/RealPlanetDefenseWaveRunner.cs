@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using ImprovedTimers;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,12 +11,12 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Runner concreto que gerencia corrotinas de ondas e spawn real via PoolSystem.
+    /// Runner concreto que gerencia ondas de spawn utilizando FrequencyTimer
+    /// para reduzir overhead e facilitar pausa/retomada.
     /// </summary>
-    [DisallowMultipleComponent]
-    public sealed class RealPlanetDefenseWaveRunner : MonoBehaviour, IPlanetDefenseWaveRunner, IInjectableComponent
+    public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
-        private readonly Dictionary<PlanetsMaster, Coroutine> _running = new();
+        private readonly Dictionary<PlanetsMaster, FrequencyTimer> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
 
         [Inject] private PlanetDefenseSpawnConfig config = new();
@@ -48,7 +50,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             strategy ??= ResolveStrategy(planet);
-
             if (!poolRunner.TryGetConfiguration(planet, out var context))
             {
                 context = new PlanetDefenseSetupContext(planet, detectionType, strategy: strategy);
@@ -69,8 +70,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var routine = StartCoroutine(RunWaves(planet, detectionType, pool, strategy));
-            _running[planet] = routine;
+            SpawnWave(planet, detectionType, pool, strategy);
+
+            var timer = new FrequencyTimer(Mathf.Max(config.DebugWaveDurationSeconds, 0.05f));
+            SubscribeToTick(timer, () => SpawnWave(planet, detectionType, pool, strategy));
+            timer.Start();
+
+            _running[planet] = timer;
         }
 
         public void StopWaves(PlanetsMaster planet)
@@ -80,9 +86,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_running.TryGetValue(planet, out var routine))
+            if (_running.TryGetValue(planet, out var timer))
             {
-                StopCoroutine(routine);
+                timer.Stop();
+                DisposeIfPossible(timer);
                 _running.Remove(planet);
             }
         }
@@ -107,18 +114,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out strategy);
         }
 
-        private System.Collections.IEnumerator RunWaves(PlanetsMaster planet, DetectionType detectionType, ObjectPool pool, IDefenseStrategy strategy)
-        {
-            var waitBetweenWaves = new WaitForSeconds(config.DebugWaveDurationSeconds);
-            while (true)
-            {
-                SpawnWave(planet, detectionType, pool, strategy);
-                yield return waitBetweenWaves;
-            }
-        }
-
         private void SpawnWave(PlanetsMaster planet, DetectionType detectionType, ObjectPool pool, IDefenseStrategy strategy)
         {
+            if (planet == null || pool == null)
+            {
+                return;
+            }
+
             var spawnPosition = planet.transform.position;
             for (int i = 0; i < config.DebugWaveSpawnCount; i++)
             {
@@ -138,6 +140,51 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private IDefenseStrategy ResolveStrategy(PlanetsMaster planet)
         {
             return _strategies.TryGetValue(planet, out var strategy) ? strategy : null;
+        }
+
+        private static void SubscribeToTick(FrequencyTimer timer, Action callback)
+        {
+            if (timer == null || callback == null)
+            {
+                return;
+            }
+
+            var eventNames = new[] { "OnTick", "Tick", "OnTimerTick", "OnFrequency" };
+            foreach (var name in eventNames)
+            {
+                var eventInfo = typeof(FrequencyTimer).GetEvent(name);
+                if (eventInfo == null)
+                {
+                    continue;
+                }
+
+                var handlerType = eventInfo.EventHandlerType;
+                Delegate handler = null;
+
+                if (handlerType == typeof(Action))
+                {
+                    handler = Delegate.CreateDelegate(handlerType, callback.Target, callback.Method, false);
+                }
+                else if (handlerType == typeof(Action<float>))
+                {
+                    Action<float> wrapper = _ => callback();
+                    handler = Delegate.CreateDelegate(handlerType, wrapper.Target, wrapper.Method, false);
+                }
+
+                if (handler != null)
+                {
+                    eventInfo.AddEventHandler(timer, handler);
+                    return;
+                }
+            }
+        }
+
+        private static void DisposeIfPossible(FrequencyTimer timer)
+        {
+            if (timer is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }

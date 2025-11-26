@@ -72,9 +72,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
                 EnsureGlobal<IPlanetDefenseWaveRunner>(() =>
                 {
-                    var go = new GameObject(nameof(RealPlanetDefenseWaveRunner));
-                    GameObject.DontDestroyOnLoad(go);
-                    var runner = go.AddComponent<RealPlanetDefenseWaveRunner>();
+                    var runner = new RealPlanetDefenseWaveRunner();
                     DependencyManager.Provider.InjectDependencies(runner);
                     runner.OnDependenciesInjected();
                     return runner;

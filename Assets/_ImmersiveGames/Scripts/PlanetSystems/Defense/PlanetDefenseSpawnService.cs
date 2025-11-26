@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _config ??= new PlanetDefenseSpawnConfig();
             _stateManager ??= new DefenseStateManager();
-            _debugLogger ??= new DefenseDebugLogger(this, _config);
+            _debugLogger ??= new DefenseDebugLogger(_config);
             EnsureDebugInterval();
         }
 
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             InjectionState = DependencyInjectionState.Ready;
             _config ??= new PlanetDefenseSpawnConfig();
             _stateManager ??= new DefenseStateManager();
-            _debugLogger ??= new DefenseDebugLogger(this, _config);
+            _debugLogger ??= new DefenseDebugLogger(_config);
             _debugLogger.Configure(_config);
             EnsureDebugInterval();
         }
@@ -119,16 +119,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"{state.LastDetectorName} ativou as defesas do planeta {state.Planet.ActorName} (sensor: {state.DetectionType?.TypeName ?? "Unknown"}).",
-                DebugUtility.Colors.CrucialInfo);
-
-            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[Debug] Detectores ativos em {state.Planet.ActorName}: {state.ActiveDetectors} (último detector: {state.LastDetectorName}).");
-
-            if (!engagedEvent.IsFirstEngagement)
-            {
-                return;
-            }
+                $"[Debug] Detectores ativos em {engagedEvent.Planet.ActorName}: {state.ActiveDetectors} após entrada de {FormatDetector(engagedEvent.Detector)}. Primeiro? {engagedEvent.IsFirstEngagement}.");
 
             var context = BuildContext(state);
             _poolRunner?.ConfigureForPlanet(context);
