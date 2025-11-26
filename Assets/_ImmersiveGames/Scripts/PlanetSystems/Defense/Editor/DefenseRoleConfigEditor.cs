@@ -1,11 +1,9 @@
 #if UNITY_EDITOR
 using UnityEditor;
-using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Editor
 {
     [CustomEditor(typeof(DefenseRoleConfig))]
-    public class DefenseRoleConfigEditor : Editor
+    public class DefenseRoleConfigEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
