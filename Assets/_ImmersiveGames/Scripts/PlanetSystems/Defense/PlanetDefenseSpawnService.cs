@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent
     {
-        [SerializeField] private PoolData defaultPoolData;
+        private PoolData defaultPoolData;
         private DefenseWaveProfileSO _waveProfile;
         private bool _warmUpPools = true;
         private bool _stopWavesOnDisable = true;

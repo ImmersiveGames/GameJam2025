@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
             var service = new PlanetDefenseSpawnService();
             // SO não é injetado via DI; o Controller atribui diretamente.
+            // Config antigo (PlanetDefenseSpawnConfig) removido – apenas ScriptableObject define ondas.
             service.SetWaveProfile(waveProfile);
             DebugUtility.LogVerbose<PlanetDefenseController>($"WaveProfile atribuído: {waveProfile?.name ?? "NULO"}");
             service.SetDefaultPoolData(defaultDefensePool);
