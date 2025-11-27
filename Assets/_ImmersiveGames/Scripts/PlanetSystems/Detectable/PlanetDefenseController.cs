@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
+    [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;

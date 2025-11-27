@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
+    [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class DefenseDebugLogger
     {
         private DefenseWaveProfileSO _waveProfile;

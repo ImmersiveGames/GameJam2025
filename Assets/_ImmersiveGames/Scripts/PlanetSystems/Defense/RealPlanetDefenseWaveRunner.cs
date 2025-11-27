@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Runner concreto que gerencia ondas de spawn utilizando FrequencyTimer
     /// para reduzir overhead e facilitar pausa/retomada.
     /// </summary>
+    [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _running = new();
