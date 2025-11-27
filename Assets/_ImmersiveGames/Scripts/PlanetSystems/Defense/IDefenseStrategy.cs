@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -15,13 +16,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             PlanetResourcesSo planetResource = null,
             DefensesMinionData preferredMinion = null,
-            IDefenseStrategy strategy = null)
+            IDefenseStrategy strategy = null,
+            PoolData poolData = null)
         {
             Planet = planet;
             DetectionType = detectionType;
             PlanetResource = planetResource;
             PreferredMinion = preferredMinion;
             Strategy = strategy;
+            PoolData = poolData;
         }
 
         public PlanetsMaster Planet { get; }
@@ -29,10 +32,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetResourcesSo PlanetResource { get; }
         public DefensesMinionData PreferredMinion { get; }
         public IDefenseStrategy Strategy { get; }
+        public PoolData PoolData { get; }
 
         public bool HasResource => PlanetResource != null;
         public bool HasPreferredMinion => PreferredMinion != null;
         public bool HasStrategy => Strategy != null;
+        public bool HasPoolData => PoolData != null;
     }
 
     /// <summary>

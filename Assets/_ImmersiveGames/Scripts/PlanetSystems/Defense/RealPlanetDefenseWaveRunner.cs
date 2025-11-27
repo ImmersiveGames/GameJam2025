@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using ImprovedTimers;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -57,7 +56,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 poolRunner.ConfigureForPlanet(context);
             }
 
-            var poolName = DefensePoolNaming.GetPoolName(planet, context);
+            var resolvedDetection = context.DetectionType ?? detectionType;
+
+            var poolData = context.PoolData;
+            if (poolData == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"PoolData missing for planet {planet.ActorName}; unable to start waves.");
+                return;
+            }
+
+            var poolName = poolData.ObjectName;
             var pool = PoolManager.Instance?.GetPool(poolName);
             if (pool == null)
             {
@@ -67,14 +75,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (pool == null)
             {
-                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Pool '{poolName}' indisponível para {planet.ActorName}.");
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Pool '{poolName}' unavailable for {planet.ActorName}.");
                 return;
             }
 
-            SpawnWave(planet, detectionType, pool, strategy);
+            SpawnWave(planet, resolvedDetection, pool, strategy);
 
             var timer = new FrequencyTimer(GetIntervalSeconds(config.DebugWaveDurationSeconds));
-            SubscribeToTick(timer, () => SpawnWave(planet, detectionType, pool, strategy));
+            SubscribeToTick(timer, () => SpawnWave(planet, resolvedDetection, pool, strategy));
             timer.Start();
 
             _running[planet] = timer;

@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -51,9 +52,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(-100)]
     public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
     {
         [SerializeField] private DefensesMinionData defaultMinionData;
+        [SerializeField] private PoolData defaultPoolData;
 
         [Inject] private PlanetDefenseSpawnConfig _config = new();
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
@@ -75,7 +78,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _config ??= new PlanetDefenseSpawnConfig();
             _stateManager ??= new DefenseStateManager();
             _debugLogger ??= new DefenseDebugLogger(_config);
+            RegisterAsGlobalListener();
             EnsureDebugInterval();
+            WarnIfPoolDataMissing();
         }
 
         public void OnDependenciesInjected()
@@ -86,6 +91,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _debugLogger ??= new DefenseDebugLogger(_config);
             _debugLogger.Configure(_config);
             EnsureDebugInterval();
+            WarnIfPoolDataMissing();
         }
 
         private void OnEnable()
@@ -179,6 +185,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _stateManager?.ClearPlanet(disabledEvent.Planet);
         }
 
+        private void RegisterAsGlobalListener()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPlanetDefenseActivationListener>(out var existing) || existing == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPlanetDefenseActivationListener>(this);
+                DependencyManager.Provider.RegisterGlobal<IDefenseEngagedListener>(this);
+                DependencyManager.Provider.RegisterGlobal<IDefenseDisengagedListener>(this);
+                DependencyManager.Provider.RegisterGlobal<IDefenseDisabledListener>(this);
+            }
+            else if (!ReferenceEquals(existing, this))
+            {
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>("Global PlanetDefenseSpawnService already registered; skipping self-registration.");
+            }
+        }
+
         private PlanetDefenseSetupContext BuildContext(DefenseState state)
         {
             PlanetResourcesSo resource = null;
@@ -192,7 +213,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.DetectionType,
                 resource,
                 defaultMinionData,
-                null);
+                null,
+                defaultPoolData);
         }
 
         private void EnsureDebugInterval()
@@ -200,6 +222,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (_config.DebugLoopIntervalSeconds <= 0f)
             {
                 _config.DebugLoopIntervalSeconds = _config.DebugWaveDurationSeconds;
+            }
+        }
+
+        private void WarnIfPoolDataMissing()
+        {
+            if (defaultPoolData == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>("Default PoolData not configured; defense waves will not warm up pools.");
             }
         }
 

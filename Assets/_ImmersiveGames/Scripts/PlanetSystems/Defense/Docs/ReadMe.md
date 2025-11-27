@@ -70,8 +70,8 @@ Detections (Player/Eater) → PlanetDefenseController (Resolve DefenseRole)
 - Pode ser desligado em produção mantendo código de telemetria isolado.
 
 ### Runners (Pool/Wave)
-- **RealPlanetDefensePoolRunner:** registra pools reais no `PoolManager` a partir de `DefensesMinionData`.
-- **RealPlanetDefenseWaveRunner:** coordena `FrequencyTimer` por planeta para spawn periódico, configurando minions via `PlanetDefenseSetupContext` + `IDefenseStrategy`.
+- **RealPlanetDefensePoolRunner:** registra pools reais no `PoolManager` usando `PoolData` pré-configurado via Editor (sem criar `PoolData` em runtime), mantendo validação via `PoolData.Validate`.
+- **RealPlanetDefenseWaveRunner:** coordena `FrequencyTimer` por planeta para spawn periódico, configurando minions via `PlanetDefenseSetupContext` + `IDefenseStrategy` e consumindo `ObjectPool.GetObject` conforme exemplos do PoolSystem.
 
 ---
 
@@ -98,9 +98,9 @@ Isso habilita combinações ou forçar papéis especiais (Player possuído, boss
 ## 🪣 Integração com PoolSystem
 
 - Usa `PoolManager`, `PoolData` e `IPoolable` para evitar instâncias extras.
-- Cada planeta obtém seu pool via `DefensesMinionData` (prefab, quantidade inicial, expansão permitida, tempo de warm-up).
-- `RealPlanetDefensePoolRunner.WarmUp` registra o pool e prepara instâncias antes da primeira wave.
-- Spawn ocorre via `ObjectPool.GetObject` dentro do tick do `FrequencyTimer` no runner de waves.
+- Cada planeta referencia um `PoolData` configurado no Editor (nome, tamanho inicial, expansão e lista de `PoolableObjectData`); o runner não cria `PoolData` em runtime.
+- `RealPlanetDefensePoolRunner.WarmUp` valida o `PoolData` e chama `PoolManager.Instance.RegisterPool(poolData)` seguindo o fluxo descrito no guia do PoolSystem.
+- Spawn ocorre via `ObjectPool.GetObject(position, spawner)` dentro do tick do `FrequencyTimer` no runner de waves, permitindo rastrear o `IActor` que disparou o spawn.
 
 ---
 
@@ -131,9 +131,10 @@ Isso habilita combinações ou forçar papéis especiais (Player possuído, boss
 
 1. **ActorMaster (prefabs do Player/Eater/Boss):** defina `DefenseRole` primário.
 2. **DefenseRoleConfig (opcional):** crie o asset via `Create → Defense → DefenseRoleConfig`, configure `Fallback Role` e `Role Mappings`.
-3. **DefensesMinionData:** associe prefabs de minions, quantidades e intervalos de wave.
-4. **PlanetDefenseSpawnService:** injete runners reais no bootstrap (já configurado) e aponte o `DefenseRoleConfig` se desejar overrides.
-5. **Planetas na cena:** adicionem `PlanetDefenseDetectable` + `PlanetDefenseController` e conectem ao EventBus padrão.
+3. **PoolData (Defense):** crie o asset `PoolData` no Editor com os `PoolableObjectData` (ex.: `DefensesMinionData`) e configure `ObjectName`, tamanho inicial e expansão.
+4. **DefensesMinionData:** associe prefabs de minions, quantidades e intervalos de wave (referenciados pelo `PoolData`).
+5. **PlanetDefenseSpawnService:** injete runners reais no bootstrap (já configurado) e referencie o `PoolData` default + `DefenseRoleConfig` se desejar overrides.
+6. **Planetas na cena:** adicionem `PlanetDefenseDetectable` + `PlanetDefenseController` e conectem ao EventBus padrão.
 
 ---
 

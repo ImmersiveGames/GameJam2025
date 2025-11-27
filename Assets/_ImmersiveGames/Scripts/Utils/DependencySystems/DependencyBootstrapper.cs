@@ -78,19 +78,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     return runner;
                 });
 
-                EnsureGlobal<IPlanetDefenseActivationListener>(() =>
-                {
-                    var go = new GameObject(nameof(PlanetDefenseSpawnService));
-                    GameObject.DontDestroyOnLoad(go);
-                    var service = go.AddComponent<PlanetDefenseSpawnService>();
-                    DependencyManager.Provider.InjectDependencies(service);
-                    service.OnDependenciesInjected();
-                    DependencyManager.Provider.RegisterGlobal<IDefenseEngagedListener>(service);
-                    DependencyManager.Provider.RegisterGlobal<IDefenseDisengagedListener>(service);
-                    DependencyManager.Provider.RegisterGlobal<IDefenseDisabledListener>(service);
-                    return service;
-                });
-
                 DebugUtility.Log<DependencyBootstrapper>(
                     "✅ Essential dependency services registered",
                     DebugUtility.Colors.Success);

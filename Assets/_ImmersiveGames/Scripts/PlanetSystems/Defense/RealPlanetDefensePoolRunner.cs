@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class RealPlanetDefensePoolRunner : IPlanetDefensePoolRunner
     {
         private readonly Dictionary<PlanetsMaster, PlanetDefenseSetupContext> _configured = new();
-        private readonly Dictionary<PlanetsMaster, string> _poolNames = new();
+        private readonly Dictionary<PlanetsMaster, ObjectPool> _planetPools = new();
 
         public void ConfigureForPlanet(PlanetDefenseSetupContext context)
         {
@@ -55,26 +54,28 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var poolName = DefensePoolNaming.GetPoolName(context.Planet, context);
-            if (poolManager.GetPool(poolName) != null)
-            {
-                _poolNames[context.Planet] = poolName;
-                return;
-            }
-
-            var poolData = BuildPoolData(poolName, context.PreferredMinion);
+            var poolData = context.PoolData;
             if (poolData == null)
             {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Cannot warm up pool for {context.Planet.ActorName}: missing minion data.");
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"PoolData not configured for planet {context.Planet.ActorName}; skipping warm up.");
                 return;
             }
 
-            var pool = poolManager.RegisterPool(poolData);
-            if (pool != null)
+            if (!PoolData.Validate(poolData, context.Planet))
             {
-                _poolNames[context.Planet] = poolName;
-                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' warmed for planet {context.Planet.ActorName}.");
+                return;
             }
+
+            var poolName = poolData.ObjectName;
+            var pool = poolManager.GetPool(poolName) ?? poolManager.RegisterPool(poolData);
+            if (pool == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Failed to register pool '{poolName}' for planet {context.Planet.ActorName}.");
+                return;
+            }
+
+            _planetPools[context.Planet] = pool;
+            DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' warmed for planet {context.Planet.ActorName}.");
         }
 
         public void Release(PlanetsMaster planet)
@@ -90,48 +91,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_poolNames.TryGetValue(planet, out var poolName))
+            if (_planetPools.TryGetValue(planet, out var pool))
             {
-                var pool = poolManager.GetPool(poolName);
                 pool?.ClearPool();
-                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' cleared for planet {planet.ActorName}.");
+                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{pool.PoolData.ObjectName}' cleared for planet {planet.ActorName}.");
             }
 
-            _poolNames.Remove(planet);
             _configured.Remove(planet);
-        }
-
-        private PoolData BuildPoolData(string poolName, DefensesMinionData minionData)
-        {
-            if (minionData == null)
-            {
-                return null;
-            }
-
-            var data = ScriptableObject.CreateInstance<PoolData>();
-            SetPrivateField(data, "objectName", poolName);
-            SetPrivateField(data, "initialPoolSize", 5);
-            SetPrivateField(data, "canExpand", true);
-            SetPrivateField(data, "objectConfigs", new PoolableObjectData[] { minionData });
-            SetPrivateField(data, "reconfigureOnReturn", true);
-            return data;
-        }
-
-        private void SetPrivateField<TValue>(PoolData data, string fieldName, TValue value)
-        {
-            var field = typeof(PoolData).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-            field?.SetValue(data, value);
-        }
-    }
-
-    public static class DefensePoolNaming
-    {
-        public static string GetPoolName(PlanetsMaster planet, PlanetDefenseSetupContext context)
-        {
-            var minionId = context?.PreferredMinion != null ? context.PreferredMinion.name : "Minion";
-            var detection = context?.DetectionType?.TypeName ?? "Unknown";
-            var planetName = planet != null ? planet.ActorName : "UnknownPlanet";
-            return $"Defense_{planetName}_{detection}_{minionId}";
+            _planetPools.Remove(planet);
         }
     }
 }
