@@ -3,6 +3,8 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
@@ -11,6 +13,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     {
         [SerializeField] private PlanetsMaster planetsMaster;
         [SerializeField] private DefenseRoleConfig defenseRoleConfig;
+        [SerializeField] private DefenseWaveProfileSO waveProfile;
+        [SerializeField] private PoolData defaultDefensePool;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -25,7 +29,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 DebugUtility.LogError<PlanetDefenseController>(
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
+                return;
             }
+
+            var service = new PlanetDefenseSpawnService();
+            service.SetWaveProfile(waveProfile);
+            DebugUtility.LogVerbose<PlanetDefenseController>($"WaveProfile atribuído: {waveProfile?.name ?? "NULO"}");
+            service.SetDefaultPoolData(defaultDefensePool);
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
+            DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
+            service.OnDependenciesInjected();
         }
 
 #if UNITY_EDITOR

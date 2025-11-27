@@ -1,6 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -33,17 +32,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
     public sealed class PlanetDefenseSpawnConfig
     {
-        public bool WarmUpPools { get; set; } = true;
-        public bool StopWavesOnDisable { get; set; } = true;
+        public DefenseWaveProfileSO WaveProfile { get; }
+        public bool WarmUpPools { get; }
+        public bool StopWavesOnDisable { get; }
 
-        // Intervalo de log; por padrão 5s para simular ciclos de spawn mais curtos.
-        public float DebugLoopIntervalSeconds { get; set; } = 5f;
+        public float DebugLoopIntervalSeconds => Mathf.Max(1f, WaveProfile?.waveIntervalSeconds ?? 5f);
+        public float DebugWaveDurationSeconds => Mathf.Max(1f, WaveProfile?.waveIntervalSeconds ?? 5f);
+        public int DebugWaveSpawnCount => Mathf.Max(1, WaveProfile?.minionsPerWave ?? 6);
 
-        // Duração "esperada" de uma onda de spawn para fins de telemetria/debug.
-        public float DebugWaveDurationSeconds { get; set; } = 5f;
+        public PlanetDefenseSpawnConfig(DefenseWaveProfileSO waveProfile = null, bool warmUpPools = true, bool stopWavesOnDisable = true)
+        {
+            WaveProfile = waveProfile;
+            WarmUpPools = warmUpPools;
+            StopWavesOnDisable = stopWavesOnDisable;
+        }
 
-        // Quantidade estimada de spawns por onda (apenas para log).
-        public int DebugWaveSpawnCount { get; set; } = 6;
+        public PlanetDefenseSpawnConfig WithWaveProfile(DefenseWaveProfileSO waveProfile)
+        {
+            return new PlanetDefenseSpawnConfig(waveProfile, WarmUpPools, StopWavesOnDisable);
+        }
     }
 
     /// <summary>
@@ -51,60 +58,62 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// delegando estado e logs para colaboradores especializados.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
-    [DisallowMultipleComponent]
-    [DefaultExecutionOrder(-100)]
-    public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
+    public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent
     {
         [SerializeField] private PoolData defaultPoolData;
 
-        [Inject] private PlanetDefenseSpawnConfig _config = new();
+        private PlanetDefenseSpawnConfig _config;
+        private DefenseWaveProfileSO _waveProfile;
+
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
         [Inject] private DefenseStateManager _stateManager;
 
         private DefenseDebugLogger _debugLogger;
 
-        private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
-        private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
-        private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
-
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => nameof(PlanetDefenseSpawnService);
 
-        private void Awake()
+        public PlanetDefenseSpawnService()
         {
-            ResolveDependenciesFromProvider();
-            _config ??= new PlanetDefenseSpawnConfig();
+            _config ??= new PlanetDefenseSpawnConfig(_waveProfile);
             _stateManager ??= new DefenseStateManager();
-            _debugLogger ??= new DefenseDebugLogger(_config);
-            RegisterAsGlobalListener();
-            EnsureDebugInterval();
-            WarnIfPoolDataMissing();
+            _debugLogger ??= new DefenseDebugLogger(_waveProfile);
+        }
+
+        public void SetDefaultPoolData(PoolData poolData)
+        {
+            defaultPoolData = poolData;
+            LogDefaultPoolData();
+        }
+
+        /// <summary>
+        /// SO não injetado via DI – passado via método do Controller.
+        /// </summary>
+        public void SetWaveProfile(DefenseWaveProfileSO waveProfile)
+        {
+            _waveProfile = waveProfile;
+            _config = (_config ?? new PlanetDefenseSpawnConfig()).WithWaveProfile(_waveProfile);
+            _debugLogger?.Configure(_waveProfile);
+            WarnIfProfileMissing();
         }
 
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
             ResolveDependenciesFromProvider();
-            _config ??= new PlanetDefenseSpawnConfig();
+            _config ??= new PlanetDefenseSpawnConfig(_waveProfile);
+            _waveProfile ??= _config.WaveProfile;
+            _config = _config.WithWaveProfile(_waveProfile);
             _stateManager ??= new DefenseStateManager();
-            _debugLogger ??= new DefenseDebugLogger(_config);
-            _debugLogger.Configure(_config);
-            EnsureDebugInterval();
+            _debugLogger ??= new DefenseDebugLogger(_waveProfile);
+            _debugLogger.Configure(_waveProfile);
+            RegisterAsGlobalListener();
+            WarnIfProfileMissing();
+            LogDefaultPoolData();
+            LogWaveProfile();
             WarnIfPoolDataMissing();
-        }
-
-        private void OnEnable()
-        {
-            RegisterBindings();
-        }
-
-        private void OnDisable()
-        {
-            UnregisterBindings();
-            _debugLogger?.StopAll();
-            _stateManager?.ClearAll();
         }
 
         public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -131,7 +140,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var context = BuildContext(state);
             _poolRunner?.ConfigureForPlanet(context);
 
-            if (_config.WarmUpPools)
+            if (ShouldWarmUpPools())
             {
                 _poolRunner?.WarmUp(context);
             }
@@ -214,14 +223,35 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.DetectionType,
                 resource,
                 null,
-                defaultPoolData);
+                defaultPoolData,
+                _waveProfile);
         }
 
-        private void EnsureDebugInterval()
+        private void LogDefaultPoolData()
         {
-            if (_config.DebugLoopIntervalSeconds <= 0f)
+            string poolName = defaultPoolData != null ? defaultPoolData.name : "null";
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>($"[PoolDebug] Default PoolData configurado: {poolName}; WarmUpPools: {_config?.WarmUpPools ?? false}.");
+        }
+
+        private void LogWaveProfile()
+        {
+            var profile = _config?.WaveProfile ?? _waveProfile;
+
+            if (profile == null)
             {
-                _config.DebugLoopIntervalSeconds = _config.DebugWaveDurationSeconds;
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>("[WaveDebug] Nenhum DefenseWaveProfileSO atribuído; serão usados valores padrão para debug de ondas.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.waveIntervalSeconds}s; Minions/Onda: {profile.minionsPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
+        }
+
+        private void WarnIfProfileMissing()
+        {
+            if (_waveProfile == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>("DefenseWaveProfileSO não atribuído; usando valores padrão para depuração.");
             }
         }
 
@@ -233,14 +263,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
+        private bool ShouldWarmUpPools()
+        {
+            return (_config?.WarmUpPools ?? false) && defaultPoolData != null;
+        }
+
         private void ResolveDependenciesFromProvider()
         {
             var provider = DependencyManager.Provider;
-
-            if (_config == null && provider.TryGetGlobal(out PlanetDefenseSpawnConfig resolvedConfig))
-            {
-                _config = resolvedConfig;
-            }
 
             if (_stateManager == null && provider.TryGetGlobal(out DefenseStateManager resolvedStateManager))
             {
@@ -258,34 +288,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        private void RegisterBindings()
-        {
-            _engagedBinding ??= new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
-            _disengagedBinding ??= new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
-            _disabledBinding ??= new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
-
-            EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
-            EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
-            EventBus<PlanetDefenseDisabledEvent>.Register(_disabledBinding);
-        }
-
-        private void UnregisterBindings()
-        {
-            if (_engagedBinding != null)
-            {
-                EventBus<PlanetDefenseEngagedEvent>.Unregister(_engagedBinding);
-            }
-
-            if (_disengagedBinding != null)
-            {
-                EventBus<PlanetDefenseDisengagedEvent>.Unregister(_disengagedBinding);
-            }
-
-            if (_disabledBinding != null)
-            {
-                EventBus<PlanetDefenseDisabledEvent>.Unregister(_disabledBinding);
-            }
-        }
 
         private static string FormatDetector(IDetector detector)
         {
