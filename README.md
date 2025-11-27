@@ -17,6 +17,7 @@
 - Movido o aviso de PoolData ausente para ocorrer somente após a injeção de dependências e configuração do PoolData, garantindo que assets atribuídos no Inspector (ex.: `PoolDataDefenses.asset`) sejam respeitados antes de qualquer log de alerta.
 - Adicionados logs verbosos no `PlanetDefenseSpawnService` para registrar o PoolData padrão configurado e o flag `WarmUpPools`, facilitando depuração de cenas onde o serviço é instanciado via código e o PoolData é definido em `PlanetDefenseController`.
 - Centralizado o uso do `DefenseWaveProfileSO` como fonte única de configuração das ondas (intervalo, minions, raio/altura) por planeta, compartilhando a mesma instância via DI sem criar ScriptableObjects em runtime.
+- Removido o caminho legado `BuildPlanetConfig`/`PlanetDefenseSpawnConfig` no `PlanetDefenseController`: o serviço recebe apenas o `DefenseWaveProfileSO` e o `PoolData` atribuídos no Inspector, evitando config duplicado ignorado em runtime.
 
 ### Passo 1 — Avaliação e Preparação (Pré-Refatoração)
 - **Escopo analisado:** `PlanetDefenseController`, `PlanetDefenseDetectable`, `PlanetDefenseSpawnService`, `PlanetDefenseEvents`, stubs (`NullPlanetDefensePoolRunner`, `NullPlanetDefenseWaveRunner`) e `DefensesMinionData`. Referências externas observadas: `PlanetsMaster`, `PlanetsManager`, `EventBus`, `DetectionSystems`, `PoolSystem`.
