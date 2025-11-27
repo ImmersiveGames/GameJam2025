@@ -16,5 +16,5 @@ MonoBehaviour:
   initialPoolSize: 10
   canExpand: 1
   objectConfigs:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: deb9a0105f0a76b4ca4ab72e483de89d, type: 2}
   reconfigureOnReturn: 1

@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   collectionName: PlayerCollaction
   configs:
-  - {fileID: 11400000, guid: 98f239058ce4acb4abef5024b8b4edc0, type: 2}
+  - {fileID: 11400000, guid: 379bfeb5c04cf224c9fa667fbd57ec59, type: 2}

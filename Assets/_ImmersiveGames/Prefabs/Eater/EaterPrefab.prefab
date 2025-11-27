@@ -87,6 +87,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
+  actorDefenseRole: 2
   config: {fileID: 11400000, guid: e7d40a5470ebfab4a957ae53212a2f67, type: 2}
 --- !u!114 &4391767132752609887
 MonoBehaviour:
@@ -129,7 +130,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planetDefenseDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
-  planetProximityDetectionType: {fileID: 11400000, guid: 05f5f4c1c7f24687a7bf01e919f4c32e, type: 2}
 --- !u!114 &8446763053167507243
 MonoBehaviour:
   m_ObjectHideFlags: 0

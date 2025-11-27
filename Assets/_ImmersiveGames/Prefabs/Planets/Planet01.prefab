@@ -86,6 +86,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
+  actorDefenseRole: 0
 --- !u!114 &6541701590752357594
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,6 +163,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planetsMaster: {fileID: 3945190765558734642}
+  defenseRoleConfig: {fileID: 11400000, guid: ec22197efdaccae44bb0de61a0ed5dd5, type: 2}
 --- !u!114 &2819374650281937465
 MonoBehaviour:
   m_ObjectHideFlags: 0

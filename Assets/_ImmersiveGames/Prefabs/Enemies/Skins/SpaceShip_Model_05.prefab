@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2038223090112082884}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Bot_R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -40,7 +40,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4329975665605679901}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Bot.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -71,7 +71,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3029173718508763685}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Top_L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -102,7 +102,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2238526478187856670}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_UP.L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -133,7 +133,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1480507811410420}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Armature
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -170,7 +170,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3010063277092855711}
   - component: {fileID: 2690225910293499746}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GPX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -262,7 +262,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4777978757219665806}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Top_R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -295,7 +295,7 @@ GameObject:
   - component: {fileID: 7747484776778541902}
   - component: {fileID: 2280512215717252883}
   - component: {fileID: 8967837815397082508}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Red Main Engine VFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5126,7 +5126,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7142851900451442201}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5159,7 +5159,7 @@ GameObject:
   - component: {fileID: 8180444838791963829}
   - component: {fileID: 5016013109571237248}
   - component: {fileID: 2266323324475297524}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SpaceShip_Model_05
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5237,7 +5237,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 688430357011140721}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Bot.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5268,7 +5268,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8607169040270596311}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_Bot_L
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5299,7 +5299,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4950627123895435023}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: VFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5331,7 +5331,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8566360738418410488}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Fire_Points
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5366,7 +5366,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8848178834707852444}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Wing_UP.R
   m_TagString: Untagged
   m_Icon: {fileID: 0}

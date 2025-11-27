@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7477231331238944625}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: VFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -43,7 +43,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8235389821110179848}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gun_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -76,7 +76,7 @@ GameObject:
   - component: {fileID: 3157505501937640137}
   - component: {fileID: 9167102269845987785}
   - component: {fileID: 8190059980301338276}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Blue Main EngineVFX Variant (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4909,7 +4909,7 @@ GameObject:
   - component: {fileID: 3440052469519898357}
   - component: {fileID: 65459145372576699}
   - component: {fileID: 782985927187943495}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Blue Main EngineVFX Variant
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9740,7 +9740,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4001312634449999966}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gun_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9773,7 +9773,7 @@ GameObject:
   - component: {fileID: 2616227536080331396}
   - component: {fileID: 4958007657890378484}
   - component: {fileID: 5889830773296059658}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Blue Main EngineVFX Variant (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14606,7 +14606,7 @@ GameObject:
   - component: {fileID: 8322562702378843948}
   - component: {fileID: 5181147012278441471}
   - component: {fileID: 1142218481311529786}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: SpaceShip_Model_09
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14683,7 +14683,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1964547112739334865}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: FirePoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14718,7 +14718,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7967641131419091325}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gun_Bot_Left
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14751,7 +14751,7 @@ GameObject:
   - component: {fileID: 119060031936752264}
   - component: {fileID: 2163974568596136952}
   - component: {fileID: 2658839660145584689}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GPX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14838,7 +14838,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7204658996224486620}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Gun_Bot_Right
   m_TagString: Untagged
   m_Icon: {fileID: 0}
