@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
+        [SerializeField] private DefenseRoleConfig defenseRoleConfig;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -124,30 +125,130 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             return detector.Owner?.ActorName ?? detector.ToString();
         }
 
-        private static DefenseRole ResolveDefenseRole(IDetector detector)
+        private DefenseRole ResolveDefenseRole(IDetector detector)
+        {
+            DefenseRole explicitRole = TryResolveFromDetector(detector);
+            if (explicitRole != DefenseRole.Unknown)
+            {
+                return explicitRole;
+            }
+
+            DefenseRole ownerRole = TryResolveFromOwner(detector);
+            if (ownerRole != DefenseRole.Unknown)
+            {
+                return ownerRole;
+            }
+
+            DefenseRole configuredRole = TryResolveFromConfig(detector);
+            if (configuredRole != DefenseRole.Unknown)
+            {
+                return configuredRole;
+            }
+
+            DebugUtility.LogVerbose<PlanetDefenseController>(
+                "Nenhuma fonte resolveu o role; usando Unknown.",
+                null,
+                this);
+
+            // TODO: Monitorar logs para Unknown e adicionar providers se necessário.
+            // TODO: Remover debug de fontes após validação completa.
+            return DefenseRole.Unknown;
+        }
+
+        private static DefenseRole TryResolveFromDetector(IDetector detector)
         {
             if (detector is IDefenseRoleProvider provider)
             {
-                return provider.DefenseRole;
+                DefenseRole role = NormalizeRole(provider.GetDefenseRole());
+                if (role != DefenseRole.Unknown)
+                {
+                    DebugUtility.LogVerbose<PlanetDefenseController>(
+                        $"Role resolvido via provider no detector: {role}",
+                        null);
+                }
+
+                return role;
             }
 
-            string actorName = detector.Owner?.ActorName;
-            if (string.IsNullOrEmpty(actorName))
+            if (detector is Component detectorComponent &&
+                detectorComponent.TryGetComponent(out IDefenseRoleProvider componentProvider))
+            {
+                DefenseRole role = NormalizeRole(componentProvider.GetDefenseRole());
+                if (role != DefenseRole.Unknown)
+                {
+                    DebugUtility.LogVerbose<PlanetDefenseController>(
+                        $"Role resolvido via provider no detector (componente): {role}",
+                        null);
+                }
+
+                return role;
+            }
+
+            return DefenseRole.Unknown;
+        }
+
+        private static DefenseRole TryResolveFromOwner(IDetector detector)
+        {
+            if (detector?.Owner is IDefenseRoleProvider provider)
+            {
+                DefenseRole role = NormalizeRole(provider.GetDefenseRole());
+                if (role != DefenseRole.Unknown)
+                {
+                    DebugUtility.LogVerbose<PlanetDefenseController>(
+                        $"Role resolvido via provider no Owner: {role}",
+                        null);
+                }
+
+                return role;
+            }
+
+            if (detector?.Owner is Component ownerComponent &&
+                ownerComponent.TryGetComponent(out IDefenseRoleProvider providerComponent))
+            {
+                DefenseRole role = NormalizeRole(providerComponent.GetDefenseRole());
+                if (role != DefenseRole.Unknown)
+                {
+                    DebugUtility.LogVerbose<PlanetDefenseController>(
+                        $"Role resolvido via provider no Owner (componente): {role}",
+                        null);
+                }
+
+                return role;
+            }
+
+            return DefenseRole.Unknown;
+        }
+
+        private DefenseRole TryResolveFromConfig(IDetector detector)
+        {
+            if (defenseRoleConfig == null)
             {
                 return DefenseRole.Unknown;
             }
 
-            if (actorName.Contains("Player"))
+            string identifier = detector?.Owner?.ActorName;
+
+            if (string.IsNullOrEmpty(identifier) && detector is Component detectorComponent)
             {
-                return DefenseRole.Player;
+                identifier = detectorComponent.gameObject.name;
             }
 
-            if (actorName.Contains("Eater"))
+            DefenseRole role = defenseRoleConfig.ResolveRole(identifier);
+
+            if (role != DefenseRole.Unknown)
             {
-                return DefenseRole.Eater;
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"Role via config: {role}",
+                    null,
+                    this);
             }
 
-            return DefenseRole.Unknown;
+            return role;
+        }
+
+        private static DefenseRole NormalizeRole(DefenseRole role)
+        {
+            return role == DefenseRole.Unknown ? DefenseRole.Unknown : role;
         }
 
         private static string FormatDetector(IDetector detector, DefenseRole role)

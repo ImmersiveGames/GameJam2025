@@ -11,10 +11,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
     }
 
     /// <summary>
-    /// Interface para detectores que desejam expor seu papel defensivo.
+    /// Interface para detectores ou componentes que desejam expor explicitamente
+    /// seu papel defensivo, evitando heurísticas por string.
     /// </summary>
     public interface IDefenseRoleProvider
     {
-        DefenseRole DefenseRole { get; }
+        DefenseRole GetDefenseRole();
     }
 }
