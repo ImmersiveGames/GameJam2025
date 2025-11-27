@@ -62,7 +62,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             public PoolData poolData;
         }
 
-        [SerializeField] private PoolData defaultPoolData;
         [SerializeField] private DefensePoolMapping[] poolMappings;
 
         [Inject] private PlanetDefenseSpawnConfig _config = new();
@@ -71,6 +70,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Inject] private DefenseStateManager _stateManager;
 
         private DefenseDebugLogger _debugLogger;
+
+        private readonly System.Collections.Generic.Dictionary<DetectionType, PoolData> _poolLookup = new();
 
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
@@ -88,6 +89,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _debugLogger ??= new DefenseDebugLogger(_config);
             RegisterAsGlobalListener();
             EnsureDebugInterval();
+            BuildPoolLookup();
             WarnIfPoolDataMissing();
         }
 
@@ -100,6 +102,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _debugLogger ??= new DefenseDebugLogger(_config);
             _debugLogger.Configure(_config);
             EnsureDebugInterval();
+            BuildPoolLookup();
             WarnIfPoolDataMissing();
         }
 
@@ -260,6 +263,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
+        private void BuildPoolLookup()
+        {
+            _poolLookup.Clear();
+            if (poolMappings == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < poolMappings.Length; i++)
+            {
+                var mapping = poolMappings[i];
+                if (mapping.detectionType == null || mapping.poolData == null)
+                {
+                    continue;
+                }
+
+                _poolLookup[mapping.detectionType] = mapping.poolData;
+            }
+        }
+
         private void ResolveDependenciesFromProvider()
         {
             var provider = DependencyManager.Provider;
@@ -287,18 +310,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private PoolData ResolvePoolData(DetectionType detectionType)
         {
-            if (poolMappings != null)
+            if (detectionType == null)
             {
-                for (int i = 0; i < poolMappings.Length; i++)
-                {
-                    if (poolMappings[i].detectionType == detectionType && poolMappings[i].poolData != null)
-                    {
-                        return poolMappings[i].poolData;
-                    }
-                }
+                return null;
             }
 
-            return defaultPoolData;
+            if (_poolLookup.TryGetValue(detectionType, out var poolData))
+            {
+                return poolData;
+            }
+
+            DebugUtility.LogWarning<PlanetDefenseSpawnService>($"No PoolData mapped for detection '{detectionType.TypeName}'. Configure a PoolData asset in the Inspector.");
+            return null;
         }
 
         private void RegisterBindings()
