@@ -6,8 +6,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Encapsula parâmetros de configuração para uma defesa planetária.
-    /// Permite que runners recebam dados de minion, recurso e estratégia
-    /// sem depender diretamente de ScriptableObjects específicos.
+    /// Permite que runners recebam dados de recurso, pool e estratégia
+    /// sem depender diretamente de ScriptableObjects específicos adicionais.
     /// </summary>
     public sealed class PlanetDefenseSetupContext
     {
@@ -15,14 +15,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetsMaster planet,
             DetectionType detectionType,
             PlanetResourcesSo planetResource = null,
-            DefensesMinionData preferredMinion = null,
             IDefenseStrategy strategy = null,
             PoolData poolData = null)
         {
             Planet = planet;
             DetectionType = detectionType;
             PlanetResource = planetResource;
-            PreferredMinion = preferredMinion;
             Strategy = strategy;
             PoolData = poolData;
         }
@@ -30,12 +28,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public DetectionType DetectionType { get; }
         public PlanetResourcesSo PlanetResource { get; }
-        public DefensesMinionData PreferredMinion { get; }
         public IDefenseStrategy Strategy { get; }
         public PoolData PoolData { get; }
 
         public bool HasResource => PlanetResource != null;
-        public bool HasPreferredMinion => PreferredMinion != null;
         public bool HasStrategy => Strategy != null;
         public bool HasPoolData => PoolData != null;
     }
