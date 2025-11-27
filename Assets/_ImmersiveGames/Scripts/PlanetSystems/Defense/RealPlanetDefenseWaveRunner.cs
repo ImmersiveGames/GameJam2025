@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
+        private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
 
         [Inject] private PlanetDefenseSpawnConfig config = new();
         [Inject] private IPlanetDefensePoolRunner poolRunner;
@@ -82,10 +83,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             SpawnWave(planet, resolvedDetection, pool, strategy);
 
             var timer = new FrequencyTimer(GetIntervalSeconds(config.DebugWaveDurationSeconds));
-            SubscribeToTick(timer, () => SpawnWave(planet, resolvedDetection, pool, strategy));
+            Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy);
+            timer.OnTick += callback;
             timer.Start();
 
             _running[planet] = timer;
+            _callbacks[planet] = callback;
         }
 
         public void StopWaves(PlanetsMaster planet)
@@ -97,6 +100,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (_running.TryGetValue(planet, out var timer))
             {
+                if (_callbacks.TryGetValue(planet, out var callback))
+                {
+                    timer.OnTick -= callback;
+                    _callbacks.Remove(planet);
+                }
                 timer.Stop();
                 DisposeIfPossible(timer);
                 _running.Remove(planet);
@@ -156,43 +164,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // FrequencyTimer espera o intervalo em segundos como inteiro.
             var clampedSeconds = Mathf.Max(seconds, 1f);
             return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
-        }
-
-        private static void SubscribeToTick(FrequencyTimer timer, Action callback)
-        {
-            if (timer == null || callback == null)
-            {
-                return;
-            }
-
-            var eventNames = new[] { "OnTick", "Tick", "OnTimerTick", "OnFrequency" };
-            foreach (var name in eventNames)
-            {
-                var eventInfo = typeof(FrequencyTimer).GetEvent(name);
-                if (eventInfo == null)
-                {
-                    continue;
-                }
-
-                var handlerType = eventInfo.EventHandlerType;
-                Delegate handler = null;
-
-                if (handlerType == typeof(Action))
-                {
-                    handler = Delegate.CreateDelegate(handlerType, callback.Target, callback.Method, false);
-                }
-                else if (handlerType == typeof(Action<float>))
-                {
-                    Action<float> wrapper = _ => callback();
-                    handler = Delegate.CreateDelegate(handlerType, wrapper.Target, wrapper.Method, false);
-                }
-
-                if (handler != null)
-                {
-                    eventInfo.AddEventHandler(timer, handler);
-                    return;
-                }
-            }
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)

@@ -55,7 +55,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DefaultExecutionOrder(-100)]
     public class PlanetDefenseSpawnService : MonoBehaviour, IPlanetDefenseActivationListener, IInjectableComponent
     {
-        [SerializeField] private DefensesMinionData defaultMinionData;
         [SerializeField] private PoolData defaultPoolData;
 
         [Inject] private PlanetDefenseSpawnConfig _config = new();
@@ -212,7 +211,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.Planet,
                 state.DetectionType,
                 resource,
-                defaultMinionData,
                 null,
                 defaultPoolData);
         }
