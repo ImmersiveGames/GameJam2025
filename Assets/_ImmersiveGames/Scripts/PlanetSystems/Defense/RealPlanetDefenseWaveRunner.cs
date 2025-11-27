@@ -21,18 +21,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
         private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
 
-        [Inject] private PlanetDefenseSpawnConfig config = new();
         [Inject] private IPlanetDefensePoolRunner poolRunner;
 
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => nameof(RealPlanetDefenseWaveRunner);
 
-        public void OnDependenciesInjected()
-        {
-            InjectionState = DependencyInjectionState.Ready;
-            config ??= new PlanetDefenseSpawnConfig();
-        }
+        public void OnDependenciesInjected() => InjectionState = DependencyInjectionState.Ready;
 
         public void StartWaves(PlanetsMaster planet, DetectionType detectionType)
         {
@@ -83,7 +78,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy);
 
-            var timer = new FrequencyTimer(GetIntervalSeconds(config.DebugWaveDurationSeconds));
+            var timer = new FrequencyTimer(GetIntervalSeconds(ResolveIntervalSeconds(context)));
             Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy);
             timer.OnTick += callback;
             timer.Start();
@@ -140,7 +135,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var spawnPosition = planet.transform.position;
-            for (int i = 0; i < config.DebugWaveSpawnCount; i++)
+            int spawns = ResolveSpawnCount(context);
+            for (int i = 0; i < spawns; i++)
             {
                 var poolable = pool.GetObject(spawnPosition, planet);
                 if (poolable == null)
@@ -165,6 +161,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // FrequencyTimer espera o intervalo em segundos como inteiro.
             var clampedSeconds = Mathf.Max(seconds, 1f);
             return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
+        }
+
+        private static float ResolveIntervalSeconds(PlanetDefenseSetupContext context)
+        {
+            return Mathf.Max(1f, context?.WaveProfile?.waveIntervalSeconds ?? 5f);
+        }
+
+        private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
+        {
+            return Mathf.Max(1, context?.WaveProfile?.minionsPerWave ?? 6);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
