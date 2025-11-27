@@ -31,11 +31,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public void WarmUp(PlanetsMaster planet, DetectionType detectionType)
         {
-            var context = _configured.TryGetValue(planet, out var existing)
-                ? existing
-                : new PlanetDefenseSetupContext(planet, detectionType);
+            if (planet == null)
+            {
+                return;
+            }
 
-            WarmUp(context);
+            if (!_configured.TryGetValue(planet, out var existing))
+            {
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"No setup context found for {planet.ActorName}; configure PoolData before warm up.");
+                return;
+            }
+
+            WarmUp(existing);
         }
 
         public void WarmUp(PlanetDefenseSetupContext context)

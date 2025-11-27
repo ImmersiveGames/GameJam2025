@@ -53,8 +53,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             strategy ??= ResolveStrategy(planet);
             if (!poolRunner.TryGetConfiguration(planet, out var context))
             {
-                context = new PlanetDefenseSetupContext(planet, detectionType, strategy: strategy);
-                poolRunner.ConfigureForPlanet(context);
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"No setup context configured for {planet.ActorName}; ensure PoolData mapping is set before starting waves.");
+                return;
             }
 
             var resolvedDetection = context.DetectionType ?? detectionType;

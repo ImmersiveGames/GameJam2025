@@ -137,6 +137,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Debug] Detectores ativos em {engagedEvent.Planet.ActorName}: {state.ActiveDetectors} após entrada de {FormatDetector(engagedEvent.Detector)}. Primeiro? {engagedEvent.IsFirstEngagement}.");
 
             var context = BuildContext(state);
+            if (context == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>($"PoolData not found for detection {state.DetectionType?.TypeName ?? "Unknown"} on planet {state.Planet.ActorName}; defense spawn skipped.");
+                return;
+            }
             _poolRunner?.ConfigureForPlanet(context);
 
             if (_config.WarmUpPools)
@@ -218,6 +223,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var poolData = ResolvePoolData(state.DetectionType);
+            if (poolData == null)
+            {
+                return null;
+            }
             return new PlanetDefenseSetupContext(
                 state.Planet,
                 state.DetectionType,
@@ -236,9 +245,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void WarnIfPoolDataMissing()
         {
-            if (ResolvePoolData(DetectionType.None) == null)
+            if (poolMappings == null || poolMappings.Length == 0)
             {
-                DebugUtility.LogWarning<PlanetDefenseSpawnService>("No PoolData configured for defense spawns; pools cannot be warmed up.");
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>("No PoolData mappings configured; defenses will not spawn minions.");
+                return;
+            }
+
+            foreach (var mapping in poolMappings)
+            {
+                if (mapping.poolData == null)
+                {
+                    DebugUtility.LogWarning<PlanetDefenseSpawnService>($"PoolData missing for detection {mapping.detectionType.TypeName}; please assign a PoolData asset in the Inspector.");
+                }
             }
         }
 
