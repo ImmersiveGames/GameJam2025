@@ -94,7 +94,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (_planetPools.TryGetValue(planet, out var pool))
             {
                 pool?.ClearPool();
-                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{pool.PoolData.ObjectName}' cleared for planet {planet.ActorName}.");
+                _configured.TryGetValue(planet, out var context);
+                var poolName = context?.PoolData != null ? context.PoolData.ObjectName : pool.name;
+                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' cleared for planet {planet.ActorName}.");
             }
 
             _configured.Remove(planet);
