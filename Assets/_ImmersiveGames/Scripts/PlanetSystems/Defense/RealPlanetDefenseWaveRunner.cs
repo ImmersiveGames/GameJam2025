@@ -17,12 +17,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
+        private const float SpawnOffsetRadius = 1.5f;
+
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
         private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
 
         [Inject] private PlanetDefenseSpawnConfig config = new();
         [Inject] private IPlanetDefensePoolRunner poolRunner;
+        [Inject] private PoolManager poolManager;
+        [Inject] private DefenseStateManager stateManager;
 
         public DependencyInjectionState InjectionState { get; set; }
 
@@ -32,6 +36,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             InjectionState = DependencyInjectionState.Ready;
             config ??= new PlanetDefenseSpawnConfig();
+            stateManager ??= new DefenseStateManager();
         }
 
         public void StartWaves(PlanetsMaster planet, DetectionType detectionType)
@@ -48,6 +53,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (_running.ContainsKey(planet))
             {
+                return;
+            }
+
+            if (!HasActiveDetectors(planet))
+            {
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"Nenhum detector ativo em {planet.ActorName}; waves não serão iniciadas.");
                 return;
             }
 
@@ -68,23 +80,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var poolName = poolData.ObjectName;
-            var pool = PoolManager.Instance?.GetPool(poolName);
-            if (pool == null)
+            if (!TryEnsurePool(context, out var pool))
             {
-                poolRunner.WarmUp(context);
-                pool = PoolManager.Instance?.GetPool(poolName);
-            }
-
-            if (pool == null)
-            {
-                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Pool '{poolName}' unavailable for {planet.ActorName}.");
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
+                    $"Pool '{poolName}' unavailable for {planet.ActorName}.");
                 return;
             }
 
-            SpawnWave(planet, resolvedDetection, pool, strategy);
+            SpawnWave(planet, resolvedDetection, poolName, strategy);
 
             var timer = new FrequencyTimer(GetIntervalSeconds(config.DebugWaveDurationSeconds));
-            Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy);
+            Action callback = () => SpawnWave(planet, resolvedDetection, poolName, strategy);
             timer.OnTick += callback;
             timer.Start();
 
@@ -132,16 +138,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out strategy);
         }
 
-        private void SpawnWave(PlanetsMaster planet, DetectionType detectionType, ObjectPool pool, IDefenseStrategy strategy)
+        private void SpawnWave(PlanetsMaster planet, DetectionType detectionType, string poolName, IDefenseStrategy strategy)
         {
-            if (planet == null || pool == null)
+            if (planet == null || string.IsNullOrEmpty(poolName))
             {
                 return;
             }
 
-            var spawnPosition = planet.transform.position;
+            if (!HasActiveDetectors(planet))
+            {
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"Interrompendo waves em {planet.ActorName} por ausência de detectores ativos.");
+                StopWaves(planet);
+                return;
+            }
+
+            var pool = poolManager?.GetPool(poolName);
+            if (pool == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Pool '{poolName}' indisponível durante spawn em {planet.ActorName}.");
+                return;
+            }
+
+            var basePosition = planet.transform.position;
             for (int i = 0; i < config.DebugWaveSpawnCount; i++)
             {
+                var randomOffset = Random.insideUnitSphere * SpawnOffsetRadius;
+                var spawnPosition = basePosition + new Vector3(randomOffset.x, 0f, randomOffset.z);
+
                 var poolable = pool.GetObject(spawnPosition, planet);
                 if (poolable == null)
                 {
@@ -153,6 +177,35 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             strategy?.OnEngaged(planet, detectionType);
+        }
+
+        private bool TryEnsurePool(PlanetDefenseSetupContext context, out ObjectPool pool)
+        {
+            pool = null;
+            if (poolManager == null || context?.PoolData == null)
+            {
+                return false;
+            }
+
+            var poolName = context.PoolData.ObjectName;
+            pool = poolManager.GetPool(poolName);
+            if (pool == null)
+            {
+                poolRunner?.WarmUp(context);
+                pool = poolManager.GetPool(poolName);
+            }
+
+            return pool != null;
+        }
+
+        private bool HasActiveDetectors(PlanetsMaster planet)
+        {
+            if (stateManager == null || planet == null)
+            {
+                return true;
+            }
+
+            return stateManager.States.TryGetValue(planet, out var state) && state.ActiveDetectors > 0;
         }
 
         private IDefenseStrategy ResolveStrategy(PlanetsMaster planet)

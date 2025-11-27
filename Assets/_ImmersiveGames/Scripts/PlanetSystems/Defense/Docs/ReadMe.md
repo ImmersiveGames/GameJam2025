@@ -1,4 +1,4 @@
-# 🛡️ Planet Defense System — Documentação Oficial (v1.0)
+# 🛡️ Planet Defense System — Documentação Oficial (v1.1)
 
 ## 📚 Índice
 
@@ -12,6 +12,7 @@
 8. [Configuração via Inspector](#configuração-via-inspector)
 9. [Extensibilidade e Estratégias](#extensibilidade-e-estratégias)
 10. [Debug e Troubleshooting](#debug-e-troubleshooting)
+11. [Atualizações v1.1: Integração de Spawning Real via PoolSystem e DI](#atualizações-v11-integração-de-spawning-real-via-poolsystem-e-di)
 
 ---
 
@@ -155,3 +156,32 @@ Isso habilita combinações ou forçar papéis especiais (Player possuído, boss
 - **Flicker de timers?** Certifique-se de que detectores múltiplos no mesmo planeta incrementam/decrementam corretamente a contagem no `DefenseStateManager`.
 
 > Dica: habilite Verbose no `DebugUtility` apenas durante testes; os timers de debug são isolados e fáceis de desativar em produção.
+
+---
+
+## 🚀 Atualizações v1.1: Integração de Spawning Real via PoolSystem e DI
+
+- **PlanetDefenseEventHandler**: novo MonoBehaviour dedicado a registrar eventos (`Engaged`, `Disengaged`, `Disabled`) e encaminhá-los ao `PlanetDefenseSpawnService` via DI. Isso mantém o serviço focado em orquestração e evita acoplamento com o `EventBus`.
+- **PlanetDefenseSpawnService**: agora injeta dependências apenas via `[Inject]` e `DependencyManager.Provider`, mantendo o estado (`DefenseStateManager`) centralizado e pronto para múltiplos detectores. O serviço permanece registrável como global para facilitar resolução por sensores.
+- **RealPlanetDefenseWaveRunner**: passa a consumir o `PoolManager` injetado, usando `GetPool(poolName).GetObject(position, planet)` com offset randômico plano ao redor do planeta. As waves só continuam enquanto houver detectores ativos registrados no `DefenseStateManager`, garantindo desligamento no último `Exit`.
+
+### Exemplo rápido: sensores enter/exit ativando defesa real
+
+```csharp
+// Em um detector (ex.: trigger de órbita)
+private void OnTriggerEnter(Collider other)
+{
+    var planet = GetComponentInParent<PlanetsMaster>();
+    EventBus<PlanetDefenseEngagedEvent>.Raise(
+        new PlanetDefenseEngagedEvent(planet, detector: this, detectionType: DetectionType.Player, isFirstEngagement: true, activeDetectors: 1));
+}
+
+private void OnTriggerExit(Collider other)
+{
+    var planet = GetComponentInParent<PlanetsMaster>();
+    EventBus<PlanetDefenseDisengagedEvent>.Raise(
+        new PlanetDefenseDisengagedEvent(planet, detector: this, detectionType: DetectionType.Player, isLastDisengagement: true, activeDetectors: 0));
+}
+```
+
+Com `PlanetDefenseEventHandler` na cena e `PlanetDefenseSpawnService` configurado com `PoolData` real, a primeira entrada ativa pools e waves; a última saída interrompe spawns e limpa timers/logs automaticamente.
