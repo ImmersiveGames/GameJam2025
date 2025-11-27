@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.Tags;
+﻿using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         Transform Transform { get; }
         bool IsActive { get; set; }
     }
-    public interface IActor : IEntity
+    public interface IActor : IEntity, IDefenseRoleProvider
     {
         string ActorName { get; }
         string ActorId { get; }

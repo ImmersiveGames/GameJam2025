@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 {
-    public class PlayerDetectionController : AbstractDetector, IDefenseRoleProvider
+    public class PlayerDetectionController : AbstractDetector
     {
         [Header("Detection Types")]
         [SerializeField] private DetectionType planetResourcesDetectionType;
@@ -16,8 +16,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         private readonly HashSet<DetectionType> _registeredDetectionTypes = new();
         private SensorController _sensorController;
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
-
-        public DefenseRole DefenseRole => DefenseRole.Player;
 
         protected override void Awake()
         {

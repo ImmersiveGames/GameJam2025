@@ -12,7 +12,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-    
+
     public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private static bool _initialized;
@@ -66,16 +66,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                // Configuração e serviço de defesa planetária (modo simples de logs)
+                // Configuração e componentes de defesa planetária
                 EnsureGlobal(() => new PlanetDefenseSpawnConfig());
-                EnsureGlobal<IPlanetDefenseActivationListener>(() =>
+                EnsureGlobal(() => new DefenseStateManager());
+                EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
+                EnsureGlobal<IPlanetDefenseWaveRunner>(() =>
                 {
-                    var go = new GameObject(nameof(PlanetDefenseSpawnService));
-                    GameObject.DontDestroyOnLoad(go);
-                    var service = go.AddComponent<PlanetDefenseSpawnService>();
-                    DependencyManager.Provider.InjectDependencies(service);
-                    service.OnDependenciesInjected();
-                    return service;
+                    var runner = new RealPlanetDefenseWaveRunner();
+                    DependencyManager.Provider.InjectDependencies(runner);
+                    runner.OnDependenciesInjected();
+                    return runner;
                 });
 
                 DebugUtility.Log<DependencyBootstrapper>(
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 DebugUtility.LogVerbose<DependencyBootstrapper>($"Global service already present: {typeof(T).Name}");
             }
         }
-        
+
 
         private static void RegisterEventBuses()
         {
