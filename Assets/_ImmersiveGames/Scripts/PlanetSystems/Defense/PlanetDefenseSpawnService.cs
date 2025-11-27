@@ -74,6 +74,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void Awake()
         {
+            ResolveDependenciesFromProvider();
             _config ??= new PlanetDefenseSpawnConfig();
             _stateManager ??= new DefenseStateManager();
             _debugLogger ??= new DefenseDebugLogger(_config);
@@ -85,6 +86,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
+            ResolveDependenciesFromProvider();
             _config ??= new PlanetDefenseSpawnConfig();
             _stateManager ??= new DefenseStateManager();
             _debugLogger ??= new DefenseDebugLogger(_config);
@@ -228,6 +230,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (defaultPoolData == null)
             {
                 DebugUtility.LogWarning<PlanetDefenseSpawnService>("Default PoolData not configured; defense waves will not warm up pools.");
+            }
+        }
+
+        private void ResolveDependenciesFromProvider()
+        {
+            var provider = DependencyManager.Provider;
+
+            if (_config == null && provider.TryGetGlobal(out PlanetDefenseSpawnConfig resolvedConfig))
+            {
+                _config = resolvedConfig;
+            }
+
+            if (_stateManager == null && provider.TryGetGlobal(out DefenseStateManager resolvedStateManager))
+            {
+                _stateManager = resolvedStateManager;
+            }
+
+            if (_poolRunner == null && provider.TryGetGlobal(out IPlanetDefensePoolRunner resolvedPoolRunner))
+            {
+                _poolRunner = resolvedPoolRunner;
+            }
+
+            if (_waveRunner == null && provider.TryGetGlobal(out IPlanetDefenseWaveRunner resolvedWaveRunner))
+            {
+                _waveRunner = resolvedWaveRunner;
             }
         }
 
