@@ -6,6 +6,7 @@
 - Eliminada a struct/classe `PlanetDefenseSpawnConfig`; os runners e o serviço de spawn agora leem diretamente o `DefenseWaveProfileSO` atribuído pelo `PlanetDefenseController`, mantendo o ScriptableObject como única fonte de configuração de ondas.
 - O `PlanetDefenseSpawnService` recebe o profile via `SetWaveProfile` (comentado em português para lembrar que SO não é injetado via DI) e registra bindings do `EventBus` após a injeção, garantindo que eventos `Engaged/Disengaged/Disabled` acionem warm-up e start/stop de ondas.
 - `RealPlanetDefenseWaveRunner` usa os valores do `DefenseWaveProfileSO` presente no `PlanetDefenseSetupContext` para intervalo e quantidade de spawns, mantendo timers alinhados ao asset configurado no Inspector e evitando valores duplicados em structs.
+- Removidos resíduos de referências ao antigo config e corrigido o uso de `PlanetDefenseSetupContext` no runner de waves para evitar variáveis inexistentes em `SpawnWave`.
 
 ### Correção Passo 1: Removida injeção DI em SO – configs via Inspector
 - ScriptableObjects (`DefenseWaveProfileSO`) deixam de ser injetados via DI e agora são atribuídos diretamente pelo `PlanetDefenseController` usando `SetWaveProfile`, mantendo o Inspector como fonte única de configuração.

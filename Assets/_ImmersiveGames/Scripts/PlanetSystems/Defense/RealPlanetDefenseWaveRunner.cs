@@ -76,10 +76,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            SpawnWave(planet, resolvedDetection, pool, strategy);
+            SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
             var timer = new FrequencyTimer(GetIntervalSeconds(ResolveIntervalSeconds(context)));
-            Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy);
+            Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy, context);
             timer.OnTick += callback;
             timer.Start();
 
@@ -127,7 +127,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out strategy);
         }
 
-        private void SpawnWave(PlanetsMaster planet, DetectionType detectionType, ObjectPool pool, IDefenseStrategy strategy)
+        private void SpawnWave(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            ObjectPool pool,
+            IDefenseStrategy strategy,
+            PlanetDefenseSetupContext context)
         {
             if (planet == null || pool == null)
             {
