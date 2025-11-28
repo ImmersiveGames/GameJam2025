@@ -22,6 +22,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
+            public int ElapsedSeconds;
+            public int IntervalSeconds;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -84,11 +86,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var intervalSeconds = ResolveIntervalSeconds(context);
-            var loop = new WaveLoop();
+            var loop = new WaveLoop
+            {
+                IntervalSeconds = ResolveIntervalSeconds(context),
+                ElapsedSeconds = 0
+            };
 
-            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context);
-            loop.Timer = new FrequencyTimer(intervalSeconds);
+            // FrequencyTimer recebe frequência em Hz, então usamos 1 Hz e contamos segundos manualmente
+            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context, loop);
+            loop.Timer = new FrequencyTimer(1);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -188,13 +194,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context)
+            PlanetDefenseSetupContext context,
+            WaveLoop loop)
         {
             if (planet == null || pool == null)
             {
                 return;
             }
 
+            loop.ElapsedSeconds++;
+
+            // Intervalo em segundos inteiros vindo do SO; só dispara após atingir o total.
+            if (loop.ElapsedSeconds < loop.IntervalSeconds)
+            {
+                return;
+            }
+
+            loop.ElapsedSeconds = 0;
             SpawnWave(planet, detectionType, pool, strategy, context);
         }
 
