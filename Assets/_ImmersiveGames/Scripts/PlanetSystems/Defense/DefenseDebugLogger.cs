@@ -17,7 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int ElapsedSeconds;
             public int IntervalSeconds;
         }
 
@@ -55,13 +54,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = new LogLoop
             {
-                IntervalSeconds = _intervalSeconds,
-                ElapsedSeconds = 0
+                IntervalSeconds = _intervalSeconds
             };
 
-            // FrequencyTimer opera com frequência (Hz); usamos 1 Hz e contamos segundos manualmente
-            loop.Tick = () => TickLog(state, loop);
-            loop.Timer = new FrequencyTimer(1);
+            loop.Tick = () => TickLog(state);
+            loop.Timer = new FrequencyTimer(loop.IntervalSeconds);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -109,22 +106,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_intervalSeconds}s | Spawns previstos: {_spawnCount}. (@ {timestamp:0.00}s)");
         }
 
-        private void TickLog(DefenseState state, LogLoop loop)
+        private void TickLog(DefenseState state)
         {
             if (state?.Planet == null)
             {
                 return;
             }
 
-            loop.ElapsedSeconds++;
-
-            // Dispara somente quando acumular o intervalo inteiro definido no ScriptableObject.
-            if (loop.ElapsedSeconds < loop.IntervalSeconds)
-            {
-                return;
-            }
-
-            loop.ElapsedSeconds = 0;
             LogWaveDebug(state, Time.time);
         }
 

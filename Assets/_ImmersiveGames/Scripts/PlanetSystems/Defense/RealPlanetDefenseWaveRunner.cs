@@ -22,7 +22,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int ElapsedSeconds;
             public int IntervalSeconds;
         }
 
@@ -88,13 +87,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = new WaveLoop
             {
-                IntervalSeconds = ResolveIntervalSeconds(context),
-                ElapsedSeconds = 0
+                IntervalSeconds = ResolveIntervalSeconds(context)
             };
 
-            // FrequencyTimer recebe frequência em Hz, então usamos 1 Hz e contamos segundos manualmente
-            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context, loop);
-            loop.Timer = new FrequencyTimer(1);
+            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context);
+            loop.Timer = new FrequencyTimer(loop.IntervalSeconds);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -194,23 +191,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context,
-            WaveLoop loop)
+            PlanetDefenseSetupContext context)
         {
             if (planet == null || pool == null)
             {
                 return;
             }
 
-            loop.ElapsedSeconds++;
-
-            // Intervalo em segundos inteiros vindo do SO; só dispara após atingir o total.
-            if (loop.ElapsedSeconds < loop.IntervalSeconds)
-            {
-                return;
-            }
-
-            loop.ElapsedSeconds = 0;
             SpawnWave(planet, detectionType, pool, strategy, context);
         }
 
