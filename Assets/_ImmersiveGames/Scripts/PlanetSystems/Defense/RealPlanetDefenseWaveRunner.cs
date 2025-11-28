@@ -63,6 +63,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             WarnIfWaveProfileMissing(planet, context);
 
             var resolvedDetection = context.DetectionType ?? detectionType;
+            var intervalSeconds = ResolveIntervalSeconds(context);
+            var spawnCount = ResolveSpawnCount(context);
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[WaveDebug] StartWaves em {planet.ActorName} | Tipo: {resolvedDetection?.TypeName ?? "Unknown"} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}.");
 
             var poolData = context.PoolData;
             if (poolData == null)
@@ -104,6 +109,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (_running.TryGetValue(planet, out var loop))
             {
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"[WaveDebug] StopWaves chamado para {planet.ActorName}; timer será parado e removido.");
+
                 if (loop.Timer != null && loop.Tick != null)
                 {
                     loop.Timer.OnInterval -= loop.Tick;
@@ -151,6 +159,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             int spawns = ResolveSpawnCount(context);
             float radius = Mathf.Max(0f, context?.WaveProfile?.spawnRadius ?? 0f);
             float heightOffset = context?.WaveProfile?.spawnHeightOffset ?? 0f;
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[WaveDebug] SpawnWave em {planet.ActorName} | Tentando spawnar {spawns} minions.");
+
+            int spawnedCount = 0;
             for (int i = 0; i < spawns; i++)
             {
                 var offset = ResolveSpawnOffset(radius, heightOffset);
@@ -161,8 +174,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     continue;
                 }
 
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"[WaveDebug] Minion spawnado com sucesso para {planet.ActorName}.");
+
+                spawnedCount++;
                 EventBus<PlanetDefenseMinionSpawnedEvent>.Raise(new PlanetDefenseMinionSpawnedEvent(planet, detectionType, poolable));
             }
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[WaveDebug] SpawnWave finalizada em {planet.ActorName} | Spawnados: {spawnedCount}/{spawns}.");
 
             strategy?.OnEngaged(planet, detectionType);
         }
@@ -188,6 +208,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 return;
             }
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[WaveDebug] TickWave chamado para {planet.ActorName}.");
 
             SpawnWave(planet, detectionType, pool, strategy, context);
         }
