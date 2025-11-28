@@ -17,8 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int CadenceSeconds;
-            public float CadenceFrequencyHz;
+            public int WaveIntervalSeconds;
         }
 
         private DefenseWaveProfileSO _waveProfile;
@@ -122,21 +121,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private LogLoop BuildLogLoop(DefenseState state)
         {
-            var cadenceSeconds = _intervalSeconds;
-            var cadenceFrequencyHz = Mathf.Approximately(cadenceSeconds, 0)
-                ? 1f
-                : 1f / Mathf.Max(1, cadenceSeconds);
-
             var loop = new LogLoop
             {
-                CadenceSeconds = cadenceSeconds,
-                CadenceFrequencyHz = cadenceFrequencyHz
+                WaveIntervalSeconds = _intervalSeconds
             };
 
             loop.Tick = () => TickLog(state);
-            // FrequencyTimer usa frequência (ticks/segundo). Convertemos a cadência em segundos do perfil para Hz
-            // para manter os logs sincronizados com o intervalo configurado no ScriptableObject.
-            loop.Timer = new FrequencyTimer(loop.CadenceFrequencyHz);
+            // FrequencyTimer aqui representa o intervalo entre logs (igual ao intervalo da wave).
+            // O asset trabalha em segundos inteiros, então usamos diretamente o valor do ScriptableObject.
+            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
             return loop;
         }
     }
