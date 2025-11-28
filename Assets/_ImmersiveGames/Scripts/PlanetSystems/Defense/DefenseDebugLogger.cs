@@ -12,17 +12,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class LogLoop
         {
-            public CountdownTimer Timer;
-            public Action TimerHandler;
-            public bool IsActive;
+            public CountdownTimer timer;
+            public Action timerHandler;
+            public bool isActive;
         }
 
-        private DefenseWaveProfileSO _waveProfile;
+        private DefenseWaveProfileSo _waveProfile;
         private readonly Dictionary<PlanetsMaster, LogLoop> _loops = new();
 
-        public DefenseDebugLogger(DefenseWaveProfileSO waveProfile) => Configure(waveProfile);
+        public DefenseDebugLogger(DefenseWaveProfileSo waveProfile) => Configure(waveProfile);
 
-        public void Configure(DefenseWaveProfileSO waveProfile)
+        public void Configure(DefenseWaveProfileSo waveProfile)
         {
             _waveProfile = waveProfile;
         }
@@ -39,19 +39,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = new LogLoop
             {
-                Timer = new CountdownTimer(interval),
-                IsActive = true
+                timer = new CountdownTimer(interval),
+                isActive = true
             };
 
-            loop.TimerHandler = () =>
+            loop.timerHandler = () =>
             {
-                if (!loop.IsActive) return;
+                if (!loop.isActive) return;
                 Log(state, interval, count);
-                if (loop.IsActive) { loop.Timer.Reset(); loop.Timer.Start(); }
+                if (loop.isActive) { loop.timer.Reset(); loop.timer.Start(); }
             };
 
-            loop.Timer.OnTimerStop += loop.TimerHandler;
-            loop.Timer.Start();
+            loop.timer.OnTimerStop += loop.timerHandler;
+            loop.timer.Start();
             _loops[state.Planet] = loop;
         }
 
@@ -59,10 +59,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (planet == null || !_loops.TryGetValue(planet, out var loop)) return;
 
-            loop.IsActive = false;
-            loop.Timer.OnTimerStop -= loop.TimerHandler;
-            loop.Timer?.Stop();
-            DisposeIfPossible(loop.Timer);
+            loop.isActive = false;
+            loop.timer.OnTimerStop -= loop.timerHandler;
+            loop.timer?.Stop();
+            DisposeIfPossible(loop.timer);
             _loops.Remove(planet);
         }
 

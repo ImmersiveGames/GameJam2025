@@ -3,7 +3,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Defense/Wave Profile")]
-    public sealed class DefenseWaveProfileSO : ScriptableObject
+    public sealed class DefenseWaveProfileSo : ScriptableObject
     {
         [Header("Wave Timing")]
         [Tooltip("Intervalo em segundos entre waves.")]

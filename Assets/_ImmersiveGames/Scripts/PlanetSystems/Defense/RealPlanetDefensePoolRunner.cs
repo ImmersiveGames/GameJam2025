@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -101,13 +100,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var poolName = context.PoolData?.ObjectName ?? pool.name;
-            if (_warmedPlanets.Contains(planet))
+            if (!_warmedPlanets.Add(planet))
             {
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' já aquecida para planeta {planet.ActorName}.");
                 return;
             }
 
-            _warmedPlanets.Add(planet);
             DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' warmed for planet {planet.ActorName}.");
         }
 

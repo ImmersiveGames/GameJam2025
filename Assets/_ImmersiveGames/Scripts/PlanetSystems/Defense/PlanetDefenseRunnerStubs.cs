@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -10,7 +9,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         /// <summary>
         /// Configuração opcional por planeta, permitindo customizar recurso e minion
-        /// antes do aquecimento da pool.
+        /// antes do aquecimento do pool.
         /// </summary>
         void ConfigureForPlanet(PlanetDefenseSetupContext context);
 

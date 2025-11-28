@@ -1,19 +1,17 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
-        [SerializeField] private DefenseWaveProfileSO waveProfile;
+        [SerializeField] private DefenseWaveProfileSo waveProfile;
         [SerializeField] private PoolData defaultDefensePool;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
@@ -99,9 +97,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 return;
             }
 
-            if (_activeDetectors.TryGetValue(detector, out DefenseRole role))
+            if (_activeDetectors.Remove(detector, out var role))
             {
-                _activeDetectors.Remove(detector);
                 int activeCount = _activeDetectors.Count;
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
@@ -171,8 +168,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no detector: {role}",
-                        null);
+                        $"Role resolvido via provider no detector: {role}");
                 }
 
                 return role;
@@ -185,8 +181,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no detector (componente): {role}",
-                        null);
+                        $"Role resolvido via provider no detector (componente): {role}");
                 }
 
                 return role;
@@ -203,8 +198,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no Owner: {role}",
-                        null);
+                        $"Role resolvido via provider no Owner: {role}");
                 }
 
                 return role;
@@ -217,8 +211,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no Owner (componente): {role}",
-                        null);
+                        $"Role resolvido via provider no Owner (componente): {role}");
                 }
 
                 return role;
