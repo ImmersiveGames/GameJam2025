@@ -1109,7 +1109,6 @@ GameObject:
   - component: {fileID: 2009245419}
   - component: {fileID: 2009245420}
   - component: {fileID: 2009245421}
-  - component: {fileID: 2009245423}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1240,19 +1239,6 @@ MonoBehaviour:
   playerDefaultLevel: 2
   honorGameConfigDebugMode: 1
   debugModeLevel: 4
---- !u!114 &2009245423
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2009245414}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cd13e7c76a982341aaafdb97ef5ab91, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultPoolData: {fileID: 11400000, guid: 7cc6fb636be4535468802f3f4f3ba310, type: 2}
 --- !u!1 &2013597641
 GameObject:
   m_ObjectHideFlags: 0

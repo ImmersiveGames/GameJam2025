@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 743985210123456788}
   - component: {fileID: -2776814566296248560}
   - component: {fileID: 1564139988472314523}
+  - component: {fileID: 1453742196354725209}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Untagged
@@ -163,7 +164,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planetsMaster: {fileID: 3945190765558734642}
-  defenseRoleConfig: {fileID: 11400000, guid: ec22197efdaccae44bb0de61a0ed5dd5, type: 2}
+  waveProfile: {fileID: 11400000, guid: f256b1a000fe65d418401359ff74e130, type: 2}
+  defaultDefensePool: {fileID: 11400000, guid: 7cc6fb636be4535468802f3f4f3ba310, type: 2}
 --- !u!114 &2819374650281937465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -292,5 +294,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6f5dcd36c3b34d50b84d90d8f8c6a0e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1453742196354725209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4de913c92e0dc634881c4b8137f1e602, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
