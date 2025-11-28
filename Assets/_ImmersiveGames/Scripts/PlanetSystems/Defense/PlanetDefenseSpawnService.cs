@@ -205,7 +205,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.waveIntervalSeconds}s; Minions/Onda: {profile.minionsPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
+                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.secondsBetweenWaves}s; Minions/Onda: {profile.enemiesPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
         }
 
         private void WarnIfProfileMissing()

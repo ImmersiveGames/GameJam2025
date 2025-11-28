@@ -12,7 +12,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Runner concreto que gerencia ondas de spawn utilizando FrequencyTimer
+    /// Runner concreto que gerencia waves de spawn utilizando IntervalTimer
     /// para reduzir overhead e facilitar pausa/retomada.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
@@ -20,9 +20,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class WaveLoop
         {
-            public FrequencyTimer Timer;
+            public IntervalTimer Timer;
             public Action Tick;
-            public int WaveIntervalSeconds;
+            public int SecondsBetweenWaves;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -59,6 +59,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 context = new PlanetDefenseSetupContext(planet, detectionType, strategy: strategy);
                 poolRunner.ConfigureForPlanet(context);
             }
+
+            WarnIfWaveProfileMissing(planet, context);
 
             var resolvedDetection = context.DetectionType ?? detectionType;
 
@@ -172,7 +174,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
         {
-            return Mathf.Max(1, context?.WaveProfile?.minionsPerWave ?? 6);
+            return Mathf.Max(1, context?.WaveProfile?.enemiesPerWave ?? 6);
         }
 
         private void TickWave(
@@ -212,23 +214,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = new WaveLoop
             {
-                WaveIntervalSeconds = intervalSeconds
+                SecondsBetweenWaves = intervalSeconds
             };
 
             loop.Tick = () => TickWave(planet, detectionType, pool, strategy, context);
-            // FrequencyTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
+            // IntervalTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
             // portanto passamos o intervalo diretamente, sem conversões para Hz.
-            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves);
             return loop;
         }
 
         private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
+            var rawInterval = context?.WaveProfile?.secondsBetweenWaves ?? 5;
             return Mathf.Max(1, rawInterval);
         }
 
-        private static void DisposeIfPossible(FrequencyTimer timer)
+        private static void WarnIfWaveProfileMissing(PlanetsMaster planet, PlanetDefenseSetupContext context)
+        {
+            if (context?.WaveProfile != null)
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
+                $"DefenseWaveProfileSO ausente para {planet?.ActorName ?? "Unknown"}; usando fallback de 5s entre waves e 6 inimigos por wave.");
+        }
+
+        private static void DisposeIfPossible(IntervalTimer timer)
         {
             if (timer is IDisposable disposable)
             {

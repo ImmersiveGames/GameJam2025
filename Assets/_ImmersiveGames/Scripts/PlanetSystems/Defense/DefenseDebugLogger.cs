@@ -34,8 +34,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _intervalSeconds = Mathf.Max(1, waveProfile?.waveIntervalSeconds ?? 5);
-            _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
+            _intervalSeconds = Mathf.Max(1, waveProfile?.secondsBetweenWaves ?? 5);
+            _spawnCount = Mathf.Max(1, waveProfile?.enemiesPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
