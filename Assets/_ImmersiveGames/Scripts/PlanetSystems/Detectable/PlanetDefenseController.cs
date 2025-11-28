@@ -3,14 +3,18 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
+    [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
-        [SerializeField] private DefenseRoleConfig defenseRoleConfig;
+        [SerializeField] private DefenseWaveProfileSO waveProfile;
+        [SerializeField] private PoolData defaultDefensePool;
 
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
 
@@ -25,7 +29,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             {
                 DebugUtility.LogError<PlanetDefenseController>(
                     $"PlanetsMaster não encontrado para o controle de defesa em {gameObject.name}.", this);
+                return;
             }
+
+            var service = new PlanetDefenseSpawnService();
+            // SO não é injetado via DI; o Controller atribui diretamente.
+            service.SetWaveProfile(waveProfile);
+            DebugUtility.LogVerbose<PlanetDefenseController>($"WaveProfile atribuído: {waveProfile?.name ?? "NULO"}");
+            service.SetDefaultPoolData(defaultDefensePool);
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
+            DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
+            service.OnDependenciesInjected();
         }
 
 #if UNITY_EDITOR
@@ -139,12 +153,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 return ownerRole;
             }
 
-            DefenseRole configuredRole = TryResolveFromConfig(detector);
-            if (configuredRole != DefenseRole.Unknown)
-            {
-                return configuredRole;
-            }
-
             DebugUtility.LogVerbose<PlanetDefenseController>(
                 "Nenhuma fonte resolveu o role; usando Unknown.",
                 null,
@@ -217,33 +225,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             return DefenseRole.Unknown;
-        }
-
-        private DefenseRole TryResolveFromConfig(IDetector detector)
-        {
-            if (defenseRoleConfig == null)
-            {
-                return DefenseRole.Unknown;
-            }
-
-            string identifier = detector?.Owner?.ActorName;
-
-            if (string.IsNullOrEmpty(identifier) && detector is Component detectorComponent)
-            {
-                identifier = detectorComponent.gameObject.name;
-            }
-
-            DefenseRole role = defenseRoleConfig.ResolveRole(identifier);
-
-            if (role != DefenseRole.Unknown)
-            {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"Role via config: {role}",
-                    null,
-                    this);
-            }
-
-            return role;
         }
 
         private static DefenseRole NormalizeRole(DefenseRole role)

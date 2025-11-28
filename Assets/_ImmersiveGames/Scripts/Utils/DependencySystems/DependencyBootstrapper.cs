@@ -67,7 +67,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
                 // Configuração e componentes de defesa planetária
-                EnsureGlobal(() => new PlanetDefenseSpawnConfig());
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
                 EnsureGlobal<IPlanetDefenseWaveRunner>(() =>

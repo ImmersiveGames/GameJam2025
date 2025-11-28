@@ -10,20 +10,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
+    [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class DefenseDebugLogger
     {
-        private PlanetDefenseSpawnConfig _config;
-        private readonly Dictionary<PlanetsMaster, FrequencyTimer> _debugTimers = new();
-        private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
-
-        public DefenseDebugLogger(PlanetDefenseSpawnConfig config)
+        private sealed class LogLoop
         {
-            _config = config ?? new PlanetDefenseSpawnConfig();
+            public FrequencyTimer Timer;
+            public Action Tick;
+            public int IntervalSeconds;
+            public float NextLogTime;
         }
 
-        public void Configure(PlanetDefenseSpawnConfig config)
+        private DefenseWaveProfileSO _waveProfile;
+        private int _intervalSeconds = 5;
+        private int _spawnCount = 6;
+        private readonly Dictionary<PlanetsMaster, LogLoop> _debugTimers = new();
+
+        public DefenseDebugLogger(DefenseWaveProfileSO waveProfile)
         {
-            _config = config ?? new PlanetDefenseSpawnConfig();
+            Configure(waveProfile);
+        }
+
+        public void Configure(DefenseWaveProfileSO waveProfile)
+        {
+            _waveProfile = waveProfile;
+            // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
+            _intervalSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
+            _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
@@ -40,13 +53,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var timer = new FrequencyTimer(GetIntervalSeconds(_config.DebugLoopIntervalSeconds));
-            Action callback = () => LogWaveDebug(state, Time.time);
-            timer.OnTick += callback;
-            timer.Start();
+            var loop = new LogLoop
+            {
+                IntervalSeconds = _intervalSeconds,
+                NextLogTime = Time.time + _intervalSeconds
+            };
 
-            _debugTimers[state.Planet] = timer;
-            _callbacks[state.Planet] = callback;
+            loop.Tick = () => TickLog(state, loop);
+            loop.Timer = new FrequencyTimer(1);
+            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.Start();
+
+            _debugTimers[state.Planet] = loop;
         }
 
         public void StopLogging(PlanetsMaster planet)
@@ -56,15 +74,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_debugTimers.TryGetValue(planet, out var timer))
+            if (_debugTimers.TryGetValue(planet, out var loop))
             {
-                if (_callbacks.TryGetValue(planet, out var callback))
+                if (loop.Timer != null && loop.Tick != null)
                 {
-                    timer.OnTick -= callback;
-                    _callbacks.Remove(planet);
+                    loop.Timer.OnTick -= loop.Tick;
                 }
-                timer.Stop();
-                DisposeIfPossible(timer);
+
+                loop.Timer?.Stop();
+                DisposeIfPossible(loop.Timer);
                 _debugTimers.Remove(planet);
             }
         }
@@ -73,29 +91,37 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             foreach (var pair in _debugTimers)
             {
-                if (_callbacks.TryGetValue(pair.Key, out var callback))
+                if (pair.Value.Timer != null && pair.Value.Tick != null)
                 {
-                    pair.Value.OnTick -= callback;
+                    pair.Value.Timer.OnTick -= pair.Value.Tick;
                 }
-                pair.Value.Stop();
-                DisposeIfPossible(pair.Value);
+                pair.Value.Timer?.Stop();
+                DisposeIfPossible(pair.Value.Timer);
             }
 
             _debugTimers.Clear();
-            _callbacks.Clear();
         }
 
         private void LogWaveDebug(DefenseState state, float timestamp)
         {
             DebugUtility.LogVerbose<DefenseDebugLogger>(
-                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}. (@ {timestamp:0.00}s)");
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_intervalSeconds}s | Spawns previstos: {_spawnCount}. (@ {timestamp:0.00}s)");
         }
 
-        private static int GetIntervalSeconds(float seconds)
+        private void TickLog(DefenseState state, LogLoop loop)
         {
-            // FrequencyTimer espera o intervalo em segundos como inteiro.
-            var clampedSeconds = Mathf.Max(seconds, 1f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
+            if (loop == null || state?.Planet == null)
+            {
+                return;
+            }
+
+            if (Time.time < loop.NextLogTime)
+            {
+                return;
+            }
+
+            LogWaveDebug(state, Time.time);
+            loop.NextLogTime = Time.time + Mathf.Max(1, loop.IntervalSeconds);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
