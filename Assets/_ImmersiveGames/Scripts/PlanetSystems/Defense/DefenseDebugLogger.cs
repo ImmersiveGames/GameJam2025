@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void Configure(DefenseWaveProfileSO waveProfile)
         {
             _waveProfile = waveProfile;
-            // Intervalos vêm do SO em segundos; FrequencyTimer usa frequência, não duração diretamente.
+            // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
             _debugLoopIntervalSeconds = Mathf.Max(0.1f, waveProfile?.waveIntervalSeconds ?? 5f);
             _debugWaveDurationSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
             _debugWaveSpawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
@@ -48,9 +48,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            // FrequencyTimer recebe frequência (ticks/segundo); convertemos o intervalo do perfil.
-            var frequencyPerSecond = Mathf.Max(0.001f, 1f / Mathf.Max(_debugLoopIntervalSeconds, 0.001f));
-            var timer = new FrequencyTimer(frequencyPerSecond);
+            // FrequencyTimer recebe intervalo em segundos (inteiro); usamos o valor do perfil.
+            var timerIntervalSeconds = Mathf.Max(1, Mathf.RoundToInt(_debugLoopIntervalSeconds));
+            var timer = new FrequencyTimer(timerIntervalSeconds);
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
