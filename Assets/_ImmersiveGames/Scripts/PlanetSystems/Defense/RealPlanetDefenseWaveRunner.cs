@@ -22,8 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int CadenceSeconds;
-            public float CadenceFrequencyHz;
+            public int WaveIntervalSeconds;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -209,31 +208,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             IDefenseStrategy strategy,
             PlanetDefenseSetupContext context)
         {
-            var cadenceSeconds = ResolveCadenceSeconds(context);
-            var cadenceFrequencyHz = ResolveCadenceFrequency(cadenceSeconds);
+            var intervalSeconds = ResolveIntervalSeconds(context);
 
             var loop = new WaveLoop
             {
-                CadenceSeconds = cadenceSeconds,
-                CadenceFrequencyHz = cadenceFrequencyHz
+                WaveIntervalSeconds = intervalSeconds
             };
 
             loop.Tick = () => TickWave(planet, detectionType, pool, strategy, context);
-            // FrequencyTimer espera frequência (ticks/segundo). Convertendo cadência em segundos para Hz evita confusão
-            // semântica entre intervalo e frequência.
-            loop.Timer = new FrequencyTimer(loop.CadenceFrequencyHz);
+            // FrequencyTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
+            // portanto passamos o intervalo diretamente, sem conversões para Hz.
+            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
             return loop;
         }
 
-        private static int ResolveCadenceSeconds(PlanetDefenseSetupContext context)
+        private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
             var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
             return Mathf.Max(1, rawInterval);
-        }
-
-        private static float ResolveCadenceFrequency(int cadenceSeconds)
-        {
-            return 1f / Mathf.Max(1, cadenceSeconds);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
