@@ -14,15 +14,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(level: DebugLevel.Verbose)]
     [RequireComponent(typeof(PlanetDefenseController))]
     [RequireComponent(typeof(PlanetsMaster))]
-    public sealed class PlanetDefenseEventHandler : MonoBehaviour, IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener
+    public sealed class PlanetDefenseEventHandler : MonoBehaviour
     {
         private PlanetDefenseSpawnService _service;
         private PlanetsMaster _planetsMaster;
+        private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
+        private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
+        private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
 
         private void Awake()
         {
             _planetsMaster = GetComponent<PlanetsMaster>();
             _service = DependencyManager.Provider.GetObject<PlanetDefenseSpawnService>(_planetsMaster.ActorId);
+
+            // Bindings usam EventBinding porque o EventBus não registra interfaces diretamente.
+            _engagedBinding = new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
+            _disengagedBinding = new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
+            _disabledBinding = new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
 
             if (_service == null)
             {
@@ -33,31 +41,52 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void OnEnable()
         {
-            EventBus<PlanetDefenseEngagedEvent>.Register(this);
-            EventBus<PlanetDefenseDisengagedEvent>.Register(this);
-            EventBus<PlanetDefenseDisabledEvent>.Register(this);
+            // Registro explícito dos bindings para este planeta (ActorId).
+            EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
+            EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
+            EventBus<PlanetDefenseDisabledEvent>.Register(_disabledBinding);
         }
 
         private void OnDisable()
         {
-            EventBus<PlanetDefenseEngagedEvent>.Unregister(this);
-            EventBus<PlanetDefenseDisengagedEvent>.Unregister(this);
-            EventBus<PlanetDefenseDisabledEvent>.Unregister(this);
+            EventBus<PlanetDefenseEngagedEvent>.Unregister(_engagedBinding);
+            EventBus<PlanetDefenseDisengagedEvent>.Unregister(_disengagedBinding);
+            EventBus<PlanetDefenseDisabledEvent>.Unregister(_disabledBinding);
         }
 
-        public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
+        private void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
         {
+            if (!IsForThisPlanet(engagedEvent.Planet))
+            {
+                return; // Ignora eventos de outros planetas para evitar interferência de escopo.
+            }
+
             _service?.HandleEngaged(engagedEvent);
         }
 
-        public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
+        private void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
         {
+            if (!IsForThisPlanet(disengagedEvent.Planet))
+            {
+                return;
+            }
+
             _service?.HandleDisengaged(disengagedEvent);
         }
 
-        public void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent)
+        private void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent)
         {
+            if (!IsForThisPlanet(disabledEvent.Planet))
+            {
+                return;
+            }
+
             _service?.HandleDisabled(disabledEvent);
+        }
+
+        private bool IsForThisPlanet(PlanetsMaster planet)
+        {
+            return planet != null && _planetsMaster != null && planet.ActorId == _planetsMaster.ActorId;
         }
     }
 }
