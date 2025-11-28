@@ -1,6 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -36,23 +35,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// delegando estado e logs para colaboradores especializados.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
-    public class PlanetDefenseSpawnService : IPlanetDefenseActivationListener, IInjectableComponent
+    public class PlanetDefenseSpawnService : IInjectableComponent
     {
         private PoolData defaultPoolData;
         private DefenseWaveProfileSO _waveProfile;
         private bool _warmUpPools = true;
         private bool _stopWavesOnDisable = true;
 
-        private bool _ownsEventBindings;
-
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
         [Inject] private DefenseStateManager _stateManager;
 
         private DefenseDebugLogger _debugLogger;
-        private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
-        private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
-        private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
 
         public DependencyInjectionState InjectionState { get; set; }
 
@@ -87,15 +81,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _stateManager ??= new DefenseStateManager();
             _debugLogger ??= new DefenseDebugLogger(_waveProfile);
             _debugLogger.Configure(_waveProfile);
-            _ownsEventBindings = RegisterAsGlobalListener();
-            BindEventListeners();
             WarnIfProfileMissing();
             LogDefaultPoolData();
             LogWaveProfile();
             WarnIfPoolDataMissing();
         }
 
-        public void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
+        public void HandleEngaged(PlanetDefenseEngagedEvent engagedEvent)
         {
             if (engagedEvent.Planet == null || engagedEvent.Detector == null)
             {
@@ -129,11 +121,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _waveRunner?.ConfigureStrategy(state.Planet, context.Strategy);
             }
 
-            _waveRunner?.StartWaves(state.Planet, state.DetectionType, context.Strategy);
-            _debugLogger?.StartLogging(state);
+            if (engagedEvent.IsFirstEngagement)
+            {
+                _waveRunner?.StartWaves(state.Planet, state.DetectionType, context.Strategy);
+                _debugLogger?.StartLogging(state);
+            }
         }
 
-        public void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
+        public void HandleDisengaged(PlanetDefenseDisengagedEvent disengagedEvent)
         {
             if (disengagedEvent.Planet == null || disengagedEvent.Detector == null)
             {
@@ -157,7 +152,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        public void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent)
+        public void HandleDisabled(PlanetDefenseDisabledEvent disabledEvent)
         {
             if (disabledEvent.Planet == null)
             {
@@ -172,51 +167,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _debugLogger?.StopLogging(disabledEvent.Planet);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
-        }
-
-        private bool RegisterAsGlobalListener()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IPlanetDefenseActivationListener>(out var existing) || existing == null)
-            {
-                DependencyManager.Provider.RegisterGlobal<IPlanetDefenseActivationListener>(this);
-                DependencyManager.Provider.RegisterGlobal<IDefenseEngagedListener>(this);
-                DependencyManager.Provider.RegisterGlobal<IDefenseDisengagedListener>(this);
-                DependencyManager.Provider.RegisterGlobal<IDefenseDisabledListener>(this);
-                return true;
-            }
-            else if (!ReferenceEquals(existing, this))
-            {
-                DebugUtility.LogVerbose<PlanetDefenseSpawnService>("Global PlanetDefenseSpawnService already registered; skipping self-registration.");
-                return false;
-            }
-
-            return true;
-        }
-
-        private void BindEventListeners()
-        {
-            if (!_ownsEventBindings)
-            {
-                return;
-            }
-
-            if (_engagedBinding == null)
-            {
-                _engagedBinding = new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
-                EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
-            }
-
-            if (_disengagedBinding == null)
-            {
-                _disengagedBinding = new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
-                EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
-            }
-
-            if (_disabledBinding == null)
-            {
-                _disabledBinding = new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
-                EventBus<PlanetDefenseDisabledEvent>.Register(_disabledBinding);
-            }
         }
 
         private PlanetDefenseSetupContext BuildContext(DefenseState state)
