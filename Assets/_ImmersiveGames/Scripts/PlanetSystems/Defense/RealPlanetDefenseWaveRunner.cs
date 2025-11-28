@@ -79,8 +79,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var intervalSeconds = ResolveIntervalSeconds(context);
-            var timer = new FrequencyTimer(ResolveFrequency(intervalSeconds));
+            // FrequencyTimer espera intervalo em segundos (inteiros); conversão garante compatibilidade com o pacote ImprovedTimers.
+            var intervalSeconds = ResolveIntervalSecondsInt(context);
+            var timer = new FrequencyTimer(intervalSeconds);
             Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy, context);
             timer.OnTick += callback;
             timer.Start();
@@ -176,10 +177,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return Mathf.Max(0.1f, context?.WaveProfile?.waveIntervalSeconds ?? 5f);
         }
 
-        private static float ResolveFrequency(float intervalSeconds)
+        private static int ResolveIntervalSecondsInt(PlanetDefenseSetupContext context)
         {
-            var safeInterval = Mathf.Max(0.1f, intervalSeconds);
-            return 1f / safeInterval;
+            // ImprovedTimers trabalha com intervalos em segundos e inteiros, portanto arredondamos para cima para evitar intervalos abaixo de 1s.
+            return Mathf.Max(1, Mathf.CeilToInt(ResolveIntervalSeconds(context)));
         }
 
         private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)
