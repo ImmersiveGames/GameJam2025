@@ -19,6 +19,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
+        private readonly struct WaveSettings
+        {
+            public WaveSettings(int secondsBetweenWaves, int enemiesPerWave, float spawnRadius, float spawnHeightOffset)
+            {
+                SecondsBetweenWaves = secondsBetweenWaves;
+                EnemiesPerWave = enemiesPerWave;
+                SpawnRadius = spawnRadius;
+                SpawnHeightOffset = spawnHeightOffset;
+            }
+
+            public int SecondsBetweenWaves { get; }
+            public int EnemiesPerWave { get; }
+            public float SpawnRadius { get; }
+            public float SpawnHeightOffset { get; }
+        }
+
         private sealed class WaveLoop
         {
             public IntervalTimer Timer;
@@ -84,11 +100,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            var waveSettings = ResolveWaveSettings(context);
+
             // Dispara a primeira wave imediatamente.
-            SpawnWave(planet, resolvedDetection, pool, strategy, context);
+            SpawnWave(planet, resolvedDetection, pool, strategy, context, waveSettings);
 
             // Configura o timer de cadência com IntervalTimer (segundos entre waves).
-            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context);
+            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context, waveSettings);
 
             loop.Timer.OnInterval += loop.Tick;
             loop.Timer.Start();
@@ -141,7 +159,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context)
+            PlanetDefenseSetupContext context,
+            WaveSettings waveSettings)
         {
             if (planet == null || pool == null)
             {
@@ -149,9 +168,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var spawnPosition = planet.transform.position;
-            int spawns = ResolveSpawnCount(context);
-            float radius = Mathf.Max(0f, context?.WaveProfile?.spawnRadius ?? 0f);
-            float heightOffset = context?.WaveProfile?.spawnHeightOffset ?? 0f;
+            int spawns = waveSettings.EnemiesPerWave;
+            float radius = Mathf.Max(0f, waveSettings.SpawnRadius);
+            float heightOffset = waveSettings.SpawnHeightOffset;
             for (int i = 0; i < spawns; i++)
             {
                 var offset = ResolveSpawnOffset(radius, heightOffset);
@@ -173,24 +192,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out var strategy) ? strategy : null;
         }
 
-        private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
-        {
-            return Mathf.Max(1, context?.WaveProfile?.enemiesPerWave ?? 6);
-        }
-
         private void TickWave(
             PlanetsMaster planet,
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context)
+            PlanetDefenseSetupContext context,
+            WaveSettings waveSettings)
         {
             if (planet == null || pool == null)
             {
                 return;
             }
 
-            SpawnWave(planet, detectionType, pool, strategy, context);
+            SpawnWave(planet, detectionType, pool, strategy, context, waveSettings);
         }
 
         private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)
@@ -209,18 +224,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context)
+            PlanetDefenseSetupContext context,
+            WaveSettings waveSettings)
         {
-            var secondsBetweenWaves = ResolveSecondsBetweenWaves(context);
-
             var loop = new WaveLoop
             {
-                SecondsBetweenWaves = secondsBetweenWaves
+                SecondsBetweenWaves = waveSettings.SecondsBetweenWaves
             };
 
             loop.Tick = () =>
             {
-                TickWave(planet, detectionType, pool, strategy, context);
+                TickWave(planet, detectionType, pool, strategy, context, waveSettings);
                 loop.Timer.Reset(loop.SecondsBetweenWaves);
                 loop.Timer.Start();
             };
@@ -229,10 +243,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return loop;
         }
 
-        private static int ResolveSecondsBetweenWaves(PlanetDefenseSetupContext context)
+        private static WaveSettings ResolveWaveSettings(PlanetDefenseSetupContext context)
         {
-            var rawInterval = context?.WaveProfile?.secondsBetweenWaves ?? 5;
-            return Mathf.Max(1, rawInterval);
+            var profile = context?.WaveProfile;
+            if (profile == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
+                    "DefenseWaveProfileSO ausente no contexto; usando defaults seguros (5s entre waves, 6 inimigos).");
+                return new WaveSettings(5, 6, 0f, 0f);
+            }
+
+            var secondsBetweenWaves = Mathf.Max(1, profile.secondsBetweenWaves);
+            var enemiesPerWave = Mathf.Max(1, profile.enemiesPerWave);
+            var spawnRadius = profile.spawnRadius;
+            var spawnHeightOffset = profile.spawnHeightOffset;
+
+            return new WaveSettings(secondsBetweenWaves, enemiesPerWave, spawnRadius, spawnHeightOffset);
         }
 
         private static void DisposeIfPossible(IntervalTimer timer)
