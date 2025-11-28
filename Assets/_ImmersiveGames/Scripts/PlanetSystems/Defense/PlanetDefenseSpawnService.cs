@@ -142,13 +142,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 disengagedEvent.DetectionType,
                 FormatDetector(disengagedEvent.Detector),
                 Mathf.Max(disengagedEvent.ActiveDetectors, 0),
-                out var removed);
+                out _);
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"[Debug] Detectores ativos em {disengagedEvent.Planet.ActorName}: {state?.ActiveDetectors ?? 0} após saída de {FormatDetector(disengagedEvent.Detector)}.");
 
-            if (removed || disengagedEvent.IsLastDisengagement)
+            var noDetectorsRemaining = disengagedEvent.IsLastDisengagement || state?.ActiveDetectors <= 0;
+
+            if (noDetectorsRemaining)
             {
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
+
                 _waveRunner?.StopWaves(disengagedEvent.Planet);
                 _debugLogger?.StopLogging(disengagedEvent.Planet);
             }
@@ -205,7 +210,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.waveIntervalSeconds}s; Minions/Onda: {profile.minionsPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
+                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.secondsBetweenWaves}s; Minions/Onda: {profile.enemiesPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
         }
 
         private void WarnIfProfileMissing()

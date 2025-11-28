@@ -7,7 +7,7 @@
 3. [Componentes Principais](#componentes-principais)
 4. [Sistema de Roles (Duplo Check + Overrides)](#sistema-de-roles-duplo-check--overrides)
 5. [Integração com PoolSystem](#integração-com-poolsystem)
-6. [Timers com FrequencyTimer](#timers-com-frequencytimer)
+6. [Timers com IntervalTimer](#timers-com-intervaltimer)
 7. [Eventos e Telemetria](#eventos-e-telemetria)
 8. [Configuração via Inspector](#configuração-via-inspector)
 9. [Extensibilidade e Estratégias](#extensibilidade-e-estratégias)
@@ -34,7 +34,7 @@ Detections (Player/Eater) → PlanetDefenseController (Resolve DefenseRole)
                           ├─ IPlanetDefensePoolRunner (pool)
                           └─ IPlanetDefenseWaveRunner (waves)
                                             ↓
-                               PoolManager / FrequencyTimer
+                               PoolManager / IntervalTimer
                                             ↓
                                      Minions (IPoolable)
 ```
@@ -42,7 +42,7 @@ Detections (Player/Eater) → PlanetDefenseController (Resolve DefenseRole)
 1. Detectores publicam `PlanetDefenseEngagedEvent`/`Disengaged` no EventBus.
 2. `PlanetDefenseController` resolve o `DefenseRole` e repassa ao `PlanetDefenseDetectable`.
 3. `PlanetDefenseSpawnService` coordena runners, estado e debug com DI.
-4. `RealPlanetDefensePoolRunner` registra/aquece pools de minions; `RealPlanetDefenseWaveRunner` dispara waves com `FrequencyTimer` sem `Update` ou `Coroutine` globais.
+4. `RealPlanetDefensePoolRunner` registra/aquece pools de minions; `RealPlanetDefenseWaveRunner` dispara waves com `IntervalTimer` sem `Update` ou `Coroutine` globais.
 
 ---
 
@@ -66,12 +66,12 @@ Detections (Player/Eater) → PlanetDefenseController (Resolve DefenseRole)
 - Evita reprocessamento e facilita diagnósticos.
 
 ### `DefenseDebugLogger`
-- Usa `FrequencyTimer` dedicado por planeta para logs periódicos (verboses) sem `Update`.
+- Usa `IntervalTimer` dedicado por planeta para logs periódicos (verboses) sem `Update`.
 - Pode ser desligado em produção mantendo código de telemetria isolado.
 
 ### Runners (Pool/Wave)
 - **RealPlanetDefensePoolRunner:** registra pools reais no `PoolManager` usando `PoolData` pré-configurado via Editor (sem criar `PoolData` em runtime), mantendo validação via `PoolData.Validate`.
-- **RealPlanetDefenseWaveRunner:** coordena `FrequencyTimer` por planeta para spawn periódico, configurando minions via `PlanetDefenseSetupContext` + `IDefenseStrategy` e consumindo `ObjectPool.GetObject` conforme exemplos do PoolSystem.
+- **RealPlanetDefenseWaveRunner:** coordena `IntervalTimer` por planeta para spawn periódico, configurando minions via `PlanetDefenseSetupContext` + `IDefenseStrategy` e consumindo `ObjectPool.GetObject` conforme exemplos do PoolSystem.
 
 ---
 
@@ -100,14 +100,14 @@ Isso habilita combinações ou forçar papéis especiais (Player possuído, boss
 - Usa `PoolManager`, `PoolData` e `IPoolable` para evitar instâncias extras.
 - Cada planeta referencia um `PoolData` configurado no Editor (nome, tamanho inicial, expansão e lista de `PoolableObjectData`); o runner não cria `PoolData` em runtime.
 - `RealPlanetDefensePoolRunner.WarmUp` valida o `PoolData` e chama `PoolManager.Instance.RegisterPool(poolData)` seguindo o fluxo descrito no guia do PoolSystem.
-- Spawn ocorre via `ObjectPool.GetObject(position, spawner)` dentro do tick do `FrequencyTimer` no runner de waves, permitindo rastrear o `IActor` que disparou o spawn.
+- Spawn ocorre via `ObjectPool.GetObject(position, spawner)` dentro do tick do `IntervalTimer` no runner de waves, permitindo rastrear o `IActor` que disparou o spawn.
 
 ---
 
-## ⏱️ Timers com FrequencyTimer
+## ⏱️ Timers com IntervalTimer
 
-- `FrequencyTimer` substitui `Update` e `Coroutine` para waves e debug.
-- Cada planeta possui um timer dedicado; `OnTick` dispara spawns ou logs conforme o runner responsável.
+- `IntervalTimer` substitui `Update` e `Coroutine` para waves e debug, trabalhando com cadência em segundos.
+- Cada planeta possui um timer dedicado; `OnInterval` dispara spawns ou logs conforme o runner responsável.
 - Timers são iniciados em `OnDefenseEngaged` (primeiro detector), pausados/limpos em `OnDefenseDisengaged` (último detector) ou `OnDefenseDisabled`.
 - Intervalo é configurado em segundos diretamente no construtor, sem conversões intermediárias.
 

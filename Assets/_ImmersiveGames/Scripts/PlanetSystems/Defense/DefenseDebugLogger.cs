@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
+    /// Responsável por logs periódicos de defesa por planeta utilizando CountdownTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
@@ -15,9 +15,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class LogLoop
         {
-            public FrequencyTimer Timer;
-            public Action Tick;
+            public CountdownTimer Timer;
+            public Action TimerHandler;
             public int WaveIntervalSeconds;
+            public bool IsActive;
         }
 
         private DefenseWaveProfileSO _waveProfile;
@@ -34,8 +35,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _intervalSeconds = Mathf.Max(1, waveProfile?.waveIntervalSeconds ?? 5);
-            _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
+            _intervalSeconds = Mathf.Max(1, waveProfile?.secondsBetweenWaves ?? 5);
+            _spawnCount = Mathf.Max(1, waveProfile?.enemiesPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
@@ -52,9 +53,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var loop = BuildLogLoop(state);
+            var loop = new LogLoop
+            {
+                WaveIntervalSeconds = _intervalSeconds,
+                Timer = new CountdownTimer(_intervalSeconds),
+                IsActive = true
+            };
 
-            loop.Timer.OnTick += loop.Tick;
+            loop.TimerHandler = () =>
+            {
+                if (!loop.IsActive)
+                {
+                    return;
+                }
+
+                TickLog(state);
+
+                if (!loop.IsActive)
+                {
+                    return;
+                }
+
+                loop.Timer.Reset();
+                loop.Timer.Start();
+            };
+
+            loop.Timer.OnTimerStop += loop.TimerHandler;
             loop.Timer.Start();
 
             _debugTimers[state.Planet] = loop;
@@ -69,9 +93,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (_debugTimers.TryGetValue(planet, out var loop))
             {
-                if (loop.Timer != null && loop.Tick != null)
+                loop.IsActive = false;
+
+                if (loop.Timer != null && loop.TimerHandler != null)
                 {
-                    loop.Timer.OnTick -= loop.Tick;
+                    loop.Timer.OnTimerStop -= loop.TimerHandler;
                 }
 
                 loop.Timer?.Stop();
@@ -84,9 +110,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             foreach (var pair in _debugTimers)
             {
-                if (pair.Value.Timer != null && pair.Value.Tick != null)
+                pair.Value.IsActive = false;
+
+                if (pair.Value.Timer != null && pair.Value.TimerHandler != null)
                 {
-                    pair.Value.Timer.OnTick -= pair.Value.Tick;
+                    pair.Value.Timer.OnTimerStop -= pair.Value.TimerHandler;
                 }
                 pair.Value.Timer?.Stop();
                 DisposeIfPossible(pair.Value.Timer);
@@ -111,26 +139,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogWaveDebug(state, Time.time);
         }
 
-        private static void DisposeIfPossible(FrequencyTimer timer)
+        private static void DisposeIfPossible(Timer timer)
         {
             if (timer is IDisposable disposable)
             {
                 disposable.Dispose();
             }
-        }
-
-        private LogLoop BuildLogLoop(DefenseState state)
-        {
-            var loop = new LogLoop
-            {
-                WaveIntervalSeconds = _intervalSeconds
-            };
-
-            loop.Tick = () => TickLog(state);
-            // FrequencyTimer aqui representa o intervalo entre logs (igual ao intervalo da wave).
-            // O asset trabalha em segundos inteiros, então usamos diretamente o valor do ScriptableObject.
-            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
-            return loop;
         }
     }
 }

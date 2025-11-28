@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c2969fa53d2dde449b6e29c111e0221, type: 3}
   m_Name: WaveProfiles
   m_EditorClassIdentifier: 
-  waveIntervalSeconds: 5
-  minionsPerWave: 6
+  secondsBetweenWaves: 5
+  enemiesPerWave: 6
   spawnRadius: 4
   spawnHeightOffset: 0.5

@@ -6,11 +6,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseWaveProfileSO : ScriptableObject
     {
         [Header("Wave Timing")]
-        public int waveIntervalSeconds = 5;
+        [Tooltip("Intervalo em segundos entre waves.")]
+        public int secondsBetweenWaves = 5;
 
         [Header("Spawn Settings")]
-        public int minionsPerWave = 6;
+        [Tooltip("Quantos inimigos aparecem em cada wave.")]
+        public int enemiesPerWave = 6;
         public float spawnRadius = 4f;
         public float spawnHeightOffset = 0.5f;
+
+        private void OnValidate()
+        {
+            secondsBetweenWaves = Mathf.Max(1, secondsBetweenWaves);
+            enemiesPerWave = Mathf.Max(1, enemiesPerWave);
+        }
     }
 }
