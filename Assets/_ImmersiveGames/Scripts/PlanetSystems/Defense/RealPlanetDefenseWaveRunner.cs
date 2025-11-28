@@ -87,10 +87,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // Dispara a primeira wave imediatamente.
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            // Configura o timer de cadência com IntervalTimer, sem qualquer conversão para Hz.
+            // Configura o timer de cadência com IntervalTimer (segundos entre waves).
             var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context);
 
-            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.OnInterval += loop.Tick;
             loop.Timer.Start();
 
             _running[planet] = loop;
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (loop.Timer != null && loop.Tick != null)
                 {
-                    loop.Timer.OnTick -= loop.Tick;
+                    loop.Timer.OnInterval -= loop.Tick;
                 }
 
                 loop.Timer?.Stop();
@@ -218,9 +218,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 SecondsBetweenWaves = secondsBetweenWaves
             };
 
-            loop.Tick = () => TickWave(planet, detectionType, pool, strategy, context);
+            loop.Tick = () =>
+            {
+                TickWave(planet, detectionType, pool, strategy, context);
+                loop.Timer.Reset(loop.SecondsBetweenWaves);
+                loop.Timer.Start();
+            };
             // IntervalTimer usa segundos inteiros entre ticks (cada tick = uma wave).
-            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves);
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
             return loop;
         }
 

@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = BuildLogLoop(state);
 
-            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.OnInterval += loop.Tick;
             loop.Timer.Start();
 
             _debugTimers[state.Planet] = loop;
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (loop.Timer != null && loop.Tick != null)
                 {
-                    loop.Timer.OnTick -= loop.Tick;
+                    loop.Timer.OnInterval -= loop.Tick;
                 }
 
                 loop.Timer?.Stop();
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (pair.Value.Timer != null && pair.Value.Tick != null)
                 {
-                    pair.Value.Timer.OnTick -= pair.Value.Tick;
+                    pair.Value.Timer.OnInterval -= pair.Value.Tick;
                 }
                 pair.Value.Timer?.Stop();
                 DisposeIfPossible(pair.Value.Timer);
@@ -126,9 +126,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 SecondsBetweenWaves = _secondsBetweenWaves
             };
 
-            loop.Tick = () => TickLog(state);
+            loop.Tick = () =>
+            {
+                TickLog(state);
+                loop.Timer.Reset(loop.SecondsBetweenWaves);
+                loop.Timer.Start();
+            };
             // IntervalTimer utiliza o intervalo em segundos entre logs (mesma cadência das waves).
-            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves);
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
             return loop;
         }
     }
