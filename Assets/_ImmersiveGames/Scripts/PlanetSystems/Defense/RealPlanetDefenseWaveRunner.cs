@@ -22,8 +22,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int IntervalSeconds;
-            public float NextWaveTime;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -87,14 +85,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
             var intervalSeconds = ResolveIntervalSeconds(context);
-            var loop = new WaveLoop
-            {
-                IntervalSeconds = intervalSeconds,
-                NextWaveTime = Time.time + intervalSeconds
-            };
+            var loop = new WaveLoop();
 
-            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context, loop);
-            loop.Timer = new FrequencyTimer(1);
+            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context);
+            loop.Timer = new FrequencyTimer(intervalSeconds);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -185,8 +179,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5f;
-            return Mathf.Max(1, Mathf.RoundToInt(rawInterval));
+            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
+            return Mathf.Max(1, rawInterval);
         }
 
         private void TickWave(
@@ -194,21 +188,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context,
-            WaveLoop loop)
+            PlanetDefenseSetupContext context)
         {
-            if (planet == null || pool == null || loop == null)
-            {
-                return;
-            }
-
-            if (Time.time < loop.NextWaveTime)
+            if (planet == null || pool == null)
             {
                 return;
             }
 
             SpawnWave(planet, detectionType, pool, strategy, context);
-            loop.NextWaveTime = Time.time + Mathf.Max(1, loop.IntervalSeconds);
         }
 
         private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)

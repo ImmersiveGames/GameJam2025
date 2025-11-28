@@ -17,8 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
-            public int IntervalSeconds;
-            public float NextLogTime;
         }
 
         private DefenseWaveProfileSO _waveProfile;
@@ -35,7 +33,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _intervalSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
+            _intervalSeconds = Mathf.Max(1, waveProfile?.waveIntervalSeconds ?? 5);
             _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
@@ -53,14 +51,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var loop = new LogLoop
-            {
-                IntervalSeconds = _intervalSeconds,
-                NextLogTime = Time.time + _intervalSeconds
-            };
+            var loop = new LogLoop();
 
-            loop.Tick = () => TickLog(state, loop);
-            loop.Timer = new FrequencyTimer(1);
+            loop.Tick = () => TickLog(state);
+            loop.Timer = new FrequencyTimer(_intervalSeconds);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -108,20 +102,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_intervalSeconds}s | Spawns previstos: {_spawnCount}. (@ {timestamp:0.00}s)");
         }
 
-        private void TickLog(DefenseState state, LogLoop loop)
+        private void TickLog(DefenseState state)
         {
-            if (loop == null || state?.Planet == null)
-            {
-                return;
-            }
-
-            if (Time.time < loop.NextLogTime)
+            if (state?.Planet == null)
             {
                 return;
             }
 
             LogWaveDebug(state, Time.time);
-            loop.NextLogTime = Time.time + Mathf.Max(1, loop.IntervalSeconds);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
