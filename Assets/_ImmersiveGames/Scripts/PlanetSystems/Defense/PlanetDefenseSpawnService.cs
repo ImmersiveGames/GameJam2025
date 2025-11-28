@@ -178,11 +178,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private PlanetDefenseSetupContext BuildContext(DefenseState state)
         {
-            PlanetResourcesSo resource = null;
-            if (state.Planet != null && state.Planet.HasAssignedResource)
-            {
-                resource = state.Planet.AssignedResource;
-            }
+            PlanetResourcesSo resource = state.Planet.HasAssignedResource ? state.Planet.AssignedResource : null;
 
             return new PlanetDefenseSetupContext(
                 state.Planet,
@@ -190,7 +186,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 null,
                 defaultPoolData,
-                _waveProfile);
+                _waveProfile); // <-- única fonte de configuração
         }
 
         private void LogDefaultPoolData()
