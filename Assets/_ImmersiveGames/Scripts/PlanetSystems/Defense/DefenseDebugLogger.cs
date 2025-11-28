@@ -28,8 +28,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void Configure(DefenseWaveProfileSO waveProfile)
         {
             _waveProfile = waveProfile;
-            _debugLoopIntervalSeconds = GetInterval(waveProfile?.waveIntervalSeconds ?? 5f);
-            _debugWaveDurationSeconds = Mathf.Max(1f, waveProfile?.waveIntervalSeconds ?? 5f);
+            _debugLoopIntervalSeconds = Mathf.Max(0.1f, waveProfile?.waveIntervalSeconds ?? 5f);
+            _debugWaveDurationSeconds = Mathf.Max(0.1f, waveProfile?.waveIntervalSeconds ?? 5f);
             _debugWaveSpawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var timer = new FrequencyTimer(GetIntervalSeconds(_debugLoopIntervalSeconds));
+            var timer = new FrequencyTimer(ResolveFrequency(_debugLoopIntervalSeconds));
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
@@ -98,16 +98,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_debugWaveDurationSeconds:0.##}s | Spawns previstos: {_debugWaveSpawnCount}. (@ {timestamp:0.00}s)");
         }
 
-        private static float GetInterval(float waveIntervalSeconds)
+        private static float ResolveFrequency(float intervalSeconds)
         {
-            return Mathf.Max(waveIntervalSeconds, 1f);
-        }
-
-        private static int GetIntervalSeconds(float seconds)
-        {
-            // FrequencyTimer espera o intervalo em segundos como inteiro.
-            var clampedSeconds = Mathf.Max(seconds, 1f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
+            var safeInterval = Mathf.Max(0.1f, intervalSeconds);
+            return 1f / safeInterval;
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)

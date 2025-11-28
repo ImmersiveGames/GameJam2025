@@ -79,7 +79,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var timer = new FrequencyTimer(GetIntervalSeconds(ResolveIntervalSeconds(context)));
+            var intervalSeconds = ResolveIntervalSeconds(context);
+            var timer = new FrequencyTimer(ResolveFrequency(intervalSeconds));
             Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy, context);
             timer.OnTick += callback;
             timer.Start();
@@ -142,9 +143,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var spawnPosition = planet.transform.position;
             int spawns = ResolveSpawnCount(context);
+            float radius = Mathf.Max(0f, context?.WaveProfile?.spawnRadius ?? 0f);
+            float heightOffset = context?.WaveProfile?.spawnHeightOffset ?? 0f;
             for (int i = 0; i < spawns; i++)
             {
-                var poolable = pool.GetObject(spawnPosition, planet);
+                var offset = ResolveSpawnOffset(radius, heightOffset);
+                var poolable = pool.GetObject(spawnPosition + offset, planet);
                 if (poolable == null)
                 {
                     DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Falha ao obter minion da pool para {planet.ActorName}.");
@@ -162,21 +166,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return _strategies.TryGetValue(planet, out var strategy) ? strategy : null;
         }
 
-        private static int GetIntervalSeconds(float seconds)
+        private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
         {
-            // FrequencyTimer espera o intervalo em segundos como inteiro.
-            var clampedSeconds = Mathf.Max(seconds, 1f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
+            return Mathf.Max(1, context?.WaveProfile?.minionsPerWave ?? 6);
         }
 
         private static float ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            return Mathf.Max(1f, context?.WaveProfile?.waveIntervalSeconds ?? 5f);
+            return Mathf.Max(0.1f, context?.WaveProfile?.waveIntervalSeconds ?? 5f);
         }
 
-        private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
+        private static float ResolveFrequency(float intervalSeconds)
         {
-            return Mathf.Max(1, context?.WaveProfile?.minionsPerWave ?? 6);
+            var safeInterval = Mathf.Max(0.1f, intervalSeconds);
+            return 1f / safeInterval;
+        }
+
+        private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)
+        {
+            if (radius <= 0f && Mathf.Approximately(heightOffset, 0f))
+            {
+                return Vector3.zero;
+            }
+
+            var planar = UnityEngine.Random.insideUnitCircle * radius;
+            return new Vector3(planar.x, heightOffset, planar.y);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
