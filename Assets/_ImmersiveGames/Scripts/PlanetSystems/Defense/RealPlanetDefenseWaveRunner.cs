@@ -22,6 +22,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public FrequencyTimer Timer;
             public Action Tick;
+            public int CadenceSeconds;
+            public float CadenceFrequencyHz;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -84,11 +86,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var intervalSeconds = ResolveIntervalSeconds(context);
-            var loop = new WaveLoop();
+            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context);
 
-            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context);
-            loop.Timer = new FrequencyTimer(intervalSeconds);
             loop.Timer.OnTick += loop.Tick;
             loop.Timer.Start();
 
@@ -177,12 +176,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return Mathf.Max(1, context?.WaveProfile?.minionsPerWave ?? 6);
         }
 
-        private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
-        {
-            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
-            return Mathf.Max(1, rawInterval);
-        }
-
         private void TickWave(
             PlanetsMaster planet,
             DetectionType detectionType,
@@ -207,6 +200,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var planar = UnityEngine.Random.insideUnitCircle * radius;
             return new Vector3(planar.x, heightOffset, planar.y);
+        }
+
+        private WaveLoop BuildWaveLoop(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            ObjectPool pool,
+            IDefenseStrategy strategy,
+            PlanetDefenseSetupContext context)
+        {
+            var cadenceSeconds = ResolveCadenceSeconds(context);
+            var cadenceFrequencyHz = ResolveCadenceFrequency(cadenceSeconds);
+
+            var loop = new WaveLoop
+            {
+                CadenceSeconds = cadenceSeconds,
+                CadenceFrequencyHz = cadenceFrequencyHz
+            };
+
+            loop.Tick = () => TickWave(planet, detectionType, pool, strategy, context);
+            // FrequencyTimer espera frequência (ticks/segundo). Convertendo cadência em segundos para Hz evita confusão
+            // semântica entre intervalo e frequência.
+            loop.Timer = new FrequencyTimer(loop.CadenceFrequencyHz);
+            return loop;
+        }
+
+        private static int ResolveCadenceSeconds(PlanetDefenseSetupContext context)
+        {
+            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
+            return Mathf.Max(1, rawInterval);
+        }
+
+        private static float ResolveCadenceFrequency(int cadenceSeconds)
+        {
+            return 1f / Mathf.Max(1, cadenceSeconds);
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
