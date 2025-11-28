@@ -7,23 +7,35 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
+    /// Responsável por logs periódicos de defesa por planeta utilizando IntervalTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
+    [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class DefenseDebugLogger
     {
-        private PlanetDefenseSpawnConfig _config;
-        private readonly Dictionary<PlanetsMaster, FrequencyTimer> _debugTimers = new();
-        private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
-
-        public DefenseDebugLogger(PlanetDefenseSpawnConfig config)
+        private sealed class LogLoop
         {
-            _config = config ?? new PlanetDefenseSpawnConfig();
+            public IntervalTimer Timer;
+            public Action Tick;
+            public int SecondsBetweenWaves;
         }
 
-        public void Configure(PlanetDefenseSpawnConfig config)
+        private DefenseWaveProfileSO _waveProfile;
+        private int _secondsBetweenWaves = 5;
+        private int _enemiesPerWave = 6;
+        private readonly Dictionary<PlanetsMaster, LogLoop> _debugTimers = new();
+
+        public DefenseDebugLogger(DefenseWaveProfileSO waveProfile)
         {
-            _config = config ?? new PlanetDefenseSpawnConfig();
+            Configure(waveProfile);
+        }
+
+        public void Configure(DefenseWaveProfileSO waveProfile)
+        {
+            _waveProfile = waveProfile;
+            // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
+            _secondsBetweenWaves = Mathf.Max(1, waveProfile?.secondsBetweenWaves ?? 5);
+            _enemiesPerWave = Mathf.Max(1, waveProfile?.enemiesPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
@@ -40,13 +52,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            var timer = new FrequencyTimer(GetIntervalSeconds(_config.DebugLoopIntervalSeconds));
-            Action callback = () => LogWaveDebug(state, Time.time);
-            timer.OnTick += callback;
-            timer.Start();
+            var loop = BuildLogLoop(state);
 
-            _debugTimers[state.Planet] = timer;
-            _callbacks[state.Planet] = callback;
+            loop.Timer.OnInterval += loop.Tick;
+            loop.Timer.Start();
+
+            _debugTimers[state.Planet] = loop;
         }
 
         public void StopLogging(PlanetsMaster planet)
@@ -56,15 +67,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_debugTimers.TryGetValue(planet, out var timer))
+            if (_debugTimers.TryGetValue(planet, out var loop))
             {
-                if (_callbacks.TryGetValue(planet, out var callback))
+                if (loop.Timer != null && loop.Tick != null)
                 {
-                    timer.OnTick -= callback;
-                    _callbacks.Remove(planet);
+                    loop.Timer.OnInterval -= loop.Tick;
                 }
-                timer.Stop();
-                DisposeIfPossible(timer);
+
+                loop.Timer?.Stop();
+                DisposeIfPossible(loop.Timer);
                 _debugTimers.Remove(planet);
             }
         }
@@ -73,37 +84,57 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             foreach (var pair in _debugTimers)
             {
-                if (_callbacks.TryGetValue(pair.Key, out var callback))
+                if (pair.Value.Timer != null && pair.Value.Tick != null)
                 {
-                    pair.Value.OnTick -= callback;
+                    pair.Value.Timer.OnInterval -= pair.Value.Tick;
                 }
-                pair.Value.Stop();
-                DisposeIfPossible(pair.Value);
+                pair.Value.Timer?.Stop();
+                DisposeIfPossible(pair.Value.Timer);
             }
 
             _debugTimers.Clear();
-            _callbacks.Clear();
         }
 
         private void LogWaveDebug(DefenseState state, float timestamp)
         {
             DebugUtility.LogVerbose<DefenseDebugLogger>(
-                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_config.DebugWaveDurationSeconds:0.##}s | Spawns previstos: {_config.DebugWaveSpawnCount}. (@ {timestamp:0.00}s)");
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_secondsBetweenWaves}s | Spawns previstos: {_enemiesPerWave}. (@ {timestamp:0.00}s)");
         }
 
-        private static int GetIntervalSeconds(float seconds)
+        private void TickLog(DefenseState state)
         {
-            // FrequencyTimer espera o intervalo em segundos como inteiro.
-            var clampedSeconds = Mathf.Max(seconds, 1f);
-            return Mathf.Max(1, Mathf.RoundToInt(clampedSeconds));
+            if (state?.Planet == null)
+            {
+                return;
+            }
+
+            LogWaveDebug(state, Time.time);
         }
 
-        private static void DisposeIfPossible(FrequencyTimer timer)
+        private static void DisposeIfPossible(IntervalTimer timer)
         {
             if (timer is IDisposable disposable)
             {
                 disposable.Dispose();
             }
+        }
+
+        private LogLoop BuildLogLoop(DefenseState state)
+        {
+            var loop = new LogLoop
+            {
+                SecondsBetweenWaves = _secondsBetweenWaves
+            };
+
+            loop.Tick = () =>
+            {
+                TickLog(state);
+                loop.Timer.Reset(loop.SecondsBetweenWaves);
+                loop.Timer.Start();
+            };
+            // IntervalTimer utiliza o intervalo em segundos entre logs (mesma cadência das waves).
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
+            return loop;
         }
     }
 }
