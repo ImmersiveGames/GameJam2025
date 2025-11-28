@@ -14,9 +14,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseDebugLogger
     {
         private DefenseWaveProfileSO _waveProfile;
-        private int _debugIntervalSeconds = 5;
-        private int _debugWaveDurationSeconds = 5;
-        private int _debugWaveSpawnCount = 6;
+        private int _intervalSeconds = 5;
+        private int _spawnCount = 6;
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _debugTimers = new();
         private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
 
@@ -29,9 +28,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _debugWaveDurationSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
-            _debugIntervalSeconds = _debugWaveDurationSeconds;
-            _debugWaveSpawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
+            _intervalSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
+            _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
@@ -48,9 +46,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            // FrequencyTimer recebe frequência (ticks/segundo); convertemos o intervalo do perfil.
-            var frequencyPerSecond = Mathf.Max(0.001f, 1f / Mathf.Max(_debugLoopIntervalSeconds, 0.001f));
-            var timer = new FrequencyTimer(_debugLoopIntervalSeconds);
+            var tickFrequency = ResolveTickFrequency(_intervalSeconds);
+            var timer = new FrequencyTimer(tickFrequency);
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
@@ -98,7 +95,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void LogWaveDebug(DefenseState state, float timestamp)
         {
             DebugUtility.LogVerbose<DefenseDebugLogger>(
-                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_debugWaveDurationSeconds}s | Spawns previstos: {_debugWaveSpawnCount}. (@ {timestamp:0.00}s)");
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_intervalSeconds}s | Spawns previstos: {_spawnCount}. (@ {timestamp:0.00}s)");
+        }
+
+        private static float ResolveTickFrequency(int intervalSeconds)
+        {
+            // FrequencyTimer recebe frequência (ticks por segundo); para intervalo em segundos, usamos 1 / intervalo.
+            intervalSeconds = Mathf.Max(1, intervalSeconds);
+            return 1f / intervalSeconds;
         }
 
         private static void DisposeIfPossible(FrequencyTimer timer)
