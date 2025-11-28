@@ -89,7 +89,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context);
 
-            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.OnInterval += loop.Tick;
             loop.Timer.Start();
 
             _running[planet] = loop;
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (loop.Timer != null && loop.Tick != null)
                 {
-                    loop.Timer.OnTick -= loop.Tick;
+                    loop.Timer.OnInterval -= loop.Tick;
                 }
 
                 loop.Timer?.Stop();
@@ -217,10 +217,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 SecondsBetweenWaves = intervalSeconds
             };
 
-            loop.Tick = () => TickWave(planet, detectionType, pool, strategy, context);
+            loop.Tick = () =>
+            {
+                TickWave(planet, detectionType, pool, strategy, context);
+                loop.Timer.Reset(loop.SecondsBetweenWaves);
+                loop.Timer.Start();
+            };
             // IntervalTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
-            // portanto passamos o intervalo diretamente, sem conversões para Hz.
-            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves);
+            // portanto passamos o intervalo diretamente como duração total e intervalo para disparar uma wave
+            // e reiniciamos o timer ao final para manter a periodicidade.
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
             return loop;
         }
 
