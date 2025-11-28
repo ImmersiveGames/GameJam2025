@@ -12,8 +12,8 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Runner concreto que gerencia waves de spawn utilizando IntervalTimer
-    /// para reduzir overhead e facilitar pausa/retomada.
+    /// Runner concreto que gerencia waves de spawn utilizando CountdownTimer
+    /// para reduzir overhead e facilitar pausa/retomada com cadência em segundos.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
@@ -25,10 +25,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             public IDefenseStrategy Strategy;
             public DefenseWaveProfileSO WaveProfile;
             public ObjectPool Pool;
-            public IntervalTimer Timer;
-            public Action IntervalHandler;
-            public int SecondsBetweenWaves;
-            public int EnemiesPerWave;
+            public CountdownTimer Timer;
+            public Action TimerHandler;
+            public bool IsActive;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -67,14 +66,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 poolRunner.ConfigureForPlanet(context);
             }
 
-            WarnIfWaveProfileMissing(planet, context);
+            if (!EnsureWaveProfileAvailable(planet, context))
+            {
+                return;
+            }
 
             var resolvedDetection = context.DetectionType ?? detectionType;
             var intervalSeconds = ResolveIntervalSeconds(context);
             var spawnCount = ResolveSpawnCount(context);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                $"[WaveDebug] StartWaves em {planet.ActorName} | Tipo: {resolvedDetection?.TypeName ?? "Unknown"} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}.");
+                $"[WaveDebug] StartWaves em {planet.ActorName} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}.");
 
             var poolData = context.PoolData;
             if (poolData == null)
@@ -97,16 +99,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            // Dispara uma wave imediata ao iniciar.
+            var loop = new WaveLoop
+            {
+                Planet = planet,
+                DetectionType = resolvedDetection,
+                Strategy = strategy,
+                WaveProfile = context?.WaveProfile,
+                Pool = pool,
+                Timer = new CountdownTimer(intervalSeconds),
+                IsActive = true
+            };
+
+            loop.TimerHandler = () =>
+            {
+                if (!loop.IsActive)
+                {
+                    return;
+                }
+
+                TickWave(loop.Planet, loop.DetectionType, loop.Pool, loop.Strategy, context);
+
+                if (loop.IsActive)
+                {
+                    loop.Timer.Reset();
+                    loop.Timer.Start();
+                }
+            };
+
+            loop.Timer.OnTimerStop += loop.TimerHandler;
+
+            // Dispara uma wave imediata ao iniciar para garantir resposta instantânea.
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context, intervalSeconds, spawnCount);
-
-            if (loop.Timer != null && loop.IntervalHandler != null)
-            {
-                loop.Timer.OnInterval += loop.IntervalHandler;
-                loop.Timer.Start();
-            }
+            loop.Timer.Start();
 
             _running[planet] = loop;
         }
@@ -123,9 +148,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                     $"[WaveDebug] StopWaves chamado para {planet.ActorName}; timer será parado e removido.");
 
-                if (loop.Timer != null && loop.IntervalHandler != null)
+                loop.IsActive = false;
+
+                if (loop.Timer != null && loop.TimerHandler != null)
                 {
-                    loop.Timer.OnInterval -= loop.IntervalHandler;
+                    loop.Timer.OnTimerStop -= loop.TimerHandler;
                 }
 
                 loop.Timer?.Stop();
@@ -237,59 +264,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return new Vector3(planar.x, heightOffset, planar.y);
         }
 
-        private WaveLoop BuildWaveLoop(
-            PlanetsMaster planet,
-            DetectionType detectionType,
-            ObjectPool pool,
-            IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context,
-            int intervalSeconds,
-            int enemiesPerWave)
-        {
-            var loop = new WaveLoop
-            {
-                Planet = planet,
-                DetectionType = detectionType,
-                Strategy = strategy,
-                WaveProfile = context?.WaveProfile,
-                Pool = pool,
-                SecondsBetweenWaves = intervalSeconds,
-                EnemiesPerWave = enemiesPerWave
-            };
-
-            loop.IntervalHandler = () =>
-            {
-                TickWave(planet, detectionType, pool, strategy, context);
-
-                // Reinicia o timer para manter a cadência contínua enquanto a defesa estiver ativa.
-                loop.Timer?.Reset(loop.SecondsBetweenWaves);
-                loop.Timer?.Start();
-            };
-
-            // IntervalTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
-            // então passamos o intervalo diretamente como duração total e intervalo para disparar uma wave.
-            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
-            return loop;
-        }
-
         private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
             var rawInterval = context?.WaveProfile?.secondsBetweenWaves ?? 5;
             return Mathf.Max(1, rawInterval);
         }
 
-        private static void WarnIfWaveProfileMissing(PlanetsMaster planet, PlanetDefenseSetupContext context)
+        private static bool EnsureWaveProfileAvailable(PlanetsMaster planet, PlanetDefenseSetupContext context)
         {
             if (context?.WaveProfile != null)
             {
-                return;
+                return true;
             }
 
             DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
-                $"DefenseWaveProfileSO ausente para {planet?.ActorName ?? "Unknown"}; usando fallback de 5s entre waves e 6 inimigos por wave.");
+                $"DefenseWaveProfileSO ausente para {planet?.ActorName ?? "Unknown"}; waves não serão iniciadas.");
+            return false;
         }
 
-        private static void DisposeIfPossible(IntervalTimer timer)
+        private static void DisposeIfPossible(Timer timer)
         {
             if (timer is IDisposable disposable)
             {
