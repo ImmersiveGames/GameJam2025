@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
+    /// Responsável por logs periódicos de defesa por planeta utilizando IntervalTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
@@ -15,14 +15,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class LogLoop
         {
-            public FrequencyTimer Timer;
+            public IntervalTimer Timer;
             public Action Tick;
-            public int WaveIntervalSeconds;
+            public int SecondsBetweenWaves;
         }
 
         private DefenseWaveProfileSO _waveProfile;
-        private int _intervalSeconds = 5;
-        private int _spawnCount = 6;
+        private int _secondsBetweenWaves = 5;
+        private int _enemiesPerWave = 6;
         private readonly Dictionary<PlanetsMaster, LogLoop> _debugTimers = new();
 
         public DefenseDebugLogger(DefenseWaveProfileSO waveProfile)
@@ -34,8 +34,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _intervalSeconds = Mathf.Max(1, waveProfile?.waveIntervalSeconds ?? 5);
-            _spawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
+            _secondsBetweenWaves = Mathf.Max(1, waveProfile?.secondsBetweenWaves ?? 5);
+            _enemiesPerWave = Mathf.Max(1, waveProfile?.enemiesPerWave ?? 6);
         }
 
         public void StartLogging(DefenseState state)
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void LogWaveDebug(DefenseState state, float timestamp)
         {
             DebugUtility.LogVerbose<DefenseDebugLogger>(
-                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_intervalSeconds}s | Spawns previstos: {_spawnCount}. (@ {timestamp:0.00}s)");
+                $"[Debug] Defesa ativa em {state.Planet.ActorName} contra {state.DetectionType?.TypeName ?? "Unknown"} | Onda: {_secondsBetweenWaves}s | Spawns previstos: {_enemiesPerWave}. (@ {timestamp:0.00}s)");
         }
 
         private void TickLog(DefenseState state)
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogWaveDebug(state, Time.time);
         }
 
-        private static void DisposeIfPossible(FrequencyTimer timer)
+        private static void DisposeIfPossible(IntervalTimer timer)
         {
             if (timer is IDisposable disposable)
             {
@@ -123,13 +123,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             var loop = new LogLoop
             {
-                WaveIntervalSeconds = _intervalSeconds
+                SecondsBetweenWaves = _secondsBetweenWaves
             };
 
             loop.Tick = () => TickLog(state);
-            // FrequencyTimer aqui representa o intervalo entre logs (igual ao intervalo da wave).
-            // O asset trabalha em segundos inteiros, então usamos diretamente o valor do ScriptableObject.
-            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
+            // IntervalTimer utiliza o intervalo em segundos entre logs (mesma cadência das waves).
+            loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves);
             return loop;
         }
     }
