@@ -5,10 +5,12 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.SkinSystems.Runtime;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
+    [DebugLevel(level: DebugLevel.Verbose)]
     public class ActorSkinController : MonoBehaviour, IResettable
     {
         [Header("Skin Configuration")]
@@ -362,6 +364,37 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             
             return null;
         }
+
+        /// <summary>
+        /// Helper para acessar o SkinRuntimeState diretamente a partir do controller.
+        /// </summary>
+        public bool TryGetRuntimeState(ModelType type, out SkinRuntimeState state)
+        {
+            var tracker = GetComponent<SkinRuntimeStateTracker>();
+            if (tracker == null)
+            {
+                state = default;
+                return false;
+            }
+
+            return tracker.TryGetState(type, out state);
+        }
         #endregion
+        
+#if UNITY_EDITOR
+        [ContextMenu("Log Skin Runtime States")]
+        private void Editor_LogSkinRuntimeStates()
+        {
+            var tracker = GetComponent<SkinRuntimeStateTracker>();
+            if (tracker == null)
+            {
+                DebugUtility.LogWarning<ActorSkinController>(
+                    $"ActorSkinController em {name} não encontrou SkinRuntimeStateTracker no mesmo GameObject.");
+                return;
+            }
+
+            tracker.LogAllStatesToConsole();
+        }
+#endif
     }
 }
