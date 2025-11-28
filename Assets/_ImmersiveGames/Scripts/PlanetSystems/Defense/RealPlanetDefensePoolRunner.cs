@@ -9,6 +9,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// <summary>
     /// Runner concreto que registra e aquece pools de minions utilizando o PoolSystem real.
     /// </summary>
+    [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class RealPlanetDefensePoolRunner : IPlanetDefensePoolRunner
     {
         private readonly Dictionary<PlanetsMaster, PlanetDefenseSetupContext> _configured = new();
