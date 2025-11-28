@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Responsável por logs periódicos de defesa por planeta utilizando FrequencyTimer
+    /// Responsável por logs periódicos de defesa por planeta utilizando IntervalTimer
     /// dedicado, evitando dependência em Update ou corrotinas.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class LogLoop
         {
-            public FrequencyTimer Timer;
+            public IntervalTimer Timer;
             public Action Tick;
             public int WaveIntervalSeconds;
         }
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = BuildLogLoop(state);
 
-            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.OnInterval += loop.Tick;
             loop.Timer.Start();
 
             _debugTimers[state.Planet] = loop;
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (loop.Timer != null && loop.Tick != null)
                 {
-                    loop.Timer.OnTick -= loop.Tick;
+                    loop.Timer.OnInterval -= loop.Tick;
                 }
 
                 loop.Timer?.Stop();
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 if (pair.Value.Timer != null && pair.Value.Tick != null)
                 {
-                    pair.Value.Timer.OnTick -= pair.Value.Tick;
+                    pair.Value.Timer.OnInterval -= pair.Value.Tick;
                 }
                 pair.Value.Timer?.Stop();
                 DisposeIfPossible(pair.Value.Timer);
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogWaveDebug(state, Time.time);
         }
 
-        private static void DisposeIfPossible(FrequencyTimer timer)
+        private static void DisposeIfPossible(IntervalTimer timer)
         {
             if (timer is IDisposable disposable)
             {
@@ -126,10 +126,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 WaveIntervalSeconds = _intervalSeconds
             };
 
-            loop.Tick = () => TickLog(state);
-            // FrequencyTimer aqui representa o intervalo entre logs (igual ao intervalo da wave).
+            loop.Tick = () =>
+            {
+                TickLog(state);
+                loop.Timer.Reset(loop.WaveIntervalSeconds);
+                loop.Timer.Start();
+            };
+            // IntervalTimer aqui representa o intervalo em segundos entre logs (igual ao intervalo da wave).
             // O asset trabalha em segundos inteiros, então usamos diretamente o valor do ScriptableObject.
-            loop.Timer = new FrequencyTimer(loop.WaveIntervalSeconds);
+            loop.Timer = new IntervalTimer(loop.WaveIntervalSeconds, loop.WaveIntervalSeconds);
             return loop;
         }
     }
