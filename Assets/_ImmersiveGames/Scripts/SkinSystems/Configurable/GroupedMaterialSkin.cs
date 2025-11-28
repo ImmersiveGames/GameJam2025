@@ -19,7 +19,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] private bool showDebugLogs;
 
         private Dictionary<MaterialGroupConfig, List<MaterialSlot>> _groupedSlots;
-        private bool _isInitialized;
 
         #region Unity Lifecycle
         protected override void Start()
@@ -32,7 +31,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyGroupedMaterials();
             }
             
-            _isInitialized = true;
             if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Initialized with {materialSlots.Length} slots");
         }
         #endregion

@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
-    public class SkinController : MonoBehaviour, IResettable
+    public class ActorSkinController : MonoBehaviour, IResettable
     {
         [Header("Skin Configuration")]
         [SerializeField] private SkinCollectionData defaultSkinCollection;
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         public event Action<ModelType, List<GameObject>> OnSkinInstancesCreated;
 
         // EventBindings para EventBus global
-        private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
+        private EventBinding<SkinEvents> _skinUpdateBinding;
         private EventBinding<SkinCollectionUpdateEvent> _skinCollectionUpdateBinding;
         private bool _globalEventsRegistered;
 
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void Awake()
         {
             FindDependencies();
-            _skinService ??= new SkinService();
+            _skinService ??= new DefaultSkinService();
 
             if (autoInitialize)
             {
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner == null)
             {
-                DebugUtility.LogError<SkinController>($"SkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogError<ActorSkinController>($"ActorSkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
             }
         }
 
@@ -100,11 +100,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 DependencyManager.Provider.RegisterForObject(_objectId, this);
                 _isRegistered = true;
                 
-                DebugUtility.LogVerbose<SkinController>($"SkinController registered in DependencyManager with ID: {_objectId}");
+                DebugUtility.LogVerbose<ActorSkinController>($"ActorSkinController registered in DependencyManager with ID: {_objectId}");
             }
             catch (Exception e)
             {
-                DebugUtility.LogWarning<SkinController>($"Failed to register SkinController in DependencyManager: {e.Message}");
+                DebugUtility.LogWarning<ActorSkinController>($"Failed to register ActorSkinController in DependencyManager: {e.Message}");
             }
         }
 
@@ -123,12 +123,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!enableGlobalEvents || _globalEventsRegistered) return;
 
-            _skinUpdateBinding ??= new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
+            _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinCollectionUpdateBinding ??= new EventBinding<SkinCollectionUpdateEvent>(OnGlobalSkinCollectionUpdate);
 
             if (_ownerActor != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.Register(_skinUpdateBinding, _ownerActor);
+                FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
                 FilteredEventBus<SkinCollectionUpdateEvent>.Register(_skinCollectionUpdateBinding, _ownerActor);
                 _globalEventsRegistered = true;
             }
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinUpdateBinding != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.Unregister(_skinUpdateBinding, _ownerActor);
+                FilteredEventBus<SkinEvents>.Unregister(_skinUpdateBinding, _ownerActor);
             }
 
             if (_skinCollectionUpdateBinding != null)
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             _globalEventsRegistered = false;
         }
 
-        private void OnGlobalSkinUpdate(SkinUpdateEvent evt)
+        private void OnGlobalSkinUpdate(SkinEvents evt)
         {
             // Reagir a eventos globais de skin update
             // Útil para sincronização em multiplayer ou sistemas cross-actor
@@ -169,13 +169,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner?.ModelTransform == null)
             {
-                DebugUtility.LogError<SkinController>($"SkinController: No valid ModelTransform found");
+                DebugUtility.LogError<ActorSkinController>($"ActorSkinController: No valid ModelTransform found");
                 return;
             }
 
             if (_skinService == null)
             {
-                DebugUtility.LogError<SkinController>("SkinController: Nenhum ISkinService configurado.");
+                DebugUtility.LogError<ActorSkinController>("ActorSkinController: Nenhum ISkinService configurado.");
                 return;
             }
 
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (config == null)
             {
-                DebugUtility.LogWarning<SkinController>("SkinController: Config nula fornecida para ApplySkin.");
+                DebugUtility.LogWarning<ActorSkinController>("ActorSkinController: Config nula fornecida para ApplySkin.");
                 return;
             }
 
@@ -254,12 +254,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (!enableGlobalEvents) return;
 
-            var skinEvent = new SkinUpdateEvent(config, _ownerActor);
-            EventBus<SkinUpdateEvent>.Raise(skinEvent);
+            var skinEvent = new SkinEvents(config, _ownerActor);
+            EventBus<SkinEvents>.Raise(skinEvent);
 
             if (_ownerActor != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.RaiseFiltered(skinEvent, _ownerActor);
+                FilteredEventBus<SkinEvents>.RaiseFiltered(skinEvent, _ownerActor);
             }
         }
 
@@ -319,7 +319,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!IsInitialized)
             {
-                DebugUtility.LogWarning<SkinController>($"SkinController not initialized. Call Initialize() first.");
+                DebugUtility.LogWarning<ActorSkinController>($"ActorSkinController not initialized. Call Initialize() first.");
                 return false;
             }
             return true;

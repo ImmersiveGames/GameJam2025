@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 {
     /// <summary>
     /// Define etapas adicionais após a criação de uma instância de skin.
-    /// Mantém o <see cref="SkinService"/> aberto a extensões sem modificações diretas.
+    /// Mantém o <see cref="DefaultSkinService"/> aberto a extensões sem modificações diretas.
     /// </summary>
     public interface ISkinInstancePostProcessor
     {

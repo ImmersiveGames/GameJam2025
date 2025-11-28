@@ -7,12 +7,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Evento global para notificar mudanças de skin individual
     /// </summary>
-    public struct SkinUpdateEvent : IEvent
+    public struct SkinEvents : IEvent
     {
         public ISkinConfig SkinConfig { get; }
         public IActor Actor { get; }
 
-        public SkinUpdateEvent(ISkinConfig skinConfig, IActor actor)
+        public SkinEvents(ISkinConfig skinConfig, IActor actor)
         {
             SkinConfig = skinConfig;
             Actor = actor;

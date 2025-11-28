@@ -15,9 +15,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
     {
         private Animator _cachedAnimator;
         private IActor _actor;
-        private SkinController _skinController;
+        private ActorSkinController _actorSkinController;
 
-        private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
+        private EventBinding<SkinEvents> _skinUpdateBinding;
         private EventBinding<SkinInstancesCreatedEvent> _skinInstancesBinding;
 
         public event System.Action<Animator> OnAnimatorChanged;
@@ -48,16 +48,16 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
             {
-                DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _skinController);
+                DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _actorSkinController);
             }
 
-            if (_skinController == null)
-                _skinController = GetComponent<SkinController>() ?? GetComponentInParent<SkinController>();
+            if (_actorSkinController == null)
+                _actorSkinController = GetComponent<ActorSkinController>() ?? GetComponentInParent<ActorSkinController>();
 
-            if (_skinController != null)
+            if (_actorSkinController != null)
             {
-                _skinController.OnSkinInstancesCreated += OnLocalSkinInstancesCreated;
-                _skinController.OnSkinApplied += OnLocalSkinApplied;
+                _actorSkinController.OnSkinInstancesCreated += OnLocalActorSkinInstancesCreated;
+                _actorSkinController.OnSkinApplied += OnLocalActorSkinApplied;
             }
         }
 
@@ -65,10 +65,10 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actor == null) return;
 
-            _skinUpdateBinding = new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
+            _skinUpdateBinding = new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
 
-            FilteredEventBus<SkinUpdateEvent>.Register(_skinUpdateBinding, _actor);
+            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _actor);
             FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _actor);
         }
 
@@ -76,18 +76,18 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         {
             if (_actor != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.Unregister(_skinUpdateBinding, _actor);
+                FilteredEventBus<SkinEvents>.Unregister(_skinUpdateBinding, _actor);
                 FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_skinInstancesBinding, _actor);
             }
 
-            if (_skinController != null)
+            if (_actorSkinController != null)
             {
-                _skinController.OnSkinInstancesCreated -= OnLocalSkinInstancesCreated;
-                _skinController.OnSkinApplied -= OnLocalSkinApplied;
+                _actorSkinController.OnSkinInstancesCreated -= OnLocalActorSkinInstancesCreated;
+                _actorSkinController.OnSkinApplied -= OnLocalActorSkinApplied;
             }
         }
 
-        private void OnGlobalSkinUpdate(SkinUpdateEvent evt)
+        private void OnGlobalSkinUpdate(SkinEvents evt)
         {
             if (evt.SkinConfig.ModelType == ModelType.ModelRoot) RefreshAnimator();
         }
@@ -97,12 +97,12 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             if (evt.ModelType == ModelType.ModelRoot) RefreshAnimator();
         }
 
-        private void OnLocalSkinApplied(ISkinConfig config)
+        private void OnLocalActorSkinApplied(ISkinConfig config)
         {
             if (config.ModelType == ModelType.ModelRoot) RefreshAnimator();
         }
 
-        private void OnLocalSkinInstancesCreated(ModelType modelType, List<GameObject> instances)
+        private void OnLocalActorSkinInstancesCreated(ModelType modelType, List<GameObject> instances)
         {
             if (modelType == ModelType.ModelRoot) RefreshAnimator();
         }
@@ -116,9 +116,9 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 
         private Animator ResolveAnimator()
         {
-            if (_skinController != null)
+            if (_actorSkinController != null)
             {
-                var animators = _skinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
+                var animators = _actorSkinController.GetComponentsFromSkinInstances<Animator>(ModelType.ModelRoot);
                 if (animators.Count > 0) return animators[0];
             }
 

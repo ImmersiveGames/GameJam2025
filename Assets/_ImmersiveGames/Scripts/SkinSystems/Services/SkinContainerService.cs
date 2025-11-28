@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
-    public class ContainerService
+    public class SkinContainerService
     {
         private readonly Dictionary<ModelType, Transform> _containers = new();
 

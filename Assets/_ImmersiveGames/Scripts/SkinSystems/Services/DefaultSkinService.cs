@@ -10,23 +10,23 @@ namespace _ImmersiveGames.Scripts.SkinSystems
     /// <summary>
     /// Serviço responsável por gerenciar contêineres e instâncias de skins.
     /// </summary>
-    public class SkinService : ISkinService
+    public class DefaultSkinService : ISkinService
     {
-        private readonly ContainerService _containerService;
-        private readonly ModelFactory _modelFactory;
+        private readonly SkinContainerService _skinContainerService;
+        private readonly SkinModelFactory _skinModelFactory;
         private readonly Dictionary<ModelType, List<GameObject>> _instances = new();
         private readonly List<ISkinInstancePostProcessor> _postProcessors = new();
         private IActor _ownerActor;
 
-        public SkinService()
-            : this(new ContainerService(), new ModelFactory(), new ISkinInstancePostProcessor[] { new DynamicCanvasBinderPostProcessor() })
+        public DefaultSkinService()
+            : this(new SkinContainerService(), new SkinModelFactory(), new ISkinInstancePostProcessor[] { new DynamicCanvasBinderPostProcessor() })
         {
         }
 
-        public SkinService(ContainerService containerService, ModelFactory modelFactory, IEnumerable<ISkinInstancePostProcessor> postProcessors)
+        public DefaultSkinService(SkinContainerService skinContainerService, SkinModelFactory skinModelFactory, IEnumerable<ISkinInstancePostProcessor> postProcessors)
         {
-            _containerService = containerService ?? throw new ArgumentNullException(nameof(containerService));
-            _modelFactory = modelFactory ?? throw new ArgumentNullException(nameof(modelFactory));
+            _skinContainerService = skinContainerService ?? throw new ArgumentNullException(nameof(skinContainerService));
+            _skinModelFactory = skinModelFactory ?? throw new ArgumentNullException(nameof(skinModelFactory));
 
             if (postProcessors != null)
             {
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             if (parent == null) throw new ArgumentNullException(nameof(parent));
 
             _ownerActor = owner;
-            _containerService.CreateAllContainers(parent);
+            _skinContainerService.CreateAllContainers(parent);
 
             if (collection != null)
             {
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (config == null) return Array.Empty<GameObject>();
 
-            var container = _containerService.GetContainer(config.ModelType);
+            var container = _skinContainerService.GetContainer(config.ModelType);
             if (container == null) return Array.Empty<GameObject>();
 
             ClearInstancesOfType(config.ModelType);
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                     continue;
                 }
 
-                var instance = _modelFactory.Instantiate(prefab, container, actor, config);
+                var instance = _skinModelFactory.Instantiate(prefab, container, actor, config);
                 if (instance != null)
                 {
                     instances.Add(instance);
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             return _instances.TryGetValue(type, out var instanceList) && instanceList.Count > 0;
         }
 
-        public Transform GetContainer(ModelType type) => _containerService.GetContainer(type);
+        public Transform GetContainer(ModelType type) => _skinContainerService.GetContainer(type);
 
         private void RunPostProcessors(IEnumerable<GameObject> instances, ISkinConfig config, IActor owner)
         {

@@ -14,12 +14,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] protected bool autoRegister = true;
         [SerializeField] protected bool useGlobalEvents = true;
         
-        protected SkinController skinController;
+        protected ActorSkinController actorSkinController;
         protected IActor ownerActor;
         protected bool isInitialized;
 
         // Event bindings para eventos globais
-        private EventBinding<SkinUpdateEvent> _skinUpdateBinding;
+        private EventBinding<SkinEvents> _skinUpdateBinding;
         private EventBinding<SkinInstancesCreatedEvent> _skinInstancesBinding;
 
         protected virtual void Awake()
@@ -46,12 +46,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (isInitialized) return;
 
-            skinController = GetComponentInParent<SkinController>();
+            actorSkinController = GetComponentInParent<ActorSkinController>();
             ownerActor = GetComponentInParent<IActor>();
             
-            if (skinController == null)
+            if (actorSkinController == null)
             {
-                DebugUtility.LogWarning<SkinConfigurable>($"SkinConfigurable: No SkinController found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogWarning<SkinConfigurable>($"SkinConfigurable: No ActorSkinController found in parent hierarchy of {gameObject.name}");
                 return;
             }
 
@@ -60,20 +60,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void RegisterWithSkinController()
         {
-            if (!isInitialized || skinController == null) return;
+            if (!isInitialized || actorSkinController == null) return;
 
-            skinController.OnSkinApplied += OnSkinAppliedHandler;
-            skinController.OnSkinCollectionApplied += OnSkinCollectionAppliedHandler;
-            skinController.OnSkinInstancesCreated += OnSkinInstancesCreatedHandler;
+            actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
+            actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;
+            actorSkinController.OnSkinInstancesCreated += OnActorSkinInstancesCreatedHandler;
         }
 
         protected virtual void UnregisterFromSkinController()
         {
-            if (skinController != null)
+            if (actorSkinController != null)
             {
-                skinController.OnSkinApplied -= OnSkinAppliedHandler;
-                skinController.OnSkinCollectionApplied -= OnSkinCollectionAppliedHandler;
-                skinController.OnSkinInstancesCreated -= OnSkinInstancesCreatedHandler;
+                actorSkinController.OnSkinApplied -= OnActorSkinAppliedHandler;
+                actorSkinController.OnSkinCollectionApplied -= OnActorSkinCollectionAppliedHandler;
+                actorSkinController.OnSkinInstancesCreated -= OnActorSkinInstancesCreatedHandler;
             }
         }
 
@@ -81,10 +81,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (!useGlobalEvents || ownerActor == null) return;
 
-            _skinUpdateBinding = new EventBinding<SkinUpdateEvent>(OnGlobalSkinUpdate);
+            _skinUpdateBinding = new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
             
-            FilteredEventBus<SkinUpdateEvent>.Register(_skinUpdateBinding, ownerActor);
+            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, ownerActor);
             FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, ownerActor);
         }
 
@@ -92,17 +92,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             if (ownerActor != null)
             {
-                FilteredEventBus<SkinUpdateEvent>.Unregister(ownerActor);
+                FilteredEventBus<SkinEvents>.Unregister(ownerActor);
                 FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(ownerActor);
             }
         }
 
         // Handlers de eventos
-        private void OnSkinAppliedHandler(ISkinConfig config) => OnSkinApplied(config);
-        private void OnSkinCollectionAppliedHandler(SkinCollectionData collection) => OnSkinCollectionApplied(collection);
-        private void OnSkinInstancesCreatedHandler(ModelType type, System.Collections.Generic.List<GameObject> instances) => OnSkinInstancesCreated(type, instances);
-        private void OnGlobalSkinUpdate(SkinUpdateEvent evt) => OnSkinApplied(evt.SkinConfig);
-        private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt) => OnSkinInstancesCreated(evt.ModelType, new System.Collections.Generic.List<GameObject>(evt.Instances));
+        private void OnActorSkinAppliedHandler(ISkinConfig config) => OnSkinApplied(config);
+        private void OnActorSkinCollectionAppliedHandler(SkinCollectionData collection) => OnSkinCollectionApplied(collection);
+        private void OnActorSkinInstancesCreatedHandler(ModelType type, List<GameObject> instances) => OnSkinInstancesCreated(type, instances);
+        private void OnGlobalSkinUpdate(SkinEvents evt) => OnSkinApplied(evt.SkinConfig);
+        private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt) => OnSkinInstancesCreated(evt.ModelType, new List<GameObject>(evt.Instances));
 
         // Métodos para override pelas classes derivadas
         protected virtual void OnSkinApplied(ISkinConfig config)
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
         }
 
-        protected virtual void OnSkinInstancesCreated(ModelType modelType, System.Collections.Generic.List<GameObject> instances)
+        protected virtual void OnSkinInstancesCreated(ModelType modelType, List<GameObject> instances)
         {
             if (modelType == targetModelType)
             {
@@ -133,22 +133,22 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         // Métodos abstratos principais
         public abstract void ConfigureSkin(ISkinConfig skinConfig);
         public abstract void ApplyDynamicModifications();
-        public virtual void ConfigureSkinInstances(System.Collections.Generic.List<GameObject> instances) { }
+        public virtual void ConfigureSkinInstances(List<GameObject> instances) { }
 
         // Métodos de utilidade
-        protected System.Collections.Generic.List<GameObject> GetSkinInstances()
+        protected List<GameObject> GetSkinInstances()
         {
-            return skinController?.GetSkinInstances(targetModelType);
+            return actorSkinController?.GetSkinInstances(targetModelType);
         }
 
         protected Transform GetSkinContainer()
         {
-            return skinController?.GetSkinContainer(targetModelType);
+            return actorSkinController?.GetSkinContainer(targetModelType);
         }
 
         public void ReconfigureCurrentSkin()
         {
-            if (skinController != null)
+            if (actorSkinController != null)
             {
                 List<GameObject> instances = GetSkinInstances();
                 if (instances is { Count: > 0 })

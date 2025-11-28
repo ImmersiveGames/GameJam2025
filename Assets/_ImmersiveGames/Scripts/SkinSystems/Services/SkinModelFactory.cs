@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
-    public class ModelFactory
+    public class SkinModelFactory
     {
         public GameObject Instantiate(GameObject prefab, Transform parent, IActor spawner, ISkinConfig config)
         {
