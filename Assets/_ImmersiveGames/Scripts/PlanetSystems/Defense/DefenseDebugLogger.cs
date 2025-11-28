@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseDebugLogger
     {
         private DefenseWaveProfileSO _waveProfile;
-        private float _debugLoopIntervalSeconds = 5f;
+        private int _debugIntervalSeconds = 5;
         private int _debugWaveDurationSeconds = 5;
         private int _debugWaveSpawnCount = 6;
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _debugTimers = new();
@@ -29,8 +29,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             _waveProfile = waveProfile;
             // Intervalos e contagens vêm exclusivamente do ScriptableObject configurado no Inspector.
-            _debugLoopIntervalSeconds = Mathf.Max(0.1f, waveProfile?.waveIntervalSeconds ?? 5f);
             _debugWaveDurationSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
+            _debugIntervalSeconds = _debugWaveDurationSeconds;
             _debugWaveSpawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
@@ -48,9 +48,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            // FrequencyTimer recebe intervalo em segundos (inteiro); usamos o valor do perfil.
-            var timerIntervalSeconds = Mathf.Max(1, Mathf.RoundToInt(_debugLoopIntervalSeconds));
-            var timer = new FrequencyTimer(timerIntervalSeconds);
+            // FrequencyTimer recebe intervalo em segundos (inteiro); usamos o valor inteiro do perfil.
+            var timer = new FrequencyTimer(_debugIntervalSeconds);
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
