@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseDebugLogger
     {
         private DefenseWaveProfileSO _waveProfile;
-        private int _debugLoopIntervalSeconds = 5;
+        private float _debugLoopIntervalSeconds = 5f;
         private int _debugWaveDurationSeconds = 5;
         private int _debugWaveSpawnCount = 6;
         private readonly Dictionary<PlanetsMaster, FrequencyTimer> _debugTimers = new();
@@ -28,9 +28,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void Configure(DefenseWaveProfileSO waveProfile)
         {
             _waveProfile = waveProfile;
-            // ImprovedTimers opera com intervalos inteiros em segundos; arredondamos para cima para evitar frações.
-            _debugLoopIntervalSeconds = Mathf.Max(1, Mathf.CeilToInt(waveProfile?.waveIntervalSeconds ?? 5f));
-            _debugWaveDurationSeconds = Mathf.Max(1, Mathf.CeilToInt(waveProfile?.waveIntervalSeconds ?? 5f));
+            // Intervalos vêm do SO em segundos; FrequencyTimer usa frequência, não duração diretamente.
+            _debugLoopIntervalSeconds = Mathf.Max(0.1f, waveProfile?.waveIntervalSeconds ?? 5f);
+            _debugWaveDurationSeconds = Mathf.Max(1, Mathf.RoundToInt(waveProfile?.waveIntervalSeconds ?? 5f));
             _debugWaveSpawnCount = Mathf.Max(1, waveProfile?.minionsPerWave ?? 6);
         }
 
@@ -48,8 +48,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            // FrequencyTimer recebe intervalo direto em segundos (inteiro), sem conversão para frequência.
-            var timer = new FrequencyTimer(_debugLoopIntervalSeconds);
+            // FrequencyTimer recebe frequência (ticks/segundo); convertemos o intervalo do perfil.
+            var frequencyPerSecond = Mathf.Max(0.001f, 1f / Mathf.Max(_debugLoopIntervalSeconds, 0.001f));
+            var timer = new FrequencyTimer(frequencyPerSecond);
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
