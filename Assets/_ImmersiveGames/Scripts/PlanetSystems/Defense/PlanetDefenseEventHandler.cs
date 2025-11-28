@@ -13,14 +13,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     [RequireComponent(typeof(PlanetDefenseController))]
+    [RequireComponent(typeof(PlanetsMaster))]
     public sealed class PlanetDefenseEventHandler : MonoBehaviour, IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener
     {
         private PlanetDefenseSpawnService _service;
+        private PlanetsMaster _planetsMaster;
 
         private void Awake()
         {
-            var planetsMaster = GetComponent<PlanetsMaster>();
-            _service = DependencyManager.Provider.GetObject<PlanetDefenseSpawnService>(planetsMaster.ActorId);
+            _planetsMaster = GetComponent<PlanetsMaster>();
+            _service = DependencyManager.Provider.GetObject<PlanetDefenseSpawnService>(_planetsMaster.ActorId);
+
+            if (_service == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseEventHandler>(
+                    $"Nenhum PlanetDefenseSpawnService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
+            }
         }
 
         private void OnEnable()
