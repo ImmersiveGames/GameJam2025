@@ -321,5 +321,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 544ba0e921d84dac9983eb0618c07053, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  skinController: {fileID: 0}
+  skinController: {fileID: 6541701590752357594}
   registerAsGlobalService: 0
+  computeInitialStateFromActorRoot: 1
+  initialStateModelType: 0

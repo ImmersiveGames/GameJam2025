@@ -180,7 +180,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 null,
                 _defaultPoolData,
-                _waveProfile); // <-- única fonte de configuração
+                _waveProfile); // ←- única fonte de configuração
         }
 
         private void LogDefaultPoolData()
