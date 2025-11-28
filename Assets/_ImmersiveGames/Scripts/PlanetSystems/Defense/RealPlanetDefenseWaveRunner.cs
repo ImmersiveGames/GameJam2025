@@ -20,9 +20,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private sealed class WaveLoop
         {
+            public PlanetsMaster Planet;
+            public DetectionType DetectionType;
+            public IDefenseStrategy Strategy;
+            public DefenseWaveProfileSO WaveProfile;
+            public ObjectPool Pool;
             public IntervalTimer Timer;
-            public Action Tick;
+            public Action IntervalHandler;
             public int SecondsBetweenWaves;
+            public int EnemiesPerWave;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -48,9 +54,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            // Garantir que qualquer loop anterior seja encerrado antes de iniciar um novo para o mesmo planeta.
             if (_running.ContainsKey(planet))
             {
-                return;
+                StopWaves(planet);
             }
 
             strategy ??= ResolveStrategy(planet);
@@ -90,12 +97,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            // Dispara uma wave imediata ao iniciar.
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context);
+            var loop = BuildWaveLoop(planet, resolvedDetection, pool, strategy, context, intervalSeconds, spawnCount);
 
-            loop.Timer.OnInterval += loop.Tick;
-            loop.Timer.Start();
+            if (loop.Timer != null && loop.IntervalHandler != null)
+            {
+                loop.Timer.OnInterval += loop.IntervalHandler;
+                loop.Timer.Start();
+            }
 
             _running[planet] = loop;
         }
@@ -112,9 +123,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                     $"[WaveDebug] StopWaves chamado para {planet.ActorName}; timer será parado e removido.");
 
-                if (loop.Timer != null && loop.Tick != null)
+                if (loop.Timer != null && loop.IntervalHandler != null)
                 {
-                    loop.Timer.OnInterval -= loop.Tick;
+                    loop.Timer.OnInterval -= loop.IntervalHandler;
                 }
 
                 loop.Timer?.Stop();
@@ -231,24 +242,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DetectionType detectionType,
             ObjectPool pool,
             IDefenseStrategy strategy,
-            PlanetDefenseSetupContext context)
+            PlanetDefenseSetupContext context,
+            int intervalSeconds,
+            int enemiesPerWave)
         {
-            var intervalSeconds = ResolveIntervalSeconds(context);
-
             var loop = new WaveLoop
             {
-                SecondsBetweenWaves = intervalSeconds
+                Planet = planet,
+                DetectionType = detectionType,
+                Strategy = strategy,
+                WaveProfile = context?.WaveProfile,
+                Pool = pool,
+                SecondsBetweenWaves = intervalSeconds,
+                EnemiesPerWave = enemiesPerWave
             };
 
-            loop.Tick = () =>
+            loop.IntervalHandler = () =>
             {
                 TickWave(planet, detectionType, pool, strategy, context);
-                loop.Timer.Reset(loop.SecondsBetweenWaves);
-                loop.Timer.Start();
+
+                // Reinicia o timer para manter a cadência contínua enquanto a defesa estiver ativa.
+                loop.Timer?.Reset(loop.SecondsBetweenWaves);
+                loop.Timer?.Start();
             };
+
             // IntervalTimer aqui representa a cadência (segundos entre waves). O asset usa segundos inteiros,
-            // portanto passamos o intervalo diretamente como duração total e intervalo para disparar uma wave
-            // e reiniciamos o timer ao final para manter a periodicidade.
+            // então passamos o intervalo diretamente como duração total e intervalo para disparar uma wave.
             loop.Timer = new IntervalTimer(loop.SecondsBetweenWaves, loop.SecondsBetweenWaves);
             return loop;
         }
