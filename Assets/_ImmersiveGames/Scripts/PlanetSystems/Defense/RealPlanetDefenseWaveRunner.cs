@@ -79,9 +79,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var timerIntervalSeconds = ResolveIntervalSeconds(context);
-            // FrequencyTimer espera duração em segundos (inteiros) entre ticks; usamos o valor inteiro já saneado.
-            var timer = new FrequencyTimer(timerIntervalSeconds);
+            var intervalSeconds = ResolveIntervalSeconds(context);
+            var frequencyPerSecond = ResolveFrequencyFromInterval(intervalSeconds);
+
+            var timer = new FrequencyTimer(intervalSeconds);
             Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy, context);
             timer.OnTick += callback;
             timer.Start();

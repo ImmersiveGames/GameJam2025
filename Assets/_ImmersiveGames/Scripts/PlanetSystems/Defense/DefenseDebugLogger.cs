@@ -48,8 +48,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             LogWaveDebug(state, Time.time);
 
-            // FrequencyTimer recebe intervalo em segundos (inteiro); usamos o valor inteiro do perfil.
-            var timer = new FrequencyTimer(_debugIntervalSeconds);
+            // FrequencyTimer recebe frequência (ticks/segundo); convertemos o intervalo do perfil.
+            var frequencyPerSecond = Mathf.Max(0.001f, 1f / Mathf.Max(_debugLoopIntervalSeconds, 0.001f));
+            var timer = new FrequencyTimer(_debugLoopIntervalSeconds);
             Action callback = () => LogWaveDebug(state, Time.time);
             timer.OnTick += callback;
             timer.Start();
