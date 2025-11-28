@@ -18,9 +18,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(level: DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
-        private readonly Dictionary<PlanetsMaster, FrequencyTimer> _running = new();
+        private sealed class WaveLoop
+        {
+            public FrequencyTimer Timer;
+            public Action Tick;
+        }
+
+        private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
-        private readonly Dictionary<PlanetsMaster, Action> _callbacks = new();
 
         [Inject] private IPlanetDefensePoolRunner poolRunner;
 
@@ -79,15 +84,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             SpawnWave(planet, resolvedDetection, pool, strategy, context);
 
-            var timerIntervalSeconds = ResolveIntervalSeconds(context);
-            var tickFrequency = ResolveTickFrequency(timerIntervalSeconds);
-            var timer = new FrequencyTimer(tickFrequency);
-            Action callback = () => SpawnWave(planet, resolvedDetection, pool, strategy, context);
-            timer.OnTick += callback;
-            timer.Start();
+            var intervalSeconds = ResolveIntervalSeconds(context);
+            var loop = new WaveLoop();
 
-            _running[planet] = timer;
-            _callbacks[planet] = callback;
+            loop.Tick = () => TickWave(planet, resolvedDetection, pool, strategy, context);
+            loop.Timer = new FrequencyTimer(intervalSeconds);
+            loop.Timer.OnTick += loop.Tick;
+            loop.Timer.Start();
+
+            _running[planet] = loop;
         }
 
         public void StopWaves(PlanetsMaster planet)
@@ -97,15 +102,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_running.TryGetValue(planet, out var timer))
+            if (_running.TryGetValue(planet, out var loop))
             {
-                if (_callbacks.TryGetValue(planet, out var callback))
+                if (loop.Timer != null && loop.Tick != null)
                 {
-                    timer.OnTick -= callback;
-                    _callbacks.Remove(planet);
+                    loop.Timer.OnTick -= loop.Tick;
                 }
-                timer.Stop();
-                DisposeIfPossible(timer);
+
+                loop.Timer?.Stop();
+                DisposeIfPossible(loop.Timer);
                 _running.Remove(planet);
             }
         }
@@ -174,16 +179,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5f;
-            return Mathf.Max(1, Mathf.RoundToInt(rawInterval));
+            var rawInterval = context?.WaveProfile?.waveIntervalSeconds ?? 5;
+            return Mathf.Max(1, rawInterval);
         }
 
-        private static float ResolveTickFrequency(int intervalSeconds)
+        private void TickWave(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            ObjectPool pool,
+            IDefenseStrategy strategy,
+            PlanetDefenseSetupContext context)
         {
-            // FrequencyTimer recebe frequência (ticks por segundo). Para um intervalo de X segundos,
-            // usamos 1 / X como frequência, garantindo valores positivos.
-            intervalSeconds = Mathf.Max(1, intervalSeconds);
-            return 1f / intervalSeconds;
+            if (planet == null || pool == null)
+            {
+                return;
+            }
+
+            SpawnWave(planet, detectionType, pool, strategy, context);
         }
 
         private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)

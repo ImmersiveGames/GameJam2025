@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseWaveProfileSO : ScriptableObject
     {
         [Header("Wave Timing")]
-        public float waveIntervalSeconds = 5f;
+        public int waveIntervalSeconds = 5;
 
         [Header("Spawn Settings")]
         public int minionsPerWave = 6;
