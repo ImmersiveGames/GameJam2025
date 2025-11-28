@@ -25,22 +25,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void Awake()
         {
             _planetsMaster = GetComponent<PlanetsMaster>();
-            _service = DependencyManager.Provider.GetObject<PlanetDefenseSpawnService>(_planetsMaster.ActorId);
 
             // Bindings usam EventBinding porque o EventBus não registra interfaces diretamente.
             _engagedBinding = new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
             _disengagedBinding = new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
             _disabledBinding = new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
 
-            if (_service == null)
-            {
-                DebugUtility.LogWarning<PlanetDefenseEventHandler>(
-                    $"Nenhum PlanetDefenseSpawnService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
-            }
+            TryResolveService();
         }
 
         private void OnEnable()
         {
+            if (_service == null)
+            {
+                TryResolveService();
+            }
+
             // Registro explícito dos bindings para este planeta (ActorId).
             EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
             EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
@@ -82,6 +82,28 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _service?.HandleDisabled(disabledEvent);
+        }
+
+        /// <summary>
+        /// Resolve o serviço registrado para o mesmo ActorId do planeta.
+        /// Se não encontrar, mantém o handler desassociado (logs evitarão chamadas nulas).
+        /// </summary>
+        private void TryResolveService()
+        {
+            if (_planetsMaster == null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetForObject(_planetsMaster.ActorId, out PlanetDefenseSpawnService resolved))
+            {
+                _service = resolved;
+            }
+            else
+            {
+                DebugUtility.LogWarning<PlanetDefenseEventHandler>(
+                    $"Nenhum PlanetDefenseSpawnService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
+            }
         }
 
         private bool IsForThisPlanet(PlanetsMaster planet)
