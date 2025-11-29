@@ -27,10 +27,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             public CountdownTimer timer;
             public Action timerHandler;
             public bool isActive;
+
+            // 🔵 alvo principal configurado pelo service
+            public Transform primaryTarget;
+            public string primaryTargetLabel;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
+        private readonly Dictionary<PlanetsMaster, PendingTarget> _pendingTargets = new();
 
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
 
@@ -67,14 +72,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (!_poolRunner.TryGetConfiguration(planet, out var context))
             {
-                // Assinatura real:
-                // PlanetDefenseSetupContext(
-                //    PlanetsMaster planet,
-                //    DetectionType detectionType,
-                //    PlanetResourcesSo planetResource = null,
-                //    IDefenseStrategy strategy = null,
-                //    PoolData poolData = null,
-                //    DefenseWaveProfileSO waveProfile = null)
                 context = new PlanetDefenseSetupContext(
                     planet,
                     detectionType,
@@ -130,6 +127,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 timer = new CountdownTimer(intervalSeconds),
                 isActive = true
             };
+            if (_pendingTargets.TryGetValue(planet, out var pending))
+            {
+                loop.primaryTarget = pending.target;
+                loop.primaryTargetLabel = pending.label;
+                _pendingTargets.Remove(planet);
+
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
+                    $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}'.");
+            }
 
             loop.timerHandler = () => {
                 if (!loop.isActive)
@@ -201,6 +208,48 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             return _strategies.TryGetValue(planet, out strategy);
         }
+        /// <summary>
+        /// Configura o alvo primário para um planeta, vindo direto do sistema de defesa.
+        /// Pode ser chamado antes ou depois de StartWaves:
+        /// - Se chamado antes, fica pendente até o loop ser criado.
+        /// - Se chamado depois, atualiza o loop atual.
+        /// </summary>
+        public void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            if (_running.TryGetValue(planet, out var loop))
+            {
+                loop.primaryTarget = target;
+                loop.primaryTargetLabel = targetLabel;
+                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                    $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
+                    $"Target=({target?.name ?? "null"}), Label='{targetLabel}'.");
+                return;
+            }
+
+            if (_pendingTargets.TryGetValue(planet, out var existing))
+            {
+                existing.target = target;
+                existing.label = targetLabel;
+                _pendingTargets[planet] = existing;
+            }
+            else
+            {
+                _pendingTargets[planet] = new PendingTarget
+                {
+                    target = target,
+                    label = targetLabel
+                };
+            }
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[Wave] ConfigurePrimaryTarget pendente para {planet.ActorName}: " +
+                $"Target=({target?.name ?? "null"}), Label='{targetLabel}'.");
+        }
 
         #endregion
 
@@ -258,16 +307,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 spawned++;
 
                 var go = poolable.GetGameObject();
-
-                // 🔽🔽🔽 BLOCO NOVO – FASE 2 🔽🔽🔽
+                
                 var controller = go.GetComponent<DefenseMinionController>();
+
                 if (controller != null)
                 {
-                    var targetLabel = loop.detectionType?.TypeName ?? "Unknown";
+                    string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
+                        ? loop.primaryTargetLabel
+                        : loop.detectionType?.TypeName ?? "Unknown";
+
+                    controller.ConfigureTarget(loop.primaryTarget, targetLabel, DefenseRole.Unknown);
                     controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
                 }
                 else
                 {
+                    // compat: ainda suporta o debug antigo, se o prefab não tiver sido migrado
                     var entryDebug = go.GetComponent<DefenseMinionEntryDebug>();
 
                     if (entryDebug != null)
@@ -280,7 +334,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         go.transform.position = orbitPosition;
                     }
                 }
-                // 🔼🔼🔼 BLOCO NOVO – FASE 2 🔼🔼🔼
             }
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
@@ -343,5 +396,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         #endregion
+        private sealed class PendingTarget
+        {
+            public Transform target;
+            public string label;
+        }
     }
 }

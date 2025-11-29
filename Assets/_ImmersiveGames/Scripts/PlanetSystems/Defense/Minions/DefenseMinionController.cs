@@ -1,4 +1,6 @@
-﻿using DG.Tweening;
+﻿using System;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using DG.Tweening;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -15,67 +17,62 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Chase
         }
 
-        [Header("Entrada visual (similar ao DefenseMinionEntryDebug)")]
+        [Header("Entrada visual")]
         [SerializeField, Min(0.1f)]
         private float entryDurationSeconds = 0.75f;
 
         [SerializeField, Range(0.05f, 1f)]
         private float initialScaleFactor = 0.2f;
 
-        [Header("Delay antes da perseguição fake")]
+        [Tooltip("Estratégia de entrada (como sai do planeta e chega na órbita).")]
+        [SerializeField]
+        private MinionEntryStrategySo entryStrategy;
+
+        [Header("Orbit / Idle antes da perseguição")]
+        [Tooltip("Tempo parado em órbita antes de iniciar a perseguição real.")]
         [SerializeField, Min(0f)]
-        private float idleDelayBeforeChase = 0.75f;
+        private float orbitIdleDelaySeconds = 0.75f;
 
-        [Header("Perseguição fake (similar ao DefenseMinionChaseDebug)")]
-        [Tooltip("Duração aproximada da perseguição em segundos (apenas para debug).")]
-        [SerializeField, Min(0.1f)]
-        private float chaseDurationSeconds = 2f;
-
-        [Tooltip("Velocidade base em unidades por segundo.")]
+        [Header("Perseguição")]
         [SerializeField, Min(0.1f)]
         private float chaseSpeed = 3f;
 
-        [Tooltip("Curva de aceleração ao longo da perseguição (0 = início, 1 = fim).")]
         [SerializeField]
-        private AnimationCurve speedOverLifetime = AnimationCurve.Linear(0f, 1f, 1f, 1f);
+        private MinionChaseStrategySo chaseStrategy;
 
-        [Tooltip("Se true, sem alvo concreto o minion anda na direção do forward. Se false, fica parado em órbita.")]
+        [Header("Resolução de alvo / Role (fallback)")]
         [SerializeField]
-        private bool moveForwardWhenNoTarget = false;
+        private DefenseRoleConfig roleConfig;
 
-        [Header("Alvo opcional (apenas para debug nesta fase)")]
-        [Tooltip("Transform do alvo real (Player, Eater, etc). Opcional para debug.")]
         [SerializeField]
-        private Transform targetTransform;
+        private string playerTag = "Player";
 
-        [Tooltip("Rótulo do alvo apenas para logs (ex.: 'Player', 'Eater', 'PlanetDefenseDetector').")]
         [SerializeField]
-        private string targetLabel = "AlvoDesconhecido";
+        private string eaterTag = "Eater";
 
-        [Tooltip("Se verdadeiro, tenta adquirir automaticamente um alvo por tag ao habilitar.")]
         [SerializeField]
-        private bool autoAcquireOnEnable;
-
-        [Tooltip("Tag usada para auto-acquire se autoAcquireOnEnable estiver ativo.")]
-        [SerializeField]
-        private string autoTargetTag = "Player";
+        private string defaultTargetTag = "Player";
 
         private Vector3 _finalScale;
         private bool _finalScaleCaptured;
 
         private MinionState _state = MinionState.Inactive;
 
-        // Tweens (no coroutines)
         private Sequence _entrySequence;
         private Tween _chaseTween;
-        private float _chaseElapsed;
 
-        #region Unity
+        private Vector3 _planetCenter;
+        private Vector3 _orbitPosition;
+
+        private Transform _targetTransform;
+        private string _targetLabel = "Unknown";
+        private DefenseRole _targetRole = DefenseRole.Unknown;
+
+        #region Unity lifecycle
 
         private void OnEnable()
         {
             KillTweens();
-            _state = MinionState.Inactive;
 
             if (!_finalScaleCaptured)
             {
@@ -83,10 +80,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _finalScaleCaptured = true;
             }
 
-            if (autoAcquireOnEnable)
-            {
-                TryAutoAcquireTarget();
-            }
+            transform.localScale = _finalScale;
+            _state = MinionState.Inactive;
         }
 
         private void OnDisable()
@@ -112,198 +107,269 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #endregion
 
-        #region API pública (chamada pelo WaveRunner)
+        #region Configuração do alvo
 
-        /// <summary>
-        /// Chamado pelo RealPlanetDefenseWaveRunner logo após o spawn,
-        /// com o centro do planeta e a posição de órbita. :contentReference[oaicite:2]{index=2}
-        /// Nesta fase: Entry com DOTween → idle → Chase fake, tudo sem corrotina.
-        /// </summary>
-        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition, string label)
+        public void ConfigureTarget(Transform target, string label, DefenseRole role)
         {
+            _targetTransform = target;
             if (!string.IsNullOrWhiteSpace(label))
             {
-                targetLabel = label;
+                _targetLabel = label;
             }
 
-            KillTweens();
-            StartEntryTween(planetCenter, orbitPosition, targetLabel);
+            _targetRole = role != DefenseRole.Unknown
+                ? role
+                : ResolveRoleFromLabel(_targetLabel);
+
+            DebugUtility.LogVerbose<DefenseMinionController>(
+                $"[Target] {name} recebeu alvo explícito: Transform=({_targetTransform?.name ?? "null"}), " +
+                $"Label='{_targetLabel}', Role={_targetRole}.");
         }
 
         #endregion
 
-        #region Entry + OrbitWait (DOTween)
+        #region API pública
 
-        private void StartEntryTween(Vector3 planetCenter, Vector3 orbitPosition, string label)
+        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition, string targetLabel)
         {
-            _state = MinionState.Entry;
-
-            if (!_finalScaleCaptured)
+            if (!string.IsNullOrWhiteSpace(targetLabel))
             {
-                _finalScale = transform.localScale;
-                _finalScaleCaptured = true;
+                _targetLabel = targetLabel;
             }
 
-            var tinyScale = _finalScale * initialScaleFactor;
+            if (_targetRole == DefenseRole.Unknown)
+            {
+                _targetRole = ResolveRoleFromLabel(_targetLabel);
+            }
 
-            // Começa visualmente "dentro" do planeta.
-            transform.position = planetCenter;
-            transform.localScale = tinyScale;
+            BeginEntryPhase(planetCenter, orbitPosition);
+        }
+
+        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition)
+        {
+            _planetCenter = planetCenter;
+            _orbitPosition = orbitPosition;
+
+            StartEntry();
+        }
+
+        #endregion
+
+        #region Entry + OrbitWait (com estratégia)
+
+        private void StartEntry()
+        {
+            KillTweens();
+            _state = MinionState.Entry;
 
             DebugUtility.LogVerbose<DefenseMinionController>(
-                $"[Entry] {name} surgiu em {planetCenter} (pequeno) e vai orbitar em {orbitPosition} contra {label}.");
+                $"[Entry] {name} iniciando entrada com estratégia '{entryStrategy?.name ?? "DEFAULT"}' " +
+                $"do centro {_planetCenter} para órbita {_orbitPosition} " +
+                $"contra alvo '{_targetLabel}' (Role: {_targetRole}, TargetTF: {_targetTransform?.name ?? "null"}).");
 
-            _entrySequence = DOTween.Sequence();
+            void OnEntryCompleted()
+            {
+                if (!isActiveAndEnabled)
+                {
+                    return;
+                }
 
-            // Movimento de saída do planeta (centro → órbita) + escala tiny → final,
-            // replicando o comportamento do DefenseMinionEntryDebug. :contentReference[oaicite:3]{index=3}
-            _entrySequence.Append(
-                transform.DOMove(orbitPosition, entryDurationSeconds)
-                    .SetEase(Ease.OutQuad));
-
-            _entrySequence.Join(
-                transform.DOScale(_finalScale, entryDurationSeconds)
-                    .From(tinyScale)
-                    .SetEase(Ease.OutQuad));
-
-            // Callback ao terminar a animação de saída.
-            _entrySequence.AppendCallback(() => {
-                transform.position = orbitPosition;
+                // Garante estado e posição finais estáveis
+                transform.position = _orbitPosition;
                 transform.localScale = _finalScale;
                 _state = MinionState.OrbitWait;
 
                 DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Entry] {name} concluiu a saída do planeta e está em órbita. " +
-                    $"Vai aguardar {idleDelayBeforeChase:0.00}s antes de 'perseguir'.");
-            });
+                    $"[Entry] {name} concluiu entrada+idle em órbita. Iniciando perseguição.");
 
-            // Idle em órbita antes da perseguição.
-            if (idleDelayBeforeChase > 0f)
-            {
-                _entrySequence.AppendInterval(idleDelayBeforeChase);
+                StartChase();
             }
 
-            // Ao completar tudo (entry + idle), inicia a perseguição fake.
-            _entrySequence.OnComplete(() => {
-                _entrySequence = null;
+            if (entryStrategy != null)
+            {
+                _entrySequence = entryStrategy.BuildEntrySequence(
+                    transform,
+                    _planetCenter,
+                    _orbitPosition,
+                    _finalScale,
+                    entryDurationSeconds,
+                    initialScaleFactor,
+                    orbitIdleDelaySeconds,
+                    OnEntryCompleted);
 
-                if (!isActiveAndEnabled)
-                    return;
+                if (_entrySequence == null)
+                {
+                    DebugUtility.LogWarning<DefenseMinionController>(
+                        $"[Entry] Estratégia '{entryStrategy.name}' retornou Sequence nula. Usando fallback DEFAULT.");
+                    BuildDefaultEntrySequence(OnEntryCompleted);
+                }
+            }
+            else
+            {
+                BuildDefaultEntrySequence(OnEntryCompleted);
+            }
+        }
 
-                StartChaseTween();
-            });
+        private void BuildDefaultEntrySequence(Action onCompleted)
+        {
+            Vector3 tinyScale = _finalScaleCaptured
+                ? _finalScale * initialScaleFactor
+                : transform.localScale * initialScaleFactor;
 
-            _entrySequence.Play();
+            transform.position = _planetCenter;
+            transform.localScale = tinyScale;
+
+            _entrySequence = DOTween.Sequence();
+
+            _entrySequence.Append(
+                transform.DOMove(_orbitPosition, entryDurationSeconds)
+                         .SetEase(Ease.OutQuad));
+
+            _entrySequence.Join(
+                transform.DOScale(_finalScale, entryDurationSeconds)
+                         .From(tinyScale));
+
+            if (orbitIdleDelaySeconds > 0f)
+            {
+                _entrySequence.AppendInterval(orbitIdleDelaySeconds);
+            }
+
+            _entrySequence.OnComplete(() => { onCompleted?.Invoke(); });
         }
 
         #endregion
 
-        #region Chase fake (DOTween, sem coroutine)
+        #region Chase / Estratégia
 
-        private void StartChaseTween()
+        private void StartChase()
         {
-            _state = MinionState.Chase;
-
-            if (targetTransform == null && autoAcquireOnEnable)
+            if (!isActiveAndEnabled)
             {
-                TryAutoAcquireTarget();
+                return;
             }
 
-            if (targetTransform == null)
+            _state = MinionState.Chase;
+
+            if (_targetTransform == null)
+            {
+                TryAcquireTargetTransform();
+            }
+
+            if (_targetTransform == null)
             {
                 DebugUtility.LogVerbose<DefenseMinionController>(
                     $"[Chase] {name} iniciou perseguição SEM alvo concreto. " +
-                    $"Somente debug contra rótulo '{targetLabel}'.");
+                    $"Role: {_targetRole} | Label: '{_targetLabel}'. Movimento fake para frente.");
+
+                _chaseTween = transform.DOMove(transform.position + transform.forward * 5f, 2f)
+                                       .SetEase(Ease.Linear)
+                                       .OnComplete(() =>
+                                       {
+                                           DebugUtility.LogVerbose<DefenseMinionController>(
+                                               $"[Chase] {name} concluiu perseguição fake sem alvo concreto.");
+                                           _state = MinionState.Inactive;
+                                           _chaseTween = null;
+                                       });
+
+                return;
+            }
+
+            DebugUtility.LogVerbose<DefenseMinionController>(
+                $"[Chase] {name} iniciou perseguição real a '{_targetLabel}' " +
+                $"(Role: {_targetRole}) em posição {_targetTransform.position}.");
+
+            if (chaseStrategy != null)
+            {
+                _chaseTween = chaseStrategy.CreateChaseTween(
+                    transform,
+                    _targetTransform,
+                    chaseSpeed,
+                    _targetLabel);
+            }
+            else
+            {
+                float distance = Vector3.Distance(transform.position, _targetTransform.position);
+                float duration = distance / Mathf.Max(0.01f, chaseSpeed);
+
+                _chaseTween = transform.DOMove(_targetTransform.position, duration)
+                                       .SetEase(Ease.Linear);
+            }
+
+            if (_chaseTween != null)
+            {
+                _chaseTween.OnUpdate(() =>
+                {
+                    var dir = (_targetTransform.position - transform.position);
+                    if (dir.sqrMagnitude > 0.0001f)
+                    {
+                        dir.Normalize();
+                        transform.forward = Vector3.Lerp(transform.forward, dir, 0.2f);
+                    }
+                });
+
+                _chaseTween.OnComplete(() =>
+                {
+                    DebugUtility.LogVerbose<DefenseMinionController>(
+                        $"[Chase] {name} concluiu Tween de perseguição a '{_targetLabel}'. " +
+                        $"Posição final: {transform.position}.");
+
+                    _state = MinionState.Inactive;
+                    _chaseTween = null;
+                });
             }
             else
             {
                 DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Chase] {name} iniciou perseguição a '{targetLabel}' em {targetTransform.position}.");
-            }
-
-            // Garante que não tem tween anterior de chase rodando
-            if (_chaseTween != null && _chaseTween.IsActive())
-            {
-                _chaseTween.Kill();
-                _chaseTween = null;
-            }
-
-            _chaseElapsed = 0f;
-
-            // Tween temporal que substitui a coroutine de perseguição
-            _chaseTween = DOVirtual.Float(
-                0f,
-                chaseDurationSeconds,
-                chaseDurationSeconds,
-                value => {
-                    float deltaTime = value - _chaseElapsed;
-                    _chaseElapsed = value;
-
-                    float t = Mathf.Clamp01(_chaseElapsed / chaseDurationSeconds);
-
-                    float speedFactor = speedOverLifetime != null
-                        ? Mathf.Max(0f, speedOverLifetime.Evaluate(t))
-                        : 1f;
-
-                    float currentSpeed = chaseSpeed * speedFactor;
-
-                    if (targetTransform != null)
-                    {
-                        Vector3 direction = (targetTransform.position - transform.position);
-                        if (direction.sqrMagnitude > 0.0001f)
-                        {
-                            direction.Normalize();
-                            transform.position += direction * (currentSpeed * deltaTime);
-
-                            // Olha gradualmente para o alvo
-                            transform.forward = Vector3.Lerp(transform.forward, direction, 0.2f);
-                        }
-                    }
-                    else if (moveForwardWhenNoTarget)
-                    {
-                        // Agora só anda para frente se a flag estiver ligada
-                        transform.position += transform.forward * (currentSpeed * deltaTime);
-                    }
-                    // Se não tiver alvo e moveForwardWhenNoTarget == false → fica parado
-                });
-
-            _chaseTween.OnComplete(() => {
-                DebugUtility.LogVerbose<DefenseMinionController>(
-                    targetTransform != null
-                        ? $"[Chase] {name} concluiu perseguição fake a '{targetLabel}'. Posição final: {transform.position}."
-                        : $"[Chase] {name} concluiu perseguição fake sem alvo concreto. Posição final: {transform.position}.");
-
+                    $"[Chase] {name} não conseguiu criar Tween de perseguição para alvo '{_targetLabel}'.");
                 _state = MinionState.Inactive;
-                _chaseTween = null;
-            });
-        }
-
-
-        private void KillChaseTween()
-        {
-            if (_chaseTween != null && _chaseTween.IsActive())
-            {
-                _chaseTween.Kill();
-                _chaseTween = null;
             }
         }
 
-        private void TryAutoAcquireTarget()
+        private void TryAcquireTargetTransform()
         {
-            if (targetTransform != null)
+            string tagToSearch = defaultTargetTag;
+
+            switch (_targetRole)
+            {
+                case DefenseRole.Player:
+                    if (!string.IsNullOrWhiteSpace(playerTag))
+                        tagToSearch = playerTag;
+                    break;
+                case DefenseRole.Eater:
+                    if (!string.IsNullOrWhiteSpace(eaterTag))
+                        tagToSearch = eaterTag;
+                    break;
+                default:
+                    if (!string.IsNullOrWhiteSpace(defaultTargetTag))
+                        tagToSearch = defaultTargetTag;
+                    break;
+            }
+
+            if (string.IsNullOrWhiteSpace(tagToSearch))
                 return;
 
-            if (string.IsNullOrWhiteSpace(autoTargetTag))
-                return;
-
-            var candidate = GameObject.FindWithTag(autoTargetTag);
+            var candidate = GameObject.FindWithTag(tagToSearch);
             if (candidate != null)
             {
-                targetTransform = candidate.transform;
+                _targetTransform = candidate.transform;
 
                 DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Chase] {name} adquiriu alvo automaticamente por tag '{autoTargetTag}': {candidate.name}");
+                    $"[Chase] {name} adquiriu alvo via fallback (tag '{tagToSearch}'): {candidate.name}.");
             }
+        }
+
+        #endregion
+
+        #region Role helpers
+
+        private DefenseRole ResolveRoleFromLabel(string label)
+        {
+            if (roleConfig == null)
+            {
+                return DefenseRole.Unknown;
+            }
+
+            return roleConfig.ResolveRole(label);
         }
 
         #endregion

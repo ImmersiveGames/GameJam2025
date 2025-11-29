@@ -13,8 +13,6 @@ GameObject:
   - component: {fileID: -3433789961080299914}
   - component: {fileID: -6241042625207907278}
   - component: {fileID: -8628056866229713421}
-  - component: {fileID: -1846911378624365419}
-  - component: {fileID: 1580029856466273968}
   - component: {fileID: -4471057359163730865}
   m_Layer: 9
   m_Name: EnemysDefensePrefab
@@ -113,65 +111,6 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 2176
---- !u!114 &-1846911378624365419
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8648089775525046338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 550d66e2fb46499f82643f7fa0575d6f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  entryDurationSeconds: 0.75
-  initialScaleFactor: 0.2
-  idleDelayBeforeChase: 0.75
-  behavioursToEnableOnChase: []
-  autoDisableOnEnable: 1
---- !u!114 &1580029856466273968
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8648089775525046338}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d06f18ae6b1e45f8a107c357eeb14ec2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  chaseDurationSeconds: 2
-  chaseSpeed: 3
-  speedOverLifetime:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  targetTransform: {fileID: 0}
-  targetLabel: AlvoDesconhecido
-  autoAcquireOnEnable: 0
-  autoTargetTag: Player
 --- !u!114 &-4471057359163730865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -186,35 +125,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entryDurationSeconds: 0.75
   initialScaleFactor: 0.2
-  idleDelayBeforeChase: 0.75
-  chaseDurationSeconds: 2
+  entryStrategy: {fileID: 11400000, guid: 4b3822632a571174faf28634c6d2bcf6, type: 2}
+  orbitIdleDelaySeconds: 0.75
   chaseSpeed: 3
-  speedOverLifetime:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  moveForwardWhenNoTarget: 1
-  targetTransform: {fileID: 0}
-  targetLabel: AlvoDesconhecido
-  autoAcquireOnEnable: 0
-  autoTargetTag: Player
+  chaseStrategy: {fileID: 11400000, guid: cff5dcd229420e0458668685daaba271, type: 2}
+  roleConfig: {fileID: 11400000, guid: ec22197efdaccae44bb0de61a0ed5dd5, type: 2}
+  playerTag: Player
+  eaterTag: Eater
+  defaultTargetTag: Player

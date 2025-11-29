@@ -26,9 +26,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Interface agregadora mantida para compatibilidade; listeners podem implementar
     /// apenas os eventos necessários através das interfaces segmentadas.
     /// </summary>
-    public interface IPlanetDefenseActivationListener : IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener
-    {
-    }
+    public interface IPlanetDefenseActivationListener : IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener { }
 
     /// <summary>
     /// Serviço de defesa planetária com orquestração de pooling e waves via DI,
@@ -115,6 +113,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (context.Strategy != null)
             {
                 _waveRunner?.ConfigureStrategy(state.Planet, context.Strategy);
+            }
+
+            // 🔵 NOVO: extrai Transform + label do alvo para o runner
+            Transform targetTransform = null;
+            string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
+
+            if (engagedEvent.Detector.Owner is Component ownerComponent)
+            {
+                targetTransform = ownerComponent.transform;
+            }
+            else if (engagedEvent.Detector is Component detectorComponent)
+            {
+                targetTransform = detectorComponent.transform;
+            }
+
+            if (_waveRunner is RealPlanetDefenseWaveRunner realRunner)
+            {
+                realRunner.ConfigurePrimaryTarget(
+                    state.Planet,
+                    targetTransform,
+                    targetLabel);
             }
 
             if (engagedEvent.IsFirstEngagement)
