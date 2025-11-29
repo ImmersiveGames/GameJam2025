@@ -213,6 +213,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  moveForwardWhenNoTarget: 1
   targetTransform: {fileID: 0}
   targetLabel: AlvoDesconhecido
   autoAcquireOnEnable: 0

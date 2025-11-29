@@ -78,8 +78,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 context = new PlanetDefenseSetupContext(
                     planet,
                     detectionType,
-                    null,      // PlanetResourcesSo (não usamos aqui)
-                    strategy   // Estratégia opcional
+                    null, // PlanetResourcesSo (não usamos aqui)
+                    strategy // Estratégia opcional
                 );
 
                 _poolRunner.ConfigureForPlanet(context);
@@ -91,8 +91,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var resolvedDetection = context.DetectionType ?? detectionType;
-            var intervalSeconds   = ResolveIntervalSeconds(context);
-            var spawnCount        = ResolveSpawnCount(context);
+            var intervalSeconds = ResolveIntervalSeconds(context);
+            var spawnCount = ResolveSpawnCount(context);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Iniciando defesa em {planet.ActorName} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}");
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var poolName = poolData.ObjectName;
-            var pool     = PoolManager.Instance?.GetPool(poolName);
+            var pool = PoolManager.Instance?.GetPool(poolName);
             if (pool == null)
             {
                 _poolRunner.WarmUp(context);
@@ -122,17 +122,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var loop = new WaveLoop
             {
-                planet        = planet,
+                planet = planet,
                 detectionType = resolvedDetection,
-                strategy      = strategy,
-                context       = context,
-                pool          = pool,
-                timer         = new CountdownTimer(intervalSeconds),
-                isActive      = true
+                strategy = strategy,
+                context = context,
+                pool = pool,
+                timer = new CountdownTimer(intervalSeconds),
+                isActive = true
             };
 
-            loop.timerHandler = () =>
-            {
+            loop.timerHandler = () => {
                 if (!loop.isActive)
                 {
                     return;
@@ -227,12 +226,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var context     = loop.context;
+            var context = loop.context;
             var waveProfile = context?.WaveProfile;
-            var planet      = loop.planet;
+            var planet = loop.planet;
 
-            int   spawnCount   = ResolveSpawnCount(context);
-            float radius       = Mathf.Max(0f, waveProfile?.spawnRadius ?? 0f);
+            int spawnCount = ResolveSpawnCount(context);
+            float radius = Mathf.Max(0f, waveProfile?.spawnRadius ?? 0f);
             float heightOffset = waveProfile?.spawnHeightOffset ?? 0f;
 
             var planetCenter = planet.transform.position;
@@ -244,7 +243,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             for (int i = 0; i < spawnCount; i++)
             {
-                var offset        = ResolveSpawnOffset(radius, heightOffset);
+                var offset = ResolveSpawnOffset(radius, heightOffset);
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
@@ -258,19 +257,30 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 spawned++;
 
-                var go         = poolable.GetGameObject();
-                var entryDebug = go.GetComponent<DefenseMinionEntryDebug>();
+                var go = poolable.GetGameObject();
 
-                if (entryDebug != null)
+                // 🔽🔽🔽 BLOCO NOVO – FASE 2 🔽🔽🔽
+                var controller = go.GetComponent<DefenseMinionController>();
+                if (controller != null)
                 {
                     var targetLabel = loop.detectionType?.TypeName ?? "Unknown";
-                    entryDebug.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
+                    controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
                 }
                 else
                 {
-                    // Fallback: se não houver script de entrada, apenas posiciona direto na órbita.
-                    go.transform.position = orbitPosition;
+                    var entryDebug = go.GetComponent<DefenseMinionEntryDebug>();
+
+                    if (entryDebug != null)
+                    {
+                        var targetLabel = loop.detectionType?.TypeName ?? "Unknown";
+                        entryDebug.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
+                    }
+                    else
+                    {
+                        go.transform.position = orbitPosition;
+                    }
                 }
+                // 🔼🔼🔼 BLOCO NOVO – FASE 2 🔼🔼🔼
             }
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
@@ -278,6 +288,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             loop.strategy?.OnEngaged(planet, loop.detectionType);
         }
+
 
         private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)
         {
