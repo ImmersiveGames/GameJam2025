@@ -307,11 +307,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 spawned++;
 
                 var go = poolable.GetGameObject();
-                
+
+                // 🔹 Tenta usar o controlador REAL primeiro
                 var controller = go.GetComponent<DefenseMinionController>();
 
                 if (controller != null)
                 {
+                    // Se o sistema de defesa já configurou um alvo primário, usamos ele.
+                    // Senão, caímos pro rótulo vindo do tipo de detecção.
                     string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
                         ? loop.primaryTargetLabel
                         : loop.detectionType?.TypeName ?? "Unknown";
@@ -321,18 +324,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
                 else
                 {
-                    // compat: ainda suporta o debug antigo, se o prefab não tiver sido migrado
-                    var entryDebug = go.GetComponent<DefenseMinionEntryDebug>();
-
-                    if (entryDebug != null)
-                    {
-                        var targetLabel = loop.detectionType?.TypeName ?? "Unknown";
-                        entryDebug.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
-                    }
-                    else
-                    {
-                        go.transform.position = orbitPosition;
-                    }
+                    go.transform.position = orbitPosition;
                 }
             }
 

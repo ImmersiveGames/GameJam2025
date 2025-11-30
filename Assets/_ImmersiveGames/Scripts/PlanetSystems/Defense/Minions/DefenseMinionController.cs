@@ -17,10 +17,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Chase
         }
 
-        [Header("Entrada visual")]
+        [Header("Entrada visual (controlado por Profile)")]
+        [HideInInspector]
         [SerializeField, Min(0.1f)]
         private float entryDurationSeconds = 0.75f;
 
+        [HideInInspector]
         [SerializeField, Range(0.05f, 1f)]
         private float initialScaleFactor = 0.2f;
 
@@ -28,12 +30,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private MinionEntryStrategySo entryStrategy;
 
-        [Header("Orbit / Idle antes da perseguição")]
-        [Tooltip("Tempo parado em órbita antes de iniciar a perseguição real.")]
+        [Header("Orbit / Idle antes da perseguição (controlado por Profile)")]
+        [HideInInspector]
         [SerializeField, Min(0f)]
         private float orbitIdleDelaySeconds = 0.75f;
 
-        [Header("Perseguição")]
+        [Header("Perseguição (controlado por Profile)")]
+        [HideInInspector]
         [SerializeField, Min(0.1f)]
         private float chaseSpeed = 3f;
 
@@ -43,15 +46,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Resolução de alvo / Role (fallback)")]
         [SerializeField]
         private DefenseRoleConfig roleConfig;
-
-        [SerializeField]
-        private string playerTag = "Player";
-
-        [SerializeField]
-        private string eaterTag = "Eater";
-
-        [SerializeField]
-        private string defaultTargetTag = "Player";
 
         private Vector3 _finalScale;
         private bool _finalScaleCaptured;
@@ -67,6 +61,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Transform _targetTransform;
         private string _targetLabel = "Unknown";
         private DefenseRole _targetRole = DefenseRole.Unknown;
+        private bool _profileApplied;
 
         #region Unity lifecycle
 
@@ -161,6 +156,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             KillTweens();
             _state = MinionState.Entry;
+            
+            if (!_profileApplied)
+            {
+                DebugUtility.LogWarning<DefenseMinionController>(
+                    $"[Entry] {name} iniciando entrada SEM Profile aplicado. " +
+                    $"Valores de comportamento estão vindo do prefab (estado não ideal). " +
+                    $"Verifique se DefensesMinionData.DefaultProfile está configurado.",
+                    this);
+            }
 
             DebugUtility.LogVerbose<DefenseMinionController>(
                 $"[Entry] {name} iniciando entrada com estratégia '{entryStrategy?.name ?? "DEFAULT"}' " +
@@ -239,7 +243,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #endregion
 
-        #region Chase / Estratégia
+                #region Chase / Estratégia
 
         private void StartChase()
         {
@@ -250,17 +254,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _state = MinionState.Chase;
 
-            if (_targetTransform == null)
-            {
-                TryAcquireTargetTransform();
-            }
-
+            // ❌ Não tentamos mais descobrir alvo por tag.
+            // ✅ Só usamos o alvo que veio explicitamente do sistema de defesa
+            //    (ConfigureTarget) + roleConfig para interpretar o label.
             if (_targetTransform == null)
             {
                 DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Chase] {name} iniciou perseguição SEM alvo concreto. " +
-                    $"Role: {_targetRole} | Label: '{_targetLabel}'. Movimento fake para frente.");
+                    $"[Chase] {name} iniciou perseguição SEM alvo concreto (_targetTransform nulo). " +
+                    $"Role: {_targetRole} | Label: '{_targetLabel}'. " +
+                    $"Nenhuma busca por tag será feita (apenas alvo explícito + RoleConfig são usados).");
 
+                // Mantemos um movimento fake simples apenas para deixar
+                // visualmente claro que o minion "faria algo" nesse caso.
                 _chaseTween = transform.DOMove(transform.position + transform.forward * 5f, 2f)
                                        .SetEase(Ease.Linear)
                                        .OnComplete(() =>
@@ -325,40 +330,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        private void TryAcquireTargetTransform()
-        {
-            string tagToSearch = defaultTargetTag;
-
-            switch (_targetRole)
-            {
-                case DefenseRole.Player:
-                    if (!string.IsNullOrWhiteSpace(playerTag))
-                        tagToSearch = playerTag;
-                    break;
-                case DefenseRole.Eater:
-                    if (!string.IsNullOrWhiteSpace(eaterTag))
-                        tagToSearch = eaterTag;
-                    break;
-                default:
-                    if (!string.IsNullOrWhiteSpace(defaultTargetTag))
-                        tagToSearch = defaultTargetTag;
-                    break;
-            }
-
-            if (string.IsNullOrWhiteSpace(tagToSearch))
-                return;
-
-            var candidate = GameObject.FindWithTag(tagToSearch);
-            if (candidate != null)
-            {
-                _targetTransform = candidate.transform;
-
-                DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Chase] {name} adquiriu alvo via fallback (tag '{tagToSearch}'): {candidate.name}.");
-            }
-        }
-
         #endregion
+
 
         #region Role helpers
 
@@ -373,5 +346,35 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         #endregion
+        public void ApplyProfile(DefenseMinionBehaviorProfile profile)
+        {
+            if (profile == null)
+            {
+                DebugUtility.LogWarning<DefenseMinionController>(
+                    $"[Profile] {name} recebeu profile nulo. Mantendo configurações atuais de prefab (uso NÃO recomendado).",
+                    this);
+                _profileApplied = false;
+                return;
+            }
+
+            // Entrada / órbita
+            entryDurationSeconds  = Mathf.Max(0.1f, profile.EntryDuration);
+            initialScaleFactor    = Mathf.Clamp(profile.InitialScaleFactor, 0.05f, 1f);
+            orbitIdleDelaySeconds = Mathf.Max(0f, profile.OrbitIdleSeconds);
+
+            // Perseguição
+            chaseSpeed = Mathf.Max(0.1f, profile.ChaseSpeed);
+
+            _profileApplied = true;
+
+            DebugUtility.LogVerbose<DefenseMinionController>(
+                $"[Profile] {name} aplicou profile '{profile.VariantId}': " +
+                $"Entry={entryDurationSeconds:0.00}s, " +
+                $"ScaleFactor={initialScaleFactor:0.00}, " +
+                $"OrbitIdle={orbitIdleDelaySeconds:0.00}s, " +
+                $"ChaseSpeed={chaseSpeed:0.00}.",
+                null,this);
+        }
+
     }
 }

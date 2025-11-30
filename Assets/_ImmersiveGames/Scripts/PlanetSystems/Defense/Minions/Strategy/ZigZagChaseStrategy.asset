@@ -9,8 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b521d6f2164ffaf4e9b6c2af3efa0010, type: 3}
-  m_Name: DirectChaseStrategy
+  m_Script: {fileID: 11500000, guid: 8be6a2f5ed094dd8875e6218c5e5becd, type: 3}
+  m_Name: ZigZagChaseStrategy
   m_EditorClassIdentifier: 
-  ease: 1
-  extraDurationFactor: 1
+  lateralAmplitude: 2
+  zigZagCount: 3
+  lateralBlendFactor: 1

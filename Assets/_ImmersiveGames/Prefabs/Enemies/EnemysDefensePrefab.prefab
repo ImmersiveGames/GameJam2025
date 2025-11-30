@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7730062546828630183}
   - component: {fileID: -3191423032800938798}
-  - component: {fileID: -3433789961080299914}
+  - component: {fileID: -2077942070350329434}
   - component: {fileID: -6241042625207907278}
   - component: {fileID: -8628056866229713421}
   - component: {fileID: -4471057359163730865}
@@ -63,7 +63,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &-3433789961080299914
+--- !u!114 &-2077942070350329434
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -72,7 +72,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 8648089775525046338}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d2513dd39b704579b039af459eb3300f, type: 3}
+  m_Script: {fileID: 11500000, guid: 67f368f00c9f404da54b67c50a40716b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   collisionLayers:
@@ -125,10 +125,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entryDurationSeconds: 0.75
   initialScaleFactor: 0.2
-  entryStrategy: {fileID: 11400000, guid: 4b3822632a571174faf28634c6d2bcf6, type: 2}
+  entryStrategy: {fileID: 11400000, guid: 7c84f521b6090ec4ba4240cd5b965505, type: 2}
   orbitIdleDelaySeconds: 0.75
   chaseSpeed: 3
-  chaseStrategy: {fileID: 11400000, guid: cff5dcd229420e0458668685daaba271, type: 2}
+  chaseStrategy: {fileID: 11400000, guid: 678d9c7ec9e2cbd45902d08aa4f491ce, type: 2}
   roleConfig: {fileID: 11400000, guid: ec22197efdaccae44bb0de61a0ed5dd5, type: 2}
   playerTag: Player
   eaterTag: Eater

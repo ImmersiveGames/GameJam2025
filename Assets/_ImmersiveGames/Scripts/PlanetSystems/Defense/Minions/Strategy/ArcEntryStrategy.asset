@@ -9,8 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b521d6f2164ffaf4e9b6c2af3efa0010, type: 3}
-  m_Name: DirectChaseStrategy
+  m_Script: {fileID: 11500000, guid: 26d60700577647bc827537073510d463, type: 3}
+  m_Name: ArcEntryStrategy
   m_EditorClassIdentifier: 
-  ease: 1
-  extraDurationFactor: 1
+  moveEase: 6
+  scaleEase: 6
+  arcStrength: 0.75
