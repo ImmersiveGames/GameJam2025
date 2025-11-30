@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Minion_Default
   m_EditorClassIdentifier: 
   variantId: Default
-  entryDurationSeconds: 0.75
+  entryDurationSeconds: 0.55
   initialScaleFactor: 0.2
-  orbitIdleSeconds: 0.75
-  chaseSpeed: 3
+  orbitIdleSeconds: 0.55
+  chaseSpeed: 10

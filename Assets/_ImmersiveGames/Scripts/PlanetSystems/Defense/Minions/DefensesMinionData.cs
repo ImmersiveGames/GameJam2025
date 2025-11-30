@@ -11,8 +11,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     ///   que descreve o comportamento padrão deste minion.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "EnemiesData",
-        menuName = "ImmersiveGames/PoolSystem/ObjectData/EnemiesDefense")]
+        fileName = "DefensesMinionData",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Minion Data")]
+
     public class DefensesMinionData : PoolableObjectData
     {
         [Header("Comportamento padrão deste tipo de minion")]

@@ -2,7 +2,10 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Defense/Wave Profile")]
+    [CreateAssetMenu(
+        fileName = "DefenseWaveProfile",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Config/Wave Profile")]
+
     public sealed class DefenseWaveProfileSo : ScriptableObject
     {
         [Header("Wave Timing")]
@@ -14,6 +17,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public int enemiesPerWave = 6;
         public float spawnRadius = 4f;
         public float spawnHeightOffset = 0.5f;
+        
+        [Header("Spawn Pattern (opcional)")]
+        [Tooltip("Padrão de spawn em órbita. Se nulo, usa distribuição aleatória padrão.")]
+        public DefenseSpawnPatternSo spawnPattern;
 
         private void OnValidate()
         {

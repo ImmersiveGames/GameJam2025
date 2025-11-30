@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8be6a2f5ed094dd8875e6218c5e5becd, type: 3}
   m_Name: ZigZagChaseStrategy
   m_EditorClassIdentifier: 
-  lateralAmplitude: 2
+  lateralAmplitude: 10
   zigZagCount: 3
   lateralBlendFactor: 1

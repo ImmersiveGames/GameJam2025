@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     [CreateAssetMenu(
         fileName = "DefenseRoleConfig",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Defense Role Config",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Config/Role Config",
         order = 100)]
     public class DefenseRoleConfig : ScriptableObject
     {

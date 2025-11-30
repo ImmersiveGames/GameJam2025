@@ -14,7 +14,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField] private DefenseWaveProfileSo waveProfile;
         [SerializeField] private PoolData defaultDefensePool;
 
+        [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
+        public PlanetDefenseLoadoutSo DefenseLoadout => defenseLoadout;
 
         private void Awake()
         {
@@ -30,15 +32,55 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            // 🔵 Resolve config efetiva por planeta (Loadout) OU pelos campos locais
+            DefenseWaveProfileSo waveToUse = waveProfile;
+            PoolData poolToUse = defaultDefensePool;
+
+            if (defenseLoadout != null)
+            {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{defenseLoadout.name}'.");
+
+                if (defenseLoadout.DefensePoolData != null)
+                {
+                    poolToUse = defenseLoadout.DefensePoolData;
+                }
+
+                if (defenseLoadout.WaveProfileOverride != null)
+                {
+                    waveToUse = defenseLoadout.WaveProfileOverride;
+                }
+
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}' " +
+                    $"e WaveProfile='{waveToUse?.name ?? "null"}' via Loadout.",
+                    null,
+                    this);
+            }
+            else
+            {
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"[Loadout] Planeta {name} sem PlanetDefenseLoadout; " +
+                    $"usando PoolData='{poolToUse?.name ?? "null"}' e WaveProfile='{waveToUse?.name ?? "null"}' do próprio controller.",
+                    null,
+                    this);
+            }
+
+            // 🔧 Cria serviço e injeta as configs efetivas
             var service = new PlanetDefenseSpawnService();
+
             // SO não é injetado via DI; o Controller atribui diretamente.
-            service.SetWaveProfile(waveProfile);
-            DebugUtility.LogVerbose<PlanetDefenseController>($"WaveProfile atribuído: {waveProfile?.name ?? "NULO"}");
-            service.SetDefaultPoolData(defaultDefensePool);
+            service.SetWaveProfile(waveToUse);
+            DebugUtility.LogVerbose<PlanetDefenseController>(
+                $"WaveProfile atribuído: {waveToUse?.name ?? "NULO"}");
+
+            service.SetDefaultPoolData(poolToUse);
+
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
             DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
             service.OnDependenciesInjected();
         }
+
 
 #if UNITY_EDITOR
         private void OnValidate()

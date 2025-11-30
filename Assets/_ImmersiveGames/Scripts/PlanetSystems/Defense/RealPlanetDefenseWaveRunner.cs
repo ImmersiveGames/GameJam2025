@@ -290,9 +290,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             int spawned = 0;
 
+            var pattern = waveProfile?.spawnPattern;
+
             for (int i = 0; i < spawnCount; i++)
             {
-                var offset = ResolveSpawnOffset(radius, heightOffset);
+                var offset = ResolveSpawnOffset(i, spawnCount, radius, heightOffset, pattern);
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
@@ -328,6 +330,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
             }
 
+
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Spawned {spawned}/{spawnCount} minions em {planet.ActorName}");
 
@@ -335,16 +338,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
 
-        private static Vector3 ResolveSpawnOffset(float radius, float heightOffset)
+        private static Vector3 ResolveSpawnOffset(
+            int index,
+            int total,
+            float radius,
+            float heightOffset,
+            DefenseSpawnPatternSo pattern)
         {
-            if (radius <= 0f && Mathf.Approximately(heightOffset, 0f))
+            // Se houver um padrão configurado, delega pra ele.
+            if (pattern != null)
             {
-                return Vector3.zero;
+                return pattern.GetSpawnOffset(index, total, radius, heightOffset);
             }
 
-            var planar = UnityEngine.Random.insideUnitCircle * radius;
-            return new Vector3(planar.x, heightOffset, planar.y);
+            // Fallback: comportamento atual (random dentro do círculo).
+            return DefenseSpawnPatternSo.DefaultRandomOffset(radius, heightOffset);
         }
+
 
         private IDefenseStrategy ResolveStrategy(PlanetsMaster planet)
         {

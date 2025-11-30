@@ -9,9 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26d60700577647bc827537073510d463, type: 3}
-  m_Name: ArcEntryStrategy
+  m_Script: {fileID: 11500000, guid: a8bc32dbcc9c40b4a930fd9d78a486d5, type: 3}
+  m_Name: RadialEvenPattern
   m_EditorClassIdentifier: 
-  moveEase: 6
-  scaleEase: 6
-  arcStrength: 1.144

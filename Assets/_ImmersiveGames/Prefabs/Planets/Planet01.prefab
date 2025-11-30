@@ -167,6 +167,7 @@ MonoBehaviour:
   planetsMaster: {fileID: 3945190765558734642}
   waveProfile: {fileID: 11400000, guid: f256b1a000fe65d418401359ff74e130, type: 2}
   defaultDefensePool: {fileID: 11400000, guid: 7cc6fb636be4535468802f3f4f3ba310, type: 2}
+  defenseLoadout: {fileID: 11400000, guid: d6fab74114d793141b4cec5203eef61b, type: 2}
 --- !u!114 &2819374650281937465
 MonoBehaviour:
   m_ObjectHideFlags: 0

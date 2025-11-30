@@ -32,6 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public IDefenseStrategy Strategy { get; }
         public PoolData PoolData { get; }
         public DefenseWaveProfileSo WaveProfile { get; }
+        
     }
 
     /// <summary>

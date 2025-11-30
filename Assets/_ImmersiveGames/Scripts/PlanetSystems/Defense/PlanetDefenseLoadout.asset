@@ -9,9 +9,8 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26d60700577647bc827537073510d463, type: 3}
-  m_Name: ArcEntryStrategy
+  m_Script: {fileID: 11500000, guid: 523ca32dd92971b4ca5febc452ca4812, type: 3}
+  m_Name: PlanetDefenseLoadout
   m_EditorClassIdentifier: 
-  moveEase: 6
-  scaleEase: 6
-  arcStrength: 1.144
+  defensePoolData: {fileID: 11400000, guid: 7cc6fb636be4535468802f3f4f3ba310, type: 2}
+  waveProfileOverride: {fileID: 11400000, guid: f256b1a000fe65d418401359ff74e130, type: 2}

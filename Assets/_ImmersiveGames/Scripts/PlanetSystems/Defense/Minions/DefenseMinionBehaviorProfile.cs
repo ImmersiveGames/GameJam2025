@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseMinionBehaviorProfile",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Minion Behavior Profile",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Behavior Profile",
         order = 200)]
     public class DefenseMinionBehaviorProfile : ScriptableObject
     {
