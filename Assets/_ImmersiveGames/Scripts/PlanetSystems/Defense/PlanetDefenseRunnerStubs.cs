@@ -1,10 +1,10 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     public interface IPlanetDefensePoolRunner
     {
-        void WarmUp(PlanetsMaster planet, DetectionType detectionType);
         void Release(PlanetsMaster planet);
 
         /// <summary>
@@ -14,27 +14,50 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void ConfigureForPlanet(PlanetDefenseSetupContext context);
 
         /// <summary>
-        /// Consulta de configuração para que serviços externos possam recuperar
-        /// as preferências antes de iniciar ondas reais.
+        /// Aquece o pool baseado diretamente em um contexto de configuração completo.
+        /// Útil para cenários onde o contexto é montado fora do runner e precisa ser reutilizado em mais de uma
+        /// única chamada.
+        /// </summary>
+        void WarmUp(PlanetDefenseSetupContext context);
+        /// <summary>
+        /// ADIÇÃO: Recupera o contexto configurado para um planeta, se existir.
+        /// Usado pelo RealPlanetDefenseWaveRunner para montar o loop de wave.
         /// </summary>
         bool TryGetConfiguration(PlanetsMaster planet, out PlanetDefenseSetupContext context);
 
-        /// <summary>
-        /// Atalho opcional que combina configuração e aquecimento em uma única chamada.
-        /// </summary>
-        void WarmUp(PlanetDefenseSetupContext context);
     }
 
     public interface IPlanetDefenseWaveRunner
     {
-        void StartWaves(PlanetsMaster planet, DetectionType detectionType);
+        /// <summary>
+        /// REMOÇÃO DO CONTRATO:
+        /// O overload StartWaves(planet, detectionType) era apenas um helper interno
+        /// do RealPlanetDefenseWaveRunner, e não é usado via interface.
+        /// A versão com strategy é a única realmente utilizada externamente.
+        /// </summary>
+        /// // void StartWaves(PlanetsMaster planet, DetectionType detectionType);
+
+        /// <summary>
+        /// Inicia as waves de defesa para o planeta utilizando uma estratégia explícita.
+        /// Esta é a versão usada pelo PlanetDefenseSpawnService.
+        /// </summary>
+        void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
+
+        /// <summary>
+        /// Interrompe as waves de defesa para o planeta.
+        /// </summary>
         void StopWaves(PlanetsMaster planet);
+
+        /// <summary>
+        /// Indica se há waves rodando para o planeta.
+        /// </summary>
         bool IsRunning(PlanetsMaster planet);
 
         /// <summary>
-        /// Permite iniciar ondas com uma estratégia explícita para o planeta.
+        /// ADIÇÃO: Configura o alvo primário que as waves de defesa irão perseguir
+        /// (por exemplo, o Eater ou o Player).
         /// </summary>
-        void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
+        void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel);
 
         /// <summary>
         /// Registra uma estratégia para ser reutilizada em futuras ativações de defesa.

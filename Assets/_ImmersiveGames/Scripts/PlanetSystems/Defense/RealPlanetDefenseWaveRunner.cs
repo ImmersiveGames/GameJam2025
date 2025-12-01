@@ -87,9 +87,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+// ADIÇÃO (Fase 2.1):
+// Se houver uma estratégia, ela pode inspecionar/ajustar o contexto
+// antes de começarmos as waves.
+            strategy?.ConfigureContext(context);
+
             var resolvedDetection = context.DetectionType ?? detectionType;
+
+// ADIÇÃO (Fase 2.1):
+// Notifica a estratégia de que a defesa foi engajada para este planeta.
+            strategy?.OnEngaged(planet, resolvedDetection);
+
             var intervalSeconds = ResolveIntervalSeconds(context);
             var spawnCount = ResolveSpawnCount(context);
+
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Iniciando defesa em {planet.ActorName} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}");
@@ -177,6 +188,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 loop.isActive = false;
 
+                // ADIÇÃO (Fase 2.1):
+                // Notifica a estratégia de que a defesa foi desengajada
+                // para este planeta e tipo de detecção usado no loop.
+                loop.strategy?.OnDisengaged(planet, loop.detectionType);
+
                 if (loop.timer != null && loop.timerHandler != null)
                 {
                     loop.timer.OnTimerStop -= loop.timerHandler;
@@ -188,6 +204,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _running.Remove(planet);
             }
         }
+
 
         public bool IsRunning(PlanetsMaster planet)
         {

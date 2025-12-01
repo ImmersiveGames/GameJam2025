@@ -128,13 +128,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 targetTransform = detectorComponent.transform;
             }
 
-            if (_waveRunner is RealPlanetDefenseWaveRunner realRunner)
-            {
-                realRunner.ConfigurePrimaryTarget(
-                    state.Planet,
-                    targetTransform,
-                    targetLabel);
-            }
+            // ALTERAÇÃO (Passo 1.2): usar a interface em vez de cast para RealPlanetDefenseWaveRunner
+            _waveRunner?.ConfigurePrimaryTarget(
+                state.Planet,
+                targetTransform,
+                targetLabel);
 
             if (engagedEvent.IsFirstEngagement)
             {
@@ -262,7 +260,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _waveRunner = resolvedWaveRunner;
             }
         }
-
 
         private static string FormatDetector(IDetector detector)
         {
