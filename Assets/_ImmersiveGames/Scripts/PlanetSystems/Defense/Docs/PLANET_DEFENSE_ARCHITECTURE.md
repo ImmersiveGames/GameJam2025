@@ -1,5 +1,47 @@
 # Arquitetura do Sistema de Defesa Planetária
 
+## Visão Geral Rápida
+Este documento explica como o sistema de defesa é montado, como conectar os componentes e como criar loadouts completos em menos de 5 minutos. Todo o código está em C# para Unity 6, com foco em SOLID e extensibilidade.
+
+### Diagrama ASCII
+```
+PlanetsManager
+  └── Instantiate planetPrefab
+      └── PlanetsMaster (Awake)
+          └── PlanetDefenseController
+              └── PlanetDefenseSpawnService
+                  └── ConfigureLoadout(planet, loadout)
+                  └── Build context (pool, waveProfile, strategy)
+                  └── RealPlanetDefenseWaveRunner
+                      └── Loop de waves → spawn via pool
+                          └── DefenseMinionController (coordenador)
+                              ├── MinionEntryHandler
+                              ├── MinionOrbitWaitHandler
+                              └── MinionChaseHandler
+```
+
+### Fluxo Completo (runtime)
+1) **PlanetsManager** instancia `planetPrefab` e escolhe um `PlanetDefenseLoadoutSO` a partir de `possibleLoadouts` (por índice ou aleatório) para cada planeta.
+2) **PlanetsMaster.Awake** recebe o loadout e chama `PlanetDefenseSpawnService.ConfigureLoadout(this, loadout)`, preservando SRP (spawn + defesa) e DIP (loadout injetado).
+3) **PlanetDefenseController** inicializa o `PlanetDefenseSpawnService`, que constrói o contexto com pool data, wave profile e estratégia (`IDefenseStrategy`). Logs verbosos mostram qual loadout foi aplicado.
+4) **RealPlanetDefenseWaveRunner** pega o alvo primário (label + role), consulta a estratégia para resolver o profile do minion com base no role e aplica o profile antes de ativar cada poolable, evitando piscadas.
+5) **DefenseMinionController** coordena `MinionEntryHandler`, `MinionOrbitWaitHandler` e `MinionChaseHandler` para executar entrada, espera em órbita e perseguição conforme o profile recebido.
+6) Qualquer handler pode ser desabilitado individualmente no prefab (por exemplo, pausar perseguição) sem afetar os demais estágios.
+
+### Guia de 5 minutos – Criar uma defesa customizada
+1. **Perfis de minion**: crie `DefenseMinionBehaviorProfileSO` via `Create → ImmersiveGames → PlanetSystems → Defense → Minions → Behavior Profile V2`.
+   - Defina `variantId`, `entryDurationSeconds`, `initialScaleFactor`, `orbitIdleSeconds`, `chaseSpeed`, e estratégias (`MinionEntryStrategySO`, `MinionChaseStrategySO`).
+2. **Wave profile**: crie um `DefenseWaveProfileSO` e preencha `defaultMinionProfile` com o profile desejado para a onda.
+3. **Estratégia (opcional)**: crie um `DefenseStrategySO` concreto (ex.: `AggressiveEaterStrategySO`, `DefensivePlayerStrategySO`) para escolher profiles diferentes por `DefenseRole`.
+4. **Loadout completo**: crie `PlanetDefenseLoadoutSO` com pool data, wave profile e estratégia (quando necessário).
+5. **Planetas**: no `PlanetsManager`, preencha `possibleLoadouts` com os loadouts criados. O manager atribui automaticamente um loadout por planeta ao instanciar o prefab.
+6. Pressione Play e verifique os logs verbosos (`[Loadout]` e aplicação de profile) para confirmar que cada planeta carregou sua configuração.
+
+### Exemplos de Loadout
+- **Peaceful**: minions lentos, `entryDurationSeconds` maior, `chaseSpeed` baixo, estratégia defensiva (arco). Ideal para planetas seguros ou tutoriais.
+- **Balanced**: valores médios de entrada/orbita/perseguição; estratégia padrão usando `defaultMinionProfile` do wave profile sem overrides por role.
+- **Berserk**: entrada rápida, `initialScaleFactor` menor (spawn discreto), `chaseSpeed` alto e estratégia agressiva (zigzag para Eater, rápido arco curto para Player).
+
 ## Histórico de testes temporários
 - **Etapa 3 (aplicação de profile no spawn)**: teste de validação visual concluído com sucesso. O script temporário `MinionSpawnTest` foi removido após confirmar que o profile é aplicado no instante do spawn, eliminando piscadas visuais.
 - **Etapa 4 (remoção de campos duplicados em MonoBehaviours)**: campos de configuração visíveis em prefabs foram removidos do `DefenseMinionController`, mantendo o comportamento 100% guiado por profiles para evitar discrepâncias entre dados do prefab e do profile.
