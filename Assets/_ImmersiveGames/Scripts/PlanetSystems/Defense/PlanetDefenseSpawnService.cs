@@ -24,12 +24,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     }
 
     /// <summary>
-    /// Interface agregadora mantida para compatibilidade; listeners podem implementar
-    /// apenas os eventos necessários através das interfaces segmentadas.
-    /// </summary>
-    public interface IPlanetDefenseActivationListener : IDefenseEngagedListener, IDefenseDisengagedListener, IDefenseDisabledListener { }
-
-    /// <summary>
     /// Serviço de defesa planetária com orquestração de pooling e waves via DI,
     /// delegando estado e logs para colaboradores especializados. Mantém-se puro
     /// (sem bindings de EventBus); o escutador MonoBehaviour apenas encaminha os
