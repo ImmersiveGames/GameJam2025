@@ -39,6 +39,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private PoolData _defaultPoolData;
         private DefenseWaveProfileSo _waveProfile;
+        private IDefenseStrategy _defaultStrategy;
         private const bool WarmUpPools = true;
         private const bool StopWavesOnDisable = true;
 
@@ -68,6 +69,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             WarnIfProfileMissing();
         }
 
+        public void SetDefenseStrategy(IDefenseStrategy defenseStrategy)
+        {
+            _defaultStrategy = defenseStrategy;
+        }
+
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
@@ -79,6 +85,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogDefaultPoolData();
             LogWaveProfile();
             WarnIfPoolDataMissing();
+            LogStrategy();
         }
 
         public void HandleEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -197,7 +204,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.Planet,
                 state.DetectionType,
                 resource,
-                null,
+                _defaultStrategy,
                 _defaultPoolData,
                 _waveProfile); // ←- única fonte de configuração
         }
@@ -224,6 +231,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.secondsBetweenWaves}s; Minions/Onda: {profile.enemiesPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}; MinionProfile: {profileName}.");
+        }
+
+        private void LogStrategy()
+        {
+            if (_defaultStrategy == null)
+            {
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    "[StrategyDebug] Nenhuma DefenseStrategy atribuída; serão usadas preferências padrão ou do WaveRunner.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[StrategyDebug] DefenseStrategy configurada: {_defaultStrategy.StrategyId}; TargetRole preferido: {_defaultStrategy.TargetRole}.");
         }
 
         private void WarnIfProfileMissing()

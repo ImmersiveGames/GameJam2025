@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField] private PlanetsMaster planetsMaster;
         [SerializeField] private DefenseWaveProfileSo waveProfile;
         [SerializeField] private PoolData defaultDefensePool;
+        [SerializeField] private DefenseStrategySO defaultDefenseStrategy;
 
         [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
@@ -35,6 +36,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 Resolve config efetiva por planeta (Loadout) OU pelos campos locais
             DefenseWaveProfileSo waveToUse = waveProfile;
             PoolData poolToUse = defaultDefensePool;
+            IDefenseStrategy strategyToUse = defaultDefenseStrategy;
 
             if (defenseLoadout != null)
             {
@@ -51,9 +53,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     waveToUse = defenseLoadout.WaveProfileOverride;
                 }
 
+                if (defenseLoadout.DefenseStrategy != null)
+                {
+                    strategyToUse = defenseLoadout.DefenseStrategy;
+                }
+
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}' " +
-                    $"e WaveProfile='{waveToUse?.name ?? "null"}' via Loadout.",
+                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}', " +
+                    $"WaveProfile='{waveToUse?.name ?? "null"}' e Strategy='{strategyToUse?.StrategyId ?? "null"}' via Loadout.",
                     null,
                     this);
             }
@@ -61,7 +68,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"[Loadout] Planeta {name} sem PlanetDefenseLoadout; " +
-                    $"usando PoolData='{poolToUse?.name ?? "null"}' e WaveProfile='{waveToUse?.name ?? "null"}' do próprio controller.",
+                    $"usando PoolData='{poolToUse?.name ?? "null"}', WaveProfile='{waveToUse?.name ?? "null"}' " +
+                    $"e Strategy='{strategyToUse?.StrategyId ?? "null"}' do próprio controller.",
                     null,
                     this);
             }
@@ -75,6 +83,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"WaveProfile atribuído: {waveToUse?.name ?? "NULO"}");
 
             service.SetDefaultPoolData(poolToUse);
+
+            if (strategyToUse != null)
+            {
+                service.SetDefenseStrategy(strategyToUse);
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"DefenseStrategy atribuída: {strategyToUse.StrategyId}");
+            }
 
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
             DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
