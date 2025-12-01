@@ -13,3 +13,6 @@
 
 ## Atualização 01/12/2025 – Estratégias de Defesa Vivas
 - `IDefenseStrategy` agora é usada para resolver profiles de minion por alvo. Exemplo de configuração: atribua `AggressiveEaterStrategy` no loadout de um planeta com profile zigzag rápido e `DefensivePlayerStrategy` com profile lento de arco para Players. Ao detectar cada role, o runner aplica o profile correspondente antes do spawn, sem tocar em código.
+
+## Atualização 02/12/2025 – Limpeza Final
+- Remoção de aliases obsoletos e referências mortas para eliminar warnings do console e manter o sistema de defesa sem código legado. O controle de alvo agora ocorre apenas via `SetTarget`, alinhando o fluxo de roles centralizado no runner.

@@ -117,12 +117,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"Label='{_targetLabel}', Role={_targetRole}.");
         }
 
-        [Obsolete("Use SetTarget para centralizar role/label vindo do wave runner.")]
-        public void ConfigureTarget(Transform target, string label, DefenseRole role)
-        {
-            SetTarget(target, label, role);
-        }
-
         #endregion
 
         #region API pública
@@ -232,7 +226,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             // ❌ Não tentamos mais descobrir alvo por tag.
             // ✅ Só usamos o alvo que veio explicitamente do sistema de defesa
-            //    (ConfigureTarget) + roleConfig para interpretar o label.
+            //    (SetTarget) + roleConfig para interpretar o label.
             chaseHandler.BeginChase(
                 _targetTransform,
                 _targetLabel,
