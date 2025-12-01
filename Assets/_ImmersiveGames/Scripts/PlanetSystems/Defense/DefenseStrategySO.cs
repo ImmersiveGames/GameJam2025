@@ -43,5 +43,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<DefenseStrategySO>(
                 $"[Strategy] {StrategyId} desengajada para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
         }
+
+        public virtual DefenseMinionBehaviorProfileSO SelectMinionProfile(
+            DefenseRole role,
+            DefenseMinionBehaviorProfileSO waveProfile,
+            DefenseMinionBehaviorProfileSO minionProfile)
+        {
+            // Fallback padrão: respeita o profile definido na wave e depois o do minion/pool.
+            return waveProfile != null ? waveProfile : minionProfile;
+        }
     }
 }

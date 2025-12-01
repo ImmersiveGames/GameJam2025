@@ -337,7 +337,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, waveProfile);
+                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, loop.primaryRole);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
@@ -395,7 +395,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
             IPoolable poolable,
-            DefenseWaveProfileSo waveProfile)
+            DefenseWaveProfileSo waveProfile,
+            IDefenseStrategy strategy,
+            DefenseRole role)
         {
             if (controller == null || poolable == null)
             {
@@ -405,10 +407,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var minionData = poolable.GetData<DefensesMinionData>();
 
             var profileFromWave = waveProfile?.defaultMinionProfile;
-            var profileV2 = profileFromWave ?? minionData?.BehaviorProfileV2;
+            var profileFromStrategy = strategy?.SelectMinionProfile(role, profileFromWave, minionData?.BehaviorProfileV2);
+            var profileV2 = profileFromStrategy ?? profileFromWave ?? minionData?.BehaviorProfileV2;
             var legacyProfile = minionData?.DefaultProfile;
 
             controller.ApplyProfile(profileV2, legacyProfile);
+
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[Strategy] Minion {controller.name} configurado com profile='{profileV2?.name ?? legacyProfile?.name ?? "null"}' " +
+                $"(Role={role}, WaveProfile='{waveProfile?.name ?? "null"}', Strategy='{strategy?.StrategyId ?? "null"}').");
         }
 
 

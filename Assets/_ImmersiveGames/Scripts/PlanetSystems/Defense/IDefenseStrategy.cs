@@ -50,5 +50,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void ConfigureContext(PlanetDefenseSetupContext context);
         void OnEngaged(PlanetsMaster planet, DetectionType detectionType);
         void OnDisengaged(PlanetsMaster planet, DetectionType detectionType);
+
+        DefenseMinionBehaviorProfileSO SelectMinionProfile(
+            DefenseRole role,
+            DefenseMinionBehaviorProfileSO waveProfile,
+            DefenseMinionBehaviorProfileSO minionProfile);
     }
 }
