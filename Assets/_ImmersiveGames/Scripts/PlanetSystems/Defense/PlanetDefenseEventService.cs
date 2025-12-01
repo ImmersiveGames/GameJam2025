@@ -142,7 +142,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _orchestrator?.ReleasePools(disabledEvent.Planet);
             }
 
-            var context = _orchestrator.ResolveEffectiveConfig(disabledEvent.Planet, disabledEvent.DetectionType);
+            var detectionType = _stateManager?.TryGetDetectionType(disabledEvent.Planet);
+            var context = _orchestrator.ResolveEffectiveConfig(disabledEvent.Planet, detectionType);
             var strategy = context?.Strategy;
             _debugLogger?.OnDisabled(disabledEvent.Planet, strategy);
             _stateManager?.ClearPlanet(disabledEvent.Planet);

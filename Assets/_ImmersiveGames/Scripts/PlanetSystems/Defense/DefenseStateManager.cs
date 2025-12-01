@@ -91,6 +91,28 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
+        /// <summary>
+        /// Tenta recuperar o tipo de detecção associado ao planeta, de forma thread-safe.
+        /// Útil para eventos tardios (ex.: disable) que não carregam DetectionType.
+        /// </summary>
+        public DetectionType TryGetDetectionType(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return null;
+            }
+
+            lock (_stateLock)
+            {
+                if (_states.TryGetValue(planet, out var state))
+                {
+                    return state.DetectionType;
+                }
+            }
+
+            return null;
+        }
+
         public void ClearAll()
         {
             lock (_stateLock)

@@ -69,11 +69,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// </summary>
         public void SimulateDebugWave(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy = null)
         {
-            if (!Debug.isDebugBuild)
-            {
-                return;
-            }
-
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Simulação de debug solicitada para {planet?.ActorName ?? "planeta nulo"}.");
 
