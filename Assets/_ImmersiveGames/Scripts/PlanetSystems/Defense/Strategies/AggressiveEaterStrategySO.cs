@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
     [CreateAssetMenu(
         fileName = "AggressiveEaterStrategy",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Aggressive Eater Strategy")]
-    public sealed class AggressiveEaterStrategySO : DefenseStrategySO
+    public sealed class AggressiveEaterStrategySo : DefenseStrategySO
     {
         [Header("Profiles por alvo")]
         [SerializeField] private DefenseMinionBehaviorProfileSO eaterProfile;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
         public override void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
             base.OnEngaged(planet, detectionType);
-            DebugUtility.LogVerbose<AggressiveEaterStrategySO>(
+            DebugUtility.LogVerbose<AggressiveEaterStrategySo>(
                 $"[Strategy] Aggressive/Eater ativa em {planet?.ActorName ?? "Unknown"} para {detectionType?.TypeName ?? "Unknown"}.");
         }
 

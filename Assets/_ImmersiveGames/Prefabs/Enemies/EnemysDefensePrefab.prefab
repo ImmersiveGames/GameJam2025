@@ -14,6 +14,9 @@ GameObject:
   - component: {fileID: -6241042625207907278}
   - component: {fileID: -8628056866229713421}
   - component: {fileID: -4471057359163730865}
+  - component: {fileID: 6287448950757993320}
+  - component: {fileID: 4490893743992998304}
+  - component: {fileID: 7774445379007838731}
   m_Layer: 9
   m_Name: EnemysDefensePrefab
   m_TagString: Untagged
@@ -123,13 +126,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c9e78eb7159d465c9a52a32987a34c3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  entryDurationSeconds: 0.75
-  initialScaleFactor: 0.2
-  entryStrategy: {fileID: 11400000, guid: 7c84f521b6090ec4ba4240cd5b965505, type: 2}
-  orbitIdleDelaySeconds: 0.75
-  chaseSpeed: 3
-  chaseStrategy: {fileID: 11400000, guid: 678d9c7ec9e2cbd45902d08aa4f491ce, type: 2}
   roleConfig: {fileID: 11400000, guid: ec22197efdaccae44bb0de61a0ed5dd5, type: 2}
-  playerTag: Player
-  eaterTag: Eater
-  defaultTargetTag: Player
+  entryHandler: {fileID: 6287448950757993320}
+  orbitWaitHandler: {fileID: 4490893743992998304}
+  chaseHandler: {fileID: 7774445379007838731}
+--- !u!114 &6287448950757993320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35d6d5130d0340f1b0c4c75385f2dc4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &4490893743992998304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e9d171a74a643a1a6a9f7b5610ea85d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7774445379007838731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8648089775525046338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1ce103e6a14443f9b95d454137c89f2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

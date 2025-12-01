@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using DG.Tweening;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;

@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
     [CreateAssetMenu(
         fileName = "DefensivePlayerStrategy",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Defensive Player Strategy")]
-    public sealed class DefensivePlayerStrategySO : DefenseStrategySO
+    public sealed class DefensivePlayerStrategySo : DefenseStrategySO
     {
         [Header("Profiles por alvo")]
         [SerializeField] private DefenseMinionBehaviorProfileSO playerProfile;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
         public override void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
             base.OnEngaged(planet, detectionType);
-            DebugUtility.LogVerbose<DefensivePlayerStrategySO>(
+            DebugUtility.LogVerbose<DefensivePlayerStrategySo>(
                 $"[Strategy] Defensive/Player ativa em {planet?.ActorName ?? "Unknown"} para {detectionType?.TypeName ?? "Unknown"}.");
         }
 

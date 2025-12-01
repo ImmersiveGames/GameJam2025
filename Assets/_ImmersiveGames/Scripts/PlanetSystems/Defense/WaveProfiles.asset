@@ -16,3 +16,5 @@ MonoBehaviour:
   enemiesPerWave: 6
   spawnRadius: 4
   spawnHeightOffset: 0.5
+  defaultMinionProfile: {fileID: 11400000, guid: 7025999ef27294d4d9ace937fc0da4d2, type: 2}
+  spawnPattern: {fileID: 11400000, guid: f88b79f0cf7e48d42ac83827196c7336, type: 2}

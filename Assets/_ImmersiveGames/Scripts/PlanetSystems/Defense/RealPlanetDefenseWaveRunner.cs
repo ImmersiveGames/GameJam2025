@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Runner concreto que gerencia as waves de defesa dos planetas usando CountdownTimer,
-    /// desacoplado de Update/corrotinas.
+    /// desacoplado de Update/coroutines.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
@@ -320,7 +320,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
-                var poolable = loop.pool.GetObject(planetCenter, planet, null, activateImmediately: false);
+                var poolable = loop.pool.GetObject(planetCenter, planet, activateImmediately: false);
                 if (poolable == null)
                 {
                     DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(

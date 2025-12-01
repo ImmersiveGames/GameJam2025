@@ -1200,6 +1200,7 @@ MonoBehaviour:
   planetPrefab: {fileID: 3945190765558734642, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
   initialPlanetCount: 3
   planetsRoot: {fileID: 1533458242}
+  possibleLoadouts: []
   initialOrbitRadius: 5
   minimumOrbitSpacing: 5
   randomizeInitialAngle: 1
@@ -1342,6 +1343,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3945190765558734642, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
+      propertyPath: defenseLoadout
+      value: 
+      objectReference: {fileID: 11400000, guid: d6fab74114d793141b4cec5203eef61b, type: 2}
     - target: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_Name
       value: Planet01
@@ -1350,6 +1355,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5359047152701732458, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
+      propertyPath: defaultDefenseStrategy
+      value: 
+      objectReference: {fileID: 11400000, guid: 3d3f0f866738ca54ca5237493d9598e2, type: 2}
     - target: {fileID: 5834496324894513697, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
