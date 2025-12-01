@@ -315,7 +315,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
-                var poolable = loop.pool.GetObject(planetCenter, planet);
+                var poolable = loop.pool.GetObject(planetCenter, planet, null, activateImmediately: false);
                 if (poolable == null)
                 {
                     DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
@@ -333,7 +333,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 if (controller != null)
                 {
                     ApplyBehaviorProfile(controller, poolable);
+                }
 
+                loop.pool.ActivateObject(poolable, planetCenter, null, planet);
+
+                if (controller != null)
+                {
                     // Se o sistema de defesa já configurou um alvo primário, usamos ele.
                     // Senão, caímos pro rótulo vindo do tipo de detecção.
                     string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
