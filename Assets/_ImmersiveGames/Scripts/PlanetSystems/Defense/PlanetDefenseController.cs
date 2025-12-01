@@ -35,6 +35,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             orchestrator.OnDependenciesInjected();
 
             var eventService = new PlanetDefenseEventService();
+            eventService.SetOwnerObjectId(planetsMaster.ActorId);
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, eventService);
             DependencyManager.Provider.InjectDependencies(eventService, planetsMaster.ActorId);
             eventService.OnDependenciesInjected();

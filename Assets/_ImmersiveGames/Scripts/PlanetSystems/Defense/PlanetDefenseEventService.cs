@@ -18,9 +18,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Inject] private DefenseStateManager _stateManager = new();
         [Inject] private IDefenseLogger _debugLogger;
 
+        private string _ownerObjectId;
+
         public DependencyInjectionState InjectionState { get; set; }
 
         public string GetObjectId() => nameof(PlanetDefenseEventService);
+
+        /// <summary>
+        /// Injeta o ActorId do planeta para resgatar serviços registrados com o mesmo identificador.
+        /// Evita dependência de um "CurrentObjectId" inexistente no DependencyManager.
+        /// </summary>
+        public void SetOwnerObjectId(string ownerObjectId)
+        {
+            _ownerObjectId = ownerObjectId;
+        }
 
         public void OnDependenciesInjected()
         {
@@ -172,7 +183,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             var provider = DependencyManager.Provider;
 
-            if (_orchestrator == null && provider.TryGetForObject(DependencyManager.CurrentObjectId, out IPlanetDefenseSetupOrchestrator resolvedOrchestrator))
+            if (string.IsNullOrEmpty(_ownerObjectId))
+            {
+                DebugUtility.LogWarning<PlanetDefenseEventService>(
+                    "OwnerObjectId não definido; não é possível resolver dependências por objeto.");
+                return;
+            }
+
+            if (_orchestrator == null && provider.TryGetForObject(_ownerObjectId, out IPlanetDefenseSetupOrchestrator resolvedOrchestrator))
             {
                 _orchestrator = resolvedOrchestrator;
             }
