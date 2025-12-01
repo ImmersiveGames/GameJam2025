@@ -17,30 +17,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Chase
         }
 
-        [Header("Entrada visual (controlado por Profile)")]
-        [HideInInspector]
-        [SerializeField, Min(0.1f)]
-        private float entryDurationSeconds = 0.75f;
+        private const float DefaultEntryDurationSeconds = 0.75f;
+        private const float DefaultInitialScaleFactor = 0.2f;
+        private const float DefaultOrbitIdleDelaySeconds = 0.75f;
+        private const float DefaultChaseSpeed = 3f;
 
-        [HideInInspector]
-        [SerializeField, Range(0.05f, 1f)]
-        private float initialScaleFactor = 0.2f;
-
-        [Tooltip("Estratégia de entrada (como sai do planeta e chega na órbita).")]
-        [SerializeField]
+        // Campos de runtime, sempre preenchidos via profile para evitar dados duplicados em prefabs.
+        private float entryDurationSeconds = DefaultEntryDurationSeconds;
+        private float initialScaleFactor   = DefaultInitialScaleFactor;
+        private float orbitIdleDelaySeconds = DefaultOrbitIdleDelaySeconds;
+        private float chaseSpeed = DefaultChaseSpeed;
         private MinionEntryStrategySo entryStrategy;
-
-        [Header("Orbit / Idle antes da perseguição (controlado por Profile)")]
-        [HideInInspector]
-        [SerializeField, Min(0f)]
-        private float orbitIdleDelaySeconds = 0.75f;
-
-        [Header("Perseguição (controlado por Profile)")]
-        [HideInInspector]
-        [SerializeField, Min(0.1f)]
-        private float chaseSpeed = 3f;
-
-        [SerializeField]
         private MinionChaseStrategySo chaseStrategy;
 
         [Header("Resolução de alvo / Role (fallback)")]
@@ -161,7 +148,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 DebugUtility.LogWarning<DefenseMinionController>(
                     $"[Entry] {name} iniciando entrada SEM Profile aplicado. " +
-                    $"Valores de comportamento estão vindo do prefab (estado não ideal). " +
+                    $"Valores de comportamento estão vindo dos defaults internos (estado não ideal). " +
                     $"Verifique se DefensesMinionData.DefaultProfile está configurado.",
                     this);
             }
