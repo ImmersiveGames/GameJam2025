@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -26,6 +27,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         [Tooltip("Transform que receberá os planetas criados. Quando vazio, usa o próprio manager.")]
         [SerializeField] private Transform planetsRoot;
+
+        [Header("Defense Loadouts")]
+        [Tooltip("Lista de loadouts possíveis para atribuição ao instanciar planetas.")]
+        [SerializeField] private PlanetDefenseLoadoutSo[] possibleLoadouts;
 
         [Header("Orbit Setup")]
         [Tooltip("Raio mínimo da órbita mais interna.")]
@@ -107,6 +112,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 PlanetsMaster planetInstance = Instantiate(planetPrefab, planetsRoot);
                 planetInstance.name = $"{planetPrefab.name}_{i + 1}";
 
+                PlanetDefenseLoadoutSo loadout = ResolveLoadoutForIndex(i);
+                if (loadout != null)
+                {
+                    planetInstance.SetDefenseLoadout(loadout);
+                }
+
                 RegisterPlanet(planetInstance);
             }
 
@@ -141,6 +152,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _planetResourcesMap[planetInstance] = resourceType;
             _planetsByActorId[planetInstance.ActorId] = planetInstance;
             RegisterActiveDetectables(planetInstance);
+        }
+
+        private PlanetDefenseLoadoutSo ResolveLoadoutForIndex(int index)
+        {
+            if (possibleLoadouts == null || possibleLoadouts.Length == 0)
+            {
+                return null;
+            }
+
+            if (index == 0)
+            {
+                return possibleLoadouts[0];
+            }
+
+            int randomIndex = Random.Range(0, possibleLoadouts.Length);
+            return possibleLoadouts[randomIndex];
         }
 
         private void ArrangePlanetsInOrbits()

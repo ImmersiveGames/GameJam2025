@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField] private PlanetsMaster planetsMaster;
         [SerializeField] private DefenseWaveProfileSo waveProfile;
         [SerializeField] private PoolData defaultDefensePool;
+        [SerializeField] private DefenseStrategySO defaultDefenseStrategy;
 
         [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
@@ -35,25 +36,38 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 Resolve config efetiva por planeta (Loadout) OU pelos campos locais
             DefenseWaveProfileSo waveToUse = waveProfile;
             PoolData poolToUse = defaultDefensePool;
+            IDefenseStrategy strategyToUse = defaultDefenseStrategy;
+            PlanetDefenseLoadoutSo loadoutToUse = planetsMaster.DefenseLoadout ?? defenseLoadout;
 
-            if (defenseLoadout != null)
+            if (planetsMaster.DefenseLoadout == null && defenseLoadout != null)
+            {
+                planetsMaster.SetDefenseLoadout(defenseLoadout);
+                loadoutToUse = defenseLoadout;
+            }
+
+            if (loadoutToUse != null)
             {
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{defenseLoadout.name}'.");
+                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{loadoutToUse.name}'.");
 
-                if (defenseLoadout.DefensePoolData != null)
+                if (loadoutToUse.DefensePoolData != null)
                 {
-                    poolToUse = defenseLoadout.DefensePoolData;
+                    poolToUse = loadoutToUse.DefensePoolData;
                 }
 
-                if (defenseLoadout.WaveProfileOverride != null)
+                if (loadoutToUse.WaveProfileOverride != null)
                 {
-                    waveToUse = defenseLoadout.WaveProfileOverride;
+                    waveToUse = loadoutToUse.WaveProfileOverride;
+                }
+
+                if (loadoutToUse.DefenseStrategy != null)
+                {
+                    strategyToUse = loadoutToUse.DefenseStrategy;
                 }
 
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}' " +
-                    $"e WaveProfile='{waveToUse?.name ?? "null"}' via Loadout.",
+                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}', " +
+                    $"WaveProfile='{waveToUse?.name ?? "null"}' e Strategy='{strategyToUse?.StrategyId ?? "null"}' via Loadout.",
                     null,
                     this);
             }
@@ -61,7 +75,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"[Loadout] Planeta {name} sem PlanetDefenseLoadout; " +
-                    $"usando PoolData='{poolToUse?.name ?? "null"}' e WaveProfile='{waveToUse?.name ?? "null"}' do próprio controller.",
+                    $"usando PoolData='{poolToUse?.name ?? "null"}', WaveProfile='{waveToUse?.name ?? "null"}' " +
+                    $"e Strategy='{strategyToUse?.StrategyId ?? "null"}' do próprio controller.",
                     null,
                     this);
             }
@@ -75,6 +90,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"WaveProfile atribuído: {waveToUse?.name ?? "NULO"}");
 
             service.SetDefaultPoolData(poolToUse);
+
+            if (strategyToUse != null)
+            {
+                service.SetDefenseStrategy(strategyToUse);
+                DebugUtility.LogVerbose<PlanetDefenseController>(
+                    $"DefenseStrategy atribuída: {strategyToUse.StrategyId}");
+            }
+
+            planetsMaster.ConfigureDefenseService(service);
 
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
             DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
@@ -123,6 +147,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     planetsMaster,
                     detector,
                     detectionType,
+                    role,
                     isFirstEngagement: activeCount == 1,
                     activeDetectors: activeCount));
         }

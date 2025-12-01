@@ -15,6 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public IDetector Detector { get; }
         public DetectionType DetectionType { get; }
+        public DefenseRole Role { get; }
         public bool IsFirstEngagement { get; }
         public int ActiveDetectors { get; }
 
@@ -22,12 +23,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetsMaster planet,
             IDetector detector,
             DetectionType detectionType,
+            DefenseRole role,
             bool isFirstEngagement,
             int activeDetectors)
         {
             Planet = planet;
             Detector = detector;
             DetectionType = detectionType;
+            Role = role;
             IsFirstEngagement = isFirstEngagement;
             ActiveDetectors = activeDetectors;
         }

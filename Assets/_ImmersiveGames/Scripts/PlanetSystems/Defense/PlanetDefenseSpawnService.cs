@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -39,6 +40,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private PoolData _defaultPoolData;
         private DefenseWaveProfileSo _waveProfile;
+        private IDefenseStrategy _defaultStrategy;
+        private readonly Dictionary<PlanetsMaster, PlanetDefenseLoadoutSo> _configuredLoadouts = new();
         private const bool WarmUpPools = true;
         private const bool StopWavesOnDisable = true;
 
@@ -68,6 +71,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             WarnIfProfileMissing();
         }
 
+        public void SetDefenseStrategy(IDefenseStrategy defenseStrategy)
+        {
+            _defaultStrategy = defenseStrategy;
+        }
+
+        public void ConfigureLoadout(PlanetsMaster planet, PlanetDefenseLoadoutSo loadout)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            _configuredLoadouts[planet] = loadout;
+            string loadoutName = loadout != null ? loadout.name : "null";
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Loadout] Planeta {planet.ActorName} usando PlanetDefenseLoadout='{loadoutName}'.");
+        }
+
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
@@ -79,6 +100,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogDefaultPoolData();
             LogWaveProfile();
             WarnIfPoolDataMissing();
+            LogStrategy();
         }
 
         public void HandleEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -118,6 +140,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 NOVO: extrai Transform + label do alvo para o runner
             Transform targetTransform = null;
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
+            DefenseRole targetRole = engagedEvent.Role;
 
             if (engagedEvent.Detector.Owner is Component ownerComponent)
             {
@@ -132,7 +155,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _waveRunner?.ConfigurePrimaryTarget(
                 state.Planet,
                 targetTransform,
-                targetLabel);
+                targetLabel,
+                targetRole);
 
             if (engagedEvent.IsFirstEngagement)
             {
@@ -190,14 +214,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PlanetDefenseSetupContext BuildContext(DefenseState state)
         {
             PlanetResourcesSo resource = state.Planet.HasAssignedResource ? state.Planet.AssignedResource : null;
+            PlanetDefenseLoadoutSo loadout = null;
+            if (state.Planet != null)
+            {
+                _configuredLoadouts.TryGetValue(state.Planet, out loadout);
+            }
+
+            PoolData poolData = loadout?.DefensePoolData ?? _defaultPoolData;
+            DefenseWaveProfileSo waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
+            IDefenseStrategy strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
 
             return new PlanetDefenseSetupContext(
                 state.Planet,
                 state.DetectionType,
                 resource,
-                null,
-                _defaultPoolData,
-                _waveProfile); // ←- única fonte de configuração
+                strategy,
+                poolData,
+                waveProfile,
+                loadout); // ←- única fonte de configuração
         }
 
         private void LogDefaultPoolData()
@@ -216,8 +250,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            string profileName = profile.defaultMinionProfile != null
+                ? profile.defaultMinionProfile.name
+                : "null";
+
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
-                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.secondsBetweenWaves}s; Minions/Onda: {profile.enemiesPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}.");
+                $"[WaveDebug] WaveProfile configurado: {profile.name}; Intervalo: {profile.secondsBetweenWaves}s; Minions/Onda: {profile.enemiesPerWave}; Raio: {profile.spawnRadius}; Altura: {profile.spawnHeightOffset}; MinionProfile: {profileName}.");
+        }
+
+        private void LogStrategy()
+        {
+            if (_defaultStrategy == null)
+            {
+                DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                    "[StrategyDebug] Nenhuma DefenseStrategy atribuída; serão usadas preferências padrão ou do WaveRunner.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[StrategyDebug] DefenseStrategy configurada: {_defaultStrategy.StrategyId}; TargetRole preferido: {_defaultStrategy.TargetRole}.");
         }
 
         private void WarnIfProfileMissing()

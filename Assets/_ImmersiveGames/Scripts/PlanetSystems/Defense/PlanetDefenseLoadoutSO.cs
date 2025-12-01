@@ -5,12 +5,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Configuração de defesa por planeta:
-    /// - Qual PoolData usar para as defesas
-    /// - Qual perfil de onda (wave profile)
+    /// - PoolData usado para as defesas
+    /// - Perfil de onda (wave profile)
+    /// - Estratégia de defesa (próxima etapa)
     ///
-    /// A ideia é que o planeta use isso como "preset" planetário.
-    /// O comportamento do minion (velocidade, entry, etc.) continua
-    /// centralizado no DefensesMinionData + DefenseMinionBehaviorProfile.
+    /// A ideia é que cada planeta possua um pacote completo de defesa
+    /// exclusivamente via dados, sem depender de variáveis de prefab ou
+    /// configurações globais compartilhadas.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefenseLoadout",
@@ -27,6 +28,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseWaveProfileSo waveProfileOverride;
 
+        [Header("Estratégia de defesa (por planeta)")]
+        [Tooltip("Estratégia opcional que customiza comportamento de waves e minions para este planeta.")]
+        [SerializeField]
+        private DefenseStrategySO defenseStrategy;
+
         /// <summary>
         /// PoolData que o planeta quer usar para suas defesas.
         /// Pode ser nulo; nesse caso o sistema pode cair em um Default configurado no próprio planeta/serviço.
@@ -37,5 +43,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// WaveProfile específico deste planeta (pode ser nulo).
         /// </summary>
         public DefenseWaveProfileSo WaveProfileOverride => waveProfileOverride;
+
+        /// <summary>
+        /// Estratégia de defesa opcional deste planeta.
+        /// </summary>
+        public DefenseStrategySO DefenseStrategy => defenseStrategy;
     }
 }

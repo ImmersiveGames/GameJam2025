@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
@@ -10,11 +11,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     {
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
+        [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
 
         public IActor PlanetActor => this;
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
+        public PlanetDefenseLoadoutSo DefenseLoadout => defenseLoadout;
 
         public event Action<PlanetResourcesSo> ResourceAssigned;
         public event Action<bool> ResourceDiscoveryChanged;
@@ -28,6 +31,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             NotifyResourceAssigned();
             NotifyResourceDiscoveryChanged();
+        }
+
+        public void SetDefenseLoadout(PlanetDefenseLoadoutSo loadout)
+        {
+            defenseLoadout = loadout;
+            DebugUtility.LogVerbose<PlanetsMaster>(
+                $"[Loadout] {ActorName} recebeu loadout '{defenseLoadout?.name ?? "null"}'.");
+        }
+
+        public void ConfigureDefenseService(PlanetDefenseSpawnService service)
+        {
+            if (service == null)
+            {
+                return;
+            }
+
+            service.ConfigureLoadout(this, defenseLoadout);
         }
 
         public void AssignResource(PlanetResourcesSo resource)
