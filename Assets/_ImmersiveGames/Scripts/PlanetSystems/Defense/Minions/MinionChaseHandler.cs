@@ -37,6 +37,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 _chaseTween = transform.DOMove(transform.position + transform.forward * 5f, 2f)
                                        .SetEase(Ease.Linear)
+                                       .SetRecyclable(true)
                                        .OnComplete(() =>
                                        {
                                            DebugUtility.LogVerbose<MinionChaseHandler>(
@@ -64,11 +65,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 float duration = distance / Mathf.Max(0.01f, chaseSpeed);
 
                 _chaseTween = transform.DOMove(targetTransform.position, duration)
-                                       .SetEase(Ease.Linear);
+                                       .SetEase(Ease.Linear)
+                                       .SetRecyclable(true);
             }
 
             if (_chaseTween != null)
             {
+                _chaseTween.SetRecyclable(true);
+
                 _chaseTween.OnUpdate(() =>
                 {
                     var dir = (targetTransform.position - transform.position);

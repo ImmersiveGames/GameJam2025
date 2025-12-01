@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -313,10 +314,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             int spawned = 0;
 
             var pattern = waveProfile?.spawnPattern;
+            List<Vector3> cachedOffsets = null;
+
+            if (pattern != null)
+            {
+                cachedOffsets = BuildOffsetsForWave(spawnCount, radius, heightOffset, pattern);
+            }
 
             for (int i = 0; i < spawnCount; i++)
             {
-                var offset = ResolveSpawnOffset(i, spawnCount, radius, heightOffset, pattern);
+                var offset = cachedOffsets != null
+                    ? cachedOffsets[i]
+                    : ResolveSpawnOffset(i, spawnCount, radius, heightOffset, null);
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
@@ -342,28 +351,42 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
+                string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
+                    ? loop.primaryTargetLabel
+                    : loop.detectionType?.TypeName ?? "Unknown";
+
+                DefenseRole targetRole = loop.primaryRole != DefenseRole.Unknown
+                    ? loop.primaryRole
+                    : loop.strategy?.TargetRole ?? DefenseRole.Unknown;
+
+                bool entryStarted = false;
+
                 if (controller != null)
                 {
-                    // Se o sistema de defesa já configurou um alvo primário, usamos ele.
-                    // Senão, caímos pro rótulo vindo do tipo de detecção.
-                    string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
-                        ? loop.primaryTargetLabel
-                        : loop.detectionType?.TypeName ?? "Unknown";
-                    DefenseRole targetRole = loop.primaryRole != DefenseRole.Unknown
-                        ? loop.primaryRole
-                        : loop.strategy?.TargetRole ?? DefenseRole.Unknown;
-
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] Aplicando alvo ao minion {go.name}: Target=({loop.primaryTarget?.name ?? "null"}), " +
                         $"Label='{targetLabel}', Role={targetRole}.");
 
                     controller.SetTarget(loop.primaryTarget, targetLabel, targetRole);
                     controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
+                    entryStarted = true;
                 }
                 else
                 {
                     go.transform.position = orbitPosition;
                 }
+
+                EventBus<PlanetDefenseMinionSpawnedEvent>.Raise(
+                    new PlanetDefenseMinionSpawnedEvent(
+                        planet,
+                        loop.detectionType,
+                        poolable,
+                        loop.primaryTarget,
+                        targetLabel,
+                        targetRole,
+                        planetCenter,
+                        orbitPosition,
+                        entryStarted));
             }
 
 
@@ -389,6 +412,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             // Fallback: comportamento atual (random dentro do círculo).
             return DefenseSpawnPatternSo.DefaultRandomOffset(radius, heightOffset);
+        }
+
+        private static List<Vector3> BuildOffsetsForWave(
+            int total,
+            float radius,
+            float heightOffset,
+            DefenseSpawnPatternSo pattern)
+        {
+            var offsets = new List<Vector3>(total);
+
+            for (int i = 0; i < total; i++)
+            {
+                offsets.Add(ResolveSpawnOffset(i, total, radius, heightOffset, pattern));
+            }
+
+            return offsets;
         }
 
 

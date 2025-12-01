@@ -220,6 +220,38 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _resolvedContexts.Remove(disabledEvent.Planet);
         }
 
+        public void HandleMinionSpawned(PlanetDefenseMinionSpawnedEvent spawnedEvent)
+        {
+            if (spawnedEvent.Planet == null || spawnedEvent.SpawnedMinion == null)
+            {
+                return;
+            }
+
+            var go = spawnedEvent.SpawnedMinion.GetGameObject();
+            if (go == null)
+            {
+                return;
+            }
+
+            var controller = go.GetComponent<DefenseMinionController>();
+            if (controller == null)
+            {
+                return;
+            }
+
+            // Listener opcional para disparar a fase de entrada/chase mesmo se outro spawner
+            // tiver gerado o evento, mantendo o controller como orquestrador do ciclo.
+            controller.SetTarget(spawnedEvent.Target, spawnedEvent.TargetLabel, spawnedEvent.TargetRole);
+
+            if (!spawnedEvent.EntryPhaseStarted)
+            {
+                controller.BeginEntryPhase(
+                    spawnedEvent.PlanetCenter,
+                    spawnedEvent.OrbitPosition,
+                    spawnedEvent.TargetLabel);
+            }
+        }
+
         public PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType)
         {
             if (planet == null)

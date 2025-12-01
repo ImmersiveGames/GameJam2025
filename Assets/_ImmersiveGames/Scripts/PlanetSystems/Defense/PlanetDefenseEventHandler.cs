@@ -19,6 +19,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
         private EventBinding<PlanetDefenseDisabledEvent> _disabledBinding;
+        private EventBinding<PlanetDefenseMinionSpawnedEvent> _minionSpawnedBinding;
 
         private void Awake()
         {
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _engagedBinding = new EventBinding<PlanetDefenseEngagedEvent>(OnDefenseEngaged);
             _disengagedBinding = new EventBinding<PlanetDefenseDisengagedEvent>(OnDefenseDisengaged);
             _disabledBinding = new EventBinding<PlanetDefenseDisabledEvent>(OnDefenseDisabled);
+            _minionSpawnedBinding = new EventBinding<PlanetDefenseMinionSpawnedEvent>(OnMinionSpawned);
 
             TryResolveService();
         }
@@ -43,6 +45,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
             EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
             EventBus<PlanetDefenseDisabledEvent>.Register(_disabledBinding);
+            EventBus<PlanetDefenseMinionSpawnedEvent>.Register(_minionSpawnedBinding);
         }
 
         private void OnDisable()
@@ -50,6 +53,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             EventBus<PlanetDefenseEngagedEvent>.Unregister(_engagedBinding);
             EventBus<PlanetDefenseDisengagedEvent>.Unregister(_disengagedBinding);
             EventBus<PlanetDefenseDisabledEvent>.Unregister(_disabledBinding);
+            EventBus<PlanetDefenseMinionSpawnedEvent>.Unregister(_minionSpawnedBinding);
         }
 
         private void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent)
@@ -80,6 +84,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _service?.HandleDisabled(disabledEvent);
+        }
+
+        private void OnMinionSpawned(PlanetDefenseMinionSpawnedEvent spawnedEvent)
+        {
+            if (!IsForThisPlanet(spawnedEvent.Planet))
+            {
+                return;
+            }
+
+            _service?.HandleMinionSpawned(spawnedEvent);
         }
 
         /// <summary>
