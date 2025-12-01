@@ -55,5 +55,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole role,
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile);
+
+        /// <summary>
+        /// Resolve dinamicamente o <see cref="DefenseRole"/> desejado para o alvo atual,
+        /// permitindo que cada estratégia aplique mapeamentos ou fallbacks sem que os
+        /// chamadores precisem conhecer configurações extras (ex.: DefenseRoleConfig).
+        /// </summary>
+        /// <param name="targetIdentifier">Identificador textual do alvo (ex.: ActorName do detector).</param>
+        /// <param name="requestedRole">Role solicitado explicitamente pelo evento que disparou a defesa.</param>
+        /// <returns>Role decidido pela estratégia, considerando mapeamentos internos e fallbacks.</returns>
+        DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole);
     }
 }

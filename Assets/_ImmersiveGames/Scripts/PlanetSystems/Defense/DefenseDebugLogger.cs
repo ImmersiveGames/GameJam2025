@@ -7,8 +7,16 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    public interface IDefenseLogger
+    {
+        void Configure(DefenseWaveProfileSo waveProfile);
+        void OnEngaged(DefenseState state, bool isFirstEngagement, IDefenseStrategy strategy);
+        void OnDisengaged(PlanetsMaster planet, bool shouldStopLogging, IDefenseStrategy strategy);
+        void OnDisabled(PlanetsMaster planet, IDefenseStrategy strategy);
+    }
+
     [DebugLevel(level: DebugLevel.Verbose)]
-    public sealed class DefenseDebugLogger
+    public sealed class DefenseDebugLogger : IDefenseLogger
     {
         private sealed class LogLoop
         {
@@ -27,7 +35,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _waveProfile = waveProfile;
         }
 
-        public void StartLogging(DefenseState state)
+        public void OnEngaged(DefenseState state, bool isFirstEngagement, IDefenseStrategy strategy)
+        {
+            if (!isFirstEngagement)
+            {
+                return;
+            }
+
+            StartLogging(state, strategy);
+        }
+
+        public void OnDisengaged(PlanetsMaster planet, bool shouldStopLogging, IDefenseStrategy strategy)
+        {
+            if (!shouldStopLogging)
+            {
+                return;
+            }
+
+            StopLogging(planet, strategy);
+        }
+
+        public void OnDisabled(PlanetsMaster planet, IDefenseStrategy strategy)
+        {
+            StopLogging(planet, strategy);
+        }
+
+        private void StartLogging(DefenseState state, IDefenseStrategy strategy)
         {
             if (state?.Planet == null || _waveProfile == null) return;
             if (_loops.ContainsKey(state.Planet)) return;
@@ -35,7 +68,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var interval = Mathf.Max(1, _waveProfile.secondsBetweenWaves);
             var count    = Mathf.Max(1, _waveProfile.enemiesPerWave);
 
-            Log(state, interval, count);
+            Log(state, interval, count, strategy);
 
             var loop = new LogLoop
             {
@@ -46,7 +79,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             loop.timerHandler = () =>
             {
                 if (!loop.isActive) return;
-                Log(state, interval, count);
+                Log(state, interval, count, strategy);
                 if (loop.isActive) { loop.timer.Reset(); loop.timer.Start(); }
             };
 
@@ -55,7 +88,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _loops[state.Planet] = loop;
         }
 
-        public void StopLogging(PlanetsMaster planet)
+        private void StopLogging(PlanetsMaster planet, IDefenseStrategy strategy)
         {
             if (planet == null || !_loops.TryGetValue(planet, out var loop)) return;
 
@@ -64,12 +97,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             loop.timer?.Stop();
             DisposeIfPossible(loop.timer);
             _loops.Remove(planet);
+
+            DebugUtility.LogVerbose<DefenseDebugLogger>(
+                $"[DefenseLog] Encerrando logs de {planet.ActorName} | Estratégia: {strategy?.StrategyId ?? "null"}.");
         }
 
-        private void Log(DefenseState state, int interval, int count)
+        private void Log(DefenseState state, int interval, int count, IDefenseStrategy strategy)
         {
             DebugUtility.LogVerbose<DefenseDebugLogger>(
-                $"[DefenseLog] {state.Planet.ActorName} | Onda a cada {interval}s | {count} minions previstos");
+                $"[DefenseLog] {state.Planet.ActorName} | Onda a cada {interval}s | {count} minions previstos | " +
+                $"Detecção: {state.DetectionType?.TypeName ?? "desconhecida"} | Estratégia: {strategy?.StrategyId ?? "null"}");
         }
 
         private static void DisposeIfPossible(Timer timer)

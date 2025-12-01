@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -37,6 +38,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
         private readonly Dictionary<PlanetsMaster, IDefenseStrategy> _strategies = new();
         private readonly Dictionary<PlanetsMaster, PendingTarget> _pendingTargets = new();
+        private readonly object _syncRoot = new();
+
+        // Pool global de timers para reduzir alocações em partidas longas/multiplayer.
+        private readonly Stack<CountdownTimer> _timerPool = new();
+        private readonly object _timerPoolLock = new();
 
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
 
@@ -56,6 +62,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             StartWaves(planet, detectionType, null);
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// Método auxiliar para simulação manual em ambientes de desenvolvimento,
+        /// respeitando o nível de debug configurado. Evita efeitos colaterais em builds release.
+        /// </summary>
+        public void SimulateDebugWave(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy = null)
+        {
+            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                $"[Wave] Simulação de debug solicitada para {planet?.ActorName ?? "planeta nulo"}.");
+
+            StartWaves(planet, detectionType, strategy);
+        }
+#endif
+
         public void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy)
         {
             if (planet == null)
@@ -63,8 +83,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            // Garante que não existam dois loops para o mesmo planeta.
-            if (_running.ContainsKey(planet))
+            bool alreadyRunning;
+            lock (_syncRoot)
+            {
+                alreadyRunning = _running.ContainsKey(planet);
+            }
+
+            if (alreadyRunning)
             {
                 StopWaves(planet);
             }
@@ -136,44 +161,47 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 strategy = strategy,
                 context = context,
                 pool = pool,
-                timer = new CountdownTimer(intervalSeconds),
+                timer = RentTimer(intervalSeconds),
                 isActive = true
             };
-            if (_pendingTargets.TryGetValue(planet, out var pending))
+            lock (_syncRoot)
             {
-                loop.primaryTarget = pending.target;
-                loop.primaryTargetLabel = pending.label;
-                loop.primaryRole = pending.role;
-                _pendingTargets.Remove(planet);
+                if (_pendingTargets.TryGetValue(planet, out var pending))
+                {
+                    loop.primaryTarget = pending.target;
+                    loop.primaryTargetLabel = pending.label;
+                    loop.primaryRole = pending.role;
+                    _pendingTargets.Remove(planet);
 
-                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                    $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
-                    $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryRole}.");
+                    DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                        $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
+                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryRole}.");
+                }
+
+                loop.timerHandler = () => {
+                    if (!loop.isActive)
+                    {
+                        return;
+                    }
+
+                    TickWave(loop);
+
+                    if (loop.isActive)
+                    {
+                        loop.timer.Reset();
+                        loop.timer.Start();
+                    }
+                };
+
+                loop.timer.OnTimerStop += loop.timerHandler;
+
+                // Primeira wave imediata para feedback responsivo.
+                SpawnWave(loop);
+
+                loop.timer.Start();
+
+                _running[planet] = loop;
             }
-
-            loop.timerHandler = () => {
-                if (!loop.isActive)
-                {
-                    return;
-                }
-
-                TickWave(loop);
-
-                if (loop.isActive)
-                {
-                    loop.timer.Reset();
-                    loop.timer.Start();
-                }
-            };
-
-            loop.timer.OnTimerStop += loop.timerHandler;
-
-            // Primeira wave imediata para feedback responsivo.
-            SpawnWave(loop);
-
-            loop.timer.Start();
-
-            _running[planet] = loop;
         }
 
         public void StopWaves(PlanetsMaster planet)
@@ -183,7 +211,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_running.TryGetValue(planet, out var loop))
+            WaveLoop loop;
+            lock (_syncRoot)
+            {
+                _running.TryGetValue(planet, out loop);
+            }
+
+            if (loop != null)
             {
                 DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                     $"[Wave] StopWaves chamado para {planet.ActorName}; timer será parado e removido.");
@@ -201,16 +235,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
 
                 loop.timer?.Stop();
-                DisposeIfPossible(loop.timer);
+                ReturnTimer(loop.timer);
 
-                _running.Remove(planet);
+                lock (_syncRoot)
+                {
+                    _running.Remove(planet);
+                }
             }
         }
 
 
         public bool IsRunning(PlanetsMaster planet)
         {
-            return planet != null && _running.ContainsKey(planet);
+            if (planet == null)
+            {
+                return false;
+            }
+
+            lock (_syncRoot)
+            {
+                return _running.ContainsKey(planet);
+            }
         }
 
         public void ConfigureStrategy(PlanetsMaster planet, IDefenseStrategy strategy)
@@ -220,12 +265,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            _strategies[planet] = strategy;
+            lock (_syncRoot)
+            {
+                _strategies[planet] = strategy;
+            }
         }
 
         public bool TryGetStrategy(PlanetsMaster planet, out IDefenseStrategy strategy)
         {
-            return _strategies.TryGetValue(planet, out strategy);
+            lock (_syncRoot)
+            {
+                return _strategies.TryGetValue(planet, out strategy);
+            }
         }
         /// <summary>
         /// Configura o alvo primário para um planeta, vindo direto do sistema de defesa.
@@ -240,32 +291,35 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_running.TryGetValue(planet, out var loop))
+            lock (_syncRoot)
             {
-                loop.primaryTarget = target;
-                loop.primaryTargetLabel = targetLabel;
-                loop.primaryRole = targetRole;
-                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                    $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
-                    $"Target=({target?.name ?? "null"}), Label='{targetLabel}', Role={targetRole}.");
-                return;
-            }
-
-            if (_pendingTargets.TryGetValue(planet, out var existing))
-            {
-                existing.target = target;
-                existing.label = targetLabel;
-                existing.role = targetRole;
-                _pendingTargets[planet] = existing;
-            }
-            else
-            {
-                _pendingTargets[planet] = new PendingTarget
+                if (_running.TryGetValue(planet, out var loop))
                 {
-                    target = target,
-                    label = targetLabel,
-                    role = targetRole
-                };
+                    loop.primaryTarget = target;
+                    loop.primaryTargetLabel = targetLabel;
+                    loop.primaryRole = targetRole;
+                    DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
+                        $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
+                        $"Target=({target?.name ?? "null"}), Label='{targetLabel}', Role={targetRole}.");
+                    return;
+                }
+
+                if (_pendingTargets.TryGetValue(planet, out var existing))
+                {
+                    existing.target = target;
+                    existing.label = targetLabel;
+                    existing.role = targetRole;
+                    _pendingTargets[planet] = existing;
+                }
+                else
+                {
+                    _pendingTargets[planet] = new PendingTarget
+                    {
+                        target = target,
+                        label = targetLabel,
+                        role = targetRole
+                    };
+                }
             }
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
@@ -313,10 +367,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             int spawned = 0;
 
             var pattern = waveProfile?.spawnPattern;
+            List<Vector3> cachedOffsets = null;
+
+            if (pattern != null)
+            {
+                cachedOffsets = BuildOffsetsForWave(spawnCount, radius, heightOffset, pattern);
+            }
 
             for (int i = 0; i < spawnCount; i++)
             {
-                var offset = ResolveSpawnOffset(i, spawnCount, radius, heightOffset, pattern);
+                var offset = cachedOffsets != null
+                    ? cachedOffsets[i]
+                    : ResolveSpawnOffset(i, spawnCount, radius, heightOffset, null);
                 var orbitPosition = planetCenter + offset;
 
                 // Nasce no centro do planeta (pequeno) e o script de entrada anima até a órbita.
@@ -335,35 +397,49 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // 🔹 Tenta usar o controlador REAL primeiro
                 var controller = go.GetComponent<DefenseMinionController>();
 
+                string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
+                    ? loop.primaryTargetLabel
+                    : loop.detectionType?.TypeName ?? "Unknown";
+
+                DefenseRole targetRole = loop.strategy != null
+                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
+                    : loop.primaryRole;
+
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, loop.primaryRole);
+                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, targetRole);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
+                bool entryStarted = false;
+
                 if (controller != null)
                 {
-                    // Se o sistema de defesa já configurou um alvo primário, usamos ele.
-                    // Senão, caímos pro rótulo vindo do tipo de detecção.
-                    string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
-                        ? loop.primaryTargetLabel
-                        : loop.detectionType?.TypeName ?? "Unknown";
-                    DefenseRole targetRole = loop.primaryRole != DefenseRole.Unknown
-                        ? loop.primaryRole
-                        : loop.strategy?.TargetRole ?? DefenseRole.Unknown;
-
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] Aplicando alvo ao minion {go.name}: Target=({loop.primaryTarget?.name ?? "null"}), " +
                         $"Label='{targetLabel}', Role={targetRole}.");
 
                     controller.SetTarget(loop.primaryTarget, targetLabel, targetRole);
                     controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
+                    entryStarted = true;
                 }
                 else
                 {
                     go.transform.position = orbitPosition;
                 }
+
+                EventBus<PlanetDefenseMinionSpawnedEvent>.Raise(
+                    new PlanetDefenseMinionSpawnedEvent(
+                        planet,
+                        loop.detectionType,
+                        poolable,
+                        loop.primaryTarget,
+                        targetLabel,
+                        targetRole,
+                        planetCenter,
+                        orbitPosition,
+                        entryStarted));
             }
 
 
@@ -389,6 +465,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             // Fallback: comportamento atual (random dentro do círculo).
             return DefenseSpawnPatternSo.DefaultRandomOffset(radius, heightOffset);
+        }
+
+        private static List<Vector3> BuildOffsetsForWave(
+            int total,
+            float radius,
+            float heightOffset,
+            DefenseSpawnPatternSo pattern)
+        {
+            var offsets = new List<Vector3>(total);
+
+            for (int i = 0; i < total; i++)
+            {
+                offsets.Add(ResolveSpawnOffset(i, total, radius, heightOffset, pattern));
+            }
+
+            return offsets;
         }
 
 
@@ -421,9 +513,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private IDefenseStrategy ResolveStrategy(PlanetsMaster planet)
         {
-            return planet != null && _strategies.TryGetValue(planet, out var strategy)
-                ? strategy
-                : null;
+            if (planet == null)
+            {
+                return null;
+            }
+
+            lock (_syncRoot)
+            {
+                return _strategies.TryGetValue(planet, out var strategy)
+                    ? strategy
+                    : null;
+            }
         }
 
         private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
@@ -452,11 +552,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return false;
         }
 
-        private static void DisposeIfPossible(Timer timer)
+        private CountdownTimer RentTimer(float durationSeconds)
         {
-            if (timer is IDisposable disposable)
+            lock (_timerPoolLock)
             {
-                disposable.Dispose();
+                if (_timerPool.Count > 0)
+                {
+                    var timer = _timerPool.Pop();
+                    timer.Reset(durationSeconds);
+                    return timer;
+                }
+            }
+
+            return new CountdownTimer(durationSeconds);
+        }
+
+        private void ReturnTimer(CountdownTimer timer)
+        {
+            if (timer == null)
+            {
+                return;
+            }
+
+            timer.Stop();
+            timer.Reset();
+
+            lock (_timerPoolLock)
+            {
+                _timerPool.Push(timer);
             }
         }
 

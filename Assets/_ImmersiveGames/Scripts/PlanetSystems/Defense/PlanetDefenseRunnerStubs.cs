@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         /// <summary>
         /// Inicia as waves de defesa para o planeta utilizando uma estratégia explícita.
-        /// Esta é a versão usada pelo PlanetDefenseSpawnService.
+        /// Esta é a versão usada pelo PlanetDefenseOrchestrationService.
         /// </summary>
         void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
 

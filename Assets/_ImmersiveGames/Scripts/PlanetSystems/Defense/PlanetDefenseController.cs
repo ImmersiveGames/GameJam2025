@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -11,13 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
-        [SerializeField] private DefenseWaveProfileSo waveProfile;
-        [SerializeField] private PoolData defaultDefensePool;
-        [SerializeField] private DefenseStrategySO defaultDefenseStrategy;
-
-        [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
         private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
-        public PlanetDefenseLoadoutSo DefenseLoadout => defenseLoadout;
 
         private void Awake()
         {
@@ -33,76 +26,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            // 🔵 Resolve config efetiva por planeta (Loadout) OU pelos campos locais
-            DefenseWaveProfileSo waveToUse = waveProfile;
-            PoolData poolToUse = defaultDefensePool;
-            IDefenseStrategy strategyToUse = defaultDefenseStrategy;
-            PlanetDefenseLoadoutSo loadoutToUse = planetsMaster.DefenseLoadout ?? defenseLoadout;
+            // 🔧 Cria sub-serviços separados para orquestração e eventos,
+            // mantendo SRP e permitindo DI explícita por ActorId.
+            var orchestrator = new PlanetDefenseOrchestrationService();
+            planetsMaster.ConfigureDefenseService(orchestrator);
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, orchestrator);
+            DependencyManager.Provider.InjectDependencies(orchestrator, planetsMaster.ActorId);
+            orchestrator.OnDependenciesInjected();
 
-            if (planetsMaster.DefenseLoadout == null && defenseLoadout != null)
-            {
-                planetsMaster.SetDefenseLoadout(defenseLoadout);
-                loadoutToUse = defenseLoadout;
-            }
-
-            if (loadoutToUse != null)
-            {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{loadoutToUse.name}'.");
-
-                if (loadoutToUse.DefensePoolData != null)
-                {
-                    poolToUse = loadoutToUse.DefensePoolData;
-                }
-
-                if (loadoutToUse.WaveProfileOverride != null)
-                {
-                    waveToUse = loadoutToUse.WaveProfileOverride;
-                }
-
-                if (loadoutToUse.DefenseStrategy != null)
-                {
-                    strategyToUse = loadoutToUse.DefenseStrategy;
-                }
-
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} usando PoolData='{poolToUse?.name ?? "null"}', " +
-                    $"WaveProfile='{waveToUse?.name ?? "null"}' e Strategy='{strategyToUse?.StrategyId ?? "null"}' via Loadout.",
-                    null,
-                    this);
-            }
-            else
-            {
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} sem PlanetDefenseLoadout; " +
-                    $"usando PoolData='{poolToUse?.name ?? "null"}', WaveProfile='{waveToUse?.name ?? "null"}' " +
-                    $"e Strategy='{strategyToUse?.StrategyId ?? "null"}' do próprio controller.",
-                    null,
-                    this);
-            }
-
-            // 🔧 Cria serviço e injeta as configs efetivas
-            var service = new PlanetDefenseSpawnService();
-
-            // SO não é injetado via DI; o Controller atribui diretamente.
-            service.SetWaveProfile(waveToUse);
-            DebugUtility.LogVerbose<PlanetDefenseController>(
-                $"WaveProfile atribuído: {waveToUse?.name ?? "NULO"}");
-
-            service.SetDefaultPoolData(poolToUse);
-
-            if (strategyToUse != null)
-            {
-                service.SetDefenseStrategy(strategyToUse);
-                DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"DefenseStrategy atribuída: {strategyToUse.StrategyId}");
-            }
-
-            planetsMaster.ConfigureDefenseService(service);
-
-            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
-            DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
-            service.OnDependenciesInjected();
+            var eventService = new PlanetDefenseEventService();
+            eventService.SetOwnerObjectId(planetsMaster.ActorId);
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, eventService);
+            DependencyManager.Provider.InjectDependencies(eventService, planetsMaster.ActorId);
+            eventService.OnDependenciesInjected();
         }
 
 

@@ -1,6 +1,7 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -90,12 +91,33 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public DetectionType DetectionType { get; }
         public IPoolable SpawnedMinion { get; }
+        public Transform Target { get; }
+        public string TargetLabel { get; }
+        public DefenseRole TargetRole { get; }
+        public Vector3 PlanetCenter { get; }
+        public Vector3 OrbitPosition { get; }
+        public bool EntryPhaseStarted { get; }
 
-        public PlanetDefenseMinionSpawnedEvent(PlanetsMaster planet, DetectionType detectionType, IPoolable spawnedMinion)
+        public PlanetDefenseMinionSpawnedEvent(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            IPoolable spawnedMinion,
+            Transform target,
+            string targetLabel,
+            DefenseRole targetRole,
+            Vector3 planetCenter,
+            Vector3 orbitPosition,
+            bool entryPhaseStarted)
         {
             Planet = planet;
             DetectionType = detectionType;
             SpawnedMinion = spawnedMinion;
+            Target = target;
+            TargetLabel = targetLabel;
+            TargetRole = targetRole;
+            PlanetCenter = planetCenter;
+            OrbitPosition = orbitPosition;
+            EntryPhaseStarted = entryPhaseStarted;
         }
     }
 }

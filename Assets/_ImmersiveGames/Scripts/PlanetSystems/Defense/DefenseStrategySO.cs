@@ -1,6 +1,7 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -22,6 +23,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Tooltip("Role preferido pelo planeta ao engajar defesas; permanece Unknown se a estratégia não tiver preferência.")]
         [SerializeField]
         private DefenseRole targetRole = DefenseRole.Unknown;
+
+        [Header("Configuração externa de roles (opcional)")]
+        [Tooltip("Config de role compartilhada; usada como fallback se os mapeamentos embutidos não cobrirem o identifier.")]
+        [SerializeField]
+        private DefenseRoleConfig roleConfig;
+
+        [Header("Mapeamento de roles (embutido)")]
+        [Tooltip("Mapeamentos opcionais incorporados para evitar SOs extras como DefenseRoleConfig.")]
+        [SerializeField]
+        private List<DefenseRoleBinding> roleMappings = new();
+
+        [Tooltip("Role de fallback aplicado caso nenhum mapeamento seja encontrado.")]
+        [SerializeField]
+        private DefenseRole fallbackRole = DefenseRole.Unknown;
 
         public string StrategyId => string.IsNullOrWhiteSpace(strategyId) ? name : strategyId;
 
@@ -51,6 +66,81 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             // Fallback padrão: respeita o profile definido na wave e depois o do minion/pool.
             return waveProfile != null ? waveProfile : minionProfile;
+        }
+
+        public virtual DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole)
+        {
+            // Role explícito do evento sempre tem prioridade.
+            if (requestedRole != DefenseRole.Unknown)
+            {
+                return requestedRole;
+            }
+
+            // Tenta resolver pelos mapeamentos embutidos da própria estratégia.
+            DefenseRole mappedRole = ResolveRole(targetIdentifier);
+            if (mappedRole != DefenseRole.Unknown)
+            {
+                return mappedRole;
+            }
+
+            // Caso exista um DefenseRoleConfig compartilhado, usa-o como fallback externo.
+            if (roleConfig != null)
+            {
+                DefenseRole configRole = roleConfig.ResolveRole(targetIdentifier);
+                if (configRole != DefenseRole.Unknown)
+                {
+                    return configRole;
+                }
+            }
+
+            // Último fallback: preferência declarada da estratégia.
+            return targetRole;
+        }
+
+        /// <summary>
+        /// Resolve um DefenseRole usando os mapeamentos embutidos na estratégia.
+        /// Permite eliminar o uso de DefenseRoleConfig separado quando a estratégia
+        /// já expressa a preferência de alvo ou precisa mapear labels de forma determinística.
+        /// </summary>
+        public DefenseRole ResolveRole(string identifier)
+        {
+            if (!string.IsNullOrWhiteSpace(identifier))
+            {
+                foreach (DefenseRoleBinding binding in roleMappings)
+                {
+                    if (binding == null || string.IsNullOrWhiteSpace(binding.Identifier))
+                    {
+                        continue;
+                    }
+
+                    if (binding.Identifier == identifier)
+                    {
+                        return binding.Role;
+                    }
+                }
+            }
+
+            if (fallbackRole != DefenseRole.Unknown)
+            {
+                return fallbackRole;
+            }
+
+            return targetRole;
+        }
+
+        [System.Serializable]
+        private class DefenseRoleBinding
+        {
+            [Tooltip("Chave textual (ex.: ActorName) mapeada para um DefenseRole.")]
+            [SerializeField]
+            private string identifier;
+
+            [Tooltip("Role que a estratégia deseja aplicar ao identifier informado.")]
+            [SerializeField]
+            private DefenseRole role = DefenseRole.Unknown;
+
+            public string Identifier => identifier;
+            public DefenseRole Role => role;
         }
     }
 }

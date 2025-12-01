@@ -29,7 +29,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            _orbitWaitTween = DOVirtual.DelayedCall(orbitIdleDelaySeconds, () => onCompleted?.Invoke());
+            _orbitWaitTween = DOVirtual.DelayedCall(orbitIdleDelaySeconds, () => onCompleted?.Invoke())
+                                      .SetRecyclable(true);
         }
 
         public void CancelOrbitWait()
