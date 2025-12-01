@@ -12,6 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseStateManager
     {
         private readonly Dictionary<PlanetsMaster, DefenseState> _states = new();
+        private readonly object _stateLock = new();
 
         public IReadOnlyDictionary<PlanetsMaster, DefenseState> States => _states;
 
@@ -26,17 +27,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            if (!_states.TryGetValue(planet, out var state))
+            lock (_stateLock)
             {
-                state = new DefenseState(planet, detectionType, detectorName, Mathf.Max(1, activeDetectors));
-                _states.Add(planet, state);
+                if (!_states.TryGetValue(planet, out var state))
+                {
+                    state = new DefenseState(planet, detectionType, detectorName, Mathf.Max(1, activeDetectors));
+                    _states.Add(planet, state);
+                    return state;
+                }
+
+                state.DetectionType ??= detectionType;
+                state.LastDetectorName = detectorName ?? state.LastDetectorName;
+                state.ActiveDetectors = Mathf.Max(state.ActiveDetectors, activeDetectors);
                 return state;
             }
-
-            state.DetectionType ??= detectionType;
-            state.LastDetectorName = detectorName ?? state.LastDetectorName;
-            state.ActiveDetectors = Mathf.Max(state.ActiveDetectors, activeDetectors);
-            return state;
         }
 
         public DefenseState RegisterDisengagement(
@@ -48,22 +52,30 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             removed = false;
 
-            if (planet == null || !_states.TryGetValue(planet, out var state))
+            if (planet == null)
             {
                 return null;
             }
 
-            state.DetectionType ??= detectionType;
-            state.LastDetectorName = detectorName ?? state.LastDetectorName;
-            state.ActiveDetectors = Mathf.Max(0, activeDetectors);
-
-            if (state.ActiveDetectors <= 0)
+            lock (_stateLock)
             {
-                _states.Remove(planet);
-                removed = true;
-            }
+                if (!_states.TryGetValue(planet, out var state))
+                {
+                    return null;
+                }
 
-            return state;
+                state.DetectionType ??= detectionType;
+                state.LastDetectorName = detectorName ?? state.LastDetectorName;
+                state.ActiveDetectors = Mathf.Max(0, activeDetectors);
+
+                if (state.ActiveDetectors <= 0)
+                {
+                    _states.Remove(planet);
+                    removed = true;
+                }
+
+                return state;
+            }
         }
 
         public void ClearPlanet(PlanetsMaster planet)
@@ -73,12 +85,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            _states.Remove(planet);
+            lock (_stateLock)
+            {
+                _states.Remove(planet);
+            }
         }
 
         public void ClearAll()
         {
-            _states.Clear();
+            lock (_stateLock)
+            {
+                _states.Clear();
+            }
         }
     }
 

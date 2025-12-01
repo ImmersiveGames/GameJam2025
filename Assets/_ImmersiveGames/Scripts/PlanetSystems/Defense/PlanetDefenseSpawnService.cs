@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (engagedEvent.IsFirstEngagement)
             {
                 _waveRunner?.StartWaves(state.Planet, state.DetectionType, context.Strategy);
-                _debugLogger?.OnEngaged(state, engagedEvent.IsFirstEngagement);
+                _debugLogger?.OnEngaged(state, engagedEvent.IsFirstEngagement, context.Strategy);
             }
         }
 
@@ -191,8 +191,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                     $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
 
+                _resolvedContexts.TryGetValue(disengagedEvent.Planet, out var context);
+                var strategy = context?.Strategy ?? _defaultStrategy;
                 _waveRunner?.StopWaves(disengagedEvent.Planet);
-                _debugLogger?.OnDisengaged(disengagedEvent.Planet, noDetectorsRemaining);
+                _debugLogger?.OnDisengaged(disengagedEvent.Planet, noDetectorsRemaining, strategy);
             }
         }
 
@@ -209,7 +211,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _poolRunner?.Release(disabledEvent.Planet);
             }
 
-            _debugLogger?.OnDisabled(disabledEvent.Planet);
+            _resolvedContexts.TryGetValue(disabledEvent.Planet, out var context);
+            var strategy = context?.Strategy ?? _defaultStrategy;
+            _debugLogger?.OnDisabled(disabledEvent.Planet, strategy);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
             _resolvedContexts.Remove(disabledEvent.Planet);
         }
