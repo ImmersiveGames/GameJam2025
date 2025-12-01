@@ -17,9 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
-        [SerializeField]
-        private DefenseMinionBehaviorProfileSO testBehaviorProfileOverride;
-
         private sealed class WaveLoop
         {
             public PlanetsMaster planet;
@@ -335,7 +332,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, testBehaviorProfileOverride);
+                    ApplyBehaviorProfile(controller, poolable);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
@@ -385,8 +382,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
-            IPoolable poolable,
-            DefenseMinionBehaviorProfileSO overrideProfile)
+            IPoolable poolable)
         {
             if (controller == null || poolable == null)
             {
@@ -400,18 +396,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var profileV2 = overrideProfile ?? minionData.BehaviorProfileV2;
+            var profileV2 = minionData.BehaviorProfileV2;
             var legacyProfile = minionData.DefaultProfile;
 
             controller.ApplyProfile(profileV2, legacyProfile);
-
-            if (profileV2 != null)
-            {
-                DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                    $"[TestEtapa3] Profile aplicado com duração {profileV2.entryDurationSeconds:F2}s, " +
-                    $"escala {profileV2.initialScaleFactor:F2}, entrada={profileV2.entryStrategy?.name ?? "None"}, " +
-                    $"perseguição={profileV2.chaseStrategy?.name ?? "None"}");
-            }
         }
 
 
