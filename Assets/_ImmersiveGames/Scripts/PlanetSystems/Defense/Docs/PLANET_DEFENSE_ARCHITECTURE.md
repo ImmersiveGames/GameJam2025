@@ -7,5 +7,5 @@
 - **Etapa 6 (WaveProfile como pacote completo)**: `DefenseWaveProfileSO` passou a definir também o `defaultMinionProfile`, permitindo criar ondas com comportamentos distintos (ex.: rápida + zigzag vs. lenta + arco) apenas trocando o asset de wave sem tocar em código.
 - **Etapa 7 (Loadouts por planeta)**: cada planeta agora recebe um `PlanetDefenseLoadoutSO` completo (pool, wave profile e estratégia), garantindo que loadouts distintos gerem defesas totalmente diferentes sem depender de configurações globais.
 
-## Atualização 01/12/2025 – Variações por planeta
-- Atribuição de `PlanetDefenseLoadoutSO` agora acontece em runtime via `PlanetsManager`, usando um array configurável de loadouts. Exemplo: para 3 planetas, use `loadouts[0]` para o primeiro e sorteie para os demais para diversificar comportamentos sem mudar prefabs.
+## Atualização 01/12/2025 – Loadouts por Planeta
+- Atribuição runtime no `PlanetsManager` via array de loadouts para variações em instâncias de um único prefab. Exemplo: para 3 planetas, use `loadouts[0]` no primeiro e sorteie para os demais, garantindo defesas distintas sem alterar prefabs.
