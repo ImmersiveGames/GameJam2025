@@ -43,6 +43,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private MinionChaseStrategySo chaseStrategy;
 
+        [Header("Curvas customizadas (controladas pelo Profile)")]
+        [SerializeField]
+        private AnimationCurve customScaleCurve;
+
+        [SerializeField]
+        private AnimationCurve customSpeedCurve;
+
         [Header("Resolução de alvo / Role (fallback)")]
         [SerializeField]
         private DefenseRoleConfig roleConfig;
@@ -225,13 +232,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _entrySequence = DOTween.Sequence();
 
-            _entrySequence.Append(
-                transform.DOMove(_orbitPosition, entryDurationSeconds)
-                         .SetEase(Ease.OutQuad));
+            var moveTween = transform.DOMove(_orbitPosition, entryDurationSeconds);
+            if (customSpeedCurve != null)
+            {
+                moveTween = moveTween.SetEase(customSpeedCurve);
+            }
+            else
+            {
+                moveTween = moveTween.SetEase(Ease.OutQuad);
+            }
 
-            _entrySequence.Join(
-                transform.DOScale(_finalScale, entryDurationSeconds)
-                         .From(tinyScale));
+            _entrySequence.Append(moveTween);
+
+            var scaleTween = transform.DOScale(_finalScale, entryDurationSeconds)
+                                     .From(tinyScale);
+
+            if (customScaleCurve != null)
+            {
+                scaleTween = scaleTween.SetEase(customScaleCurve);
+            }
+
+            _entrySequence.Join(scaleTween);
 
             if (orbitIdleDelaySeconds > 0f)
             {
@@ -296,8 +317,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 float distance = Vector3.Distance(transform.position, _targetTransform.position);
                 float duration = distance / Mathf.Max(0.01f, chaseSpeed);
 
-                _chaseTween = transform.DOMove(_targetTransform.position, duration)
-                                       .SetEase(Ease.Linear);
+                _chaseTween = transform.DOMove(_targetTransform.position, duration);
+
+                if (customSpeedCurve != null)
+                {
+                    _chaseTween = _chaseTween.SetEase(customSpeedCurve);
+                }
+                else
+                {
+                    _chaseTween = _chaseTween.SetEase(Ease.Linear);
+                }
             }
 
             if (_chaseTween != null)
@@ -346,7 +375,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         #endregion
-        public void ApplyProfile(DefenseMinionBehaviorProfile profile)
+        public void ApplyProfile(DefenseMinionBehaviorProfileSO profile)
         {
             if (profile == null)
             {
@@ -361,9 +390,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             entryDurationSeconds  = Mathf.Max(0.1f, profile.EntryDuration);
             initialScaleFactor    = Mathf.Clamp(profile.InitialScaleFactor, 0.05f, 1f);
             orbitIdleDelaySeconds = Mathf.Max(0f, profile.OrbitIdleSeconds);
+            entryStrategy         = profile.EntryStrategy;
 
             // Perseguição
-            chaseSpeed = Mathf.Max(0.1f, profile.ChaseSpeed);
+            chaseSpeed   = Mathf.Max(0.1f, profile.ChaseSpeed);
+            chaseStrategy = profile.ChaseStrategy;
+
+            // Curvas customizadas
+            customScaleCurve = profile.CustomScaleCurve;
+            customSpeedCurve = profile.CustomSpeedCurve;
 
             _profileApplied = true;
 

@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Configuração de um TIPO de minion de defesa para o PoolSystem.
     ///
     /// - Herdado de PoolableObjectData (lifetime, prefab, etc.)
-    /// - Agora também referencia um DefenseMinionBehaviorProfile,
+    /// - Agora também referencia um DefenseMinionBehaviorProfileSO,
     ///   que descreve o comportamento padrão deste minion.
     /// </summary>
     [CreateAssetMenu(
@@ -19,8 +19,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Comportamento padrão deste tipo de minion")]
         [Tooltip("Profile de comportamento aplicado a todos os minions que usam este data.")]
         [SerializeField]
-        private DefenseMinionBehaviorProfile defaultProfile;
+        private DefenseMinionBehaviorProfileSO defaultProfile;
 
-        public DefenseMinionBehaviorProfile DefaultProfile => defaultProfile;
+        public DefenseMinionBehaviorProfileSO DefaultProfile => defaultProfile;
     }
 }

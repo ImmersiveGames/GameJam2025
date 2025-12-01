@@ -16,14 +16,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     ///
     /// E adiciona:
     /// - leitura do DefensesMinionData (PoolableObjectData específico)
-    /// - leitura do DefenseMinionBehaviorProfile
+    /// - leitura do DefenseMinionBehaviorProfileSO
     /// - aplica o profile em um DefenseMinionController, se existir.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class DefenseMinionPoolable : BulletPoolable
     {
         private DefensesMinionData _minionData;
-        private DefenseMinionBehaviorProfile _profile;
+        private DefenseMinionBehaviorProfileSO _profile;
         private DefenseMinionController _controller;
 
         private void Awake()

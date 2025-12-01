@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     ///
     /// A ideia é que o planeta use isso como "preset" planetário.
     /// O comportamento do minion (velocidade, entry, etc.) continua
-    /// centralizado no DefensesMinionData + DefenseMinionBehaviorProfile.
+    /// centralizado no DefensesMinionData + DefenseMinionBehaviorProfileSO.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefenseLoadout",
