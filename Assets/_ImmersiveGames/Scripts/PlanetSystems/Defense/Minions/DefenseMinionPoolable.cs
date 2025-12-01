@@ -23,6 +23,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseMinionPoolable : BulletPoolable
     {
         private DefensesMinionData _minionData;
+        private DefenseMinionBehaviorProfileSO _profileV2;
         private DefenseMinionBehaviorProfile _profile;
         private DefenseMinionController _controller;
 
@@ -71,21 +72,42 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            _profile = _minionData.DefaultProfile;
+            _profileV2 = _minionData.BehaviorProfileV2;
+            _profile   = _minionData.DefaultProfile;
+
+            // Preferimos o profile v2; se estiver ausente, caímos no legado.
+            if (_profileV2 != null)
+            {
+                DebugUtility.LogVerbose<DefenseMinionPoolable>(
+                    $"[{source}] '{name}' recebeu profile v2 '{_profileV2.VariantId}' do data '{_minionData.name}'.",
+                    null,this);
+
+                if (_controller != null)
+                {
+                    _controller.ApplyProfile(_profileV2, _profile);
+                }
+                else
+                {
+                    DebugUtility.LogWarning<DefenseMinionPoolable>(
+                        $"[{source}] '{name}' possui profile v2 '{_profileV2.VariantId}', mas não encontrou DefenseMinionController no mesmo GameObject.",
+                        this);
+                }
+
+                return;
+            }
 
             if (_profile == null)
             {
                 DebugUtility.LogWarning<DefenseMinionPoolable>(
-                    $"[{source}] DefensesMinionData '{_minionData.name}' não possui BehaviorProfile definido.",
+                    $"[{source}] DefensesMinionData '{_minionData.name}' não possui BehaviorProfile definido (v2 nem legado).",
                     this);
                 return;
             }
 
             DebugUtility.LogVerbose<DefenseMinionPoolable>(
-                $"[{source}] '{name}' recebeu perfil de minion '{_profile.VariantId}' do data '{_minionData.name}'.",
+                $"[{source}] '{name}' recebeu profile legado '{_profile.VariantId}' do data '{_minionData.name}'.",
                 null,this);
 
-            // Se já existir um Controller real, ele recebe o profile aqui:
             if (_controller != null)
             {
                 _controller.ApplyProfile(_profile);
@@ -93,7 +115,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             else
             {
                 DebugUtility.LogWarning<DefenseMinionPoolable>(
-                    $"[{source}] '{name}' possui profile '{_profile.VariantId}', mas não encontrou DefenseMinionController no mesmo GameObject.",
+                    $"[{source}] '{name}' possui profile legado '{_profile.VariantId}', mas não encontrou DefenseMinionController no mesmo GameObject.",
                     this);
             }
         }

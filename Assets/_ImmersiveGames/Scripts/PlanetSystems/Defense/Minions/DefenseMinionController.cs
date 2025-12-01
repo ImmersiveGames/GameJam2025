@@ -346,6 +346,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         #endregion
+        public void ApplyProfile(DefenseMinionBehaviorProfileSO profileV2, DefenseMinionBehaviorProfile legacyProfile = null)
+        {
+            if (profileV2 != null)
+            {
+                // Entrada / órbita
+                entryDurationSeconds  = Mathf.Max(0.1f, profileV2.EntryDuration);
+                initialScaleFactor    = Mathf.Clamp(profileV2.InitialScaleFactor, 0.05f, 1f);
+                orbitIdleDelaySeconds = Mathf.Max(0f, profileV2.OrbitIdleSeconds);
+
+                // Estratégias
+                entryStrategy = profileV2.EntryStrategy;
+                chaseStrategy = profileV2.ChaseStrategy;
+
+                // Perseguição
+                chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
+
+                _profileApplied = true;
+
+                DebugUtility.LogVerbose<DefenseMinionController>(
+                    $"[Profile] {name} aplicou profile v2 '{profileV2.VariantId}': " +
+                    $"Entry={entryDurationSeconds:0.00}s, " +
+                    $"ScaleFactor={initialScaleFactor:0.00}, " +
+                    $"OrbitIdle={orbitIdleDelaySeconds:0.00}s, " +
+                    $"ChaseSpeed={chaseSpeed:0.00}, " +
+                    $"EntryStrategy={(entryStrategy != null ? entryStrategy.name : "NONE")}, " +
+                    $"ChaseStrategy={(chaseStrategy != null ? chaseStrategy.name : "NONE")}",
+                    null,this);
+
+                return;
+            }
+
+            ApplyProfile(legacyProfile);
+        }
+
         public void ApplyProfile(DefenseMinionBehaviorProfile profile)
         {
             if (profile == null)
