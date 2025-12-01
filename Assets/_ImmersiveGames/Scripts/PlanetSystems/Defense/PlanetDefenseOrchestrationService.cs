@@ -8,21 +8,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
-    public interface IDefenseEngagedListener
-    {
-        void OnDefenseEngaged(PlanetDefenseEngagedEvent engagedEvent);
-    }
-
-    public interface IDefenseDisengagedListener
-    {
-        void OnDefenseDisengaged(PlanetDefenseDisengagedEvent disengagedEvent);
-    }
-
-    public interface IDefenseDisabledListener
-    {
-        void OnDefenseDisabled(PlanetDefenseDisabledEvent disabledEvent);
-    }
-
     /// <summary>
     /// Orquestrador focado em preparar contexto, pools e runner de waves.
     /// Mantém cache por planeta e delega logs ao IDefenseLogger injetado via DI.
