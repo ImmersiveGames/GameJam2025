@@ -2,30 +2,34 @@
 
 ## Atualizações 26/11/2025
 
+### Divisão por Responsabilidade Única
+- O antigo `PlanetDefenseSpawnService` foi dividido em dois serviços explícitos: `PlanetDefenseOrchestrationService` (prepara contexto/pool/waves) e `PlanetDefenseEventService` (processa eventos e delega ao orquestrador). Ambos são instanciados pelo `PlanetDefenseController` e registrados por `ActorId` via `DependencyManager`.
+- O `PlanetDefenseEventHandler` agora resolve o `PlanetDefenseEventService` para encaminhar eventos `Engaged/Disengaged/Disabled/MinionSpawned`, mantendo o orquestrador puro e reutilizável.
+
 ### Correção Passo 1: Removida struct obsoleta – SO como fonte única de config
 - Eliminada a struct/classe `PlanetDefenseSpawnConfig`; o `PlanetDefenseController` não cria nem aplica mais este config e passa somente o `DefenseWaveProfileSO` atribuído no Inspector para o serviço de spawn.
 - Removidas referências residuais ao caminho legado (`BuildPlanetConfig`) no controlador, garantindo que apenas o ScriptableObject do Inspector e o `PoolData` sejam usados para configurar o serviço.
-- O `PlanetDefenseSpawnService` recebe o profile via `SetWaveProfile` (comentado em português para lembrar que SO não é injetado via DI) e registra bindings do `EventBus` após a injeção, garantindo que eventos `Engaged/Disengaged/Disabled` acionem warm-up e start/stop de ondas.
+- O `PlanetDefenseOrchestrationService` recebe o profile via `SetWaveProfile` (comentado em português para lembrar que SO não é injetado via DI) e registra bindings do `EventBus` após a injeção, garantindo que eventos `Engaged/Disengaged/Disabled` acionem warm-up e start/stop de ondas (via `PlanetDefenseEventService`).
 - `RealPlanetDefenseWaveRunner` usa os valores do `DefenseWaveProfileSO` presente no `PlanetDefenseSetupContext` para intervalo e quantidade de spawns, mantendo timers alinhados ao asset configurado no Inspector e evitando valores duplicados em structs.
 - Removidos resíduos de referências ao antigo config e corrigido o uso de `PlanetDefenseSetupContext` no runner de waves para evitar variáveis inexistentes em `SpawnWave`.
 
 ### Correção Passo 1: Removida injeção DI em SO – configs via Inspector
 - ScriptableObjects (`DefenseWaveProfileSO`) deixam de ser injetados via DI e agora são atribuídos diretamente pelo `PlanetDefenseController` usando `SetWaveProfile`, mantendo o Inspector como fonte única de configuração.
-- `PlanetDefenseSpawnService` recebe o profile via método público (com aviso explícito em português) e repassa ao `PlanetDefenseSetupContext`, evitando criação dinâmica de assets e mantendo o fluxo controlado por cena.
+- `PlanetDefenseOrchestrationService` recebe o profile via método público (com aviso explícito em português) e repassa ao `PlanetDefenseSetupContext`, evitando criação dinâmica de assets e mantendo o fluxo controlado por cena.
 - Logs verbosos foram adicionados para confirmar o profile atribuído e para alertar quando nenhum profile for fornecido, facilitando depuração de cenas multiplayer locais.
 
 ### Correção Passo 1: PoolData não injetado
 - Movido o aviso de PoolData ausente para ocorrer somente após a injeção de dependências e configuração do PoolData, garantindo que assets atribuídos no Inspector (ex.: `PoolDataDefenses.asset`) sejam respeitados antes de qualquer log de alerta.
-- Adicionados logs verbosos no `PlanetDefenseSpawnService` para registrar o PoolData padrão configurado e o flag `WarmUpPools`, facilitando depuração de cenas onde o serviço é instanciado via código e o PoolData é definido em `PlanetDefenseController`.
+- Adicionados logs verbosos no `PlanetDefenseOrchestrationService` para registrar o PoolData padrão configurado e o flag `WarmUpPools`, facilitando depuração de cenas onde o serviço é instanciado via código e o PoolData é definido em `PlanetDefenseController`.
 - Centralizado o uso do `DefenseWaveProfileSO` como fonte única de configuração das ondas (intervalo, minions, raio/altura) por planeta, compartilhando a mesma instância via DI sem criar ScriptableObjects em runtime.
 - Removido o caminho legado `BuildPlanetConfig`/`PlanetDefenseSpawnConfig` no `PlanetDefenseController`: o serviço recebe apenas o `DefenseWaveProfileSO` e o `PoolData` atribuídos no Inspector, evitando config duplicado ignorado em runtime.
 
 ### Passo 1 — Avaliação e Preparação (Pré-Refatoração)
-- **Escopo analisado:** `PlanetDefenseController`, `PlanetDefenseDetectable`, `PlanetDefenseSpawnService`, `PlanetDefenseEvents`, stubs (`NullPlanetDefensePoolRunner`, `NullPlanetDefenseWaveRunner`) e `DefensesMinionData`. Referências externas observadas: `PlanetsMaster`, `PlanetsManager`, `EventBus`, `DetectionSystems`, `PoolSystem`.
+- **Escopo analisado:** `PlanetDefenseController`, `PlanetDefenseDetectable`, `PlanetDefenseEventService`, `PlanetDefenseOrchestrationService`, stubs (`NullPlanetDefensePoolRunner`, `NullPlanetDefenseWaveRunner`) e `DefensesMinionData`. Referências externas observadas: `PlanetsMaster`, `PlanetsManager`, `EventBus`, `DetectionSystems`, `PoolSystem`.
 - **Fluxo atual mapeado:**
   1. Sensores (`IDetector`) entram em alcance do planeta via `PlanetDefenseDetectable`, que registra a entrada para evitar chamadas duplicadas e aciona `PlanetDefenseController.EngageDefense` com o `DetectionType`.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseDetectable.cs†L32-L78】
   2. `PlanetDefenseController` resolve o papel (`DefenseRole`) do detector, mantém contagem local de detectores ativos e publica `PlanetDefenseEngagedEvent` com flag de primeira ativação e total de detectores. Desengates removem da tabela e publicam `PlanetDefenseDisengagedEvent`; ao desabilitar o objeto, emite `PlanetDefenseDisabledEvent` e limpa estado.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L13-L115】
-  3. `PlanetDefenseSpawnService` escuta os três eventos para rastrear estado de defesa por planeta, apenas para logging/debug. Mantém dicionário `PlanetsMaster -> ActiveDefenseState`, registra/atualiza contadores, e em `Update` gera logs periódicos simulando ondas. Não inicia spawns reais e limpa bindings no `OnDisable`.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseSpawnService.cs†L15-L198】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseSpawnService.cs†L198-L278】
+  3. `PlanetDefenseEventService` escuta os três eventos para rastrear estado de defesa por planeta, delegando aquecimento de pool/waves para o orquestrador e registrando contadores. Logs verbosos auxiliam na depuração e o cache de contexto é limpo no disable.
   4. Stubs `NullPlanetDefensePoolRunner` e `NullPlanetDefenseWaveRunner` fornecem fallbacks de DI para pools/ondas, armazenando apenas estado mínimo (`HashSet` de planetas rodando).【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseRunnerStubs.cs†L1-L80】
   5. Dados de minion (`DefensesMinionData`) derivam de `PoolableObjectData` e definem menu de criação, mas não têm lógica adicional.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/DefensesMinionData.cs†L1-L9】
 
@@ -38,20 +42,20 @@
 
 ### Pontos fracos e riscos
 - **Dependência de nomes para papel**: `ResolveDefenseRole` inspeciona strings em `ActorName`, quebrando princípio de fonte única de verdade e tornando o comportamento frágil para multiplayer local (nomes duplicados). Necessário Strategy/Provider formal para papel de defesa.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L62-L108】
-- **Acoplamento a logs e Update**: `PlanetDefenseSpawnService` roda em `Update` apenas para debug; ausência de throttling de GC (strings concatenadas) e falta de `StopWavesOnDisable` aplicação real. Quando implementar spawns reais, Update deve considerar escala de tempo e múltiplas instâncias.
+- **Acoplamento a logs e Update**: serviços atuais removem dependência de `Update`, delegando logs periódicos ao `DefenseDebugLogger` e acionando runners apenas em eventos.
 - **Lacuna de sincronização**: `OnDisable` de `PlanetDefenseDetectable` força `DisengageDefense` para cada detector registrado, mas o controlador apenas limpa contagem e publica evento em `OnDisable` se ainda houver detectores. Em pipelines rápidos, pode gerar eventos redundantes. Revisar responsabilidade de limpeza única.
 - **Ausência de telemetria central**: não há agregador para múltiplos serviços de defesa (pool, ondas, efeitos). EventBus cobre transporte, mas falta um orchestrator aplicando Strategy/DI para cada planeta (ex.: `IPlanetDefenseOrchestrator`).
 - **Teste/Debug**: Sem testes automatizados. Interpretação de `DetectionType` como `TypeName` para logs; não há validação de nulos na origem do evento (detector/planeta nulo apenas retorna silenciosamente). Pode mascarar falhas.
 
 ### Recomendações para próximos passos
 - Introduzir **interfaces claras de papel** (`IDefenseRoleProvider` concreto ou Strategy) e eliminar heurística por nome; permitir binding por jogador local (ex.: inject `IPlayerIdentity`).
-- Criar **serviço orquestrador** que reaja aos eventos e coordene runners reais (pool/wave), mantendo `PlanetDefenseSpawnService` apenas para debug ou migrando logs para o orquestrador.
+- Criar **serviço orquestrador** que reaja aos eventos e coordene runners reais (pool/wave); etapa concluída com `PlanetDefenseOrchestrationService` + `PlanetDefenseEventService`.
 - Substituir uso de `Update` por **timers/Tasks** específicos ou corrotinas encapsuladas por planeta para evitar conflito em multiplayer local e reduzir carga de logs.
 - Formalizar **contratos de DI** para `IPlanetDefensePoolRunner`/`IPlanetDefenseWaveRunner`, com configuração por ScriptableObject para cenas locais múltiplas.
 - Adicionar **testes de integração** para fluxo de eventos (engage → start waves; disengage → stop) e cenários de desabilitação, garantindo idempotência e contagem correta.
 
 ### Passo 2 — Refatorar Interfaces e Abstrações (D/I do SOLID)
-- **Interfaces segmentadas de listener**: `IDefenseEngagedListener`, `IDefenseDisengagedListener` e `IDefenseDisabledListener` permanecem separadas; o listener agregado foi removido para reforçar Interface Segregation e evitar dependência em contratos genéricos.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseSpawnService.cs†L11-L23】
+- **Interfaces segmentadas de listener**: `IDefenseEngagedListener`, `IDefenseDisengagedListener` e `IDefenseDisabledListener` permanecem separadas; o listener agregado foi removido para reforçar Interface Segregation e evitar dependência em contratos genéricos.
 - **Contratos de configuração por planeta**: `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner` ganharam métodos opcionais para configurar minions, recursos e estratégias por planeta (`ConfigureForPlanet`, `TryGetConfiguration`, `WarmUp(PlanetDefenseSetupContext)`, `ConfigureStrategy`, `TryGetStrategy`, `StartWaves` com estratégia), mantendo compatibilidade com chamadas existentes. Os stubs `Null*` armazenam configurações sem executar lógica real, preservando DI e Open/Closed para futuras implementações.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseRunnerStubs.cs†L1-L115】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseRunnerStubs.cs†L117-L195】
 - **Strategy Pattern preparado**: criada `IDefenseStrategy` com `PlanetDefenseSetupContext`, permitindo injeção de comportamentos diferentes (agressivo/defensivo) por planeta ou recurso, reforçando Dependency Inversion ao isolar decisões de spawn de implementações concretas. O contrato é neutro para multiplayer local e pode ser usado pelos runners ou orchestrators futuros.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/IDefenseStrategy.cs†L1-L43】
 
@@ -74,11 +78,11 @@
 ### 26/11/2025 — Passo 4: Refatoração do Serviço de Spawn com Integração de PoolSystem e FrequencyTimer
 - **Separação de responsabilidades**: o fluxo de spawn agora usa `DefenseStateManager` para rastrear detectores/planetas e `DefenseDebugLogger` para logs periódicos via `FrequencyTimer` por planeta (intervalo inteiro em segundos), removendo `Update`, corrotinas e reduzindo alocação de GC.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/DefenseStateManager.cs†L1-L78】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/DefenseDebugLogger.cs†L1-L132】
 - **Pools reais e ondas com timers**: os stubs foram substituídos por `RealPlanetDefensePoolRunner` (registrando pools no `PoolManager` com `PoolData` pré-configurado via Editor, sem criar `PoolData` em runtime) e `RealPlanetDefenseWaveRunner` (usa `FrequencyTimer` por planeta com intervalo em segundos, spawn via `ObjectPool` e evento `PlanetDefenseMinionSpawnedEvent`).【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefensePoolRunner.cs†L1-L94】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefenseWaveRunner.cs†L1-L200】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseEvents.cs†L1-L88】
-- **Serviço orquestrador**: `PlanetDefenseSpawnService` injeta os runners reais, cria `PlanetDefenseSetupContext` com recurso do planeta/pool configurado, aquece pools, inicia/paralisa ondas conforme engajamento/disengajamento e limpa pools em disable, preservando logs verbosos e compatibilidade de eventos.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseSpawnService.cs†L1-L230】
+- **Serviço orquestrador**: `PlanetDefenseOrchestrationService` injeta os runners reais, cria `PlanetDefenseSetupContext` com recurso do planeta/pool configurado, aquece pools, inicia/paralisa ondas conforme engajamento/disengajamento e limpa pools em disable, preservando logs verbosos e compatibilidade de eventos.
 - **Bootstrap e DI**: `DependencyBootstrapper` registra o `DefenseStateManager`, runners reais e o serviço de spawn como singletons de cena, garantindo injeção e ciclo de vida correto para multiplayer local.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L1-L143】
 
 ### 26/11/2025 — Registro de serviços
-- **Registro manual e explícito**: `PlanetDefenseSpawnService` permanece desacoplado de inicialização automática; adicione-o à cena e resolva suas dependências via `DependencyManager` conforme necessidade, utilizando apenas os contratos segmentados (`IDefenseEngagedListener`, `IDefenseDisengagedListener`, `IDefenseDisabledListener`) em registradores ou event handlers.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseSpawnService.cs†L11-L23】【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L32-L81】
+- **Registro manual e explícito**: `PlanetDefenseOrchestrationService` e `PlanetDefenseEventService` permanecem desacoplados de inicialização automática; adicione-os à cena e resolva suas dependências via `DependencyManager` conforme necessidade, utilizando apenas os contratos segmentados (`IDefenseEngagedListener`, `IDefenseDisengagedListener`, `IDefenseDisabledListener`) em registradores ou event handlers.
 
 ### 26/11/2025 — Estado do DefenseRoleConfig
 - O `DefenseRoleConfig` permanece no projeto apenas para compatibilidade com cenas antigas, mas o `PlanetDefenseController` não consulta mais esse asset; use providers (`IDefenseRoleProvider`) nos prefabs para definir o papel de defesa de forma explícita.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L17-L180】

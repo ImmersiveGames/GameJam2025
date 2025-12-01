@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 $"[Loadout] {ActorName} recebeu loadout '{defenseLoadout?.name ?? "null"}'.");
         }
 
-        public void ConfigureDefenseService(PlanetDefenseSpawnService service)
+        public void ConfigureDefenseService(IPlanetDefenseSetupOrchestrator service)
         {
             if (service == null)
             {

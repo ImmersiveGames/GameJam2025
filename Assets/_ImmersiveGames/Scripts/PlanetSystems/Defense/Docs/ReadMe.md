@@ -33,8 +33,9 @@ Todo o sistema usa **CountdownTimer** (ImprovedTimers) → precisão em segundos
 | Componente                        | Responsabilidade                                                                                   |
 |-----------------------------------|----------------------------------------------------------------------------------------------------|
 | `PlanetDefenseController`        | MonoBehaviour que escuta sensores → publica eventos (`Engaged`, `Disengaged`, `Disabled`).        |
-| `PlanetDefenseEventHandler`       | Escuta os eventos do EventBus e delega ao `PlanetDefenseSpawnService` (mantém o serviço puro).   |
-| `PlanetDefenseSpawnService`       | Orquestrador central – decide quando aquecer pools, iniciar/parar waves e logar defesa.          |
+| `PlanetDefenseEventHandler`       | Escuta os eventos do EventBus e delega ao `PlanetDefenseEventService` (mantém os serviços puros).   |
+| `PlanetDefenseOrchestrationService` | Orquestrador central – decide quando aquecer pools, iniciar/parar waves e logar defesa.          |
+| `PlanetDefenseEventService`       | Serviço de eventos que registra engajamentos e delega decisões ao orquestrador.          |
 | `RealPlanetDefensePoolRunner`     | Registra e aquece a pool de minions usando o `PoolManager` real (uma única vez por planeta).      |
 | `RealPlanetDefenseWaveRunner`     | Gerencia o loop de waves com `CountdownTimer`. Spawna **wave imediata + ondas periódicas**.      |
 | `DefenseDebugLogger`              | Log periódico (Verbose) da defesa ativa usando também `CountdownTimer`.                          |
@@ -57,7 +58,7 @@ Todo o sistema usa **CountdownTimer** (ImprovedTimers) → precisão em segundos
 
 1. Detector entra → `PlanetDefenseController.EngageDefense()`
 2. Publica `PlanetDefenseEngagedEvent` (com `IsFirstEngagement`)
-3. `PlanetDefenseSpawnService` → aquece pool + inicia waves (se for o primeiro detector)
+3. `PlanetDefenseEventService` → delega para o orquestrador aquecer pool + iniciar waves (se for o primeiro detector)
 4. `RealPlanetDefenseWaveRunner`
    - Spawna **uma wave imediata**
    - Inicia `CountdownTimer` com `secondsBetweenWaves` do SO
@@ -95,7 +96,7 @@ Basta configurar **um único** `DefenseWaveProfileSO` no Inspector do planeta �
 ## Injeção de Dependências
 Container leve `DependencyManager`:
 - `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner` → singletons globais
-- `PlanetDefenseSpawnService` → registrado por `ActorId` do planeta
+- `PlanetDefenseOrchestrationService` e `PlanetDefenseEventService` → registrados por `ActorId` do planeta
 
 ---
 

@@ -7,14 +7,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Componente MonoBehaviour responsável por escutar eventos do EventBus
-    /// e delegar ao PlanetDefenseSpawnService, mantendo o serviço puro.
+    /// e delegar ao PlanetDefenseEventService, mantendo o serviço puro.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     [RequireComponent(typeof(PlanetDefenseController))]
     [RequireComponent(typeof(PlanetsMaster))]
     public sealed class PlanetDefenseEventHandler : MonoBehaviour
     {
-        private PlanetDefenseSpawnService _service;
+        private PlanetDefenseEventService _service;
         private PlanetsMaster _planetsMaster;
         private EventBinding<PlanetDefenseEngagedEvent> _engagedBinding;
         private EventBinding<PlanetDefenseDisengagedEvent> _disengagedBinding;
@@ -107,14 +107,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (DependencyManager.Provider.TryGetForObject(_planetsMaster.ActorId, out PlanetDefenseSpawnService resolved))
+            if (DependencyManager.Provider.TryGetForObject(_planetsMaster.ActorId, out PlanetDefenseEventService resolved))
             {
                 _service = resolved;
             }
             else
             {
                 DebugUtility.LogWarning<PlanetDefenseEventHandler>(
-                    $"Nenhum PlanetDefenseSpawnService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
+                    $"Nenhum PlanetDefenseEventService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
             }
         }
 

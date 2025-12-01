@@ -26,16 +26,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            // 🔧 Cria serviço e injeta apenas dependências, deixando a resolução de
-            // configuração centralizada no PlanetDefenseSpawnService usando o
-            // PlanetDefenseLoadout do planeta.
-            var service = new PlanetDefenseSpawnService();
+            // 🔧 Cria sub-serviços separados para orquestração e eventos,
+            // mantendo SRP e permitindo DI explícita por ActorId.
+            var orchestrator = new PlanetDefenseOrchestrationService();
+            planetsMaster.ConfigureDefenseService(orchestrator);
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, orchestrator);
+            DependencyManager.Provider.InjectDependencies(orchestrator, planetsMaster.ActorId);
+            orchestrator.OnDependenciesInjected();
 
-            planetsMaster.ConfigureDefenseService(service);
-
-            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
-            DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
-            service.OnDependenciesInjected();
+            var eventService = new PlanetDefenseEventService();
+            DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, eventService);
+            DependencyManager.Provider.InjectDependencies(eventService, planetsMaster.ActorId);
+            eventService.OnDependenciesInjected();
         }
 
 

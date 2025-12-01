@@ -9,21 +9,22 @@ PlanetsManager
   └── Instantiate planetPrefab
       └── PlanetsMaster (Awake)
           └── PlanetDefenseController
-              └── PlanetDefenseSpawnService
-                  └── ConfigureLoadout(planet, loadout)
-                  └── Build context (pool, waveProfile, strategy)
-                  └── RealPlanetDefenseWaveRunner
-                      └── Loop de waves → spawn via pool
-                          └── DefenseMinionController (coordenador)
-                              ├── MinionEntryHandler
-                              ├── MinionOrbitWaitHandler
-                              └── MinionChaseHandler
+              ├── PlanetDefenseOrchestrationService
+              |   └── ConfigureLoadout(planet, loadout)
+              |   └── Build context (pool, waveProfile, strategy)
+              |   └── RealPlanetDefenseWaveRunner
+              |       └── Loop de waves → spawn via pool
+              |           └── DefenseMinionController (coordenador)
+              |               ├── MinionEntryHandler
+              |               ├── MinionOrbitWaitHandler
+              |               └── MinionChaseHandler
+              └── PlanetDefenseEventService
 ```
 
 ### Fluxo Completo (runtime)
 1) **PlanetsManager** instancia `planetPrefab` e escolhe um `PlanetDefenseLoadoutSO` a partir de `possibleLoadouts` (por índice ou aleatório) para cada planeta.
-2) **PlanetsMaster.Awake** recebe o loadout e chama `PlanetDefenseSpawnService.ConfigureLoadout(this, loadout)`, preservando SRP (spawn + defesa) e DIP (loadout injetado).
-3) **PlanetDefenseController** inicializa o `PlanetDefenseSpawnService`, que constrói o contexto com pool data, wave profile e estratégia (`IDefenseStrategy`). Logs verbosos mostram qual loadout foi aplicado.
+2) **PlanetsMaster.Awake** recebe o loadout e chama `PlanetDefenseOrchestrationService.ConfigureLoadout(this, loadout)`, preservando SRP (spawn + defesa) e DIP (loadout injetado).
+3) **PlanetDefenseController** inicializa o `PlanetDefenseOrchestrationService` (setup/caches) e o `PlanetDefenseEventService` (eventos). O orquestrador constrói o contexto com pool data, wave profile e estratégia (`IDefenseStrategy`). Logs verbosos mostram qual loadout foi aplicado.
 4) **RealPlanetDefenseWaveRunner** pega o alvo primário (label + role), consulta a estratégia para resolver o profile do minion com base no role e aplica o profile antes de ativar cada poolable, evitando piscadas.
 5) **DefenseMinionController** coordena `MinionEntryHandler`, `MinionOrbitWaitHandler` e `MinionChaseHandler` para executar entrada, espera em órbita e perseguição conforme o profile recebido.
 6) Qualquer handler pode ser desabilitado individualmente no prefab (por exemplo, pausar perseguição) sem afetar os demais estágios.
