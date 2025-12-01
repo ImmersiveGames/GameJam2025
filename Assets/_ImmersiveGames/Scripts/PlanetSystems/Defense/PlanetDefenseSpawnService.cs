@@ -140,7 +140,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 NOVO: extrai Transform + label do alvo para o runner
             Transform targetTransform = null;
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
-            DefenseRole targetRole = engagedEvent.Role;
+            DefenseRole targetRole = context.Strategy != null
+                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.Role)
+                : engagedEvent.Role;
 
             if (engagedEvent.Detector.Owner is Component ownerComponent)
             {

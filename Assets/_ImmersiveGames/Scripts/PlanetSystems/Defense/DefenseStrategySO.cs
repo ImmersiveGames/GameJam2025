@@ -24,6 +24,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseRole targetRole = DefenseRole.Unknown;
 
+        [Header("Configuração externa de roles (opcional)")]
+        [Tooltip("Config de role compartilhada; usada como fallback se os mapeamentos embutidos não cobrirem o identifier.")]
+        [SerializeField]
+        private DefenseRoleConfig roleConfig;
+
         [Header("Mapeamento de roles (embutido)")]
         [Tooltip("Mapeamentos opcionais incorporados para evitar SOs extras como DefenseRoleConfig.")]
         [SerializeField]
@@ -61,6 +66,35 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             // Fallback padrão: respeita o profile definido na wave e depois o do minion/pool.
             return waveProfile != null ? waveProfile : minionProfile;
+        }
+
+        public virtual DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole)
+        {
+            // Role explícito do evento sempre tem prioridade.
+            if (requestedRole != DefenseRole.Unknown)
+            {
+                return requestedRole;
+            }
+
+            // Tenta resolver pelos mapeamentos embutidos da própria estratégia.
+            DefenseRole mappedRole = ResolveRole(targetIdentifier);
+            if (mappedRole != DefenseRole.Unknown)
+            {
+                return mappedRole;
+            }
+
+            // Caso exista um DefenseRoleConfig compartilhado, usa-o como fallback externo.
+            if (roleConfig != null)
+            {
+                DefenseRole configRole = roleConfig.ResolveRole(targetIdentifier);
+                if (configRole != DefenseRole.Unknown)
+                {
+                    return configRole;
+                }
+            }
+
+            // Último fallback: preferência declarada da estratégia.
+            return targetRole;
         }
 
         /// <summary>

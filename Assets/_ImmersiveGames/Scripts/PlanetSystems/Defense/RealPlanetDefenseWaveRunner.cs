@@ -344,20 +344,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // 🔹 Tenta usar o controlador REAL primeiro
                 var controller = go.GetComponent<DefenseMinionController>();
 
-                if (controller != null)
-                {
-                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, loop.primaryRole);
-                }
-
-                loop.pool.ActivateObject(poolable, planetCenter, null, planet);
-
                 string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
                     ? loop.primaryTargetLabel
                     : loop.detectionType?.TypeName ?? "Unknown";
 
-                DefenseRole targetRole = loop.primaryRole != DefenseRole.Unknown
-                    ? loop.primaryRole
-                    : loop.strategy?.TargetRole ?? DefenseRole.Unknown;
+                DefenseRole targetRole = loop.strategy != null
+                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
+                    : loop.primaryRole;
+
+                if (controller != null)
+                {
+                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, targetRole);
+                }
+
+                loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
                 bool entryStarted = false;
 
