@@ -332,6 +332,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
+                    ApplyBehaviorProfile(controller, poolable);
+
                     // Se o sistema de defesa já configurou um alvo primário, usamos ele.
                     // Senão, caímos pro rótulo vindo do tipo de detecção.
                     string targetLabel = !string.IsNullOrWhiteSpace(loop.primaryTargetLabel)
@@ -370,6 +372,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             // Fallback: comportamento atual (random dentro do círculo).
             return DefenseSpawnPatternSo.DefaultRandomOffset(radius, heightOffset);
+        }
+
+
+        private static void ApplyBehaviorProfile(DefenseMinionController controller, IPoolable poolable)
+        {
+            if (controller == null || poolable == null)
+            {
+                return;
+            }
+
+            var minionData = poolable.GetData<DefensesMinionData>();
+
+            if (minionData == null)
+            {
+                return;
+            }
+
+            var profileV2 = minionData.BehaviorProfileV2;
+            var legacyProfile = minionData.DefaultProfile;
+
+            controller.ApplyProfile(profileV2, legacyProfile);
         }
 
 
