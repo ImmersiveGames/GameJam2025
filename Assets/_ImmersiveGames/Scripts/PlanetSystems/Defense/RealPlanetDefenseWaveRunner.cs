@@ -124,8 +124,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 // Notifica a estratégia de que a defesa foi engajada para este planeta.
             strategy?.OnEngaged(planet, resolvedDetection);
 
-            var intervalSeconds = ResolveIntervalSeconds(context);
-            var spawnCount = ResolveSpawnCount(context);
+            int intervalSeconds = ResolveIntervalSeconds(context);
+            int spawnCount = ResolveSpawnCount(context);
 
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var poolName = poolData.ObjectName;
+            string poolName = poolData.ObjectName;
             var pool = PoolManager.Instance?.GetPool(poolName);
             if (pool == null)
             {
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     ? loop.primaryTargetLabel
                     : loop.detectionType?.TypeName ?? "Unknown";
 
-                DefenseRole targetRole = loop.strategy != null
+                var targetRole = loop.strategy != null
                     ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
                     : loop.primaryRole;
 
@@ -530,13 +530,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             // DefenseWaveProfileSO já garante valores mínimos via OnValidate,
             // mas aqui protegemos contra configuração nula.
-            var raw = context?.WaveProfile.enemiesPerWave ?? 6;
+            int raw = context?.WaveProfile.enemiesPerWave ?? 6;
             return Mathf.Max(1, raw);
         }
 
         private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            var raw = context?.WaveProfile?.secondsBetweenWaves ?? 5;
+            int raw = context?.WaveProfile?.secondsBetweenWaves ?? 5;
             return Mathf.Max(1, raw);
         }
 

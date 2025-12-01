@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Ponto e escala iniciais
-            Vector3 tinyScale = finalScale * initialScaleFactor;
+            var tinyScale = finalScale * initialScaleFactor;
             minion.position = planetCenter;
             minion.localScale = tinyScale;
 

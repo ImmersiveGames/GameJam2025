@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var poolName = context.PoolData?.ObjectName ?? pool.name;
+            string poolName = context.PoolData?.ObjectName ?? pool.name;
             if (!_warmedPlanets.Add(planet))
             {
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' já aquecida para planeta {planet.ActorName}.");
@@ -120,7 +120,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 pool.ClearPool();
                 _configured.TryGetValue(planet, out var context);
-                var poolName = context?.PoolData != null ? context.PoolData.ObjectName : pool.name;
+                string poolName = context?.PoolData != null ? context.PoolData.ObjectName : pool.name;
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' cleared for planet {planet.ActorName}.");
             }
 

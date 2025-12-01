@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
     [CreateAssetMenu(
         fileName = "AggressiveEaterStrategy",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Aggressive Eater Strategy")]
-    public sealed class AggressiveEaterStrategySo : DefenseStrategySO
+    public sealed class AggressiveEaterStrategySo : DefenseStrategySo
     {
         [Header("Profiles por alvo")]
         [SerializeField] private DefenseMinionBehaviorProfileSO eaterProfile;

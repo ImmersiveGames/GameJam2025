@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             float initialScaleFactor,
             Action onCompleted)
         {
-            Vector3 tinyScale = finalScale * initialScaleFactor;
+            var tinyScale = finalScale * initialScaleFactor;
 
             transform.position = planetCenter;
             transform.localScale = tinyScale;

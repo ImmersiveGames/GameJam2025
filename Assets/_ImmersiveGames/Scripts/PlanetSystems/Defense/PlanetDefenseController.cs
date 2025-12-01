@@ -69,7 +69,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            DefenseRole role = ResolveDefenseRole(detector);
+            var role = ResolveDefenseRole(detector);
             _activeDetectors.Add(detector, role);
             int activeCount = _activeDetectors.Count;
 
@@ -141,13 +141,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private DefenseRole ResolveDefenseRole(IDetector detector)
         {
-            DefenseRole explicitRole = TryResolveFromDetector(detector);
+            var explicitRole = TryResolveFromDetector(detector);
             if (explicitRole != DefenseRole.Unknown)
             {
                 return explicitRole;
             }
 
-            DefenseRole ownerRole = TryResolveFromOwner(detector);
+            var ownerRole = TryResolveFromOwner(detector);
             if (ownerRole != DefenseRole.Unknown)
             {
                 return ownerRole;
@@ -165,9 +165,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static DefenseRole TryResolveFromDetector(IDetector detector)
         {
-            if (detector is IDefenseRoleProvider provider)
+            var provider = detector as IDefenseRoleProvider;
+            if (provider != null)
             {
-                DefenseRole role = NormalizeRole(provider.GetDefenseRole());
+                var role = NormalizeRole(provider.GetDefenseRole());
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
@@ -180,7 +181,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (detector is Component detectorComponent &&
                 detectorComponent.TryGetComponent(out IDefenseRoleProvider componentProvider))
             {
-                DefenseRole role = NormalizeRole(componentProvider.GetDefenseRole());
+                var role = NormalizeRole(componentProvider.GetDefenseRole());
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
@@ -197,7 +198,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (detector?.Owner is IDefenseRoleProvider provider)
             {
-                DefenseRole role = NormalizeRole(provider.GetDefenseRole());
+                var role = NormalizeRole(provider.GetDefenseRole());
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
@@ -210,7 +211,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (detector?.Owner is Component ownerComponent &&
                 ownerComponent.TryGetComponent(out IDefenseRoleProvider providerComponent))
             {
-                DefenseRole role = NormalizeRole(providerComponent.GetDefenseRole());
+                var role = NormalizeRole(providerComponent.GetDefenseRole());
                 if (role != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(

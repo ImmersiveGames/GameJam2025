@@ -2,6 +2,7 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [CreateAssetMenu(
         fileName = "DefenseStrategy",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Defense Strategy (Base)")]
-    public class DefenseStrategySO : ScriptableObject, IDefenseStrategy
+    public class DefenseStrategySo : ScriptableObject, IDefenseStrategy
     {
         [Header("Identidade da estratégia")]
         [SerializeField]
@@ -49,13 +50,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public virtual void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
-            DebugUtility.LogVerbose<DefenseStrategySO>(
+            DebugUtility.LogVerbose<DefenseStrategySo>(
                 $"[Strategy] {StrategyId} engajada para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
         }
 
         public virtual void OnDisengaged(PlanetsMaster planet, DetectionType detectionType)
         {
-            DebugUtility.LogVerbose<DefenseStrategySO>(
+            DebugUtility.LogVerbose<DefenseStrategySo>(
                 $"[Strategy] {StrategyId} desengajada para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
         }
 
@@ -77,7 +78,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Tenta resolver pelos mapeamentos embutidos da própria estratégia.
-            DefenseRole mappedRole = ResolveRole(targetIdentifier);
+            var mappedRole = ResolveRole(targetIdentifier);
             if (mappedRole != DefenseRole.Unknown)
             {
                 return mappedRole;
@@ -86,7 +87,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // Caso exista um DefenseRoleConfig compartilhado, usa-o como fallback externo.
             if (roleConfig != null)
             {
-                DefenseRole configRole = roleConfig.ResolveRole(targetIdentifier);
+                var configRole = roleConfig.ResolveRole(targetIdentifier);
                 if (configRole != DefenseRole.Unknown)
                 {
                     return configRole;
@@ -102,30 +103,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// Permite eliminar o uso de DefenseRoleConfig separado quando a estratégia
         /// já expressa a preferência de alvo ou precisa mapear labels de forma determinística.
         /// </summary>
-        public DefenseRole ResolveRole(string identifier)
+        private DefenseRole ResolveRole(string identifier)
         {
-            if (!string.IsNullOrWhiteSpace(identifier))
+            if (string.IsNullOrWhiteSpace(identifier)) return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
+            foreach (var binding in roleMappings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)).Where(binding => binding.Identifier == identifier))
             {
-                foreach (DefenseRoleBinding binding in roleMappings)
-                {
-                    if (binding == null || string.IsNullOrWhiteSpace(binding.Identifier))
-                    {
-                        continue;
-                    }
-
-                    if (binding.Identifier == identifier)
-                    {
-                        return binding.Role;
-                    }
-                }
+                return binding.Role;
             }
 
-            if (fallbackRole != DefenseRole.Unknown)
-            {
-                return fallbackRole;
-            }
+            return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
 
-            return targetRole;
         }
 
         [System.Serializable]

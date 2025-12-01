@@ -1,5 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using DG.Tweening;
+using DG.Tweening.Core;
+using DG.Tweening.Plugins.Options;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -41,10 +43,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Direção principal (reta) até o alvo
-            Vector3 startPos = minion.position;
-            Vector3 endPos   = target.position;
+            var startPos = minion.position;
+            var endPos   = target.position;
 
-            Vector3 forwardDir = (endPos - startPos);
+            var forwardDir = (endPos - startPos);
             float distance     = forwardDir.magnitude;
 
             if (distance <= 0.001f || speed <= 0.001f)
@@ -56,7 +58,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             forwardDir.Normalize();
 
             // Direção lateral: perpendicular ao vetor até o alvo
-            Vector3 lateralDir = Vector3.Cross(forwardDir, Vector3.up);
+            var lateralDir = Vector3.Cross(forwardDir, Vector3.up);
             if (lateralDir.sqrMagnitude < 0.0001f)
             {
                 // Caso raro: alvo esteja exatamente acima/abaixo
@@ -74,7 +76,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var seq = DOTween.Sequence();
 
             // Movimento principal até o alvo
-            var moveForward = minion.DOMove(endPos, duration)
+            TweenerCore<Vector3, Vector3, VectorOptions> moveForward = minion.DOMove(endPos, duration)
                                     .SetEase(Ease.Linear);
 
             seq.Join(moveForward);

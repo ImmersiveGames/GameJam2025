@@ -14,8 +14,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, DefenseState> _states = new();
         private readonly object _stateLock = new();
 
-        public IReadOnlyDictionary<PlanetsMaster, DefenseState> States => _states;
-
         public DefenseState RegisterEngagement(
             PlanetsMaster planet,
             DetectionType detectionType,
@@ -68,11 +66,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 state.LastDetectorName = detectorName ?? state.LastDetectorName;
                 state.ActiveDetectors = Mathf.Max(0, activeDetectors);
 
-                if (state.ActiveDetectors <= 0)
-                {
-                    _states.Remove(planet);
-                    removed = true;
-                }
+                if (state.ActiveDetectors > 0) return state;
+                _states.Remove(planet);
+                removed = true;
 
                 return state;
             }

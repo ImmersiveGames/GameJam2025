@@ -65,8 +65,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (state?.Planet == null || _waveProfile == null) return;
             if (_loops.ContainsKey(state.Planet)) return;
 
-            var interval = Mathf.Max(1, _waveProfile.secondsBetweenWaves);
-            var count    = Mathf.Max(1, _waveProfile.enemiesPerWave);
+            int interval = Mathf.Max(1, _waveProfile.secondsBetweenWaves);
+            int count    = Mathf.Max(1, _waveProfile.enemiesPerWave);
 
             Log(state, interval, count, strategy);
 

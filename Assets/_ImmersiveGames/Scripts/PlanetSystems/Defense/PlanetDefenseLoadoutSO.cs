@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Configuração de defesa por planeta:
     /// - PoolData usado para as defesas
     /// - Perfil de onda (wave profile)
-    /// - Estratégia de defesa (próxima etapa)
+    /// - Estratégia defensiva (próxima etapa)
     ///
     /// A ideia é que cada planeta possua um pacote completo de defesa
     /// exclusivamente via dados, sem depender de variáveis de prefab ou
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Estratégia de defesa (por planeta)")]
         [Tooltip("Estratégia opcional que customiza comportamento de waves e minions para este planeta.")]
         [SerializeField]
-        private DefenseStrategySO defenseStrategy;
+        private DefenseStrategySo defenseStrategy;
 
         /// <summary>
         /// PoolData que o planeta quer usar para suas defesas.
@@ -46,8 +46,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public DefenseWaveProfileSo WaveProfileOverride => waveProfileOverride;
 
         /// <summary>
-        /// Estratégia de defesa opcional deste planeta.
+        /// Estratégia defensiva opcional deste planeta.
         /// </summary>
-        public DefenseStrategySO DefenseStrategy => defenseStrategy;
+        public DefenseStrategySo DefenseStrategy => defenseStrategy;
     }
 }

@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Mantém cache por planeta e delega logs ao IDefenseLogger injetado via DI.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
-    public class PlanetDefenseOrchestrationService : IInjectableComponent, IPlanetDefenseSetupOrchestrator
+    public class PlanetDefenseOrchestrationService : IPlanetDefenseSetupOrchestrator
     {
         private PoolData _defaultPoolData;
         private DefenseWaveProfileSo _waveProfile;
@@ -92,12 +92,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return cached;
             }
 
-            PlanetResourcesSo resource = planet.HasAssignedResource ? planet.AssignedResource : null;
+            var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
             _configuredLoadouts.TryGetValue(planet, out var loadout);
 
-            PoolData poolData = loadout?.DefensePoolData ?? _defaultPoolData;
-            DefenseWaveProfileSo waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
-            IDefenseStrategy strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+            var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
+            var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
+            var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
 
             var context = new PlanetDefenseSetupContext(
                 planet,
@@ -154,11 +154,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public void ReleasePools(PlanetsMaster planet)
         {
-            if (!ReleasePoolsOnDisable)
-            {
-                return;
-            }
-
             _poolRunner?.Release(planet);
         }
 

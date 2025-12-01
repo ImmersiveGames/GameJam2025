@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
 
@@ -26,17 +27,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return fallbackRole;
             }
 
-            foreach (DefenseRoleBinding binding in roleMappings)
+            foreach (var binding in roleMappings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)).Where(binding => string.Equals(binding.Identifier, identifier, StringComparison.Ordinal)))
             {
-                if (binding == null || string.IsNullOrWhiteSpace(binding.Identifier))
-                {
-                    continue;
-                }
-
-                if (string.Equals(binding.Identifier, identifier, StringComparison.Ordinal))
-                {
-                    return binding.Role;
-                }
+                return binding.Role;
             }
 
             return fallbackRole;
