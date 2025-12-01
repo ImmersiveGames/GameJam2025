@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region Configuração do alvo
 
-        public void ConfigureTarget(Transform target, string label, DefenseRole role)
+        public void SetTarget(Transform target, string label, DefenseRole role)
         {
             _targetTransform = target;
             if (!string.IsNullOrWhiteSpace(label))
@@ -115,6 +115,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<DefenseMinionController>(
                 $"[Target] {name} recebeu alvo explícito: Transform=({_targetTransform?.name ?? "null"}), " +
                 $"Label='{_targetLabel}', Role={_targetRole}.");
+        }
+
+        [Obsolete("Use SetTarget para centralizar role/label vindo do wave runner.")]
+        public void ConfigureTarget(Transform target, string label, DefenseRole role)
+        {
+            SetTarget(target, label, role);
         }
 
         #endregion

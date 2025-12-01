@@ -123,6 +123,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     planetsMaster,
                     detector,
                     detectionType,
+                    role,
                     isFirstEngagement: activeCount == 1,
                     activeDetectors: activeCount));
         }

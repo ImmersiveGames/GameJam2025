@@ -118,6 +118,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 NOVO: extrai Transform + label do alvo para o runner
             Transform targetTransform = null;
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
+            DefenseRole targetRole = engagedEvent.Role;
 
             if (engagedEvent.Detector.Owner is Component ownerComponent)
             {
@@ -132,7 +133,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _waveRunner?.ConfigurePrimaryTarget(
                 state.Planet,
                 targetTransform,
-                targetLabel);
+                targetLabel,
+                targetRole);
 
             if (engagedEvent.IsFirstEngagement)
             {

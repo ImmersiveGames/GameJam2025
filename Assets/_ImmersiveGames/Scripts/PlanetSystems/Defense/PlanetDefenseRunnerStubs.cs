@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// ADIÇÃO: Configura o alvo primário que as waves de defesa irão perseguir
         /// (por exemplo, o Eater ou o Player).
         /// </summary>
-        void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel);
+        void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);
 
         /// <summary>
         /// Registra uma estratégia para ser reutilizada em futuras ativações de defesa.
