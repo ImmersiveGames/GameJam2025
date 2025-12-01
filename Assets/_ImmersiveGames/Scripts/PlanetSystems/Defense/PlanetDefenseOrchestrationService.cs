@@ -36,6 +36,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             InjectionState = DependencyInjectionState.Ready;
             ResolveDependenciesFromProvider();
             _defenseLogger?.Configure(_waveProfile);
+            WarnIfProfileMissing();
             LogDefaultPoolData();
             LogWaveProfile();
             WarnIfPoolDataMissing();
