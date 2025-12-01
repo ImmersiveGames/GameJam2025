@@ -17,7 +17,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public int enemiesPerWave = 6;
         public float spawnRadius = 4f;
         public float spawnHeightOffset = 0.5f;
-        
+
+        [Header("Minion Defaults")]
+        [Tooltip("Profile padrão aplicado a todos os minions desta wave.")]
+        public DefenseMinionBehaviorProfileSO defaultMinionProfile;
+
         [Header("Spawn Pattern (opcional)")]
         [Tooltip("Padrão de spawn em órbita. Se nulo, usa distribuição aleatória padrão.")]
         public DefenseSpawnPatternSo spawnPattern;

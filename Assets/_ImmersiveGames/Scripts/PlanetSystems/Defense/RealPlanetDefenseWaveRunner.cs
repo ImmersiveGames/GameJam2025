@@ -332,7 +332,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable);
+                    ApplyBehaviorProfile(controller, poolable, waveProfile);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
@@ -382,7 +382,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
-            IPoolable poolable)
+            IPoolable poolable,
+            DefenseWaveProfileSo waveProfile)
         {
             if (controller == null || poolable == null)
             {
@@ -391,13 +392,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var minionData = poolable.GetData<DefensesMinionData>();
 
-            if (minionData == null)
-            {
-                return;
-            }
-
-            var profileV2 = minionData.BehaviorProfileV2;
-            var legacyProfile = minionData.DefaultProfile;
+            var profileFromWave = waveProfile?.defaultMinionProfile;
+            var profileV2 = profileFromWave ?? minionData?.BehaviorProfileV2;
+            var legacyProfile = minionData?.DefaultProfile;
 
             controller.ApplyProfile(profileV2, legacyProfile);
         }
