@@ -43,8 +43,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
         [Inject] private DefenseStateManager _stateManager = new();
-
-        private DefenseDebugLogger _debugLogger = new(null);
+        [Inject] private IDefenseLogger _debugLogger;
 
         public DependencyInjectionState InjectionState { get; set; }
 
@@ -90,8 +89,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             InjectionState = DependencyInjectionState.Ready;
             ResolveDependenciesFromProvider();
             _stateManager ??= new DefenseStateManager();
-            _debugLogger ??= new DefenseDebugLogger(_waveProfile);
-            _debugLogger.Configure(_waveProfile);
+            _debugLogger?.Configure(_waveProfile);
             WarnIfProfileMissing();
             LogDefaultPoolData();
             LogWaveProfile();
@@ -163,7 +161,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (engagedEvent.IsFirstEngagement)
             {
                 _waveRunner?.StartWaves(state.Planet, state.DetectionType, context.Strategy);
-                _debugLogger?.StartLogging(state);
+                _debugLogger?.OnEngaged(state, engagedEvent.IsFirstEngagement);
             }
         }
 
@@ -192,7 +190,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
 
                 _waveRunner?.StopWaves(disengagedEvent.Planet);
-                _debugLogger?.StopLogging(disengagedEvent.Planet);
+                _debugLogger?.OnDisengaged(disengagedEvent.Planet, noDetectorsRemaining);
             }
         }
 
@@ -209,7 +207,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _poolRunner?.Release(disabledEvent.Planet);
             }
 
-            _debugLogger?.StopLogging(disabledEvent.Planet);
+            _debugLogger?.OnDisabled(disabledEvent.Planet);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
             _resolvedContexts.Remove(disabledEvent.Planet);
         }
@@ -359,6 +357,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (_waveRunner == null && provider.TryGetGlobal(out IPlanetDefenseWaveRunner resolvedWaveRunner))
             {
                 _waveRunner = resolvedWaveRunner;
+            }
+
+            if (_debugLogger == null && provider.TryGetGlobal(out IDefenseLogger resolvedLogger))
+            {
+                _debugLogger = resolvedLogger;
             }
         }
 

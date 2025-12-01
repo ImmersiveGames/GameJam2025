@@ -7,8 +7,16 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    public interface IDefenseLogger
+    {
+        void Configure(DefenseWaveProfileSo waveProfile);
+        void OnEngaged(DefenseState state, bool isFirstEngagement);
+        void OnDisengaged(PlanetsMaster planet, bool shouldStopLogging);
+        void OnDisabled(PlanetsMaster planet);
+    }
+
     [DebugLevel(level: DebugLevel.Verbose)]
-    public sealed class DefenseDebugLogger
+    public sealed class DefenseDebugLogger : IDefenseLogger
     {
         private sealed class LogLoop
         {
@@ -27,7 +35,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _waveProfile = waveProfile;
         }
 
-        public void StartLogging(DefenseState state)
+        public void OnEngaged(DefenseState state, bool isFirstEngagement)
+        {
+            if (!isFirstEngagement)
+            {
+                return;
+            }
+
+            StartLogging(state);
+        }
+
+        public void OnDisengaged(PlanetsMaster planet, bool shouldStopLogging)
+        {
+            if (!shouldStopLogging)
+            {
+                return;
+            }
+
+            StopLogging(planet);
+        }
+
+        public void OnDisabled(PlanetsMaster planet)
+        {
+            StopLogging(planet);
+        }
+
+        private void StartLogging(DefenseState state)
         {
             if (state?.Planet == null || _waveProfile == null) return;
             if (_loops.ContainsKey(state.Planet)) return;
@@ -55,7 +88,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _loops[state.Planet] = loop;
         }
 
-        public void StopLogging(PlanetsMaster planet)
+        private void StopLogging(PlanetsMaster planet)
         {
             if (planet == null || !_loops.TryGetValue(planet, out var loop)) return;
 
