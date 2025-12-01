@@ -40,6 +40,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PoolData _defaultPoolData;
         private DefenseWaveProfileSo _waveProfile;
         private IDefenseStrategy _defaultStrategy;
+        private PlanetDefenseLoadoutSo _configuredLoadout;
         private const bool WarmUpPools = true;
         private const bool StopWavesOnDisable = true;
 
@@ -72,6 +73,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void SetDefenseStrategy(IDefenseStrategy defenseStrategy)
         {
             _defaultStrategy = defenseStrategy;
+        }
+
+        public void ConfigureLoadout(PlanetsMaster planet, PlanetDefenseLoadoutSo loadout)
+        {
+            _configuredLoadout = loadout;
+            string loadoutName = loadout != null ? loadout.name : "null";
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Loadout] Planeta {planet?.ActorName ?? "UNKNOWN"} usando PlanetDefenseLoadout='{loadoutName}'.");
         }
 
         public void OnDependenciesInjected()
@@ -206,7 +215,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 _defaultStrategy,
                 _defaultPoolData,
-                _waveProfile); // ←- única fonte de configuração
+                _waveProfile,
+                _configuredLoadout); // ←- única fonte de configuração
         }
 
         private void LogDefaultPoolData()

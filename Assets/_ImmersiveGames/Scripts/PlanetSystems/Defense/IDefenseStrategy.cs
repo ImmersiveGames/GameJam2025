@@ -16,7 +16,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
             PoolData poolData = null,
-            DefenseWaveProfileSo waveProfile = null)
+            DefenseWaveProfileSo waveProfile = null,
+            PlanetDefenseLoadoutSo loadout = null)
         {
             Planet = planet;
             DetectionType = detectionType;
@@ -24,6 +25,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Strategy = strategy;
             PoolData = poolData;
             WaveProfile = waveProfile;
+            Loadout = loadout;
         }
 
         public PlanetsMaster Planet { get; }
@@ -32,7 +34,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public IDefenseStrategy Strategy { get; }
         public PoolData PoolData { get; }
         public DefenseWaveProfileSo WaveProfile { get; }
-        
+        public PlanetDefenseLoadoutSo Loadout { get; }
+
     }
 
     /// <summary>

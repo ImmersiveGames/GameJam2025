@@ -37,25 +37,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseWaveProfileSo waveToUse = waveProfile;
             PoolData poolToUse = defaultDefensePool;
             IDefenseStrategy strategyToUse = defaultDefenseStrategy;
+            PlanetDefenseLoadoutSo loadoutToUse = planetsMaster.DefenseLoadout ?? defenseLoadout;
 
-            if (defenseLoadout != null)
+            if (planetsMaster.DefenseLoadout == null && defenseLoadout != null)
+            {
+                planetsMaster.SetDefenseLoadout(defenseLoadout);
+                loadoutToUse = defenseLoadout;
+            }
+
+            if (loadoutToUse != null)
             {
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{defenseLoadout.name}'.");
+                    $"[Loadout] Planeta {name} recebeu PlanetDefenseLoadout='{loadoutToUse.name}'.");
 
-                if (defenseLoadout.DefensePoolData != null)
+                if (loadoutToUse.DefensePoolData != null)
                 {
-                    poolToUse = defenseLoadout.DefensePoolData;
+                    poolToUse = loadoutToUse.DefensePoolData;
                 }
 
-                if (defenseLoadout.WaveProfileOverride != null)
+                if (loadoutToUse.WaveProfileOverride != null)
                 {
-                    waveToUse = defenseLoadout.WaveProfileOverride;
+                    waveToUse = loadoutToUse.WaveProfileOverride;
                 }
 
-                if (defenseLoadout.DefenseStrategy != null)
+                if (loadoutToUse.DefenseStrategy != null)
                 {
-                    strategyToUse = defenseLoadout.DefenseStrategy;
+                    strategyToUse = loadoutToUse.DefenseStrategy;
                 }
 
                 DebugUtility.LogVerbose<PlanetDefenseController>(
@@ -90,6 +97,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogVerbose<PlanetDefenseController>(
                     $"DefenseStrategy atribuída: {strategyToUse.StrategyId}");
             }
+
+            planetsMaster.ConfigureDefenseService(service);
 
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, service);
             DependencyManager.Provider.InjectDependencies(service, planetsMaster.ActorId);
