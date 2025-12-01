@@ -42,6 +42,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private DefenseWaveProfileSo _waveProfile;
         private IDefenseStrategy _defaultStrategy;
         private readonly Dictionary<PlanetsMaster, PlanetDefenseLoadoutSo> _configuredLoadouts = new();
+        private readonly Dictionary<PlanetsMaster, PlanetDefenseSetupContext> _resolvedContexts = new();
         private const bool WarmUpPools = true;
         private const bool StopWavesOnDisable = true;
 
@@ -84,6 +85,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _configuredLoadouts[planet] = loadout;
+            _resolvedContexts.Remove(planet);
             string loadoutName = loadout != null ? loadout.name : "null";
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"[Loadout] Planeta {planet.ActorName} usando PlanetDefenseLoadout='{loadoutName}'.");
@@ -124,10 +126,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
                 $"[Debug] Detectores ativos em {engagedEvent.Planet.ActorName}: {state.ActiveDetectors} após entrada de {FormatDetector(engagedEvent.Detector)}. Primeiro? {engagedEvent.IsFirstEngagement}.");
 
-            var context = BuildContext(state);
+            var context = ResolveEffectiveConfig(state.Planet, state.DetectionType);
+            if (context == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>(
+                    $"Contexto não resolvido para {state.Planet?.ActorName ?? "planeta desconhecido"}; engajamento ignorado.");
+                return;
+            }
             _poolRunner?.ConfigureForPlanet(context);
 
-            if (ShouldWarmUpPools())
+            if (ShouldWarmUpPools(context))
             {
                 _poolRunner?.WarmUp(context);
             }
@@ -209,29 +217,45 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _debugLogger?.StopLogging(disabledEvent.Planet);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
+            _resolvedContexts.Remove(disabledEvent.Planet);
         }
 
-        private PlanetDefenseSetupContext BuildContext(DefenseState state)
+        public PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType)
         {
-            PlanetResourcesSo resource = state.Planet.HasAssignedResource ? state.Planet.AssignedResource : null;
-            PlanetDefenseLoadoutSo loadout = null;
-            if (state.Planet != null)
+            if (planet == null)
             {
-                _configuredLoadouts.TryGetValue(state.Planet, out loadout);
+                DebugUtility.LogWarning<PlanetDefenseSpawnService>("Planeta nulo ao resolver configuração de defesa.");
+                return null;
             }
+
+            if (_resolvedContexts.TryGetValue(planet, out var cached) && cached != null && cached.DetectionType == detectionType)
+            {
+                return cached;
+            }
+
+            PlanetResourcesSo resource = planet.HasAssignedResource ? planet.AssignedResource : null;
+            _configuredLoadouts.TryGetValue(planet, out var loadout);
 
             PoolData poolData = loadout?.DefensePoolData ?? _defaultPoolData;
             DefenseWaveProfileSo waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
             IDefenseStrategy strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
 
-            return new PlanetDefenseSetupContext(
-                state.Planet,
-                state.DetectionType,
+            var context = new PlanetDefenseSetupContext(
+                planet,
+                detectionType,
                 resource,
                 strategy,
                 poolData,
                 waveProfile,
-                loadout); // ←- única fonte de configuração
+                loadout);
+
+            strategy?.ConfigureContext(context);
+            _resolvedContexts[planet] = context;
+
+            DebugUtility.LogVerbose<PlanetDefenseSpawnService>(
+                $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', WaveProfile='{context.WaveProfile?.name ?? "null"}', Strategy='{context.Strategy?.StrategyId ?? "null"}'.");
+
+            return context;
         }
 
         private void LogDefaultPoolData()
@@ -287,9 +311,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        private bool ShouldWarmUpPools()
+        private static bool ShouldWarmUpPools(PlanetDefenseSetupContext context)
         {
-            return WarmUpPools && _defaultPoolData != null;
+            return WarmUpPools && context?.PoolData != null;
         }
 
         private void ResolveDependenciesFromProvider()

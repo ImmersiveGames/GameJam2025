@@ -11,7 +11,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     ///
     /// A ideia é que cada planeta possua um pacote completo de defesa
     /// exclusivamente via dados, sem depender de variáveis de prefab ou
-    /// configurações globais compartilhadas.
+    /// configurações globais compartilhadas. Esta é a "fonte única" por
+    /// planeta, evitando campos duplicados em controllers.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefenseLoadout",
