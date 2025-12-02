@@ -68,6 +68,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 // Configuração e componentes de defesa planetária
                 EnsureGlobal(() => new DefenseStateManager());
+                EnsureGlobal<IDefenseLogger>(() => new DefenseDebugLogger(null));
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
                 EnsureGlobal<IPlanetDefenseWaveRunner>(() =>
                 {
