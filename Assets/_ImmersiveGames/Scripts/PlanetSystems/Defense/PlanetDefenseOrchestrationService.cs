@@ -95,20 +95,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
             _configuredLoadouts.TryGetValue(planet, out var loadout);
 
-            var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
-            var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
-            var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+            var preset = loadout?.DefensePreset;
 
-            var context = new PlanetDefenseSetupContext(
-                planet,
-                detectionType,
-                resource,
-                strategy,
-                poolData,
-                waveProfile,
-                loadout);
+            PlanetDefenseSetupContext context;
 
-            strategy?.ConfigureContext(context);
+            if (preset != null)
+            {
+                context = PlanetDefensePresetAdapter.BuildContext(
+                    planet,
+                    detectionType,
+                    resource,
+                    loadout,
+                    preset,
+                    _defaultPoolData,
+                    _waveProfile,
+                    _defaultStrategy);
+            }
+            else
+            {
+                var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
+                var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
+                var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+
+                context = new PlanetDefenseSetupContext(
+                    planet,
+                    detectionType,
+                    resource,
+                    strategy,
+                    poolData,
+                    waveProfile,
+                    loadout);
+
+                strategy?.ConfigureContext(context);
+            }
+
             _resolvedContexts[planet] = context;
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(

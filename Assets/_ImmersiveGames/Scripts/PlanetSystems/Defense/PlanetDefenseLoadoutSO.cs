@@ -4,21 +4,21 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Configuração de defesa por planeta:
-    /// - PoolData usado para as defesas
-    /// - Perfil de onda (wave profile)
-    /// - Estratégia defensiva (próxima etapa)
+    /// Configuração de defesa por planeta.
     ///
-    /// A ideia é que cada planeta possua um pacote completo de defesa
-    /// exclusivamente via dados, sem depender de variáveis de prefab ou
-    /// configurações globais compartilhadas. Esta é a "fonte única" por
-    /// planeta, evitando campos duplicados em controllers.
+    /// Agora prioriza o uso de um <see cref="PlanetDefensePresetSo"/> simples,
+    /// mantendo campos antigos para compatibilidade.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefenseLoadout",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Loadout")]
     public sealed class PlanetDefenseLoadoutSo : ScriptableObject
     {
+        [Header("Preset simplificado (recomendado)")]
+        [Tooltip("Config única para waves, alvo e minion. Permite override avançado opcional.")]
+        [SerializeField]
+        private PlanetDefensePresetSo defensePreset;
+
         [Header("Pool de defesas (por planeta)")]
         [Tooltip("PoolData usado para spawnar os minions defensivos deste planeta.")]
         [SerializeField]
@@ -33,6 +33,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Tooltip("Estratégia opcional que customiza comportamento de waves e minions para este planeta.")]
         [SerializeField]
         private DefenseStrategySo defenseStrategy;
+
+        /// <summary>
+        /// Preset simplificado recomendado para 99% dos planetas.
+        /// </summary>
+        public PlanetDefensePresetSo DefensePreset => defensePreset;
 
         /// <summary>
         /// PoolData que o planeta quer usar para suas defesas.
