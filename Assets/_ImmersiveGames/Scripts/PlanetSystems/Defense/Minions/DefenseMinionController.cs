@@ -155,15 +155,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             CancelHandlers();
             _state = MinionState.Entry;
 
-            if (!_profileApplied)
-            {
-                DebugUtility.LogWarning<DefenseMinionController>(
-                    $"[Entry] {name} iniciando entrada SEM Profile aplicado. " +
-                    $"Valores de comportamento estão vindo dos defaults internos (estado não ideal). " +
-                    $"Verifique se DefensesMinionData.DefaultProfile está configurado.",
-                    this);
-            }
-
             DebugUtility.LogVerbose<DefenseMinionController>(
                 $"[Entry] {name} iniciando entrada com estratégia '{entryStrategy?.name ?? "DEFAULT"}' " +
                 $"do centro {_planetCenter} para órbita {_orbitPosition} " +
@@ -253,7 +244,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #endregion
 
-        public void ApplyProfile(DefenseMinionBehaviorProfileSO profileV2, DefenseMinionBehaviorProfile legacyProfile = null)
+        public void ApplyProfile(DefenseMinionBehaviorProfileSO profileV2)
         {
             if (profileV2 != null)
             {
@@ -284,37 +275,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            ApplyProfile(legacyProfile);
-        }
+            _profileApplied = false;
 
-        public void ApplyProfile(DefenseMinionBehaviorProfile profile)
-        {
-            if (profile == null)
-            {
-                DebugUtility.LogWarning<DefenseMinionController>(
-                    $"[Profile] {name} recebeu profile nulo. Mantendo configurações atuais de prefab (uso NÃO recomendado).",
-                    this);
-                _profileApplied = false;
-                return;
-            }
-
-            // Entrada / órbita
-            entryDurationSeconds  = Mathf.Max(0.1f, profile.EntryDuration);
-            initialScaleFactor    = Mathf.Clamp(profile.InitialScaleFactor, 0.05f, 1f);
-            orbitIdleDelaySeconds = Mathf.Max(0f, profile.OrbitIdleSeconds);
-
-            // Perseguição
-            chaseSpeed = Mathf.Max(0.1f, profile.ChaseSpeed);
-
-            _profileApplied = true;
-
-            DebugUtility.LogVerbose<DefenseMinionController>(
-                $"[Profile] {name} aplicou profile '{profile.VariantId}': " +
-                $"Entry={entryDurationSeconds:0.00}s, " +
-                $"ScaleFactor={initialScaleFactor:0.00}, " +
-                $"OrbitIdle={orbitIdleDelaySeconds:0.00}s, " +
-                $"ChaseSpeed={chaseSpeed:0.00}.",
-                null,this);
+            DebugUtility.LogWarning<DefenseMinionController>(
+                $"[Profile] {name} recebeu profile nulo. Mantendo configurações atuais de prefab (uso NÃO recomendado).",
+                this);
         }
 
     }

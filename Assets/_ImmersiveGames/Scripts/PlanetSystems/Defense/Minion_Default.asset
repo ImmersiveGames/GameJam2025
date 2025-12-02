@@ -9,11 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 016a33c03d8036942b42bf6b1d2853cc, type: 3}
+  m_Script: {fileID: 11500000, guid: e1d933413cce5914499240aefe8cf4d2, type: 3}
   m_Name: Minion_Default
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   variantId: Default
   entryDurationSeconds: 0.55
   initialScaleFactor: 0.2
   orbitIdleSeconds: 0.55
   chaseSpeed: 10
+  entryStrategy: {fileID: 0}
+  chaseStrategy: {fileID: 0}

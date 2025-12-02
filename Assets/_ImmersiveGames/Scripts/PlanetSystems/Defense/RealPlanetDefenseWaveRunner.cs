@@ -501,12 +501,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var profileFromWave = waveProfile?.defaultMinionProfile;
             var profileFromStrategy = strategy?.SelectMinionProfile(role, profileFromWave, minionData?.BehaviorProfileV2);
             var profileV2 = profileFromStrategy ?? profileFromWave ?? minionData?.BehaviorProfileV2;
-            var legacyProfile = minionData?.DefaultProfile;
 
-            controller.ApplyProfile(profileV2, legacyProfile);
+            controller.ApplyProfile(profileV2);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                $"[Strategy] Minion {controller.name} configurado com profile='{profileV2?.name ?? legacyProfile?.name ?? "null"}' " +
+                $"[Strategy] Minion {controller.name} configurado com profile='{profileV2?.name ?? "null"}' " +
                 $"(Role={role}, WaveProfile='{waveProfile?.name ?? "null"}', Strategy='{strategy?.StrategyId ?? "null"}').");
         }
 
