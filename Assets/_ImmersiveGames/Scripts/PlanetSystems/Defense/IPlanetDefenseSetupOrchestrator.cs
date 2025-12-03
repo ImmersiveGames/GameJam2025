@@ -14,9 +14,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     public interface IPlanetDefenseSetupOrchestrator : IInjectableComponent
     {
-        void SetDefaultPoolData(PoolData poolData);
-        void SetWaveProfile(DefenseWaveProfileSo waveProfile);
-        void SetDefenseStrategy(IDefenseStrategy defenseStrategy);
         void ConfigureDefenseEntries(
             PlanetsMaster planet,
             IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
