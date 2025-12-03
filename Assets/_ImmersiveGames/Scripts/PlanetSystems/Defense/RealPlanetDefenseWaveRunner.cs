@@ -101,6 +101,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 context = new PlanetDefenseSetupContext(
                     planet,
                     detectionType,
+                    DefenseRole.Unknown,
                     null, // PlanetResourcesSo (não usamos aqui)
                     strategy // Estratégia opcional
                 );

@@ -13,6 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetDefenseSetupContext(
             PlanetsMaster planet,
             DetectionType detectionType,
+            DefenseRole defenseRole,
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
             PoolData poolData = null,
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             Planet = planet;
             DetectionType = detectionType;
+            DefenseRole = defenseRole;
             PlanetResource = planetResource;
             Strategy = strategy;
             PoolData = poolData;
@@ -32,6 +34,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public PlanetsMaster Planet { get; }
         public DetectionType DetectionType { get; }
+        public DefenseRole DefenseRole { get; }
         public PlanetResourcesSo PlanetResource { get; }
         public IDefenseStrategy Strategy { get; }
         public PoolData PoolData { get; }

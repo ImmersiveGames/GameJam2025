@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (!_configuredDefenseEntries.TryGetValue(planet, out var configuration))
             {
                 DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração de defesa encontrada para {planet?.ActorName ?? "planeta nulo"}.");
-                return new PlanetDefenseSetupContext(planet, detectionType, resource);
+                return new PlanetDefenseSetupContext(planet, detectionType, detectionRole, resource);
             }
 
             var selectedEntry = SelectEntry(configuration, planet);
@@ -240,6 +240,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var context = new PlanetDefenseSetupContext(
                 planet,
                 detectionType,
+                detectionRole,
                 resource,
                 null,
                 poolData,
