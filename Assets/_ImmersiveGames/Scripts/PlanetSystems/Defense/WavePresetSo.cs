@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     this);
             }
 
-            if (spawnPattern != null && numberOfEnemiesPerWave == 0)
+            if (spawnPattern != null && numberOfEnemiesPerWave <= 0)
             {
                 DebugUtility.LogError<WavePresetSo>(
                     "SpawnPattern usado, mas número de inimigos zero — configure corretamente.",
