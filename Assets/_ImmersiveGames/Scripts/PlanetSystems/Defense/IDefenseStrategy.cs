@@ -16,8 +16,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
             PoolData poolData = null,
-            DefenseWaveProfileSo waveProfile = null,
-            PlanetDefenseLoadoutSo loadout = null,
             WavePresetSo wavePreset = null,
             float spawnOffset = 0f,
             float spawnRadius = 0f)
@@ -27,8 +25,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetResource = planetResource;
             Strategy = strategy;
             PoolData = poolData;
-            WaveProfile = waveProfile;
-            Loadout = loadout;
             WavePreset = wavePreset;
             SpawnOffset = spawnOffset;
             SpawnRadius = spawnRadius;
@@ -39,8 +35,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetResourcesSo PlanetResource { get; }
         public IDefenseStrategy Strategy { get; }
         public PoolData PoolData { get; }
-        public DefenseWaveProfileSo WaveProfile { get; }
-        public PlanetDefenseLoadoutSo Loadout { get; }
         public WavePresetSo WavePreset { get; }
         public float SpawnOffset { get; }
         public float SpawnRadius { get; }

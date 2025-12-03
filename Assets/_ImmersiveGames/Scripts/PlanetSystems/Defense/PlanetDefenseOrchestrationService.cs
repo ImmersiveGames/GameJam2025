@@ -54,7 +54,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var entries = defenseEntries ?? Array.Empty<PlanetDefenseEntrySo>();
             _configuredDefenseEntries[planet] = new DefenseEntryConfiguration(entries, defenseChoiceMode);
             ClearCachedContext(planet);
-            PlanetDefensePresetAdapter.ClearCache(planet);
             PreloadDefensePools(entries, planet);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
@@ -128,7 +127,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void ClearContext(PlanetsMaster planet)
         {
             ClearCachedContext(planet);
-            PlanetDefensePresetAdapter.ClearCache(planet);
         }
 
         private static bool ShouldWarmUpPools(PlanetDefenseSetupContext context)

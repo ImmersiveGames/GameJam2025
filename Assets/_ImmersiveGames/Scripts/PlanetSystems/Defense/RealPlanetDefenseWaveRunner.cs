@@ -353,7 +353,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var context = loop.context;
             var wavePreset = context?.WavePreset;
-            var waveProfile = context?.WaveProfile;
             var planet = loop.planet;
 
             int spawnCount = ResolveSpawnCount(context);
@@ -416,7 +415,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, targetRole);
+                    ApplyBehaviorProfile(controller, poolable, loop.strategy, targetRole);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
@@ -496,7 +495,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
             IPoolable poolable,
-            DefenseWaveProfileSo waveProfile,
             IDefenseStrategy strategy,
             DefenseRole role)
         {
@@ -507,15 +505,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var minionData = poolable.GetData<DefensesMinionData>();
 
-            var profileFromWave = waveProfile?.defaultMinionProfile;
-            var profileFromStrategy = strategy?.SelectMinionProfile(role, profileFromWave, minionData?.BehaviorProfileV2);
-            var profileV2 = profileFromStrategy ?? profileFromWave ?? minionData?.BehaviorProfileV2;
+            var profileFromStrategy = strategy?.SelectMinionProfile(role, null, minionData?.BehaviorProfileV2);
+            var profileV2 = profileFromStrategy ?? minionData?.BehaviorProfileV2;
 
             controller.ApplyProfile(profileV2);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Strategy] Minion {controller.name} configurado com profile='{profileV2?.name ?? "null"}' " +
-                $"(Role={role}, WaveProfile='{waveProfile?.name ?? "null"}', Strategy='{strategy?.StrategyId ?? "null"}').");
+                $"(Role={role}, Strategy='{strategy?.StrategyId ?? "null"}').");
         }
 
 
