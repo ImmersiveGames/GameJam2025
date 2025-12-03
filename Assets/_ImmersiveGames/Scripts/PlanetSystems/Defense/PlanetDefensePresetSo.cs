@@ -3,116 +3,147 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Preset único de defesa para configuração no Editor, mantendo a composição
-    /// com perfis existentes (waves, minion, estratégia) e evitando duplicação de dados.
+    /// Fonte única de configuração defensiva por planeta.
+    /// É arrastada diretamente no <see cref="PlanetsMaster"/>,
+    /// encapsulando ondas, alvo, minion e estratégia sem depender
+    /// de ScriptableObjects legados.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefensePreset",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Preset")]
     public sealed class PlanetDefensePresetSo : ScriptableObject
     {
-        [Header("Wave Profile (source of counts, timing, radius, height)")]
-        [Tooltip("Wave profile used by default for this preset; carries enemies per wave, interval, radius and height.")]
+        [Header("Wave Settings (Single Source)")]
+        [Tooltip("Quantidade de inimigos que serão spawnados por wave.")]
         [SerializeField]
-        private DefenseWaveProfileSo baseWaveProfile;
+        private int planetDefenseWaveEnemiesCount = 6;
 
-        [Header("Optional Wave Overrides")]
-        [Tooltip("Allow replacing the base wave profile with a custom one for this planet.")]
+        [Tooltip("Intervalo, em segundos, entre waves consecutivas.")]
         [SerializeField]
-        private bool useCustomWaveProfile;
+        private int planetDefenseWaveSecondsBetweenWaves = 5;
 
-        [Tooltip("Custom wave profile when the override is enabled.")]
+        [Tooltip("Raio base utilizado para spawn orbital dos inimigos.")]
         [SerializeField]
-        private DefenseWaveProfileSo customWaveProfile;
+        private float planetDefenseWaveSpawnRadius = 4f;
 
-        [Tooltip("Optional spawn pattern override applied at runtime without mutating the source profile.")]
+        [Tooltip("Offset vertical aplicado ao spawn, relativo ao planeta.")]
         [SerializeField]
-        private DefenseSpawnPatternSo spawnPatternOverride;
+        private float planetDefenseWaveSpawnHeightOffset = 0.5f;
 
-        [Header("Targeting")]
-        [Tooltip("How minions should select targets in local multiplayer (player vs eater).")]
+        [Tooltip("Padrão de distribuição espacial por wave (opcional).")]
         [SerializeField]
-        private DefenseTargetMode targetMode = DefenseTargetMode.PreferPlayer;
+        private DefenseSpawnPatternSo planetDefenseWaveSpawnPattern;
 
-        [Header("Minion Data")]
-        [Tooltip("Minion data (pool/prefab + default behavior) used by this preset.")]
+        [Header("Minion Defaults")]
+        [Tooltip("Profile padrão aplicado aos minions spawnados pelas waves.")]
         [SerializeField]
-        private DefensesMinionData minionData;
+        private DefenseMinionBehaviorProfileSO planetDefenseWaveMinionProfile;
 
-        [Header("Advanced Overrides")]
-        [Tooltip("Allow setting a specific strategy for this planet instead of relying on defaults.")]
+        [Tooltip("Dados de minion usados pelo planeta (prefab/pool).")]
         [SerializeField]
-        private bool useCustomStrategy;
+        private DefensesMinionData planetDefenseMinionData;
 
-        [Tooltip("Custom strategy applied when the override flag is enabled.")]
+        [Header("Strategy & Targeting")]
+        [Tooltip("Modo de seleção de alvo em multiplayer local.")]
         [SerializeField]
-        private DefenseStrategySo customStrategy;
+        private DefenseTargetMode planetDefenseTargetMode = DefenseTargetMode.PreferPlayer;
 
-        private DefenseWaveProfileSo runtimeWaveProfileCache;
-        private DefenseWaveProfileSo cachedWaveProfileSource;
-        private DefenseSpawnPatternSo cachedSpawnPattern;
+        [Tooltip("Estratégia defensiva opcional específica deste planeta.")]
+        [SerializeField]
+        private DefenseStrategySo planetDefenseStrategy;
+
+        private DefenseWaveProfileSo cachedWaveProfile;
 
         /// <summary>
-        /// Wave profile resolvido considerando override e cache de runtime
-        /// para não alocar instâncias a cada chamada.
+        /// Quantidade de inimigos por wave, exposta com nomenclatura padronizada.
+        /// </summary>
+        public int PlanetDefenseWaveEnemiesCount => planetDefenseWaveEnemiesCount;
+
+        /// <summary>
+        /// Tempo entre waves em segundos, exposto de forma explícita.
+        /// </summary>
+        public int PlanetDefenseWaveSecondsBetweenWaves => planetDefenseWaveSecondsBetweenWaves;
+
+        /// <summary>
+        /// Raio de spawn utilizado para orbitas de wave.
+        /// </summary>
+        public float PlanetDefenseWaveSpawnRadius => planetDefenseWaveSpawnRadius;
+
+        /// <summary>
+        /// Offset vertical para spawn dos inimigos.
+        /// </summary>
+        public float PlanetDefenseWaveSpawnHeightOffset => planetDefenseWaveSpawnHeightOffset;
+
+        /// <summary>
+        /// Padrão de spawn configurado no preset.
+        /// </summary>
+        public DefenseSpawnPatternSo PlanetDefenseWaveSpawnPattern => planetDefenseWaveSpawnPattern;
+
+        /// <summary>
+        /// Profile padrão de comportamento de minion para esta configuração.
+        /// </summary>
+        public DefenseMinionBehaviorProfileSO PlanetDefenseWaveMinionProfile => planetDefenseWaveMinionProfile;
+
+        /// <summary>
+        /// Dados de minion definidos pelo planeta (prefab/pool), respeitando SRP.
+        /// </summary>
+        public DefensesMinionData MinionData => planetDefenseMinionData;
+
+        /// <summary>
+        /// Estratégia defensiva específica, caso atribuída.
+        /// </summary>
+        public DefenseStrategySo CustomStrategy => planetDefenseStrategy;
+
+        /// <summary>
+        /// Modo de alvo usado para gerar estratégias simples.
+        /// </summary>
+        public DefenseTargetMode TargetMode => planetDefenseTargetMode;
+
+        /// <summary>
+        /// Perfil de wave resolvido a partir dos dados internos, sem SO legados.
+        /// Mantém cache para evitar alocações extras em multiplayer local.
         /// </summary>
         public DefenseWaveProfileSo ResolvedWaveProfile
         {
             get
             {
-                var sourceProfile = useCustomWaveProfile && customWaveProfile != null
-                    ? customWaveProfile
-                    : baseWaveProfile;
-
-                if (sourceProfile == null)
+                if (cachedWaveProfile == null)
                 {
-                    runtimeWaveProfileCache = null;
-                    cachedWaveProfileSource = null;
-                    cachedSpawnPattern = null;
-                    return null;
+                    cachedWaveProfile = ScriptableObject.CreateInstance<DefenseWaveProfileSo>();
+                    cachedWaveProfile.name = $"{name}_WaveProfile";
                 }
 
-                if (spawnPatternOverride == null)
-                {
-                    runtimeWaveProfileCache = null;
-                    cachedWaveProfileSource = sourceProfile;
-                    cachedSpawnPattern = null;
-                    return sourceProfile;
-                }
+                cachedWaveProfile.enemiesPerWave = planetDefenseWaveEnemiesCount;
+                cachedWaveProfile.secondsBetweenWaves = planetDefenseWaveSecondsBetweenWaves;
+                cachedWaveProfile.spawnRadius = planetDefenseWaveSpawnRadius;
+                cachedWaveProfile.spawnHeightOffset = planetDefenseWaveSpawnHeightOffset;
+                cachedWaveProfile.defaultMinionProfile = planetDefenseWaveMinionProfile;
+                cachedWaveProfile.spawnPattern = planetDefenseWaveSpawnPattern;
 
-                if (runtimeWaveProfileCache == null || cachedWaveProfileSource != sourceProfile || cachedSpawnPattern != spawnPatternOverride)
-                {
-                    runtimeWaveProfileCache = ScriptableObject.CreateInstance<DefenseWaveProfileSo>();
-                    runtimeWaveProfileCache.name = $"{name}_RuntimeWaveProfile";
-                    runtimeWaveProfileCache.secondsBetweenWaves = sourceProfile.secondsBetweenWaves;
-                    runtimeWaveProfileCache.enemiesPerWave = sourceProfile.enemiesPerWave;
-                    runtimeWaveProfileCache.spawnRadius = sourceProfile.spawnRadius;
-                    runtimeWaveProfileCache.spawnHeightOffset = sourceProfile.spawnHeightOffset;
-                    runtimeWaveProfileCache.defaultMinionProfile = sourceProfile.defaultMinionProfile;
-                    runtimeWaveProfileCache.spawnPattern = spawnPatternOverride;
-
-                    cachedWaveProfileSource = sourceProfile;
-                    cachedSpawnPattern = spawnPatternOverride;
-                }
-
-                return runtimeWaveProfileCache;
+                return cachedWaveProfile;
             }
         }
 
-        /// <summary>
-        /// Target mode escolhido para o preset (Player/Eater), evitando SOs extras.
-        /// </summary>
-        public DefenseTargetMode TargetMode => targetMode;
+        private void OnValidate()
+        {
+            if (planetDefenseWaveEnemiesCount <= 0)
+            {
+                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveEnemiesCount > 0.", this);
+                planetDefenseWaveEnemiesCount = 1;
+            }
 
-        /// <summary>
-        /// Minion data associado ao preset, mantendo SRP: o planeta escolhe o tipo
-        /// de minion, não o comportamento.
-        /// </summary>
-        public DefensesMinionData MinionData => minionData;
+            if (planetDefenseWaveSecondsBetweenWaves <= 0)
+            {
+                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveSecondsBetweenWaves > 0.", this);
+                planetDefenseWaveSecondsBetweenWaves = 1;
+            }
 
-        /// <summary>
-        /// Estratégia ativa considerando overrides avançados.
-        /// </summary>
-        public DefenseStrategySo CustomStrategy => useCustomStrategy ? customStrategy : null;
+            if (planetDefenseMinionData == null)
+            {
+                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseMinionData atribuído.", this);
+            }
+
+            planetDefenseWaveSpawnRadius = Mathf.Max(0f, planetDefenseWaveSpawnRadius);
+        }
     }
 }

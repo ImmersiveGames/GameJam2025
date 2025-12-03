@@ -10,29 +10,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
     public class TestDefenseWaves
     {
         [Test]
-        public void ResolvedWaveProfile_ShouldCloneWithSpawnPatternAndCache()
+        public void ResolvedWaveProfile_ShouldComposeWithSpawnPatternAndCache()
         {
             var preset = ScriptableObject.CreateInstance<PlanetDefensePresetSo>();
-            var baseProfile = ScriptableObject.CreateInstance<DefenseWaveProfileSo>();
-            baseProfile.enemiesPerWave = 8;
-            baseProfile.secondsBetweenWaves = 7;
-            baseProfile.spawnRadius = 6f;
-            baseProfile.spawnHeightOffset = 1.5f;
 
             var spawnPattern = ScriptableObject.CreateInstance<MockDefenseSpawnPattern>();
 
-            SetPrivateField(preset, "baseWaveProfile", baseProfile);
-            SetPrivateField(preset, "spawnPatternOverride", spawnPattern);
+            SetPrivateField(preset, "planetDefenseWaveEnemiesCount", 8);
+            SetPrivateField(preset, "planetDefenseWaveSecondsBetweenWaves", 7);
+            SetPrivateField(preset, "planetDefenseWaveSpawnRadius", 6f);
+            SetPrivateField(preset, "planetDefenseWaveSpawnHeightOffset", 1.5f);
+            SetPrivateField(preset, "planetDefenseWaveSpawnPattern", spawnPattern);
 
             var resolved1 = preset.ResolvedWaveProfile;
             var resolved2 = preset.ResolvedWaveProfile;
 
             Assert.AreSame(resolved1, resolved2, "Resolved wave profile should be cached for repeated calls.");
-            Assert.AreNotSame(baseProfile, resolved1, "Spawn pattern override should trigger runtime clone.");
-            Assert.AreEqual(baseProfile.enemiesPerWave, resolved1.enemiesPerWave);
-            Assert.AreEqual(baseProfile.secondsBetweenWaves, resolved1.secondsBetweenWaves);
-            Assert.AreEqual(baseProfile.spawnRadius, resolved1.spawnRadius);
-            Assert.AreEqual(baseProfile.spawnHeightOffset, resolved1.spawnHeightOffset);
+            Assert.AreEqual(8, resolved1.enemiesPerWave);
+            Assert.AreEqual(7, resolved1.secondsBetweenWaves);
+            Assert.AreEqual(6f, resolved1.spawnRadius);
+            Assert.AreEqual(1.5f, resolved1.spawnHeightOffset);
             Assert.AreEqual(spawnPattern, resolved1.spawnPattern);
         }
 
