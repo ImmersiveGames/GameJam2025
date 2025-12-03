@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -18,30 +19,37 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         [Header("Identidade da estratégia")]
         [SerializeField]
-        private string strategyId = "default";
+        private string strategyId = "PlanetDefenseStrategy";
 
         [Header("Configuração do alvo")]
         [Tooltip("Role preferido pelo planeta ao engajar defesas; permanece Unknown se a estratégia não tiver preferência.")]
+        [FormerlySerializedAs("targetRole")]
         [SerializeField]
-        private DefenseRole targetRole = DefenseRole.Unknown;
+        private DefenseRole preferredTargetRole = DefenseRole.Unknown;
 
         [Header("Configuração externa de roles (opcional)")]
         [Tooltip("Config de role compartilhada; usada como fallback se os mapeamentos embutidos não cobrirem o identifier.")]
+        [FormerlySerializedAs("roleConfig")]
         [SerializeField]
-        private DefenseRoleConfig roleConfig;
+        private DefenseRoleConfig sharedRoleConfig;
 
         [Header("Mapeamento de roles (embutido)")]
         [Tooltip("Mapeamentos opcionais incorporados para evitar SOs extras como DefenseRoleConfig.")]
+        [FormerlySerializedAs("roleMappings")]
         [SerializeField]
-        private List<DefenseRoleBinding> roleMappings = new();
+        private List<DefenseRoleBinding> embeddedRoleBindings = new();
 
         [Tooltip("Role de fallback aplicado caso nenhum mapeamento seja encontrado.")]
+        [FormerlySerializedAs("fallbackRole")]
         [SerializeField]
-        private DefenseRole fallbackRole = DefenseRole.Unknown;
+        private DefenseRole fallbackTargetRole = DefenseRole.Unknown;
 
         public string StrategyId => string.IsNullOrWhiteSpace(strategyId) ? name : strategyId;
 
-        public DefenseRole TargetRole => targetRole;
+        public DefenseRole PreferredTargetRole => preferredTargetRole;
+
+        [System.Obsolete("Use PreferredTargetRole for clarity.")]
+        public DefenseRole TargetRole => preferredTargetRole;
 
         public virtual void ConfigureContext(PlanetDefenseSetupContext context)
         {
@@ -65,6 +73,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
+            if (waveProfile == null && minionProfile == null)
+            {
+                DebugUtility.LogError<DefenseStrategySo>($"[Strategy] {StrategyId} não recebeu waveProfile nem minionProfile. Configure defaults para evitar minion sem comportamento.");
+                return null;
+            }
+
             // Fallback padrão: respeita o profile definido na wave e depois o do minion/pool.
             return waveProfile != null ? waveProfile : minionProfile;
         }
@@ -85,9 +99,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Caso exista um DefenseRoleConfig compartilhado, usa-o como fallback externo.
-            if (roleConfig != null)
+            if (sharedRoleConfig != null)
             {
-                var configRole = roleConfig.ResolveRole(targetIdentifier);
+                var configRole = sharedRoleConfig.ResolveRole(targetIdentifier);
                 if (configRole != DefenseRole.Unknown)
                 {
                     return configRole;
@@ -95,7 +109,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Último fallback: preferência declarada da estratégia.
-            return targetRole;
+            return preferredTargetRole;
         }
 
         /// <summary>
@@ -105,14 +119,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// </summary>
         private DefenseRole ResolveRole(string identifier)
         {
-            if (string.IsNullOrWhiteSpace(identifier)) return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
-            foreach (var binding in roleMappings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)).Where(binding => binding.Identifier == identifier))
+            if (string.IsNullOrWhiteSpace(identifier)) return fallbackTargetRole != DefenseRole.Unknown ? fallbackTargetRole : preferredTargetRole;
+            foreach (var binding in embeddedRoleBindings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)).Where(binding => binding.Identifier == identifier))
             {
                 return binding.Role;
             }
 
-            return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
+            return fallbackTargetRole != DefenseRole.Unknown ? fallbackTargetRole : preferredTargetRole;
+        }
 
+        private void OnValidate()
+        {
+            if (string.IsNullOrWhiteSpace(strategyId) || strategyId.Equals("default", System.StringComparison.OrdinalIgnoreCase))
+            {
+                DebugUtility.LogError<DefenseStrategySo>($"[Strategy] {name} está com StrategyId genérico. Forneça um identificador único para evitar configurações ambíguas.");
+                strategyId = string.IsNullOrWhiteSpace(name) ? "PlanetDefenseStrategy" : name;
+            }
+
+            if (preferredTargetRole == DefenseRole.Unknown && fallbackTargetRole == DefenseRole.Unknown && sharedRoleConfig == null)
+            {
+                DebugUtility.LogWarning<DefenseStrategySo>($"[Strategy] {StrategyId} não possui role preferido ou fallback configurado. Defina um alvo para evitar comportamento imprevisível.");
+            }
         }
 
         [System.Serializable]

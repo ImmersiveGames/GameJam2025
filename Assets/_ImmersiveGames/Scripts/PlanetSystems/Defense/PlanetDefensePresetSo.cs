@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -13,26 +14,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         [Header("Wave Profile (source of counts, timing, radius, height)")]
         [Tooltip("Wave profile used by default for this preset; carries enemies per wave, interval, radius and height.")]
+        [FormerlySerializedAs("baseWaveProfile")]
         [SerializeField]
-        private DefenseWaveProfileSo baseWaveProfile;
+        private DefenseWaveProfileSo defaultWaveProfile;
 
         [Header("Optional Wave Overrides")]
         [Tooltip("Allow replacing the base wave profile with a custom one for this planet.")]
+        [FormerlySerializedAs("useCustomWaveProfile")]
         [SerializeField]
-        private bool useCustomWaveProfile;
+        private bool useCustomWaveProfileOverride;
 
         [Tooltip("Custom wave profile when the override is enabled.")]
+        [FormerlySerializedAs("customWaveProfile")]
         [SerializeField]
-        private DefenseWaveProfileSo customWaveProfile;
+        private DefenseWaveProfileSo customWaveProfileOverride;
 
         [Tooltip("Optional spawn pattern override applied at runtime without mutating the source profile.")]
+        [FormerlySerializedAs("spawnPatternOverride")]
         [SerializeField]
-        private DefenseSpawnPatternSo spawnPatternOverride;
+        private DefenseSpawnPatternSo waveSpawnPatternOverride;
 
         [Header("Targeting")]
         [Tooltip("How minions should select targets in local multiplayer (player vs eater).")]
+        [FormerlySerializedAs("targetMode")]
         [SerializeField]
-        private DefenseTargetMode targetMode = DefenseTargetMode.PreferPlayer;
+        private DefenseTargetMode preferredTargetRole = DefenseTargetMode.PreferPlayer;
 
         [Header("Minion Data")]
         [Tooltip("Minion data (pool/prefab + default behavior) used by this preset.")]
@@ -41,12 +47,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         [Header("Advanced Overrides")]
         [Tooltip("Allow setting a specific strategy for this planet instead of relying on defaults.")]
+        [FormerlySerializedAs("useCustomStrategy")]
         [SerializeField]
-        private bool useCustomStrategy;
+        private bool useCustomDefenseStrategyOverride;
 
         [Tooltip("Custom strategy applied when the override flag is enabled.")]
+        [FormerlySerializedAs("customStrategy")]
         [SerializeField]
-        private DefenseStrategySo customStrategy;
+        private DefenseStrategySo customDefenseStrategyOverride;
 
         private DefenseWaveProfileSo runtimeWaveProfileCache;
         private DefenseWaveProfileSo cachedWaveProfileSource;
@@ -60,9 +68,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             get
             {
-                var sourceProfile = useCustomWaveProfile && customWaveProfile != null
-                    ? customWaveProfile
-                    : baseWaveProfile;
+                var sourceProfile = useCustomWaveProfileOverride && customWaveProfileOverride != null
+                    ? customWaveProfileOverride
+                    : defaultWaveProfile;
 
                 if (sourceProfile == null)
                 {
@@ -72,7 +80,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     return null;
                 }
 
-                if (spawnPatternOverride == null)
+                if (waveSpawnPatternOverride == null)
                 {
                     runtimeWaveProfileCache = null;
                     cachedWaveProfileSource = sourceProfile;
@@ -80,7 +88,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     return sourceProfile;
                 }
 
-                if (runtimeWaveProfileCache == null || cachedWaveProfileSource != sourceProfile || cachedSpawnPattern != spawnPatternOverride)
+                if (runtimeWaveProfileCache == null || cachedWaveProfileSource != sourceProfile || cachedSpawnPattern != waveSpawnPatternOverride)
                 {
                     runtimeWaveProfileCache = ScriptableObject.CreateInstance<DefenseWaveProfileSo>();
                     runtimeWaveProfileCache.name = $"{name}_RuntimeWaveProfile";
@@ -89,10 +97,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     runtimeWaveProfileCache.spawnRadius = sourceProfile.spawnRadius;
                     runtimeWaveProfileCache.spawnHeightOffset = sourceProfile.spawnHeightOffset;
                     runtimeWaveProfileCache.defaultMinionProfile = sourceProfile.defaultMinionProfile;
-                    runtimeWaveProfileCache.spawnPattern = spawnPatternOverride;
+                    runtimeWaveProfileCache.spawnPattern = waveSpawnPatternOverride;
 
                     cachedWaveProfileSource = sourceProfile;
-                    cachedSpawnPattern = spawnPatternOverride;
+                    cachedSpawnPattern = waveSpawnPatternOverride;
                 }
 
                 return runtimeWaveProfileCache;
@@ -102,7 +110,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Target mode escolhido para o preset (Player/Eater), evitando SOs extras.
         /// </summary>
-        public DefenseTargetMode TargetMode => targetMode;
+        public DefenseTargetMode PreferredTargetRole => preferredTargetRole;
+
+        [System.Obsolete("Use PreferredTargetRole instead for clarity.")]
+        public DefenseTargetMode TargetMode => preferredTargetRole;
 
         /// <summary>
         /// Minion data associado ao preset, mantendo SRP: o planeta escolhe o tipo
@@ -113,6 +124,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Estratégia ativa considerando overrides avançados.
         /// </summary>
-        public DefenseStrategySo CustomStrategy => useCustomStrategy ? customStrategy : null;
+        public DefenseStrategySo CustomStrategy => useCustomDefenseStrategyOverride ? customDefenseStrategyOverride : null;
+
+        private void OnValidate()
+        {
+            if (defaultWaveProfile == null)
+            {
+                Debug.LogError($"[PlanetDefensePresetSo] {name} está sem DefenseWaveProfile base. Configure para evitar fallback silencioso.");
+            }
+
+            if (minionData == null)
+            {
+                Debug.LogError($"[PlanetDefensePresetSo] {name} está sem DefensesMinionData. Configure para manter a orquestração consistente.");
+            }
+
+            if (useCustomWaveProfileOverride && customWaveProfileOverride == null)
+            {
+                Debug.LogError($"[PlanetDefensePresetSo] {name} habilitou custom wave profile mas não atribuiu um ScriptableObject. Desative o override ou forneça um profile válido.");
+                useCustomWaveProfileOverride = false;
+            }
+
+            if (useCustomDefenseStrategyOverride && customDefenseStrategyOverride == null)
+            {
+                Debug.LogError($"[PlanetDefensePresetSo] {name} habilitou custom strategy mas não atribuiu uma StrategySo. Desative o override ou forneça uma estratégia válida.");
+                useCustomDefenseStrategyOverride = false;
+            }
+        }
     }
 }

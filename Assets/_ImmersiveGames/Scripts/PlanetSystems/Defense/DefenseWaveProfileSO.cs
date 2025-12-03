@@ -30,6 +30,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             secondsBetweenWaves = Mathf.Max(1, secondsBetweenWaves);
             enemiesPerWave = Mathf.Max(1, enemiesPerWave);
+
+            if (defaultMinionProfile == null)
+            {
+                Debug.LogError($"[DefenseWaveProfileSo] {name} sem defaultMinionProfile. Configure um profile padrão para evitar comportamento inconsistente.");
+            }
+
+            if (spawnRadius < 0f)
+            {
+                Debug.LogWarning($"[DefenseWaveProfileSo] {name} possui spawnRadius negativo. Normalizando para 0 para evitar posições inválidas.");
+                spawnRadius = Mathf.Max(0f, spawnRadius);
+            }
         }
     }
 }
