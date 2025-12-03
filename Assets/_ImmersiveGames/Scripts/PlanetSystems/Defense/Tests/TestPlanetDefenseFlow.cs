@@ -46,11 +46,11 @@ public class TestPlanetDefenseFlow
 
         _service.ConfigureDefenseEntries(_planet, entries, DefenseChoiceMode.Sequential);
 
-        var firstContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player);
-        ClearCachedDetectionContext(_service, _planet, DetectionType.Player);
-        var secondContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player);
-        ClearCachedDetectionContext(_service, _planet, DetectionType.Player);
-        var thirdContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player);
+        var firstContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player, DefenseRole.Player);
+        ClearCachedDetectionContext(_service, _planet, DetectionType.Player, DefenseRole.Player);
+        var secondContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player, DefenseRole.Player);
+        ClearCachedDetectionContext(_service, _planet, DetectionType.Player, DefenseRole.Player);
+        var thirdContext = _service.ResolveEffectiveConfig(_planet, DetectionType.Player, DefenseRole.Player);
 
         Assert.AreSame(presets[0], firstContext.WavePreset, "O primeiro preset deve ser reutilizado para o primeiro índice sequencial.");
         Assert.AreSame(presets[1], secondContext.WavePreset, "O segundo preset deve ser escolhido ao avançar a sequência.");
@@ -66,7 +66,7 @@ public class TestPlanetDefenseFlow
         CacheApproxRadius(_service, _planet, 5f);
 
         _service.ConfigureDefenseEntries(_planet, new List<PlanetDefenseEntrySo> { entry }, DefenseChoiceMode.Sequential);
-        var context = _service.ResolveEffectiveConfig(_planet, DetectionType.Player);
+        var context = _service.ResolveEffectiveConfig(_planet, DetectionType.Player, DefenseRole.Player);
 
         Assert.AreEqual(7f, context.SpawnRadius, 0.001f, "SpawnRadius deve somar o raio cacheado com o offset da entrada.");
         Assert.AreEqual(2f, context.SpawnOffset, 0.001f, "SpawnOffset deve refletir o valor configurado na entrada.");
@@ -85,7 +85,7 @@ public class TestPlanetDefenseFlow
         LogAssert.Expect(LogType.Error, new Regex("NumberOfEnemiesPerWave inválido"));
         LogAssert.Expect(LogType.Error, new Regex("IntervalBetweenWaves inválido"));
 
-        var context = _service.ResolveEffectiveConfig(_planet, DetectionType.Player);
+        var context = _service.ResolveEffectiveConfig(_planet, DetectionType.Player, DefenseRole.Player);
 
         Assert.IsNotNull(context, "Contexto deve ser retornado mesmo para validação fail-fast.");
         Assert.AreSame(preset, context.WavePreset, "Preset inválido ainda deve ser encaminhado para depuração.");
@@ -130,17 +130,18 @@ public class TestPlanetDefenseFlow
     private static void ClearCachedDetectionContext(
         PlanetDefenseOrchestrationService service,
         PlanetsMaster planet,
-        DetectionType detectionType)
+        DetectionType detectionType,
+        DefenseRole role)
     {
         var cacheField = typeof(PlanetDefenseOrchestrationService)
             .GetField("_resolvedContexts", BindingFlags.Instance | BindingFlags.NonPublic);
-        var cache = cacheField?.GetValue(service) as Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>>;
+        var cache = cacheField?.GetValue(service) as Dictionary<PlanetsMaster, Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>>;
 
         if (cache == null || !cache.TryGetValue(planet, out var byDetection) || byDetection == null)
         {
             return;
         }
 
-        byDetection.Remove(detectionType);
+        byDetection.Remove((detectionType, role));
     }
 }

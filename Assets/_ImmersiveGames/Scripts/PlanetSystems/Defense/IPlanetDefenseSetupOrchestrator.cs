@@ -18,7 +18,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetsMaster planet,
             IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
             DefenseChoiceMode defenseChoiceMode);
-        PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType);
+        PlanetDefenseSetupContext ResolveEffectiveConfig(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole detectionRole);
         void PrepareRunners(PlanetDefenseSetupContext context);
         void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);
         void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);

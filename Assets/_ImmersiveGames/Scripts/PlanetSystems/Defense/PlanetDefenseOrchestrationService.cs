@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public class PlanetDefenseOrchestrationService : IPlanetDefenseSetupOrchestrator
     {
         private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntries = new();
-        private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
+        private readonly Dictionary<PlanetsMaster, Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<int, PlanetDefenseEntrySo>> _sequentialEntryCache = new();
         private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
@@ -60,7 +60,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[DefenseEntries] Planeta {planet.ActorName} configurado com {entries.Count} entradas (modo: {defenseChoiceMode}).");
         }
 
-        public PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType)
+        public PlanetDefenseSetupContext ResolveEffectiveConfig(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole detectionRole)
         {
             if (planet == null)
             {
@@ -68,15 +71,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            if (TryReuseCachedContext(planet, detectionType, out var cached))
+            if (TryReuseCachedContext(planet, detectionType, detectionRole, out var cached))
             {
                 return cached;
             }
 
             var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
-            var context = ResolveEntryContext(planet, detectionType, resource);
+            var context = ResolveEntryContext(planet, detectionType, detectionRole, resource);
 
-            CacheContext(planet, detectionType, context);
+            CacheContext(planet, detectionType, detectionRole, context);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
                 $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', WavePreset='{context.WavePreset?.name ?? "null"}'.");
@@ -154,13 +157,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        private bool TryReuseCachedContext(PlanetsMaster planet, DetectionType detectionType, out PlanetDefenseSetupContext cached)
+        private bool TryReuseCachedContext(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole detectionRole,
+            out PlanetDefenseSetupContext cached)
         {
             cached = null;
 
+            var cacheKey = (detectionType, detectionRole);
+
             if (_resolvedContexts.TryGetValue(planet, out var contextsByDetection) &&
                 contextsByDetection != null &&
-                contextsByDetection.TryGetValue(detectionType, out var context) &&
+                contextsByDetection.TryGetValue(cacheKey, out var context) &&
                 context != null)
             {
                 cached = context;
@@ -170,7 +179,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return false;
         }
 
-        private void CacheContext(PlanetsMaster planet, DetectionType detectionType, PlanetDefenseSetupContext context)
+        private void CacheContext(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole detectionRole,
+            PlanetDefenseSetupContext context)
         {
             if (planet == null || context == null)
             {
@@ -179,11 +192,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (!_resolvedContexts.TryGetValue(planet, out var contextsByDetection) || contextsByDetection == null)
             {
-                contextsByDetection = new Dictionary<DetectionType, PlanetDefenseSetupContext>();
+                contextsByDetection = new Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>();
                 _resolvedContexts[planet] = contextsByDetection;
             }
 
-            contextsByDetection[detectionType] = context;
+            contextsByDetection[(detectionType, detectionRole)] = context;
         }
 
         private void ClearCachedContext(PlanetsMaster planet)
@@ -202,6 +215,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PlanetDefenseSetupContext ResolveEntryContext(
             PlanetsMaster planet,
             DetectionType detectionType,
+            DefenseRole detectionRole,
             PlanetResourcesSo resource)
         {
             if (!_configuredDefenseEntries.TryGetValue(planet, out var configuration))
@@ -211,7 +225,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var selectedEntry = SelectEntry(configuration, planet);
-            var wavePreset = ResolveWavePreset(selectedEntry, DefenseRole.Unknown);
+            var wavePreset = ResolveWavePreset(selectedEntry, detectionRole);
             var poolData = wavePreset?.PoolData;
             var spawnRadius = CalculatePlanetRadius(planet, selectedEntry?.SpawnOffset ?? 0f);
 

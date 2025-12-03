@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[Debug] Detectores ativos em {engagedEvent.Planet.ActorName}: {state.ActiveDetectors} após entrada de {FormatDetector(engagedEvent.Detector)}. Primeiro? {engagedEvent.IsFirstEngagement}.");
 
-            var context = _orchestrator?.ResolveEffectiveConfig(state.Planet, state.DetectionType);
+            var context = _orchestrator?.ResolveEffectiveConfig(state.Planet, state.DetectionType, engagedEvent.Role);
             if (context == null)
             {
                 DebugUtility.LogWarning<PlanetDefenseEventService>(
@@ -122,7 +122,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
 
-            var context = _orchestrator.ResolveEffectiveConfig(disengagedEvent.Planet, disengagedEvent.DetectionType);
+            var context = _orchestrator.ResolveEffectiveConfig(
+                disengagedEvent.Planet,
+                disengagedEvent.DetectionType,
+                DefenseRole.Unknown);
             var strategy = context?.Strategy;
             _orchestrator?.StopWaves(disengagedEvent.Planet);
             _debugLogger?.OnDisengaged(disengagedEvent.Planet, true, strategy);
@@ -142,7 +145,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var detectionType = _stateManager?.TryGetDetectionType(disabledEvent.Planet);
-            var context = _orchestrator?.ResolveEffectiveConfig(disabledEvent.Planet, detectionType);
+            var context = _orchestrator?.ResolveEffectiveConfig(
+                disabledEvent.Planet,
+                detectionType,
+                DefenseRole.Unknown);
             var strategy = context?.Strategy;
             _debugLogger?.OnDisabled(disabledEvent.Planet, strategy);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
