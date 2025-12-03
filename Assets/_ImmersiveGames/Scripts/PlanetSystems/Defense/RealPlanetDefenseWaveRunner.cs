@@ -108,7 +108,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _poolRunner.ConfigureForPlanet(context);
             }
 
-            if (!EnsureWaveProfileAvailable(planet, context))
+            if (!EnsureWavePresetAvailable(planet, context))
             {
                 return;
             }
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 // Notifica a estratégia de que a defesa foi engajada para este planeta.
             strategy?.OnEngaged(planet, resolvedDetection);
 
-            int intervalSeconds = ResolveIntervalSeconds(context);
+            float intervalSeconds = ResolveIntervalSeconds(context);
             int spawnCount = ResolveSpawnCount(context);
 
 
@@ -352,25 +352,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var context = loop.context;
+            var wavePreset = context?.WavePreset;
             var waveProfile = context?.WaveProfile;
             var planet = loop.planet;
 
             int spawnCount = ResolveSpawnCount(context);
-            float radius = Mathf.Max(0f, waveProfile?.spawnRadius ?? 0f);
-            float heightOffset = waveProfile?.spawnHeightOffset ?? 0f;
+            float radius = Mathf.Max(0f, context?.SpawnRadius ?? 0f);
+            float heightOffset = 0f;
 
             var planetCenter = planet.transform.position;
+            planetCenter.y = 0f;
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] SpawnWave em {planet.ActorName} | Tentando spawnar {spawnCount} minions.");
 
             int spawned = 0;
 
-            var pattern = waveProfile?.spawnPattern;
+            var pattern = wavePreset?.SpawnPattern;
             List<Vector3> cachedOffsets = null;
 
             if (pattern != null)
             {
+                if (spawnCount <= 0)
+                {
+                    DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
+                        $"SpawnPattern configurado, mas NumberOfEnemiesPerWave é inválido para {planet.ActorName}.");
+                    return;
+                }
+
                 cachedOffsets = BuildOffsetsForWave(spawnCount, radius, heightOffset, pattern);
             }
 
@@ -527,27 +536,41 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
         {
-            // DefenseWaveProfileSO já garante valores mínimos via OnValidate,
-            // mas aqui protegemos contra configuração nula.
-            int raw = context?.WaveProfile.enemiesPerWave ?? 6;
+            var preset = context?.WavePreset;
+            int raw = preset?.NumberOfEnemiesPerWave ?? 0;
+
+            if (preset != null && raw <= 0)
+            {
+                DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
+                    $"NumberOfEnemiesPerWave inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
+            }
+
             return Mathf.Max(1, raw);
         }
 
-        private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
+        private static float ResolveIntervalSeconds(PlanetDefenseSetupContext context)
         {
-            int raw = context?.WaveProfile?.secondsBetweenWaves ?? 5;
-            return Mathf.Max(1, raw);
+            var preset = context?.WavePreset;
+            float raw = preset?.IntervalBetweenWaves ?? 1f;
+
+            if (preset != null && raw <= 0f)
+            {
+                DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
+                    $"IntervalBetweenWaves inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
+            }
+
+            return Mathf.Max(0.1f, raw);
         }
 
-        private static bool EnsureWaveProfileAvailable(PlanetsMaster planet, PlanetDefenseSetupContext context)
+        private static bool EnsureWavePresetAvailable(PlanetsMaster planet, PlanetDefenseSetupContext context)
         {
-            if (context?.WaveProfile != null)
+            if (context?.WavePreset != null)
             {
                 return true;
             }
 
             DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
-                $"DefenseWaveProfileSO ausente para {planet?.ActorName ?? "Unknown"}; waves não serão iniciadas.");
+                $"WavePreset ausente para {planet?.ActorName ?? "Unknown"}; waves não serão iniciadas.");
             return false;
         }
 

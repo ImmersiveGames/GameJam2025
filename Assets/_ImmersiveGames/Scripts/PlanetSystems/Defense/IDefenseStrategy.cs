@@ -19,7 +19,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseWaveProfileSo waveProfile = null,
             PlanetDefenseLoadoutSo loadout = null,
             WavePresetSo wavePreset = null,
-            float spawnOffset = 0f)
+            float spawnOffset = 0f,
+            float spawnRadius = 0f)
         {
             Planet = planet;
             DetectionType = detectionType;
@@ -30,6 +31,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Loadout = loadout;
             WavePreset = wavePreset;
             SpawnOffset = spawnOffset;
+            SpawnRadius = spawnRadius;
         }
 
         public PlanetsMaster Planet { get; }
@@ -41,6 +43,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetDefenseLoadoutSo Loadout { get; }
         public WavePresetSo WavePreset { get; }
         public float SpawnOffset { get; }
+        public float SpawnRadius { get; }
 
     }
 

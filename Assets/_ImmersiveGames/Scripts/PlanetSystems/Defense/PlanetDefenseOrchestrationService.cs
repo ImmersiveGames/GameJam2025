@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
+using _ImmersiveGames.Scripts.SkinSystems.Runtime;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -20,6 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntries = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
+        private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
         private const bool WarmUpPools = true;
         private const bool ReleasePoolsOnDisable = true;
 
@@ -193,6 +196,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _resolvedContexts.Remove(planet);
             _sequentialIndices.Remove(planet);
+            _cachedApproxRadii.Remove(planet);
         }
 
         private PlanetDefenseSetupContext ResolveEntryContext(
@@ -209,6 +213,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var selectedEntry = SelectEntry(configuration, planet);
             var wavePreset = ResolveWavePreset(selectedEntry, DefenseRole.Unknown);
             var poolData = wavePreset?.PoolData;
+            var spawnRadius = CalculatePlanetRadius(planet, selectedEntry?.SpawnOffset ?? 0f);
 
             if (wavePreset == null)
             {
@@ -230,7 +235,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 null,
                 null,
                 wavePreset,
-                selectedEntry?.SpawnOffset ?? 0f);
+                selectedEntry?.SpawnOffset ?? 0f,
+                spawnRadius);
 
             return context;
         }
@@ -297,6 +303,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             return entry.EntryDefaultWavePreset;
+        }
+
+        private float CalculatePlanetRadius(PlanetsMaster planet, float spawnOffset)
+        {
+            if (planet == null)
+            {
+                return 0f;
+            }
+
+            if (!_cachedApproxRadii.TryGetValue(planet, out var approxRadius))
+            {
+                if (!DependencyManager.Provider.TryGetForObject(planet.ActorId, out SkinRuntimeStateTracker tracker))
+                {
+                    DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"SkinRuntimeStateTracker não encontrado para {planet.ActorName}; usando offset apenas.");
+                    approxRadius = 0f;
+                }
+                else
+                {
+                    var state = tracker.GetStateOrEmpty(ModelType.ModelRoot);
+                    approxRadius = Mathf.Max(0f, state.ApproxRadius);
+                }
+
+                _cachedApproxRadii[planet] = approxRadius;
+            }
+
+            return Mathf.Max(0f, approxRadius + spawnOffset);
         }
 
         private void PreloadDefensePools(IReadOnlyList<PlanetDefenseEntrySo> entries, PlanetsMaster planet)
