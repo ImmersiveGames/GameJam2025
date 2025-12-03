@@ -19,20 +19,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Loadout")]
     public sealed class PlanetDefenseLoadoutSo : ScriptableObject
     {
+        [Header("Preset principal")]
+        [Tooltip("Primary defense preset for this planet; centralizes wave, target and strategy setup.")]
+        [SerializeField]
+        private PlanetDefensePresetSo defensePreset;
+
         [Header("Pool de defesas (por planeta)")]
         [Tooltip("PoolData usado para spawnar os minions defensivos deste planeta.")]
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private PoolData defensePoolData;
 
         [Header("Perfil de ondas (por planeta)")]
         [Tooltip("WaveProfile específico deste planeta. Se nulo, o controller pode cair no profile padrão configurado nele.")]
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private DefenseWaveProfileSo waveProfileOverride;
 
         [Header("Estratégia de defesa (por planeta)")]
         [Tooltip("Estratégia opcional que customiza comportamento de waves e minions para este planeta.")]
-        [SerializeField]
+        [SerializeField, HideInInspector]
         private DefenseStrategySo defenseStrategy;
+
+        /// <summary>
+        /// Preset principal de defesa, preferido pelos serviços de orquestração.
+        /// Mantém compatibilidade com SRP ao compor dados de ondas, estratégia e alvo.
+        /// </summary>
+        public PlanetDefensePresetSo DefensePreset => defensePreset;
 
         /// <summary>
         /// PoolData que o planeta quer usar para suas defesas.

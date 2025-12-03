@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private DefenseWaveProfileSo _waveProfile;
         private IDefenseStrategy _defaultStrategy;
         private readonly Dictionary<PlanetsMaster, PlanetDefenseLoadoutSo> _configuredLoadouts = new();
-        private readonly Dictionary<PlanetsMaster, PlanetDefenseSetupContext> _resolvedContexts = new();
+        private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
         private const bool WarmUpPools = true;
         private const bool ReleasePoolsOnDisable = true;
 
@@ -73,7 +73,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _configuredLoadouts[planet] = loadout;
-            _resolvedContexts.Remove(planet);
+            ClearCachedContext(planet);
+            PlanetDefensePresetAdapter.ClearCache(planet);
             string loadoutName = loadout != null ? loadout.name : "null";
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
                 $"[Loadout] Planeta {planet.ActorName} usando PlanetDefenseLoadout='{loadoutName}'.");
@@ -87,7 +88,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            if (_resolvedContexts.TryGetValue(planet, out var cached) && cached != null && cached.DetectionType == detectionType)
+            if (TryReuseCachedContext(planet, detectionType, out var cached))
             {
                 return cached;
             }
@@ -95,21 +96,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
             _configuredLoadouts.TryGetValue(planet, out var loadout);
 
-            var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
-            var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
-            var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
-
-            var context = new PlanetDefenseSetupContext(
+            var context = ResolvePresetOrLegacyContext(
                 planet,
                 detectionType,
-                resource,
-                strategy,
-                poolData,
-                waveProfile,
-                loadout);
+                loadout,
+                resource);
 
-            strategy?.ConfigureContext(context);
-            _resolvedContexts[planet] = context;
+            CacheContext(planet, detectionType, context);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
                 $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', WaveProfile='{context.WaveProfile?.name ?? "null"}', Strategy='{context.Strategy?.StrategyId ?? "null"}'.");
@@ -159,7 +152,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public void ClearContext(PlanetsMaster planet)
         {
-            _resolvedContexts.Remove(planet);
+            ClearCachedContext(planet);
+            PlanetDefensePresetAdapter.ClearCache(planet);
         }
 
         private void LogDefaultPoolData()
@@ -238,6 +232,89 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 _defenseLogger = resolvedLogger;
             }
+        }
+
+        private bool TryReuseCachedContext(PlanetsMaster planet, DetectionType detectionType, out PlanetDefenseSetupContext cached)
+        {
+            cached = null;
+
+            if (_resolvedContexts.TryGetValue(planet, out var contextsByDetection) &&
+                contextsByDetection != null &&
+                contextsByDetection.TryGetValue(detectionType, out var context) &&
+                context != null)
+            {
+                cached = context;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void CacheContext(PlanetsMaster planet, DetectionType detectionType, PlanetDefenseSetupContext context)
+        {
+            if (planet == null || context == null)
+            {
+                return;
+            }
+
+            if (!_resolvedContexts.TryGetValue(planet, out var contextsByDetection) || contextsByDetection == null)
+            {
+                contextsByDetection = new Dictionary<DetectionType, PlanetDefenseSetupContext>();
+                _resolvedContexts[planet] = contextsByDetection;
+            }
+
+            contextsByDetection[detectionType] = context;
+        }
+
+        private void ClearCachedContext(PlanetsMaster planet)
+        {
+            if (planet == null)
+            {
+                return;
+            }
+
+            _resolvedContexts.Remove(planet);
+        }
+
+        private PlanetDefenseSetupContext ResolvePresetOrLegacyContext(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            PlanetDefenseLoadoutSo loadout,
+            PlanetResourcesSo resource)
+        {
+            var preset = loadout?.DefensePreset;
+
+            var context = preset != null
+                ? PlanetDefensePresetAdapter.Resolve(
+                    planet,
+                    detectionType,
+                    preset,
+                    _defaultPoolData,
+                    _waveProfile,
+                    _defaultStrategy,
+                    loadout)
+                : null;
+
+            if (context != null)
+            {
+                return context;
+            }
+
+            var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
+            var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
+            var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+
+            context = new PlanetDefenseSetupContext(
+                planet,
+                detectionType,
+                resource,
+                strategy,
+                poolData,
+                waveProfile,
+                loadout);
+
+            strategy?.ConfigureContext(context);
+            return context;
         }
     }
 }

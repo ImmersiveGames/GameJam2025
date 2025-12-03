@@ -11,7 +11,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
     {
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
+
+        // Nota de migração: o loadout agora centraliza o preset de defesa,
+        // evitando múltiplos SOs espalhados por planeta.
         [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
+
+        private PlanetDefenseLoadoutSo _cachedConfiguredLoadout;
+        private IPlanetDefenseSetupOrchestrator _cachedConfiguredService;
 
         public IActor PlanetActor => this;
         public PlanetResourcesSo AssignedResource => _resourceData;
@@ -36,6 +42,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public void SetDefenseLoadout(PlanetDefenseLoadoutSo loadout)
         {
             defenseLoadout = loadout;
+            _cachedConfiguredLoadout = null;
+            _cachedConfiguredService = null;
             DebugUtility.LogVerbose<PlanetsMaster>(
                 $"[Loadout] {ActorName} recebeu loadout '{defenseLoadout?.name ?? "null"}'.");
         }
@@ -47,7 +55,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
+            // Cacheia configurações repetidas para evitar reatribuições e logs
+            // redundantes em cenários de multiplayer local com reuso de planetas.
+            if (_cachedConfiguredService == service && _cachedConfiguredLoadout == defenseLoadout)
+            {
+                return;
+            }
+
             service.ConfigureLoadout(this, defenseLoadout);
+            _cachedConfiguredService = service;
+            _cachedConfiguredLoadout = defenseLoadout;
         }
 
         public void AssignResource(PlanetResourcesSo resource)
