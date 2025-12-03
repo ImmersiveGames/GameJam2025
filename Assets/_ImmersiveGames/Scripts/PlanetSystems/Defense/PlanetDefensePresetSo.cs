@@ -1,4 +1,5 @@
 using UnityEngine;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -128,19 +129,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (planetDefenseWaveEnemiesCount <= 0)
             {
-                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveEnemiesCount > 0.", this);
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveEnemiesCount > 0.", this);
                 planetDefenseWaveEnemiesCount = 1;
             }
 
             if (planetDefenseWaveSecondsBetweenWaves <= 0)
             {
-                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveSecondsBetweenWaves > 0.", this);
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveSecondsBetweenWaves > 0.", this);
                 planetDefenseWaveSecondsBetweenWaves = 1;
             }
 
             if (planetDefenseMinionData == null)
             {
-                Debug.LogError($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseMinionData atribuído.", this);
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseMinionData atribuído.", this);
             }
 
             planetDefenseWaveSpawnRadius = Mathf.Max(0f, planetDefenseWaveSpawnRadius);
