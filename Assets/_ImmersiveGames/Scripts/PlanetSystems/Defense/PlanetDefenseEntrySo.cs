@@ -16,17 +16,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class PlanetDefenseEntrySo : ScriptableObject
     {
         [Header("Mapeamento por role")]
-        [Tooltip("Mapeamento de role detectado para preset de onda específico.")]
+        [Tooltip("Mapeamento de role detectado para preset de onda específico — use para waves diferentes por role.")]
         [SerializeField]
         private Dictionary<DefenseRole, WavePresetSo> entryBindByRole = new();
 
         [Header("Preset default (obrigatório)")]
-        [Tooltip("Preset de onda default, obrigatório.")]
+        [Tooltip("Preset de onda default, obrigatório para roles não mapeados.")]
         [SerializeField]
         private WavePresetSo entryDefaultWavePreset;
 
         [Header("Spawn")]
-        [Tooltip("Offset para spawn ao redor do planeta.")]
+        [Tooltip("Offset para spawn ao redor do planeta — valor adicionado ao tamanho real do planeta.")]
         [SerializeField]
         private float spawnOffset;
 
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (entryBindByRole.Count > 0 && entryDefaultWavePreset == null)
             {
                 DebugUtility.LogError<PlanetDefenseEntrySo>(
-                    "Bind usado, mas default faltando — configure default para evitar falhas em runtime.",
+                    "Bind usado, mas default faltando — configure default para evitar falhas em roles não mapeados.",
                     this);
             }
 
