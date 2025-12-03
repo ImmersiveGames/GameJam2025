@@ -5,76 +5,81 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Descreve um preset de wave contendo perfil, pool e comportamento
-    /// obrigatório para os minions. Mantém SRP concentrando os dados
-    /// necessários para spawn sem replicar lógica do planeta.
+    /// Representa um preset de onda isolado contendo dados mínimos para
+    /// spawn consistente dos minions. Mantém o SRP ao separar a definição
+    /// da onda do mapeamento por role configurado em PlanetDefenseEntrySo.
     /// </summary>
     [CreateAssetMenu(
         fileName = "WavePreset",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Wave Preset")]
     public sealed class WavePresetSo : ScriptableObject
     {
-        [Header("Wave Profile")]
-        [Tooltip("Perfil de onda com contagem, intervalos, raio e altura de spawn.")]
-        [SerializeField]
-        private DefenseWaveProfileSo waveProfile;
-
-        [Header("Pool Obrigatório")]
-        [Tooltip("Pool que contém o prefab e ciclo de vida de cada minion desta wave.")]
+        [Header("Pool (Obrigatório)")]
+        [Tooltip("Pool de minions, obrigatório.")]
         [SerializeField]
         private PoolData poolData;
 
-        [Header("Comportamento do Minion")]
-        [Tooltip("Configuração padrão de minion usada para instanciar e dirigir a wave.")]
+        [Header("Configuração de Onda")]
+        [Tooltip("Número de inimigos por entrada, obrigatório.")]
         [SerializeField]
-        private DefensesMinionData defaultMinionData;
+        private int numberOfEnemiesPerWave = 1;
 
-        [Header("Estratégia de Defesa")]
-        [Tooltip("Estratégia a ser aplicada para conduzir os minions desta wave.")]
+        [Tooltip("Tempo entre entradas, obrigatório.")]
         [SerializeField]
-        private DefenseStrategySo defenseStrategy;
+        private float intervalBetweenWaves = 1f;
+
+        [Tooltip("Padrão de posicionamento, opcional.")]
+        [SerializeField]
+        private DefenseSpawnPatternSo spawnPattern;
 
         /// <summary>
-        /// Perfil de onda base com limites de spawn e cadência.
-        /// </summary>
-        public DefenseWaveProfileSo WaveProfile => waveProfile;
-
-        /// <summary>
-        /// Pool obrigatório de minions para evitar alocação em runtime.
+        /// Pool obrigatório para instanciar minions desta onda.
         /// </summary>
         public PoolData PoolData => poolData;
 
         /// <summary>
-        /// Minion padrão associado a esta wave.
+        /// Quantidade de inimigos a serem gerados em cada entrada.
         /// </summary>
-        public DefensesMinionData DefaultMinionData => defaultMinionData;
+        public int NumberOfEnemiesPerWave => numberOfEnemiesPerWave;
 
         /// <summary>
-        /// Estratégia opcional aplicada à wave.
+        /// Intervalo, em segundos, entre cada entrada de wave.
         /// </summary>
-        public DefenseStrategySo DefenseStrategy => defenseStrategy;
+        public float IntervalBetweenWaves => intervalBetweenWaves;
+
+        /// <summary>
+        /// Padrão opcional de posicionamento dos minions.
+        /// </summary>
+        public DefenseSpawnPatternSo SpawnPattern => spawnPattern;
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (waveProfile == null)
-            {
-                DebugUtility.LogError<WavePresetSo>(
-                    "WaveProfile obrigatório — configure para evitar dados inválidos.",
-                    this);
-            }
-
             if (poolData == null)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "PoolData obrigatório — configure para habilitar spawn consistente.",
+                    "PoolData obrigatório — configure ou waves falharão.",
                     this);
             }
 
-            if (defaultMinionData == null)
+            if (numberOfEnemiesPerWave <= 0)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "DefaultMinionData obrigatório — configure para definir o comportamento do minion.",
+                    "NumberOfEnemiesPerWave deve ser maior que 0.",
+                    this);
+            }
+
+            if (intervalBetweenWaves <= 0f)
+            {
+                DebugUtility.LogError<WavePresetSo>(
+                    "IntervalBetweenWaves deve ser maior que 0.",
+                    this);
+            }
+
+            if (spawnPattern != null && numberOfEnemiesPerWave == 0)
+            {
+                DebugUtility.LogError<WavePresetSo>(
+                    "SpawnPattern usado, mas número de inimigos zero — configure corretamente.",
                     this);
             }
         }
