@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -33,12 +34,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (defaultMinionProfile == null)
             {
-                Debug.LogError($"[DefenseWaveProfileSo] {name} sem defaultMinionProfile. Configure um profile padrão para evitar comportamento inconsistente.");
+                DebugUtility.LogError<DefenseWaveProfileSo>($"[DefenseWaveProfileSo] {name} sem defaultMinionProfile. Configure um profile padrão para evitar comportamento inconsistente.");
             }
 
             if (spawnRadius < 0f)
             {
-                Debug.LogWarning($"[DefenseWaveProfileSo] {name} possui spawnRadius negativo. Normalizando para 0 para evitar posições inválidas.");
+                DebugUtility.LogWarning<DefenseWaveProfileSo>($"[DefenseWaveProfileSo] {name} possui spawnRadius negativo. Normalizando para 0 para evitar posições inválidas.");
                 spawnRadius = Mathf.Max(0f, spawnRadius);
             }
         }

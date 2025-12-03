@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -130,23 +131,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (defaultWaveProfile == null)
             {
-                Debug.LogError($"[PlanetDefensePresetSo] {name} está sem DefenseWaveProfile base. Configure para evitar fallback silencioso.");
+                DebugUtility.LogError<PlanetDefensePresetSo>($"[PlanetDefensePresetSo] {name} está sem DefenseWaveProfile base. Configure para evitar fallback silencioso.");
             }
 
             if (minionData == null)
             {
-                Debug.LogError($"[PlanetDefensePresetSo] {name} está sem DefensesMinionData. Configure para manter a orquestração consistente.");
+                DebugUtility.LogError<PlanetDefensePresetSo>($"[PlanetDefensePresetSo] {name} está sem DefensesMinionData. Configure para manter a orquestração consistente.");
             }
 
             if (useCustomWaveProfileOverride && customWaveProfileOverride == null)
             {
-                Debug.LogError($"[PlanetDefensePresetSo] {name} habilitou custom wave profile mas não atribuiu um ScriptableObject. Desative o override ou forneça um profile válido.");
+                DebugUtility.LogError<PlanetDefensePresetSo>($"[PlanetDefensePresetSo] {name} habilitou custom wave profile mas não atribuiu um ScriptableObject. Desative o override ou forneça um profile válido.");
                 useCustomWaveProfileOverride = false;
             }
 
             if (useCustomDefenseStrategyOverride && customDefenseStrategyOverride == null)
             {
-                Debug.LogError($"[PlanetDefensePresetSo] {name} habilitou custom strategy mas não atribuiu uma StrategySo. Desative o override ou forneça uma estratégia válida.");
+                DebugUtility.LogError<PlanetDefensePresetSo>($"[PlanetDefensePresetSo] {name} habilitou custom strategy mas não atribuiu uma StrategySo. Desative o override ou forneça uma estratégia válida.");
                 useCustomDefenseStrategyOverride = false;
             }
         }

@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -24,7 +25,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Tooltip("Primary defense preset for this planet; centralizes wave, target and strategy setup.")]
         [SerializeField]
         [FormerlySerializedAs("defensePreset")]
-        [SerializeField]
         private PlanetDefensePresetSo planetDefensePreset;
 
         [Header("Pool de defesas (por planeta)")]
@@ -71,17 +71,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (planetDefensePreset == null)
             {
-                Debug.LogError($"[PlanetDefenseLoadoutSo] {name} está sem PlanetDefensePreset definido. Configure um preset para evitar fallbacks silenciosos.");
+                DebugUtility.LogError<PlanetDefenseLoadoutSo>($"[PlanetDefenseLoadoutSo] {name} está sem PlanetDefensePreset definido. Configure um preset para evitar fallbacks silenciosos.");
             }
 
             if (planetDefensePoolData != null)
             {
-                Debug.LogWarning($"[PlanetDefenseLoadoutSo] {name} ainda referencia PoolData direto. Use o preset para consolidar configuração e evitar duplicação.");
+                DebugUtility.LogWarning<PlanetDefenseLoadoutSo>($"[PlanetDefenseLoadoutSo] {name} ainda referencia PoolData direto. Use o preset para consolidar configuração e evitar duplicação.");
             }
 
             if (planetWaveProfileOverride != null || planetDefenseStrategyOverride != null)
             {
-                Debug.LogWarning($"[PlanetDefenseLoadoutSo] {name} possui overrides legados (wave/strategy). Centralize essas escolhas no preset para manter SRP.");
+                DebugUtility.LogWarning<PlanetDefenseLoadoutSo>($"[PlanetDefenseLoadoutSo] {name} possui overrides legados (wave/strategy). Centralize essas escolhas no preset para manter SRP.");
             }
         }
     }
