@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Serviço dedicado ao fluxo de eventos de defesa: registra engajamentos,
-    /// orquestra runners via o IPlanetDefenseSetupOrchestrator e delega logs.
+    /// orquestra runners via o IPlanetDefenseSetupOrchestrator com logs via DebugUtility.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseEventService : IInjectableComponent
@@ -17,7 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         [Inject] private IPlanetDefenseSetupOrchestrator _orchestrator;
         [Inject] private DefenseStateManager _stateManager = new();
-        [Inject] private IDefenseLogger _debugLogger;
 
         private string _ownerObjectId;
 
@@ -95,7 +94,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (engagedEvent.IsFirstEngagement)
             {
                 _orchestrator.StartWaves(state.Planet, state.DetectionType, context.Strategy);
-                _debugLogger?.OnEngaged(state, engagedEvent.IsFirstEngagement, context.Strategy);
             }
         }
 
@@ -122,13 +120,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<PlanetDefenseEventService>(
                 $"[Debug] Nenhum detector restante em {disengagedEvent.Planet.ActorName}. Encerrando waves e logging.");
 
-            var context = _orchestrator.ResolveEffectiveConfig(
-                disengagedEvent.Planet,
-                disengagedEvent.DetectionType,
-                DefenseRole.Unknown);
-            var strategy = context?.Strategy;
             _orchestrator?.StopWaves(disengagedEvent.Planet);
-            _debugLogger?.OnDisengaged(disengagedEvent.Planet, true, strategy);
         }
 
         public void HandleDisabled(PlanetDefenseDisabledEvent disabledEvent)
@@ -145,12 +137,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var detectionType = _stateManager?.TryGetDetectionType(disabledEvent.Planet);
-            var context = _orchestrator?.ResolveEffectiveConfig(
-                disabledEvent.Planet,
-                detectionType,
-                DefenseRole.Unknown);
-            var strategy = context?.Strategy;
-            _debugLogger?.OnDisabled(disabledEvent.Planet, strategy);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
             _orchestrator?.ClearContext(disabledEvent.Planet);
         }
@@ -206,10 +192,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _stateManager = resolvedStateManager;
             }
 
-            if (_debugLogger == null && provider.TryGetGlobal(out IDefenseLogger resolvedLogger))
-            {
-                _debugLogger = resolvedLogger;
-            }
         }
 
         private static string FormatDetector(IDetector detector)

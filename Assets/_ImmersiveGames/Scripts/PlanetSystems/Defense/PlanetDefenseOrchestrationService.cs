@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Orquestrador focado em preparar contexto, pools e runner de waves.
-    /// Mantém cache por planeta e delega logs ao IDefenseLogger injetado via DI.
+    /// Mantém cache por planeta e delega logs ao DebugUtility para acompanhamento no Editor.
     /// </summary>
     [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseOrchestrationService : IPlanetDefenseSetupOrchestrator
@@ -29,7 +29,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
-        [Inject] private IDefenseLogger _defenseLogger;
 
         public DependencyInjectionState InjectionState { get; set; }
 
@@ -151,10 +150,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _waveRunner = resolvedWaveRunner;
             }
 
-            if (_defenseLogger == null && provider.TryGetGlobal(out IDefenseLogger resolvedLogger))
-            {
-                _defenseLogger = resolvedLogger;
-            }
         }
 
         private bool TryReuseCachedContext(
