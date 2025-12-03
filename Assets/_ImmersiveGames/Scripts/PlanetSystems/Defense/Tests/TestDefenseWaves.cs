@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
             baseProfile.spawnRadius = 6f;
             baseProfile.spawnHeightOffset = 1.5f;
 
-            var spawnPattern = ScriptableObject.CreateInstance<DefenseSpawnPatternSo>();
+            var spawnPattern = ScriptableObject.CreateInstance<MockDefenseSpawnPattern>();
 
             SetPrivateField(preset, "baseWaveProfile", baseProfile);
             SetPrivateField(preset, "spawnPatternOverride", spawnPattern);
@@ -41,6 +41,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.IsNotNull(field, $"Field '{fieldName}' not found on {target.GetType().Name}");
             field.SetValue(target, value);
+        }
+
+        private sealed class MockDefenseSpawnPattern : DefenseSpawnPatternSo
+        {
+            public override Vector3 GetSpawnOffset(int index, int total, float radius, float heightOffset)
+            {
+                return Vector3.zero;
+            }
         }
     }
 }
