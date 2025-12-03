@@ -22,6 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntries = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
+        private readonly Dictionary<PlanetsMaster, Dictionary<int, PlanetDefenseEntrySo>> _sequentialEntryCache = new();
         private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
         private const bool WarmUpPools = true;
         private const bool ReleasePoolsOnDisable = true;
@@ -196,6 +197,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _resolvedContexts.Remove(planet);
             _sequentialIndices.Remove(planet);
+            _sequentialEntryCache.Remove(planet);
             _cachedApproxRadii.Remove(planet);
         }
 
@@ -214,6 +216,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var wavePreset = ResolveWavePreset(selectedEntry, DefenseRole.Unknown);
             var poolData = wavePreset?.PoolData;
             var spawnRadius = CalculatePlanetRadius(planet, selectedEntry?.SpawnOffset ?? 0f);
+
+            ValidateWavePresetRuntime(planet, wavePreset);
 
             if (wavePreset == null)
             {
@@ -285,9 +289,38 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 currentIndex = 0;
             }
 
-            var entry = entries[currentIndex];
+            var cachedEntry = ResolveCachedSequentialEntry(planet, currentIndex);
+            var entry = cachedEntry ?? entries[currentIndex];
+
+            CacheSequentialEntry(planet, currentIndex, entry);
             _sequentialIndices[planet] = (currentIndex + 1) % entries.Count;
             return entry;
+        }
+
+        private PlanetDefenseEntrySo ResolveCachedSequentialEntry(PlanetsMaster planet, int index)
+        {
+            if (!_sequentialEntryCache.TryGetValue(planet, out var cache) || cache == null)
+            {
+                return null;
+            }
+
+            return cache.TryGetValue(index, out var cached) ? cached : null;
+        }
+
+        private void CacheSequentialEntry(PlanetsMaster planet, int index, PlanetDefenseEntrySo entry)
+        {
+            if (planet == null || entry == null)
+            {
+                return;
+            }
+
+            if (!_sequentialEntryCache.TryGetValue(planet, out var cache) || cache == null)
+            {
+                cache = new Dictionary<int, PlanetDefenseEntrySo>();
+                _sequentialEntryCache[planet] = cache;
+            }
+
+            cache[index] = entry;
         }
 
         private WavePresetSo ResolveWavePreset(PlanetDefenseEntrySo entry, DefenseRole role)
@@ -329,6 +362,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             return Mathf.Max(0f, approxRadius + spawnOffset);
+        }
+
+        private void ValidateWavePresetRuntime(PlanetsMaster planet, WavePresetSo wavePreset)
+        {
+            if (wavePreset == null)
+            {
+                return;
+            }
+
+            if (wavePreset.NumberOfEnemiesPerWave <= 0)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"NumberOfEnemiesPerWave inválido em '{wavePreset.name}' para planeta {planet?.ActorName ?? "Unknown"}.");
+            }
+
+            if (wavePreset.IntervalBetweenWaves <= 0f)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"IntervalBetweenWaves inválido em '{wavePreset.name}' para planeta {planet?.ActorName ?? "Unknown"}.");
+            }
+
+            if (wavePreset.SpawnPattern != null && wavePreset.NumberOfEnemiesPerWave <= 0)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"SpawnPattern configurado em '{wavePreset.name}' mas NumberOfEnemiesPerWave está inválido para {planet?.ActorName ?? "Unknown"}.");
+            }
         }
 
         private void PreloadDefensePools(IReadOnlyList<PlanetDefenseEntrySo> entries, PlanetsMaster planet)
