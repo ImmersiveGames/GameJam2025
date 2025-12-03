@@ -48,6 +48,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            entryBindByRole ??= new Dictionary<DefenseRole, WavePresetSo>();
+
             if (entryDefaultWavePreset == null)
             {
                 DebugUtility.LogError<PlanetDefenseEntrySo>(
@@ -55,14 +57,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     this);
             }
 
-            if (entryBindByRole != null && entryBindByRole.Count > 0 && entryDefaultWavePreset == null)
+            if (entryBindByRole.Count > 0 && entryDefaultWavePreset == null)
             {
                 DebugUtility.LogError<PlanetDefenseEntrySo>(
                     "Bind usado, mas default faltando — configure default para evitar falhas em runtime.",
                     this);
             }
 
-            if (entryBindByRole != null)
+            if (entryBindByRole.Count > 0)
             {
                 foreach (KeyValuePair<DefenseRole, WavePresetSo> bind in entryBindByRole)
                 {
