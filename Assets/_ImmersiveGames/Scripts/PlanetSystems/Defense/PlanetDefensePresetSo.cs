@@ -14,91 +14,91 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Preset")]
     public sealed class PlanetDefensePresetSo : ScriptableObject
     {
-        [Header("Wave Settings (Single Source)")]
-        [Tooltip("Quantidade de inimigos que serão spawnados por wave.")]
+        [Header("Waves")]
+        [Tooltip("Quantidade de inimigos por wave.")]
         [SerializeField]
-        private int planetDefenseWaveEnemiesCount = 6;
+        private int waveEnemies = 6;
 
-        [Tooltip("Intervalo, em segundos, entre waves consecutivas.")]
+        [Tooltip("Intervalo, em segundos, entre waves.")]
         [SerializeField]
-        private int planetDefenseWaveSecondsBetweenWaves = 5;
+        private int waveIntervalSeconds = 5;
 
-        [Tooltip("Raio base utilizado para spawn orbital dos inimigos.")]
+        [Tooltip("Raio de spawn ao redor do planeta.")]
         [SerializeField]
-        private float planetDefenseWaveSpawnRadius = 4f;
+        private float waveSpawnRadius = 4f;
 
-        [Tooltip("Offset vertical aplicado ao spawn, relativo ao planeta.")]
+        [Tooltip("Offset vertical do spawn.")]
         [SerializeField]
-        private float planetDefenseWaveSpawnHeightOffset = 0.5f;
+        private float waveSpawnHeight = 0.5f;
 
-        [Tooltip("Padrão de distribuição espacial por wave (opcional).")]
+        [Tooltip("Padrão de distribuição (opcional).")]
         [SerializeField]
-        private DefenseSpawnPatternSo planetDefenseWaveSpawnPattern;
+        private DefenseSpawnPatternSo waveSpawnPattern;
 
-        [Header("Minion Defaults")]
-        [Tooltip("Profile padrão aplicado aos minions spawnados pelas waves.")]
+        [Header("Minions")]
+        [Tooltip("Profile padrão dos minions da wave.")]
         [SerializeField]
-        private DefenseMinionBehaviorProfileSO planetDefenseWaveMinionProfile;
+        private DefenseMinionBehaviorProfileSO waveMinionProfile;
 
-        [Tooltip("Dados de minion usados pelo planeta (prefab/pool).")]
+        [Tooltip("Dados do minion (prefab/pool).")]
         [SerializeField]
-        private DefensesMinionData planetDefenseMinionData;
+        private DefensesMinionData minionData;
 
-        [Header("Strategy & Targeting")]
+        [Header("Alvo & Estratégia")]
         [Tooltip("Modo de seleção de alvo em multiplayer local.")]
         [SerializeField]
-        private DefenseTargetMode planetDefenseTargetMode = DefenseTargetMode.PreferPlayer;
+        private DefenseTargetMode targetMode = DefenseTargetMode.PreferPlayer;
 
-        [Tooltip("Estratégia defensiva opcional específica deste planeta.")]
+        [Tooltip("Estratégia defensiva opcional específica.")]
         [SerializeField]
-        private DefenseStrategySo planetDefenseStrategy;
+        private DefenseStrategySo strategy;
 
         private DefenseWaveProfileSo cachedWaveProfile;
 
         /// <summary>
         /// Quantidade de inimigos por wave, exposta com nomenclatura padronizada.
         /// </summary>
-        public int PlanetDefenseWaveEnemiesCount => planetDefenseWaveEnemiesCount;
+        public int PlanetDefenseWaveEnemiesCount => waveEnemies;
 
         /// <summary>
         /// Tempo entre waves em segundos, exposto de forma explícita.
         /// </summary>
-        public int PlanetDefenseWaveSecondsBetweenWaves => planetDefenseWaveSecondsBetweenWaves;
+        public int PlanetDefenseWaveSecondsBetweenWaves => waveIntervalSeconds;
 
         /// <summary>
         /// Raio de spawn utilizado para orbitas de wave.
         /// </summary>
-        public float PlanetDefenseWaveSpawnRadius => planetDefenseWaveSpawnRadius;
+        public float PlanetDefenseWaveSpawnRadius => waveSpawnRadius;
 
         /// <summary>
         /// Offset vertical para spawn dos inimigos.
         /// </summary>
-        public float PlanetDefenseWaveSpawnHeightOffset => planetDefenseWaveSpawnHeightOffset;
+        public float PlanetDefenseWaveSpawnHeightOffset => waveSpawnHeight;
 
         /// <summary>
         /// Padrão de spawn configurado no preset.
         /// </summary>
-        public DefenseSpawnPatternSo PlanetDefenseWaveSpawnPattern => planetDefenseWaveSpawnPattern;
+        public DefenseSpawnPatternSo PlanetDefenseWaveSpawnPattern => waveSpawnPattern;
 
         /// <summary>
         /// Profile padrão de comportamento de minion para esta configuração.
         /// </summary>
-        public DefenseMinionBehaviorProfileSO PlanetDefenseWaveMinionProfile => planetDefenseWaveMinionProfile;
+        public DefenseMinionBehaviorProfileSO PlanetDefenseWaveMinionProfile => waveMinionProfile;
 
         /// <summary>
         /// Dados de minion definidos pelo planeta (prefab/pool), respeitando SRP.
         /// </summary>
-        public DefensesMinionData MinionData => planetDefenseMinionData;
+        public DefensesMinionData MinionData => minionData;
 
         /// <summary>
         /// Estratégia defensiva específica, caso atribuída.
         /// </summary>
-        public DefenseStrategySo CustomStrategy => planetDefenseStrategy;
+        public DefenseStrategySo CustomStrategy => strategy;
 
         /// <summary>
         /// Modo de alvo usado para gerar estratégias simples.
         /// </summary>
-        public DefenseTargetMode TargetMode => planetDefenseTargetMode;
+        public DefenseTargetMode TargetMode => targetMode;
 
         /// <summary>
         /// Perfil de wave resolvido a partir dos dados internos, sem SO legados.
@@ -114,12 +114,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     cachedWaveProfile.name = $"{name}_WaveProfile";
                 }
 
-                cachedWaveProfile.enemiesPerWave = planetDefenseWaveEnemiesCount;
-                cachedWaveProfile.secondsBetweenWaves = planetDefenseWaveSecondsBetweenWaves;
-                cachedWaveProfile.spawnRadius = planetDefenseWaveSpawnRadius;
-                cachedWaveProfile.spawnHeightOffset = planetDefenseWaveSpawnHeightOffset;
-                cachedWaveProfile.defaultMinionProfile = planetDefenseWaveMinionProfile;
-                cachedWaveProfile.spawnPattern = planetDefenseWaveSpawnPattern;
+                cachedWaveProfile.enemiesPerWave = waveEnemies;
+                cachedWaveProfile.secondsBetweenWaves = waveIntervalSeconds;
+                cachedWaveProfile.spawnRadius = waveSpawnRadius;
+                cachedWaveProfile.spawnHeightOffset = waveSpawnHeight;
+                cachedWaveProfile.defaultMinionProfile = waveMinionProfile;
+                cachedWaveProfile.spawnPattern = waveSpawnPattern;
 
                 return cachedWaveProfile;
             }
@@ -127,24 +127,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void OnValidate()
         {
-            if (planetDefenseWaveEnemiesCount <= 0)
+            if (waveEnemies <= 0)
             {
-                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveEnemiesCount > 0.", this);
-                planetDefenseWaveEnemiesCount = 1;
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige WaveEnemies > 0.", this);
+                waveEnemies = 1;
             }
 
-            if (planetDefenseWaveSecondsBetweenWaves <= 0)
+            if (waveIntervalSeconds <= 0)
             {
-                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseWaveSecondsBetweenWaves > 0.", this);
-                planetDefenseWaveSecondsBetweenWaves = 1;
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige WaveIntervalSeconds > 0.", this);
+                waveIntervalSeconds = 1;
             }
 
-            if (planetDefenseMinionData == null)
+            if (minionData == null)
             {
-                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige PlanetDefenseMinionData atribuído.", this);
+                DebugUtility.LogError<PlanetDefensePresetSo>($"{nameof(PlanetDefensePresetSo)} exige MinionData atribuído.", this);
             }
 
-            planetDefenseWaveSpawnRadius = Mathf.Max(0f, planetDefenseWaveSpawnRadius);
+            waveSpawnRadius = Mathf.Max(0f, waveSpawnRadius);
         }
     }
 }

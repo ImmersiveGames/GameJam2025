@@ -16,11 +16,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
 
             var spawnPattern = ScriptableObject.CreateInstance<MockDefenseSpawnPattern>();
 
-            SetPrivateField(preset, "planetDefenseWaveEnemiesCount", 8);
-            SetPrivateField(preset, "planetDefenseWaveSecondsBetweenWaves", 7);
-            SetPrivateField(preset, "planetDefenseWaveSpawnRadius", 6f);
-            SetPrivateField(preset, "planetDefenseWaveSpawnHeightOffset", 1.5f);
-            SetPrivateField(preset, "planetDefenseWaveSpawnPattern", spawnPattern);
+            SetPrivateField(preset, "waveEnemies", 8);
+            SetPrivateField(preset, "waveIntervalSeconds", 7);
+            SetPrivateField(preset, "waveSpawnRadius", 6f);
+            SetPrivateField(preset, "waveSpawnHeight", 1.5f);
+            SetPrivateField(preset, "waveSpawnPattern", spawnPattern);
 
             var resolved1 = preset.ResolvedWaveProfile;
             var resolved2 = preset.ResolvedWaveProfile;

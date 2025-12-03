@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
             var preset = ScriptableObject.CreateInstance<PlanetDefensePresetSo>();
             var minionData = ScriptableObject.CreateInstance<DefensesMinionData>();
 
-            SetPrivateField(preset, "planetDefenseMinionData", minionData);
+            SetPrivateField(preset, "minionData", minionData);
 
             Assert.AreSame(minionData, preset.MinionData, "Preset must return the assigned minion data (SRP).");
         }
