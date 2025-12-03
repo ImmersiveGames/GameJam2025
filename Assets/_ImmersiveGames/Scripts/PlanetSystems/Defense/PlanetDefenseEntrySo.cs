@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Mapeamento por role")]
         [Tooltip("Mapeamento de role detectado para preset de onda específico — use para waves diferentes por role.")]
         [SerializeField]
-        private Dictionary<DefenseRole, WavePresetSo> entryBindByRole = new();
+        private List<RoleWaveBinding> entryBindByRole = new();
 
         [Header("Preset default (obrigatório)")]
         [Tooltip("Preset de onda default, obrigatório para roles não mapeados.")]
@@ -33,7 +34,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Bind configurado entre role detectado e preset específico.
         /// </summary>
-        public IReadOnlyDictionary<DefenseRole, WavePresetSo> EntryBindByRole => entryBindByRole;
+        public IReadOnlyDictionary<DefenseRole, WavePresetSo> EntryBindByRole
+        {
+            get
+            {
+                EnsureRuntimeBindings();
+                return runtimeBindByRole;
+            }
+        }
 
         /// <summary>
         /// Preset default usado quando o role não está mapeado.
@@ -48,7 +56,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            entryBindByRole ??= new Dictionary<DefenseRole, WavePresetSo>();
+            RebuildRuntimeBindings();
 
             if (entryDefaultWavePreset == null)
             {
@@ -63,20 +71,85 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     "Bind usado, mas default faltando — configure default para evitar falhas em roles não mapeados.",
                     this);
             }
+        }
+#endif
 
-            if (entryBindByRole.Count > 0)
+        private void OnEnable()
+        {
+            EnsureRuntimeBindings();
+        }
+
+        /// <summary>
+        /// Garante que o dicionário em runtime reflita a lista serializada no Editor.
+        /// </summary>
+        private void EnsureRuntimeBindings()
+        {
+            runtimeBindByRole ??= new Dictionary<DefenseRole, WavePresetSo>();
+
+            if (runtimeBindByRole.Count == 0 && entryBindByRole != null && entryBindByRole.Count > 0)
             {
-                foreach (KeyValuePair<DefenseRole, WavePresetSo> bind in entryBindByRole)
+                RebuildRuntimeBindings();
+            }
+        }
+
+        /// <summary>
+        /// Reconstrói o dicionário de binds para uso em runtime e valida entradas duplicadas.
+        /// </summary>
+        private void RebuildRuntimeBindings()
+        {
+            runtimeBindByRole ??= new Dictionary<DefenseRole, WavePresetSo>();
+            runtimeBindByRole.Clear();
+
+            if (entryBindByRole == null)
+            {
+                entryBindByRole = new List<RoleWaveBinding>();
+                return;
+            }
+
+            foreach (var bind in entryBindByRole)
+            {
+                var role = bind.Role;
+                var preset = bind.WavePreset;
+
+                if (runtimeBindByRole.ContainsKey(role))
                 {
-                    if (bind.Value == null)
-                    {
-                        DebugUtility.LogError<PlanetDefenseEntrySo>(
-                            $"Preset de wave para role '{bind.Key}' está vazio — configure para evitar falhas.",
-                            this);
-                    }
+                    DebugUtility.LogError<PlanetDefenseEntrySo>(
+                        $"Role '{role}' duplicado no bind — mantenha apenas um preset por role.",
+                        this);
+                    continue;
+                }
+
+                runtimeBindByRole[role] = preset;
+
+                if (preset == null)
+                {
+                    DebugUtility.LogError<PlanetDefenseEntrySo>(
+                        $"Preset de wave para role '{role}' está vazio — configure para evitar falhas.",
+                        this);
                 }
             }
         }
-#endif
+
+        /// <summary>
+        /// Estrutura serializável para expor binds no Inspector.
+        /// </summary>
+        [Serializable]
+        private struct RoleWaveBinding
+        {
+            [Tooltip("Role detectado no evento de defesa.")]
+            [SerializeField]
+            private DefenseRole role;
+
+            [Tooltip("Preset de onda específico para o role informado.")]
+            [SerializeField]
+            private WavePresetSo wavePreset;
+
+            public DefenseRole Role => role;
+
+            public WavePresetSo WavePreset => wavePreset;
+        }
+
+        [NonSerialized]
+        private Dictionary<DefenseRole, WavePresetSo> runtimeBindByRole = new();
     }
 }

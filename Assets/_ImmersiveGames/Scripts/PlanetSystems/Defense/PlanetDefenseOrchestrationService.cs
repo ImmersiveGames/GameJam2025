@@ -243,8 +243,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 null,
                 poolData,
-                null,
-                null,
                 wavePreset,
                 selectedEntry?.SpawnOffset ?? 0f,
                 spawnRadius);
