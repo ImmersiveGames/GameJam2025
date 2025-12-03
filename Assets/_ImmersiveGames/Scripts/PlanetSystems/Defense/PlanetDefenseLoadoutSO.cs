@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Estratégia de defesa (por planeta)")]
         [Tooltip("Estratégia opcional que customiza comportamento de waves e minions para este planeta.")]
         [SerializeField, HideInInspector]
-        private DefenseStrategySo defenseStrategy;
+        private PlanetDefenseStrategySo defenseStrategy;
 
         /// <summary>
         /// Preset principal de defesa, preferido pelos serviços de orquestração.
@@ -59,6 +59,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Estratégia defensiva opcional deste planeta.
         /// </summary>
-        public DefenseStrategySo DefenseStrategy => defenseStrategy;
+        public PlanetDefenseStrategySo DefenseStrategy => defenseStrategy;
     }
 }

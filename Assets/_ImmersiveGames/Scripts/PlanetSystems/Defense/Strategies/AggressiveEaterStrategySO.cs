@@ -8,21 +8,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
     /// Estratégia voltada para confrontar Eaters com minions rápidos e imprevisíveis.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "AggressiveEaterStrategy",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Aggressive Eater Strategy")]
-    public sealed class AggressiveEaterStrategySo : DefenseStrategySo
+        fileName = "PlanetDefenseEaterAggressiveStrategy",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Planet Defense Eater Aggressive Strategy")]
+    public sealed class PlanetDefenseEaterAggressiveStrategySo : PlanetDefenseStrategySo
     {
         [Header("Profiles por alvo")]
-        [SerializeField] private DefenseMinionBehaviorProfileSO eaterProfile;
+        [SerializeField] private DefenseMinionBehaviorProfileSO eaterBehaviorProfile;
 
         [Tooltip("Profile usado quando o alvo não é um Eater; mantém compatibilidade com a estratégia base.")]
-        [SerializeField] private DefenseMinionBehaviorProfileSO fallbackProfile;
+        [SerializeField] private DefenseMinionBehaviorProfileSO nonEaterBehaviorProfile;
 
         public override void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
             base.OnEngaged(planet, detectionType);
-            DebugUtility.LogVerbose<AggressiveEaterStrategySo>(
-                $"[Strategy] Aggressive/Eater ativa em {planet?.ActorName ?? "Unknown"} para {detectionType?.TypeName ?? "Unknown"}.");
+            DebugUtility.LogVerbose<PlanetDefenseEaterAggressiveStrategySo>(
+                $"[Strategy] Aggressive/Eater engaged on {planet?.ActorName ?? "Unknown"} for {detectionType?.TypeName ?? "Unknown"}.");
         }
 
         public override DefenseMinionBehaviorProfileSO SelectMinionProfile(
@@ -30,22 +30,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
-            if (role == DefenseRole.Eater && eaterProfile != null)
+            if (role == DefenseRole.Eater && eaterBehaviorProfile != null)
             {
-                return eaterProfile;
+                return eaterBehaviorProfile;
             }
 
-            if (waveProfile != null)
+            if (role == DefenseRole.Unknown && TargetRole == DefenseRole.Eater && eaterBehaviorProfile != null)
             {
-                return waveProfile;
+                return eaterBehaviorProfile;
             }
 
-            if (role == DefenseRole.Unknown && TargetRole == DefenseRole.Eater && eaterProfile != null)
-            {
-                return eaterProfile;
-            }
+            var resolvedMinionProfile = nonEaterBehaviorProfile != null ? nonEaterBehaviorProfile : minionProfile;
+            return base.SelectMinionProfile(role, waveProfile, resolvedMinionProfile);
+        }
 
-            return fallbackProfile != null ? fallbackProfile : minionProfile;
+        protected override void OnValidate()
+        {
+            base.OnValidate();
+            SetPreferredTargetRole(DefenseRole.Eater);
+            SetUnmappedTargetRoleFallback(DefenseRole.Eater);
+            EnsureRoleBehaviorBinding(DefenseRole.Eater, eaterBehaviorProfile);
         }
     }
 }

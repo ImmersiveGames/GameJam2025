@@ -1,47 +1,57 @@
+using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Base ScriptableObject para estratégias de defesa por planeta.
-    /// Fornece implementação padrão (no-op) para permitir dados puros
-    /// sem exigir código adicional até que estratégias concretas existam.
+    /// Estratégia base de defesa planetária.
+    /// - Resolve o alvo prioritário (DefenseRole) de forma determinística.
+    /// - Define perfil de comportamento de minions por role sem duplicar dados por estratégia concreta.
+    /// - Falha cedo quando requisitos mínimos não estão configurados.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "DefenseStrategy",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Defense Strategy (Base)")]
-    public class DefenseStrategySo : ScriptableObject, IDefenseStrategy
+        fileName = "PlanetDefenseStrategy",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Planet Defense Strategy (Base)")]
+    public class PlanetDefenseStrategySo : ScriptableObject, IDefenseStrategy
     {
         [Header("Identidade da estratégia")]
         [SerializeField]
-        private string strategyId = "default";
+        private string strategyId = "PlanetDefenseStrategy";
 
-        [Header("Configuração do alvo")]
-        [Tooltip("Role preferido pelo planeta ao engajar defesas; permanece Unknown se a estratégia não tiver preferência.")]
+        [Header("Configuração do alvo preferencial")]
+        [Tooltip("Role preferido pelo planeta ao engajar defesas quando não houver mapeamento explícito.")]
         [SerializeField]
-        private DefenseRole targetRole = DefenseRole.Unknown;
+        private DefenseRole preferredTargetRole = DefenseRole.Unknown;
+
+        [Tooltip("Role aplicado quando nenhum mapeamento for resolvido; ajuda a evitar Unknown em runtime.")]
+        [SerializeField]
+        private DefenseRole unmappedTargetRoleFallback = DefenseRole.Unknown;
 
         [Header("Configuração externa de roles (opcional)")]
-        [Tooltip("Config de role compartilhada; usada como fallback se os mapeamentos embutidos não cobrirem o identifier.")]
+        [Tooltip("Config compartilhada para mapear identifiers em roles.")]
         [SerializeField]
-        private DefenseRoleConfig roleConfig;
+        private DefenseRoleConfig sharedRoleConfig;
 
-        [Header("Mapeamento de roles (embutido)")]
-        [Tooltip("Mapeamentos opcionais incorporados para evitar SOs extras como DefenseRoleConfig.")]
+        [Header("Mapeamentos de role embutidos")]
+        [Tooltip("Mapeamentos internos de identifier para role, evitando duplicidade com DefenseRoleConfig quando desnecessário.")]
         [SerializeField]
-        private List<DefenseRoleBinding> roleMappings = new();
+        private List<DefenseRoleBinding> embeddedRoleBindings = new();
 
-        [Tooltip("Role de fallback aplicado caso nenhum mapeamento seja encontrado.")]
+        [Header("Profiles por role")]
+        [Tooltip("Perfil de comportamento padrão quando não há correspondência por role ou wave.")]
         [SerializeField]
-        private DefenseRole fallbackRole = DefenseRole.Unknown;
+        private DefenseMinionBehaviorProfileSO defaultBehaviorProfile;
 
-        public string StrategyId => string.IsNullOrWhiteSpace(strategyId) ? name : strategyId;
+        [Tooltip("Associações explícitas entre role e perfil de comportamento, compartilhadas entre estratégias concretas.")]
+        [SerializeField]
+        private List<DefenseRoleBehaviorBinding> roleBehaviorBindings = new();
 
-        public DefenseRole TargetRole => targetRole;
+        public string StrategyId => string.IsNullOrWhiteSpace(strategyId) ? name : strategyId.Trim();
+
+        public DefenseRole TargetRole => preferredTargetRole;
 
         public virtual void ConfigureContext(PlanetDefenseSetupContext context)
         {
@@ -50,14 +60,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public virtual void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
-            DebugUtility.LogVerbose<DefenseStrategySo>(
-                $"[Strategy] {StrategyId} engajada para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
+            DebugUtility.LogVerbose<PlanetDefenseStrategySo>(
+                $"[Strategy] {StrategyId} engaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
         }
 
         public virtual void OnDisengaged(PlanetsMaster planet, DetectionType detectionType)
         {
-            DebugUtility.LogVerbose<DefenseStrategySo>(
-                $"[Strategy] {StrategyId} desengajada para {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
+            DebugUtility.LogVerbose<PlanetDefenseStrategySo>(
+                $"[Strategy] {StrategyId} disengaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}).");
         }
 
         public virtual DefenseMinionBehaviorProfileSO SelectMinionProfile(
@@ -65,54 +75,179 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
-            // Fallback padrão: respeita o profile definido na wave e depois o do minion/pool.
-            return waveProfile != null ? waveProfile : minionProfile;
+            var resolvedRole = role != DefenseRole.Unknown ? role : preferredTargetRole;
+            var roleProfile = ResolveBehaviorProfile(resolvedRole);
+
+            if (roleProfile != null)
+            {
+                return roleProfile;
+            }
+
+            if (waveProfile != null)
+            {
+                return waveProfile;
+            }
+
+            if (defaultBehaviorProfile != null)
+            {
+                return defaultBehaviorProfile;
+            }
+
+            return minionProfile;
         }
 
         public virtual DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole)
         {
-            // Role explícito do evento sempre tem prioridade.
             if (requestedRole != DefenseRole.Unknown)
             {
                 return requestedRole;
             }
 
-            // Tenta resolver pelos mapeamentos embutidos da própria estratégia.
-            var mappedRole = ResolveRole(targetIdentifier);
+            var mappedRole = ResolveRoleFromBindings(targetIdentifier);
             if (mappedRole != DefenseRole.Unknown)
             {
                 return mappedRole;
             }
 
-            // Caso exista um DefenseRoleConfig compartilhado, usa-o como fallback externo.
-            if (roleConfig != null)
+            if (sharedRoleConfig != null)
             {
-                var configRole = roleConfig.ResolveRole(targetIdentifier);
+                var configRole = sharedRoleConfig.ResolveRole(targetIdentifier);
                 if (configRole != DefenseRole.Unknown)
                 {
                     return configRole;
                 }
             }
 
-            // Último fallback: preferência declarada da estratégia.
-            return targetRole;
-        }
-
-        /// <summary>
-        /// Resolve um DefenseRole usando os mapeamentos embutidos na estratégia.
-        /// Permite eliminar o uso de DefenseRoleConfig separado quando a estratégia
-        /// já expressa a preferência de alvo ou precisa mapear labels de forma determinística.
-        /// </summary>
-        private DefenseRole ResolveRole(string identifier)
-        {
-            if (string.IsNullOrWhiteSpace(identifier)) return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
-            foreach (var binding in roleMappings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)).Where(binding => binding.Identifier == identifier))
+            if (preferredTargetRole != DefenseRole.Unknown)
             {
-                return binding.Role;
+                return preferredTargetRole;
             }
 
-            return fallbackRole != DefenseRole.Unknown ? fallbackRole : targetRole;
+            return unmappedTargetRoleFallback;
+        }
 
+        protected virtual void OnValidate()
+        {
+            if (string.IsNullOrWhiteSpace(strategyId))
+            {
+                DebugUtility.LogError<PlanetDefenseStrategySo>($"{name}: StrategyId is required; using asset name as fallback.");
+                strategyId = name;
+            }
+
+            ValidateRoleBindings();
+            ValidateBehaviorBindings();
+
+            if (preferredTargetRole == DefenseRole.Unknown &&
+                unmappedTargetRoleFallback == DefenseRole.Unknown &&
+                !embeddedRoleBindings.Any() &&
+                sharedRoleConfig == null)
+            {
+                DebugUtility.LogError<PlanetDefenseStrategySo>(
+                    $"{name}: No role resolution configured. Set a preferred target, fallback role, role bindings or a shared role config.");
+            }
+        }
+
+        protected void SetPreferredTargetRole(DefenseRole role)
+        {
+            preferredTargetRole = role;
+        }
+
+        protected void SetUnmappedTargetRoleFallback(DefenseRole role)
+        {
+            unmappedTargetRoleFallback = role;
+        }
+
+        protected void EnsureRoleBehaviorBinding(DefenseRole role, DefenseMinionBehaviorProfileSO profile)
+        {
+            if (role == DefenseRole.Unknown)
+            {
+                DebugUtility.LogError<PlanetDefenseStrategySo>($"{name}: Cannot bind Unknown role to a behavior profile.");
+                return;
+            }
+
+            var existingBinding = roleBehaviorBindings.FirstOrDefault(binding => binding != null && binding.Role == role);
+            if (existingBinding != null)
+            {
+                existingBinding.SetProfile(profile);
+                return;
+            }
+
+            roleBehaviorBindings.Add(new DefenseRoleBehaviorBinding(role, profile));
+        }
+
+        private DefenseRole ResolveRoleFromBindings(string identifier)
+        {
+            if (string.IsNullOrWhiteSpace(identifier))
+            {
+                return unmappedTargetRoleFallback;
+            }
+
+            foreach (var binding in embeddedRoleBindings.Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier)))
+            {
+                if (binding.Identifier == identifier)
+                {
+                    return binding.Role;
+                }
+            }
+
+            return unmappedTargetRoleFallback;
+        }
+
+        private DefenseMinionBehaviorProfileSO ResolveBehaviorProfile(DefenseRole role)
+        {
+            if (role == DefenseRole.Unknown)
+            {
+                return null;
+            }
+
+            foreach (var binding in roleBehaviorBindings.Where(binding => binding != null && binding.Role != DefenseRole.Unknown))
+            {
+                if (binding.Role == role)
+                {
+                    return binding.BehaviorProfile;
+                }
+            }
+
+            return null;
+        }
+
+        private void ValidateRoleBindings()
+        {
+            var duplicatedKeys = embeddedRoleBindings
+                .Where(binding => binding != null && !string.IsNullOrWhiteSpace(binding.Identifier))
+                .GroupBy(binding => binding.Identifier)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToList();
+
+            if (duplicatedKeys.Count > 0)
+            {
+                DebugUtility.LogError<PlanetDefenseStrategySo>(
+                    $"{name}: Duplicate role identifiers detected: {string.Join(", ", duplicatedKeys)}");
+            }
+        }
+
+        private void ValidateBehaviorBindings()
+        {
+            foreach (var binding in roleBehaviorBindings)
+            {
+                if (binding == null)
+                {
+                    DebugUtility.LogError<PlanetDefenseStrategySo>($"{name}: Null behavior binding detected.");
+                    continue;
+                }
+
+                if (binding.Role == DefenseRole.Unknown)
+                {
+                    DebugUtility.LogError<PlanetDefenseStrategySo>($"{name}: Behavior binding with Unknown role is not allowed.");
+                }
+
+                if (binding.BehaviorProfile == null)
+                {
+                    DebugUtility.LogError<PlanetDefenseStrategySo>(
+                        $"{name}: Behavior binding for role {binding.Role} has no profile assigned.");
+                }
+            }
         }
 
         [System.Serializable]
@@ -128,6 +263,32 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             public string Identifier => identifier;
             public DefenseRole Role => role;
+        }
+
+        [System.Serializable]
+        private class DefenseRoleBehaviorBinding
+        {
+            [Tooltip("Role alvo para associar ao perfil de comportamento do minion.")]
+            [SerializeField]
+            private DefenseRole role = DefenseRole.Unknown;
+
+            [Tooltip("Perfil de comportamento escolhido para o role informado.")]
+            [SerializeField]
+            private DefenseMinionBehaviorProfileSO behaviorProfile;
+
+            public DefenseRoleBehaviorBinding(DefenseRole role, DefenseMinionBehaviorProfileSO behaviorProfile)
+            {
+                this.role = role;
+                this.behaviorProfile = behaviorProfile;
+            }
+
+            public DefenseRole Role => role;
+            public DefenseMinionBehaviorProfileSO BehaviorProfile => behaviorProfile;
+
+            public void SetProfile(DefenseMinionBehaviorProfileSO profile)
+            {
+                behaviorProfile = profile;
+            }
         }
     }
 }

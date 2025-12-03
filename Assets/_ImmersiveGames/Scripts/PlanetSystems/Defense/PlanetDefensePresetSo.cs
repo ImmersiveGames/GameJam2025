@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         [Tooltip("Custom strategy applied when the override flag is enabled.")]
         [SerializeField]
-        private DefenseStrategySo customStrategy;
+        private PlanetDefenseStrategySo customStrategy;
 
         private DefenseWaveProfileSo runtimeWaveProfileCache;
         private DefenseWaveProfileSo cachedWaveProfileSource;
@@ -113,6 +113,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Estratégia ativa considerando overrides avançados.
         /// </summary>
-        public DefenseStrategySo CustomStrategy => useCustomStrategy ? customStrategy : null;
+        public PlanetDefenseStrategySo CustomStrategy => useCustomStrategy ? customStrategy : null;
     }
 }

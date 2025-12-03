@@ -8,21 +8,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
     /// Estratégia defensiva contra Players: prioriza minions mais lentos e previsíveis.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "DefensivePlayerStrategy",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Defensive Player Strategy")]
-    public sealed class DefensivePlayerStrategySo : DefenseStrategySo
+        fileName = "PlanetDefensePlayerDefensiveStrategy",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Strategies/Planet Defense Player Defensive Strategy")]
+    public sealed class PlanetDefensePlayerDefensiveStrategySo : PlanetDefenseStrategySo
     {
         [Header("Profiles por alvo")]
-        [SerializeField] private DefenseMinionBehaviorProfileSO playerProfile;
+        [SerializeField] private DefenseMinionBehaviorProfileSO playerBehaviorProfile;
 
         [Tooltip("Profile usado quando o alvo não é Player ou quando não há match direto.")]
-        [SerializeField] private DefenseMinionBehaviorProfileSO fallbackProfile;
+        [SerializeField] private DefenseMinionBehaviorProfileSO nonPlayerBehaviorProfile;
 
         public override void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
             base.OnEngaged(planet, detectionType);
-            DebugUtility.LogVerbose<DefensivePlayerStrategySo>(
-                $"[Strategy] Defensive/Player ativa em {planet?.ActorName ?? "Unknown"} para {detectionType?.TypeName ?? "Unknown"}.");
+            DebugUtility.LogVerbose<PlanetDefensePlayerDefensiveStrategySo>(
+                $"[Strategy] Defensive/Player engaged on {planet?.ActorName ?? "Unknown"} for {detectionType?.TypeName ?? "Unknown"}.");
         }
 
         public override DefenseMinionBehaviorProfileSO SelectMinionProfile(
@@ -30,22 +30,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
-            if (role == DefenseRole.Player && playerProfile != null)
+            if (role == DefenseRole.Player && playerBehaviorProfile != null)
             {
-                return playerProfile;
+                return playerBehaviorProfile;
             }
 
-            if (waveProfile != null)
+            if (role == DefenseRole.Unknown && TargetRole == DefenseRole.Player && playerBehaviorProfile != null)
             {
-                return waveProfile;
+                return playerBehaviorProfile;
             }
 
-            if (role == DefenseRole.Unknown && TargetRole == DefenseRole.Player && playerProfile != null)
-            {
-                return playerProfile;
-            }
+            var resolvedMinionProfile = nonPlayerBehaviorProfile != null ? nonPlayerBehaviorProfile : minionProfile;
+            return base.SelectMinionProfile(role, waveProfile, resolvedMinionProfile);
+        }
 
-            return fallbackProfile != null ? fallbackProfile : minionProfile;
+        protected override void OnValidate()
+        {
+            base.OnValidate();
+            SetPreferredTargetRole(DefenseRole.Player);
+            SetUnmappedTargetRoleFallback(DefenseRole.Player);
+            EnsureRoleBehaviorBinding(DefenseRole.Player, playerBehaviorProfile);
         }
     }
 }
