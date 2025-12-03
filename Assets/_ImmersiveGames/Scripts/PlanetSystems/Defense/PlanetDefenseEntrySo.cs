@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -49,12 +50,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (entryDefaultWavePreset == null)
             {
-                Debug.LogError("EntryDefaultWavePreset obrigatório — configure ou defesas falharão.", this);
+                DebugUtility.LogError<PlanetDefenseEntrySo>(
+                    "EntryDefaultWavePreset obrigatório — configure ou defesas falharão.",
+                    this);
             }
 
             if (entryBindByRole != null && entryBindByRole.Count > 0 && entryDefaultWavePreset == null)
             {
-                Debug.LogError("Bind usado, mas default faltando — configure default para evitar falhas em runtime.", this);
+                DebugUtility.LogError<PlanetDefenseEntrySo>(
+                    "Bind usado, mas default faltando — configure default para evitar falhas em runtime.",
+                    this);
             }
 
             if (entryBindByRole != null)
@@ -63,7 +68,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     if (bind.Value == null)
                     {
-                        Debug.LogError($"Preset de wave para role '{bind.Key}' está vazio — configure para evitar falhas.", this);
+                        DebugUtility.LogError<PlanetDefenseEntrySo>(
+                            $"Preset de wave para role '{bind.Key}' está vazio — configure para evitar falhas.",
+                            this);
                     }
                 }
             }

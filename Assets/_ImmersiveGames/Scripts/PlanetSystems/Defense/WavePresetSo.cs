@@ -1,5 +1,6 @@
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -58,17 +59,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (waveProfile == null)
             {
-                Debug.LogError("WaveProfile obrigatório — configure para evitar dados inválidos.", this);
+                DebugUtility.LogError<WavePresetSo>(
+                    "WaveProfile obrigatório — configure para evitar dados inválidos.",
+                    this);
             }
 
             if (poolData == null)
             {
-                Debug.LogError("PoolData obrigatório — configure para habilitar spawn consistente.", this);
+                DebugUtility.LogError<WavePresetSo>(
+                    "PoolData obrigatório — configure para habilitar spawn consistente.",
+                    this);
             }
 
             if (defaultMinionData == null)
             {
-                Debug.LogError("DefaultMinionData obrigatório — configure para definir o comportamento do minion.", this);
+                DebugUtility.LogError<WavePresetSo>(
+                    "DefaultMinionData obrigatório — configure para definir o comportamento do minion.",
+                    this);
             }
         }
 #endif
