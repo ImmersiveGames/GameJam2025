@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -15,7 +17,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void SetDefaultPoolData(PoolData poolData);
         void SetWaveProfile(DefenseWaveProfileSo waveProfile);
         void SetDefenseStrategy(IDefenseStrategy defenseStrategy);
-        void ConfigureLoadout(PlanetsMaster planet, PlanetDefenseLoadoutSo loadout);
+        void ConfigureDefenseEntries(
+            PlanetsMaster planet,
+            IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
+            DefenseChoiceMode defenseChoiceMode);
         PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType);
         void PrepareRunners(PlanetDefenseSetupContext context);
         void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
@@ -12,24 +13,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
 
-        // Nota de migração: o loadout agora centraliza o preset de defesa,
-        // evitando múltiplos SOs espalhados por planeta.
-        [SerializeField] private PlanetDefenseLoadoutSo defenseLoadout;
+        [Header("Defesas")]
+        [Tooltip("Lista de entradas para defesas.")]
+        [SerializeField]
+        private List<PlanetDefenseEntrySo> defenseEntries = new();
 
-        private PlanetDefenseLoadoutSo _cachedConfiguredLoadout;
+        [Tooltip("Modo de escolha das entradas.")]
+        [SerializeField]
+        private DefenseChoiceMode defenseChoiceMode = DefenseChoiceMode.Sequential;
+
         private IPlanetDefenseSetupOrchestrator _cachedConfiguredService;
 
         public IActor PlanetActor => this;
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
-        public PlanetDefenseLoadoutSo DefenseLoadout => defenseLoadout;
+        public IReadOnlyList<PlanetDefenseEntrySo> DefenseEntries => defenseEntries;
+        public DefenseChoiceMode DefenseMode => defenseChoiceMode;
 
         public event Action<PlanetResourcesSo> ResourceAssigned;
         public event Action<bool> ResourceDiscoveryChanged;
 
         private void OnEnable()
         {
+            ConfigureDefenseEntries();
+
             if (!HasAssignedResource)
             {
                 return;
@@ -39,15 +47,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             NotifyResourceDiscoveryChanged();
         }
 
-        public void SetDefenseLoadout(PlanetDefenseLoadoutSo loadout)
-        {
-            defenseLoadout = loadout;
-            _cachedConfiguredLoadout = null;
-            _cachedConfiguredService = null;
-            DebugUtility.LogVerbose<PlanetsMaster>(
-                $"[Loadout] {ActorName} recebeu loadout '{defenseLoadout?.name ?? "null"}'.");
-        }
-
         public void ConfigureDefenseService(IPlanetDefenseSetupOrchestrator service)
         {
             if (service == null)
@@ -55,16 +54,30 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            // Cacheia configurações repetidas para evitar reatribuições e logs
-            // redundantes em cenários de multiplayer local com reuso de planetas.
-            if (_cachedConfiguredService == service && _cachedConfiguredLoadout == defenseLoadout)
+            _cachedConfiguredService = service;
+            ConfigureDefenseEntries();
+        }
+
+        private void ConfigureDefenseEntries()
+        {
+            if (defenseEntries == null)
+            {
+                defenseEntries = new List<PlanetDefenseEntrySo>();
+            }
+
+            if (defenseEntries.Count == 0)
+            {
+                DebugUtility.LogError<PlanetsMaster>(
+                    "Lista de defesas vazia — configure ou defesas falharão.",
+                    this);
+            }
+
+            if (_cachedConfiguredService == null)
             {
                 return;
             }
 
-            service.ConfigureLoadout(this, defenseLoadout);
-            _cachedConfiguredService = service;
-            _cachedConfiguredLoadout = defenseLoadout;
+            _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
         }
 
         public void AssignResource(PlanetResourcesSo resource)
@@ -120,6 +133,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _resourceDiscovered = false;
             NotifyResourceDiscoveryChanged();
         }
+    }
+    
+    /// <summary>
+    /// Define como o planeta seleciona cada entrada de defesa configurada.
+    /// </summary>
+    public enum DefenseChoiceMode
+    {
+        Sequential,
+        Random
     }
     public interface IPlanetActor
     {

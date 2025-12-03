@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -19,6 +21,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private DefenseWaveProfileSo _waveProfile;
         private IDefenseStrategy _defaultStrategy;
         private readonly Dictionary<PlanetsMaster, PlanetDefenseLoadoutSo> _configuredLoadouts = new();
+        private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntries = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
         private const bool WarmUpPools = true;
         private const bool ReleasePoolsOnDisable = true;
@@ -65,19 +68,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             LogStrategy();
         }
 
-        public void ConfigureLoadout(PlanetsMaster planet, PlanetDefenseLoadoutSo loadout)
+        public void ConfigureDefenseEntries(
+            PlanetsMaster planet,
+            IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
+            DefenseChoiceMode defenseChoiceMode)
         {
             if (planet == null)
             {
                 return;
             }
 
-            _configuredLoadouts[planet] = loadout;
+            var entries = defenseEntries ?? Array.Empty<PlanetDefenseEntrySo>();
+            _configuredDefenseEntries[planet] = new DefenseEntryConfiguration(entries, defenseChoiceMode);
             ClearCachedContext(planet);
             PlanetDefensePresetAdapter.ClearCache(planet);
-            string loadoutName = loadout != null ? loadout.name : "null";
+
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
-                $"[Loadout] Planeta {planet.ActorName} usando PlanetDefenseLoadout='{loadoutName}'.");
+                $"[DefenseEntries] Planeta {planet.ActorName} configurado com {entries.Count} entradas (modo: {defenseChoiceMode}).");
         }
 
         public PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType)
@@ -315,6 +322,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             strategy?.ConfigureContext(context);
             return context;
+        }
+
+        private readonly struct DefenseEntryConfiguration
+        {
+            public readonly IReadOnlyList<PlanetDefenseEntrySo> Entries;
+            public readonly DefenseChoiceMode ChoiceMode;
+
+            public DefenseEntryConfiguration(IReadOnlyList<PlanetDefenseEntrySo> entries, DefenseChoiceMode choiceMode)
+            {
+                Entries = entries;
+                ChoiceMode = choiceMode;
+            }
         }
     }
 }

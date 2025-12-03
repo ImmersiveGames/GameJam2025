@@ -26,10 +26,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            // Integração pós-migração: o loadout centraliza o preset e
-            // precisa ser aplicado no orquestrador antes de iniciar os serviços.
-            ResolveDefenseLoadout();
-
             // 🔧 Cria sub-serviços separados para orquestração e eventos,
             // mantendo SRP e permitindo DI explícita por ActorId.
             var orchestrator = new PlanetDefenseOrchestrationService();
@@ -43,27 +39,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DependencyManager.Provider.RegisterForObject(planetsMaster.ActorId, eventService);
             DependencyManager.Provider.InjectDependencies(eventService, planetsMaster.ActorId);
             eventService.OnDependenciesInjected();
-        }
-
-        private PlanetDefenseLoadoutSo ResolveDefenseLoadout()
-        {
-            var loadout = planetsMaster.DefenseLoadout;
-
-            if (loadout == null)
-            {
-                DebugUtility.LogWarning<PlanetDefenseController>(
-                    "Nenhum PlanetDefenseLoadoutSo definido; serão usados fallbacks legados.",
-                    planetsMaster);
-                return null;
-            }
-
-            var presetName = loadout.DefensePreset != null ? loadout.DefensePreset.name : "legacy";
-            DebugUtility.LogVerbose<PlanetDefenseController>(
-                $"[Preset] Aplicando loadout '{loadout.name}' com preset '{presetName}' para {planetsMaster.ActorName}.",
-                DebugUtility.Colors.Info,
-                planetsMaster);
-
-            return loadout;
         }
 
 
