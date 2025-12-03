@@ -18,6 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PoolData _defaultPoolData;
         private DefenseWaveProfileSo _waveProfile;
         private IDefenseStrategy _defaultStrategy;
+        private readonly Dictionary<DefenseTargetMode, SimplePlanetDefenseStrategy> _strategyCache = new();
         private readonly Dictionary<PlanetsMaster, PlanetDefenseLoadoutSo> _configuredLoadouts = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<DetectionType, PlanetDefenseSetupContext>> _resolvedContexts = new();
         private const bool WarmUpPools = true;
@@ -282,29 +283,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetDefenseLoadoutSo loadout,
             PlanetResourcesSo resource)
         {
-            var preset = loadout?.DefensePreset;
-
-            var context = preset != null
-                ? PlanetDefensePresetAdapter.Resolve(
-                    planet,
-                    detectionType,
-                    preset,
-                    _defaultPoolData,
-                    _waveProfile,
-                    _defaultStrategy,
-                    loadout)
-                : null;
-
-            if (context != null)
-            {
-                return context;
-            }
-
             var poolData = loadout?.DefensePoolData ?? _defaultPoolData;
-            var waveProfile = loadout?.WaveProfileOverride ?? _waveProfile;
-            var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+            var waveProfile = loadout?.ResolvedWaveProfile ?? _waveProfile;
+            var strategy = ResolveStrategy(loadout);
 
-            context = new PlanetDefenseSetupContext(
+            var context = new PlanetDefenseSetupContext(
                 planet,
                 detectionType,
                 resource,
@@ -315,6 +298,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             strategy?.ConfigureContext(context);
             return context;
+        }
+
+        private IDefenseStrategy ResolveStrategy(PlanetDefenseLoadoutSo loadout)
+        {
+            if (loadout != null)
+            {
+                var customStrategy = loadout.ResolveStrategy(_defaultStrategy);
+                if (customStrategy != null)
+                {
+                    return customStrategy;
+                }
+
+                return GetOrCreateSimpleStrategy(loadout.PreferredTargetRole);
+            }
+
+            return _defaultStrategy ?? GetOrCreateSimpleStrategy(DefenseTargetMode.PreferPlayer);
+        }
+
+        private IDefenseStrategy GetOrCreateSimpleStrategy(DefenseTargetMode targetMode)
+        {
+            if (_strategyCache.TryGetValue(targetMode, out var cached))
+            {
+                return cached;
+            }
+
+            var strategy = new SimplePlanetDefenseStrategy(targetMode);
+            _strategyCache[targetMode] = strategy;
+            return strategy;
         }
     }
 }
