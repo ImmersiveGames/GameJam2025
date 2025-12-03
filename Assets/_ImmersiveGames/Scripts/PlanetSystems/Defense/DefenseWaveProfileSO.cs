@@ -30,6 +30,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             secondsBetweenWaves = Mathf.Max(1, secondsBetweenWaves);
             enemiesPerWave = Mathf.Max(1, enemiesPerWave);
+            spawnRadius = Mathf.Max(0f, spawnRadius);
+
+            if (defaultMinionProfile == null)
+            {
+                Debug.LogError(
+                    $"[{nameof(DefenseWaveProfileSo)}] {name} requer um {nameof(DefenseMinionBehaviorProfileSO)} para evitar fallback silencioso nos minions.",
+                    this);
+            }
         }
     }
 }
