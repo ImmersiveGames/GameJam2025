@@ -4,7 +4,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Configuração de um TIPO de minion de defesa para o PoolSystem.
+    /// LEGACY: Configuração de um TIPO de minion de defesa para o PoolSystem.
     ///
     /// - Herdado de PoolableObjectData (lifetime, prefab, etc.)
     /// - Referencia um DefenseMinionBehaviorProfileSO,

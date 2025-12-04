@@ -3,8 +3,10 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Preset de Wave: define apenas quantidade e cadência de spawn por wave,
-    /// sem alterar comportamento dos minions (apenas parâmetros de tempo e distribuição).
+    /// LEGACY: Preset de Wave separado. Mantido para compatibilidade, mas substituído
+    /// por <see cref="DefenseEntryConfigSo"/> que agrega entrada + wave em um único asset.
+    /// Define apenas quantidade e cadência de spawn por wave, sem alterar
+    /// comportamento dos minions (apenas parâmetros de tempo e distribuição).
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseWaveProfile",

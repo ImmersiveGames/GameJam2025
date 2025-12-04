@@ -3,8 +3,9 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Preset único de defesa para configuração no Editor, mantendo a composição
-    /// com perfis existentes (waves, minion, estratégia) e evitando duplicação de dados.
+    /// LEGACY: Preset único de defesa antigo. Mantido para compatibilidade, mas
+    /// substituído por <see cref="DefenseEntryConfigSo"/> + <see cref="DefenseMinionConfigSo"/>
+    /// para simplificar a configuração de designers.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefensePreset",

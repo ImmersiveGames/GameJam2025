@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -17,7 +18,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             IDefenseStrategy strategy = null,
             PoolData poolData = null,
             DefenseWaveProfileSo waveProfile = null,
-            PlanetDefenseLoadoutSo loadout = null)
+            PlanetDefenseLoadoutSo loadout = null,
+            DefenseEntryConfigSo entryConfig = null,
+            DefenseEntryConfigSo.RoleDefenseConfig roleConfig = null,
+            DefenseMinionConfigSo minionConfig = null,
+            int minionsPerWave = 0,
+            float secondsBetweenWaves = 0f,
+            float spawnRadius = 0f,
+            float spawnHeightOffset = 0f,
+            DefenseSpawnPatternSo spawnPattern = null,
+            Vector3? spawnOffset = null)
         {
             Planet = planet;
             DetectionType = detectionType;
@@ -26,6 +36,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PoolData = poolData;
             WaveProfile = waveProfile;
             Loadout = loadout;
+            EntryConfig = entryConfig;
+            RoleConfig = roleConfig;
+            MinionConfig = minionConfig;
+            MinionsPerWave = minionsPerWave;
+            SecondsBetweenWaves = secondsBetweenWaves;
+            SpawnRadius = spawnRadius;
+            SpawnHeightOffset = spawnHeightOffset;
+            SpawnPattern = spawnPattern;
+            SpawnOffset = spawnOffset ?? Vector3.zero;
         }
 
         public PlanetsMaster Planet { get; }
@@ -35,6 +54,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PoolData PoolData { get; }
         public DefenseWaveProfileSo WaveProfile { get; }
         public PlanetDefenseLoadoutSo Loadout { get; }
+        public DefenseEntryConfigSo EntryConfig { get; }
+        public DefenseEntryConfigSo.RoleDefenseConfig RoleConfig { get; }
+        public DefenseMinionConfigSo MinionConfig { get; }
+        public int MinionsPerWave { get; }
+        public float SecondsBetweenWaves { get; }
+        public float SpawnRadius { get; }
+        public float SpawnHeightOffset { get; }
+        public DefenseSpawnPatternSo SpawnPattern { get; }
+        public Vector3 SpawnOffset { get; }
 
     }
 

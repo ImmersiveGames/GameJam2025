@@ -5,9 +5,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Configuração de defesa por planeta:
-    /// - PoolData usado para as defesas
-    /// - Perfil de onda (wave profile)
-    /// - Estratégia defensiva (próxima etapa)
+    /// - Novo fluxo: DefenseEntryConfigSo + DefenseMinionConfigSo por Role
+    /// - LEGACY: PoolData + WaveProfile + Strategy para compatibilidade
     ///
     /// A ideia é que cada planeta possua um pacote completo de defesa
     /// exclusivamente via dados, sem depender de variáveis de prefab ou
@@ -19,6 +18,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Loadout")]
     public sealed class PlanetDefenseLoadoutSo : ScriptableObject
     {
+        [Header("Config simplificada por Role")]
+        [Tooltip("Configuração única de entrada de defesa por planeta (entrada + wave por Role).")]
+        [SerializeField]
+        private DefenseEntryConfigSo defenseEntryConfig;
+
         [Header("Preset principal")]
         [Tooltip("Primary defense preset for this planet; centralizes wave, target and strategy setup.")]
         [SerializeField]
@@ -44,6 +48,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// Mantém compatibilidade com SRP ao compor dados de ondas, estratégia e alvo.
         /// </summary>
         public PlanetDefensePresetSo DefensePreset => defensePreset;
+
+        /// <summary>
+        /// Configuração simplificada de defesa por Role (entrada + wave), preferida no fluxo novo.
+        /// </summary>
+        public DefenseEntryConfigSo DefenseEntryConfig => defenseEntryConfig;
 
         /// <summary>
         /// PoolData que o planeta quer usar para suas defesas.
