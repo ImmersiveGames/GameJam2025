@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetDefenseSetupContext ResolveEffectiveConfig(
             PlanetsMaster planet,
             DetectionType detectionType,
-            DefenseRole detectionRole)
+            DefenseRole targetRole)
         {
             if (planet == null)
             {
@@ -70,15 +70,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            if (TryReuseCachedContext(planet, detectionType, detectionRole, out var cached))
+            if (TryReuseCachedContext(planet, detectionType, targetRole, out var cached))
             {
                 return cached;
             }
 
             var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
-            var context = ResolveEntryContext(planet, detectionType, detectionRole, resource);
+            var context = ResolveEntryContext(planet, detectionType, targetRole, resource);
 
-            CacheContext(planet, detectionType, detectionRole, context);
+            CacheContext(planet, detectionType, targetRole, context);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
                 $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', WavePreset='{context.WavePreset?.name ?? "null"}'.");
@@ -155,12 +155,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private bool TryReuseCachedContext(
             PlanetsMaster planet,
             DetectionType detectionType,
-            DefenseRole detectionRole,
+            DefenseRole targetRole,
             out PlanetDefenseSetupContext cached)
         {
             cached = null;
 
-            var cacheKey = (detectionType, detectionRole);
+            var cacheKey = (detectionType, targetRole);
 
             if (_resolvedContexts.TryGetValue(planet, out var contextsByDetection) &&
                 contextsByDetection != null &&
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private void CacheContext(
             PlanetsMaster planet,
             DetectionType detectionType,
-            DefenseRole detectionRole,
+            DefenseRole targetRole,
             PlanetDefenseSetupContext context)
         {
             if (planet == null || context == null)
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _resolvedContexts[planet] = contextsByDetection;
             }
 
-            contextsByDetection[(detectionType, detectionRole)] = context;
+            contextsByDetection[(detectionType, targetRole)] = context;
         }
 
         private void ClearCachedContext(PlanetsMaster planet)
@@ -210,17 +210,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PlanetDefenseSetupContext ResolveEntryContext(
             PlanetsMaster planet,
             DetectionType detectionType,
-            DefenseRole detectionRole,
+            DefenseRole targetRole,
             PlanetResourcesSo resource)
         {
             if (!_configuredDefenseEntries.TryGetValue(planet, out var configuration))
             {
                 DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração de defesa encontrada para {planet?.ActorName ?? "planeta nulo"}.");
-                return new PlanetDefenseSetupContext(planet, detectionType, detectionRole, resource);
+                return new PlanetDefenseSetupContext(planet, detectionType, targetRole, resource);
             }
 
             var selectedEntry = SelectEntry(configuration, planet);
-            var wavePreset = ResolveWavePreset(selectedEntry, detectionRole);
+            var wavePreset = ResolveWavePreset(selectedEntry, targetRole);
             var poolData = wavePreset?.PoolData;
             var spawnRadius = CalculatePlanetRadius(planet, selectedEntry?.SpawnOffset ?? 0f);
 
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var context = new PlanetDefenseSetupContext(
                 planet,
                 detectionType,
-                detectionRole,
+                targetRole,
                 resource,
                 null,
                 poolData,
