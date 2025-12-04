@@ -7,9 +7,10 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Define como o planeta reage a cada target role detectado: qual minion usar,
-    /// qual preset de wave dispara e qual offset aplicar ao spawn ao redor do planeta.
-    /// Não altera lógica existente — apenas oferece um novo ponto de configuração.
+    /// Define como o planeta reage a cada target role detectado: qual minion config usar
+    /// e qual preset de wave disparar para aquele role específico.
+    /// O pool está exclusivamente em <see cref="WavePresetSo.PoolData"/>.
+    /// Não altera lógica existente — apenas oferece um ponto unificado de configuração por role.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class DefenseEntryConfigSO : ScriptableObject
     {
         [Header("Mapeamento por target role")]
-        [Tooltip("Lista de binds entre target role detectado, minion config e preset de wave específico.")]
+        [Tooltip("Lista de binds entre target role detectado, minion config e preset de wave específico. O pool vem do WavePreset.")]
         [SerializeField]
         private List<RoleDefenseBinding> bindings = new();
 
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseMinionConfigSO defaultMinionConfig;
 
-        [Tooltip("Preset de wave padrão usado quando o role não está mapeado.")]
+        [Tooltip("Preset de wave padrão usado quando o role não está mapeado. O pool está em WavePresetSo.PoolData.")]
         [SerializeField]
         private WavePresetSo defaultWavePreset;
 
@@ -123,7 +124,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseRole role;
 
-            [Tooltip("Config completa do minion a ser usado para este role.")]
+            [Tooltip("Config lógica do minion a ser usado para este role.")]
             [SerializeField]
             private DefenseMinionConfigSO minionConfig;
 
