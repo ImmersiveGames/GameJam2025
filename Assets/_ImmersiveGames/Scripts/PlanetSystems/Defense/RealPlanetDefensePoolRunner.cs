@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class RealPlanetDefensePoolRunner : IPlanetDefensePoolRunner
     {
         private readonly Dictionary<PlanetsMaster, PlanetDefenseSetupContext> _configured = new();
-        private readonly Dictionary<PlanetsMaster, ObjectPool> _planetPools = new();
+        private readonly Dictionary<PlanetsMaster, List<ObjectPool>> _planetPools = new();
         private readonly HashSet<PlanetsMaster> _warmedPlanets = new();
 
         public void ConfigureForPlanet(PlanetDefenseSetupContext context)
@@ -26,19 +26,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var planet = context.Planet;
             _configured[planet] = context;
 
-            var poolData = context.PoolData;
-            if (poolData == null)
-            {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"PoolData ausente para {planet.ActorName}; defesa poderá falhar por falta de pool.");
-                return;
-            }
-
-            if (!PoolData.Validate(poolData, planet))
-            {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"PoolData inválido para {planet.ActorName}; registro de pool cancelado.");
-                return;
-            }
-
             var poolManager = PoolManager.Instance;
             if (poolManager == null)
             {
@@ -46,21 +33,37 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_planetPools.TryGetValue(planet, out var existingPool) && existingPool != null)
+            var poolsForPlanet = _planetPools.TryGetValue(planet, out var existingList) && existingList != null
+                ? existingList
+                : new List<ObjectPool>();
+
+            foreach (var poolData in EnumeratePoolData(context))
             {
-                DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolData.ObjectName}' reutilizada para planeta {planet.ActorName}.");
-                return;
+                if (poolData == null)
+                {
+                    continue;
+                }
+
+                if (!PoolData.Validate(poolData, planet))
+                {
+                    DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"PoolData inválido para {planet.ActorName}; registro de pool cancelado.");
+                    continue;
+                }
+
+                if (poolsForPlanet.Exists(p => p != null && p.name == poolData.ObjectName))
+                {
+                    continue;
+                }
+
+                var pool = poolManager.RegisterPool(poolData);
+                if (pool != null)
+                {
+                    poolsForPlanet.Add(pool);
+                    DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolData.ObjectName}' registrada para planeta {planet.ActorName}.");
+                }
             }
 
-            var pool = poolManager.RegisterPool(poolData);
-            if (pool == null)
-            {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Falha ao registrar pool '{poolData.ObjectName}' para planeta {planet.ActorName}.");
-                return;
-            }
-
-            _planetPools[planet] = pool;
-            DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolData.ObjectName}' registrada para planeta {planet.ActorName}.");
+            _planetPools[planet] = poolsForPlanet;
         }
 
         public bool TryGetConfiguration(PlanetsMaster planet, out PlanetDefenseSetupContext context)
@@ -93,13 +96,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 ConfigureForPlanet(context);
             }
 
-            if (!_planetPools.TryGetValue(planet, out var pool) || pool == null)
+            if (!_planetPools.TryGetValue(planet, out var pools) || pools == null || pools.Count == 0)
             {
                 DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Pool não configurada para planeta {planet.ActorName}; warm-up cancelado.");
                 return;
             }
 
-            string poolName = context.PoolData?.ObjectName ?? pool.name;
+            string poolName = context.PoolData?.ObjectName ?? pools[0].name;
             if (!_warmedPlanets.Add(planet))
             {
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' já aquecida para planeta {planet.ActorName}.");
@@ -116,17 +119,46 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_planetPools.TryGetValue(planet, out var pool) && pool != null)
+            if (_planetPools.TryGetValue(planet, out var pools) && pools != null)
             {
-                pool.ClearPool();
+                foreach (var pool in pools)
+                {
+                    pool?.ClearPool();
+                }
+
                 _configured.TryGetValue(planet, out var context);
-                string poolName = context?.PoolData != null ? context.PoolData.ObjectName : pool.name;
+                string poolName = context?.PoolData != null ? context.PoolData.ObjectName : pools[0].name;
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' cleared for planet {planet.ActorName}.");
             }
 
             _configured.Remove(planet);
             _planetPools.Remove(planet);
             _warmedPlanets.Remove(planet);
+        }
+
+        private IEnumerable<PoolData> EnumeratePoolData(PlanetDefenseSetupContext context)
+        {
+            if (context?.PoolData != null)
+            {
+                yield return context.PoolData;
+            }
+
+            var entry = context?.EntryConfig;
+            if (entry?.defaultConfig?.minionConfig?.PoolData != null)
+            {
+                yield return entry.defaultConfig.minionConfig.PoolData;
+            }
+
+            if (entry?.roleConfigs != null)
+            {
+                foreach (var roleConfig in entry.roleConfigs)
+                {
+                    if (roleConfig?.minionConfig?.PoolData != null)
+                    {
+                        yield return roleConfig.minionConfig.PoolData;
+                    }
+                }
+            }
         }
     }
 }

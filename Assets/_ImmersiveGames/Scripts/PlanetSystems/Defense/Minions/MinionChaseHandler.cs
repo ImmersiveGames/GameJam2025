@@ -13,7 +13,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class MinionChaseHandler : MonoBehaviour
     {
+        public enum ChaseStopReason
+        {
+            LostTarget,
+            Completed,
+            Cancelled
+        }
+
         private Tween _chaseTween;
+        private Transform _targetTransform;
+        private string _targetLabel;
+        private DefenseRole _targetRole;
+        private float _chaseSpeed;
+        private MinionChaseStrategySo _chaseStrategy;
+        private Action<ChaseStopReason> _onChaseStopped;
+        private Func<Transform> _reacquireTarget;
+        private bool _isChasing;
+        private Vector3 _lastTargetPosition;
 
         private void OnDisable()
         {
@@ -26,81 +42,138 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole targetRole,
             float chaseSpeed,
             MinionChaseStrategySo chaseStrategy,
-            Action onCompleted)
+            Func<Transform> targetResolver,
+            Action<ChaseStopReason> onChaseStopped)
         {
             CancelChase();
 
-            if (targetTransform == null)
-            {
-                DebugUtility.LogVerbose<MinionChaseHandler>(
-                    $"[Chase] {name} iniciado sem alvo concreto. Role: {targetRole} | Label: '{targetLabel}'.");
+            _targetTransform = targetTransform;
+            _targetLabel = targetLabel;
+            _targetRole = targetRole;
+            _chaseSpeed = Mathf.Max(0.01f, chaseSpeed);
+            _chaseStrategy = chaseStrategy;
+            _onChaseStopped = onChaseStopped;
+            _reacquireTarget = targetResolver;
+            _isChasing = true;
 
-                _chaseTween = transform.DOMove(transform.position + transform.forward * 5f, 2f)
-                                       .SetEase(Ease.Linear)
-                                       .SetRecyclable(true)
-                                       .OnComplete(() =>
-                                       {
-                                           DebugUtility.LogVerbose<MinionChaseHandler>(
-                                               $"[Chase] {name} concluiu perseguição fake sem alvo concreto.");
-                                           onCompleted?.Invoke();
-                                           _chaseTween = null;
-                                       });
+            DebugUtility.LogVerbose<MinionChaseHandler>(
+                $"[Chase] {name} iniciou perseguição ativa a '{_targetLabel}' (Role: {_targetRole}).");
+
+            RestartChaseTween();
+        }
+
+        private void RestartChaseTween()
+        {
+            if (!_isChasing)
+            {
                 return;
             }
 
-            DebugUtility.LogVerbose<MinionChaseHandler>(
-                $"[Chase] {name} iniciou perseguição real a '{targetLabel}' (Role: {targetRole}) em posição {targetTransform.position}.");
+            CancelChaseTweenOnly();
 
-            if (chaseStrategy != null)
+            if (!TryEnsureTarget())
             {
-                _chaseTween = chaseStrategy.CreateChaseTween(
+                StopChase(ChaseStopReason.LostTarget);
+                return;
+            }
+
+            var currentTarget = _targetTransform;
+            if (currentTarget == null)
+            {
+                StopChase(ChaseStopReason.LostTarget);
+                return;
+            }
+
+            _lastTargetPosition = currentTarget.position;
+
+            if (_chaseStrategy != null)
+            {
+                _chaseTween = _chaseStrategy.CreateChaseTween(
                     transform,
-                    targetTransform,
-                    chaseSpeed,
-                    targetLabel);
+                    currentTarget,
+                    _chaseSpeed,
+                    _targetLabel);
             }
             else
             {
-                float distance = Vector3.Distance(transform.position, targetTransform.position);
-                float duration = distance / Mathf.Max(0.01f, chaseSpeed);
-
-                _chaseTween = transform.DOMove(targetTransform.position, duration)
+                _chaseTween = transform.DOMove(currentTarget.position, _chaseSpeed)
+                                       .SetSpeedBased(true)
                                        .SetEase(Ease.Linear)
                                        .SetRecyclable(true);
             }
 
-            if (_chaseTween != null)
-            {
-                _chaseTween.SetRecyclable(true);
-
-                _chaseTween.OnUpdate(() =>
-                {
-                    var dir = (targetTransform.position - transform.position);
-                    if (dir.sqrMagnitude > 0.0001f)
-                    {
-                        dir.Normalize();
-                        transform.forward = Vector3.Lerp(transform.forward, dir, 0.2f);
-                    }
-                });
-
-                _chaseTween.OnComplete(() =>
-                {
-                    DebugUtility.LogVerbose<MinionChaseHandler>(
-                        $"[Chase] {name} concluiu Tween de perseguição a '{targetLabel}'. Posição final: {transform.position}.");
-
-                    onCompleted?.Invoke();
-                    _chaseTween = null;
-                });
-            }
-            else
+            if (_chaseTween == null)
             {
                 DebugUtility.LogVerbose<MinionChaseHandler>(
-                    $"[Chase] {name} não conseguiu criar Tween de perseguição para alvo '{targetLabel}'.");
-                onCompleted?.Invoke();
+                    $"[Chase] {name} não conseguiu criar Tween para alvo '{_targetLabel}'. Finalizando perseguição.");
+                StopChase(ChaseStopReason.Cancelled);
+                return;
             }
+
+            _chaseTween.SetRecyclable(true);
+
+            _chaseTween.OnUpdate(() =>
+            {
+                if (!_isChasing)
+                {
+                    return;
+                }
+
+                if (_targetTransform == null && !TryEnsureTarget())
+                {
+                    StopChase(ChaseStopReason.LostTarget);
+                    return;
+                }
+
+                if (_targetTransform != null)
+                {
+                    if ((_targetTransform.position - _lastTargetPosition).sqrMagnitude > 0.0001f)
+                    {
+                        RestartChaseTween();
+                        return;
+                    }
+
+                    var direction = (_targetTransform.position - transform.position);
+                    if (direction.sqrMagnitude > 0.0001f)
+                    {
+                        transform.forward = Vector3.Lerp(transform.forward, direction.normalized, 0.2f);
+                    }
+                }
+            });
+
+            _chaseTween.OnComplete(() =>
+            {
+                if (!_isChasing)
+                {
+                    return;
+                }
+
+                DebugUtility.LogVerbose<MinionChaseHandler>(
+                    $"[Chase] {name} concluiu etapa de perseguição para '{_targetLabel}'. Reiniciando enquanto ativo.");
+
+                RestartChaseTween();
+            });
+        }
+
+        private bool TryEnsureTarget()
+        {
+            if (_targetTransform != null)
+            {
+                return true;
+            }
+
+            _targetTransform = _reacquireTarget?.Invoke();
+            return _targetTransform != null;
         }
 
         public void CancelChase()
+        {
+            _isChasing = false;
+            CancelChaseTweenOnly();
+            ClearRuntimeState();
+        }
+
+        private void CancelChaseTweenOnly()
         {
             if (_chaseTween != null && _chaseTween.IsActive())
             {
@@ -108,6 +181,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             _chaseTween = null;
+        }
+
+        private void StopChase(ChaseStopReason reason)
+        {
+            _isChasing = false;
+            CancelChaseTweenOnly();
+            _onChaseStopped?.Invoke(reason);
+            ClearRuntimeState();
+        }
+
+        private void ClearRuntimeState()
+        {
+            _targetTransform = null;
+            _targetLabel = null;
+            _targetRole = DefenseRole.Unknown;
+            _chaseStrategy = null;
+            _onChaseStopped = null;
+            _reacquireTarget = null;
+            _lastTargetPosition = Vector3.zero;
         }
     }
 }
