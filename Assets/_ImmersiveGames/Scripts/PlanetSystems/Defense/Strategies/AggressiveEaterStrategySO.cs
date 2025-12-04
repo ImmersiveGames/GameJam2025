@@ -26,11 +26,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
         }
 
         public override DefenseMinionBehaviorProfileSO SelectMinionProfile(
-            DefenseRole role,
+            DefenseRole targetRole,
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
-            if (role == DefenseRole.Eater && eaterProfile != null)
+            if (targetRole == DefenseRole.Eater && eaterProfile != null)
             {
                 return eaterProfile;
             }
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategies
                 return waveProfile;
             }
 
-            if (role == DefenseRole.Unknown && TargetRole == DefenseRole.Eater && eaterProfile != null)
+            if (targetRole == DefenseRole.Unknown && TargetRole == DefenseRole.Eater && eaterProfile != null)
             {
                 return eaterProfile;
             }

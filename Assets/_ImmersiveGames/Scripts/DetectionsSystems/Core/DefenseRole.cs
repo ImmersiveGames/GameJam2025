@@ -1,7 +1,9 @@
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
 {
     /// <summary>
-    /// Representa a origem de um detector que pode ativar defesas planetárias.
+    /// Representa o papel do objeto detectado em relação ao planeta
+    /// (por exemplo, Player, Eater, Unknown). Usado para escolher presets
+    /// de wave e configuração de entrada da defesa.
     /// </summary>
     public enum DefenseRole
     {
@@ -12,7 +14,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
 
     /// <summary>
     /// Interface para detectores ou componentes que desejam expor explicitamente
-    /// seu papel defensivo, evitando heurísticas por string.
+    /// o role do alvo detectado, evitando heurísticas por string.
     /// </summary>
     public interface IDefenseRoleProvider
     {

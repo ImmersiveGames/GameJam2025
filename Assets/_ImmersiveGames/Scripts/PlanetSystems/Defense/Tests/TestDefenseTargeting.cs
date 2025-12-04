@@ -14,9 +14,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Tests
         {
             var strategy = new SimplePlanetDefenseStrategy(DefenseTargetMode.PreferPlayer);
 
-            var role = strategy.ResolveTargetRole(null, DefenseRole.Unknown);
+            var targetRole = strategy.ResolveTargetRole(null, DefenseRole.Unknown);
 
-            Assert.AreEqual(DefenseRole.Player, role);
+            Assert.AreEqual(DefenseRole.Player, targetRole);
             Assert.AreEqual(DefenseRole.Player, strategy.TargetRole);
         }
 
