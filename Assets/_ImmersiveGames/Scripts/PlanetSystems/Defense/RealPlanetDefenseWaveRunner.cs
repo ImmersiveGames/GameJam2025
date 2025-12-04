@@ -450,7 +450,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 EventBus<PlanetDefenseMinionSpawnedEvent>.Raise(
                     new PlanetDefenseMinionSpawnedEvent(
                         planet,
-                        loop.detectionType,
                         poolable,
                         spawnContext,
                         controller != null));
