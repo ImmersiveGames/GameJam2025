@@ -1,12 +1,12 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Encapsula parâmetros de configuração para uma defesa planetária.
-    /// Permite que runners recebam dados de recurso, pool e estratégia
-    /// sem depender diretamente de ScriptableObjects específicos adicionais.
+    /// Permite que runners recebam dados de recurso, configurações de entrada,
+    /// minion e wave sem depender diretamente de ScriptableObjects adicionais.
     /// </summary>
     public sealed class PlanetDefenseSetupContext
     {
@@ -16,9 +16,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole defenseRole,
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
-            PoolData poolData = null,
+            DefenseEntryConfigSO entryConfig = null,
+            DefenseMinionConfigSO minionConfig = null,
             WavePresetSo wavePreset = null,
-            float spawnOffset = 0f,
+            Vector3 spawnOffset = default,
             float spawnRadius = 0f)
         {
             Planet = planet;
@@ -26,7 +27,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole = defenseRole;
             PlanetResource = planetResource;
             Strategy = strategy;
-            PoolData = poolData;
+            EntryConfig = entryConfig;
+            MinionConfig = minionConfig;
             WavePreset = wavePreset;
             SpawnOffset = spawnOffset;
             SpawnRadius = spawnRadius;
@@ -37,9 +39,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public DefenseRole DefenseRole { get; }
         public PlanetResourcesSo PlanetResource { get; }
         public IDefenseStrategy Strategy { get; }
-        public PoolData PoolData { get; }
+        public DefenseEntryConfigSO EntryConfig { get; }
+        public DefenseMinionConfigSO MinionConfig { get; }
         public WavePresetSo WavePreset { get; }
-        public float SpawnOffset { get; }
+        public Vector3 SpawnOffset { get; }
         public float SpawnRadius { get; }
 
     }
