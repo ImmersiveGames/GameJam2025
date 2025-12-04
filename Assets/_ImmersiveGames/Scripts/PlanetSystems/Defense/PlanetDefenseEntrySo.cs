@@ -7,9 +7,10 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Entrada genérica de defesa planetária, responsável por mapear roles detectados
-    /// para presets de wave e definir um preset default obrigatório. Mantém SRP ao
-    /// separar a orquestração (PlanetsMaster/serviços) das configurações de editor.
+    /// Entrada genérica de defesa planetária. Define como os minions entram em lote
+    /// no planeta (Entry) e qual preset de wave cada target role usa. O planeta
+    /// apenas configura a entrada: não define comportamento dos minions, apenas
+    /// de onde e como eles surgem.
     /// </summary>
     [CreateAssetMenu(
         fileName = "PlanetDefenseEntry",
@@ -17,12 +18,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public sealed class PlanetDefenseEntrySo : ScriptableObject
     {
         [Header("Mapeamento por role")]
-        [Tooltip("Mapeamento de role detectado para preset de onda específico — use para waves diferentes por role.")]
+        [Tooltip("Mapeamento de target role detectado para preset de wave específico — use para waves diferentes por role.")]
         [SerializeField]
         private List<RoleWaveBinding> entryBindByRole = new();
 
         [Header("Preset default (obrigatório)")]
-        [Tooltip("Preset de onda default, obrigatório para roles não mapeados.")]
+        [Tooltip("Preset de wave default, obrigatório para target roles não mapeados.")]
         [SerializeField]
         private WavePresetSo entryDefaultWavePreset;
 
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private float spawnOffset;
 
         /// <summary>
-        /// Bind configurado entre role detectado e preset específico.
+        /// Bind configurado entre target role detectado e preset específico.
         /// </summary>
         public IReadOnlyDictionary<DefenseRole, WavePresetSo> EntryBindByRole
         {
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         /// <summary>
-        /// Preset default usado quando o role não está mapeado.
+        /// Preset default usado quando o target role não está mapeado.
         /// </summary>
         public WavePresetSo EntryDefaultWavePreset => entryDefaultWavePreset;
 
@@ -136,11 +137,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Serializable]
         private struct RoleWaveBinding
         {
-            [Tooltip("Role detectado no evento de defesa.")]
+            [Tooltip("Target role detectado no evento de defesa.")]
             [SerializeField]
             private DefenseRole role;
 
-            [Tooltip("Preset de onda específico para o role informado.")]
+            [Tooltip("Preset de wave específico para o target role informado.")]
             [SerializeField]
             private WavePresetSo wavePreset;
 

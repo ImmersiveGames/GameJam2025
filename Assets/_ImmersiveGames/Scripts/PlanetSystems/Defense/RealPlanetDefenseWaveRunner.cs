@@ -13,7 +13,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Runner concreto que gerencia as waves de defesa dos planetas usando CountdownTimer,
-    /// desacoplado de Update/coroutines.
+    /// desacoplado de Update/coroutines. Dispara as entradas (Entry) já configuradas
+    /// pelo orquestrador, repetindo-as conforme o preset de wave e respeitando o
+    /// target role do alvo primário quando definido.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
