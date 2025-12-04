@@ -58,11 +58,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region IPlanetDefenseWaveRunner
 
-        public void StartWaves(PlanetsMaster planet, DetectionType detectionType)
-        {
-            StartWaves(planet, detectionType, null);
-        }
-
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         /// <summary>
         /// Método auxiliar para simulação manual em ambientes de desenvolvimento,

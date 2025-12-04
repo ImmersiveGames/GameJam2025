@@ -50,7 +50,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private string _targetLabel = DefaultTargetLabel;
         private DefenseRole _targetRole = DefenseRole.Unknown;
         private DetectionType _detectionType;
-        private bool _profileApplied;
         private IPoolable _poolable;
 
         [SerializeField]
@@ -275,7 +274,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _detectionType = null;
             _planetCenter = Vector3.zero;
             _orbitPosition = Vector3.zero;
-            _profileApplied = false;
         }
 
         #endregion
@@ -346,8 +344,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // Perseguição
                 chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
 
-                _profileApplied = true;
-
                 DebugUtility.LogVerbose<DefenseMinionController>(
                     $"[Profile] {name} aplicou profile v2 '{profileV2.VariantId}': " +
                     $"Entry={entryDurationSeconds:0.00}s, " +
@@ -360,8 +356,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 return;
             }
-
-            _profileApplied = false;
 
             DebugUtility.LogWarning<DefenseMinionController>(
                 $"[Profile] {name} recebeu profile nulo. Mantendo configurações atuais de prefab (uso NÃO recomendado).",

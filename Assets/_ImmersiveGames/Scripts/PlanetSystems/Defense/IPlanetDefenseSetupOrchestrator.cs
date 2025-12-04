@@ -8,7 +8,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Contrato de orquestração: resolve configuração efetiva do planeta e
-    /// encaminha comandos para pool e wave runners.
+    /// encaminha comandos para pool e wave runners. Responsável apenas por spawn/entrada;
+    /// comportamento e alvo do minion continuam dentro do próprio minion.
     /// </summary>
     public interface IPlanetDefenseSetupOrchestrator : IInjectableComponent
     {

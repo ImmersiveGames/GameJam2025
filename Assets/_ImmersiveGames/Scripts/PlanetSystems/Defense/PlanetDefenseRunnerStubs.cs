@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    /// <summary>
+    /// Runner de pools responsável apenas por registrar e aquecer pools de minions de defesa.
+    /// Não decide comportamento nem alvo dos minions; somente prepara objetos para spawn.
+    /// </summary>
     public interface IPlanetDefensePoolRunner
     {
         void Release(PlanetsMaster planet);
@@ -19,27 +23,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// única chamada.
         /// </summary>
         void WarmUp(PlanetDefenseSetupContext context);
+
         /// <summary>
-        /// ADIÇÃO: Recupera o contexto configurado para um planeta, se existir.
+        /// Recupera o contexto configurado para um planeta, se existir.
         /// Usado pelo RealPlanetDefenseWaveRunner para montar o loop de wave.
         /// </summary>
         bool TryGetConfiguration(PlanetsMaster planet, out PlanetDefenseSetupContext context);
-
     }
 
+    /// <summary>
+    /// Runner de waves focado apenas em orquestrar o spawn por intervalos.
+    /// Não define comportamento dos minions; apenas instancia usando o contexto fornecido.
+    /// </summary>
     public interface IPlanetDefenseWaveRunner
     {
         /// <summary>
-        /// REMOÇÃO DO CONTRATO:
-        /// O overload StartWaves(planet, detectionType) era apenas um helper interno
-        /// do RealPlanetDefenseWaveRunner, e não é usado via interface.
-        /// A versão com strategy é a única realmente utilizada externamente.
-        /// </summary>
-        /// // void StartWaves(PlanetsMaster planet, DetectionType detectionType);
-
-        /// <summary>
         /// Inicia as waves de defesa para o planeta utilizando uma estratégia explícita.
-        /// Esta é a versão usada pelo PlanetDefenseOrchestrationService.
         /// </summary>
         void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
 
@@ -54,8 +53,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         bool IsRunning(PlanetsMaster planet);
 
         /// <summary>
-        /// ADIÇÃO: Configura o alvo primário que as waves de defesa irão perseguir
-        /// (por exemplo, o Eater ou o Player).
+        /// Configura o alvo primário que as waves de defesa irão perseguir (ex.: Eater, Player).
         /// </summary>
         void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);
 

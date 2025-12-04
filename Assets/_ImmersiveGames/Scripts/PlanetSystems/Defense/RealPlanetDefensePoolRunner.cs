@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
@@ -69,15 +68,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public bool TryGetConfiguration(PlanetsMaster planet, out PlanetDefenseSetupContext context)
         {
             return _configured.TryGetValue(planet, out context);
-        }
-
-        public void WarmUp(PlanetsMaster planet, DetectionType detectionType)
-        {
-            var context = _configured.TryGetValue(planet, out var existing)
-                ? existing
-                : new PlanetDefenseSetupContext(planet, detectionType);
-
-            WarmUp(context);
         }
 
         public void WarmUp(PlanetDefenseSetupContext context)
