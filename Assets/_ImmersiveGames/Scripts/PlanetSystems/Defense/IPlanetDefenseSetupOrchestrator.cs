@@ -19,6 +19,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void ConfigureLoadout(PlanetsMaster planet, PlanetDefenseLoadoutSo loadout);
         PlanetDefenseSetupContext ResolveEffectiveConfig(PlanetsMaster planet, DetectionType detectionType);
         void PrepareRunners(PlanetDefenseSetupContext context);
+        /// <summary>
+        /// Resolve e aquece pools de defesa para o planeta usando o detection type fornecido.
+        /// Retorna o contexto efetivo usado para o aquecimento para chamadas subsequentes.
+        /// </summary>
+        PlanetDefenseSetupContext PreloadDefensePools(PlanetsMaster planet, DetectionType detectionType);
         void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);
         void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
         void StopWaves(PlanetsMaster planet);

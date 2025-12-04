@@ -132,6 +132,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
+        public PlanetDefenseSetupContext PreloadDefensePools(PlanetsMaster planet, DetectionType detectionType)
+        {
+            if (planet == null)
+            {
+                return null;
+            }
+
+            var context = ResolveEffectiveConfig(planet, detectionType);
+
+            if (context == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseOrchestrationService>(
+                    $"[Preload] Falha ao resolver contexto para {planet.ActorName}; pools não serão aquecidas.");
+                return null;
+            }
+
+            PrepareRunners(context);
+            return context;
+        }
+
         public void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole)
         {
             _waveRunner?.ConfigurePrimaryTarget(planet, target, targetLabel, targetRole);
