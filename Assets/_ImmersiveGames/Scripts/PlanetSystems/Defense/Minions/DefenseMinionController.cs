@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region Configuração do alvo
 
-        public void SetTarget(Transform target, string label, DefenseRole role)
+        public void SetTarget(Transform target, string label, DefenseRole targetRole)
         {
             _targetTransform = target;
             if (!string.IsNullOrWhiteSpace(label))
@@ -108,8 +108,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _targetLabel = label;
             }
 
-            _targetRole = role != DefenseRole.Unknown
-                ? role
+            _targetRole = targetRole != DefenseRole.Unknown
+                ? targetRole
                 : ResolveRoleFromLabel(_targetLabel);
 
             DebugUtility.LogVerbose<DefenseMinionController>(

@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 alvo principal configurado pelo service
             public Transform primaryTarget;
             public string primaryTargetLabel;
-            public DefenseRole primaryRole;
+            public DefenseRole primaryTargetRole;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -171,12 +171,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = pending.target;
                     loop.primaryTargetLabel = pending.label;
-                    loop.primaryRole = pending.role;
+                    loop.primaryTargetRole = pending.targetRole;
                     _pendingTargets.Remove(planet);
 
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
-                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryRole}.");
+                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryTargetRole}.");
                 }
 
                 loop.timerHandler = () => {
@@ -298,7 +298,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = target;
                     loop.primaryTargetLabel = targetLabel;
-                    loop.primaryRole = targetRole;
+                    loop.primaryTargetRole = targetRole;
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
                         $"Target=({target?.name ?? "null"}), Label='{targetLabel}', Role={targetRole}.");
@@ -309,7 +309,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     existing.target = target;
                     existing.label = targetLabel;
-                    existing.role = targetRole;
+                    existing.targetRole = targetRole;
                     _pendingTargets[planet] = existing;
                 }
                 else
@@ -318,7 +318,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     {
                         target = target,
                         label = targetLabel,
-                        role = targetRole
+                        targetRole = targetRole
                     };
                 }
             }
@@ -411,8 +411,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     : loop.detectionType?.TypeName ?? "Unknown";
 
                 var targetRole = loop.strategy != null
-                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
-                    : loop.primaryRole;
+                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryTargetRole)
+                    : loop.primaryTargetRole;
 
                 if (controller != null)
                 {
@@ -608,7 +608,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public Transform target;
             public string label;
-            public DefenseRole role;
+            public DefenseRole targetRole;
         }
     }
 }

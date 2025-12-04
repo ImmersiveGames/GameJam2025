@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;
-        private readonly Dictionary<IDetector, DefenseRole> _activeDetectors = new();
+        private readonly Dictionary<IDetector, DefenseRole> _activeDetectorRoles = new();
 
         private void Awake()
         {
@@ -64,17 +64,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_activeDetectors.ContainsKey(detector))
+            if (_activeDetectorRoles.ContainsKey(detector))
             {
                 return;
             }
 
-            var role = ResolveDefenseRole(detector);
-            _activeDetectors.Add(detector, role);
-            int activeCount = _activeDetectors.Count;
+            var targetRole = ResolveTargetRole(detector);
+            _activeDetectorRoles.Add(detector, targetRole);
+            int activeCount = _activeDetectorRoles.Count;
 
             DebugUtility.LogVerbose<PlanetDefenseController>(
-                $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, role)}.",
+                $"Planeta {GetPlanetName()} iniciou defesas contra {FormatDetector(detector, targetRole)}.",
                 DebugUtility.Colors.CrucialInfo,
                 this);
 
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     planetsMaster,
                     detector,
                     detectionType,
-                    role,
+                    targetRole,
                     isFirstEngagement: activeCount == 1,
                     activeDetectors: activeCount));
         }
@@ -100,11 +100,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (_activeDetectors.Remove(detector, out var role))
+            if (_activeDetectorRoles.Remove(detector, out var targetRole))
             {
-                int activeCount = _activeDetectors.Count;
+                int activeCount = _activeDetectorRoles.Count;
                 DebugUtility.LogVerbose<PlanetDefenseController>(
-                    $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, role)}.",
+                    $"Planeta {GetPlanetName()} encerrou defesas contra {FormatDetector(detector, targetRole)}.",
                     null,
                     this);
 
@@ -120,10 +120,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void OnDisable()
         {
-            if (_activeDetectors.Count > 0 && planetsMaster != null)
+            if (_activeDetectorRoles.Count > 0 && planetsMaster != null)
             {
-                int activeCount = _activeDetectors.Count;
-                _activeDetectors.Clear();
+                int activeCount = _activeDetectorRoles.Count;
+                _activeDetectorRoles.Clear();
                 EventBus<PlanetDefenseDisabledEvent>.Raise(
                     new PlanetDefenseDisabledEvent(planetsMaster, activeCount));
             }
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return detector.Owner?.ActorName ?? detector.ToString();
         }
 
-        private DefenseRole ResolveDefenseRole(IDetector detector)
+        private DefenseRole ResolveTargetRole(IDetector detector)
         {
             var explicitRole = TryResolveFromDetector(detector);
             if (explicitRole != DefenseRole.Unknown)
@@ -168,27 +168,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var provider = detector as IDefenseRoleProvider;
             if (provider != null)
             {
-                var role = NormalizeRole(provider.GetDefenseRole());
-                if (role != DefenseRole.Unknown)
+                var targetRole = NormalizeRole(provider.GetDefenseRole());
+                if (targetRole != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no detector: {role}");
+                        $"Role resolvido via provider no detector: {targetRole}");
                 }
 
-                return role;
+                return targetRole;
             }
 
             if (detector is Component detectorComponent &&
                 detectorComponent.TryGetComponent(out IDefenseRoleProvider componentProvider))
             {
-                var role = NormalizeRole(componentProvider.GetDefenseRole());
-                if (role != DefenseRole.Unknown)
+                var targetRole = NormalizeRole(componentProvider.GetDefenseRole());
+                if (targetRole != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no detector (componente): {role}");
+                        $"Role resolvido via provider no detector (componente): {targetRole}");
                 }
 
-                return role;
+                return targetRole;
             }
 
             return DefenseRole.Unknown;
@@ -198,27 +198,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (detector?.Owner is IDefenseRoleProvider provider)
             {
-                var role = NormalizeRole(provider.GetDefenseRole());
-                if (role != DefenseRole.Unknown)
+                var targetRole = NormalizeRole(provider.GetDefenseRole());
+                if (targetRole != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no Owner: {role}");
+                        $"Role resolvido via provider no Owner: {targetRole}");
                 }
 
-                return role;
+                return targetRole;
             }
 
             if (detector?.Owner is Component ownerComponent &&
                 ownerComponent.TryGetComponent(out IDefenseRoleProvider providerComponent))
             {
-                var role = NormalizeRole(providerComponent.GetDefenseRole());
-                if (role != DefenseRole.Unknown)
+                var targetRole = NormalizeRole(providerComponent.GetDefenseRole());
+                if (targetRole != DefenseRole.Unknown)
                 {
                     DebugUtility.LogVerbose<PlanetDefenseController>(
-                        $"Role resolvido via provider no Owner (componente): {role}");
+                        $"Role resolvido via provider no Owner (componente): {targetRole}");
                 }
 
-                return role;
+                return targetRole;
             }
 
             return DefenseRole.Unknown;
@@ -229,11 +229,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return role == DefenseRole.Unknown ? DefenseRole.Unknown : role;
         }
 
-        private static string FormatDetector(IDetector detector, DefenseRole role)
+        private static string FormatDetector(IDetector detector, DefenseRole targetRole)
         {
             string detectorName = GetDetectorName(detector);
 
-            return role switch
+            return targetRole switch
             {
                 DefenseRole.Player => $"o Player ({detectorName})",
                 DefenseRole.Eater => $"o Eater ({detectorName})",
