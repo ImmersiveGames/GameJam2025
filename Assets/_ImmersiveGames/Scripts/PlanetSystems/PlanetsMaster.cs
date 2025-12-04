@@ -77,8 +77,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            // TODO: atualizar orchestrator para aceitar DefenseEntryConfigSO.
-            _cachedConfiguredService.ConfigureDefenseEntries(this, null, defenseChoiceMode);
+            _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
         }
 
         public void AssignResource(PlanetResourcesSo resource)

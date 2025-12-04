@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -16,7 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         void ConfigureDefenseEntries(
             PlanetsMaster planet,
-            IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
+            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
             DefenseChoiceMode defenseChoiceMode);
         PlanetDefenseSetupContext ResolveEffectiveConfig(
             PlanetsMaster planet,
