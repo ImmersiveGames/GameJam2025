@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -47,6 +47,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Transform _targetTransform;
         private string _targetLabel = "Unknown";
         private DefenseRole _targetRole = DefenseRole.Unknown;
+        private DetectionType _detectionType;
         private bool _profileApplied;
 
         [SerializeField]
@@ -100,51 +101,42 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region Configuração do alvo
 
-        public void SetTarget(Transform target, string label, DefenseRole targetRole)
+        public void OnSpawned(MinionSpawnContext context)
         {
-            _targetTransform = target;
-            if (!string.IsNullOrWhiteSpace(label))
-            {
-                _targetLabel = label;
-            }
+            EnsureHandlers();
 
-            _targetRole = targetRole != DefenseRole.Unknown
-                ? targetRole
+            _planetCenter = context.Planet != null
+                ? context.Planet.transform.position
+                : context.SpawnPosition;
+            _orbitPosition = context.OrbitPosition;
+            _detectionType = context.DetectionType;
+
+            _targetLabel = string.IsNullOrWhiteSpace(context.TargetLabel)
+                ? _targetLabel
+                : context.TargetLabel;
+
+            _targetRole = context.TargetRole != DefenseRole.Unknown
+                ? context.TargetRole
                 : ResolveRoleFromLabel(_targetLabel);
 
+            _targetTransform = ResolveTargetTransform();
+
+            transform.position = context.SpawnPosition;
+            if (context.SpawnDirection.sqrMagnitude > 0.0001f)
+            {
+                transform.forward = context.SpawnDirection.normalized;
+            }
+
             DebugUtility.LogVerbose<DefenseMinionController>(
-                $"[Target] {name} recebeu alvo explícito: Transform=({_targetTransform?.name ?? "null"}), " +
-                $"Label='{_targetLabel}', Role={_targetRole}.");
+                $"[Spawn] {name} recebeu contexto: Role={_targetRole}, Label='{_targetLabel}', Detection={_detectionType?.TypeName ?? "null"}. " +
+                $"SpawnPos={context.SpawnPosition}, OrbitPos={_orbitPosition}, TargetTF=({_targetTransform?.name ?? "null"}).");
+
+            StartEntry();
         }
 
         #endregion
 
         #region API pública
-
-        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition, string targetLabel)
-        {
-            EnsureHandlers();
-
-            if (!string.IsNullOrWhiteSpace(targetLabel))
-            {
-                _targetLabel = targetLabel;
-            }
-
-            if (_targetRole == DefenseRole.Unknown)
-            {
-                _targetRole = ResolveRoleFromLabel(_targetLabel);
-            }
-
-            BeginEntryPhase(planetCenter, orbitPosition);
-        }
-
-        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition)
-        {
-            _planetCenter = planetCenter;
-            _orbitPosition = orbitPosition;
-
-            StartEntry();
-        }
 
         #endregion
 
@@ -240,6 +232,41 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             return roleConfig.ResolveRole(label);
+        }
+
+        private Transform ResolveTargetTransform()
+        {
+            Transform fallback = null;
+            var desiredRole = _targetRole;
+
+            foreach (var behaviour in FindObjectsOfType<MonoBehaviour>(includeInactive: false))
+            {
+                if (behaviour is not IDefenseRoleProvider roleProvider)
+                {
+                    continue;
+                }
+
+                var resolvedRole = roleProvider.GetDefenseRole();
+                if (resolvedRole == DefenseRole.Unknown)
+                {
+                    continue;
+                }
+
+                if (desiredRole == DefenseRole.Unknown)
+                {
+                    _targetRole = resolvedRole;
+                    return behaviour.transform;
+                }
+
+                if (resolvedRole == desiredRole)
+                {
+                    return behaviour.transform;
+                }
+
+                fallback ??= behaviour.transform;
+            }
+
+            return fallback;
         }
 
         #endregion

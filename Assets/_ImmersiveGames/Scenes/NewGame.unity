@@ -1200,7 +1200,6 @@ MonoBehaviour:
   planetPrefab: {fileID: 3945190765558734642, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
   initialPlanetCount: 3
   planetsRoot: {fileID: 1533458242}
-  possibleLoadouts: []
   initialOrbitRadius: 5
   minimumOrbitSpacing: 5
   randomizeInitialAngle: 1

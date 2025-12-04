@@ -90,32 +90,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetsMaster Planet { get; }
         public DetectionType DetectionType { get; }
         public IPoolable SpawnedMinion { get; }
-        public Transform Target { get; }
-        public string TargetLabel { get; }
-        public DefenseRole TargetRole { get; }
-        public Vector3 PlanetCenter { get; }
-        public Vector3 OrbitPosition { get; }
+        public MinionSpawnContext SpawnContext { get; }
         public bool EntryPhaseStarted { get; }
 
         public PlanetDefenseMinionSpawnedEvent(
             PlanetsMaster planet,
             DetectionType detectionType,
             IPoolable spawnedMinion,
-            Transform target,
-            string targetLabel,
-            DefenseRole targetRole,
-            Vector3 planetCenter,
-            Vector3 orbitPosition,
+            MinionSpawnContext spawnContext,
             bool entryPhaseStarted)
         {
             Planet = planet;
             DetectionType = detectionType;
             SpawnedMinion = spawnedMinion;
-            Target = target;
-            TargetLabel = targetLabel;
-            TargetRole = targetRole;
-            PlanetCenter = planetCenter;
-            OrbitPosition = orbitPosition;
+            SpawnContext = spawnContext;
             EntryPhaseStarted = entryPhaseStarted;
         }
     }

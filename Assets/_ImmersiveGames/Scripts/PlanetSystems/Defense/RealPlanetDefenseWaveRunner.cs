@@ -414,6 +414,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryTargetRole)
                     : loop.primaryTargetRole;
 
+                var spawnDirection = offset.sqrMagnitude > 0.0001f
+                    ? offset.normalized
+                    : Vector3.zero;
+
+                var spawnContext = new MinionSpawnContext
+                {
+                    Planet = planet,
+                    DetectionType = loop.detectionType,
+                    TargetRole = targetRole,
+                    TargetLabel = targetLabel,
+                    SpawnPosition = planetCenter,
+                    OrbitPosition = orbitPosition,
+                    SpawnDirection = spawnDirection
+                };
+
                 if (controller != null)
                 {
                     ApplyBehaviorProfile(controller, poolable, loop.strategy, targetRole);
@@ -421,17 +436,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
-                bool entryStarted = false;
-
                 if (controller != null)
                 {
-                    DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                        $"[Wave] Aplicando alvo ao minion {go.name}: Target=({loop.primaryTarget?.name ?? "null"}), " +
-                        $"Label='{targetLabel}', Role={targetRole}.");
-
-                    controller.SetTarget(loop.primaryTarget, targetLabel, targetRole);
-                    controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
-                    entryStarted = true;
+                    controller.OnSpawned(spawnContext);
                 }
                 else
                 {
@@ -443,12 +450,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         planet,
                         loop.detectionType,
                         poolable,
-                        loop.primaryTarget,
-                        targetLabel,
-                        targetRole,
-                        planetCenter,
-                        orbitPosition,
-                        entryStarted));
+                        spawnContext,
+                        controller != null));
             }
 
 

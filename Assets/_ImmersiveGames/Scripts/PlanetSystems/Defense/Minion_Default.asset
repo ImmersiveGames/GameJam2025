@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1d933413cce5914499240aefe8cf4d2, type: 3}
   m_Name: Minion_Default
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   variantId: Default
   entryDurationSeconds: 0.55
   initialScaleFactor: 0.2
   orbitIdleSeconds: 0.55
   chaseSpeed: 10
-  entryStrategy: {fileID: 0}
-  chaseStrategy: {fileID: 0}
+  entryStrategy: {fileID: 11400000, guid: 4b3822632a571174faf28634c6d2bcf6, type: 2}
+  chaseStrategy: {fileID: 11400000, guid: cff5dcd229420e0458668685daaba271, type: 2}

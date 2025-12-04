@@ -9,12 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9c2969fa53d2dde449b6e29c111e0221, type: 3}
-  m_Name: WaveProfiles
+  m_Script: {fileID: 11500000, guid: b61cc73b0103f284b9683dc87110305f, type: 3}
+  m_Name: WavePreset
   m_EditorClassIdentifier: 
-  secondsBetweenWaves: 5
-  enemiesPerWave: 6
-  spawnRadius: 4
-  spawnHeightOffset: 0.5
-  defaultMinionProfile: {fileID: 11400000, guid: 7025999ef27294d4d9ace937fc0da4d2, type: 2}
+  poolData: {fileID: 11400000, guid: 7cc6fb636be4535468802f3f4f3ba310, type: 2}
+  numberOfEnemiesPerWave: 5
+  intervalBetweenWaves: 3
   spawnPattern: {fileID: 11400000, guid: f88b79f0cf7e48d42ac83827196c7336, type: 2}
