@@ -71,24 +71,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             _orchestrator.PrepareRunners(context);
 
-            Transform targetTransform = null;
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
             var targetRole = context.Strategy != null
-                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.Role)
-                : engagedEvent.Role;
-
-            if (engagedEvent.Detector.Owner is Component ownerComponent)
-            {
-                targetTransform = ownerComponent.transform;
-            }
-            else if (engagedEvent.Detector is Component detectorComponent)
-            {
-                targetTransform = detectorComponent.transform;
-            }
+                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.TargetRole)
+                : engagedEvent.TargetRole;
 
             _orchestrator.ConfigurePrimaryTarget(
                 state.Planet,
-                targetTransform,
+                null,
                 targetLabel,
                 targetRole);
 
@@ -156,27 +146,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var go = spawnedEvent.SpawnedMinion.GetGameObject();
-            if (go == null)
-            {
-                return;
-            }
-
-            var controller = go.GetComponent<DefenseMinionController>();
-            if (controller == null)
-            {
-                return;
-            }
-
-            controller.SetTarget(spawnedEvent.Target, spawnedEvent.TargetLabel, spawnedEvent.TargetRole);
-
-            if (!spawnedEvent.EntryPhaseStarted)
-            {
-                controller.BeginEntryPhase(
-                    spawnedEvent.PlanetCenter,
-                    spawnedEvent.OrbitPosition,
-                    spawnedEvent.TargetLabel);
-            }
+            DebugUtility.LogVerbose<PlanetDefenseEventService>(
+                $"[SpawnEvent] Minion spawnado em {spawnedEvent.Planet.ActorName} com role '{spawnedEvent.SpawnContext.TargetRole}' " +
+                $"e label '{spawnedEvent.SpawnContext.TargetLabel}'. EntryStarted={spawnedEvent.EntryPhaseStarted}.");
         }
 
         private void ResolveDependenciesFromProvider()

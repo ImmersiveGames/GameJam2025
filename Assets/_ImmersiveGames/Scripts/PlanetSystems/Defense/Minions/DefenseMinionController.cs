@@ -1,6 +1,7 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private const float DefaultInitialScaleFactor = 0.2f;
         private const float DefaultOrbitIdleDelaySeconds = 0.75f;
         private const float DefaultChaseSpeed = 3f;
+        private const string DefaultTargetLabel = "Unknown";
 
         // Campos de runtime, sempre preenchidos via profile para evitar dados duplicados em prefabs.
         private float entryDurationSeconds = DefaultEntryDurationSeconds;
@@ -45,9 +47,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Vector3 _orbitPosition;
 
         private Transform _targetTransform;
-        private string _targetLabel = "Unknown";
+        private string _targetLabel = DefaultTargetLabel;
         private DefenseRole _targetRole = DefenseRole.Unknown;
+        private DetectionType _detectionType;
         private bool _profileApplied;
+        private IPoolable _poolable;
 
         [SerializeField]
         private MinionEntryHandler entryHandler;
@@ -71,13 +75,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             transform.localScale = _finalScale;
-            _state = MinionState.Inactive;
+            _poolable ??= GetComponent<IPoolable>();
+            ResetRuntimeState();
         }
 
         private void OnDisable()
         {
             CancelHandlers();
-            _state = MinionState.Inactive;
+            ResetRuntimeState();
         }
 
         private void CancelHandlers()
@@ -100,51 +105,44 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region Configuração do alvo
 
-        public void SetTarget(Transform target, string label, DefenseRole role)
+        public void OnSpawned(MinionSpawnContext context)
         {
-            _targetTransform = target;
-            if (!string.IsNullOrWhiteSpace(label))
-            {
-                _targetLabel = label;
-            }
+            EnsureHandlers();
 
-            _targetRole = role != DefenseRole.Unknown
-                ? role
+            ResetRuntimeState();
+
+            _planetCenter = context.Planet != null
+                ? context.Planet.transform.position
+                : context.SpawnPosition;
+            _orbitPosition = context.OrbitPosition;
+            _detectionType = context.DetectionType;
+
+            _targetLabel = string.IsNullOrWhiteSpace(context.TargetLabel)
+                ? DefaultTargetLabel
+                : context.TargetLabel;
+
+            _targetRole = context.TargetRole != DefenseRole.Unknown
+                ? context.TargetRole
                 : ResolveRoleFromLabel(_targetLabel);
 
+            _targetTransform = ResolveTargetTransform();
+
+            transform.position = context.SpawnPosition;
+            if (context.SpawnDirection.sqrMagnitude > 0.0001f)
+            {
+                transform.forward = context.SpawnDirection.normalized;
+            }
+
             DebugUtility.LogVerbose<DefenseMinionController>(
-                $"[Target] {name} recebeu alvo explícito: Transform=({_targetTransform?.name ?? "null"}), " +
-                $"Label='{_targetLabel}', Role={_targetRole}.");
+                $"[Spawn] {name} recebeu contexto: Role={_targetRole}, Label='{_targetLabel}', Detection={_detectionType?.TypeName ?? "null"}. " +
+                $"SpawnPos={context.SpawnPosition}, OrbitPos={_orbitPosition}, TargetTF=({_targetTransform?.name ?? "null"}).");
+
+            StartEntry();
         }
 
         #endregion
 
         #region API pública
-
-        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition, string targetLabel)
-        {
-            EnsureHandlers();
-
-            if (!string.IsNullOrWhiteSpace(targetLabel))
-            {
-                _targetLabel = targetLabel;
-            }
-
-            if (_targetRole == DefenseRole.Unknown)
-            {
-                _targetRole = ResolveRoleFromLabel(_targetLabel);
-            }
-
-            BeginEntryPhase(planetCenter, orbitPosition);
-        }
-
-        public void BeginEntryPhase(Vector3 planetCenter, Vector3 orbitPosition)
-        {
-            _planetCenter = planetCenter;
-            _orbitPosition = orbitPosition;
-
-            StartEntry();
-        }
 
         #endregion
 
@@ -207,24 +205,77 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (chaseHandler == null || !chaseHandler.isActiveAndEnabled)
             {
-                _state = MinionState.OrbitWait;
                 DebugUtility.LogVerbose<DefenseMinionController>(
-                    $"[Chase] {name} não iniciou perseguição porque o MinionChaseHandler está desabilitado ou ausente.");
+                    $"[Chase] {name} não possui MinionChaseHandler ativo; retornando ao pool para evitar estado inconsistente.");
+                ReturnToPool();
                 return;
             }
 
             _state = MinionState.Chase;
 
-            // ❌ Não tentamos mais descobrir alvo por tag.
-            // ✅ Só usamos o alvo que veio explicitamente do sistema de defesa
-            //    (SetTarget) + roleConfig para interpretar o label.
             chaseHandler.BeginChase(
                 _targetTransform,
                 _targetLabel,
                 _targetRole,
                 chaseSpeed,
                 chaseStrategy,
-                () => _state = MinionState.Inactive);
+                ResolveTargetTransform,
+                HandleChaseStopped);
+        }
+
+        #endregion
+
+        #region Pool helpers
+
+        private void HandleChaseStopped(MinionChaseHandler.ChaseStopReason reason)
+        {
+            if (!isActiveAndEnabled)
+            {
+                return;
+            }
+
+            DebugUtility.LogVerbose<DefenseMinionController>(
+                $"[Chase] {name} sinalizou parada ({reason}). Encerrando atividade para evitar minion ocioso.");
+
+            ReturnToPool();
+        }
+
+        private bool ReturnToPool()
+        {
+            if (_poolable == null)
+            {
+                _poolable = GetComponent<IPoolable>();
+            }
+
+            if (_poolable == null)
+            {
+                DebugUtility.LogWarning<DefenseMinionController>(
+                    $"[Pool] {name} não possui IPoolable; desativando GameObject para evitar estado zombie.",
+                    this);
+                gameObject.SetActive(false);
+                return false;
+            }
+
+            if (_poolable is PooledObject pooled && pooled.GetPool != null)
+            {
+                pooled.GetPool.ReturnObject(_poolable);
+                return true;
+            }
+
+            _poolable.Deactivate();
+            return true;
+        }
+
+        private void ResetRuntimeState()
+        {
+            _state = MinionState.Inactive;
+            _targetTransform = null;
+            _targetLabel = DefaultTargetLabel;
+            _targetRole = DefenseRole.Unknown;
+            _detectionType = null;
+            _planetCenter = Vector3.zero;
+            _orbitPosition = Vector3.zero;
+            _profileApplied = false;
         }
 
         #endregion
@@ -240,6 +291,41 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             return roleConfig.ResolveRole(label);
+        }
+
+        private Transform ResolveTargetTransform()
+        {
+            Transform fallback = null;
+            var desiredRole = _targetRole;
+
+            foreach (var behaviour in FindObjectsOfType<MonoBehaviour>(includeInactive: false))
+            {
+                if (behaviour is not IDefenseRoleProvider roleProvider)
+                {
+                    continue;
+                }
+
+                var resolvedRole = roleProvider.GetDefenseRole();
+                if (resolvedRole == DefenseRole.Unknown)
+                {
+                    continue;
+                }
+
+                if (desiredRole == DefenseRole.Unknown)
+                {
+                    _targetRole = resolvedRole;
+                    return behaviour.transform;
+                }
+
+                if (resolvedRole == desiredRole)
+                {
+                    return behaviour.transform;
+                }
+
+                fallback ??= behaviour.transform;
+            }
+
+            return fallback;
         }
 
         #endregion
