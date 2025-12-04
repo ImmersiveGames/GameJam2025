@@ -30,5 +30,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 $"[Poolable] OnActivated em '{name}' | pos={pos} | spawner={(spawner != null ? spawner.ActorName : "null")}.",
                 null,this);
         }
+
+        protected override void OnDeactivated()
+        {
+            base.OnDeactivated();
+
+            // Garantir que nenhum estado de perseguição ou referência residual permaneça após a desativação
+            if (TryGetComponent<DefenseMinionController>(out var controller))
+            {
+                controller.CleanupOnDeactivated();
+            }
+        }
     }
 }

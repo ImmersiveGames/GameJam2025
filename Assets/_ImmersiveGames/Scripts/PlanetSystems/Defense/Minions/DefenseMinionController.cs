@@ -66,8 +66,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void OnEnable()
         {
-            CancelHandlers();
-
             if (!_finalScaleCaptured)
             {
                 _finalScale = transform.localScale;
@@ -76,13 +74,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             transform.localScale = _finalScale;
             _poolable ??= GetComponent<IPoolable>();
-            ResetRuntimeState();
+            CleanupOnDeactivated();
         }
 
         private void OnDisable()
         {
-            CancelHandlers();
-            ResetRuntimeState();
+            CleanupOnDeactivated();
         }
 
         private void CancelHandlers()
@@ -256,6 +253,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             ReturnToPool();
+        }
+
+        /// <summary>
+        /// Limpa todo estado de perseguição e referências quando o minion é desativado ou devolvido ao pool.
+        /// </summary>
+        public void CleanupOnDeactivated()
+        {
+            CancelHandlers();
+            ResetRuntimeState();
         }
 
         private bool ReturnToPool()
