@@ -237,6 +237,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<DefenseMinionController>(
                 $"[Chase] {name} sinalizou parada ({reason}). Encerrando atividade para evitar minion ocioso.");
 
+            if (reason == MinionChaseHandler.ChaseStopReason.LostTarget)
+            {
+                var reacquiredTarget = ResolveTargetTransform();
+
+                if (reacquiredTarget != null)
+                {
+                    DebugUtility.LogVerbose<DefenseMinionController>(
+                        $"[Chase] {name} perdeu o alvo anterior, mas reaquiriu '{reacquiredTarget.name}'. Reiniciando perseguição.");
+
+                    _targetTransform = reacquiredTarget;
+                    StartChase();
+                    return;
+                }
+
+                DebugUtility.LogVerbose<DefenseMinionController>(
+                    $"[Chase] {name} não encontrou novo alvo. Retornando ao pool para evitar estado parado.");
+            }
+
             ReturnToPool();
         }
 
@@ -246,6 +264,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 _poolable = GetComponent<IPoolable>();
             }
+
+            _state = MinionState.Inactive;
 
             if (_poolable == null)
             {
