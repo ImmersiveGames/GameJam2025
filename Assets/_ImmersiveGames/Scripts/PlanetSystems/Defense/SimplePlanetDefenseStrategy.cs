@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         public DefenseMinionBehaviorProfileSO SelectMinionProfile(
-            DefenseRole role,
+            DefenseRole targetRole,
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {

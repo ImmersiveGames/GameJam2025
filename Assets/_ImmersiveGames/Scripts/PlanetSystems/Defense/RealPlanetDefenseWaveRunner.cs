@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 alvo principal configurado pelo service
             public Transform primaryTarget;
             public string primaryTargetLabel;
-            public DefenseRole primaryRole;
+            public DefenseRole primaryTargetRole;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -170,12 +170,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = pending.target;
                     loop.primaryTargetLabel = pending.label;
-                    loop.primaryRole = pending.role;
+                    loop.primaryTargetRole = pending.targetRole;
                     _pendingTargets.Remove(planet);
 
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
-                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryRole}.");
+                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryTargetRole}.");
                 }
 
                 loop.timerHandler = () => {
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = target;
                     loop.primaryTargetLabel = targetLabel;
-                    loop.primaryRole = targetRole;
+                    loop.primaryTargetRole = targetRole;
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
                         $"Target=({target?.name ?? "null"}), Label='{targetLabel}', Role={targetRole}.");
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     existing.target = target;
                     existing.label = targetLabel;
-                    existing.role = targetRole;
+                    existing.targetRole = targetRole;
                     _pendingTargets[planet] = existing;
                 }
                 else
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     {
                         target = target,
                         label = targetLabel,
-                        role = targetRole
+                        targetRole = targetRole
                     };
                 }
             }
@@ -402,8 +402,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     : loop.detectionType?.TypeName ?? "Unknown";
 
                 var targetRole = loop.strategy != null
-                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
-                    : loop.primaryRole;
+                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryTargetRole)
+                    : loop.primaryTargetRole;
+
+                var spawnDirection = offset.sqrMagnitude > 0.0001f
+                    ? offset.normalized
+                    : Vector3.zero;
+
+                var spawnContext = new MinionSpawnContext
+                {
+                    Planet = planet,
+                    DetectionType = loop.detectionType,
+                    TargetRole = targetRole,
+                    TargetLabel = targetLabel,
+                    SpawnPosition = planetCenter,
+                    OrbitPosition = orbitPosition,
+                    SpawnDirection = spawnDirection
+                };
 
                 if (controller != null)
                 {
@@ -412,17 +427,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
-                bool entryStarted = false;
-
                 if (controller != null)
                 {
-                    DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                        $"[Wave] Aplicando alvo ao minion {go.name}: Target=({loop.primaryTarget?.name ?? "null"}), " +
-                        $"Label='{targetLabel}', Role={targetRole}.");
-
-                    controller.SetTarget(loop.primaryTarget, targetLabel, targetRole);
-                    controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
-                    entryStarted = true;
+                    controller.OnSpawned(spawnContext);
                 }
                 else
                 {
@@ -434,12 +441,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         planet,
                         loop.detectionType,
                         poolable,
-                        loop.primaryTarget,
-                        targetLabel,
-                        targetRole,
-                        planetCenter,
-                        orbitPosition,
-                        entryStarted));
+                        spawnContext,
+                        controller != null));
             }
 
 
@@ -587,7 +590,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public Transform target;
             public string label;
-            public DefenseRole role;
+            public DefenseRole targetRole;
         }
     }
 }
