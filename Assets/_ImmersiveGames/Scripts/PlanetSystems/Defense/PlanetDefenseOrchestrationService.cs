@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -105,7 +106,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             CacheContext(planet, detectionType, context);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
-                $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', WaveProfile='{context.WaveProfile?.name ?? "null"}', Strategy='{context.Strategy?.StrategyId ?? "null"}'.");
+                $"[Context] {planet.ActorName} resolvido com Pool='{context.PoolData?.name ?? "null"}', " +
+                $"WaveProfile='{context.WaveProfile?.name ?? "null"}', EntryConfig='{context.EntryConfig?.name ?? "null"}', " +
+                $"MinionConfig='{context.MinionConfig?.name ?? "null"}', Strategy='{context.Strategy?.StrategyId ?? "null"}'.");
 
             return context;
         }
@@ -282,6 +285,43 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetDefenseLoadoutSo loadout,
             PlanetResourcesSo resource)
         {
+            var entryConfig = loadout?.DefenseEntryConfig;
+
+            if (entryConfig != null)
+            {
+                var defaultRoleConfig = entryConfig.defaultConfig;
+
+                if (defaultRoleConfig == null && entryConfig.roleConfigs != null && entryConfig.roleConfigs.Count > 0)
+                {
+                    defaultRoleConfig = entryConfig.roleConfigs[0];
+                }
+
+                var minionConfig = defaultRoleConfig?.minionConfig;
+                var poolData = minionConfig?.PoolData ?? loadout?.DefensePoolData ?? _defaultPoolData;
+                var strategy = loadout?.DefenseStrategy ?? _defaultStrategy;
+
+                var context = new PlanetDefenseSetupContext(
+                    planet,
+                    detectionType,
+                    resource,
+                    strategy,
+                    poolData,
+                    null,
+                    loadout,
+                    entryConfig,
+                    defaultRoleConfig,
+                    minionConfig,
+                    defaultRoleConfig?.minionsPerWave ?? 0,
+                    defaultRoleConfig?.intervalBetweenWaves ?? 0f,
+                    defaultRoleConfig?.spawnRadius ?? 0f,
+                    defaultRoleConfig?.spawnHeightOffset ?? 0f,
+                    defaultRoleConfig?.spawnPattern,
+                    entryConfig.spawnOffset);
+
+                strategy?.ConfigureContext(context);
+                return context;
+            }
+
             var preset = loadout?.DefensePreset;
 
             var context = preset != null

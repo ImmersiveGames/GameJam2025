@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using ImprovedTimers;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // 🔵 alvo principal configurado pelo service
             public Transform primaryTarget;
             public string primaryTargetLabel;
-            public DefenseRole primaryRole;
+            public DefenseRole primaryTargetRole;
         }
 
         private readonly Dictionary<PlanetsMaster, WaveLoop> _running = new();
@@ -108,7 +109,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _poolRunner.ConfigureForPlanet(context);
             }
 
-            if (!EnsureWaveProfileAvailable(planet, context))
+            if (!EnsureEntryOrWaveAvailable(planet, context))
             {
                 return;
             }
@@ -124,14 +125,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 // Notifica a estratégia de que a defesa foi engajada para este planeta.
             strategy?.OnEngaged(planet, resolvedDetection);
 
-            int intervalSeconds = ResolveIntervalSeconds(context);
-            int spawnCount = ResolveSpawnCount(context);
+            var defaultRoleConfig = ResolveRoleConfig(context, DefenseRole.Unknown);
+            int intervalSeconds = ResolveIntervalSeconds(context, defaultRoleConfig);
+            int spawnCount = ResolveSpawnCount(context, defaultRoleConfig);
 
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Iniciando defesa em {planet.ActorName} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}");
 
-            var poolData = context.PoolData;
+            var minionConfig = defaultRoleConfig?.minionConfig ?? context.MinionConfig;
+            var poolData = minionConfig?.PoolData ?? context.PoolData;
             if (poolData == null)
             {
                 DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
@@ -139,20 +142,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            string poolName = poolData.ObjectName;
-            var pool = PoolManager.Instance?.GetPool(poolName);
-            if (pool == null)
-            {
-                _poolRunner.WarmUp(context);
-                pool = PoolManager.Instance?.GetPool(poolName);
-            }
-
-            if (pool == null)
-            {
-                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
-                    $"Pool '{poolName}' indisponível para {planet.ActorName}.");
-                return;
-            }
+            var pool = ResolvePoolForData(planet, context, null, poolData);
 
             var loop = new WaveLoop
             {
@@ -170,12 +160,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = pending.target;
                     loop.primaryTargetLabel = pending.label;
-                    loop.primaryRole = pending.role;
+                    loop.primaryTargetRole = pending.targetRole;
                     _pendingTargets.Remove(planet);
 
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] Alvo primário aplicado a loop de {planet.ActorName}: " +
-                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryRole}.");
+                        $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryTargetRole}.");
                 }
 
                 loop.timerHandler = () => {
@@ -297,7 +287,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     loop.primaryTarget = target;
                     loop.primaryTargetLabel = targetLabel;
-                    loop.primaryRole = targetRole;
+                    loop.primaryTargetRole = targetRole;
                     DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                         $"[Wave] ConfigurePrimaryTarget aplicado em loop ativo para {planet.ActorName}: " +
                         $"Target=({target?.name ?? "null"}), Label='{targetLabel}', Role={targetRole}.");
@@ -308,7 +298,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 {
                     existing.target = target;
                     existing.label = targetLabel;
-                    existing.role = targetRole;
+                    existing.targetRole = targetRole;
                     _pendingTargets[planet] = existing;
                 }
                 else
@@ -317,7 +307,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     {
                         target = target,
                         label = targetLabel,
-                        role = targetRole
+                        targetRole = targetRole
                     };
                 }
             }
@@ -346,27 +336,40 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void SpawnWave(WaveLoop loop)
         {
-            if (loop.planet == null || loop.pool == null)
+            if (loop?.planet == null)
             {
                 return;
             }
 
             var context = loop.context;
-            var waveProfile = context?.WaveProfile;
             var planet = loop.planet;
 
-            int spawnCount = ResolveSpawnCount(context);
-            float radius = Mathf.Max(0f, waveProfile?.spawnRadius ?? 0f);
-            float heightOffset = waveProfile?.spawnHeightOffset ?? 0f;
+            var roleConfig = ResolveRoleConfig(context, loop.primaryTargetRole);
+            var waveProfile = context?.WaveProfile;
+            var minionConfig = roleConfig?.minionConfig ?? context.MinionConfig;
+            var poolData = minionConfig?.PoolData ?? context.PoolData;
 
-            var planetCenter = planet.transform.position;
+            loop.pool = ResolvePoolForData(planet, context, loop, poolData);
+
+            if (loop.pool == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
+                    $"Pool indisponível para {planet.ActorName}; wave cancelada.");
+                return;
+            }
+
+            int spawnCount = ResolveSpawnCount(context, roleConfig);
+            float radius = ResolveSpawnRadius(context, roleConfig);
+            float heightOffset = ResolveSpawnHeight(context, roleConfig);
+
+            var planetCenter = planet.transform.position + context.SpawnOffset;
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] SpawnWave em {planet.ActorName} | Tentando spawnar {spawnCount} minions.");
 
             int spawned = 0;
 
-            var pattern = waveProfile?.spawnPattern;
+            var pattern = ResolveSpawnPattern(context, roleConfig);
             List<Vector3> cachedOffsets = null;
 
             if (pattern != null)
@@ -402,27 +405,34 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     : loop.detectionType?.TypeName ?? "Unknown";
 
                 var targetRole = loop.strategy != null
-                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryRole)
-                    : loop.primaryRole;
+                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryTargetRole)
+                    : loop.primaryTargetRole;
+
+                var spawnDirection = offset.sqrMagnitude > 0.0001f
+                    ? offset.normalized
+                    : Vector3.zero;
+
+                var spawnContext = new MinionSpawnContext
+                {
+                    Planet = planet,
+                    DetectionType = loop.detectionType,
+                    TargetRole = targetRole,
+                    TargetLabel = targetLabel,
+                    SpawnPosition = planetCenter,
+                    OrbitPosition = orbitPosition,
+                    SpawnDirection = spawnDirection
+                };
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, waveProfile, loop.strategy, targetRole);
+                    ApplyBehaviorProfile(controller, poolable, minionConfig, waveProfile, loop.strategy, targetRole);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
 
-                bool entryStarted = false;
-
                 if (controller != null)
                 {
-                    DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                        $"[Wave] Aplicando alvo ao minion {go.name}: Target=({loop.primaryTarget?.name ?? "null"}), " +
-                        $"Label='{targetLabel}', Role={targetRole}.");
-
-                    controller.SetTarget(loop.primaryTarget, targetLabel, targetRole);
-                    controller.BeginEntryPhase(planetCenter, orbitPosition, targetLabel);
-                    entryStarted = true;
+                    controller.OnSpawned(spawnContext);
                 }
                 else
                 {
@@ -434,12 +444,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         planet,
                         loop.detectionType,
                         poolable,
-                        loop.primaryTarget,
-                        targetLabel,
-                        targetRole,
-                        planetCenter,
-                        orbitPosition,
-                        entryStarted));
+                        spawnContext,
+                        controller != null));
             }
 
 
@@ -487,6 +493,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
             IPoolable poolable,
+            DefenseMinionConfigSo minionConfig,
             DefenseWaveProfileSo waveProfile,
             IDefenseStrategy strategy,
             DefenseRole role)
@@ -499,8 +506,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var minionData = poolable.GetData<DefensesMinionData>();
 
             var profileFromWave = waveProfile?.defaultMinionProfile;
-            var profileFromStrategy = strategy?.SelectMinionProfile(role, profileFromWave, minionData?.BehaviorProfileV2);
-            var profileV2 = profileFromStrategy ?? profileFromWave ?? minionData?.BehaviorProfileV2;
+            var profileFromMinionConfig = minionConfig?.BehaviorProfile;
+            var profileFromStrategy = strategy?.SelectMinionProfile(role, profileFromWave, profileFromMinionConfig ?? minionData?.BehaviorProfileV2);
+            var profileV2 = profileFromStrategy ?? profileFromWave ?? profileFromMinionConfig ?? minionData?.BehaviorProfileV2;
 
             controller.ApplyProfile(profileV2);
 
@@ -525,29 +533,124 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
+        private static int ResolveSpawnCount(PlanetDefenseSetupContext context, DefenseEntryConfigSo.RoleDefenseConfig roleConfig)
         {
-            // DefenseWaveProfileSO já garante valores mínimos via OnValidate,
-            // mas aqui protegemos contra configuração nula.
-            int raw = context?.WaveProfile.enemiesPerWave ?? 6;
+            if (roleConfig != null)
+            {
+                return Mathf.Max(1, roleConfig.minionsPerWave);
+            }
+
+            int raw = context?.WaveProfile?.enemiesPerWave ?? context?.MinionsPerWave ?? 6;
             return Mathf.Max(1, raw);
         }
 
-        private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context)
+        private static int ResolveIntervalSeconds(PlanetDefenseSetupContext context, DefenseEntryConfigSo.RoleDefenseConfig roleConfig)
         {
-            int raw = context?.WaveProfile?.secondsBetweenWaves ?? 5;
+            if (roleConfig != null)
+            {
+                return Mathf.Max(1, Mathf.RoundToInt(roleConfig.intervalBetweenWaves));
+            }
+
+            int raw = context?.WaveProfile?.secondsBetweenWaves ?? Mathf.RoundToInt(context?.SecondsBetweenWaves ?? 5f);
             return Mathf.Max(1, raw);
         }
 
-        private static bool EnsureWaveProfileAvailable(PlanetsMaster planet, PlanetDefenseSetupContext context)
+        private static float ResolveSpawnRadius(PlanetDefenseSetupContext context, DefenseEntryConfigSo.RoleDefenseConfig roleConfig)
         {
-            if (context?.WaveProfile != null)
+            if (roleConfig != null)
+            {
+                return Mathf.Max(0f, roleConfig.spawnRadius);
+            }
+
+            return Mathf.Max(0f, context?.WaveProfile?.spawnRadius ?? context?.SpawnRadius ?? 0f);
+        }
+
+        private static float ResolveSpawnHeight(PlanetDefenseSetupContext context, DefenseEntryConfigSo.RoleDefenseConfig roleConfig)
+        {
+            if (roleConfig != null)
+            {
+                return roleConfig.spawnHeightOffset;
+            }
+
+            return context?.WaveProfile?.spawnHeightOffset ?? context?.SpawnHeightOffset ?? 0f;
+        }
+
+        private static DefenseSpawnPatternSo ResolveSpawnPattern(PlanetDefenseSetupContext context, DefenseEntryConfigSo.RoleDefenseConfig roleConfig)
+        {
+            if (roleConfig?.spawnPattern != null)
+            {
+                return roleConfig.spawnPattern;
+            }
+
+            return context?.WaveProfile?.spawnPattern ?? context?.SpawnPattern;
+        }
+
+        private static DefenseEntryConfigSo.RoleDefenseConfig ResolveRoleConfig(PlanetDefenseSetupContext context, DefenseRole targetRole)
+        {
+            var entry = context?.EntryConfig;
+            if (entry == null)
+            {
+                return context?.RoleConfig;
+            }
+
+            if (entry.roleConfigs != null)
+            {
+                foreach (var roleConfig in entry.roleConfigs)
+                {
+                    if (roleConfig != null && roleConfig.targetRole == targetRole)
+                    {
+                        return roleConfig;
+                    }
+                }
+            }
+
+            return entry.defaultConfig ?? context?.RoleConfig;
+        }
+
+        private ObjectPool ResolvePoolForData(
+            PlanetsMaster planet,
+            PlanetDefenseSetupContext context,
+            WaveLoop loop,
+            PoolData poolData)
+        {
+            if (poolData == null)
+            {
+                return loop?.pool;
+            }
+
+            var desiredName = poolData.ObjectName;
+
+            if (loop?.pool != null && loop.pool.name == desiredName)
+            {
+                return loop.pool;
+            }
+
+            var poolManager = PoolManager.Instance;
+            var pool = poolManager?.GetPool(desiredName);
+
+            if (pool == null)
+            {
+                _poolRunner?.ConfigureForPlanet(context);
+                pool = poolManager?.GetPool(desiredName) ?? poolManager?.RegisterPool(poolData);
+            }
+
+            if (pool == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>($"Pool '{desiredName}' indisponível para {planet.ActorName}.");
+            }
+
+            return pool;
+        }
+
+        private static bool EnsureEntryOrWaveAvailable(PlanetsMaster planet, PlanetDefenseSetupContext context)
+        {
+            if (context?.EntryConfig != null || context?.WaveProfile != null)
             {
                 return true;
             }
 
             DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
-                $"DefenseWaveProfileSO ausente para {planet?.ActorName ?? "Unknown"}; waves não serão iniciadas.");
+                $"Nenhuma configuração de entrada ou wave disponível para {planet?.ActorName ?? "Unknown"}; waves não serão iniciadas.");
             return false;
         }
 
@@ -587,7 +690,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public Transform target;
             public string label;
-            public DefenseRole role;
+            public DefenseRole targetRole;
         }
     }
 }

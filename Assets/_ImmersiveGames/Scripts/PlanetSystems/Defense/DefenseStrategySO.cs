@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         public virtual DefenseMinionBehaviorProfileSO SelectMinionProfile(
-            DefenseRole role,
+            DefenseRole targetRole,
             DefenseMinionBehaviorProfileSO waveProfile,
             DefenseMinionBehaviorProfileSO minionProfile)
         {
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             // Último fallback: preferência declarada da estratégia.
-            return targetRole;
+            return this.targetRole;
         }
 
         /// <summary>
