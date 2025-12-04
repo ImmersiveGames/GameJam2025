@@ -1,12 +1,11 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Evento disparado quando um planeta inicia defesas contra um detector.
+    /// Evento de runtime disparado quando um planeta inicia defesas contra um detector.
     /// Inclui metadados (contagem e TargetRole solicitado) para evitar que
     /// outros serviços reimplementem rastreamento do alvo detectado.
     /// </summary>
@@ -37,7 +36,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     }
 
     /// <summary>
-    /// Evento disparado quando um detector deixa o planeta. Também traz
+    /// Evento de runtime disparado quando um detector deixa o planeta. Também traz
     /// metadados suficientes para sabermos se esta foi a última saída e a
     /// contagem de detectores restantes, permitindo que listeners decidam se
     /// devem interromper defesas sem manter contadores locais.
@@ -66,42 +65,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     }
 
     /// <summary>
-    /// Evento disparado quando o planeta é desabilitado. Permite que serviços
-    /// desliguem loops de defesa mesmo que ainda existam detectores ativos.
+    /// Evento de runtime disparado quando o planeta é desabilitado.
+    /// Permite que serviços desliguem loops de defesa e limpem pools, sem carregar
+    /// informações de configuração.
     /// </summary>
     public readonly struct PlanetDefenseDisabledEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
-        public int ActiveDetectors { get; }
 
-        public PlanetDefenseDisabledEvent(PlanetsMaster planet, int activeDetectors)
+        public PlanetDefenseDisabledEvent(PlanetsMaster planet)
         {
             Planet = planet;
-            ActiveDetectors = activeDetectors;
         }
     }
 
     /// <summary>
-    /// Evento emitido a cada minion spawnado por uma onda, facilitando
-    /// telemetria ou efeitos adicionais sem acoplamento direto ao runner.
+    /// Evento de runtime emitido a cada minion spawnado por uma onda, facilitando
+    /// telemetria ou efeitos adicionais sem acoplamento direto ao runner ou dados
+    /// de configuração.
     /// </summary>
     public readonly struct PlanetDefenseMinionSpawnedEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
-        public DetectionType DetectionType { get; }
         public IPoolable SpawnedMinion { get; }
         public MinionSpawnContext SpawnContext { get; }
         public bool EntryPhaseStarted { get; }
 
         public PlanetDefenseMinionSpawnedEvent(
             PlanetsMaster planet,
-            DetectionType detectionType,
             IPoolable spawnedMinion,
             MinionSpawnContext spawnContext,
             bool entryPhaseStarted)
         {
             Planet = planet;
-            DetectionType = detectionType;
             SpawnedMinion = spawnedMinion;
             SpawnContext = spawnContext;
             EntryPhaseStarted = entryPhaseStarted;

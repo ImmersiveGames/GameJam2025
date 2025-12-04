@@ -1,8 +1,66 @@
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
+    // Orchestrator
+    /// <summary>
+    /// Contrato de orquestração: resolve configuração efetiva do planeta e
+    /// encaminha comandos para pool e wave runners.
+    /// </summary>
+    public interface IPlanetDefenseSetupOrchestrator : IInjectableComponent
+    {
+        void ConfigureDefenseEntries(
+            PlanetsMaster planet,
+            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            DefenseChoiceMode defenseChoiceMode);
+        PlanetDefenseSetupContext ResolveEffectiveConfig(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole targetRole);
+        void PrepareRunners(PlanetDefenseSetupContext context);
+        void ConfigurePrimaryTarget(PlanetsMaster planet, Transform target, string targetLabel, DefenseRole targetRole);
+        void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy);
+        void StopWaves(PlanetsMaster planet);
+        void ReleasePools(PlanetsMaster planet);
+        void ClearContext(PlanetsMaster planet);
+    }
+
+    // Strategy
+    /// <summary>
+    /// Define o comportamento de defesa para um planeta específico, permitindo
+    /// estratégias customizadas (ex.: agressiva para Eater, defensiva para Player)
+    /// baseadas no role do alvo detectado.
+    /// </summary>
+    public interface IDefenseStrategy
+    {
+        string StrategyId { get; }
+        DefenseRole TargetRole { get; }
+
+        void ConfigureContext(PlanetDefenseSetupContext context);
+        void OnEngaged(PlanetsMaster planet, DetectionType detectionType);
+        void OnDisengaged(PlanetsMaster planet, DetectionType detectionType);
+
+        DefenseMinionBehaviorProfileSO SelectMinionProfile(
+            DefenseRole targetRole,
+            DefenseMinionBehaviorProfileSO waveProfile,
+            DefenseMinionBehaviorProfileSO minionProfile);
+
+        /// <summary>
+        /// Resolve dinamicamente o <see cref="DefenseRole"/> desejado para o alvo atual,
+        /// permitindo que cada estratégia aplique mapeamentos ou fallbacks sem que os
+        /// chamadores precisem conhecer configurações extras (ex.: DefenseRoleConfig).
+        /// </summary>
+        /// <param name="targetIdentifier">Identificador textual do alvo (ex.: ActorName do detector).</param>
+        /// <param name="requestedRole">Role do alvo detectado informado pelo evento que disparou a defesa.</param>
+        /// <returns>Role do alvo escolhido pela estratégia, considerando mapeamentos internos e fallbacks.</returns>
+        DefenseRole ResolveTargetRole(string targetIdentifier, DefenseRole requestedRole);
+    }
+
+    // Pool Runner
     public interface IPlanetDefensePoolRunner
     {
         void Release(PlanetsMaster planet);
@@ -24,9 +82,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// Usado pelo RealPlanetDefenseWaveRunner para montar o loop de wave.
         /// </summary>
         bool TryGetConfiguration(PlanetsMaster planet, out PlanetDefenseSetupContext context);
-
     }
 
+    // Wave Runner
     public interface IPlanetDefenseWaveRunner
     {
         /// <summary>
