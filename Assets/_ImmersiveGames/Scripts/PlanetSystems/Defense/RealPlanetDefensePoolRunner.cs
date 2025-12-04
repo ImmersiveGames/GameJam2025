@@ -26,10 +26,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var planet = context.Planet;
             _configured[planet] = context;
 
-            var poolData = context.PoolData;
-            if (poolData == null)
+            var poolData = context.WavePreset?.PoolData;
+            if (context == null || context.WavePreset == null || poolData == null)
             {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"PoolData ausente para {planet.ActorName}; defesa poderá falhar por falta de pool.");
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>(
+                    $"PoolData ausente ou WavePreset nulo para {planet.ActorName}; defesa poderá falhar por falta de pool.");
                 return;
             }
 
@@ -88,6 +89,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var planet = context.Planet;
             _configured[planet] = context;
 
+            var poolData = context.WavePreset?.PoolData;
+            if (context == null || context.WavePreset == null || poolData == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>(
+                    $"PoolData ausente ou WavePreset nulo para {planet.ActorName}; warm-up cancelado.");
+                return;
+            }
+
+            var poolManager = PoolManager.Instance;
+            if (poolManager == null)
+            {
+                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>("PoolManager indisponível; warm-up não pode prosseguir.");
+                return;
+            }
+
             if (!_planetPools.ContainsKey(planet))
             {
                 ConfigureForPlanet(context);
@@ -95,17 +111,23 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (!_planetPools.TryGetValue(planet, out var pool) || pool == null)
             {
-                DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Pool não configurada para planeta {planet.ActorName}; warm-up cancelado.");
-                return;
+                pool = poolManager.RegisterPool(poolData);
+                if (pool == null)
+                {
+                    DebugUtility.LogWarning<RealPlanetDefensePoolRunner>($"Pool não configurada para planeta {planet.ActorName}; warm-up cancelado.");
+                    return;
+                }
+                _planetPools[planet] = pool;
             }
 
-            string poolName = context.PoolData?.ObjectName ?? pool.name;
+            string poolName = poolData?.ObjectName ?? pool.name;
             if (!_warmedPlanets.Add(planet))
             {
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' já aquecida para planeta {planet.ActorName}.");
                 return;
             }
 
+            poolManager.RegisterPool(poolData);
             DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' warmed for planet {planet.ActorName}.");
         }
 
@@ -120,7 +142,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             {
                 pool.ClearPool();
                 _configured.TryGetValue(planet, out var context);
-                string poolName = context?.PoolData != null ? context.PoolData.ObjectName : pool.name;
+                var poolData = context?.WavePreset?.PoolData;
+                string poolName = poolData != null ? poolData.ObjectName : pool.name;
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' cleared for planet {planet.ActorName}.");
             }
 

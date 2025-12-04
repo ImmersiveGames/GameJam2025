@@ -90,7 +90,7 @@ MonoBehaviour:
   customActorId: 
   actorDefenseRole: 0
   defenseEntries:
-  - {fileID: 11400000, guid: 832f1ccc09829c445a47f95e34ff58ed, type: 2}
+  - {fileID: 11400000, guid: 710d71b31018ab64e8f124ae5babdca4, type: 2}
   defenseChoiceMode: 0
 --- !u!114 &6541701590752357594
 MonoBehaviour:

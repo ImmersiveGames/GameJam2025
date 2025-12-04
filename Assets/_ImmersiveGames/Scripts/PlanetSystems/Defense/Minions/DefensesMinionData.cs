@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [CreateAssetMenu(
         fileName = "DefensesMinionData",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Minion Data")]
-
     public class DefensesMinionData : PoolableObjectData
     {
         [Header("Comportamento padrão deste tipo de minion")]

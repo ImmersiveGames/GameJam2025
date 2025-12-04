@@ -13,7 +13,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Runner concreto que gerencia as waves de defesa dos planetas usando CountdownTimer,
-    /// desacoplado de Update/coroutines.
+    /// desacoplado de Update/coroutines. Dispara as entradas (Entry) já configuradas
+    /// pelo orquestrador, repetindo-as conforme o preset de wave e respeitando o
+    /// target role do alvo primário quando definido.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
@@ -132,7 +134,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
                 $"[Wave] Iniciando defesa em {planet.ActorName} | Intervalo: {intervalSeconds}s | Minions/Onda: {spawnCount}");
 
-            var poolData = context.PoolData;
+            var poolData = context.WavePreset?.PoolData;
             if (poolData == null)
             {
                 DebugUtility.LogWarning<RealPlanetDefenseWaveRunner>(
@@ -431,7 +433,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (controller != null)
                 {
-                    ApplyBehaviorProfile(controller, poolable, loop.strategy, targetRole);
+                    ApplyBehaviorProfile(controller, loop.context, poolable, loop.strategy, targetRole);
                 }
 
                 loop.pool.ActivateObject(poolable, planetCenter, null, planet);
@@ -448,7 +450,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 EventBus<PlanetDefenseMinionSpawnedEvent>.Raise(
                     new PlanetDefenseMinionSpawnedEvent(
                         planet,
-                        loop.detectionType,
                         poolable,
                         spawnContext,
                         controller != null));
@@ -498,6 +499,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static void ApplyBehaviorProfile(
             DefenseMinionController controller,
+            PlanetDefenseSetupContext context,
             IPoolable poolable,
             IDefenseStrategy strategy,
             DefenseRole role)
@@ -507,15 +509,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var minionData = poolable.GetData<DefensesMinionData>();
+            var minionProfile = context?.MinionConfig?.BehaviorProfile;
 
-            var profileFromStrategy = strategy?.SelectMinionProfile(role, null, minionData?.BehaviorProfileV2);
-            var profileV2 = profileFromStrategy ?? minionData?.BehaviorProfileV2;
+            var profileFromStrategy = strategy?.SelectMinionProfile(role, null, minionProfile);
+            var profile = profileFromStrategy ?? minionProfile;
 
-            controller.ApplyProfile(profileV2);
+            controller.ApplyProfile(profile);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                $"[Strategy] Minion {controller.name} configurado com profile='{profileV2?.name ?? "null"}' " +
+                $"[Strategy] Minion {controller.name} configurado com profile='{profile?.name ?? "null"}' " +
                 $"(Role={role}, Strategy='{strategy?.StrategyId ?? "null"}').");
         }
 

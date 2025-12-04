@@ -5,9 +5,10 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Representa um preset de onda isolado contendo dados mínimos para
-    /// spawn consistente dos minions. Mantém o SRP ao separar a definição
-    /// da onda do mapeamento por role configurado em PlanetDefenseEntrySo.
+    /// Representa um preset de wave, definindo quantas vezes uma entrada é
+    /// disparada e quantos minions surgem em cada disparo (lote). Mantém o
+    /// SRP ao separar a configuração de wave do mapeamento por target role
+    /// feito pelo DefenseEntryConfigSO.
     /// </summary>
     [CreateAssetMenu(
         fileName = "WavePreset",
@@ -20,11 +21,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PoolData poolData;
 
         [Header("Configuração de Onda")]
-        [Tooltip("Número de inimigos por entrada, obrigatório.")]
+        [Tooltip("Quantidade de inimigos por disparo de entrada (lote), obrigatório.")]
         [SerializeField]
         private int numberOfEnemiesPerWave = 1;
 
-        [Tooltip("Tempo entre entradas, obrigatório.")]
+        [Tooltip("Tempo entre waves (disparos da mesma entrada), obrigatório.")]
         [SerializeField]
         private float intervalBetweenWaves = 1f;
 
@@ -38,12 +39,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PoolData PoolData => poolData;
 
         /// <summary>
-        /// Quantidade de inimigos a serem gerados em cada entrada.
+        /// Quantidade de inimigos gerados em cada disparo da entrada (uma wave).
         /// </summary>
         public int NumberOfEnemiesPerWave => numberOfEnemiesPerWave;
 
         /// <summary>
-        /// Intervalo, em segundos, entre cada entrada de wave.
+        /// Intervalo, em segundos, entre cada wave disparada pela mesma entrada.
         /// </summary>
         public float IntervalBetweenWaves => intervalBetweenWaves;
 

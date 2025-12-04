@@ -122,10 +122,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             if (_activeDetectorRoles.Count > 0 && planetsMaster != null)
             {
-                int activeCount = _activeDetectorRoles.Count;
                 _activeDetectorRoles.Clear();
-                EventBus<PlanetDefenseDisabledEvent>.Raise(
-                    new PlanetDefenseDisabledEvent(planetsMaster, activeCount));
+                EventBus<PlanetDefenseDisabledEvent>.Raise(new PlanetDefenseDisabledEvent(planetsMaster));
             }
         }
 

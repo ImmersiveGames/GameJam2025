@@ -12,9 +12,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// - Rigidbody / velocidade
     /// - DamageDealer / colisão / retorno ao pool
     /// - LifetimeManager
-    ///
-    /// E adiciona:
-    /// - leitura do DefensesMinionData (PoolableObjectData específico)
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class DefenseMinionPoolable : BulletPoolable
@@ -29,6 +26,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DebugUtility.LogVerbose<DefenseMinionPoolable>(
                 $"[Poolable] OnActivated em '{name}' | pos={pos} | spawner={(spawner != null ? spawner.ActorName : "null")}.",
                 null,this);
+        }
+
+        protected override void OnDeactivated()
+        {
+            base.OnDeactivated();
+
+            // Garantir que nenhum estado de perseguição ou referência residual permaneça após a desativação
+            if (TryGetComponent<DefenseMinionController>(out var controller))
+            {
+                controller.CleanupOnDeactivated();
+            }
         }
     }
 }

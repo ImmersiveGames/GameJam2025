@@ -12,11 +12,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         order = 100)]
     public class DefenseRoleConfig : ScriptableObject
     {
-        [Tooltip("Role do alvo detectado usado como fallback quando nenhum mapeamento corresponde ao identifier.")]
+        [Tooltip("Target role do alvo detectado usado como fallback quando nenhum mapeamento corresponde ao identifier.")]
         [SerializeField]
         private DefenseRole fallbackRole = DefenseRole.Unknown;
 
-        [Tooltip("Mapeamentos de um identifier (ex.: ActorName) para o DefenseRole do alvo detectado.")]
+        [Tooltip("Mapeamentos de um identifier (ex.: ActorName) para o target role do alvo detectado.")]
         [SerializeField]
         private List<DefenseRoleBinding> roleMappings = new();
 
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private string identifier;
 
-            [Tooltip("DefenseRole aplicado ao alvo detectado que corresponde ao identifier informado.")]
+            [Tooltip("Target role aplicado ao alvo detectado que corresponde ao identifier informado.")]
             [SerializeField]
             private DefenseRole role = DefenseRole.Unknown;
 

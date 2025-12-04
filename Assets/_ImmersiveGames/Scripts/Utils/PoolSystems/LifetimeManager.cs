@@ -30,7 +30,8 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 float remainingTime = f - Time.deltaTime;
                 if (remainingTime <= 0)
                 {
-                    _objectsToRemove.Add(poolable);
+                    // Lifetime expirado deve resultar em retorno imediato ao pool
+                    ReturnToPool(poolable);
                 }
                 else
                 {
@@ -45,11 +46,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
                 {
                     // Para objetos nulos/destruídos, apenas remove do dicionário
                     _objectLifetimes.Remove(poolable);
-                }
-                else
-                {
-                    // Para objetos válidos expirados, retorna ao pool
-                    ReturnToPool(poolable);
                 }
             }
         }
