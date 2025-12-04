@@ -29,6 +29,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Action<ChaseStopReason> _onChaseStopped;
         private Func<Transform> _reacquireTarget;
         private bool _isChasing;
+        private Vector3 _lastTargetPosition;
 
         private void OnDisable()
         {
@@ -83,6 +84,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
+            _lastTargetPosition = currentTarget.position;
+
             if (_chaseStrategy != null)
             {
                 _chaseTween = _chaseStrategy.CreateChaseTween(
@@ -124,7 +127,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 if (_targetTransform != null)
                 {
-                    _chaseTween.ChangeEndValue(_targetTransform.position, snapStartValue: false);
+                    if ((_targetTransform.position - _lastTargetPosition).sqrMagnitude > 0.0001f)
+                    {
+                        RestartChaseTween();
+                        return;
+                    }
 
                     var direction = (_targetTransform.position - transform.position);
                     if (direction.sqrMagnitude > 0.0001f)
@@ -192,6 +199,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _chaseStrategy = null;
             _onChaseStopped = null;
             _reacquireTarget = null;
+            _lastTargetPosition = Vector3.zero;
         }
     }
 }

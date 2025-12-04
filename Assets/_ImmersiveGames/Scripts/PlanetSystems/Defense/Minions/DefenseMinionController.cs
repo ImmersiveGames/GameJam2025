@@ -256,9 +256,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return false;
             }
 
-            if (_poolable.GetPool != null)
+            if (_poolable is PooledObject pooled && pooled.GetPool != null)
             {
-                _poolable.GetPool.ReturnObject(_poolable);
+                pooled.GetPool.ReturnObject(_poolable);
                 return true;
             }
 
