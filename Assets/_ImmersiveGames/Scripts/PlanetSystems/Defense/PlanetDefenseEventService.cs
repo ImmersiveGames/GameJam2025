@@ -74,8 +74,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Transform targetTransform = null;
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
             var targetRole = context.Strategy != null
-                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.Role)
-                : engagedEvent.Role;
+                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.TargetRole)
+                : engagedEvent.TargetRole;
 
             if (engagedEvent.Detector.Owner is Component ownerComponent)
             {

@@ -7,16 +7,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Evento disparado quando um planeta inicia defesas contra um detector.
-    /// Inclui metadados para sabermos se esta foi a primeira detecção ativa
-    /// e a contagem total de detectores rastreados, evitando duplicar estado
-    /// em outros serviços.
+    /// Inclui metadados (contagem e TargetRole solicitado) para evitar que
+    /// outros serviços reimplementem rastreamento do alvo detectado.
     /// </summary>
     public readonly struct PlanetDefenseEngagedEvent : IEvent
     {
         public PlanetsMaster Planet { get; }
         public IDetector Detector { get; }
         public DetectionType DetectionType { get; }
-        public DefenseRole Role { get; }
+        public DefenseRole TargetRole { get; }
         public bool IsFirstEngagement { get; }
         public int ActiveDetectors { get; }
 
@@ -24,14 +23,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetsMaster planet,
             IDetector detector,
             DetectionType detectionType,
-            DefenseRole role,
+            DefenseRole targetRole,
             bool isFirstEngagement,
             int activeDetectors)
         {
             Planet = planet;
             Detector = detector;
             DetectionType = detectionType;
-            Role = role;
+            TargetRole = targetRole;
             IsFirstEngagement = isFirstEngagement;
             ActiveDetectors = activeDetectors;
         }
