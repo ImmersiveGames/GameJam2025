@@ -12,9 +12,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// - Rigidbody / velocidade
     /// - DamageDealer / colisão / retorno ao pool
     /// - LifetimeManager
-    ///
-    /// E adiciona:
-    /// - leitura do DefensesMinionData (PoolableObjectData específico)
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class DefenseMinionPoolable : BulletPoolable
