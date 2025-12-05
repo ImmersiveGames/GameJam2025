@@ -372,6 +372,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // Perseguição
                 chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
 
+                if (chaseHandler == null)
+                {
+                    chaseHandler = GetComponent<MinionChaseHandler>();
+                }
+
+                if (chaseHandler != null)
+                {
+                    chaseHandler.ConfigureRotation(
+                        profileV2.SnapFacingOnChaseStart,
+                        profileV2.ChaseRotationLerpFactor);
+                }
+
                 _profileApplied = true;
 
                 DebugUtility.LogVerbose<DefenseMinionController>(
@@ -381,7 +393,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     $"OrbitIdle={orbitIdleDelaySeconds:0.00}s, " +
                     $"ChaseSpeed={chaseSpeed:0.00}, " +
                     $"EntryStrategy={(entryStrategy != null ? entryStrategy.name : "NONE")}, " +
-                    $"ChaseStrategy={(chaseStrategy != null ? chaseStrategy.name : "NONE")}",
+                    $"ChaseStrategy={(chaseStrategy != null ? chaseStrategy.name : "NONE")}, " +
+                    $"SnapFacing={profileV2.SnapFacingOnChaseStart}, " +
+                    $"ChaseRotLerp={profileV2.ChaseRotationLerpFactor:0.00}",
                     null,this);
 
                 return;
