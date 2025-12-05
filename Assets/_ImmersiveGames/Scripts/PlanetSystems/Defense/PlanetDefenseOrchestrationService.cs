@@ -373,10 +373,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (wavePreset.NumberOfEnemiesPerWave <= 0)
+            if (wavePreset.NumberOfMinionsPerWave <= 0)
             {
                 DebugUtility.LogError<PlanetDefenseOrchestrationService>(
-                    $"NumberOfEnemiesPerWave inválido em '{wavePreset.name}' para planeta {planet?.ActorName ?? "Unknown"}.");
+                    $"NumberOfMinionsPerWave inválido em '{wavePreset.name}' para planeta {planet?.ActorName ?? "Unknown"}.");
             }
 
             if (wavePreset.IntervalBetweenWaves <= 0f)
@@ -385,10 +385,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     $"IntervalBetweenWaves inválido em '{wavePreset.name}' para planeta {planet?.ActorName ?? "Unknown"}.");
             }
 
-            if (wavePreset.SpawnPattern != null && wavePreset.NumberOfEnemiesPerWave <= 0)
+            if (wavePreset.SpawnPattern != null && wavePreset.NumberOfMinionsPerWave <= 0)
             {
                 DebugUtility.LogError<PlanetDefenseOrchestrationService>(
-                    $"SpawnPattern configurado em '{wavePreset.name}' mas NumberOfEnemiesPerWave está inválido para {planet?.ActorName ?? "Unknown"}.");
+                    $"SpawnPattern configurado em '{wavePreset.name}' mas NumberOfMinionsPerWave está inválido para {planet?.ActorName ?? "Unknown"}.");
             }
         }
 

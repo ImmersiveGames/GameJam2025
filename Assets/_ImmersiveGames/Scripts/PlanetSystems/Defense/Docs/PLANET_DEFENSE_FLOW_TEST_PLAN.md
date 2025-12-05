@@ -23,7 +23,7 @@ Este plano descreve verificações para o fluxo completo do orquestrador de defe
 
 - **Fail-fast em presets inválidos**
   - Script: `TestPlanetDefenseFlow.FlagsInvalidWavePresetAtRuntime`
-  - Passo a passo: criar `WavePresetSo` com `NumberOfEnemiesPerWave` zero e `SpawnPattern` preenchido, configurar entrada e resolver contexto. Verificar que o log de erro é emitido (usando `LogAssert` em EditMode) e que o contexto ainda é retornado para inspeção.
+  - Passo a passo: criar `WavePresetSo` com `NumberOfMinionsPerWave` zero e `SpawnPattern` preenchido, configurar entrada e resolver contexto. Verificar que o log de erro é emitido (usando `LogAssert` em EditMode) e que o contexto ainda é retornado para inspeção.
 
 ## Observações
 - Os testes devem rodar em modo de edição para evitar dependência de cenas específicas.
