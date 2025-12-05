@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Tooltip("Perfil de comportamento padrão (opcional) usado quando o role não está mapeado.")]
         [SerializeField]
         private DefenseMinionBehaviorProfileSO defaultMinionBehaviorProfile;
-        
+
         [Header("Spawn")]
         [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrão.")]
         [SerializeField]
