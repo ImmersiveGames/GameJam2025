@@ -221,7 +221,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var selectedEntry = SelectEntry(configuration, planet);
             var roleConfig = ResolveRoleConfig(selectedEntry, targetRole);
-            var spawnOffset = selectedEntry != null ? new Vector3(selectedEntry.SpawnOffset, 0f, 0f) : Vector3.zero;
+            var spawnOffset = selectedEntry != null ? new Vector3(selectedEntry.DefaultSpawnOffset, 0f, 0f) : Vector3.zero;
             var wavePreset = roleConfig.WavePreset;
             var spawnRadius = CalculatePlanetRadius(planet, spawnOffset.magnitude);
 
