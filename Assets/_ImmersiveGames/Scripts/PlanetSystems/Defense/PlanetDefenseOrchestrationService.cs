@@ -229,6 +229,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var wavePreset = roleConfig.WavePreset;
             var spawnRadius = CalculatePlanetRadius(planet, spawnOffset.magnitude);
 
+            var minionData = roleConfig.MinionData;
+            var minionProfile = roleConfig.MinionBehaviorOverride
+                                ?? minionData?.BehaviorProfileV2;
+
             ValidateWavePresetRuntime(planet, wavePreset);
 
             if (wavePreset == null)
@@ -244,8 +248,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 strategy: null,
                 entryConfig: selectedEntry,
                 minionConfig: roleConfig.MinionConfig,
-                minionData: roleConfig.MinionData,
-                minionBehaviorProfile: roleConfig.MinionBehaviorOverride,
+                minionData: minionData,
+                minionBehaviorProfile: minionProfile,
                 wavePreset: wavePreset,
                 spawnOffset: spawnOffset,
                 spawnRadius: spawnRadius);
