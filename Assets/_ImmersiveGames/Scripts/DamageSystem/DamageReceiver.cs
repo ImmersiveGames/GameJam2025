@@ -413,6 +413,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void TryRaiseGameOver(DamageLifecycleNotification notification)
         {
+            if (_actor == null)
+            {
+                return;
+            }
+
             if (!triggerGameOverOnDeath || !notification.DeathStateChanged || !notification.IsDead)
             {
                 return;
