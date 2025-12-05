@@ -53,12 +53,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private MinionChaseStrategySo chaseStrategy;
 
-        public string VariantId          => string.IsNullOrWhiteSpace(variantId) ? name : variantId;
-        public float EntryDuration      => entryDurationSeconds;
+        public string VariantId => string.IsNullOrWhiteSpace(variantId) ? name : variantId;
+        public float EntryDuration => entryDurationSeconds;
         public float InitialScaleFactor => initialScaleFactor;
-        public float OrbitIdleSeconds   => orbitIdleSeconds;
-        public float ChaseSpeed         => chaseSpeed;
-        public bool SnapFacingOnChaseStart   => snapFacingOnChaseStart;
+        public float OrbitIdleSeconds => orbitIdleSeconds;
+        public float ChaseSpeed => chaseSpeed;
+        public bool SnapFacingOnChaseStart => snapFacingOnChaseStart;
         public float ChaseRotationLerpFactor => chaseRotationLerpFactor;
         public MinionEntryStrategySo EntryStrategy => entryStrategy;
         public MinionChaseStrategySo ChaseStrategy => chaseStrategy;
