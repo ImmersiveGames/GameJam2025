@@ -491,15 +491,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var minionProfile = context?.MinionConfig?.BehaviorProfile;
+            var waveProfile = context?.WavePreset?.WaveBehaviorProfile;
 
-            var profileFromStrategy = strategy?.SelectMinionProfile(role, null, minionProfile);
-            var profile = profileFromStrategy ?? minionProfile;
+            var minionProfile = context?.MinionBehaviorProfile
+                                ?? context?.MinionData?.BehaviorProfileV2;
 
-            controller.ApplyProfile(profile);
+            if (minionProfile == null)
+            {
+                minionProfile = context?.MinionConfig?.BehaviorProfile;
+            }
+
+            var selectedProfile = strategy?.SelectMinionProfile(role, waveProfile, minionProfile)
+                                  ?? waveProfile
+                                  ?? minionProfile;
+
+            controller.ApplyProfile(selectedProfile);
 
             DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                $"[Strategy] Minion {controller.name} configurado com profile='{profile?.name ?? "null"}' " +
+                $"[Strategy] Minion {controller.name} configurado com profile='{selectedProfile?.name ?? "null"}' " +
                 $"(Role={role}, Strategy='{strategy?.StrategyId ?? "null"}').");
         }
 
