@@ -13,6 +13,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
 
+        [Header("Planet Defense (Nova Config)")]
+        [Tooltip("Configuração de defesa por role para este planeta.")]
+        [SerializeField]
+        private DefenseEntryConfigSO defenseEntryConfig;
+
         [Header("Defesas")]
         [Tooltip("Lista de DefenseEntryConfigSO que define como o planeta reage aos roles detectados.")]
         [SerializeField]
@@ -28,6 +33,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
+        public DefenseEntryConfigSO DefenseEntryConfig => defenseEntryConfig;
         public IReadOnlyList<DefenseEntryConfigSO> DefenseEntries => defenseEntries;
         public DefenseChoiceMode DefenseMode => defenseChoiceMode;
 
