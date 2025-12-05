@@ -35,6 +35,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField, Min(0.1f)]
         private float chaseSpeed = 3f;
 
+        [Header("Rotação na perseguição")]
+        [Tooltip("Se verdadeiro, quando a perseguição começa o minion já alinha o forward diretamente para o alvo.")]
+        [SerializeField]
+        private bool snapFacingOnChaseStart = true;
+
+        [Tooltip("Fator de interpolação da rotação durante a perseguição (0 = não gira, 1 = vira instantaneamente).")]
+        [SerializeField, Range(0f, 1f)]
+        private float chaseRotationLerpFactor = 0.2f;
+
         [Header("Estratégias")]
         [Tooltip("Define como o minion sai do planeta e chega na órbita.")]
         [SerializeField]
@@ -49,6 +58,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public float InitialScaleFactor => initialScaleFactor;
         public float OrbitIdleSeconds   => orbitIdleSeconds;
         public float ChaseSpeed         => chaseSpeed;
+        public bool SnapFacingOnChaseStart   => snapFacingOnChaseStart;
+        public float ChaseRotationLerpFactor => chaseRotationLerpFactor;
         public MinionEntryStrategySo EntryStrategy => entryStrategy;
         public MinionChaseStrategySo ChaseStrategy => chaseStrategy;
     }
