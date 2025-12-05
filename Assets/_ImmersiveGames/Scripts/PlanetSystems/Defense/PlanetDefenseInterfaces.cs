@@ -14,10 +14,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// </summary>
     public interface IPlanetDefenseSetupOrchestrator : IInjectableComponent
     {
+        // V1 (legado, ainda em uso)
         void ConfigureDefenseEntries(
             PlanetsMaster planet,
             IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
             DefenseChoiceMode defenseChoiceMode);
+
+        // V2 (nova, baseada em DefenseEntryConfigSO)
+        void ConfigureDefenseEntriesV2(
+            PlanetsMaster planet,
+            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            DefenseChoiceMode defenseChoiceMode);
+
         PlanetDefenseSetupContext ResolveEffectiveConfig(
             PlanetsMaster planet,
             DetectionType detectionType,

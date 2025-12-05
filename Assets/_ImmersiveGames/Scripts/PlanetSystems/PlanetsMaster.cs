@@ -71,10 +71,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 defenseEntries = new List<PlanetDefenseEntrySo>();
             }
 
-            if (defenseEntries.Count == 0)
+            if (defenseEntryConfigs == null)
+            {
+                defenseEntryConfigs = new List<DefenseEntryConfigSO>();
+            }
+
+            if (defenseEntries.Count == 0 && defenseEntryConfigs.Count == 0)
             {
                 DebugUtility.LogError<PlanetsMaster>(
-                    "Lista de defesas vazia — configure ou defesas falharão.",
+                    "Nenhuma entrada de defesa configurada (v1 ou v2) — configure PlanetDefenseEntrySo ou DefenseEntryConfigSO.",
                     this);
             }
 
@@ -83,7 +88,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
+            // Configuração V1 (legado)
+            if (defenseEntries.Count > 0)
+            {
+                _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
+            }
+
+            // Configuração V2 (nova)
+            if (defenseEntryConfigs.Count > 0)
+            {
+                _cachedConfiguredService.ConfigureDefenseEntriesV2(this, defenseEntryConfigs, defenseChoiceMode);
+            }
         }
 
         public void AssignResource(PlanetResourcesSo resource)
