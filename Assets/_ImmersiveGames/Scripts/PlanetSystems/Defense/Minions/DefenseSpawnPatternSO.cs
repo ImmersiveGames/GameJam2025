@@ -3,8 +3,8 @@
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Base para padrões de spawn em órbita. Define como calcular o offset
-    /// da posição em relação ao centro do planeta para cada minion da wave.
+    /// Base para padrões de spawn em órbita (Spawn Patterns).
+    /// Responsável por calcular o offset da posição de órbita em relação ao centro do planeta.
     /// </summary>
     public abstract class DefenseSpawnPatternSo : ScriptableObject
     {

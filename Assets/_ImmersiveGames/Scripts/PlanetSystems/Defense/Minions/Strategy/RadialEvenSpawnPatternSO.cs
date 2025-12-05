@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     [CreateAssetMenu(
-        fileName = "RadialEvenPattern",
-        menuName = "ImmersiveGames/PlanetSystems/Defense/Config/Spawn Pattern/Radial Even")]
+        fileName = "RadialEvenSpawnPattern",
+        menuName = "ImmersiveGames/PlanetSystems/Defense/Spawn Patterns/Radial Even")]
     public class RadialEvenSpawnPatternSo : DefenseSpawnPatternSo
     {
         public override Vector3 GetSpawnOffset(int index, int total, float radius, float heightOffset)
