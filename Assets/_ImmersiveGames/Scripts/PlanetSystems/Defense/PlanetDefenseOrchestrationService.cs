@@ -263,8 +263,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 null,
                 entryConfig,
-                minionBehaviorProfile,
                 wavePreset,
+                minionBehaviorProfile,
                 spawnOffset,
                 spawnRadius);
 
