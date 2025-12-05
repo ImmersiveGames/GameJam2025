@@ -225,6 +225,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var wavePreset = roleConfig.WavePreset;
             var spawnRadius = CalculatePlanetRadius(planet, spawnOffset.magnitude);
 
+            DefenseEntryConfigSO entryConfig = null;
+            DefenseMinionConfigSO minionConfig = null;
+
             ValidateWavePresetRuntime(planet, wavePreset);
 
             if (wavePreset == null)
@@ -238,10 +241,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 targetRole,
                 resource,
                 null,
-                selectedEntry,
-                roleConfig.MinionConfig,
+                entryConfig,
+                minionConfig,
                 wavePreset,
-                spawnOffset,
+                Vector3.zero,
                 spawnRadius);
 
             return context;
