@@ -360,7 +360,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 if (spawnCount <= 0)
                 {
                     DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
-                        $"SpawnPattern configurado, mas NumberOfEnemiesPerWave é inválido para {planet.ActorName}.");
+                        $"SpawnPattern configurado, mas NumberOfMinionsPerWave é inválido para {planet.ActorName}.");
                     return;
                 }
 
@@ -522,12 +522,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private static int ResolveSpawnCount(PlanetDefenseSetupContext context)
         {
             var preset = context?.WavePreset;
-            int raw = preset?.NumberOfEnemiesPerWave ?? 0;
+            int raw = preset?.NumberOfMinionsPerWave ?? 0;
 
             if (preset != null && raw <= 0)
             {
                 DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
-                    $"NumberOfEnemiesPerWave inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
+                    $"NumberOfMinionsPerWave inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
             }
 
             return Mathf.Max(1, raw);
