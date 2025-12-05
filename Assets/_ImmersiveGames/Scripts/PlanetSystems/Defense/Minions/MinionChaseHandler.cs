@@ -30,6 +30,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Func<Transform> _reacquireTarget;
         private bool _isChasing;
         private Vector3 _lastTargetPosition;
+
+        // Configuração de rotação aplicada externamente pelo controller/perfil.
         private bool _snapFacingOnChaseStart = true;
         private float _rotationLerpFactor = 0.2f;
 
