@@ -35,6 +35,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseSpawnPatternSo spawnPattern;
 
+        [Header("Comportamento da Wave (opcional)")]
+        [Tooltip("Perfil de comportamento específico desta wave, opcional.")]
+        [SerializeField]
+        private DefenseMinionBehaviorProfileSO waveBehaviorProfile;
+
         /// <summary>
         /// Pool obrigatório para instanciar minions desta onda.
         /// </summary>
@@ -54,6 +59,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// Padrão opcional de posicionamento dos minions.
         /// </summary>
         public DefenseSpawnPatternSo SpawnPattern => spawnPattern;
+
+        /// <summary>
+        /// Perfil opcional que ajusta o comportamento dos minions desta wave.
+        /// </summary>
+        public DefenseMinionBehaviorProfileSO WaveBehaviorProfile => waveBehaviorProfile;
 
 #if UNITY_EDITOR
         private void OnValidate()

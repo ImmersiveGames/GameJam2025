@@ -10,7 +10,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Define uma entrada de defesa completa (Entry v2), similar ao PlanetDefenseEntrySo, mas com
     /// dados extras de spawn e referência opcional a um perfil de comportamento padrão para
     /// minions desse tipo de defesa. Não referencia DefensesMinionPoolData; o pool está exclusivamente
-    /// em <see cref="WavePresetSo.PoolData"/>.
+    /// em <see cref="WavePresetSo.PoolData"/>. A configuração de minions agora depende apenas de
+    /// <see cref="WavePresetSo"/> (pool + padrão de spawn) e <see cref="DefenseMinionBehaviorProfileSO"/>,
+    /// pois o legado DefenseMinionConfigSO foi removido.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",

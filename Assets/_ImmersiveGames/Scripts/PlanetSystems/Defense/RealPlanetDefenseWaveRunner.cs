@@ -491,7 +491,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            DefenseMinionBehaviorProfileSO waveProfile = null;
+            // Perfil opcional definido na wave, usado como camada de override acima do profile por role.
+            var waveProfile = context?.WavePreset?.WaveBehaviorProfile;
             var roleProfile = context?.MinionBehaviorProfile;
             DefenseMinionBehaviorProfileSO legacyProfile = null;
 
