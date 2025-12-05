@@ -25,6 +25,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseMinionConfigSO defaultMinionConfig;
 
+        [Tooltip("Tipo de minion para pool padrão (opcional) usado quando o role não está mapeado.")]
+        [SerializeField]
+        private DefensesMinionData defaultMinionPoolData;
+
         [Header("Spawn")]
         [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrão.")]
         [SerializeField]
@@ -50,9 +54,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public IReadOnlyList<RoleDefenseConfigBinding> RoleBindings => roleBindings;
 
-        public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultWavePreset, defaultSpawnOffset);
+        public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultMinionPoolData, defaultWavePreset, defaultSpawnOffset);
 
         public WavePresetSo DefaultWavePreset => defaultWavePreset;
+
+        public DefensesMinionData DefaultMinionPoolData => defaultMinionPoolData;
 
         public float DefaultSpawnOffset => defaultSpawnOffset;
 
@@ -71,6 +77,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (defaultMinionConfig == null)
             {
                 DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionConfig vazio — defina apenas se quiser guiar o design.", this);
+            }
+
+            if (defaultMinionPoolData == null)
+            {
+                DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionPoolData vazio — defina apenas se quiser guiar o design.", this);
             }
         }
 #endif
@@ -124,6 +135,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionConfig vazio para role '{role}'.", this);
             }
 
+            if (config.MinionPoolData == null)
+            {
+                DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionPoolData vazio para role '{role}'.", this);
+            }
+
             if (config.WavePreset == null)
             {
                 DebugUtility.LogError<DefenseEntryConfigSO>($"WavePreset vazio para role '{role}'.", this);
@@ -141,6 +157,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseMinionConfigSO minionConfig;
 
+            [Tooltip("Tipo de minion/pool a ser usado para este role.")]
+            [SerializeField]
+            private DefensesMinionData minionPoolData;
+
             [Tooltip("Preset de wave específico para este role.")]
             [SerializeField]
             private WavePresetSo wavePreset;
@@ -157,20 +177,27 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     ? entryDefaultSpawnOffset
                     : spawnOffsetOverride;
 
-                return new RoleDefenseConfig(minionConfig, wavePreset, offset);
+                return new RoleDefenseConfig(minionConfig, minionPoolData, wavePreset, offset);
             }
         }
 
         public readonly struct RoleDefenseConfig
         {
-            public RoleDefenseConfig(DefenseMinionConfigSO minionConfig, WavePresetSo wavePreset, float spawnOffset)
+            public RoleDefenseConfig(
+                DefenseMinionConfigSO minionConfig,
+                DefensesMinionData minionPoolData,
+                WavePresetSo wavePreset,
+                float spawnOffset)
             {
                 MinionConfig = minionConfig;
+                MinionPoolData = minionPoolData;
                 WavePreset = wavePreset;
                 SpawnOffset = spawnOffset;
             }
 
             public DefenseMinionConfigSO MinionConfig { get; }
+
+            public DefensesMinionData MinionPoolData { get; }
 
             public WavePresetSo WavePreset { get; }
 
