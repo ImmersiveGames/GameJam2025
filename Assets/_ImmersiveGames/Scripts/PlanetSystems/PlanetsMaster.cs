@@ -13,10 +13,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
 
-        [Header("Defesas")]
-        [Tooltip("Lista de DefenseEntryConfigSO que define como o planeta reage aos roles detectados.")]
+        [Header("Planet Defense (Entries v2)")]
+        [Tooltip("Lista de novas entradas de defesa (DefenseEntryConfigSO).")]
         [SerializeField]
-        private List<DefenseEntryConfigSO> defenseEntries = new();
+        private List<DefenseEntryConfigSO> defenseEntryConfigs = new();
 
         [Tooltip("Modo de escolha das entradas.")]
         [SerializeField]
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
-        public IReadOnlyList<DefenseEntryConfigSO> DefenseEntries => defenseEntries;
+        public IReadOnlyList<DefenseEntryConfigSO> DefenseEntryConfigs => defenseEntryConfigs;
         public DefenseChoiceMode DefenseMode => defenseChoiceMode;
 
         public event Action<PlanetResourcesSo> ResourceAssigned;
@@ -60,15 +60,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void ConfigureDefenseEntries()
         {
-            if (defenseEntries == null)
+            if (defenseEntryConfigs == null)
             {
-                defenseEntries = new List<DefenseEntryConfigSO>();
+                defenseEntryConfigs = new List<DefenseEntryConfigSO>();
             }
 
-            if (defenseEntries.Count == 0)
+            if (defenseEntryConfigs.Count == 0)
             {
                 DebugUtility.LogError<PlanetsMaster>(
-                    "Lista de defesas vazia — configure ou defesas falharão.",
+                    "Nenhuma entrada de defesa configurada — adicione DefenseEntryConfigSO para habilitar defesas.",
                     this);
             }
 
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
+            _cachedConfiguredService.ConfigureDefenseEntriesV2(this, defenseEntryConfigs, defenseChoiceMode);
         }
 
         public void AssignResource(PlanetResourcesSo resource)

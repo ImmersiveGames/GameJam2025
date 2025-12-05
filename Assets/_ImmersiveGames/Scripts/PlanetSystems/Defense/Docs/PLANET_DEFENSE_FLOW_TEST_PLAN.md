@@ -11,7 +11,7 @@ Este plano descreve verificações para o fluxo completo do orquestrador de defe
 ## Cenários e Scripts
 - **Preload único por PoolData**
   - Script: `TestPlanetDefenseFlow.PreloadRegistersUniquePools`
-  - Passo a passo: criar dois `WavePresetSo` que referenciam o mesmo `PoolData`, configurar duas entradas e chamar `ConfigureDefenseEntries`. Verificar que o `PoolManager` registra apenas uma vez.
+  - Passo a passo: criar dois `WavePresetSo` que referenciam o mesmo `PoolData`, configurar duas entradas e chamar `ConfigureDefenseEntriesV2`. Verificar que o `PoolManager` registra apenas uma vez.
 
 - **Escolha sequencial com cache por índice**
   - Script: `TestPlanetDefenseFlow.SequentialEntryIsCachedPerIndex`

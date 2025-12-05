@@ -7,34 +7,37 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Define como o planeta reage a cada target role detectado: qual minion config usar
-    /// e qual preset de wave disparar para aquele role específico.
+    /// Define uma entrada de defesa completa (Entry v2), similar ao PlanetDefenseEntrySo, mas com
+    /// dados extras de spawn e referência opcional ao MinionConfig para facilitar design.
     /// O pool está exclusivamente em <see cref="WavePresetSo.PoolData"/>.
-    /// Não altera lógica existente — apenas oferece um ponto unificado de configuração por role.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Entry Config")]
     public sealed class DefenseEntryConfigSO : ScriptableObject
     {
-        [Header("Mapeamento por target role")]
-        [Tooltip("Lista de binds entre target role detectado, minion config e preset de wave específico. O pool vem do WavePreset.")]
-        [SerializeField]
-        private List<RoleDefenseBinding> bindings = new();
-
         [Header("Configuração padrão")]
-        [Tooltip("Minion config padrão usado quando o role não está mapeado.")]
-        [SerializeField]
-        private DefenseMinionConfigSO defaultMinionConfig;
-
         [Tooltip("Preset de wave padrão usado quando o role não está mapeado. O pool está em WavePresetSo.PoolData.")]
         [SerializeField]
         private WavePresetSo defaultWavePreset;
 
-        [Header("Spawn")]
-        [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn.")]
+        [Tooltip("Minion config padrão (opcional) usado quando o role não está mapeado.")]
         [SerializeField]
-        private float spawnOffset;
+        private DefenseMinionConfigSO defaultMinionConfig;
+
+        [Header("Spawn")]
+        [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrão.")]
+        [SerializeField]
+        private float defaultSpawnOffset;
+
+        [Tooltip("Se verdadeiro, gira as posições de spawn entre waves para distribuir minions.")]
+        [SerializeField]
+        private bool rotatePositions;
+
+        [Header("Mapeamento por target role")]
+        [Tooltip("Lista de binds entre target role detectado, configs opcionais de minion, preset de wave específico e offset dedicado.")]
+        [SerializeField]
+        private List<RoleDefenseConfigBinding> roleBindings = new();
 
         public IReadOnlyDictionary<DefenseRole, RoleDefenseConfig> Bindings
         {
@@ -45,23 +48,29 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultWavePreset);
+        public IReadOnlyList<RoleDefenseConfigBinding> RoleBindings => roleBindings;
 
-        public float SpawnOffset => spawnOffset;
+        public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultWavePreset, defaultSpawnOffset);
+
+        public WavePresetSo DefaultWavePreset => defaultWavePreset;
+
+        public float DefaultSpawnOffset => defaultSpawnOffset;
+
+        public bool RotatePositions => rotatePositions;
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
             RebuildRuntimeBindings();
 
-            if (defaultMinionConfig == null)
-            {
-                DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionConfig não configurado — defina para evitar falhas em roles não mapeados.", this);
-            }
-
             if (defaultWavePreset == null)
             {
                 DebugUtility.LogError<DefenseEntryConfigSO>("DefaultWavePreset é obrigatório para roles não mapeados.", this);
+            }
+
+            if (defaultMinionConfig == null)
+            {
+                DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionConfig vazio — defina apenas se quiser guiar o design.", this);
             }
         }
 #endif
@@ -75,7 +84,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             runtimeBindings ??= new Dictionary<DefenseRole, RoleDefenseConfig>();
 
-            if (runtimeBindings.Count == 0 && bindings != null && bindings.Count > 0)
+            if (runtimeBindings.Count == 0 && roleBindings != null && roleBindings.Count > 0)
             {
                 RebuildRuntimeBindings();
             }
@@ -86,16 +95,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             runtimeBindings ??= new Dictionary<DefenseRole, RoleDefenseConfig>();
             runtimeBindings.Clear();
 
-            if (bindings == null)
+            if (roleBindings == null)
             {
-                bindings = new List<RoleDefenseBinding>();
+                roleBindings = new List<RoleDefenseConfigBinding>();
                 return;
             }
 
-            foreach (var binding in bindings)
+            foreach (var binding in roleBindings)
             {
                 var role = binding.Role;
-                var config = binding.ToConfig();
+                var config = binding.ToConfig(defaultSpawnOffset);
 
                 if (runtimeBindings.ContainsKey(role))
                 {
@@ -104,21 +113,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 }
 
                 runtimeBindings[role] = config;
+                ValidateBindingConfig(role, config);
+            }
+        }
 
-                if (config.MinionConfig == null)
-                {
-                    DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionConfig vazio para role '{role}'.", this);
-                }
+        private void ValidateBindingConfig(DefenseRole role, RoleDefenseConfig config)
+        {
+            if (config.MinionConfig == null)
+            {
+                DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionConfig vazio para role '{role}'.", this);
+            }
 
-                if (config.WavePreset == null)
-                {
-                    DebugUtility.LogError<DefenseEntryConfigSO>($"WavePreset vazio para role '{role}'.", this);
-                }
+            if (config.WavePreset == null)
+            {
+                DebugUtility.LogError<DefenseEntryConfigSO>($"WavePreset vazio para role '{role}'.", this);
             }
         }
 
         [Serializable]
-        private struct RoleDefenseBinding
+        public struct RoleDefenseConfigBinding
         {
             [Tooltip("Target role detectado no evento de defesa.")]
             [SerializeField]
@@ -132,22 +145,36 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private WavePresetSo wavePreset;
 
+            [Tooltip("Offset específico para este role (opcional). Se zero, usa o default da entrada.")]
+            [SerializeField]
+            private float spawnOffsetOverride;
+
             public DefenseRole Role => role;
 
-            public RoleDefenseConfig ToConfig() => new(minionConfig, wavePreset);
+            public RoleDefenseConfig ToConfig(float entryDefaultSpawnOffset)
+            {
+                var offset = Mathf.Approximately(spawnOffsetOverride, 0f)
+                    ? entryDefaultSpawnOffset
+                    : spawnOffsetOverride;
+
+                return new RoleDefenseConfig(minionConfig, wavePreset, offset);
+            }
         }
 
         public readonly struct RoleDefenseConfig
         {
-            public RoleDefenseConfig(DefenseMinionConfigSO minionConfig, WavePresetSo wavePreset)
+            public RoleDefenseConfig(DefenseMinionConfigSO minionConfig, WavePresetSo wavePreset, float spawnOffset)
             {
                 MinionConfig = minionConfig;
                 WavePreset = wavePreset;
+                SpawnOffset = spawnOffset;
             }
 
             public DefenseMinionConfigSO MinionConfig { get; }
 
             public WavePresetSo WavePreset { get; }
+
+            public float SpawnOffset { get; }
         }
 
         [NonSerialized]
