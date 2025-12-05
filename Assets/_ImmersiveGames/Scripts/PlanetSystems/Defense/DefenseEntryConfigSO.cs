@@ -66,9 +66,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             RebuildRuntimeBindings();
 
-            if (defaultMinionConfig == null)
+            if (defaultMinionConfig == null && defaultMinionData == null)
             {
-                DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionConfig não configurado — defina para evitar falhas em roles não mapeados.", this);
+                DebugUtility.LogWarning<DefenseEntryConfigSO>("Nenhum minion default configurado (nem legado nem v2). Configure MinionData ou MinionConfig.", this);
             }
 
             if (defaultWavePreset == null)
@@ -117,9 +117,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
                 runtimeBindings[role] = config;
 
-                if (config.MinionConfig == null)
+                if (config.MinionConfig == null && config.MinionData == null)
                 {
-                    DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionConfig vazio para role '{role}'.", this);
+                    DebugUtility.LogWarning<DefenseEntryConfigSO>($"Nenhum minion configurado para role '{role}'. Configure MinionData ou MinionConfig.", this);
                 }
 
                 if (config.WavePreset == null)
