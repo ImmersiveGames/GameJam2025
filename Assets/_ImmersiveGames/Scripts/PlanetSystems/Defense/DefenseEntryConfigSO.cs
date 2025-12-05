@@ -27,6 +27,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private DefenseMinionConfigSO defaultMinionConfig;
 
+        [Tooltip("Dados v2 do minion padrão usado quando o role não está mapeado.")]
+        [SerializeField]
+        private DefensesMinionData defaultMinionData;
+
+        [Tooltip("Override opcional de comportamento para o minion padrão.")]
+        [SerializeField]
+        private DefenseMinionBehaviorProfileSO defaultMinionBehaviorOverride;
+
         [Tooltip("Preset de wave padrão usado quando o role não está mapeado. O pool está em WavePresetSo.PoolData.")]
         [SerializeField]
         private WavePresetSo defaultWavePreset;
@@ -45,7 +53,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
         }
 
-        public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultWavePreset);
+        public RoleDefenseConfig DefaultConfig => new(
+            defaultMinionConfig,
+            defaultWavePreset,
+            defaultMinionData,
+            defaultMinionBehaviorOverride);
 
         public float SpawnOffset => spawnOffset;
 
@@ -128,26 +140,44 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseMinionConfigSO minionConfig;
 
+            [Tooltip("Dados v2 do minion a ser usado para este role.")]
+            [SerializeField]
+            private DefensesMinionData minionData;
+
+            [Tooltip("Override opcional de comportamento para este role.")]
+            [SerializeField]
+            private DefenseMinionBehaviorProfileSO minionBehaviorOverride;
+
             [Tooltip("Preset de wave específico para este role.")]
             [SerializeField]
             private WavePresetSo wavePreset;
 
             public DefenseRole Role => role;
 
-            public RoleDefenseConfig ToConfig() => new(minionConfig, wavePreset);
+            public RoleDefenseConfig ToConfig() => new(minionConfig, wavePreset, minionData, minionBehaviorOverride);
         }
 
         public readonly struct RoleDefenseConfig
         {
-            public RoleDefenseConfig(DefenseMinionConfigSO minionConfig, WavePresetSo wavePreset)
+            public RoleDefenseConfig(
+                DefenseMinionConfigSO minionConfig,
+                WavePresetSo wavePreset,
+                DefensesMinionData minionData = null,
+                DefenseMinionBehaviorProfileSO minionBehaviorOverride = null)
             {
                 MinionConfig = minionConfig;
                 WavePreset = wavePreset;
+                MinionData = minionData;
+                MinionBehaviorOverride = minionBehaviorOverride;
             }
 
             public DefenseMinionConfigSO MinionConfig { get; }
 
             public WavePresetSo WavePreset { get; }
+
+            public DefensesMinionData MinionData { get; }
+
+            public DefenseMinionBehaviorProfileSO MinionBehaviorOverride { get; }
         }
 
         [NonSerialized]

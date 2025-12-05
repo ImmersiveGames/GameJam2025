@@ -240,6 +240,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 null,
                 selectedEntry,
                 roleConfig.MinionConfig,
+                roleConfig.MinionData,
+                roleConfig.MinionBehaviorOverride,
                 wavePreset,
                 spawnOffset,
                 spawnRadius);
