@@ -372,6 +372,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 // Perseguição
                 chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
 
+                // Configuração de rotação na perseguição
                 if (chaseHandler == null)
                 {
                     chaseHandler = GetComponent<MinionChaseHandler>();
