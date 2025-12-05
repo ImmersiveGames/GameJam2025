@@ -20,15 +20,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Cancelled
         }
 
-        [Header("Rotação / Facing")]
-        [Tooltip("Fator de interpolação da rotação durante a perseguição (0 = não gira, 1 = vira instantaneamente).")]
-        [SerializeField, Range(0f, 1f)]
-        private float rotationLerpFactor = 0.2f;
-
-        [Tooltip("Se verdadeiro, quando a perseguição começa o minion já alinha o forward diretamente para o alvo.")]
-        [SerializeField]
-        private bool snapFacingOnChaseStart = true;
-
         private Tween _chaseTween;
         private Transform _targetTransform;
         private string _targetLabel;
@@ -39,10 +30,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Func<Transform> _reacquireTarget;
         private bool _isChasing;
         private Vector3 _lastTargetPosition;
+        private bool _snapFacingOnChaseStart = true;
+        private float _rotationLerpFactor = 0.2f;
 
         private void OnDisable()
         {
             CancelChase();
+        }
+
+        public void ConfigureRotation(bool snapFacingOnChaseStart, float rotationLerpFactor)
+        {
+            _snapFacingOnChaseStart = snapFacingOnChaseStart;
+            _rotationLerpFactor = Mathf.Clamp01(rotationLerpFactor);
         }
 
         public void BeginChase(
@@ -65,7 +64,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _reacquireTarget = targetResolver;
             _isChasing = true;
 
-            if (snapFacingOnChaseStart && _targetTransform != null)
+            if (_snapFacingOnChaseStart && _targetTransform != null)
             {
                 var dir = _targetTransform.position - transform.position;
                 if (dir.sqrMagnitude > 0.0001f)
@@ -152,12 +151,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     }
 
                     var direction = (_targetTransform.position - transform.position);
-                    if (direction.sqrMagnitude > 0.0001f && rotationLerpFactor > 0f)
+                    if (direction.sqrMagnitude > 0.0001f && _rotationLerpFactor > 0f)
                     {
                         transform.forward = Vector3.Lerp(
                             transform.forward,
                             direction.normalized,
-                            rotationLerpFactor);
+                            _rotationLerpFactor);
                     }
                 }
             });
