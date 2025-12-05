@@ -19,6 +19,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             IDefenseStrategy strategy = null,
             DefenseEntryConfigSO entryConfig = null,
             DefenseMinionConfigSO minionConfig = null,
+            DefensesMinionData minionData = null,
+            DefenseMinionBehaviorProfileSO minionBehaviorProfile = null,
             WavePresetSo wavePreset = null,
             Vector3 spawnOffset = default,
             float spawnRadius = 0f)
@@ -30,6 +32,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Strategy = strategy;
             EntryConfig = entryConfig;
             MinionConfig = minionConfig;
+            MinionData = minionData;
+            MinionBehaviorProfile = minionBehaviorProfile;
             WavePreset = wavePreset;
             SpawnOffset = spawnOffset;
             SpawnRadius = spawnRadius;
@@ -42,6 +46,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public IDefenseStrategy Strategy { get; }
         public DefenseEntryConfigSO EntryConfig { get; }
         public DefenseMinionConfigSO MinionConfig { get; }
+        public DefensesMinionData MinionData { get; }
+        public DefenseMinionBehaviorProfileSO MinionBehaviorProfile { get; }
         public WavePresetSo WavePreset { get; }
         public Vector3 SpawnOffset { get; }
         public float SpawnRadius { get; }
