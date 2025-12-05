@@ -83,11 +83,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (!_poolRunner.TryGetConfiguration(planet, out var context))
             {
                 context = new PlanetDefenseSetupContext(
-                    planet,
-                    detectionType,
-                    DefenseRole.Unknown,
-                    null, // PlanetResourcesSo (não usamos aqui)
-                    strategy // Estratégia opcional
+                    planet: planet,
+                    detectionType: detectionType,
+                    defenseRole: DefenseRole.Unknown,
+                    planetResource: null, // PlanetResourcesSo (não usamos aqui)
+                    strategy: strategy // Estratégia opcional
                 );
 
                 _poolRunner.ConfigureForPlanet(context);

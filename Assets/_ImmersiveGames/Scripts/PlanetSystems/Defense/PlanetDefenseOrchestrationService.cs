@@ -216,7 +216,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (!_configuredDefenseEntries.TryGetValue(planet, out var configuration))
             {
                 DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração de defesa encontrada para {planet?.ActorName ?? "planeta nulo"}.");
-                return new PlanetDefenseSetupContext(planet, detectionType, targetRole, resource);
+                return new PlanetDefenseSetupContext(
+                    planet: planet,
+                    detectionType: detectionType,
+                    defenseRole: targetRole,
+                    planetResource: resource);
             }
 
             var selectedEntry = SelectEntry(configuration, planet);
@@ -233,18 +237,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var context = new PlanetDefenseSetupContext(
-                planet,
-                detectionType,
-                targetRole,
-                resource,
-                null,
-                selectedEntry,
-                roleConfig.MinionConfig,
-                roleConfig.MinionData,
-                roleConfig.MinionBehaviorOverride,
-                wavePreset,
-                spawnOffset,
-                spawnRadius);
+                planet: planet,
+                detectionType: detectionType,
+                defenseRole: targetRole,
+                planetResource: resource,
+                strategy: null,
+                entryConfig: selectedEntry,
+                minionConfig: roleConfig.MinionConfig,
+                minionData: roleConfig.MinionData,
+                minionBehaviorProfile: roleConfig.MinionBehaviorOverride,
+                wavePreset: wavePreset,
+                spawnOffset: spawnOffset,
+                spawnRadius: spawnRadius);
 
             return context;
         }

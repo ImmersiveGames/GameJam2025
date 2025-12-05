@@ -74,7 +74,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             var context = _configured.TryGetValue(planet, out var existing)
                 ? existing
-                : new PlanetDefenseSetupContext(planet, detectionType, DefenseRole.Unknown);
+                : new PlanetDefenseSetupContext(
+                    planet: planet,
+                    detectionType: detectionType,
+                    defenseRole: DefenseRole.Unknown);
 
             WarmUp(context);
         }
