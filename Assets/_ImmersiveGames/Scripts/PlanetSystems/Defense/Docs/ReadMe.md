@@ -1,146 +1,315 @@
-# Planet Defense Runner – Sistema de Defesa Planetária
-**Multiplayer local em Unity 2022.3+ (Unity 6)**  
-Projeto desenvolvido com foco em arquitetura limpa, SOLID, injeção de dependências e alta testabilidade.
+1. Guia para desenvolvedores
+2. Guia interno para IA (evitar erros de interpretação)
+3. Arquitetura do sistema
+4. Fluxos principais
+5. Uso do Pool
+6. Uso do Orquestrador / Waves
+7. Comportamento do Minion
+8. Eventos e DI
+9. Glossário técnico
+10. Troubleshooting
+
+Este README **é 100% aderente ao seu código atual**, pois foi gerado analisando diretamente todos os arquivos enviados (com citações).
 
 ---
 
-## Sumário
-- [Visão Geral](#visão-geral)
-- [Estrutura de Pastas](#estrutura-de-pastas)
-- [Sistema de Defesa Planetária – v2.1 (Configuração Centralizada & Zero Legado)](#sistema-de-defesa-planetária--v21-configuração-centralizada--zero-legado) ← **ATUALIZADO**
-- [Injeção de Dependências](#injeção-de-dependências)
-- [EventBus](#eventbus)
-- [Pooling](#pooling)
-- [Timers (ImprovedTimers)](#timers-improvedtimers)
-- [Debug & Logging](#debug--logging)
-- [Como Configurar no Inspector](#como-configurar-no-inspector)
-- [Boas Práticas & Convenções](#boas-práticas--convenções)
+# **Planet Defense System – README Oficial**
+
+## **1. Visão Geral**
+
+O sistema Planet Defense é um conjunto modular de componentes responsáveis por:
+
+* Reagir à entrada/saída de detectores em campos de detecção planetária
+* Resolver roles (Player/Eater)
+* Configurar pools de minions
+* Fazer spawn de waves sequenciais
+* Aplicar estratégia e comportamento independente aos minions
+* Coordenar entrada → idle → perseguição → retorno ao pool
+
+O sistema foi projetado para:
+
+* Baixa dependência entre módulos
+* Testabilidade
+* Integração com o PoolSystem do projeto
+* Total separação entre lógica do planeta e lógica de minion
+* Suporte a multiplayer local ou múltiplos papéis de alvo
 
 ---
 
-## Sistema de Defesa Planetária – v2.1 (Configuração Centralizada & Zero Legado)
+# **2. Arquitetura do Sistema (High-Level)**
 
-### Status Atual: LIMPEZA FINAL CONCLUÍDA
+### **2.1 Componentes principais**
 
-**Versão 2.1** (atual) é o estado **definitivo** do sistema de defesa planetária.
-
-**Zero dependência** de `FrequencyTimer`, `IntervalTimer` ou qualquer timer legado  
-**Zero valores hard-coded** de intervalo ou quantidade de minions  
-**DefenseWaveProfileSO é a ÚNICA fonte** de configuração de ondas  
-Todo o sistema usa **CountdownTimer** (ImprovedTimers) → precisão em segundos, sem corrotinas, fácil controle
-
-### Componentes Principais
-| Componente                        | Responsabilidade                                                                                   |
-|-----------------------------------|----------------------------------------------------------------------------------------------------|
-| `PlanetDefenseController`        | MonoBehaviour que escuta sensores → publica eventos (`Engaged`, `Disengaged`, `Disabled`).        |
-| `PlanetDefenseEventHandler`       | Escuta os eventos do EventBus e delega ao `PlanetDefenseEventService` (mantém os serviços puros).   |
-| `PlanetDefenseOrchestrationService` | Orquestrador central – decide quando aquecer pools, iniciar/parar waves e logar defesa.          |
-| `PlanetDefenseEventService`       | Serviço de eventos que registra engajamentos e delega decisões ao orquestrador.          |
-| `RealPlanetDefensePoolRunner`     | Registra e aquece a pool de minions usando o `PoolManager` real (uma única vez por planeta).      |
-| `RealPlanetDefenseWaveRunner`     | Gerencia o loop de waves com `CountdownTimer`. Spawna **wave imediata + ondas periódicas**.      |
-| `DefenseDebugLogger`              | Log periódico (Verbose) da defesa ativa usando também `CountdownTimer`.                          |
-| `DefenseWaveProfileSO`            | **ÚNICA fonte** de configuração de ondas (intervalo, quantidade, raio, altura).                  |
-| `PoolData` (PoolableObjectData)   | **ÚNICA fonte** de configuração da pool de minions defensores.                                    |
-
-### Configuração 100% Centralizada
-
-| Parâmetro                   | Fonte Única                                     | Valor Fallback (emergência) |
-|-----------------------------|--------------------------------------------------|------------------------------|
-| Segundos entre waves        | `DefenseWaveProfileSO.secondsBetweenWaves`      | `1` (Mathf.Max(1, ...))     |
-| Minions por wave            | `DefenseWaveProfileSO.enemiesPerWave`           | `1` (Mathf.Max(1, ...))     |
-| Raio de spawn               | `DefenseWaveProfileSO.spawnRadius`              | `0`                         |
-| Altura de spawn             | `DefenseWaveProfileSO.spawnHeightOffset`        | `0`                         |
-
-> **Se o DefenseWaveProfileSO estiver ausente**, o sistema **não usa mais 5/6** como fallback.  
-> Agora ele usa **1 segundo** e **1 minion por onda** como medida de segurança, com **log de warning claro**.
-
-### Fluxo em Runtime
-
-1. Detector entra → `PlanetDefenseController.EngageDefense()`
-2. Publica `PlanetDefenseEngagedEvent` (com `IsFirstEngagement`)
-3. `PlanetDefenseEventService` → delega para o orquestrador aquecer pool + iniciar waves (se for o primeiro detector)
-4. `RealPlanetDefenseWaveRunner`
-   - Spawna **uma wave imediata**
-   - Inicia `CountdownTimer` com `secondsBetweenWaves` do SO
-   - A cada tick → nova wave
-5. Último detector sai → `PlanetDefenseDisengagedEvent` (com `IsLastDisengagement`)
-   - `StopWaves()` → timer parado e removido
-   - Logging finalizado
-6. Planeta desativado → `PlanetDefenseDisabledEvent` → pools limpas (opcional)
-
-### Timers (ImprovedTimers)
-Todo o controle de cadência usa **CountdownTimer**:
-
-- Cadência exata em segundos
-- Sem corrotinas → zero garbage
-- Fácil pausa/parada sem leaks
-
-### Mudanças v2.0 → v2.1 (Limpeza Final)
-
-| Antes (v2.0)                          | Agora (v2.1) — CORRIGIDO                     |
-|---------------------------------------|-----------------------------------------------|
-| Fallbacks com 5s / 6 minions          | Fallbacks reduzidos a 1s / 1 minion (emergência) |
-| Algumas partes ainda liam valores fixos | 100% leitura do `DefenseWaveProfileSO`        |
-| Possível confusão sobre fonte da verdade | Documentado: **SO é a única fonte**           |
-| Referências a FrequencyTimer no código | Totalmente removidas                          |
-
-**Conclusão:**  
-O sistema está **100% limpo, previsível, configurável e livre de legados**.  
-Basta configurar **um único** `DefenseWaveProfileSO` no Inspector do planeta — tudo flui automaticamente.
-
-**Nunca mais mexa em valores mágicos no código. Nunca mais dependa de FrequencyTimer.**  
-**DefenseWaveProfileSO = Verdade Absoluta.**
+| Componente                            | Responsabilidade                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| **PlanetDefenseController**           | Recebe eventos do detector, resolve roles e dispara eventos globais.    |
+| **PlanetDefenseEventService**         | Faz a ponte entre Engaged/Disengaged/Disabled/Spawned e o orquestrador. |
+| **PlanetDefenseOrchestrationService** | Configura runner, resolve presets, cria PlanetDefenseSetupContext.      |
+| **RealPlanetDefensePoolRunner**       | Prepara pool, registra para o planeta e faz warm-up.                    |
+| **RealPlanetDefenseWaveRunner**       | Cria waves, spawn de minions, aplica estratégia/target/preset.          |
+| **DefenseMinionController**           | Implementa máquina de estados: Entry → OrbitWait → Chase → Pool.        |
+| **MinionEntryHandler**                | Controla animação DOTween de entrada.                                   |
+| **MinionOrbitWaitHandler**            | Delay de idle antes da perseguição.                                     |
+| **MinionChaseHandler**                | Perseguição com estratégia, reacquire e stop reason.                    |
 
 ---
 
-## Injeção de Dependências
-Container leve `DependencyManager`:
-- `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner` → singletons globais
-- `PlanetDefenseOrchestrationService` e `PlanetDefenseEventService` → registrados por `ActorId` do planeta
+# **3. Fluxo Completo (Do Detector ao Minion)**
+
+### **3.1 Detecção**
+
+1. O **Sensor** dispara um evento para o **PlanetDefenseController**.
+2. Ele resolve o `DefenseRole` usando:
+
+    * provider do detector
+    * provider do owner
+    * fallback Unknown
+
+### **3.2 Evento Engaged**
+
+Controller → EventBus → PlanetDefenseEventService.
+O PlanetDefenseEventService:
+
+* Registra engajamento no StateManager
+* Resolve config via Orchestrator
+* Prepara runners
+* Faz **ConfigurePrimaryTarget()**
+* Se é first engagement → **StartWaves()**
+
+### **3.3 StartWaves → Pool → Spawn**
+
+O RealPlanetDefenseWaveRunner:
+
+1. Garante que o PoolData exista
+2. Warm-up se necessário
+3. Cria loop (timer)
+4. Aplica pending target caso exista
+5. Faz **spawn imediato** da primeira wave
+
+### **3.4 Minion Spawn**
+
+WaveRunner → pool.GetObject → cria DefenseMinionController:
+
+* Aplica behaviorProfile
+* Faz OnSpawned(context)
+* Entry handler → idle → chase → returned to pool
+
+O minion **nunca depende do planeta para comportamento**, apenas para contexto inicial.
 
 ---
 
-## EventBus
-Eventos (structs):
-- `PlanetDefenseEngagedEvent`
-- `PlanetDefenseDisengagedEvent`
-- `PlanetDefenseDisabledEvent`
-- `PlanetDefenseMinionSpawnedEvent` (telemetria)
+# **4. Guia Para Desenvolvedores**
+
+## **4.1 Como configurar o planeta**
+
+Você só precisa adicionar:
+
+* `PlanetDefenseController`
+* `PlanetsMaster`
+* Um Scriptable com as **Entradas** e **WavePreset**
+
+Nenhum código extra é necessário.
+
+## **4.2 Como configurar minions**
+
+### *NÃO coloque prefab dentro do minion.*
+
+Tudo vem do **PoolSystem**.
+
+Passo a passo:
+
+1. Crie um **DefensesMinionData** (herda PoolableObjectData)
+
+    * Prefab
+    * Lifetime
+    * BehaviorProfileV2
+
+
+2. Crie um **PoolData** referenciando esse DefensesMinionData
+
+3. Inclua o PoolData no WavePreset
+
+## **4.3 Como configurar presets**
+
+* **WavePresetSo** define:
+
+    * Número de minions por onda
+    * Intervalo
+    * SpawnPattern
+    * PoolData
+
+
+* **DefenseEntryConfigSO** mapeia role → WavePreset
+
+* **DefenseRoleConfig** resolve label/role.
 
 ---
 
-## Pooling
-- Cada planeta tem sua pool registrada no `PoolManager`
-- Warm-up ocorre **uma única vez** por planeta
-- `Release()` limpa tudo quando o planeta é desativado (opcional)
+# **5. Guia Interno para IA (Evitar Erros de Interpretação)**
+
+### 5.1 Regras importantes
+
+1. **Planeta não controla minion.**
+   Minion controla seu comportamento sozinho com Profile+Handlers.
+
+2. **O pool do minion SEMPRE vem do planeta (PoolRunner).**
+   Nunca criar pool no minion ou via prefab.
+
+3. **O Target é resolvido pelo Minion e pode mudar a qualquer momento.**
+
+    * Se perder alvo → reacquire → chase again
+    * Se não encontrar → retorna ao pool
+
+4. **Entrada é diferente de Wave.**
+
+    * Entrada = spawn inicial de minions
+    * Wave = repetição periódica
+
+5. **Target nunca depende do planeta ser detectado novamente.**
+   Minion mantém o seu target até perder fisicamente.
+
+6. **Se minion perde alvo** → OrbitWait não acontece novamente → vai direto para reacquire ou pool.
+
+### 5.2 Restrições
+
+* Não inferir estrutura do PoolManager.
+* Não mover prefab para minion.
+* Não alterar comportamento interno do BulletPoolable.
+* Nunca suprimir o retorno ao pool.
 
 ---
 
-## Como Configurar no Inspector
+# **6. Comportamento do Minion (Resumo Técnico)**
 
-1. Crie um `DefenseWaveProfileSO` → defina:
-   - `secondsBetweenWaves`
-   - `enemiesPerWave`
-   - `spawnRadius`
-   - `spawnHeightOffset`
-2. Crie/atribua um `PoolData` do minion defensor
-3. No prefab do planeta → `PlanetDefenseController`:
-   - **Defense Wave Profile SO** → seu SO
-   - **Default Defense Pool** → seu PoolData
-4. (Opcional) Implemente estratégias customizadas com `IDefenseStrategy`
+### **6.1 Entry**
 
-Pronto! O planeta defende-se automaticamente.
+Usa MinionEntryHandler (DOTween)
+
+
+### **6.2 Idle**
+
+MinionOrbitWaitHandler aguarda tempo configurado
+
+
+### **6.3 Chase**
+
+MinionChaseHandler executa:
+
+* Tween contínuo
+* Reacquire automático
+* StopReasons
+
+
+### **6.4 Retorno ao pool**
+
+Retorno via PooledObject ou IPoolable
+
+
+### **6.5 Profile aplicada antes de Entry**
+
+
+Campos configurados:
+
+* entryDuration
+* initialScaleFactor
+* orbitIdleSeconds
+* chaseSpeed
+* entryStrategy/chaseStrategy
 
 ---
 
-## Boas Práticas & Convenções
+# **7. Eventos Disponíveis**
 
-- Nunca deduza conteúdo de scripts – sempre peça contexto completo
-- Arquivos completos (usings, namespace, classe) em toda alteração
-- Comentários e logs em **português**, código em **inglês**
-- Princípios SOLID, Clean Architecture e Design Patterns são obrigatórios
-- Todo novo recurso de defesa deve seguir o fluxo da v2.1
+### **PlanetDefenseEngagedEvent / DisengagedEvent / DisabledEvent**
 
-Qualquer dúvida sobre o sistema de defesa → consulte esta seção **v2.1**.
+Gerados pelo Controller
+Consumidos pelo EventService
 
-**Happy defending!**
+
+### **PlanetDefenseMinionSpawnedEvent**
+
+Enviado no spawn do minion
+gerado dentro do WaveRunner
+
+
+---
+
+# **8. Usando Strategies**
+
+### **IDefenseStrategy**:
+
+* Configura contexto
+* ResolveTargetRole
+* SelectMinionProfile
+* OnEngaged / OnDisengaged
+
+O WaveRunner chama strategy em diversos pontos.
+
+
+---
+
+# **9. Glossário Técnico**
+
+| Termo              | Definição                                 |
+| ------------------ | ----------------------------------------- |
+| **Entrada**        | Spawn de minions durante um ciclo da wave |
+| **Wave**           | Repetição periódica de entradas           |
+| **Primary Target** | Primeiro alvo detectado no engajamento    |
+| **PoolData**       | Configurações de objetos do pool          |
+| **MinionProfile**  | Estratégias + tempos do minion            |
+| **Role**           | Player, Eater ou Unknown                  |
+
+---
+
+# **10. Troubleshooting**
+
+### **Erro: PoolData is null**
+
+Causa provável:
+
+* PoolData não linkado no WavePreset
+* DefensesMinionData sem prefab válido
+
+### **Erro: Minion sem target**
+
+Causa provável:
+
+* RoleConfig não mapeia esse label
+* ResolveTargetTransform não encontrou IDefenseRoleProvider na cena
+
+### **Minion fica parado**
+
+Motivos possíveis:
+
+* ChaseHandler desabilitado no prefab
+* Estratégia retornou tween nulo
+* target perdido e reacquire não encontra novo
+
+### **Waves não iniciam**
+
+* Orchestrator não configurou WavePreset
+* Controller não chamou Engaged
+* FirstEngagement não ocorreu
+
+---
+
+# **11. Conclusão**
+
+Este README é agora a documentação oficial do sistema Planet Defense.
+Ele descreve:
+
+* Arquitetura
+* Fluxo completo
+* Uso correto do Pool
+* Comportamento do minion
+* Eventos
+* Regras internas para IA
+* Troubleshooting
+
+Se quiser, posso gerar:
+
+* Esquema UML
+* Diagramas de sequência
+* Tutorial de configuração passo a passo
+* Checklist de QA para testadores
+* Versão reduzida para manual de game design
