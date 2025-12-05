@@ -13,13 +13,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private PlanetResourcesSo _resourceData;
         private bool _resourceDiscovered;
 
-        [Header("Defesas")]
-        [Tooltip("Lista de entradas para defesas.")]
-        [SerializeField]
-        private List<PlanetDefenseEntrySo> defenseEntries = new();
-
-        [Header("Planet Defense (Nova Config – Entries v2)")]
-        [Tooltip("Lista de novas entradas de defesa (DefenseEntryConfigSO). Ainda não usada em runtime.")]
+        [Header("Planet Defense (Entries v2)")]
+        [Tooltip("Lista de novas entradas de defesa (DefenseEntryConfigSO).")]
         [SerializeField]
         private List<DefenseEntryConfigSO> defenseEntryConfigs = new();
 
@@ -33,7 +28,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
-        public IReadOnlyList<PlanetDefenseEntrySo> DefenseEntries => defenseEntries;
         public IReadOnlyList<DefenseEntryConfigSO> DefenseEntryConfigs => defenseEntryConfigs;
         public DefenseChoiceMode DefenseMode => defenseChoiceMode;
 
@@ -66,20 +60,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void ConfigureDefenseEntries()
         {
-            if (defenseEntries == null)
-            {
-                defenseEntries = new List<PlanetDefenseEntrySo>();
-            }
-
             if (defenseEntryConfigs == null)
             {
                 defenseEntryConfigs = new List<DefenseEntryConfigSO>();
             }
 
-            if (defenseEntries.Count == 0 && defenseEntryConfigs.Count == 0)
+            if (defenseEntryConfigs.Count == 0)
             {
                 DebugUtility.LogError<PlanetsMaster>(
-                    "Nenhuma entrada de defesa configurada (v1 ou v2) — configure PlanetDefenseEntrySo ou DefenseEntryConfigSO.",
+                    "Nenhuma entrada de defesa configurada — adicione DefenseEntryConfigSO para habilitar defesas.",
                     this);
             }
 
@@ -88,17 +77,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            // Configuração V1 (legado)
-            if (defenseEntries.Count > 0)
-            {
-                _cachedConfiguredService.ConfigureDefenseEntries(this, defenseEntries, defenseChoiceMode);
-            }
-
-            // Configuração V2 (nova)
-            if (defenseEntryConfigs.Count > 0)
-            {
-                _cachedConfiguredService.ConfigureDefenseEntriesV2(this, defenseEntryConfigs, defenseChoiceMode);
-            }
+            _cachedConfiguredService.ConfigureDefenseEntriesV2(this, defenseEntryConfigs, defenseChoiceMode);
         }
 
         public void AssignResource(PlanetResourcesSo resource)

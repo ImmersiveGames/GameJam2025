@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Descreve um tipo lógico de minion de defesa, contendo apenas parâmetros
     /// de comportamento, lifetime e ajustes opcionais de movimento para editor.
     /// </summary>
+    [Obsolete("Configuração design-only; utilize DefenseMinionBehaviorProfileSO e PoolData na pipeline principal.", false)]
     [CreateAssetMenu(
         fileName = "DefenseMinionConfig",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Minion Config")]

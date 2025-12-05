@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
@@ -10,6 +11,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// para presets de wave e definir um preset default obrigatório. Mantém SRP ao
     /// separar a orquestração (PlanetsMaster/serviços) das configurações de editor.
     /// </summary>
+    [Obsolete("Legacy defense entry. Migre para DefenseEntryConfigSO (v2).", false)]
     [CreateAssetMenu(
         fileName = "PlanetDefenseEntry",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Entry")]
