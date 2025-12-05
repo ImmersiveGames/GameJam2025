@@ -1,3 +1,5 @@
+// LEGACY: DefenseMinionConfigSO não é mais usado pelo fluxo de defesa v2.
+// Mantido apenas para compatibilidade temporária com assets antigos.
 using System;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -9,7 +11,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Descreve um tipo lógico de minion de defesa, contendo apenas parâmetros
     /// de comportamento, lifetime e ajustes opcionais de movimento para editor.
     /// </summary>
-    [Obsolete("Configuração design-only; utilize DefenseMinionBehaviorProfileSO e PoolData na pipeline principal.", false)]
+    [Obsolete("LEGACY: não usado pelo fluxo de defesa v2. Evite criar novas instâncias.", false)]
     [CreateAssetMenu(
         fileName = "DefenseMinionConfig",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Minion Config")]
