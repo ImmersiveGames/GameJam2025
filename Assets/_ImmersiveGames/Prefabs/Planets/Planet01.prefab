@@ -89,7 +89,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   customActorId: 
   actorDefenseRole: 0
-  defenseEntries:
+  defenseEntryConfigs:
   - {fileID: 11400000, guid: 710d71b31018ab64e8f124ae5babdca4, type: 2}
   defenseChoiceMode: 0
 --- !u!114 &6541701590752357594

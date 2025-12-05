@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
@@ -21,9 +22,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private PoolData poolData;
 
         [Header("Configuração de Onda")]
-        [Tooltip("Quantidade de inimigos por disparo de entrada (lote), obrigatório.")]
+        [Tooltip("Quantidade de minions por disparo de entrada (lote), obrigatório.")]
+        [FormerlySerializedAs("numberOfEnemiesPerWave")]
         [SerializeField]
-        private int numberOfEnemiesPerWave = 1;
+        private int numberOfMinionsPerWave = 1;
 
         [Tooltip("Tempo entre waves (disparos da mesma entrada), obrigatório.")]
         [SerializeField]
@@ -39,9 +41,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PoolData PoolData => poolData;
 
         /// <summary>
-        /// Quantidade de inimigos gerados em cada disparo da entrada (uma wave).
+        /// Quantidade de minions gerados em cada disparo da entrada (uma wave).
         /// </summary>
-        public int NumberOfEnemiesPerWave => numberOfEnemiesPerWave;
+        public int NumberOfMinionsPerWave => numberOfMinionsPerWave;
 
         /// <summary>
         /// Intervalo, em segundos, entre cada wave disparada pela mesma entrada.
@@ -63,10 +65,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     this);
             }
 
-            if (numberOfEnemiesPerWave <= 0)
+            if (numberOfMinionsPerWave <= 0)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "NumberOfEnemiesPerWave deve ser maior que 0.",
+                    "NumberOfMinionsPerWave deve ser maior que 0.",
                     this);
             }
 
@@ -77,10 +79,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     this);
             }
 
-            if (spawnPattern != null && numberOfEnemiesPerWave <= 0)
+            if (spawnPattern != null && numberOfMinionsPerWave <= 0)
             {
                 DebugUtility.LogError<WavePresetSo>(
-                    "SpawnPattern usado, mas número de inimigos zero — configure corretamente.",
+                    "SpawnPattern usado, mas número de minions zero — configure corretamente.",
                     this);
             }
         }

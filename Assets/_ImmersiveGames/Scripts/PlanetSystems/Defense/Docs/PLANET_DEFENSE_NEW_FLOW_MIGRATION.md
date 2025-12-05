@@ -4,11 +4,11 @@
 - **Editor**: configure cada planeta com uma lista de `DefenseEntryConfigSO` e escolha o `DefenseChoiceMode` (Random ou Sequential). Cada entrada referencia `DefenseMinionConfigSO` + `WavePresetSo` por role detectado e um preset default obrigatório.
 - **Preload**: o `PlanetDefenseOrchestrationService` faz preload único de todos os `PoolData` presentes nas entradas/binds/defaults, emitindo `LogError` via `DebugUtility` se algum pool estiver ausente.
 - **Runtime**: a cada detecção, o orquestrador resolve a entrada (modo escolhido), pega o `WavePresetSo` pelo role (ou default), calcula o raio dinâmico via `SkinRuntimeStateTracker` (`ApproxRadius` + `SpawnOffset`) e entrega o contexto para o runner.
-- **Spawn**: o runner instancia inimigos usando `NumberOfEnemiesPerWave`, `IntervalBetweenWaves` e `SpawnPattern` opcional, sempre com Y = 0 (top-down). Falhas de configuração são sinalizadas cedo para evitar comportamentos silenciosos.
+- **Spawn**: o runner instancia minions usando `NumberOfMinionsPerWave`, `IntervalBetweenWaves` e `SpawnPattern` opcional, sempre com Y = 0 (top-down). Falhas de configuração são sinalizadas cedo para evitar comportamentos silenciosos.
 
 ## Boas práticas
 - **SRP primeiro**: `DefenseEntryConfigSO` apenas mapeia role → (minion config + wave preset) e offset; `WavePresetSo` guarda dados da onda e do pool; lógica de spawn fica no serviço/runner.
-- **Nomenclatura clara**: use sufixo `So` em ScriptableObjects, nomes explícitos (`EntryDefaultWavePreset`, `NumberOfEnemiesPerWave`, `SpawnOffset`) e tooltips em português para orientar designers.
+- **Nomenclatura clara**: use sufixo `So` em ScriptableObjects, nomes explícitos (`EntryDefaultWavePreset`, `NumberOfMinionsPerWave`, `SpawnOffset`) e tooltips em português para orientar designers.
 - **Fail-fast em todas as etapas**: mantenha `OnValidate` para presets/entries e logs de runtime no orquestrador/runner. Não dependa de fallbacks implícitos.
 - **Multiplayer local**: reuse presets compartilhados entre planetas para reduzir GC e manter consistência de dificuldade; evite duplicar `PoolData` quando o comportamento é o mesmo.
 - **Performance**: confie no cache de radius e no cache de entradas sequenciais. Não recalcule binds ou radius por frame.
@@ -39,7 +39,7 @@
 4. **Cobrir radius dinâmico**
    - Nos testes, forneça `SkinRuntimeStateTracker` com `ApproxRadius` controlado; valide `SpawnOffset` aplicado e Y fixo em 0.
 5. **Validar fail-fast**
-   - Inclua casos com `PoolData` ausente e `NumberOfEnemiesPerWave <= 0` para checar `LogError` via `DebugUtility`.
+  - Inclua casos com `PoolData` ausente e `NumberOfMinionsPerWave <= 0` para checar `LogError` via `DebugUtility`.
 6. **Executar sequência completa**
    - Simule detecção → resolução de entrada → preload → spawn de waves. Confirme que caches (radius e sequência) são reutilizados entre chamadas.
 
