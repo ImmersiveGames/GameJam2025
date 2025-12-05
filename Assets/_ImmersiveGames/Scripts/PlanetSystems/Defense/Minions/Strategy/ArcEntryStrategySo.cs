@@ -36,6 +36,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
+            if (entryDurationSeconds <= 0f)
+            {
+                entryDurationSeconds = 0.01f;
+            }
+
             // Ponto e escala iniciais
             var tinyScale = finalScale * initialScaleFactor;
             minion.position = planetCenter;
