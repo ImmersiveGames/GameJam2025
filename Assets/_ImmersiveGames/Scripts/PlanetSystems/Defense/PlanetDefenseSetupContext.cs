@@ -7,7 +7,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// <summary>
     /// Encapsula parâmetros de configuração para uma defesa planetária.
     /// Permite que runners recebam dados de recurso, configurações de entrada,
-    /// minion e wave sem depender diretamente de ScriptableObjects adicionais.
+    /// perfil de comportamento de minion e wave sem depender diretamente de
+    /// ScriptableObjects adicionais, mantendo o contexto livre de PoolData
+    /// (responsabilidade do PoolSystem).
     /// </summary>
     public sealed class PlanetDefenseSetupContext
     {
@@ -18,8 +20,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
             DefenseEntryConfigSO entryConfig = null,
-            DefenseMinionConfigSO minionConfig = null,
             WavePresetSo wavePreset = null,
+            DefenseMinionBehaviorProfileSO minionBehaviorProfile = null,
             Vector3 spawnOffset = default,
             float spawnRadius = 0f)
         {
@@ -29,8 +31,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             PlanetResource = planetResource;
             Strategy = strategy;
             EntryConfig = entryConfig;
-            MinionConfig = minionConfig;
             WavePreset = wavePreset;
+            MinionBehaviorProfile = minionBehaviorProfile;
             SpawnOffset = spawnOffset;
             SpawnRadius = spawnRadius;
         }
@@ -41,8 +43,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public PlanetResourcesSo PlanetResource { get; }
         public IDefenseStrategy Strategy { get; }
         public DefenseEntryConfigSO EntryConfig { get; }
-        public DefenseMinionConfigSO MinionConfig { get; }
         public WavePresetSo WavePreset { get; }
+        public DefenseMinionBehaviorProfileSO MinionBehaviorProfile { get; }
         public Vector3 SpawnOffset { get; }
         public float SpawnRadius { get; }
     }

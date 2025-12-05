@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             CacheContext(planet, detectionType, targetRole, context);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
-                $"[Context] {planet.ActorName} resolvido com Pool='{context.WavePreset?.PoolData?.name ?? "null"}', WavePreset='{context.WavePreset?.name ?? "null"}'.");
+                $"[Context] {planet.ActorName} resolvido com WavePreset='{context.WavePreset?.name ?? "null"}'.");
 
             return context;
         }
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private static bool ShouldWarmUpPools(PlanetDefenseSetupContext context)
         {
-            return WarmUpPools && context?.WavePreset?.PoolData != null;
+            return WarmUpPools && context?.WavePreset != null;
         }
 
         private void ResolveDependenciesFromProvider()
@@ -243,11 +243,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var roleConfig = ResolveRoleConfig(selectedEntry, targetRole);
             var wavePreset = roleConfig.WavePreset;
-            var poolData = wavePreset?.PoolData;
+            var minionBehaviorProfile = roleConfig.MinionBehaviorProfile;
             var spawnRadius = CalculatePlanetRadius(planet, roleConfig.SpawnOffset);
             var spawnOffset = Vector3.zero;
             var entryConfig = selectedEntry;
-            var minionConfig = roleConfig.MinionConfig;
 
             ValidateWavePresetRuntime(planet, wavePreset);
 
@@ -257,13 +256,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     $"WavePreset não resolvido para {planet.ActorName} no fluxo v2; configure binds ou default.");
                 return false;
             }
-
-            if (poolData == null)
-            {
-                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
-                    $"PoolData ausente ao resolver defesa de {planet.ActorName} no fluxo v2; configure PoolData no WavePreset.");
-            }
-
             context = new PlanetDefenseSetupContext(
                 planet,
                 detectionType,
@@ -271,8 +263,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 resource,
                 null,
                 entryConfig,
-                minionConfig,
                 wavePreset,
+                minionBehaviorProfile,
                 spawnOffset,
                 spawnRadius);
 

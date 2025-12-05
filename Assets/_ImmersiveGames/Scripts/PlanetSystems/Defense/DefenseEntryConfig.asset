@@ -11,8 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b12b8c3c0f828c4e8fdc1ced2b8d2ca, type: 3}
   m_Name: DefenseEntryConfig
-  m_EditorClassIdentifier: 
-  bindings: []
-  defaultMinionConfig: {fileID: 11400000, guid: bc1a9df8f524c904eb6b11cca936cdb1, type: 2}
+  m_EditorClassIdentifier:
   defaultWavePreset: {fileID: 11400000, guid: 657c5a63f13cbf1438a31b7a15df48f6, type: 2}
-  spawnOffset: 1
+  defaultMinionBehaviorProfile: {fileID: 11400000, guid: 4410292b6df062747bb94739d6447765, type: 2}
+  defaultSpawnOffset: 1
+  rotatePositions: 0
+  roleBindings: []

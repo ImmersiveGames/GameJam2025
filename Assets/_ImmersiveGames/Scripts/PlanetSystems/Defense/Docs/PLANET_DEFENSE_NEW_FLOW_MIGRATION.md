@@ -1,13 +1,13 @@
 # Migração e Boas Práticas do Novo Fluxo de Defesa Planetária (03/12/2025)
 
 ## Visão geral (fluxo end-to-end)
-- **Editor**: configure cada planeta com uma lista de `DefenseEntryConfigSO` e escolha o `DefenseChoiceMode` (Random ou Sequential). Cada entrada referencia `DefenseMinionConfigSO` + `WavePresetSo` por role detectado e um preset default obrigatório.
+- **Editor**: configure cada planeta com uma lista de `DefenseEntryConfigSO` e escolha o `DefenseChoiceMode` (Random ou Sequential). Cada entrada referencia `DefenseMinionBehaviorProfileSO` + `WavePresetSo` por role detectado e um preset default obrigatório.
 - **Preload**: o `PlanetDefenseOrchestrationService` faz preload único de todos os `PoolData` presentes nas entradas/binds/defaults, emitindo `LogError` via `DebugUtility` se algum pool estiver ausente.
 - **Runtime**: a cada detecção, o orquestrador resolve a entrada (modo escolhido), pega o `WavePresetSo` pelo role (ou default), calcula o raio dinâmico via `SkinRuntimeStateTracker` (`ApproxRadius` + `SpawnOffset`) e entrega o contexto para o runner.
 - **Spawn**: o runner instancia minions usando `NumberOfMinionsPerWave`, `IntervalBetweenWaves` e `SpawnPattern` opcional, sempre com Y = 0 (top-down). Falhas de configuração são sinalizadas cedo para evitar comportamentos silenciosos.
 
 ## Boas práticas
-- **SRP primeiro**: `DefenseEntryConfigSO` apenas mapeia role → (minion config + wave preset) e offset; `WavePresetSo` guarda dados da onda e do pool; lógica de spawn fica no serviço/runner.
+- **SRP primeiro**: `DefenseEntryConfigSO` apenas mapeia role → (perfil de comportamento + wave preset) e offset; `WavePresetSo` guarda dados da onda e do pool; lógica de spawn fica no serviço/runner.
 - **Nomenclatura clara**: use sufixo `So` em ScriptableObjects, nomes explícitos (`EntryDefaultWavePreset`, `NumberOfMinionsPerWave`, `SpawnOffset`) e tooltips em português para orientar designers.
 - **Fail-fast em todas as etapas**: mantenha `OnValidate` para presets/entries e logs de runtime no orquestrador/runner. Não dependa de fallbacks implícitos.
 - **Multiplayer local**: reuse presets compartilhados entre planetas para reduzir GC e manter consistência de dificuldade; evite duplicar `PoolData` quando o comportamento é o mesmo.
@@ -31,7 +31,7 @@
 1. **Inventário dos testes antigos**
    - Localize testes que dependem de `DefenseLoadout` ou perfis legados. Liste cenas e fixtures afetadas.
 2. **Preparar assets do novo fluxo**
-  - Crie `DefenseEntryConfigSO` com default obrigatório e binds necessários, referenciando `WavePresetSo` existentes e `DefenseMinionConfigSO` para cada bind.
+  - Crie `DefenseEntryConfigSO` com default obrigatório e binds necessários, referenciando `WavePresetSo` existentes e `DefenseMinionBehaviorProfileSO` para cada bind.
   - Confirme `PoolData`, contagem e intervalos em cada `WavePresetSo` (fail-fast no `OnValidate`).
 3. **Atualizar fixtures**
   - Substitua mocks/loadouts por coleções de `DefenseEntryConfigSO` + `DefenseChoiceMode` injetados no orquestrador.
