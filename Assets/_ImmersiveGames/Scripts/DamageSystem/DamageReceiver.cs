@@ -343,6 +343,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 {
                     audioEmitter.Play(deathSound, deathCtx);
                 }
+
+                ExecuteDeathReturn();
             }
             else if (hasReviveSound)
             {
