@@ -192,6 +192,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (Application.isPlaying)
             {
                 EnsureLifecycleHandler();
+
+                var resourceSystem = _bridge != null ? _bridge.GetResourceSystem() : null;
+                if (resourceSystem == null)
+                {
+                    HandleDamageWithoutResource(ctx);
+                    return;
+                }
             }
 
             var context = new DamageCommandContext(
@@ -350,6 +357,44 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 audioEmitter.Play(reviveSound, deathCtx);
             }
+        }
+
+        private void HandleDamageWithoutResource(DamageContext ctx)
+        {
+            if (ctx == null)
+            {
+                return;
+            }
+
+            if (_cooldowns != null && !string.IsNullOrEmpty(ctx.AttackerId))
+            {
+                if (!_cooldowns.CanDealDamage(ctx.AttackerId, _receiverId))
+                {
+                    return;
+                }
+            }
+
+            if (audioEmitter != null)
+            {
+                var hasDeathSound = deathSound != null && deathSound.clip != null;
+                var hasHitSound = hitSound != null && hitSound.clip != null;
+                var sound = hasDeathSound ? deathSound : hasHitSound ? hitSound : null;
+
+                if (sound != null)
+                {
+                    var position = ctx.HasHitPosition ? ctx.HitPosition : transform.position;
+                    var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
+                    audioEmitter.Play(sound, audioCtx);
+                }
+            }
+
+            if (spawnExplosionOnDeath)
+            {
+                _explosion?.Initialize();
+                _explosion?.PlayExplosion(ctx);
+            }
+
+            ExecuteDeathReturn();
         }
 
         private void ExecuteDeathReturn()
