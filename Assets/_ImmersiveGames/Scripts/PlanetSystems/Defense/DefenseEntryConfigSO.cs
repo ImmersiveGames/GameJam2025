@@ -163,7 +163,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public readonly struct RoleDefenseConfig
         {
-            public RoleDefenseConfig(DefenseMinionConfigSO minionConfig, WavePresetSo wavePreset, float spawnOffset)
+            public RoleDefenseConfig(
+                DefenseMinionConfigSO minionConfig,
+                WavePresetSo wavePreset,
+                float spawnOffset)
             {
                 MinionConfig = minionConfig;
                 WavePreset = wavePreset;
