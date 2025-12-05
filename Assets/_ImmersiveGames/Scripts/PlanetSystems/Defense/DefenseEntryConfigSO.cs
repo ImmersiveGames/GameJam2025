@@ -3,26 +3,23 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
-    /// Define como o planeta reage a cada target role detectado: qual minion config usar
-    /// e qual preset de wave disparar para aquele role específico.
-    /// O pool está exclusivamente em <see cref="WavePresetSo.PoolData"/>.
-    /// Não altera lógica existente — apenas oferece um ponto unificado de configuração por role.
+    /// Configura, para um planeta ou grupo de planetas, qual WavePreset cada DefenseRole usa
+    /// e quais offsets de spawn aplicar. O pool está exclusivamente em
+    /// <see cref="WavePresetSo.PoolData"/>.
+    /// Não altera a lógica existente — apenas oferece um ponto unificado de configuração
+    /// por role.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Planets/Defense Entry Config")]
     public sealed class DefenseEntryConfigSO : ScriptableObject
     {
-        [Header("Mapeamento por target role")]
-        [Tooltip("Lista de binds entre target role detectado, minion config e preset de wave específico. O pool vem do WavePreset.")]
-        [SerializeField]
-        private List<RoleDefenseBinding> bindings = new();
-
-        [Header("Configuração padrão")]
+        [Header("Configuração padrão (fallback)")]
         [Tooltip("Minion config padrão usado quando o role não está mapeado.")]
         [SerializeField]
         private DefenseMinionConfigSO defaultMinionConfig;
@@ -31,10 +28,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [SerializeField]
         private WavePresetSo defaultWavePreset;
 
-        [Header("Spawn")]
+        [Header("Spawn padrão")]
         [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn.")]
+        [FormerlySerializedAs("spawnOffset")]
         [SerializeField]
-        private float spawnOffset;
+        private float defaultSpawnOffset;
+
+        [Tooltip("Raio base aplicado ao planeta antes de somar offsets. Mantido explícito para inspeção.")]
+        [SerializeField]
+        private float defaultSpawnRadius;
+
+        [Header("Mapeamento por target role")]
+        [Tooltip("Lista de binds entre target role detectado, minion config e preset de wave específico. O pool vem do WavePreset.")]
+        [FormerlySerializedAs("bindings")]
+        [SerializeField]
+        private List<RoleDefenseBinding> roleBindings = new();
 
         public IReadOnlyDictionary<DefenseRole, RoleDefenseConfig> Bindings
         {
@@ -47,7 +55,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public RoleDefenseConfig DefaultConfig => new(defaultMinionConfig, defaultWavePreset);
 
-        public float SpawnOffset => spawnOffset;
+        public float DefaultSpawnOffset => defaultSpawnOffset;
+
+        public float DefaultSpawnRadius => defaultSpawnRadius;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -75,7 +85,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             runtimeBindings ??= new Dictionary<DefenseRole, RoleDefenseConfig>();
 
-            if (runtimeBindings.Count == 0 && bindings != null && bindings.Count > 0)
+            if (runtimeBindings.Count == 0 && roleBindings != null && roleBindings.Count > 0)
             {
                 RebuildRuntimeBindings();
             }
@@ -86,13 +96,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             runtimeBindings ??= new Dictionary<DefenseRole, RoleDefenseConfig>();
             runtimeBindings.Clear();
 
-            if (bindings == null)
+            if (roleBindings == null)
             {
-                bindings = new List<RoleDefenseBinding>();
+                roleBindings = new List<RoleDefenseBinding>();
                 return;
             }
 
-            foreach (var binding in bindings)
+            foreach (var binding in roleBindings)
             {
                 var role = binding.Role;
                 var config = binding.ToConfig();
@@ -124,7 +134,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseRole role;
 
-            [Tooltip("Config lógica do minion a ser usado para este role.")]
+            [Tooltip("Referência de design / não utilizada pelo runtime atual.")]
             [SerializeField]
             private DefenseMinionConfigSO minionConfig;
 
