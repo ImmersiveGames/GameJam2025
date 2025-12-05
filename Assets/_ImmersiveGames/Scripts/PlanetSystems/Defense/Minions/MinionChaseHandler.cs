@@ -152,12 +152,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     }
 
                     var direction = (_targetTransform.position - transform.position);
-                    if (direction.sqrMagnitude > 0.0001f)
+                    if (direction.sqrMagnitude > 0.0001f && rotationLerpFactor > 0f)
                     {
-                        if (rotationLerpFactor > 0f)
-                        {
-                            transform.forward = Vector3.Lerp(transform.forward, direction.normalized, rotationLerpFactor);
-                        }
+                        transform.forward = Vector3.Lerp(
+                            transform.forward,
+                            direction.normalized,
+                            rotationLerpFactor);
                     }
                 }
             });
