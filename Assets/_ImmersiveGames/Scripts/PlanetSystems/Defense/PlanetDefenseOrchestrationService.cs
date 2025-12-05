@@ -22,7 +22,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseOrchestrationService : IPlanetDefenseSetupOrchestrator
     {
-        private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntries = new();
+        private readonly Dictionary<PlanetsMaster, DefenseEntryConfiguration> _configuredDefenseEntriesV1 = new();
+        private readonly Dictionary<PlanetsMaster, DefenseEntryConfigV2> _configuredDefenseEntriesV2 = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<int, PlanetDefenseEntrySo>> _sequentialEntryCache = new();
@@ -53,12 +54,31 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var entries = defenseEntries ?? Array.Empty<PlanetDefenseEntrySo>();
-            _configuredDefenseEntries[planet] = new DefenseEntryConfiguration(entries, defenseChoiceMode);
+            _configuredDefenseEntriesV1[planet] = new DefenseEntryConfiguration(entries, defenseChoiceMode);
             ClearCachedContext(planet);
             PreloadDefensePools(entries, planet);
 
             DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
                 $"[DefenseEntries] Planeta {planet.ActorName} configurado com {entries.Count} entradas (modo: {defenseChoiceMode}).");
+        }
+
+        public void ConfigureDefenseEntriesV2(
+            PlanetsMaster planet,
+            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            DefenseChoiceMode defenseChoiceMode)
+        {
+            if (planet == null)
+            {
+                DebugUtility.LogWarning<PlanetDefenseOrchestrationService>("Planeta nulo ao configurar entradas v2.");
+                return;
+            }
+
+            var entries = defenseEntries ?? Array.Empty<DefenseEntryConfigSO>();
+            _configuredDefenseEntriesV2[planet] = new DefenseEntryConfigV2(entries, defenseChoiceMode);
+            ClearCachedContext(planet);
+
+            DebugUtility.LogVerbose<PlanetDefenseOrchestrationService>(
+                $"[DefenseEntriesV2] Planeta {planet.ActorName} configurado com {entries.Count} entradas (modo: {defenseChoiceMode}).");
         }
 
         public PlanetDefenseSetupContext ResolveEffectiveConfig(
@@ -215,7 +235,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole targetRole,
             PlanetResourcesSo resource)
         {
-            if (!_configuredDefenseEntries.TryGetValue(planet, out var configuration))
+            if (!_configuredDefenseEntriesV1.TryGetValue(planet, out var configuration))
             {
                 DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração de defesa encontrada para {planet?.ActorName ?? "planeta nulo"}.");
                 return new PlanetDefenseSetupContext(planet, detectionType, targetRole, resource);
@@ -464,6 +484,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             public readonly DefenseChoiceMode ChoiceMode;
 
             public DefenseEntryConfiguration(IReadOnlyList<PlanetDefenseEntrySo> entries, DefenseChoiceMode choiceMode)
+            {
+                Entries = entries;
+                ChoiceMode = choiceMode;
+            }
+        }
+
+        private readonly struct DefenseEntryConfigV2
+        {
+            public readonly IReadOnlyList<DefenseEntryConfigSO> Entries;
+            public readonly DefenseChoiceMode ChoiceMode;
+
+            public DefenseEntryConfigV2(IReadOnlyList<DefenseEntryConfigSO> entries, DefenseChoiceMode choiceMode)
             {
                 Entries = entries;
                 ChoiceMode = choiceMode;
