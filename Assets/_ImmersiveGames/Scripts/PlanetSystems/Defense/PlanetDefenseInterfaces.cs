@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         void ConfigureDefenseEntries(
             PlanetsMaster planet,
-            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            IReadOnlyList<PlanetDefenseEntrySo> defenseEntries,
             DefenseChoiceMode defenseChoiceMode);
         PlanetDefenseSetupContext ResolveEffectiveConfig(
             PlanetsMaster planet,

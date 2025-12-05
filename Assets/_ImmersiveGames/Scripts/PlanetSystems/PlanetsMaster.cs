@@ -14,9 +14,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         private bool _resourceDiscovered;
 
         [Header("Defesas")]
-        [Tooltip("Lista de DefenseEntryConfigSO que define como o planeta reage aos roles detectados.")]
+        [Tooltip("Lista de entradas para defesas.")]
         [SerializeField]
-        private List<DefenseEntryConfigSO> defenseEntries = new();
+        private List<PlanetDefenseEntrySo> defenseEntries = new();
+
+        [Header("Planet Defense (Nova Config – Entries v2)")]
+        [Tooltip("Lista de novas entradas de defesa (DefenseEntryConfigSO). Ainda não usada em runtime.")]
+        [SerializeField]
+        private List<DefenseEntryConfigSO> defenseEntryConfigs = new();
 
         [Tooltip("Modo de escolha das entradas.")]
         [SerializeField]
@@ -28,7 +33,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         public PlanetResourcesSo AssignedResource => _resourceData;
         public bool HasAssignedResource => _resourceData != null;
         public bool IsResourceDiscovered => _resourceDiscovered;
-        public IReadOnlyList<DefenseEntryConfigSO> DefenseEntries => defenseEntries;
+        public IReadOnlyList<PlanetDefenseEntrySo> DefenseEntries => defenseEntries;
+        public IReadOnlyList<DefenseEntryConfigSO> DefenseEntryConfigs => defenseEntryConfigs;
         public DefenseChoiceMode DefenseMode => defenseChoiceMode;
 
         public event Action<PlanetResourcesSo> ResourceAssigned;
@@ -62,7 +68,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         {
             if (defenseEntries == null)
             {
-                defenseEntries = new List<DefenseEntryConfigSO>();
+                defenseEntries = new List<PlanetDefenseEntrySo>();
             }
 
             if (defenseEntries.Count == 0)
