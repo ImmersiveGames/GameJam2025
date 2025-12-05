@@ -9,7 +9,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// <summary>
     /// Define uma entrada de defesa completa (Entry v2), similar ao PlanetDefenseEntrySo, mas com
     /// dados extras de spawn e referência opcional a um perfil de comportamento padrão para
-    /// minions desse tipo de defesa. O pool está exclusivamente em <see cref="WavePresetSo.PoolData"/>.
+    /// minions desse tipo de defesa. Não referencia DefensesMinionPoolData; o pool está exclusivamente
+    /// em <see cref="WavePresetSo.PoolData"/>.
     /// </summary>
     [CreateAssetMenu(
         fileName = "DefenseEntryConfig",
@@ -135,11 +136,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DebugUtility.LogWarning<DefenseEntryConfigSO>($"BehaviorProfile vazio para role '{role}'.", this);
             }
 
-            if (config.MinionPoolPoolData == null)
-            {
-                DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionPoolPoolData vazio para role '{role}'.", this);
-            }
-
             if (config.WavePreset == null)
             {
                 DebugUtility.LogError<DefenseEntryConfigSO>($"WavePreset vazio para role '{role}'.", this);
@@ -194,8 +190,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             public DefenseMinionBehaviorProfileSO BehaviorProfile { get; }
-
-            public DefensesMinionPoolData MinionPoolPoolData { get; }
 
             public WavePresetSo WavePreset { get; }
 
