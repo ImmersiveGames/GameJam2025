@@ -9,7 +9,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Representa um preset de wave, definindo quantas vezes uma entrada é
     /// disparada e quantos minions surgem em cada disparo (lote). Mantém o
     /// SRP ao separar a configuração de wave do mapeamento por target role
-    /// feito pelo DefenseEntryConfigSO.
+    /// feito pelo DefenseEntryConfigSO e permite um perfil de comportamento
+    /// opcional para os minions da wave.
     /// </summary>
     [CreateAssetMenu(
         fileName = "WavePreset",
