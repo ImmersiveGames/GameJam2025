@@ -59,25 +59,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #region IPlanetDefenseWaveRunner
 
-        public void StartWaves(PlanetsMaster planet, DetectionType detectionType)
-        {
-            StartWaves(planet, detectionType, null);
-        }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        /// <summary>
-        /// Método auxiliar para simulação manual em ambientes de desenvolvimento,
-        /// respeitando o nível de debug configurado. Evita efeitos colaterais em builds release.
-        /// </summary>
-        public void SimulateDebugWave(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy = null)
-        {
-            DebugUtility.LogVerbose<RealPlanetDefenseWaveRunner>(
-                $"[Wave] Simulação de debug solicitada para {planet?.ActorName ?? "planeta nulo"}.");
-
-            StartWaves(planet, detectionType, strategy);
-        }
-#endif
-
         public void StartWaves(PlanetsMaster planet, DetectionType detectionType, IDefenseStrategy strategy)
         {
             if (planet == null)

@@ -27,7 +27,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, Dictionary<int, DefenseEntryConfigSO>> _sequentialEntryCache = new();
         private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
         private const bool WarmUpPools = true;
-        private const bool ReleasePoolsOnDisable = true;
 
         [Inject] private IPlanetDefensePoolRunner _poolRunner;
         [Inject] private IPlanetDefenseWaveRunner _waveRunner;
