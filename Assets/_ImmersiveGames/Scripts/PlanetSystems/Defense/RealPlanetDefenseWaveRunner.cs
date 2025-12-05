@@ -491,7 +491,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            DefenseMinionBehaviorProfileSO waveProfile = null;
+            var waveProfile = context?.WavePreset?.WaveBehaviorProfile;
             var roleProfile = context?.MinionBehaviorProfile;
             DefenseMinionBehaviorProfileSO legacyProfile = null;
 
