@@ -27,6 +27,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
+            if (baseSpeed <= 0f)
+            {
+                return null;
+            }
+
             float distance = Vector3.Distance(minion.position, target.position);
             float durationFromSpeed = distance / Mathf.Max(0.01f, baseSpeed);
             float duration = durationFromSpeed * (1f + extraDurationFactor);
