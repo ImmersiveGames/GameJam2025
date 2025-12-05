@@ -491,7 +491,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var minionProfile = context?.MinionConfig?.BehaviorProfile;
+            var minionProfile = context?.MinionBehaviorProfile;
 
             var profileFromStrategy = strategy?.SelectMinionProfile(role, null, minionProfile);
             var profile = profileFromStrategy ?? minionProfile;
