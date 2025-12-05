@@ -1,315 +1,400 @@
-1. Guia para desenvolvedores
-2. Guia interno para IA (evitar erros de interpretação)
-3. Arquitetura do sistema
-4. Fluxos principais
-5. Uso do Pool
-6. Uso do Orquestrador / Waves
-7. Comportamento do Minion
-8. Eventos e DI
-9. Glossário técnico
-10. Troubleshooting
-
-Este README **é 100% aderente ao seu código atual**, pois foi gerado analisando diretamente todos os arquivos enviados (com citações).
-
----
-
-# **Planet Defense System – README Oficial**
-
-## **1. Visão Geral**
-
-O sistema Planet Defense é um conjunto modular de componentes responsáveis por:
-
-* Reagir à entrada/saída de detectores em campos de detecção planetária
-* Resolver roles (Player/Eater)
-* Configurar pools de minions
-* Fazer spawn de waves sequenciais
-* Aplicar estratégia e comportamento independente aos minions
-* Coordenar entrada → idle → perseguição → retorno ao pool
-
-O sistema foi projetado para:
-
-* Baixa dependência entre módulos
-* Testabilidade
-* Integração com o PoolSystem do projeto
-* Total separação entre lógica do planeta e lógica de minion
-* Suporte a multiplayer local ou múltiplos papéis de alvo
-
----
-
-# **2. Arquitetura do Sistema (High-Level)**
-
-### **2.1 Componentes principais**
-
-| Componente                            | Responsabilidade                                                        |
-| ------------------------------------- | ----------------------------------------------------------------------- |
-| **PlanetDefenseController**           | Recebe eventos do detector, resolve roles e dispara eventos globais.    |
-| **PlanetDefenseEventService**         | Faz a ponte entre Engaged/Disengaged/Disabled/Spawned e o orquestrador. |
-| **PlanetDefenseOrchestrationService** | Configura runner, resolve presets, cria PlanetDefenseSetupContext.      |
-| **RealPlanetDefensePoolRunner**       | Prepara pool, registra para o planeta e faz warm-up.                    |
-| **RealPlanetDefenseWaveRunner**       | Cria waves, spawn de minions, aplica estratégia/target/preset.          |
-| **DefenseMinionController**           | Implementa máquina de estados: Entry → OrbitWait → Chase → Pool.        |
-| **MinionEntryHandler**                | Controla animação DOTween de entrada.                                   |
-| **MinionOrbitWaitHandler**            | Delay de idle antes da perseguição.                                     |
-| **MinionChaseHandler**                | Perseguição com estratégia, reacquire e stop reason.                    |
-
----
-
-# **3. Fluxo Completo (Do Detector ao Minion)**
-
-### **3.1 Detecção**
-
-1. O **Sensor** dispara um evento para o **PlanetDefenseController**.
-2. Ele resolve o `DefenseRole` usando:
-
-    * provider do detector
-    * provider do owner
-    * fallback Unknown
-
-### **3.2 Evento Engaged**
-
-Controller → EventBus → PlanetDefenseEventService.
-O PlanetDefenseEventService:
-
-* Registra engajamento no StateManager
-* Resolve config via Orchestrator
-* Prepara runners
-* Faz **ConfigurePrimaryTarget()**
-* Se é first engagement → **StartWaves()**
-
-### **3.3 StartWaves → Pool → Spawn**
-
-O RealPlanetDefenseWaveRunner:
-
-1. Garante que o PoolData exista
-2. Warm-up se necessário
-3. Cria loop (timer)
-4. Aplica pending target caso exista
-5. Faz **spawn imediato** da primeira wave
-
-### **3.4 Minion Spawn**
-
-WaveRunner → pool.GetObject → cria DefenseMinionController:
-
-* Aplica behaviorProfile
-* Faz OnSpawned(context)
-* Entry handler → idle → chase → returned to pool
-
-O minion **nunca depende do planeta para comportamento**, apenas para contexto inicial.
-
----
-
-# **4. Guia Para Desenvolvedores**
-
-## **4.1 Como configurar o planeta**
-
-Você só precisa adicionar:
-
-* `PlanetDefenseController`
-* `PlanetsMaster`
-* Um Scriptable com as **Entradas** e **WavePreset**
-
-Nenhum código extra é necessário.
-
-## **4.2 Como configurar minions**
-
-### *NÃO coloque prefab dentro do minion.*
-
-Tudo vem do **PoolSystem**.
-
-Passo a passo:
-
-1. Crie um **DefensesMinionData** (herda PoolableObjectData)
-
-    * Prefab
-    * Lifetime
-    * BehaviorProfileV2
-
-
-2. Crie um **PoolData** referenciando esse DefensesMinionData
-
-3. Inclua o PoolData no WavePreset
-
-## **4.3 Como configurar presets**
-
-* **WavePresetSo** define:
-
-    * Número de minions por onda
-    * Intervalo
-    * SpawnPattern
-    * PoolData
-
-
-* **DefenseEntryConfigSO** mapeia role → WavePreset
-
-* **DefenseRoleConfig** resolve label/role.
-
----
-
-# **5. Guia Interno para IA (Evitar Erros de Interpretação)**
-
-### 5.1 Regras importantes
-
-1. **Planeta não controla minion.**
-   Minion controla seu comportamento sozinho com Profile+Handlers.
-
-2. **O pool do minion SEMPRE vem do planeta (PoolRunner).**
-   Nunca criar pool no minion ou via prefab.
-
-3. **O Target é resolvido pelo Minion e pode mudar a qualquer momento.**
-
-    * Se perder alvo → reacquire → chase again
-    * Se não encontrar → retorna ao pool
-
-4. **Entrada é diferente de Wave.**
-
-    * Entrada = spawn inicial de minions
-    * Wave = repetição periódica
-
-5. **Target nunca depende do planeta ser detectado novamente.**
-   Minion mantém o seu target até perder fisicamente.
-
-6. **Se minion perde alvo** → OrbitWait não acontece novamente → vai direto para reacquire ou pool.
-
-### 5.2 Restrições
-
-* Não inferir estrutura do PoolManager.
-* Não mover prefab para minion.
-* Não alterar comportamento interno do BulletPoolable.
-* Nunca suprimir o retorno ao pool.
-
----
-
-# **6. Comportamento do Minion (Resumo Técnico)**
-
-### **6.1 Entry**
-
-Usa MinionEntryHandler (DOTween)
-
-
-### **6.2 Idle**
-
-MinionOrbitWaitHandler aguarda tempo configurado
-
-
-### **6.3 Chase**
-
-MinionChaseHandler executa:
-
-* Tween contínuo
-* Reacquire automático
-* StopReasons
-
-
-### **6.4 Retorno ao pool**
-
-Retorno via PooledObject ou IPoolable
-
-
-### **6.5 Profile aplicada antes de Entry**
-
-
-Campos configurados:
-
-* entryDuration
-* initialScaleFactor
-* orbitIdleSeconds
-* chaseSpeed
-* entryStrategy/chaseStrategy
-
----
-
-# **7. Eventos Disponíveis**
-
-### **PlanetDefenseEngagedEvent / DisengagedEvent / DisabledEvent**
-
-Gerados pelo Controller
-Consumidos pelo EventService
-
-
-### **PlanetDefenseMinionSpawnedEvent**
-
-Enviado no spawn do minion
-gerado dentro do WaveRunner
-
-
----
-
-# **8. Usando Strategies**
-
-### **IDefenseStrategy**:
-
-* Configura contexto
-* ResolveTargetRole
-* SelectMinionProfile
-* OnEngaged / OnDisengaged
-
-O WaveRunner chama strategy em diversos pontos.
-
-
----
-
-# **9. Glossário Técnico**
-
-| Termo              | Definição                                 |
-| ------------------ | ----------------------------------------- |
-| **Entrada**        | Spawn de minions durante um ciclo da wave |
-| **Wave**           | Repetição periódica de entradas           |
-| **Primary Target** | Primeiro alvo detectado no engajamento    |
-| **PoolData**       | Configurações de objetos do pool          |
-| **MinionProfile**  | Estratégias + tempos do minion            |
-| **Role**           | Player, Eater ou Unknown                  |
-
----
-
-# **10. Troubleshooting**
-
-### **Erro: PoolData is null**
-
-Causa provável:
-
-* PoolData não linkado no WavePreset
-* DefensesMinionData sem prefab válido
-
-### **Erro: Minion sem target**
-
-Causa provável:
-
-* RoleConfig não mapeia esse label
-* ResolveTargetTransform não encontrou IDefenseRoleProvider na cena
-
-### **Minion fica parado**
-
-Motivos possíveis:
-
-* ChaseHandler desabilitado no prefab
-* Estratégia retornou tween nulo
-* target perdido e reacquire não encontra novo
-
-### **Waves não iniciam**
-
-* Orchestrator não configurou WavePreset
-* Controller não chamou Engaged
-* FirstEngagement não ocorreu
-
----
-
-# **11. Conclusão**
-
-Este README é agora a documentação oficial do sistema Planet Defense.
-Ele descreve:
-
-* Arquitetura
-* Fluxo completo
-* Uso correto do Pool
-* Comportamento do minion
-* Eventos
-* Regras internas para IA
+Perfeito — vou produzir agora a **versão completa e oficial do README**, totalmente reescrita, refletindo **todo o estado atual do sistema**, incluindo:
+
+* Sistema de defesa por planetas
+* Pipeline completo de minions v2
+* Estratégias de spawn, entrada, perseguição
+* Behavior Profiles (V2)
+* PoolSystem e integração
+* Orquestração
+* Facing + rotação + inércia
+* Nomenclatura padronizada
+* Remoção do legado
+* Fluxos detalhados
+* Diagramas (ASCII)
 * Troubleshooting
+* Glossário
 
-Se quiser, posso gerar:
+Este README será extenso, estruturado, documentado e pronto para versionar no repositório oficial.
 
-* Esquema UML
-* Diagramas de sequência
-* Tutorial de configuração passo a passo
-* Checklist de QA para testadores
-* Versão reduzida para manual de game design
+---
+
+# **README — Planet Defense & Minion Behavior System (Versão Atualizada)**
+
+**Autor:** Immersive Games
+**Versão:** V2.5 (Pipeline de comportamentos unificado + rotação configurável)
+**Última atualização:** [DATA ATUAL]
+
+---
+
+# **1. Visão Geral**
+
+Este documento descreve o **sistema completo de Defesa Planetária** e o **pipeline V2 de Minions** utilizado pelos planetas para gerar minions defensivos, orientar entrada em órbita, perseguir ameaças e aplicar estratégias comportamentais.
+
+O sistema é composto por:
+
+* **Orquestrador** da defesa planetária
+* **Wave Presets** que definem a cadência de geração
+* **Minion Behavior Profiles (V2)**
+* **Entry Strategies**
+* **Chase Strategies**
+* **Spawn Patterns**
+* **PoolSystem**
+* **Minion Runtime Handlers (Entry, Orbit, Chase)**
+
+Todo o sistema foi refatorado para suportar:
+
+* Configuração por ScriptableObjects
+* Arquitetura limpa (cada camada conhece somente o necessário)
+* Nenhuma dependência do legado (DefenseMinionConfigSO foi removido)
+* Controle total de rotação durante a perseguição
+* Estratégias consistentes e substituíveis por perfil
+* Suporte a múltiplos roles e behaviors por planeta
+
+---
+
+# **2. Arquitetura Geral**
+
+```
+┌─────────────────────────────────────────────┐
+│                PlanetDefense                │
+└─────────────────────────────────────────────┘
+         │
+         ▼
+┌──────────────────────────────┐
+│ DefenseEntryConfigSO (V2)    │  ← por planeta
+│  role → WavePreset + Profile │
+└──────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────┐
+│ PlanetDefenseOrchestrationService │
+│  resolve entry + roleConfig       │
+│  monta PlanetDefenseSetupContext  │
+└────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────┐
+│ PlanetDefenseSetupContext (V2)     │
+│  WavePreset                        │
+│  MinionBehaviorProfile             │
+│  SpawnOffset / SpawnRadius         │
+└────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────┐
+│ RealPlanetDefenseWaveRunner        │
+│  Spawn via PoolSystem              │
+│  ApplyEntryStrategy                │
+│  ApplyChaseStrategy                │
+│  ApplyProfile (V2)                 │
+└────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────┐
+│ DefenseMinionController            │
+│ MinionEntryHandler                 │
+│ MinionOrbitWaitHandler             │
+│ MinionChaseHandler                 │
+└────────────────────────────────────┘
+```
+
+---
+
+# **3. Componentes do Sistema**
+
+## **3.1 DefenseEntryConfigSO (V2)**
+
+Define COMO o planeta reage a cada tipo de ameaça (role).
+
+Cada role define:
+
+* **WavePresetSo** (como spawnar e em que ritmo)
+* **DefenseMinionBehaviorProfileSO** (COMO o minion se move e se comporta)
+* **SpawnOffsetOverride**
+* **Modo de seleção (Default / Role-Based)**
+
+**Nenhum conhecimento sobre pool/data antiga permanece aqui.**
+
+---
+
+## **3.2 WavePresetSo**
+
+Define o “padrão de ondas” do minion:
+
+* `PoolData` → de qual pool retornar minions
+* `SpawnPattern (DefenseSpawnPatternSO)` → como posicioná-los
+* `NumberOfMinionsPerWave`
+* `IntervalBetweenWaves`
+* `WaveBehaviorProfile (opcional)` → override de comportamento por WAVE
+
+`SpawnPattern` é completamente plugável.
+
+---
+
+## **3.3 DefenseMinionBehaviorProfileSO (V2)**
+
+É o **coração** do sistema de minions.
+
+Cada perfil define:
+
+### **Entrada**
+
+* `EntryDurationSeconds`
+* `InitialScaleFactor`
+* `OrbitIdleSeconds`
+* `EntryStrategy (MinionEntryStrategySo)`
+
+### **Perseguição**
+
+* `ChaseSpeed`
+* `ChaseStrategy (MinionChaseStrategySo)`
+
+### **Rotação (V2.5)**
+
+* `SnapFacingOnChaseStart`
+* `ChaseRotationLerpFactor` (0..1, controla “inércia”)
+
+---
+
+# **4. Estratégias (Strategies)**
+
+Todas as estratégias são SOs independentes e plugáveis.
+
+---
+
+## **4.1 Entry Strategies (MinionEntryStrategySo)**
+
+Define como o minion sai do **centro do planeta** e chega à órbita.
+
+### StraightEntryStrategySo
+
+* Linha reta
+* Easing configurável
+* Escala animada
+
+### ArcEntryStrategySo
+
+* Movimento em curva
+* Calcula midpoint + offset lateral
+* Também anima escala
+
+---
+
+## **4.2 Chase Strategies (MinionChaseStrategySo)**
+
+Define como o minion alcança o alvo.
+
+### DirectChaseStrategySo
+
+* Move diretamente até o alvo
+* Duração = dist/speed
+* Easing configurável
+
+### ZigZagChaseStrategySo
+
+* Movimento blendado com DOBlendableMoveBy
+* Parâmetros:
+
+    * Amplitude
+    * ZigZagCount
+    * LateralBlendFactor
+
+---
+
+## **4.3 Spawn Patterns**
+
+### RadialEvenSpawnPatternSO
+
+* Distribui minions uniformemente num círculo
+* Muito usado para defesas orbitais
+* Opcional: heightOffset
+
+---
+
+# **5. Minion Runtime Handlers**
+
+## **5.1 DefenseMinionController**
+
+Recebe o profile e distribui:
+
+* EntryDuration
+* InitialScaleFactor
+* OrbitIdleSeconds
+* ChaseSpeed
+* EntryStrategy
+* ChaseStrategy
+* **SnapFacingOnChaseStart**
+* **ChaseRotationLerpFactor**
+
+---
+
+## **5.2 MinionEntryHandler**
+
+* Executa sequências DOTween de entrada
+* Aguarda `OrbitIdleDelaySeconds`
+* Aciona a mudança de estado para chasing
+
+---
+
+## **5.3 MinionOrbitWaitHandler**
+
+* Temporiza idle antes da perseguição
+* Usa DOTween.Sequence com callback
+
+---
+
+## **5.4 MinionChaseHandler (V2.5)**
+
+Agora totalmente configurável pelo perfil, sem SerializeFields internos.
+
+* `_snapFacingOnChaseStart` → se olha direto para o alvo no início
+* `_rotationLerpFactor` → controla inércia do giro
+* Atualiza facing a cada frame do chase:
+
+```
+transform.forward = Lerp(current, direction, factor)
+```
+
+* Lógica robusta para:
+
+    * Alvo movendo
+    * Reset de tween
+    * Fuga/imprecisão
+
+---
+
+# **6. PlanetDefense Pipeline**
+
+## **6.1 Orquestração**
+
+`PlanetDefenseOrchestrationService`:
+
+1. Identifica ameaça (role).
+2. Busca definição no `DefenseEntryConfigSO`.
+3. Resolve `RoleDefenseConfig`.
+4. Monta `PlanetDefenseSetupContext` contendo:
+
+    * WavePreset
+    * MinionBehaviorProfile
+    * SpawnOffset
+    * SpawnRadius
+
+Nenhum uso de pool ou minion config legado.
+
+---
+
+## **6.2 Wave Runner (RealPlanetDefenseWaveRunner)**
+
+Responsável por:
+
+* Determinar pool → `WavePreset.PoolData`
+* Aplicar spawn pattern → `WavePreset.SpawnPattern`
+* Criar minions via PoolSystem
+* Configurar Entry + Chase via ApplyProfile
+* Aplicar estratégias
+* Lançar eventos do PlanetDefenseEventService
+
+`ApplyBehaviorProfile` removeu completamente qualquer dependência do sistema V1.
+
+---
+
+# **7. Pool System**
+
+Integração via `PoolData`:
+
+* `WavePreset.PoolData` define qual pool o planeta usa
+* Cada minion no pool é `DefenseMinionPoolable`
+* Profile aplicado **após** o retorno do pool
+* Cada instância é configurada dinamicamente pelo `DefenseMinionController`
+
+Nenhuma configuração de comportamento é feita no pool.
+
+---
+
+# **8. Recomendações de Uso**
+
+### Para criar um novo tipo de minion:
+
+1. Crie um **Behavior Profile**
+2. Escolha Entry Strategy
+3. Escolha Chase Strategy
+4. Configure rotação conforme desejado (inércia vs instantâneo)
+5. Associe à `WavePreset` + Pool
+6. Adicione ao `DefenseEntryConfigSO` do planeta
+
+---
+
+# **9. Troubleshooting**
+
+### Minion não está virando para o alvo
+
+* Ajuste `ChaseRotationLerpFactor`
+* Confira `SnapFacingOnChaseStart`
+
+### Minion gira instantaneamente (não tem inércia)
+
+* Use valores entre `0.05` e `0.25` para LerpFactor
+
+### Minion teleporta durante Entry
+
+* Verifique `EntryDurationSeconds`
+* Proteções impedem duration zero
+
+### Minion não sai do planeta
+
+* Cheque WavePreset.PoolData
+* Cheque Pattern/Sphere radius
+
+---
+
+# **10. Glossário**
+
+| Termo            | Significado                                         |
+| ---------------- | --------------------------------------------------- |
+| Entry Strategy   | Movimento de saída do planeta até órbita            |
+| Chase Strategy   | Movimento usado durante perseguição                 |
+| Behavior Profile | Pacote completo de comportamento do minion          |
+| WavePreset       | Define cadência/quantidade de minions               |
+| Spawn Pattern    | Distribuição espacial dos minions                   |
+| PoolData         | Configuração do objeto dentro do sistema de pooling |
+| Role             | Tipo de ameaça detectada (Eater, Player etc.)       |
+
+---
+
+# **11. Changelog dos Refactors Importantes**
+
+### V2
+
+* Entrada, órbita e perseguição padronizadas
+* Behavior Profile substitui MinionConfig (legado removido)
+
+### V2.5
+
+* Rotação configurável via Behavior Profile
+* SnapFacingOnChaseStart
+* ChaseRotationLerpFactor
+* Entry/Chase strategies unificadas
+* Nomenclatura padronizada
+* Remoção total do legacy
+
+---
+
+# **12. Conclusão**
+
+O sistema agora está:
+
+* Modular
+* Totalmente configurável via ScriptableObjects
+* Sem dependência do legado
+* Com comportamento físico mais natural (inércia, facing, entrada suave)
+* Extensível sem alterar código
+* Preparado para designers e programadores
+
+Se quiser, posso gerar também:
+
+* **Versão compacta (B)** para designers
+* **UML oficial (D)** para documentação arquitetural
+* **Diagrama de sequência do spawn/chase**
+* **Exemplos de profiles (“glass cannon”, “heavy bruiser”, “tracker drone”)**
+
+Basta pedir.

@@ -707,6 +707,8 @@ MonoBehaviour:
   explosionOffset: {x: 0, y: 0, z: 0}
   disableSkinOnDeath: 1
   triggerGameOverOnDeath: 1
+  returnToPoolOnDeath: 0
+  destroyGameObjectIfNoPool: 0
   strategyPipeline:
   - type: 0
     criticalSettings:
@@ -1403,6 +1405,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 452753156535112276, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
+      propertyPath: returnToPoolOnDeath
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1456968061734532042, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_Name
       value: EaterPrefab

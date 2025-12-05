@@ -14,7 +14,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
-    [RequireComponent(typeof(IActor))]
     public class DamageReceiver : MonoBehaviour, IDamageReceiver
     {
         [Header("Recurso alvo (ex: Health)")]
@@ -34,6 +33,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [Tooltip("Quando verdadeiro, dispara GameOver ao detectar a morte deste ator.")]
         private bool triggerGameOverOnDeath;
 
+        [Header("Pooling / Destruição")]
+        [SerializeField] private bool returnToPoolOnDeath = true;
+        [SerializeField] private bool destroyGameObjectIfNoPool = false;
+
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
         {
@@ -49,6 +52,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private DamageCommandInvoker _commandInvoker;
         private DamageReceiverLifecycleHandler _lifecycleHandler;
         private bool _waitingForLifecycleBinding;
+        private string _receiverId;
+        private IPoolable _poolable;
 
         [Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
@@ -63,9 +68,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             DependencyManager.Provider.InjectDependencies(this);
 
             _actor = GetComponent<IActor>();
+            _receiverId = _actor != null
+                ? _actor.ActorId
+                : $"DamageReceiver_{gameObject.GetInstanceID()}";
             _bridge = GetComponent<InjectableEntityResourceBridge>();
+            _poolable = GetComponent<IPoolable>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
-            _lifecycle = new DamageLifecycleModule(_actor.ActorId)
+            _lifecycle = new DamageLifecycleModule(_receiverId)
             {
                 DisableSkinOnDeath = disableSkinOnDeath
             };
@@ -183,6 +192,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (Application.isPlaying)
             {
                 EnsureLifecycleHandler();
+
+                var resourceSystem = _bridge != null ? _bridge.GetResourceSystem() : null;
+                if (resourceSystem == null)
+                {
+                    HandleDamageWithoutResource(ctx);
+                    return;
+                }
             }
 
             var context = new DamageCommandContext(
@@ -205,7 +221,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
-        public string GetReceiverId() => _actor.ActorId;
+        public string GetReceiverId() => _receiverId;
 
         public void UndoLastDamage()
         {
@@ -334,6 +350,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 {
                     audioEmitter.Play(deathSound, deathCtx);
                 }
+
+                ExecuteDeathReturn();
             }
             else if (hasReviveSound)
             {
@@ -341,8 +359,65 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
+        private void HandleDamageWithoutResource(DamageContext ctx)
+        {
+            if (ctx == null)
+            {
+                return;
+            }
+
+            if (_cooldowns != null && !string.IsNullOrEmpty(ctx.AttackerId))
+            {
+                if (!_cooldowns.CanDealDamage(ctx.AttackerId, _receiverId))
+                {
+                    return;
+                }
+            }
+
+            if (audioEmitter != null)
+            {
+                var hasDeathSound = deathSound != null && deathSound.clip != null;
+                var hasHitSound = hitSound != null && hitSound.clip != null;
+                var sound = hasDeathSound ? deathSound : hasHitSound ? hitSound : null;
+
+                if (sound != null)
+                {
+                    var position = ctx.HasHitPosition ? ctx.HitPosition : transform.position;
+                    var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
+                    audioEmitter.Play(sound, audioCtx);
+                }
+            }
+
+            if (spawnExplosionOnDeath)
+            {
+                _explosion?.Initialize();
+                _explosion?.PlayExplosion(ctx);
+            }
+
+            ExecuteDeathReturn();
+        }
+
+        private void ExecuteDeathReturn()
+        {
+            if (returnToPoolOnDeath && _poolable != null)
+            {
+                _poolable.Deactivate();
+                return;
+            }
+
+            if (destroyGameObjectIfNoPool)
+            {
+                gameObject.SetActive(false);
+            }
+        }
+
         private void TryRaiseGameOver(DamageLifecycleNotification notification)
         {
+            if (_actor == null)
+            {
+                return;
+            }
+
             if (!triggerGameOverOnDeath || !notification.DeathStateChanged || !notification.IsDead)
             {
                 return;

@@ -229,8 +229,10 @@ MonoBehaviour:
   spawnExplosionOnDeath: 1
   explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}
   explosionOffset: {x: 0, y: 0, z: 0}
-  disableSkinOnDeath: 1
+  disableSkinOnDeath: 0
   triggerGameOverOnDeath: 0
+  returnToPoolOnDeath: 1
+  destroyGameObjectIfNoPool: 0
   strategyPipeline:
   - type: 0
     criticalSettings:
