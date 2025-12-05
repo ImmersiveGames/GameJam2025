@@ -27,6 +27,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<int, PlanetDefenseEntrySo>> _sequentialEntryCache = new();
+        private readonly Dictionary<PlanetsMaster, Dictionary<int, DefenseEntryConfigSO>> _sequentialEntryCacheV2 = new();
         private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
         private const bool WarmUpPools = true;
 
@@ -98,7 +99,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var resource = planet.HasAssignedResource ? planet.AssignedResource : null;
-            var context = ResolveEntryContext(planet, detectionType, targetRole, resource);
+            PlanetDefenseSetupContext context;
+
+            if (TryResolveFromV2(planet, detectionType, targetRole, resource, out var contextV2))
+            {
+                context = contextV2;
+            }
+            else
+            {
+                context = ResolveEntryContextV1(planet, detectionType, targetRole, resource);
+            }
 
             CacheContext(planet, detectionType, targetRole, context);
 
@@ -226,10 +236,74 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _resolvedContexts.Remove(planet);
             _sequentialIndices.Remove(planet);
             _sequentialEntryCache.Remove(planet);
+            _sequentialEntryCacheV2.Remove(planet);
             _cachedApproxRadii.Remove(planet);
         }
 
-        private PlanetDefenseSetupContext ResolveEntryContext(
+        private bool TryResolveFromV2(
+            PlanetsMaster planet,
+            DetectionType detectionType,
+            DefenseRole targetRole,
+            PlanetResourcesSo resource,
+            out PlanetDefenseSetupContext context)
+        {
+            context = null;
+
+            if (!_configuredDefenseEntriesV2.TryGetValue(planet, out var configuration) ||
+                configuration.Entries == null ||
+                configuration.Entries.Count == 0)
+            {
+                return false;
+            }
+
+            var selectedEntry = SelectEntry(configuration, planet);
+
+            if (selectedEntry == null)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"Nenhuma DefenseEntryConfigSO válida para {planet.ActorName}; caindo para fluxo v1.");
+                return false;
+            }
+
+            var roleConfig = ResolveRoleConfig(selectedEntry, targetRole);
+            var wavePreset = roleConfig.WavePreset;
+            var poolData = wavePreset?.PoolData;
+            var spawnRadius = CalculatePlanetRadius(planet, roleConfig.SpawnOffset);
+            var spawnOffset = Vector3.zero;
+            var entryConfig = selectedEntry;
+            var minionConfig = roleConfig.MinionConfig;
+
+            ValidateWavePresetRuntime(planet, wavePreset);
+
+            if (wavePreset == null)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"WavePreset não resolvido para {planet.ActorName} no fluxo v2; configure binds ou default.");
+                return false;
+            }
+
+            if (poolData == null)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>(
+                    $"PoolData ausente ao resolver defesa de {planet.ActorName} no fluxo v2; configure PoolData no WavePreset.");
+            }
+
+            context = new PlanetDefenseSetupContext(
+                planet,
+                detectionType,
+                targetRole,
+                resource,
+                null,
+                entryConfig,
+                minionConfig,
+                wavePreset,
+                spawnOffset,
+                spawnRadius);
+
+            return true;
+        }
+
+        private PlanetDefenseSetupContext ResolveEntryContextV1(
             PlanetsMaster planet,
             DetectionType detectionType,
             DefenseRole targetRole,
@@ -353,6 +427,99 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             cache[index] = entry;
+        }
+
+        private DefenseEntryConfigSO SelectEntry(DefenseEntryConfigV2 configuration, PlanetsMaster planet)
+        {
+            if (configuration.Entries == null || configuration.Entries.Count == 0)
+            {
+                DebugUtility.LogError<PlanetDefenseOrchestrationService>($"Lista de entradas v2 vazia para {planet.ActorName}; configure ao menos uma entrada.");
+                return null;
+            }
+
+            return configuration.ChoiceMode switch
+            {
+                DefenseChoiceMode.Random => SelectRandomEntry(configuration.Entries),
+                DefenseChoiceMode.Sequential => SelectSequentialEntry(configuration.Entries, planet),
+                _ => SelectSequentialEntry(configuration.Entries, planet)
+            };
+        }
+
+        private DefenseEntryConfigSO SelectRandomEntry(IReadOnlyList<DefenseEntryConfigSO> entries)
+        {
+            if (entries.Count == 0)
+            {
+                return null;
+            }
+
+            var index = UnityEngine.Random.Range(0, entries.Count);
+            return entries[index];
+        }
+
+        private DefenseEntryConfigSO SelectSequentialEntry(IReadOnlyList<DefenseEntryConfigSO> entries, PlanetsMaster planet)
+        {
+            if (!_sequentialIndices.TryGetValue(planet, out var currentIndex))
+            {
+                currentIndex = 0;
+            }
+
+            if (entries.Count == 0)
+            {
+                return null;
+            }
+
+            if (currentIndex >= entries.Count)
+            {
+                currentIndex = 0;
+            }
+
+            var cachedEntry = ResolveCachedSequentialEntryV2(planet, currentIndex);
+            var entry = cachedEntry ?? entries[currentIndex];
+
+            CacheSequentialEntryV2(planet, currentIndex, entry);
+            _sequentialIndices[planet] = (currentIndex + 1) % entries.Count;
+            return entry;
+        }
+
+        private DefenseEntryConfigSO ResolveCachedSequentialEntryV2(PlanetsMaster planet, int index)
+        {
+            if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
+            {
+                return null;
+            }
+
+            return cache.TryGetValue(index, out var cached) ? cached : null;
+        }
+
+        private void CacheSequentialEntryV2(PlanetsMaster planet, int index, DefenseEntryConfigSO entry)
+        {
+            if (planet == null || entry == null)
+            {
+                return;
+            }
+
+            if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
+            {
+                cache = new Dictionary<int, DefenseEntryConfigSO>();
+                _sequentialEntryCacheV2[planet] = cache;
+            }
+
+            cache[index] = entry;
+        }
+
+        private DefenseEntryConfigSO.RoleDefenseConfig ResolveRoleConfig(DefenseEntryConfigSO entry, DefenseRole targetRole)
+        {
+            if (entry == null)
+            {
+                return default;
+            }
+
+            if (entry.Bindings != null && entry.Bindings.TryGetValue(targetRole, out var roleConfig))
+            {
+                return roleConfig;
+            }
+
+            return entry.DefaultConfig;
         }
 
         private WavePresetSo ResolveWavePreset(PlanetDefenseEntrySo entry, DefenseRole role)
