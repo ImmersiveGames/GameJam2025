@@ -14,7 +14,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
-    [RequireComponent(typeof(IActor))]
     public class DamageReceiver : MonoBehaviour, IDamageReceiver
     {
         [Header("Recurso alvo (ex: Health)")]
@@ -49,6 +48,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private DamageCommandInvoker _commandInvoker;
         private DamageReceiverLifecycleHandler _lifecycleHandler;
         private bool _waitingForLifecycleBinding;
+        private string _receiverId;
 
         [Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
@@ -63,9 +63,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             DependencyManager.Provider.InjectDependencies(this);
 
             _actor = GetComponent<IActor>();
+            _receiverId = _actor != null
+                ? _actor.ActorId
+                : $"DamageReceiver_{gameObject.GetInstanceID()}";
             _bridge = GetComponent<InjectableEntityResourceBridge>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
-            _lifecycle = new DamageLifecycleModule(_actor.ActorId)
+            _lifecycle = new DamageLifecycleModule(_receiverId)
             {
                 DisableSkinOnDeath = disableSkinOnDeath
             };
@@ -205,7 +208,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
-        public string GetReceiverId() => _actor.ActorId;
+        public string GetReceiverId() => _receiverId;
 
         public void UndoLastDamage()
         {
