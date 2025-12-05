@@ -33,6 +33,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [Tooltip("Quando verdadeiro, dispara GameOver ao detectar a morte deste ator.")]
         private bool triggerGameOverOnDeath;
 
+        [Header("Pooling / Destruição")]
+        [SerializeField] private bool returnToPoolOnDeath = true;
+        [SerializeField] private bool destroyGameObjectIfNoPool = false;
+
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
         {
@@ -49,6 +53,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private DamageReceiverLifecycleHandler _lifecycleHandler;
         private bool _waitingForLifecycleBinding;
         private string _receiverId;
+        private IPoolable _poolable;
 
         [Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
@@ -67,6 +72,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 ? _actor.ActorId
                 : $"DamageReceiver_{gameObject.GetInstanceID()}";
             _bridge = GetComponent<InjectableEntityResourceBridge>();
+            _poolable = GetComponent<IPoolable>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_receiverId)
             {
@@ -341,6 +347,20 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             else if (hasReviveSound)
             {
                 audioEmitter.Play(reviveSound, deathCtx);
+            }
+        }
+
+        private void ExecuteDeathReturn()
+        {
+            if (returnToPoolOnDeath && _poolable != null)
+            {
+                _poolable.Deactivate();
+                return;
+            }
+
+            if (destroyGameObjectIfNoPool)
+            {
+                gameObject.SetActive(false);
             }
         }
 
