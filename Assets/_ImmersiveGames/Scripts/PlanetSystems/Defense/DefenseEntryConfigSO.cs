@@ -25,11 +25,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Tooltip("Perfil de comportamento padrão (opcional) usado quando o role não está mapeado.")]
         [SerializeField]
         private DefenseMinionBehaviorProfileSO defaultMinionBehaviorProfile;
-
-        [Tooltip("Tipo de minion para pool padrão (opcional) usado quando o role não está mapeado.")]
-        [SerializeField]
-        private DefensesMinionPoolData defaultMinionPoolPoolData;
-
+        
         [Header("Spawn")]
         [Tooltip("Offset aplicado ao radius do planeta para posicionar o spawn por padrão.")]
         [SerializeField]
@@ -55,11 +51,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public IReadOnlyList<RoleDefenseConfigBinding> RoleBindings => roleBindings;
 
-        public RoleDefenseConfig DefaultConfig => new(defaultMinionBehaviorProfile, defaultWavePreset, defaultSpawnOffset);
+        public RoleDefenseConfig DefaultConfig => new(defaultWavePreset, defaultMinionBehaviorProfile, defaultSpawnOffset);
 
         public WavePresetSo DefaultWavePreset => defaultWavePreset;
-
-        public DefensesMinionPoolData DefaultMinionPoolPoolData => defaultMinionPoolPoolData;
 
         public float DefaultSpawnOffset => defaultSpawnOffset;
 
@@ -78,11 +72,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (defaultMinionBehaviorProfile == null)
             {
                 DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionBehaviorProfile vazio — defina apenas se quiser guiar o design.", this);
-            }
-
-            if (defaultMinionPoolPoolData == null)
-            {
-                DebugUtility.LogWarning<DefenseEntryConfigSO>("DefaultMinionPoolPoolData vazio — defina apenas se quiser guiar o design.", this);
             }
         }
 #endif
@@ -131,9 +120,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private void ValidateBindingConfig(DefenseRole role, RoleDefenseConfig config)
         {
-            if (config.BehaviorProfile == null)
+            if (config.MinionBehaviorProfile == null)
             {
-                DebugUtility.LogWarning<DefenseEntryConfigSO>($"BehaviorProfile vazio para role '{role}'.", this);
+                DebugUtility.LogWarning<DefenseEntryConfigSO>($"MinionBehaviorProfile vazio para role '{role}'.", this);
             }
 
             if (config.WavePreset == null)
@@ -149,17 +138,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             [SerializeField]
             private DefenseRole role;
 
-            [Tooltip("Perfil de comportamento do minion a ser usado para este role (opcional).")]
-            [SerializeField]
-            private DefenseMinionBehaviorProfileSO behaviorProfile;
-
-            [Tooltip("Tipo de minion/pool a ser usado para este role.")]
-            [SerializeField]
-            private DefensesMinionPoolData minionPoolPoolData;
-
             [Tooltip("Preset de wave específico para este role.")]
             [SerializeField]
             private WavePresetSo wavePreset;
+
+            [Tooltip("Perfil de comportamento do minion a ser usado para este role (opcional).")]
+            [SerializeField]
+            private DefenseMinionBehaviorProfileSO minionBehaviorProfile;
 
             [Tooltip("Offset específico para este role (opcional). Se zero, usa o default da entrada.")]
             [SerializeField]
@@ -173,25 +158,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     ? entryDefaultSpawnOffset
                     : spawnOffsetOverride;
 
-                return new RoleDefenseConfig(behaviorProfile, wavePreset, offset);
+                return new RoleDefenseConfig(wavePreset, minionBehaviorProfile, offset);
             }
         }
 
         public readonly struct RoleDefenseConfig
         {
             public RoleDefenseConfig(
-                DefenseMinionBehaviorProfileSO behaviorProfile,
                 WavePresetSo wavePreset,
+                DefenseMinionBehaviorProfileSO minionBehaviorProfile,
                 float spawnOffset)
             {
-                BehaviorProfile = behaviorProfile;
                 WavePreset = wavePreset;
+                MinionBehaviorProfile = minionBehaviorProfile;
                 SpawnOffset = spawnOffset;
             }
 
-            public DefenseMinionBehaviorProfileSO BehaviorProfile { get; }
-
             public WavePresetSo WavePreset { get; }
+
+            public DefenseMinionBehaviorProfileSO MinionBehaviorProfile { get; }
 
             public float SpawnOffset { get; }
         }
