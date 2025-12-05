@@ -7,7 +7,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// <summary>
     /// Encapsula parâmetros de configuração para uma defesa planetária.
     /// Permite que runners recebam dados de recurso, configurações de entrada,
-    /// minion e wave sem depender diretamente de ScriptableObjects adicionais.
+    /// minion e wave sem depender diretamente de ScriptableObjects adicionais,
+    /// mantendo o contexto livre de PoolData (responsabilidade do PoolSystem).
     /// </summary>
     public sealed class PlanetDefenseSetupContext
     {

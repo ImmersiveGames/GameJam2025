@@ -185,7 +185,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             public RoleDefenseConfig(
                 DefenseMinionConfigSO minionConfig,
-                DefensesMinionPoolData minionPoolPoolData,
                 WavePresetSo wavePreset,
                 float spawnOffset)
             {
