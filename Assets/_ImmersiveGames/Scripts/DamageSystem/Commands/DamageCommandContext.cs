@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
     {
         public DamageContext Request { get; }
         public ResourceType TargetResource { get; }
-        public InjectableEntityResourceBridge Bridge { get; }
+        public ActorResourceComponent Component { get; }
         public IDamageStrategy Strategy { get; }
         public DamageCooldownModule CooldownModule { get; }
         public DamageLifecycleModule LifecycleModule { get; }
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         public DamageCommandContext(
             DamageContext request,
             ResourceType targetResource,
-            InjectableEntityResourceBridge bridge,
+            ActorResourceComponent component,
             IDamageStrategy strategy,
             DamageCooldownModule cooldownModule,
             DamageLifecycleModule lifecycleModule,
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         {
             Request = request;
             TargetResource = targetResource;
-            Bridge = bridge;
+            Component = component;
             Strategy = strategy;
             CooldownModule = cooldownModule;
             LifecycleModule = lifecycleModule;

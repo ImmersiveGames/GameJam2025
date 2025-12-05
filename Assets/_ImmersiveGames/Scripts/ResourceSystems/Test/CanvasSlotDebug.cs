@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
         [ContextMenu("📊 Check Canvas Components")]
         public void CheckCanvasComponents()
         {
-            var canvasBinders = FindObjectsByType<InjectableCanvasResourceBinder>(FindObjectsSortMode.None);
+            var canvasBinders = FindObjectsByType<ActorResourceCanvas>(FindObjectsSortMode.None);
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 Found {canvasBinders.Length} Canvas Binders");
 
             foreach (var binder in canvasBinders)
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
 
                     if (config == null) continue;
 
-                    var canvasBinders = FindObjectsByType<InjectableCanvasResourceBinder>(FindObjectsSortMode.None);
+                    var canvasBinders = FindObjectsByType<ActorResourceCanvas>(FindObjectsSortMode.None);
                     foreach (var binder in canvasBinders)
                     {
                         if (binder.TryGetSlot(actorId, resourceType, out var slot) && slot != null)
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        private void DebugCanvas(InjectableCanvasResourceBinder binder)
+        private void DebugCanvas(ActorResourceCanvas binder)
         {
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 CANVAS DEBUG: '{binder.CanvasId}'");
             DebugUtility.LogVerbose<CanvasDebugUtility>($"- State: {binder.State}, Injection: {binder.InjectionState}");

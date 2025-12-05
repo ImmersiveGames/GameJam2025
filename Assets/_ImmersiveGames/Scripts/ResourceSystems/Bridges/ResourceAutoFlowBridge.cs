@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             if (!HasAutoFlowResources())
             {
-                DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"Nenhum recurso AutoFlow em {actor.ActorId} — Bridge desativado.");
+                DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"Nenhum recurso AutoFlow em {actor.ActorId} — Component desativado.");
                 enabled = false;
                 return;
             }

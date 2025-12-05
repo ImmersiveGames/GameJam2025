@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
-    public class DynamicCanvasBinder : InjectableCanvasResourceBinder
+    public class DynamicCanvasBinder : ActorResourceCanvas
     {
         [SerializeField] private bool registerInPipeline = true;
         public override CanvasType Type => CanvasType.Dynamic;

@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 DebugUtility.Colors.CrucialInfo);
 
             // Se já existirem Canvas Binders na cena, registrar automaticamente.
-            var existingBinders = UnityEngine.Object.FindObjectsByType<InjectableCanvasResourceBinder>(
+            var existingBinders = UnityEngine.Object.FindObjectsByType<ActorResourceCanvas>(
                 UnityEngine.FindObjectsInactive.Include,
                 UnityEngine.FindObjectsSortMode.None
             );

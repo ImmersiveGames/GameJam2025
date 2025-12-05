@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         };
 
         private IActor _actor;
-        private InjectableEntityResourceBridge _bridge;
+        private ActorResourceComponent _component;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
         private DamageExplosionModule _explosion;
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _receiverId = _actor != null
                 ? _actor.ActorId
                 : $"DamageReceiver_{gameObject.GetInstanceID()}";
-            _bridge = GetComponent<InjectableEntityResourceBridge>();
+            _component = GetComponent<ActorResourceComponent>();
             _poolable = GetComponent<IPoolable>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_receiverId)
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 EnsureLifecycleHandler();
 
-                var resourceSystem = _bridge != null ? _bridge.GetResourceSystem() : null;
+                var resourceSystem = _component != null ? _component.GetResourceSystem() : null;
                 if (resourceSystem == null)
                 {
                     HandleDamageWithoutResource(ctx);
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             var context = new DamageCommandContext(
                 ctx,
                 targetResource,
-                _bridge,
+                _component,
                 _strategy,
                 _cooldowns,
                 _lifecycle,
@@ -238,7 +238,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            if (_bridge == null)
+            if (_component == null)
             {
                 return;
             }
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 CreateLifecycleDamageContext,
                 HandleLifecycleNotification);
 
-            var system = _bridge.GetResourceSystem();
+            var system = _component.GetResourceSystem();
             if (system == null)
             {
                 _waitingForLifecycleBinding = true;

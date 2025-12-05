@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         {
             if (resourceLinks.Length == 0)
             {
-                DebugUtility.LogVerbose<ResourceLinkBridge>($"Nenhum link configurado em {actor.ActorId}. Bridge desativado.");
+                DebugUtility.LogVerbose<ResourceLinkBridge>($"Nenhum link configurado em {actor.ActorId}. Component desativado.");
                 enabled = false;
                 return;
             }

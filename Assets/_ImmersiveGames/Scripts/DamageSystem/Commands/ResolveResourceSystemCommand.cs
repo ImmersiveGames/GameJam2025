@@ -4,7 +4,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
     {
         public bool Execute(DamageCommandContext context)
         {
-            var bridge = context?.Bridge;
+            var bridge = context?.Component;
             if (bridge == null)
             {
                 return false;

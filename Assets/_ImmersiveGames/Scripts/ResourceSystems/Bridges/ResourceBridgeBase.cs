@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             actor = GetComponent<IActor>();
             if (actor == null)
             {
-                DebugUtility.LogWarning<ResourceBridgeBase>($"{name} não possui IActor — bridge desativado.");
+                DebugUtility.LogWarning<ResourceBridgeBase>($"{name} não possui IActor — component desativado.");
                 enabled = false;
             }
         }
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             _initialized = true;
             DebugUtility.LogVerbose<ResourceBridgeBase>(
-                $"✅ Bridge inicializado para {actor.ActorId}",
+                $"✅ Component inicializado para {actor.ActorId}",
                 DebugUtility.Colors.CrucialInfo);
             OnServiceInitialized();
         }

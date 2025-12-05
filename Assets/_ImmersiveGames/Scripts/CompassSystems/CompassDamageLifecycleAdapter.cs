@@ -85,7 +85,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             _eventsRegistered = true;
 
             DebugUtility.LogVerbose<CompassDamageLifecycleAdapter>(
-                $"🧭 Bridge registrado para {_entityId} (registrado na bússola: {_isRegisteredWithCompass}).",
+                $"🧭 Component registrado para {_entityId} (registrado na bússola: {_isRegisteredWithCompass}).",
                 DebugUtility.Colors.Success);
         }
 

@@ -10,7 +10,7 @@ using UnityEngine.Pool;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
-    public abstract class InjectableCanvasResourceBinder : MonoBehaviour, ICanvasBinder
+    public abstract class ActorResourceCanvas : MonoBehaviour, ICanvasBinder
     {
         [Header("Identification")]
         [SerializeField] private string canvasId;
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 
             if (slotPrefab == null)
             {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"❌ Slot prefab not assigned for Canvas '{CanvasId}'.");
+                DebugUtility.LogError<ActorResourceCanvas>($"❌ Slot prefab not assigned for Canvas '{CanvasId}'.");
                 State = CanvasInitializationState.Failed;
                 InjectionState = DependencyInjectionState.Failed;
                 return;
@@ -70,13 +70,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 State = CanvasInitializationState.Ready;
                 InjectionState = DependencyInjectionState.Ready;
 
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>(
+                DebugUtility.LogVerbose<ActorResourceCanvas>(
                     $"✅ Canvas '{CanvasId}' Ready ({Type})",
                     DebugUtility.Colors.CrucialInfo);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"❌ Error initializing canvas '{CanvasId}': {ex}");
+                DebugUtility.LogError<ActorResourceCanvas>($"❌ Error initializing canvas '{CanvasId}': {ex}");
                 State = CanvasInitializationState.Failed;
                 InjectionState = DependencyInjectionState.Failed;
             }
@@ -129,11 +129,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 newSlot.Configure(data);
                 actorDict[resourceType] = newSlot;
 
-                DebugUtility.LogVerbose<InjectableCanvasResourceBinder>($"🎨 Bound {actorId}.{resourceType} on '{CanvasId}'");
+                DebugUtility.LogVerbose<ActorResourceCanvas>($"🎨 Bound {actorId}.{resourceType} on '{CanvasId}'");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"❌ Error creating slot for {actorId}.{resourceType}: {ex}");
+                DebugUtility.LogError<ActorResourceCanvas>($"❌ Error creating slot for {actorId}.{resourceType}: {ex}");
                 _pool.Release(newSlot);
             }
         }
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableCanvasResourceBinder>($"Error during destroy: {ex}");
+                DebugUtility.LogError<ActorResourceCanvas>($"Error during destroy: {ex}");
             }
         }
 

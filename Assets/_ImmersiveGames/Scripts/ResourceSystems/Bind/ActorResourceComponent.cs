@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
-    public class InjectableEntityResourceBridge : MonoBehaviour, IInjectableComponent
+    public class ActorResourceComponent : MonoBehaviour, IInjectableComponent
     {
         [SerializeField] private ResourceInstanceConfig[] resourceInstances = Array.Empty<ResourceInstanceConfig>();
 
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             _actor = GetComponent<IActor>();
             if (_actor == null)
             {
-                DebugUtility.LogWarning<InjectableEntityResourceBridge>($"No IActor found on {gameObject.name}");
+                DebugUtility.LogWarning<ActorResourceComponent>($"No IActor found on {gameObject.name}");
                 enabled = false;
                 return;
             }
@@ -53,13 +53,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                     _orchestrator.RegisterActor(_service);
 
                 InjectionState = DependencyInjectionState.Ready;
-                DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
-                    $"✅ Bridge initialized for '{_actor.ActorId}'",
+                DebugUtility.LogVerbose<ActorResourceComponent>(
+                    $"✅ Component initialized for '{_actor.ActorId}'",
                     DebugUtility.Colors.CrucialInfo);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableEntityResourceBridge>($"❌ Entity bridge failed for '{_actor.ActorId}': {ex}");
+                DebugUtility.LogError<ActorResourceComponent>($"❌ Entity component failed for '{_actor.ActorId}': {ex}");
                 InjectionState = DependencyInjectionState.Failed;
             }
         }
@@ -79,13 +79,13 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
                 _service?.Dispose();
                 _service = null;
 
-                DebugUtility.LogVerbose<InjectableEntityResourceBridge>(
-                    $"Cleaned up bridge for '{_actor?.ActorId}'",
+                DebugUtility.LogVerbose<ActorResourceComponent>(
+                    $"Cleaned up component for '{_actor?.ActorId}'",
                     DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<InjectableEntityResourceBridge>($"Error on destroy: {ex}");
+                DebugUtility.LogError<ActorResourceComponent>($"Error on destroy: {ex}");
             }
         }
         public ResourceSystem GetResourceSystem() => _service;

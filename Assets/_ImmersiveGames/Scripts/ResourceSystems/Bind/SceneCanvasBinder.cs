@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
 {
-    public class SceneCanvasBinder : InjectableCanvasResourceBinder
+    public class SceneCanvasBinder : ActorResourceCanvas
     {
         [SerializeField] private bool registerInPipeline = true;
         public override CanvasType Type => CanvasType.Scene;

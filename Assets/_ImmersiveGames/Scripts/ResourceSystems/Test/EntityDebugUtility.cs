@@ -558,10 +558,10 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             }
         }
 
-        [ContextMenu(BridgesMenuRoot + "Injectable Bridge Status")]
+        [ContextMenu(BridgesMenuRoot + "Injectable Component Status")]
         public void DebugBridgeStatus()
         {
-            if (!TryGetComponentForDebug(out InjectableEntityResourceBridge bridge, "Debug Bridge Status"))
+            if (!TryGetComponentForDebug(out ActorResourceComponent bridge, "Debug Component Status"))
             {
                 return;
             }
@@ -569,15 +569,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             LogInjectableBridgeStatus(bridge);
         }
 
-        private void LogInjectableBridgeStatus(InjectableEntityResourceBridge bridge)
+        private void LogInjectableBridgeStatus(ActorResourceComponent component)
         {
-            var actorId = bridge.GetObjectId();
-            var service = bridge.GetResourceSystem();
+            var actorId = component.GetObjectId();
+            var service = component.GetResourceSystem();
 
             DebugUtility.LogVerbose<EntityDebugUtility>($"🔧 ENTITY BRIDGE STATUS: {actorId}");
             DebugUtility.LogVerbose<EntityDebugUtility>($"- Actor: {actorId}");
             DebugUtility.LogVerbose<EntityDebugUtility>($"- Service: {service != null}");
-            DebugUtility.LogVerbose<EntityDebugUtility>($"- Injection: {bridge.InjectionState}");
+            DebugUtility.LogVerbose<EntityDebugUtility>($"- Injection: {component.InjectionState}");
 
             if (service != null)
             {
@@ -646,7 +646,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
             DebugUtility.LogVerbose<EntityDebugUtility>(sb.ToString());
         }
 
-        [ContextMenu(BridgesMenuRoot + "Resource Bridge Status")]
+        [ContextMenu(BridgesMenuRoot + "Resource Component Status")]
         public void DebugResourceBridgeStatus()
         {
             var bridges = GetComponents<ResourceBridgeBase>();
@@ -848,7 +848,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Test
                 if (resourceSystem != null && bridge.isInitialized)
                 {
                     DebugUtility.LogWarning<EntityDebugUtility>(
-                        $"🔄 AutoFlow Bridge '{bridge.name}': Service={(bridge.HasAutoFlowService ? "✅" : "❌")}, " +
+                        $"🔄 AutoFlow Component '{bridge.name}': Service={(bridge.HasAutoFlowService ? "✅" : "❌")}, " +
                         $"StartPaused={bridge.StartPaused}, AutoResumeAllowed={bridge.AutoResumeAllowed}, " +
                         $"IsActive={bridge.IsAutoFlowActive}");
 

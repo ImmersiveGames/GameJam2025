@@ -1,4 +1,4 @@
-# ⚔️ Sistema de Dano — Documentação Oficial (v2.0)
+# ⚔️ Sistema de Dano — Documentação Oficial (v2.1)
 
 ## 📚 Índice
 
@@ -28,6 +28,8 @@ O **Damage System** fornece um pipeline modular de processamento de dano totalme
 - **Estratégias Componíveis** — `DamageStrategyFactory` monta pipelines de `IDamageStrategy` em tempo de execução.
 - **Undo Seguro** — Cada comando guarda snapshots para restaurar o estado anterior.
 - **Integração Direta com Recursos** — Atualiza `ResourceSystem` e notifica módulos de ciclo de vida.
+- **One-shot sem ResourceSystem** — Objetos simples podem sofrer dano, tocar feedbacks e serem devolvidos ao pool/desativados mesmo sem bridge registrada.
+- **Identificador resiliente** — `DamageReceiver` usa um `receiverId` interno para operar sem depender de `IActor`, preservando compatibilidade com eventos quando o ator existe.
 
 ---
 
@@ -70,16 +72,17 @@ Falhas em qualquer etapa abortam o fluxo, executam `Undo` parcial e emitem `Dama
 ## 🏗️ Componentes Principais
 
 ### `DamageReceiver`
-- Requer `ActorMaster` e `InjectableEntityResourceBridge` no mesmo objeto.
+- Trabalha com `ActorMaster` + `InjectableEntityResourceBridge` quando presentes, mas também opera sem `IActor` ou bridge (modo one-shot) usando um `receiverId` interno.
 - Configura `strategyPipeline`, cooldown e recurso alvo via Inspector.
 - Permite escolher se a skin deve ser desativada automaticamente ao morrer (`Disable Skin On Death`).
-- Pode sinalizar se a morte do ator dispara `GameOver` (`Trigger Game Over On Death`), respeitando o estado atual do `GameManager`.
+- Pode sinalizar se a morte do ator dispara `GameOver` (`Trigger Game Over On Death`), respeitando o estado atual do `GameManager` (apenas quando um `IActor` está disponível).
 - Constrói `DamageCommandInvoker` e pipeline de estratégias em `Awake`/`OnValidate`.
 - Orquestra o `DamageReceiverLifecycleHandler`, que observa o `ResourceSystem` e sincroniza morte/revive, explosões e áudio mesmo para alterações externas (auto-flow, links, editor).
+- Executa `ExecuteDeathReturn` para retornar ao pool (`IPoolable`) ou desativar o GameObject quando não há pool.
 - API pública:
   - `ReceiveDamage(DamageContext)` — inicia o pipeline.
   - `UndoLastDamage()` — reverte o último registro executado.
-  - `GetReceiverId()` — expõe o identificador do ator para colisões e eventos.
+  - `GetReceiverId()` — expõe o identificador do receptor para colisões e eventos, com fallback estável quando não há ator.
 
 ### `DamageDealer`
 - Também depende de `ActorMaster`.
@@ -156,6 +159,7 @@ Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo p
 - `ApplyDamageCommand` modifica diretamente o recurso configurado (`ResourceType targetResource`).
 - `DamageLifecycleModule` é acionado pelo `DamageReceiverLifecycleHandler`, mantendo o estado atualizado mesmo quando o recurso é alterado fora do pipeline de dano.
 - Eventos resultantes podem ser consumidos por bridges do ResourceSystem (UI, thresholds, auto-flow) mantendo coerência reativa.
+- Quando não existe `ResourceSystem`, o `DamageReceiver` executa um fluxo one-shot: toca áudio de hit/death, dispara explosão e retorna ao pool/desativa o objeto sem acionar comandos ou eventos de pipeline.
 
 ---
 
@@ -166,6 +170,8 @@ Todos os eventos usam `DamageEventDispatcher.RaiseForParticipants`, garantindo p
    - `Damage Cooldown`: tempo mínimo entre acertos do mesmo atacante.
    - `Disable Skin On Death`: defina `false` para manter o modelo ativo e executar animações de morte.
    - `Trigger Game Over On Death`: quando `true`, publica `GameOverEvent` caso o `GameManager` esteja em sessão ativa.
+   - `Return To Pool On Death`: devolve o objeto via `IPoolable` quando morrer.
+   - `Destroy Game Object If No Pool`: desativa/destroi o objeto se não houver pool disponível.
    - `Strategy Pipeline`: lista ordenada de estratégias (Basic, Critical, Resistance).
 2. **DamageDealer**
    - `Base Damage`, `Damage Type`, `Target Resource`.
