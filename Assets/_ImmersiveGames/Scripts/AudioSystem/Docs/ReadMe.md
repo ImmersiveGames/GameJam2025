@@ -1,339 +1,319 @@
-﻿# 🎧 Immersive Games – Audio System
+﻿# 🎧 Immersive Games – Audio System (v2.0)
 
-Sistema modular e extensível de áudio para Unity, com suporte a:
-- **BGM (música ambiente)**
-- **SFX (efeitos sonoros)**
-- **Pooling de emissores**
-- **Serviços globais via DependencyManager**
-- **Fade, crossfade e controle de volume unificado**
+Sistema unificado, modular e extensível de áudio para Unity, com:
 
----
-
-## ⚙️ Arquitetura Geral
-
-| Componente | Função |
-|-------------|--------|
-| **`AudioManager`** | Gerencia BGM (faixas principais), volumes e crossfades. |
-| **`EntityAudioEmitter`** | Componente reutilizável por entidade que lida com pools e reprodução de SFX locais. |
-| **`SoundEmitter`** | Objeto reutilizável (via pool) responsável por tocar SFX. |
-| **`AudioSystemInitializer`** | Garante que o sistema e dependências de áudio estejam prontos no runtime. |
-| **`AudioMathUtility`** | Serviço central de cálculos de volume, dB e pitch. |
-| **`AudioVolumeService`** | Orquestra a combinação de volumes (clip/config/categoria/master/contexto) de forma consistente. |
-| **`AudioServiceSettings`** | ScriptableObject global com multiplicadores e volumes padrão. |
-| **`AudioConfig`** | Configurações padrão de áudio por entidade. |
-| **`SoundData`** | Asset individual com dados de cada som (clip, mixer, volume, etc). |
-| **`SoundBuilder`** | API fluente para instanciar e tocar sons de forma controlada. |
+* **BGM** (música ambiente)
+* **SFX** (efeitos sonoros)
+* **Pooling global de SoundEmitter**
+* **Serviços globais via DependencyManager**
+* **Fade, crossfade, spatial, random pitch**
+* **AudioBuilder fluente**
+* **Auditoria em runtime + Painel de Preview**
 
 ---
 
-## 🔊 Hierarquia de Volume
+# ⚙️ Arquitetura Geral (v2.0)
 
-O volume final de um som é calculado pelo `AudioVolumeService`, que combina as camadas de forma previsível usando o `AudioMathUtility`:
+A arquitetura foi simplificada e centralizada para maior estabilidade, especialmente em trocas de cena.
+
+| Componente                  | Função                                                               |
+| --------------------------- | -------------------------------------------------------------------- |
+| **AudioManager**            | Gerencia BGM, crossfades, mixer, pause/resume.                       |
+| **AudioSfxService**         | Sistema global de SFX, baseado em um **pool único** de SoundEmitter. |
+| **EntityAudioEmitter**      | Camada fina por entidade — direciona tudo ao `AudioSfxService`.      |
+| **SoundEmitter**            | Emissor real que toca o áudio (instanciado via pool).                |
+| **AudioVolumeService**      | Mistura volumes (Master, BGM, SFX, Contexto, Clip).                  |
+| **AudioMathUtility**        | Cálculo de volumes lineares/dB, pitch e curvas perceptivas.          |
+| **AudioSystemInitializer**  | Garante que tudo esteja inicializado antes de uso.                   |
+| **SoundData**               | Configuração individual de cada áudio.                               |
+| **AudioContext**            | Dados temporários por chamada (posição, spatial, volume override).   |
+| **SoundBuilder**            | API fluente para construir SFX (fade, spatial, random pitch...).     |
+| **AudioRuntimeDiagnostics** | Overlay de depuração (BGM + SFX + Emitters).                         |
+| **AudioPreviewPanel**       | Preview de SFX e BGM em runtime.                                     |
+
+---
+
+# 🔊 Hierarquia de Volume
+
+O volume final é calculado exclusivamente pelo **AudioVolumeService**, combinando:
 
 ```
-FinalVolume = SoundData.volume
-× AudioConfig.defaultVolume
-× AudioServiceSettings.(bgmMultiplier | sfxMultiplier)
-× AudioServiceSettings.(bgmVolume | sfxVolume)
-× AudioServiceSettings.masterVolume
-× AudioContext.volumeMultiplier
-(⊕ AudioContext.volumeOverride, quando fornecido)
+FinalVolume =
+    SoundData.volume
+  × AudioConfig.defaultVolume
+  × AudioServiceSettings.(sfxVolume ou bgmVolume)
+  × AudioServiceSettings.(sfxMultiplier ou bgmMultiplier)
+  × AudioServiceSettings.masterVolume
+  × AudioContext.volumeMultiplier
+ (⊕ VolumeOverride, se definido)
 ```
 
-Cada categoria (BGM ou SFX) respeita seus multiplicadores e volumes globais, com possibilidade de override contextual por som.
+Cada camada tem propósito claro e pode ser ajustada individualmente.
 
 ---
 
-## 🎛️ Configuração no Unity
+# 🧱 Estrutura Atualizada do Sistema
 
-### 1️⃣ Crie os assets necessários:
-- `Assets/Audio/Configs/AudioServiceSettings.asset`
-- `Assets/Audio/Configs/PlayerAudioConfig.asset`
-- `Assets/Audio/Sounds/ShootSound.asset`
-- `Assets/Audio/Sounds/BGM_MainTheme.asset`
+### 1. SFX – Novo fluxo simplificado
 
-### 2️⃣ Configure os valores:
+Toda reprodução de efeito sonoro passa por:
 
-#### AudioServiceSettings
-| Campo | Descrição | Exemplo |
-|--------|------------|---------|
-| `masterVolume` | Volume geral global | `1.0` |
-| `bgmVolume` | Volume de música ambiente | `0.8` |
-| `sfxVolume` | Volume de efeitos sonoros | `1.0` |
-| `bgmMultiplier` | Fator adicional fixo aplicado em runtime | `0.5` |
-| `sfxMultiplier` | Fator adicional fixo aplicado aos SFX | `1.0` |
-
-#### AudioConfig (por entidade)
-| Campo | Descrição |
-|--------|-----------|
-| `defaultVolume` | Volume base do controlador |
-| `defaultMixerGroup` | MixerGroup padrão dos sons |
-| `maxDistance` | Distância máxima do som 3D |
-| `useSpatialBlend` | Define se o áudio é espacializado |
-
-> **Nota:** Sons específicos (tiro, dano, morte, etc.) agora são atribuídos diretamente nos componentes que os disparam,
-sempre usando um `EntityAudioEmitter` compartilhado pela entidade.
-
----
-
-## 🚀 Exemplos de Uso
-
-### 🎵 Tocando BGM Globalmente
-
-```csharp
-using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using UnityEngine;
-
-public class MenuMusicStarter : MonoBehaviour
-{
-    [SerializeField] private SoundData mainMenuMusic;
-
-    [Inject] private IAudioService _audioService;
-
-    private void Awake()
-    {
-        // Garante que o AudioManager exista e injeta o serviço global.
-        AudioSystemInitializer.EnsureAudioSystemInitialized();
-        DependencyManager.Instance.InjectDependencies(this);
-    }
-
-    private void Start()
-    {
-        if (_audioService == null || mainMenuMusic == null)
-        {
-            return;
-        }
-
-        // Toca a música do menu com fade-in de 2s
-        _audioService.PlayBGM(mainMenuMusic, true, 2f);
-    }
-
-    private void OnDisable()
-    {
-        // Para a música suavemente ao sair do menu
-        _audioService?.StopBGM(1.5f);
-    }
-}
-````
-
----
-
-### 💥 Tocando SFX Local (ex: tiro, impacto, passo)
-
-```csharp
-using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using UnityEngine;
-
-public class Gun : MonoBehaviour
-{
-    [SerializeField] private EntityAudioEmitter audioEmitter;
-    [SerializeField] private SoundData shootSound;
-
-    private void Awake()
-    {
-        audioEmitter ??= GetComponent<EntityAudioEmitter>();
-    }
-
-    void Fire()
-    {
-        if (audioEmitter == null || shootSound == null)
-        {
-            return;
-        }
-
-        // Som direto via emissor configurado para o jogador
-        var context = AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend);
-        audioEmitter.Play(shootSound, context);
-
-        // Ou via SoundBuilder para ajustes avançados (fade, pitch, etc.)
-        audioEmitter.CreateBuilder()
-            ?.WithSoundData(shootSound)
-            .AtPosition(transform.position)
-            .WithRandomPitch()
-            .WithFadeIn(0.15f)
-            .Play();
-    }
-}
+```
+IAudioSfxService → (pool global) → SoundEmitter
 ```
 
+Nenhum Entity cria fonte de áudio, nem instância pool local, nem precisa gerenciar corrotinas.
+
 ---
 
-### 🧮 Controle de Volume e Mixers em Runtime
+### 2. EntityAudioEmitter – Nova versão (v2.0)
+
+O `EntityAudioEmitter` agora é apenas:
+
+* Um resolvedor de `IAudioSfxService`.
+* Uma camada de conveniência para entidades que desejam sons ligados à sua posição.
+
+Exemplo do fluxo atual:
 
 ```csharp
-[Inject] private IAudioService _audioService;
+var ctx = AudioContext.Default(transform.position, UsesSpatialBlend);
+_sfxService.PlayOneShot(soundData, ctx, fadeInSeconds);
+```
 
-void Awake()
+> Ele **não mantém pools**, não cria fontes e não faz fade manual.
+> Tudo isso é responsabilidade do `AudioSfxService`.
+
+---
+
+### 3. Pool Global de SoundEmitter
+
+* Configurado por **SoundEmitterPoolData** localizado em:
+
+  ```
+  Resources/Audio/SoundEmitters/PD_SoundEmitter.asset
+  ```
+* Registrado automaticamente via:
+
+  ```
+  PoolManager.Instance.RegisterPool(poolData)
+  ```
+* Reutilizado por todos os SFX do jogo.
+
+---
+
+# 🧰 Configuração no Unity
+
+### 1️⃣ Assets necessários
+
+```
+Assets/Audio/Configs/AudioServiceSettings.asset
+Assets/Audio/Configs/<Entity>AudioConfig.asset
+Assets/Audio/Configs/PD_SoundEmitter.asset  (Pool)
+Assets/Audio/Sounds/*.asset  (SoundData)
+```
+
+### 2️⃣ Ajustes importantes em PD_SoundEmitter.asset:
+
+* `InitialPoolSize`: 10–30
+* `CanExpand`: true
+* `ObjectConfigs` → 1 entrada de `SoundEmitterPoolableData`
+* Prefab do SoundEmitter:
+
+  ```
+  Resources/Audio/Prefabs/SoundEmitter.prefab
+  ```
+
+---
+
+# 🚀 Exemplos Atualizados
+
+## 🎵 Tocar BGM (via AudioManager)
+
+```csharp
+[Inject] private IAudioService _audio;
+
+private void Start()
 {
     AudioSystemInitializer.EnsureAudioSystemInitialized();
     DependencyManager.Instance.InjectDependencies(this);
-}
 
-void ReduzirVolume()
-{
-    // Reduz o volume geral da música
-    _audioService?.SetBGMVolume(0.5f);
-}
-
-void PausarRetomar()
-{
-    // Pausa e retoma
-    _audioService?.PauseBGM();
-    _audioService?.ResumeBGM();
-}
-
-void PararImediato()
-{
-    // Para imediatamente (sem fade)
-    _audioService?.StopBGMImmediate();
+    _audio.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 1f);
 }
 ```
 
 ---
 
-### 🎚️ Ajustando o equilíbrio BGM / SFX
-
-Se o **BGM** estiver mais alto que os **SFX**, ajuste os multiplicadores no asset `AudioServiceSettings`:
-
-| Campo           | Descrição                          | Valor sugerido |
-| --------------- | ---------------------------------- | -------------- |
-| `bgmMultiplier` | Reduz todas as músicas globalmente | `0.5`          |
-| `sfxMultiplier` | Mantém o nível dos efeitos         | `1.0`          |
-| `bgmVolume`     | Volume runtime controlável por UI  | `0.8`          |
-| `masterVolume`  | Volume global (master)             | `1.0`          |
-
-💡 **Dica:** É comum deixar `bgmMultiplier` menor que `sfxMultiplier` para dar mais destaque aos efeitos.
-
----
-
-## 🧰 Depuração
-
-Para ver logs detalhados de áudio (com volumes e dB):
-
-* Ative `debugEmitters = true` em `AudioServiceSettings`.
-
-O sistema exibirá no console:
-
-```
-[SFX Pool] Clip=GunShot | Linear=0.80 | dB=-1.9 | Mixer=SFX
-[BGM] Clip=MainTheme | Linear=0.40 | dB=-7.9 | Mixer=Music
-```
-
----
-
-## 🧩 Fluxo de Inicialização
-
-1. **`AudioSystemInitializer`** é executado automaticamente (`RuntimeInitializeOnLoad`).
-2. Verifica e instancia o **`AudioManager`** (se necessário, via `Resources/Audio/Prefabs/AudioManager`).
-3. Registra globalmente os serviços:
-
-    * `IAudioService` (gerenciamento de BGM)
-    * `IAudioMathService` (conversões e cálculos)
-    * `IAudioVolumeService` (orquestra composição de volume BGM/SFX)
-    * `AudioServiceSettings` (quando fornecido pelo AudioManager configurado na cena)
-4. Controllers e SoundEmitters usam esses serviços automaticamente, garantindo consistência entre BGM e SFX.
-
----
-
-## ✅ Boas Práticas
-
-* Use **`SoundData` ScriptableObjects** para todos os sons reutilizáveis.
-* Centralize volumes no **`AudioServiceSettings`** — nunca direto no `AudioSource`.
-* Use **`SoundBuilder`** para criar sons temporários de forma fluida.
-* Prefira **pools locais** (`SoundEmitterPoolData`) para entidades que reproduzem sons frequentemente.
-* Use **mixer groups** (`SFX`, `Music`, `UI`) para maior controle no mixer global.
-
----
-
-## 🧩 Exemplo de Estrutura no Projeto
-
-```
-Assets/
- ├── Audio/
- │   ├── Prefabs/
- │   │   └── AudioManager.prefab
- │   ├── Configs/
- │   │   ├── AudioServiceSettings.asset
- │   │   └── PlayerAudioConfig.asset
- │   ├── Sounds/
- │   │   ├── ShootSound.asset
- │   │   └── BGM_MainTheme.asset
- │   └── Mixers/
- │       ├── MasterMixer.mixer
- │       ├── Music.mixerGroup
- │       └── SFX.mixerGroup
- └── Scripts/
-     └── AudioSystem/
-        ├── AudioManager.cs
-        ├── Components/
-        │   ├── EntityAudioEmitter.cs
-        │   └── SoundEmitter.cs
-        ├── AudioSystemInitializer.cs
-         ├── AudioMathUtility.cs
-         ├── Configs/
-         │   ├── AudioConfig.cs
-         │   ├── SoundData.cs
-         │   └── AudioServiceSettings.cs
-         └── Services/
-             └── Interfaces/
-```
-
----
-
-## 🧠 Observação
-
-O sistema foi projetado para ser **escalável e desacoplado**.
-O `AudioVolumeService` mantém a composição de volume em um ponto único (SRP) enquanto o `AudioMathUtility` foca nas conversões e cálculos perceptuais, permitindo ajustes futuros sem alterar controladores ou emissores.
-
----
-
-## 🪄 Exemplo de Extensão (novo tipo de som)
+## 🔫 SFX via EntityAudioEmitter
 
 ```csharp
-public class EnemyAudioFeedback : MonoBehaviour
-{
-    [SerializeField] private EntityAudioEmitter emitter;
-    [SerializeField] private SoundData alertSound;
-    [SerializeField] private SoundData deathSound;
-
-    private void Awake()
-    {
-        emitter ??= GetComponent<EntityAudioEmitter>();
-    }
-
-    public void PlayAlert()
-    {
-        if (emitter == null || alertSound == null) return;
-        emitter.Play(alertSound, AudioContext.Default(transform.position, emitter.UsesSpatialBlend));
-    }
-
-    public void PlayDeath()
-    {
-        if (emitter == null || deathSound == null) return;
-        emitter.Play(deathSound, AudioContext.Default(transform.position, emitter.UsesSpatialBlend));
-    }
-}
+audioEmitter.Play(shootSound, 
+    AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend));
 ```
 
 ---
 
-## 📘 Conclusão
+## ⚡ SFX Avançado via SoundBuilder
 
-Com este sistema, o áudio fica:
-
-✅ Centralizado
-✅ Controlável por configuração e UI
-✅ Balanceado entre BGM e SFX
-✅ Otimizado com pooling
-✅ Fácil de depurar e expandir
+```csharp
+audioEmitter.CreateBuilder()
+    ?.WithSoundData(explosion)
+    .AtPosition(transform.position)
+    .WithRandomPitch()
+    .WithFadeIn(0.15f)
+    .Play();
+```
 
 ---
 
-> **Autor:** Equipe Immersive Games
-> **Versão:** 1.1
-> **Compatível com:** Unity 6+
-> **Licença:** Interna / Proprietária
+# 🎚️ Ajuste de Volumes em Runtime
+
+```csharp
+_audio.SetBGMVolume(0.5f);    // Música
+_audioServiceSettings.sfxVolume = 0.8f; // SFX global
+_audioServiceSettings.masterVolume = 1f; // Master
+```
+
+---
+
+# 🧵 Debug – Nova Seção (v2.0)
+
+O novo sistema conta com duas ferramentas essenciais:
+
+---
+
+## 1) **AudioRuntimeDiagnostics.cs** – Overlay Completo
+
+Mostra em tempo real:
+
+### BGM
+
+* Clip atual
+* Volume final
+* Playing / Paused / Stopped
+
+### SFX
+
+* Emitters ativos (ex.: 5/18 tocando)
+* Lista dos emissores
+* Nome do clip
+* Posição
+* Ativo/Idle
+
+### Funções
+
+| Ação                   | Tecla  |
+| ---------------------- | ------ |
+| Ligar/desligar overlay | **F9** |
+
+### Como usar
+
+Adicionar o componente a um GameObject que exista em todas as cenas:
+
+```csharp
+gameObject.AddComponent<AudioRuntimeDiagnostics>();
+```
+
+---
+
+## 2) **AudioPreviewPanel.cs** – Preview de SFX e BGM
+
+Permite testar qualquer `SoundData` em runtime.
+
+### Recursos:
+
+* Lista de SFX navegáveis (`<< Play >>`)
+* Lista de BGM navegáveis (`<< Play/Loop Stop >>`)
+* Fade configurável
+* Volume multiplier para preview
+* Modo Non-spatial automático para SFX de teste
+
+### Tecla
+
+| Função                 | Tecla   |
+| ---------------------- | ------- |
+| Mostrar/Ocultar painel | **F10** |
+
+### Como usar
+
+1. Adicione ao GameObject:
+
+   ```
+   AudioPreviewPanel
+   ```
+2. Preencha no Inspector:
+
+   * `sfxClips[]`
+   * `bgmClips[]`
+
+Agora você pode testar **qualquer áudio do jogo** sem precisar criar scripts temporários.
+
+---
+
+# 🧪 Testes Automatizados – AudioSystemScenarioTester
+
+Para validar a arquitetura completa, o projeto já conta com:
+
+* Testes de SFX:
+
+   * OneShot
+   * Spatial/Non-spatial
+   * Random Pitch (10x)
+   * Fade-in
+   * Stress test (30 sons)
+* Testes de BGM:
+
+   * Play/Stop
+   * Fade-in/out
+   * Pause/Resume
+   * Volumes (1.0 → 0.5 → 0.2 → 1.0)
+
+Basta rodar a cena com:
+
+```csharp
+AudioSystemScenarioTester
+```
+
+---
+
+# 🛠️ Fluxo de Inicialização Atual (v2.0)
+
+1. **AudioSystemInitializer** é chamado (RuntimeInitializeOnLoad).
+2. Garante:
+
+   * AudioManager
+   * Pool de SoundEmitter
+   * Registro de:
+
+      * IAudioSfxService
+      * IAudioService
+      * IAudioVolumeService
+      * IAudioMathService
+3. Dependências disponíveis globalmente via `DependencyManager`.
+
+---
+
+# ✔️ Boas Práticas (atualizadas)
+
+* Use sempre `SoundData` (nada de clipes “nus”).
+* Utilize `EntityAudioEmitter` ou `SoundBuilder` — **não toque SFX direto no AudioSource**.
+* Ajuste volumes no `AudioServiceSettings`, não no AudioSource.
+* Use mixers (`SFX`, `Music`, `UI`) para mixagem profissional.
+* Para debug de cena:
+
+   * **F9** → Diagnostics
+   * **F10** → Preview
+
+---
+
+# 📘 Conclusão
+
+A nova versão (v2.0) oferece:
+
+* **Estabilidade total em troca de cena**
+* **Pooling único, sem leaks**
+* **API fluida para SFX complexos**
+* **Depuração profissional em tempo real**
+* **Preview runtime poderoso para level/audio design**
+* **Arquitetura limpa, sustentável, SOLID**
+
+---
