@@ -52,18 +52,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (poolable == null)
                 return NullHandle;
 
-            bool originalLoop = sound.loop;
-            if (forceLoop && !sound.loop)
-            {
-                sound.loop = true;
-            }
+            var runtimeSound = CreateRuntimeSoundData(sound, forceLoop);
 
-            poolable.Initialize(sound);
-
-            if (!originalLoop)
-            {
-                sound.loop = originalLoop;
-            }
+            poolable.Initialize(runtimeSound);
 
             poolable.SetSpatialBlend(context.useSpatial ? sound.spatialBlend : 0f);
 
@@ -151,19 +142,33 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private static void ConfigurePoolData(SoundEmitterPoolData poolData, SoundData sound, SoundEmitterPoolableData poolable)
         {
-            SetField(poolData, "objectName", sound.name ?? sound.clip?.name ?? "SoundEmitter");
+            var objectName = sound.name ?? sound.clip?.name ?? "SoundEmitter";
+
+            poolData.name = $"{objectName}_PoolData";
+            SetField(poolData, "objectName", objectName);
             SetField(poolData, "initialPoolSize", 3);
             SetField(poolData, "canExpand", true);
             SetField(poolData, "objectConfigs", new PoolableObjectData[] { poolable });
             SetField(poolData, "reconfigureOnReturn", false);
-            SetField(poolData, "maxSoundInstances", poolData.MaxSoundInstances > 0 ? poolData.MaxSoundInstances : 30);
+            SetField(poolData, "maxSoundInstances", Mathf.Max(poolData.MaxSoundInstances, 30));
         }
 
         private static void ConfigurePoolableData(SoundEmitterPoolableData poolable, SoundData sound, GameObject prefab)
         {
-            SetField(poolable, "objectName", sound.name ?? sound.clip?.name ?? "SoundEmitter");
+            var objectName = sound.name ?? sound.clip?.name ?? "SoundEmitter";
+
+            poolable.name = $"{objectName}_Poolable";
+            SetField(poolable, "objectName", objectName);
             SetField(poolable, "prefab", prefab);
-            SetField(poolable, "lifetime", 0f);
+            SetField(poolable, "lifetime", Mathf.Max(1f, prefab.GetComponent<AudioSource>()?.clip?.length ?? sound.clip?.length ?? 5f));
+        }
+
+        private static SoundData CreateRuntimeSoundData(SoundData source, bool forceLoop)
+        {
+            var runtime = Object.Instantiate(source);
+            runtime.hideFlags = HideFlags.HideAndDontSave;
+            runtime.loop = forceLoop || source.loop;
+            return runtime;
         }
 
         private static void SetField<T>(object target, string fieldName, T value)
