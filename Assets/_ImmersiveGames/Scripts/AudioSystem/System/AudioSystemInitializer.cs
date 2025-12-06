@@ -44,7 +44,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             if (IsInitialized()) return;
 
-            _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
+            if (_cachedAudioManager != null && !_cachedAudioManager)
+            {
+                _cachedAudioManager = null;
+            }
+
+            _cachedAudioManager = _cachedAudioManager != null ? _cachedAudioManager : Object.FindAnyObjectByType<AudioManager>();
             if (_cachedAudioManager != null)
             {
                 if (!_cachedAudioManager.IsInitialized)
@@ -72,7 +77,27 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DebugUtility.Colors.Success);
         }
 
-        private static bool IsInitialized() => DependencyManager.Provider?.TryGetGlobal<IAudioService>(out _) ?? false;
+        private static bool IsInitialized()
+        {
+            if (DependencyManager.Provider == null) return false;
+
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioService>(out var service))
+                return false;
+
+            return IsServiceValid(service);
+        }
+
+        private static bool IsServiceValid(IAudioService service)
+        {
+            if (service == null) return false;
+
+            if (service is Object unityObj)
+            {
+                return unityObj;
+            }
+
+            return true;
+        }
 
         public static IAudioService GetAudioService()
         {

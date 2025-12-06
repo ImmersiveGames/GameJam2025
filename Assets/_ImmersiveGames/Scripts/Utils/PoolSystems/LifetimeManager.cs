@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
 
                 // Se o poolable foi destruído (mas a referência ainda existe), remove da lista
-                if (poolable == null || poolable.GetGameObject() == null)
+                if (IsPoolableDestroyed(poolable))
                 {
                     _objectsToRemove.Add(poolable);
                     continue;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             // Remove objetos expirados ou nulos
             foreach (var poolable in _objectsToRemove)
             {
-                if (poolable == null || poolable.GetGameObject() == null)
+                if (IsPoolableDestroyed(poolable))
                 {
                     // Para objetos nulos/destruídos, apenas remove do dicionário
                     _objectLifetimes.Remove(poolable);
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void Register(IPoolable poolable, float lifetime)
         {
-            if (poolable == null)
+            if (IsPoolableDestroyed(poolable))
             {
                 DebugUtility.LogError<LifetimeManager>("Cannot register null poolable object.", this);
                 return;
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void Unregister(IPoolable poolable)
         {
-            if (poolable == null)
+            if (IsPoolableDestroyed(poolable))
             {
                 DebugUtility.LogError<LifetimeManager>("Cannot unregister null poolable object.", this);
                 return;
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public void ReturnToPool(IPoolable poolable)
         {
-            if (poolable == null)
+            if (IsPoolableDestroyed(poolable))
             {
                 DebugUtility.LogError<LifetimeManager>("Cannot return null poolable object to pool.", this);
                 return;
@@ -114,6 +114,25 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 DebugUtility.LogError<LifetimeManager>($"Object '{poolable.GetGameObject().name}' has no associated pool or PooledObject component.", this);
             }
+        }
+
+        /// <summary>
+        /// Trata corretamente referências destruídas (UnityEngine.Object) mesmo quando tipadas como interface.
+        /// </summary>
+        private static bool IsPoolableDestroyed(IPoolable poolable)
+        {
+            if (poolable == null)
+            {
+                return true;
+            }
+
+            if (poolable is Object unityObj && !unityObj)
+            {
+                return true;
+            }
+
+            var go = poolable.GetGameObject();
+            return go == null;
         }
     }
 }
