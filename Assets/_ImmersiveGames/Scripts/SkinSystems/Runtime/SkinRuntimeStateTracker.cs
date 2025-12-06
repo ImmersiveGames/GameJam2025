@@ -15,7 +15,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
     /// - Modo 2 (fallback opcional): calcula a partir do root do ator (útil para planetas já prontos no prefab).
     /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(level: DebugLevel.Verbose)]
     public class SkinRuntimeStateTracker : MonoBehaviour
     {
         [Header("References")]

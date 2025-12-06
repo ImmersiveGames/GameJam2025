@@ -22,7 +22,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         public void Initialize(SoundData data)
         {
             Data = data;
-            if (_audioSource == null) _audioSource = gameObject.GetOrAdd<AudioSource>();
+            if (_audioSource == null || !_audioSource)
+                _audioSource = gameObject.GetOrAdd<AudioSource>();
+
             ApplySoundData(data);
         }
 
@@ -35,14 +37,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             /* optional */
         }
+
         protected override void OnDeactivated()
         {
             /* optional */
         }
+
         protected override void OnReset()
         {
             /* optional */
         }
+
         protected override void OnReconfigured(PoolableObjectData config)
         {
             /* optional */
@@ -50,7 +55,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (_audioSource == null || Data == null) return;
+            if (Data == null || _audioSource == null || !_audioSource)
+                return;
 
             if (_playingCoroutine != null)
             {
@@ -68,8 +74,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void PlayWithFade(float targetMultiplier, float duration)
         {
-            if (_audioSource == null || Data == null)
+            if (Data == null || _audioSource == null || !_audioSource)
             {
+                // fallback: tenta executar Play normal se possível
                 Play();
                 return;
             }
@@ -79,22 +86,30 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 StopCoroutine(_playingCoroutine);
                 _playingCoroutine = null;
             }
+
             StartCoroutine(PlayAndFadeRoutine(targetMultiplier, duration));
         }
 
         private IEnumerator PlayAndFadeRoutine(float targetMultiplier, float duration)
         {
+            if (_audioSource == null || !_audioSource)
+                yield break;
+
             SetVolumeMultiplier(0f);
             _audioSource.Play();
 
             float elapsed = 0f;
             while (elapsed < duration)
             {
+                if (_audioSource == null || !_audioSource)
+                    yield break;
+
                 elapsed += Time.deltaTime;
                 float t = elapsed / duration;
                 SetVolumeMultiplier(Mathf.Lerp(0f, targetMultiplier, t));
                 yield return null;
             }
+
             SetVolumeMultiplier(targetMultiplier);
 
             if (!Data.loop)
@@ -110,13 +125,29 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 StopCoroutine(_playingCoroutine);
                 _playingCoroutine = null;
             }
-            _audioSource.Stop();
+
+            if (_audioSource != null && _audioSource)
+            {
+                _audioSource.Stop();
+            }
+
             _poolRef?.ReturnObject(this);
         }
 
         private IEnumerator WaitForSoundToEnd()
         {
-            yield return new WaitWhile(() => _audioSource.isPlaying);
+            // se o AudioSource foi destruído, não tente acessar isPlaying
+            if (_audioSource == null || !_audioSource)
+            {
+                ReturnToPool();
+                yield break;
+            }
+
+            yield return new WaitWhile(() =>
+                _audioSource != null &&
+                _audioSource &&
+                _audioSource.isPlaying);
+
             ReturnToPool();
         }
 
@@ -127,27 +158,33 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void WithRandomPitch(float min = -0.05f, float max = 0.05f)
         {
-            if (_audioSource != null)
+            if (_audioSource != null && _audioSource)
                 _audioSource.pitch = Random.Range(1f + min, 1f + max);
         }
 
         public void SetSpatialBlend(float spatialBlend)
         {
-            if (_audioSource != null) _audioSource.spatialBlend = spatialBlend;
+            if (_audioSource != null && _audioSource)
+                _audioSource.spatialBlend = spatialBlend;
         }
+
         public void SetMaxDistance(float maxDistance)
         {
-            if (_audioSource != null) _audioSource.maxDistance = maxDistance;
+            if (_audioSource != null && _audioSource)
+                _audioSource.maxDistance = maxDistance;
         }
+
         public void SetMixerGroup(AudioMixerGroup group)
         {
-            if (_audioSource != null) _audioSource.outputAudioMixerGroup = group;
+            if (_audioSource != null && _audioSource)
+                _audioSource.outputAudioMixerGroup = group;
         }
 
         public void SetVolumeMultiplier(float multiplier)
         {
             _volumeMultiplier = multiplier;
-            if (_audioSource != null && Data != null)
+
+            if (_audioSource != null && _audioSource && Data != null)
             {
                 _audioSource.volume = Data.volume * _volumeMultiplier;
             }
@@ -155,7 +192,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void ApplySoundData(SoundData data)
         {
-            if (_audioSource == null || data == null) return;
+            if (_audioSource == null || !_audioSource || data == null) return;
+
             _audioSource.clip = data.clip;
             _audioSource.outputAudioMixerGroup = data.mixerGroup;
             _audioSource.priority = data.priority;
@@ -163,7 +201,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _audioSource.playOnAwake = data.playOnAwake;
             _audioSource.spatialBlend = data.spatialBlend;
             _audioSource.maxDistance = data.maxDistance;
-            _audioSource.volume = data.volume * _volumeMultiplier; // small note: ensure _audio_source variable name consistent
+            _audioSource.volume = data.volume * _volumeMultiplier;
             _audioSource.pitch = 1f;
         }
     }

@@ -11,7 +11,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Serviço dedicado ao fluxo de eventos de defesa: registra engajamentos,
     /// orquestra runners via o IPlanetDefenseSetupOrchestrator com logs via DebugUtility.
     /// </summary>
-    [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseEventService : IInjectableComponent
     {
         private const bool StopWavesOnDisable = true;

@@ -10,7 +10,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.SkinSystems
 {
-    [DebugLevel(level: DebugLevel.Verbose)]
     public class ActorSkinController : MonoBehaviour, IResettable
     {
         [Header("Skin Configuration")]

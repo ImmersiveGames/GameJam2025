@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
-    [DebugLevel(level: DebugLevel.Verbose)]
     [RequireComponent(typeof(MinionEntryHandler))]
     [RequireComponent(typeof(MinionOrbitWaitHandler))]
     [RequireComponent(typeof(MinionChaseHandler))]

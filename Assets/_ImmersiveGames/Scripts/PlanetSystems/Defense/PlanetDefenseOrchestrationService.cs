@@ -18,7 +18,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// DebugUtility para acompanhamento no Editor. Não define comportamento
     /// de minions — apenas como e onde eles entram.
     /// </summary>
-    [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseOrchestrationService : IPlanetDefenseSetupOrchestrator
     {
         private readonly Dictionary<PlanetsMaster, DefenseEntryConfigV2> _configuredDefenseEntriesV2 = new();

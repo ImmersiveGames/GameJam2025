@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
@@ -19,11 +20,6 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             EventBus<StateChangedEvent>.Register(_stateChangedEvent);
         }
 
-        public void Dispose()
-        {
-            EventBus<StateChangedEvent>.Unregister(_stateChangedEvent);
-        }
-
         private void OnStateChanged(StateChangedEvent evt)
         {
             _isGameActive = evt.isGameActive;
@@ -31,12 +27,18 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         public bool CanExecuteAction(ActionType action)
         {
-            return _isGameActive && (_stateMachine.CurrentState?.CanPerformAction(action) ?? false);
+            return _isGameActive &&
+                (_stateMachine.CurrentState?.CanPerformAction(action) ?? false);
         }
 
         public bool IsGameActive()
         {
             return _isGameActive;
+        }
+
+        public void Dispose()
+        {
+            EventBus<StateChangedEvent>.Unregister(_stateChangedEvent);
         }
     }
 

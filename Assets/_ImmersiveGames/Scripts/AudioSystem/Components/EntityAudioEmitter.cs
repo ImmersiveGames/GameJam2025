@@ -176,14 +176,25 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private System.Collections.IEnumerator FadeVolume(AudioSource src, float from, float to, float dur)
         {
+            if (src == null || !src)
+                yield break;
+
             float t = 0f;
             while (t < dur)
             {
+                if (src == null || !src)
+                    yield break;
+
                 t += Time.deltaTime;
                 src.volume = Mathf.Lerp(from, to, t / dur);
                 yield return null;
             }
+
+            if (src == null || !src)
+                yield break;
+
             src.volume = to;
         }
+
     }
 }

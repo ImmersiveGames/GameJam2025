@@ -1,5 +1,7 @@
 ﻿using System.Collections;
+using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityUtils;
@@ -8,8 +10,8 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
     
     public class SceneLoader : Singleton<SceneLoader>
     {
-        [SerializeField] private string gameplayScene = "Gameplay";
-        [SerializeField] private string uiScene = "UI";
+        [SerializeField] private string gameplayScene = "GameplayScene";
+        [SerializeField] private string uiScene = "UIScene";
         private IEnumerator Start()
         {
             DebugUtility.LogVerbose<SceneLoader>(
@@ -68,6 +70,16 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         {
             string currentScene = SceneManager.GetActiveScene().name;
             DebugUtility.LogVerbose<SceneLoader>($"Recarregando cena atual {currentScene}.");
+            
+            // Obtemos o FadeService por DI
+            DependencyManager.Provider.TryGetGlobal(out IFadeService fade);
+            
+            if (fade != null)
+            {
+                Debug.Log("[SceneLoader] Executando FadeIn antes da recarga.");
+                fade.RequestFadeIn();
+                yield return new WaitForSecondsRealtime(0.6f); // Aguarda o fade (ajustável)
+            }
 
             AsyncOperation reloadOperation = SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Single);
             while (reloadOperation is { isDone: false })
@@ -77,6 +89,12 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
 
             // Recarrega a UI (separada) após o gameplay para restabelecer handlers de eventos.
             yield return LoadUISceneAdditive(uiScene);
+            
+            if (fade != null)
+            {
+                Debug.Log("[SceneLoader] Executando FadeOut após recarga.");
+                fade.RequestFadeOut();
+            }
         }
     }
 }

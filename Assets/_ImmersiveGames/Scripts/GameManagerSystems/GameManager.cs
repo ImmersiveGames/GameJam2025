@@ -80,19 +80,31 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             base.Awake();
             ConfigureDebug();
+            RegisterGameServices();
+
             if (!DependencyManager.Provider.TryGetGlobal(out _orchestrator))
             {
                 _orchestrator = new ActorResourceOrchestratorService();
                 DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
-            RegisterGameServices();
-            if (!SceneManager.GetSceneByName("UI").isLoaded)
+
+            if (DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
             {
-                DebugUtility.LogVerbose<GameManager>($"Carregando cena de UI em modo aditivo.");
-                SceneManager.LoadSceneAsync("UI", LoadSceneMode.Additive);
+                var ui = GameConfig.UIScene;
+                var gameplay = GameConfig.GameplayScene;
+
+                DebugUtility.LogVerbose<GameManager>($"Carregando GameplayScene + UIScene com Fade...");
+                StartCoroutine(loader.LoadScenesWithFadeAsync(
+                    scenesToLoad: new[]
+                    {
+                        new SceneLoadData(gameplay, LoadSceneMode.Single),
+                        new SceneLoadData(ui, LoadSceneMode.Additive)
+                    }));
             }
+
             Initialize();
         }
+
 
 
         private void Initialize()
@@ -283,23 +295,28 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             _resetInProgress = true;
 
-            // Permite que sistemas persistentes (ex.: pools, placares) limpem estado antes do reload.
             EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
-
-            // Dá uma folga para que os handlers do GameResetRequestedEvent processem paradas (timers, spawns, etc.).
             yield return new WaitForEndOfFrame();
-
-            // Aguarda a FSM voltar para o menu para garantir execução de OnExit/OnEnter dos estados atuais.
             yield return WaitForMenuState();
 
-            // Garante que o tempo global não fique travado após sair de estados que pausam o timeScale.
             Time.timeScale = 1f;
 
-            // Recria a FSM para limpar bindings antigos antes de recarregar a cena.
             GameManagerStateMachine.Instance.Rebuild(this);
 
-            // Recarrega a cena ativa e reanexa a UI.
-            yield return SceneLoader.Instance.ReloadCurrentSceneAsync();
+            if (DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
+            {
+                var gameplay = GameConfig.GameplayScene;
+                var ui = GameConfig.UIScene;
+
+                var scenesToLoad = new[]
+                {
+                    new SceneLoadData(gameplay, LoadSceneMode.Single),
+                    new SceneLoadData(ui, LoadSceneMode.Additive)
+                };
+
+                // Usa o pipeline de fade já existente no SceneLoaderService
+                yield return loader.LoadScenesWithFadeAsync(scenesToLoad);
+            }
 
             EventBus<GameResetCompletedEvent>.Raise(new GameResetCompletedEvent());
 
@@ -307,6 +324,34 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _resetRoutine = null;
         }
 
+
+        public void ReturnToMenu()
+        {
+            // Se estiver no meio de um reset, você pode optar por ignorar ou cancelar.
+            if (_resetRoutine != null)
+            {
+                StopCoroutine(_resetRoutine);
+                _resetRoutine = null;
+            }
+
+            _resetRoutine = StartCoroutine(ReturnToMenuRoutine());
+        }
+
+        private IEnumerator ReturnToMenuRoutine()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
+                yield break;
+
+            var menu = GameConfig.MenuScene;
+
+            var scenesToLoad = new[]
+            {
+                new SceneLoadData(menu, LoadSceneMode.Single)
+            };
+
+            // Usa o mesmo pipeline de fade do serviço de cenas
+            yield return loader.LoadScenesWithFadeAsync(scenesToLoad);
+        }
         private IEnumerator WaitForMenuState()
         {
             // Usa deltaTime não escalonado para respeitar pausas.

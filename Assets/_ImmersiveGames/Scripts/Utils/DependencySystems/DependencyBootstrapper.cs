@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -9,6 +11,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
+using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
@@ -40,6 +43,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 // Serviços "puros" que não dependem de outros
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
+                
+                // CORRETO: Registrar o CoroutineRunner primeiro
+                EnsureGlobal<ICoroutineRunner>(() =>
+                {
+                    var go = new GameObject("GlobalCoroutineRunner");
+                    Object.DontDestroyOnLoad(go);
+                    return go.AddComponent<GlobalCoroutineRunner>();
+                });
+                EnsureGlobal<IFadeService>(() => new FadeService());
+                EnsureGlobal<ISceneLoaderService>(() => new SceneLoaderService());
 
                 // ResourceInitializationManager - singleton próprio
                 var initManager = ResourceInitializationManager.Instance;

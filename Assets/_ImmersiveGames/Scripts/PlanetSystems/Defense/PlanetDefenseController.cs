@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
-    [DebugLevel(level: DebugLevel.Verbose)]
     public class PlanetDefenseController : MonoBehaviour
     {
         [SerializeField] private PlanetsMaster planetsMaster;

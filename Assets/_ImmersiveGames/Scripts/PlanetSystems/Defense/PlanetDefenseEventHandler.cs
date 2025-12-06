@@ -10,7 +10,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Componente MonoBehaviour responsável por escutar eventos do EventBus
     /// e delegar ao PlanetDefenseEventService, mantendo o serviço puro.
     /// </summary>
-    [DebugLevel(level: DebugLevel.Verbose)]
     [RequireComponent(typeof(PlanetDefenseController))]
     [RequireComponent(typeof(PlanetsMaster))]
     public sealed class PlanetDefenseEventHandler : MonoBehaviour
