@@ -30,19 +30,11 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 Debug.LogError("[FadeService] Falha ao obter CoroutineRunner.");
             }
 
-            _fadeInBinding = new EventBinding<FadeInRequestedEvent>(_ => RequestFadeIn());
+            _fadeInBinding  = new EventBinding<FadeInRequestedEvent>(_ => RequestFadeIn());
             _fadeOutBinding = new EventBinding<FadeOutRequestedEvent>(_ => RequestFadeOut());
 
             EventBus<FadeInRequestedEvent>.Register(_fadeInBinding);
             EventBus<FadeOutRequestedEvent>.Register(_fadeOutBinding);
-        }
-
-        ~FadeService()
-        {
-            // Em tempo de execução normal, o serviço vive até o fim do jogo.
-            // Este destrutor é apenas um fallback de limpeza.
-            EventBus<FadeInRequestedEvent>.Unregister(_fadeInBinding);
-            EventBus<FadeOutRequestedEvent>.Unregister(_fadeOutBinding);
         }
 
         public void RequestFadeIn()
@@ -56,6 +48,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             if (_isFading)
                 return;
 
+            // Fade até preto (alpha = 1). Mantemos a cena de fade carregada.
             _runner.Run(FadeRoutine(1f));
         }
 
@@ -70,6 +63,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             if (_isFading)
                 return;
 
+            // Fade até transparente (alpha = 0). Depois descarregamos a cena de fade.
             _runner.Run(FadeRoutine(0f));
         }
 
@@ -110,11 +104,23 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 Debug.Log("[FadeService] FadeController localizado.");
             }
 
-            // Executa o fade na UI
-            yield return _fadeController.FadeTo(targetAlpha);
+            if (_fadeController != null)
+            {
+                // Executa o fade com a duração configurada no FadeController (in/out).
+                yield return _fadeController.FadeTo(targetAlpha);
+            }
+            else
+            {
+                Debug.LogWarning("[FadeService] FadeController nulo em FadeRoutine.");
+            }
 
-            // Após completar, descarrega a cena de fade para não manter overlay o tempo todo.
-            if (_isLoaded)
+            // Regra de descarregamento:
+            // - Se estamos fazendo FadeIn (targetAlpha ~ 1): mantemos a cena de fade carregada
+            //   para cobrir o carregamento / descarregamento das outras cenas.
+            // - Se estamos fazendo FadeOut (targetAlpha ~ 0): após clarear removemos a FadeScene.
+            bool shouldUnloadAfter = _isLoaded && targetAlpha <= 0f + 0.001f;
+
+            if (shouldUnloadAfter)
             {
                 Debug.Log("[FadeService] Unloading cena FadeScene...");
                 var unloadOp = SceneManager.UnloadSceneAsync(FadeSceneName);

@@ -6,7 +6,10 @@ namespace _ImmersiveGames.Scripts.FadeSystem
     public class FadeController : MonoBehaviour
     {
         [SerializeField] private CanvasGroup canvasGroup;
-        [SerializeField] private float fadeDuration = 0.5f;
+
+        [Header("Fade Durations")]
+        [SerializeField] private float fadeInDuration = 0.5f;
+        [SerializeField] private float fadeOutDuration = 0.5f;
 
         private void Awake()
         {
@@ -32,23 +35,37 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             return FadeTo(0f);
         }
 
+        /// <summary>
+        /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída).
+        /// </summary>
         public IEnumerator FadeTo(float target)
         {
             if (canvasGroup == null)
+                yield break;
+
+            float current = canvasGroup.alpha;
+
+            // Se estamos aumentando o alpha, usamos a duração de FadeIn;
+            // se estamos diminuindo, usamos a duração de FadeOut.
+            float duration = target > current ? fadeInDuration : fadeOutDuration;
+
+            // Proteção para duração zero ou negativa: aplica direto.
+            if (duration <= 0f)
             {
-                Debug.LogError("[FadeController] CanvasGroup nulo. Abortando fade.");
+                canvasGroup.alpha = target;
                 yield break;
             }
 
-            float start = canvasGroup.alpha;
+            float start = current;
             float time = 0f;
 
-            Debug.Log($"[FadeController] Iniciando Fade para alpha = {target}");
+            Debug.Log($"[FadeController] Iniciando Fade para alpha = {target} (dur={duration})");
 
-            while (time < fadeDuration)
+            while (time < duration)
             {
                 time += Time.unscaledDeltaTime;
-                canvasGroup.alpha = Mathf.Lerp(start, target, time / fadeDuration);
+                float t = Mathf.Clamp01(time / duration);
+                canvasGroup.alpha = Mathf.Lerp(start, target, t);
                 yield return null;
             }
 

@@ -88,18 +88,33 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
 
+            // Auto-load apenas quando necessário:
+            // - Se a GameplayScene já está carregada e a UIScene não, carregamos só a UI com Fade.
+            // - Em qualquer outro caso (Menu → Gameplay+UI, etc.), não fazemos nada aqui para evitar duplo fade.
             if (DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
             {
                 var ui = GameConfig.UIScene;
                 var gameplay = GameConfig.GameplayScene;
 
-                DebugUtility.LogVerbose<GameManager>($"Carregando GameplayScene + UIScene com Fade...");
-                StartCoroutine(loader.LoadScenesWithFadeAsync(
-                    scenesToLoad: new[]
-                    {
-                        new SceneLoadData(gameplay, LoadSceneMode.Single),
-                        new SceneLoadData(ui, LoadSceneMode.Additive)
-                    }));
+                bool gameplayLoaded = loader.IsSceneLoaded(gameplay);
+                bool uiLoaded = loader.IsSceneLoaded(ui);
+
+                if (gameplayLoaded && !uiLoaded)
+                {
+                    DebugUtility.LogVerbose<GameManager>(
+                        $"GameplayScene ({gameplay}) já carregada; carregando apenas UIScene ({ui}) com Fade...");
+
+                    StartCoroutine(loader.LoadScenesWithFadeAsync(
+                        scenesToLoad: new[]
+                        {
+                            new SceneLoadData(ui, LoadSceneMode.Additive)
+                        }));
+                }
+                else
+                {
+                    DebugUtility.LogVerbose<GameManager>(
+                        $"GameManager Awake - auto-load de cena ignorado. GameplayLoaded={gameplayLoaded}, UILoaded={uiLoaded}");
+                }
             }
 
             Initialize();
