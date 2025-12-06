@@ -7,10 +7,9 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
-    /// Emissor de áudio reutilizável por entidade que delega a reprodução para o serviço global
-    /// de SFX. Componentes de gameplay devem injetar seus próprios <see cref="SoundData"/> e
-    /// chamar os métodos públicos para reproduzir efeitos sonoros locais sem acoplar a pooling
-    /// ou a objetos temporários.
+    /// Emissor de áudio reutilizável por entidade. Encaminha a reprodução de SFX para o
+    /// serviço global de áudio (IAudioSfxService), mantendo a configuração padrão
+    /// definida via <see cref="AudioConfig"/>.
     /// </summary>
     [DisallowMultipleComponent]
     public class EntityAudioEmitter : MonoBehaviour
@@ -31,19 +30,32 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
             }
-        }
-
-        /// <summary>
-        /// Reproduz um efeito sonoro local delegando ao serviço global de SFX.
-        /// </summary>
-        public void Play(SoundData soundData, AudioContext ctx, float fadeInSeconds = 0f)
-        {
-            if (soundData == null || soundData.clip == null) return;
 
             if (_sfxService == null)
             {
                 DebugUtility.LogWarning<EntityAudioEmitter>(
-                    $"[{name}] IAudioSfxService não encontrado — áudio não será reproduzido.",
+                    $"[{name}] IAudioSfxService não encontrado — nenhum SFX será reproduzido.",
+                    this);
+            }
+        }
+
+        /// <summary>
+        /// Reproduz um efeito sonoro local usando o serviço global de SFX.
+        /// </summary>
+        public void Play(SoundData soundData, AudioContext ctx, float fadeInSeconds = 0f)
+        {
+            if (soundData == null || soundData.clip == null)
+            {
+                DebugUtility.LogWarning<EntityAudioEmitter>(
+                    $"[{name}] SoundData inválido ao reproduzir SFX.",
+                    this);
+                return;
+            }
+
+            if (_sfxService == null)
+            {
+                DebugUtility.LogWarning<EntityAudioEmitter>(
+                    $"[{name}] IAudioSfxService não disponível — som não será reproduzido.",
                     this);
                 return;
             }
@@ -52,16 +64,17 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
 
         /// <summary>
-        /// Helper para reproduzir um som na própria posição do emissor, respeitando o uso de spatial blend padrão.
+        /// Helper para reproduzir um som na posição do emissor respeitando as configurações padrão.
         /// </summary>
         public void PlayAtSelf(SoundData soundData, float fadeInSeconds = 0f)
         {
-            var ctx = AudioContext.Default(transform.position, UsesSpatialBlend);
+            var useSpatial = defaults?.useSpatialBlend ?? true;
+            var ctx = AudioContext.Default(transform.position, useSpatial);
             Play(soundData, ctx, fadeInSeconds);
         }
 
         /// <summary>
-        /// Método legado mantido para compatibilidade, mas agora delegando ao serviço global.
+        /// Sobrecarga para compatibilidade legada.
         /// </summary>
         public void Play(SoundData soundData, float fadeInSeconds = 0f)
         {

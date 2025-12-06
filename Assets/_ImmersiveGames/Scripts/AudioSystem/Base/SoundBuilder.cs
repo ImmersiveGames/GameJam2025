@@ -1,20 +1,18 @@
-﻿using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
-    /// SoundBuilder que usa pool local do controller.
+    /// SoundBuilder que delega reprodução para o serviço global de SFX.
     /// </summary>
     public class SoundBuilder
     {
-        private readonly ObjectPool _pool;
-        private readonly IAudioMathService _math;
-        private readonly IAudioVolumeService _volumeService;
-        private readonly AudioServiceSettings _settings;
-        private readonly AudioConfig _audioConfig;
+        private readonly IAudioSfxService _sfxService;
 
         private SoundData _sound;
         private Vector3 _position = Vector3.zero;
@@ -23,13 +21,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private float _volumeMultiplier = 1f;
         private float _fadeIn;
 
-        public SoundBuilder(ObjectPool pool, IAudioMathService math, IAudioVolumeService volumeService, AudioServiceSettings settings, AudioConfig audioCfg)
+        public SoundBuilder() : this(ResolveSfxService())
         {
-            _pool = pool;
-            _math = math;
-            _volumeService = volumeService;
-            _settings = settings;
-            _audioConfig = audioCfg;
+        }
+
+        // Assinatura antiga preservada para compatibilidade, parâmetros são ignorados.
+        public SoundBuilder(ObjectPool _, IAudioMathService __, IAudioVolumeService ___, AudioServiceSettings ____, AudioConfig _____)
+            : this()
+        {
+        }
+
+        public SoundBuilder(IAudioSfxService sfxService)
+        {
+            _sfxService = sfxService;
         }
 
         public SoundBuilder WithSoundData(SoundData sd)
@@ -37,22 +41,26 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _sound = sd;
             return this;
         }
+
         public SoundBuilder AtPosition(Vector3 pos, bool spatial = true)
         {
             _position = pos;
             _useSpatial = spatial;
             return this;
         }
+
         public SoundBuilder WithRandomPitch(bool v = true)
         {
             _randomPitch = v;
             return this;
         }
+
         public SoundBuilder WithVolumeMultiplier(float m)
         {
             _volumeMultiplier = m;
             return this;
         }
+
         public SoundBuilder WithFadeIn(float seconds)
         {
             _fadeIn = seconds;
@@ -61,34 +69,45 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void Play()
         {
-            if (_sound == null || _pool == null) return;
-            var ctx = AudioContext.Default(_position, _useSpatial, _volumeMultiplier);
+            if (_sound == null || _sound.clip == null)
+            {
+                DebugUtility.LogWarning(typeof(SoundBuilder), "SoundBuilder.Play chamado com SoundData inválido.");
+                return;
+            }
 
-            var emitter = _pool.GetObject(_position, null, null, false) as SoundEmitter;
-            if (emitter == null) return;
+            if (_sfxService == null)
+            {
+                DebugUtility.LogWarning(typeof(SoundBuilder), "IAudioSfxService não encontrado. Som não será reproduzido.");
+                return;
+            }
 
-            emitter.Initialize(_sound);
-            emitter.SetSpatialBlend(_useSpatial ? _sound.spatialBlend : 0f);
-            emitter.SetMaxDistance(_audioConfig != null ? _audioConfig.maxDistance : _sound.maxDistance);
-            emitter.SetMixerGroup(_sound.mixerGroup ?? _audioConfig?.defaultMixerGroup);
+            var context = AudioContext.Default(_position, _useSpatial, _volumeMultiplier);
 
-            float master = _settings != null ? _settings.masterVolume : 1f;
-            float catVol = _settings != null ? _settings.sfxVolume : 1f;
-            float catMul = _settings != null ? _settings.sfxMultiplier : 1f;
-            float configDefault = _audioConfig != null ? _audioConfig.defaultVolume : 1f;
+            bool originalRandomPitch = _sound.randomPitch;
+            if (_randomPitch && !_sound.randomPitch)
+            {
+                _sound.randomPitch = true;
+            }
 
-            float finalVol = _volumeService?.CalculateSfxVolume(_sound, _audioConfig, _settings, ctx) ??
-                             _math?.CalculateFinalVolume(_sound.volume, configDefault, catVol, catMul, master, ctx.volumeMultiplier, ctx.volumeOverride) ??
-                             Mathf.Clamp01(_sound.volume * configDefault * catVol * master * ctx.volumeMultiplier);
+            _sfxService.PlayOneShot(_sound, context, _fadeIn);
 
-            float multiplier = _sound.volume > 0f ? Mathf.Clamp01(finalVol / _sound.volume) : Mathf.Clamp01(finalVol);
-            emitter.SetVolumeMultiplier(multiplier);
+            if (_sound.randomPitch != originalRandomPitch)
+            {
+                _sound.randomPitch = originalRandomPitch;
+            }
+        }
 
-            if (_randomPitch || _sound.randomPitch) emitter.WithRandomPitch(-_sound.pitchVariation, _sound.pitchVariation);
+        private static IAudioSfxService ResolveSfxService()
+        {
+            AudioSystemInitializer.EnsureAudioSystemInitialized();
 
-            emitter.Activate(_position);
-            if (_fadeIn > 0f) emitter.PlayWithFade(multiplier, _fadeIn);
-            else emitter.Play();
+            if (DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal(out IAudioSfxService service))
+            {
+                return service;
+            }
+
+            DebugUtility.LogWarning(typeof(SoundBuilder), "IAudioSfxService não pôde ser resolvido via DependencyManager.");
+            return null;
         }
     }
 }
