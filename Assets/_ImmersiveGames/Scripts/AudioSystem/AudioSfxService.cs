@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Reflection;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Pool;
@@ -129,8 +128,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             ConfigurePoolableData(poolableData, sound, emitterPrefab);
 
-            var poolData = ScriptableObject.CreateInstance<SoundEmitterPoolData>();
-            ConfigurePoolData(poolData, sound, poolableData);
+            var template = LoadPoolTemplate();
+            var poolData = template != null
+                ? ScriptableObject.Instantiate(template)
+                : ScriptableObject.CreateInstance<SoundEmitterPoolData>();
+
+            ConfigurePoolData(poolData, template, sound, poolableData);
 
             return poolData;
         }
@@ -149,27 +152,62 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             return fallback;
         }
 
-        private static void ConfigurePoolData(SoundEmitterPoolData poolData, SoundData sound, SoundEmitterPoolableData poolable)
+        private static SoundEmitterPoolData LoadPoolTemplate()
         {
-            SetField(poolData, "objectName", sound.name ?? sound.clip?.name ?? "SoundEmitter");
-            SetField(poolData, "initialPoolSize", 3);
-            SetField(poolData, "canExpand", true);
-            SetField(poolData, "objectConfigs", new PoolableObjectData[] { poolable });
-            SetField(poolData, "reconfigureOnReturn", false);
-            SetField(poolData, "maxSoundInstances", poolData.MaxSoundInstances > 0 ? poolData.MaxSoundInstances : 30);
+            return Resources.Load<SoundEmitterPoolData>("Audio/SoundEmitters/PD_SoundEmitter");
+        }
+
+        private static void ConfigurePoolData(
+            SoundEmitterPoolData poolData,
+            SoundEmitterPoolData template,
+            SoundData sound,
+            SoundEmitterPoolableData poolable)
+        {
+            var initialPoolSize = Mathf.Max(template?.InitialPoolSize ?? 3, 1);
+            var maxSoundInstances = Mathf.Max(template?.MaxSoundInstances ?? 30, initialPoolSize);
+            var config = new PoolDataConfig
+            {
+                objectName = sound.name ?? sound.clip?.name ?? template?.ObjectName ?? "SoundEmitter",
+                initialPoolSize = initialPoolSize,
+                canExpand = template?.CanExpand ?? true,
+                objectConfigs = new PoolableObjectData[] { poolable },
+                reconfigureOnReturn = template?.ReconfigureOnReturn ?? false,
+                maxSoundInstances = maxSoundInstances
+            };
+
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(config), poolData);
         }
 
         private static void ConfigurePoolableData(SoundEmitterPoolableData poolable, SoundData sound, GameObject prefab)
         {
-            SetField(poolable, "objectName", sound.name ?? sound.clip?.name ?? "SoundEmitter");
-            SetField(poolable, "prefab", prefab);
-            SetField(poolable, "lifetime", 0f);
+            float fallbackLifetime = Mathf.Max(sound.clip != null ? sound.clip.length : 1f, 0.1f);
+            var config = new PoolableObjectConfig
+            {
+                objectName = sound.name ?? sound.clip?.name ?? "SoundEmitter",
+                prefab = prefab,
+                lifetime = fallbackLifetime
+            };
+
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(config), poolable);
         }
 
-        private static void SetField<T>(object target, string fieldName, T value)
+        [System.Serializable]
+        private class PoolDataConfig
         {
-            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-            field?.SetValue(target, value);
+            public string objectName;
+            public int initialPoolSize;
+            public bool canExpand;
+            public PoolableObjectData[] objectConfigs;
+            public bool reconfigureOnReturn;
+            public int maxSoundInstances;
+        }
+
+        [System.Serializable]
+        private class PoolableObjectConfig
+        {
+            public string objectName;
+            public GameObject prefab;
+            public float lifetime;
         }
 
         private class SoundEmitterHandle : IAudioHandle
