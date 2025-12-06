@@ -6,6 +6,8 @@ using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.SceneManagement.Core;
+using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -15,7 +17,6 @@ using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
-
     public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private static bool _initialized;
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
 
-            // Garantir criação do DependencyManager
+            // Garante criação do DependencyManager
             if (!DependencyManager.HasInstance)
             {
                 var _ = DependencyManager.Provider; // força criação
@@ -43,7 +44,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 // Serviços "puros" que não dependem de outros
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
-                
+
                 // CORRETO: Registrar o CoroutineRunner primeiro
                 EnsureGlobal<ICoroutineRunner>(() =>
                 {
@@ -51,8 +52,63 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     Object.DontDestroyOnLoad(go);
                     return go.AddComponent<GlobalCoroutineRunner>();
                 });
+
+                // Fade e loader legado (ainda usado por sistemas antigos)
                 EnsureGlobal<IFadeService>(() => new FadeService());
                 EnsureGlobal<ISceneLoaderService>(() => new SceneLoaderService());
+
+                // --- Novo pipeline moderno de Scene Management ---
+                // Registramos o core loader baseado em Task, o planner de contexto
+                // e o serviço de transição de cenas usado pelo GameManager e por outros sistemas.
+
+                EnsureGlobal<ISceneLoader>(() =>
+                {
+                    // Loader moderno, baseado em Task (SceneLoaderCore)
+                    return new SceneLoaderCore();
+                });
+
+                EnsureGlobal<ISceneTransitionPlanner>(() =>
+                {
+                    // Planejador simples de contexto de transição (carregar/alvo/unload/fade)
+                    return new SimpleSceneTransitionPlanner();
+                });
+
+                EnsureGlobal<IFadeAwaiter>(() =>
+                {
+                    // IFadeAwaiter encapsula IFadeService + ICoroutineRunner em uma API baseada em Task.
+                    var provider = DependencyManager.Provider;
+
+                    provider.TryGetGlobal(out IFadeService fadeService);
+                    provider.TryGetGlobal(out ICoroutineRunner coroutineRunner);
+
+                    if (fadeService == null || coroutineRunner == null)
+                    {
+                        DebugUtility.LogWarning<DependencyBootstrapper>(
+                            "[SceneTransition] Não foi possível criar FadeAwaiter: IFadeService ou ICoroutineRunner não encontrados. " +
+                            "Transições continuarão, mas sem Fade assíncrono.");
+                        return null;
+                    }
+
+                    return new FadeAwaiter(fadeService, coroutineRunner);
+                });
+
+                EnsureGlobal<ISceneTransitionService>(() =>
+                {
+                    var provider = DependencyManager.Provider;
+
+                    provider.TryGetGlobal(out ISceneLoader sceneLoader);
+                    provider.TryGetGlobal(out IFadeAwaiter fadeAwaiter);
+
+                    if (sceneLoader == null)
+                    {
+                        DebugUtility.LogWarning<DependencyBootstrapper>(
+                            "[SceneTransition] ISceneLoader não encontrado ao criar SceneTransitionService. " +
+                            "Transições de cena não funcionarão.");
+                        return null;
+                    }
+
+                    return new SceneTransitionService(sceneLoader, fadeAwaiter);
+                });
 
                 // ResourceInitializationManager - singleton próprio
                 var initManager = ResourceInitializationManager.Instance;
@@ -115,7 +171,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
         }
 
-
         private static void RegisterEventBuses()
         {
             try
@@ -129,13 +184,13 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
 
                     // verifica se já existe um registro para esse tipo
-                    var registerMethod = typeof(DependencyManager).GetMethod("TryGetGlobal", BindingFlags.Instance | BindingFlags.Public);
-                    var genericTryGet = registerMethod?.MakeGenericMethod(busInterfaceType);
+                    var tryGetMethod = typeof(DependencyManager)
+                        .GetMethod("TryGetGlobal", BindingFlags.Instance | BindingFlags.Public);
+                    var genericTryGet = tryGetMethod?.MakeGenericMethod(busInterfaceType);
 
                     bool exists = false;
                     if (genericTryGet != null)
                     {
-                        // invoca TryGetGlobal<T>(out T existing)
                         var parameters = new object[] { null };
                         var result = (bool)genericTryGet.Invoke(DependencyManager.Provider, parameters);
                         exists = result;
@@ -144,9 +199,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     if (!exists)
                     {
                         object busInstance = Activator.CreateInstance(busImplType);
-                        var registerMethodGeneric = typeof(DependencyManager).GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
-                        var genericRegister = registerMethodGeneric?.MakeGenericMethod(busInterfaceType);
+                        var registerMethod = typeof(DependencyManager)
+                            .GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
+                        var genericRegister = registerMethod?.MakeGenericMethod(busInterfaceType);
                         genericRegister?.Invoke(DependencyManager.Provider, new[] { busInstance });
+
                         DebugUtility.Log<DependencyBootstrapper>($"Registered EventBus for {eventType.Name}");
                     }
                 }
