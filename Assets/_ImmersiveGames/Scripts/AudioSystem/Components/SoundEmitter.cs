@@ -143,10 +143,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 yield break;
             }
 
-            yield return new WaitWhile(() =>
-                _audioSource != null &&
-                _audioSource &&
-                _audioSource.isPlaying);
+            while (_audioSource != null && _audioSource && _audioSource.isPlaying)
+            {
+                yield return null;
+            }
 
             ReturnToPool();
         }
