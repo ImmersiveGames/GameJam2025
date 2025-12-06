@@ -34,10 +34,15 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void Start()
         {
-            if (_audioService == null)
+            if (!IsServiceValid(_audioService))
             {
-                DebugUtility.LogWarning<GameAudioManager>("IAudioService não injetado — verifique a inicialização do AudioManager.");
-                return;
+                TryResolveAudioService();
+
+                if (!IsServiceValid(_audioService))
+                {
+                    DebugUtility.LogWarning<GameAudioManager>("IAudioService não injetado — verifique a inicialização do AudioManager.");
+                    return;
+                }
             }
 
             if (mainMenuBGM != null && mainMenuBGM.clip != null)
@@ -48,6 +53,26 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             {
                 DebugUtility.LogWarning<GameAudioManager>("BGM não configurado — verifique SoundData.");
             }
+        }
+
+        private void TryResolveAudioService()
+        {
+            if (DependencyManager.Provider != null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _audioService);
+            }
+        }
+
+        private static bool IsServiceValid(IAudioService service)
+        {
+            if (service == null) return false;
+
+            if (service is Object unityObj)
+            {
+                return unityObj;
+            }
+
+            return true;
         }
 
 #if UNITY_EDITOR

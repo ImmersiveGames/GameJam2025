@@ -38,6 +38,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private void Awake() => Initialize();
 
+        private void OnDestroy()
+        {
+            IsInitialized = false;
+        }
+
         private void Initialize()
         {
             if (IsInitialized) return;
@@ -54,7 +59,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             _volumeService ??= new AudioVolumeService(_math);
             _resolvedSettings ??= settings;
 
-            DependencyManager.Provider?.RegisterGlobal<IAudioService>(this);
+            DependencyManager.Provider?.RegisterGlobal<IAudioService>(this, true);
 
             // torna settings disponível via DI se for configurado
             if (settings != null)
@@ -63,6 +68,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             EnsureBgmAudioSource();
+
+            DontDestroyOnLoad(gameObject);
 
             IsInitialized = true;
             DebugUtility.Log<AudioManager>(
@@ -106,7 +113,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         public void StopBGM(float fadeOutDuration = 0f)
         {
-            if (bgmAudioSource == null || !bgmAudioSource.isPlaying) return;
+            if (!IsSourceValid(bgmAudioSource) || !bgmAudioSource.isPlaying) return;
 
             if (_bgmFadeCoroutine != null) StopCoroutine(_bgmFadeCoroutine);
 
