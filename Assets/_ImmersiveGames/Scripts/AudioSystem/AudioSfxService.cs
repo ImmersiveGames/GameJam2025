@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Pool;
@@ -9,7 +8,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 {
     /// <summary>
     /// Serviço global de SFX baseado em pooling de <see cref="SoundEmitter"/>.
-    /// Mantém um pool por SoundData e retorna handles seguros para controlar a reprodução.
+    /// Mantém um pool global e retorna handles seguros para controlar a reprodução.
     /// </summary>
     public class AudioSfxService : IAudioSfxService
     {
@@ -17,7 +16,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private readonly AudioServiceSettings _serviceSettings;
         private readonly AudioConfig _defaultConfig;
 
-        private readonly Dictionary<SoundData, ObjectPool> _pools = new();
+        private ObjectPool _sfxPool;
 
         private static readonly NullAudioHandle NullHandle = new();
 
@@ -43,11 +42,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (sound == null || sound.clip == null)
                 return NullHandle;
 
-            var pool = GetOrCreatePool(sound);
-            if (pool == null)
+            EnsurePoolInitialized();
+            if (_sfxPool == null)
                 return NullHandle;
 
-            var poolable = pool.GetObject(context.position, null, null, false) as SoundEmitter;
+            var poolable = _sfxPool.GetObject(context.position, null, null, false) as SoundEmitter;
             if (poolable == null)
                 return NullHandle;
 
@@ -92,122 +91,30 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             return new SoundEmitterHandle(poolable);
         }
 
-        private ObjectPool GetOrCreatePool(SoundData sound)
+        private void EnsurePoolInitialized()
         {
-            if (_pools.TryGetValue(sound, out var existing) && existing != null)
-                return existing;
+            if (_sfxPool != null)
+                return;
 
-            var poolRoot = AudioRuntimeRoot.Root;
-            if (poolRoot == null)
-                return null;
-
-            var poolGo = new GameObject($"SfxPool_{sound.name ?? sound.clip?.name ?? "SoundEmitter"}");
-            poolGo.transform.SetParent(poolRoot, false);
-
-            var pool = poolGo.AddComponent<ObjectPool>();
-            var poolData = CreatePoolData(sound);
-            if (poolData == null)
+            var poolManager = PoolManager.Instance;
+            if (poolManager == null)
             {
-                Object.Destroy(poolGo);
-                return null;
+                Debug.LogError("AudioSfxService: PoolManager instance not found. Unable to initialize SFX pool.");
+                return;
             }
 
-            pool.SetData(poolData);
-            pool.Initialize();
-
-            _pools[sound] = pool;
-            return pool;
-        }
-
-        private SoundEmitterPoolData CreatePoolData(SoundData sound)
-        {
-            var poolableData = ScriptableObject.CreateInstance<SoundEmitterPoolableData>();
-            var emitterPrefab = LoadEmitterPrefab();
-            if (emitterPrefab == null)
-                return null;
-
-            ConfigurePoolableData(poolableData, sound, emitterPrefab);
-
-            var template = LoadPoolTemplate();
-            var poolData = template != null
-                ? ScriptableObject.Instantiate(template)
-                : ScriptableObject.CreateInstance<SoundEmitterPoolData>();
-
-            ConfigurePoolData(poolData, template, sound, poolableData);
-
-            return poolData;
-        }
-
-        private static GameObject LoadEmitterPrefab()
-        {
-            var prefab = Resources.Load<GameObject>("Audio/Prefabs/SoundEmitter");
-            if (prefab != null)
-                return prefab;
-
-            var fallback = new GameObject("SoundEmitterPrefab");
-            fallback.AddComponent<AudioSource>();
-            fallback.AddComponent<SoundEmitter>();
-            fallback.SetActive(false);
-            fallback.hideFlags = HideFlags.HideAndDontSave;
-            return fallback;
-        }
-
-        private static SoundEmitterPoolData LoadPoolTemplate()
-        {
-            return Resources.Load<SoundEmitterPoolData>("Audio/SoundEmitters/PD_SoundEmitter");
-        }
-
-        private static void ConfigurePoolData(
-            SoundEmitterPoolData poolData,
-            SoundEmitterPoolData template,
-            SoundData sound,
-            SoundEmitterPoolableData poolable)
-        {
-            var initialPoolSize = Mathf.Max(template?.InitialPoolSize ?? 3, 1);
-            var maxSoundInstances = Mathf.Max(template?.MaxSoundInstances ?? 30, initialPoolSize);
-            var config = new PoolDataConfig
+            var poolData = Resources.Load<SoundEmitterPoolData>("Audio/SoundEmitters/PD_SoundEmitter");
+            if (poolData == null)
             {
-                objectName = sound.name ?? sound.clip?.name ?? template?.ObjectName ?? "SoundEmitter",
-                initialPoolSize = initialPoolSize,
-                canExpand = template?.CanExpand ?? true,
-                objectConfigs = new PoolableObjectData[] { poolable },
-                reconfigureOnReturn = template?.ReconfigureOnReturn ?? false,
-                maxSoundInstances = maxSoundInstances
-            };
+                Debug.LogError("AudioSfxService: SoundEmitterPoolData not found at 'Audio/SoundEmitters/PD_SoundEmitter'.");
+                return;
+            }
 
-            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(config), poolData);
-        }
-
-        private static void ConfigurePoolableData(SoundEmitterPoolableData poolable, SoundData sound, GameObject prefab)
-        {
-            float fallbackLifetime = Mathf.Max(sound.clip != null ? sound.clip.length : 1f, 0.1f);
-            var config = new PoolableObjectConfig
+            _sfxPool = poolManager.RegisterPool(poolData);
+            if (_sfxPool == null)
             {
-                objectName = sound.name ?? sound.clip?.name ?? "SoundEmitter",
-                prefab = prefab,
-                lifetime = fallbackLifetime
-            };
-
-            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(config), poolable);
-        }
-
-        [System.Serializable]
-        private class PoolDataConfig
-        {
-            public string objectName;
-            public int initialPoolSize;
-            public bool canExpand;
-            public PoolableObjectData[] objectConfigs;
-            public bool reconfigureOnReturn;
-            public int maxSoundInstances;
-        }
-
-        [System.Serializable]
-        private class PoolableObjectConfig
-        {
-            public string objectName;
-            public GameObject prefab;
-            public float lifetime;
+                Debug.LogError("AudioSfxService: Failed to register SFX pool via PoolManager.");
+            }
         }
 
         private class SoundEmitterHandle : IAudioHandle
