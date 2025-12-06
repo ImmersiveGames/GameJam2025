@@ -128,8 +128,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 933743373}
-  - component: {fileID: 933743375}
   - component: {fileID: 933743374}
+  - component: {fileID: 933743375}
   m_Layer: 0
   m_Name: BootstrapManager
   m_TagString: Untagged
@@ -161,10 +161,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 933743372}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 375f02a8442f42edaddf4412e0a3fb16, type: 3}
+  m_Script: {fileID: 11500000, guid: 8137bf62280e48458710ee57c8031052, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  AutoUnparentOnAwake: 1
+  gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
+  debugManager: {fileID: 933743375}
+  worldEater: {fileID: 0}
 --- !u!114 &933743375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,9 +176,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 933743372}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 892c577d2ec043b59e1ebceb19fe1050, type: 3}
+  m_Script: {fileID: 11500000, guid: 3e771a0a9224406a878217f5d9df5b11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  applyOnAwake: 1
+  globalDebugEnabled: 1
+  verboseInEditor: 1
+  verboseInPlayer: 0
+  fallbacksInEditor: 1
+  fallbacksInPlayer: 0
+  repeatedCallVerboseInEditor: 1
+  repeatedCallVerboseInPlayer: 0
+  editorDefaultLevel: 3
+  playerDefaultLevel: 2
+  honorGameConfigDebugMode: 1
+  debugModeLevel: 4
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

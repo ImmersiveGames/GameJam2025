@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.UI
         [SerializeField] Transform indicatorObject;
         [SerializeField] Sprite eaterIcon;
 
-        [Inject] private IGameManager _gameManager;
+        [Inject] private IGameplayManager _gameplayManager;
 
         private Transform _eaterTransform;
         private bool _hasSpawnedPlanets;
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.Scripts.UI
 
         private void Start()
         {
-            _eaterTransform = (_gameManager ?? GameManager.Instance)?.WorldEater;
+            _eaterTransform = (_gameplayManager ?? GameplayManager.Instance)?.WorldEater;
             SpawnIndicator(_eaterTransform, eaterIcon, false);
             SpawnPlanetsIndicators();
         }

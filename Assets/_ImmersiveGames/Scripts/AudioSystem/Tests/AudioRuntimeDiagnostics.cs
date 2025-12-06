@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             {
                 // fallback: tenta encontrar qualquer AudioSource com tag/nome sugestivo,
                 // mas sem inventar muita lógica. Isso é apenas um fallback de debug.
-                var allSources = FindObjectsOfType<AudioSource>();
+                var allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
                 foreach (var src in allSources)
                 {
                     if (!src.isActiveAndEnabled) continue;
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         {
             _emittersSnapshot.Clear();
 
-            var emitters = FindObjectsOfType<SoundEmitter>();
+            var emitters = FindObjectsByType<SoundEmitter>(FindObjectsSortMode.None);
             _sfxEmitterTotal = emitters.Length;
             _sfxEmitterPlaying = 0;
 

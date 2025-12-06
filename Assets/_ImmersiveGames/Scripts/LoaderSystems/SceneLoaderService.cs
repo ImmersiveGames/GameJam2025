@@ -10,6 +10,7 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
     public class SceneLoaderService : ISceneLoaderService
     {
         private readonly IFadeService _fade;
+        private bool _transitionInProgress;
 
         public SceneLoaderService()
         {
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
             }
             else
             {
-                Debug.LogWarning("[SceneLoaderService] FadeService não encontrado.");
+                Debug.LogWarning("[SceneLoaderService] FadeService não encontrado. Transições ocorrerão sem fade.");
             }
         }
 
@@ -40,7 +41,6 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
 
                     yield return op;
 
-                    // Garante que cena Single se torne ativa
                     if (sceneData.LoadMode == LoadSceneMode.Single)
                     {
                         var loaded = SceneManager.GetSceneByName(sceneData.SceneName);
@@ -62,7 +62,6 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
             {
                 if (IsSceneLoaded(name))
                 {
-                    // Proteção: só descarrega se não for a cena ativa
                     if (name == active.name)
                     {
                         Debug.LogWarning($"[SceneLoaderService] Ignorando descarregamento da cena ativa: {name}");
@@ -94,23 +93,38 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
             IEnumerable<SceneLoadData> scenesToLoad,
             IEnumerable<string> scenesToUnload = null)
         {
-            Debug.Log("[SceneLoaderService] Iniciando LoadScenesWithFadeAsync");
-
-            if (_fade != null)
+            if (_transitionInProgress)
             {
-                _fade.RequestFadeIn();
-                yield return new WaitForSecondsRealtime(0.6f);
+                Debug.LogWarning("[SceneLoaderService] Já existe uma transição em andamento. Chamada ignorada.");
+                yield break;
             }
 
-            if (scenesToLoad != null)
-                yield return LoadScenesAsync(scenesToLoad);
+            _transitionInProgress = true;
+            Debug.Log("[SceneLoaderService] Iniciando LoadScenesWithFadeAsync");
 
-            if (scenesToUnload != null)
-                yield return UnloadScenesAsync(scenesToUnload);
-
-            if (_fade != null)
+            try
             {
-                _fade.RequestFadeOut();
+                if (_fade != null)
+                {
+                    // Escurece antes de qualquer load/unload
+                    yield return _fade.FadeInAsync();
+                }
+
+                if (scenesToLoad != null)
+                    yield return LoadScenesAsync(scenesToLoad);
+
+                if (scenesToUnload != null)
+                    yield return UnloadScenesAsync(scenesToUnload);
+
+                if (_fade != null)
+                {
+                    // Clareia quando tudo terminou
+                    yield return _fade.FadeOutAsync();
+                }
+            }
+            finally
+            {
+                _transitionInProgress = false;
             }
         }
 

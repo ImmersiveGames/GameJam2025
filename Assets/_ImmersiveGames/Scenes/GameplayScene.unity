@@ -1082,6 +1082,51 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!1 &1825234189
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1825234191}
+  - component: {fileID: 1825234190}
+  m_Layer: 0
+  m_Name: GameplayManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1825234190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825234189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1a08e6f0dbc4ff7b68deaded2699edc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  worldEater: {fileID: 6913646855031215727}
+--- !u!4 &1825234191
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1825234189}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1849846772
 GameObject:
   m_ObjectHideFlags: 0
@@ -1177,12 +1222,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2009245416}
-  - component: {fileID: 2009245415}
-  - component: {fileID: 2009245422}
   - component: {fileID: 2009245418}
   - component: {fileID: 2009245419}
   - component: {fileID: 2009245420}
   - component: {fileID: 2009245421}
+  - component: {fileID: 2009245422}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1190,21 +1234,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2009245415
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2009245414}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8137bf62280e48458710ee57c8031052, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
-  debugManager: {fileID: 2009245422}
-  worldEater: {fileID: 6913646855031215727}
 --- !u!4 &2009245416
 Transform:
   m_ObjectHideFlags: 0
@@ -1299,21 +1328,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2009245414}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e771a0a9224406a878217f5d9df5b11, type: 3}
+  m_Script: {fileID: 11500000, guid: c1a08e6f0dbc4ff7b68deaded2699edc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  applyOnAwake: 1
-  globalDebugEnabled: 1
-  verboseInEditor: 1
-  verboseInPlayer: 0
-  fallbacksInEditor: 1
-  fallbacksInPlayer: 0
-  repeatedCallVerboseInEditor: 1
-  repeatedCallVerboseInPlayer: 0
-  editorDefaultLevel: 3
-  playerDefaultLevel: 2
-  honorGameConfigDebugMode: 1
-  debugModeLevel: 4
+  worldEater: {fileID: 6913646855031215727}
 --- !u!1 &2013597641
 GameObject:
   m_ObjectHideFlags: 0
@@ -1546,6 +1564,7 @@ SceneRoots:
   - {fileID: 1164878014}
   - {fileID: 32286165}
   - {fileID: 2009245416}
+  - {fileID: 1825234191}
   - {fileID: 1849846776}
   - {fileID: 885771673}
   - {fileID: 1467168392}

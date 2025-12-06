@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿﻿using System.Collections;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
 {
@@ -11,7 +12,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         private const string FadeSceneName = "FadeScene";
 
         private FadeController _fadeController;
-        private bool _isLoaded;
+        private bool _isInitializing;
         private bool _isFading;
         private readonly ICoroutineRunner _runner;
 
@@ -37,6 +38,12 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             EventBus<FadeOutRequestedEvent>.Register(_fadeOutBinding);
         }
 
+        ~FadeService()
+        {
+            EventBus<FadeInRequestedEvent>.Unregister(_fadeInBinding);
+            EventBus<FadeOutRequestedEvent>.Unregister(_fadeOutBinding);
+        }
+
         public void RequestFadeIn()
         {
             if (_runner == null)
@@ -45,11 +52,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 return;
             }
 
-            if (_isFading)
-                return;
-
-            // Fade até preto (alpha = 1). Mantemos a cena de fade carregada.
-            _runner.Run(FadeRoutine(1f));
+            _runner.Run(FadeInAsync());
         }
 
         public void RequestFadeOut()
@@ -60,76 +63,117 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 return;
             }
 
-            if (_isFading)
-                return;
-
-            // Fade até transparente (alpha = 0). Depois descarregamos a cena de fade.
-            _runner.Run(FadeRoutine(0f));
+            _runner.Run(FadeOutAsync());
         }
 
-        private IEnumerator FadeRoutine(float targetAlpha)
+        /// <summary>
+        /// Garante que o FadeController persistente foi criado a partir da FadeScene.
+        /// </summary>
+        private IEnumerator EnsureFadeControllerInitialized()
         {
-            _isFading = true;
+            if (_fadeController != null)
+                yield break;
 
-            if (!_isLoaded)
+            if (_isInitializing)
             {
-                Debug.Log("[FadeService] Carregando cena FadeScene...");
-                var loadOp = SceneManager.LoadSceneAsync(FadeSceneName, LoadSceneMode.Additive);
-                if (loadOp != null)
-                    yield return loadOp;
-
-                var scene = SceneManager.GetSceneByName(FadeSceneName);
-                if (!scene.IsValid())
-                {
-                    Debug.LogError("[FadeService] Cena FadeScene não encontrada ou inválida.");
-                    _isFading = false;
-                    yield break;
-                }
-
-                foreach (var root in scene.GetRootGameObjects())
-                {
-                    _fadeController = root.GetComponentInChildren<FadeController>(true);
-                    if (_fadeController != null)
-                        break;
-                }
-
-                if (_fadeController == null)
-                {
-                    Debug.LogError("[FadeService] FadeController não encontrado na cena FadeScene.");
-                    _isFading = false;
-                    yield break;
-                }
-
-                _isLoaded = true;
-                Debug.Log("[FadeService] FadeController localizado.");
+                // Se já está inicializando em outra corrotina, apenas espera.
+                while (_isInitializing)
+                    yield return null;
+                yield break;
             }
 
-            if (_fadeController != null)
+            _isInitializing = true;
+
+            Debug.Log("[FadeService] Carregando FadeScene para inicialização do fade...");
+
+            var loadOp = SceneManager.LoadSceneAsync(FadeSceneName, LoadSceneMode.Additive);
+            if (loadOp != null)
+                yield return loadOp;
+
+            var scene = SceneManager.GetSceneByName(FadeSceneName);
+            if (!scene.IsValid())
             {
-                // Executa o fade com a duração configurada no FadeController (in/out).
-                yield return _fadeController.FadeTo(targetAlpha);
+                Debug.LogError("[FadeService] Cena FadeScene não encontrada ou inválida.");
+                _isInitializing = false;
+                yield break;
+            }
+
+            FadeController prefabController = null;
+            GameObject prefabRoot = null;
+
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                var controller = root.GetComponentInChildren<FadeController>(true);
+                if (controller != null)
+                {
+                    prefabController = controller;
+                    prefabRoot = controller.gameObject;
+                    break;
+                }
+            }
+
+            if (prefabController == null)
+            {
+                Debug.LogError("[FadeService] FadeController não encontrado na FadeScene.");
+                _isInitializing = false;
+                yield break;
+            }
+
+            // Clona o objeto do FadeController para um objeto persistente.
+            var instance = Object.Instantiate(prefabRoot);
+            Object.DontDestroyOnLoad(instance);
+
+            _fadeController = instance.GetComponent<FadeController>();
+
+            // Opcional: descarrega a cena container, já que o overlay persistente está criado.
+            Debug.Log("[FadeService] Descarregando FadeScene container após inicialização.");
+            var unloadOp = SceneManager.UnloadSceneAsync(FadeSceneName);
+            if (unloadOp != null)
+                yield return unloadOp;
+
+            if (_fadeController == null)
+            {
+                Debug.LogError("[FadeService] FadeController do clone persistente é nulo.");
             }
             else
             {
-                Debug.LogWarning("[FadeService] FadeController nulo em FadeRoutine.");
+                Debug.Log("[FadeService] FadeController persistente inicializado com sucesso.");
             }
 
-            // Regra de descarregamento:
-            // - Se estamos fazendo FadeIn (targetAlpha ~ 1): mantemos a cena de fade carregada
-            //   para cobrir o carregamento / descarregamento das outras cenas.
-            // - Se estamos fazendo FadeOut (targetAlpha ~ 0): após clarear removemos a FadeScene.
-            bool shouldUnloadAfter = _isLoaded && targetAlpha <= 0f + 0.001f;
+            _isInitializing = false;
+        }
 
-            if (shouldUnloadAfter)
-            {
-                Debug.Log("[FadeService] Unloading cena FadeScene...");
-                var unloadOp = SceneManager.UnloadSceneAsync(FadeSceneName);
-                if (unloadOp != null)
-                    yield return unloadOp;
+        public IEnumerator FadeInAsync()
+        {
+            // Se já está em um fade, espera terminar (ou poderia cancelar o anterior, se quiser).
+            while (_isFading)
+                yield return null;
 
-                _isLoaded = false;
-                _fadeController = null;
-            }
+            _isFading = true;
+
+            yield return EnsureFadeControllerInitialized();
+
+            if (_fadeController != null)
+                yield return _fadeController.FadeTo(1f);
+            else
+                Debug.LogWarning("[FadeService] FadeInAsync chamado, mas FadeController é nulo.");
+
+            _isFading = false;
+        }
+
+        public IEnumerator FadeOutAsync()
+        {
+            while (_isFading)
+                yield return null;
+
+            _isFading = true;
+
+            yield return EnsureFadeControllerInitialized();
+
+            if (_fadeController != null)
+                yield return _fadeController.FadeTo(0f);
+            else
+                Debug.LogWarning("[FadeService] FadeOutAsync chamado, mas FadeController é nulo.");
 
             _isFading = false;
         }

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             if (canvasGroup != null)
             {
-                // Começa transparente por padrão
+                // Sempre começa transparente
                 canvasGroup.alpha = 0f;
             }
         }
@@ -38,40 +38,36 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         /// <summary>
         /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída).
         /// </summary>
-        public IEnumerator FadeTo(float target)
+        public IEnumerator FadeTo(float targetAlpha)
         {
             if (canvasGroup == null)
                 yield break;
 
-            float current = canvasGroup.alpha;
+            float currentAlpha = canvasGroup.alpha;
+            float duration = targetAlpha > currentAlpha ? fadeInDuration : fadeOutDuration;
 
-            // Se estamos aumentando o alpha, usamos a duração de FadeIn;
-            // se estamos diminuindo, usamos a duração de FadeOut.
-            float duration = target > current ? fadeInDuration : fadeOutDuration;
-
-            // Proteção para duração zero ou negativa: aplica direto.
             if (duration <= 0f)
             {
-                canvasGroup.alpha = target;
+                canvasGroup.alpha = targetAlpha;
                 yield break;
             }
 
-            float start = current;
+            float start = currentAlpha;
             float time = 0f;
 
-            Debug.Log($"[FadeController] Iniciando Fade para alpha = {target} (dur={duration})");
+            Debug.Log($"[FadeController] Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
 
             while (time < duration)
             {
                 time += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(time / duration);
-                canvasGroup.alpha = Mathf.Lerp(start, target, t);
+                canvasGroup.alpha = Mathf.Lerp(start, targetAlpha, t);
                 yield return null;
             }
 
-            canvasGroup.alpha = target;
+            canvasGroup.alpha = targetAlpha;
 
-            Debug.Log($"[FadeController] Fade concluído para alpha = {target}");
+            Debug.Log($"[FadeController] Fade concluído para alpha = {targetAlpha}");
         }
     }
 }

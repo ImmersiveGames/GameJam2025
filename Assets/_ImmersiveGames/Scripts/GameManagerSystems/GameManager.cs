@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -6,6 +8,9 @@ using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.SceneManagement.Core;
+using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,67 +19,85 @@ using UnityUtils;
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     [DefaultExecutionOrder(-101)]
-    public sealed class GameManager : Singleton<GameManager>, IGameManager
+    public sealed class GameManager : PersistentSingleton<GameManager>, IGameManager
     {
         [SerializeField] private GameConfig gameConfig;
         [SerializeField] private DebugManager debugManager;
-        [SerializeField] private Transform worldEater;
-        
+
         public GameConfig GameConfig => gameConfig;
-        public Transform WorldEater => worldEater;
 
         private EventBinding<GameStartEvent> _gameStartEvent;
         private EventBinding<GameStartRequestedEvent> _startRequestedBinding;
         private EventBinding<GamePauseRequestedEvent> _pauseRequestedBinding;
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
+
         private IActorResourceOrchestrator _orchestrator;
         private Coroutine _resetRoutine;
         private bool _resetInProgress;
 
-        private const string StateGuardLogPrefix = "Solicitação ignorada: ciclo de jogo não está em estado de gameplay.";
+        // Infraestrutura do novo pipeline de transição de cenas
+        private ISceneLoader _sceneLoaderCore;
+        private ISceneTransitionPlanner _sceneTransitionPlanner;
+        private ISceneTransitionService _sceneTransitionService;
+        private IFadeAwaiter _fadeAwaiter;
 
-        [ContextMenu("Game Loop/Request Start")]
+        private const string StateGuardLogPrefix =
+            "Solicitação ignorada: ciclo de jogo não está em estado de gameplay.";
+
+        #region Context Menus
+
+        [ContextMenu("Game Loop/Requests/Start Game")]
         private void ContextRequestStart()
         {
-            // Facilita testes editoriais disparando o mesmo fluxo usado pelos botões de UI.
             EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
         }
 
-        [ContextMenu("Game Loop/Request Pause")]
+        [ContextMenu("Game Loop/Requests/Pause Game")]
         private void ContextRequestPause()
         {
-            // Usa o pipeline de eventos para respeitar as validações de estado atuais.
             EventBus<GamePauseRequestedEvent>.Raise(new GamePauseRequestedEvent());
         }
 
-        [ContextMenu("Game Loop/Request Resume")]
+        [ContextMenu("Game Loop/Requests/Resume Game")]
         private void ContextRequestResume()
         {
-            // Retoma o jogo seguindo o mesmo mecanismo da UI.
             EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
         }
 
-        [ContextMenu("Game Loop/Request Reset")]
+        [ContextMenu("Game Loop/Requests/Reset Game")]
         private void ContextRequestReset()
         {
-            // Solicita o reset completo da sessão via FSM.
             EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
         }
 
-        [ContextMenu("Game Loop/Force Game Over")]
+        [ContextMenu("Game Loop/Requests/Go To Gameplay (Direct)")]
+        private void ContextRequestGoToGameplay()
+        {
+            StartGameplayFromCurrentScene();
+        }
+
+        [ContextMenu("Game Loop/Requests/Go To Menu (Direct)")]
+        private void ContextRequestGoToMenu()
+        {
+            GoToMenuFromCurrentScene();
+        }
+
+        [ContextMenu("Game Loop/Force/Game Over")]
         private void ContextForceGameOver()
         {
-            // Dispara game over respeitando validação de estado.
             TryTriggerGameOver("Context menu");
         }
 
-        [ContextMenu("Game Loop/Force Victory")]
+        [ContextMenu("Game Loop/Force/Victory")]
         private void ContextForceVictory()
         {
-            // Dispara vitória respeitando validação de estado.
             TryTriggerVictory("Context menu");
         }
+
+        #endregion
+
+        #region Unity Lifecycle
 
         protected override void Awake()
         {
@@ -88,46 +111,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 DependencyManager.Provider.RegisterGlobal(_orchestrator);
             }
 
-            // Auto-load apenas quando necessário:
-            // - Se a GameplayScene já está carregada e a UIScene não, carregamos só a UI com Fade.
-            // - Em qualquer outro caso (Menu → Gameplay+UI, etc.), não fazemos nada aqui para evitar duplo fade.
-            if (DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
-            {
-                var ui = GameConfig.UIScene;
-                var gameplay = GameConfig.GameplayScene;
-
-                bool gameplayLoaded = loader.IsSceneLoaded(gameplay);
-                bool uiLoaded = loader.IsSceneLoaded(ui);
-
-                if (gameplayLoaded && !uiLoaded)
-                {
-                    DebugUtility.LogVerbose<GameManager>(
-                        $"GameplayScene ({gameplay}) já carregada; carregando apenas UIScene ({ui}) com Fade...");
-
-                    StartCoroutine(loader.LoadScenesWithFadeAsync(
-                        scenesToLoad: new[]
-                        {
-                            new SceneLoadData(ui, LoadSceneMode.Additive)
-                        }));
-                }
-                else
-                {
-                    DebugUtility.LogVerbose<GameManager>(
-                        $"GameManager Awake - auto-load de cena ignorado. GameplayLoaded={gameplayLoaded}, UILoaded={uiLoaded}");
-                }
-            }
-
             Initialize();
         }
 
-
-
         private void Initialize()
         {
-            // Inicializa a FSM
             GameManagerStateMachine.Instance.InitializeStateMachine(this);
 
-            // Registra listener para GameStart
             _gameStartEvent = new EventBinding<GameStartEvent>(OnGameStart);
             EventBus<GameStartEvent>.Register(_gameStartEvent);
 
@@ -147,7 +137,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 "GameManager inicializado.",
                 DebugUtility.Colors.CrucialInfo);
         }
-        
 
         private void OnDestroy()
         {
@@ -155,8 +144,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 StopCoroutine(_resetRoutine);
                 _resetRoutine = null;
-                _resetInProgress = false;
             }
+
+            _resetInProgress = false;
 
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
@@ -165,14 +155,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             EventBus<GameResetRequestedEvent>.Unregister(_resetRequestedBinding);
         }
 
+        #endregion
+
+        #region Public API
+
         public bool IsGameActive()
         {
             return GameManagerStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
-        }
-
-        private bool IsCurrentState<TState>() where TState : class, IState
-        {
-            return GameManagerStateMachine.Instance.CurrentState is TState;
         }
 
         public bool TryTriggerGameOver(string reason = null)
@@ -183,7 +172,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return false;
             }
 
-            DebugUtility.LogVerbose<GameManager>($"Disparando GameOver. Razão: {reason ?? "(não informada)"}.");
+            DebugUtility.LogVerbose<GameManager>(
+                $"Disparando GameOver. Razão: {reason ?? "(não informada)"}.");
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
             return true;
         }
@@ -196,16 +186,74 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return false;
             }
 
-            DebugUtility.LogVerbose<GameManager>($"Disparando Victory. Razão: {reason ?? "(não informada)"}.");
+            DebugUtility.LogVerbose<GameManager>(
+                $"Disparando Victory. Razão: {reason ?? "(não informada)"}.");
             EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
             return true;
+        }
+
+        /// <summary>
+        /// Entrada direta para transitar da cena atual para o setup de Gameplay
+        /// usando o pipeline novo (SceneState + Planner + TransitionService).
+        /// Alvo: GameplayScene + UIScene, com GameplayScene ativa.
+        /// </summary>
+        public void StartGameplayFromCurrentScene()
+        {
+            if (_resetInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>(
+                    "StartGameplayFromCurrentScene ignorado: reset em andamento.");
+                return;
+            }
+
+            if (_sceneTransitionPlanner == null || _sceneTransitionService == null ||
+                _sceneLoaderCore == null || gameConfig == null)
+            {
+                DebugUtility.LogWarning<GameManager>(
+                    "Infra de transição de cenas não está configurada; StartGameplayFromCurrentScene ignorado.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameManager>(
+                "Iniciando transição para Gameplay a partir da cena atual (StartGameplayFromCurrentScene).");
+
+            _ = StartGameplayFromCurrentSceneAsync();
+        }
+
+        /// <summary>
+        /// Entrada direta para transitar da cena atual para o MenuScene
+        /// usando o pipeline novo (SceneState + Planner + TransitionService).
+        /// Alvo: apenas MenuScene, como cena ativa.
+        /// </summary>
+        public void GoToMenuFromCurrentScene()
+        {
+            if (_resetInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>(
+                    "GoToMenuFromCurrentScene ignorado: reset em andamento.");
+                return;
+            }
+
+            if (_sceneTransitionPlanner == null || _sceneTransitionService == null ||
+                _sceneLoaderCore == null || gameConfig == null)
+            {
+                DebugUtility.LogWarning<GameManager>(
+                    "Infra de transição de cenas não está configurada; GoToMenuFromCurrentScene ignorado.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameManager>(
+                "Iniciando transição para Menu a partir da cena atual (GoToMenuFromCurrentScene).");
+
+            _ = GoToMenuFromCurrentSceneAsync();
         }
 
         public void ResetGame()
         {
             if (_resetInProgress)
             {
-                DebugUtility.LogWarning<GameManager>("Solicitação de reset ignorada: já existe um reset em andamento.");
+                DebugUtility.LogWarning<GameManager>(
+                    "Solicitação de reset ignorada: já existe um reset em andamento.");
                 return;
             }
 
@@ -213,49 +261,24 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _resetRoutine = StartCoroutine(ResetGameRoutine());
         }
 
-        private void OnGameStart(GameStartEvent evt)
+        public void ReturnToMenu()
         {
-            DebugUtility.LogVerbose<GameManager>("Evento de início de jogo recebido.");
-            // Pode ser usado para inicializar sistemas adicionais
-        }
-
-        private void OnStartRequested(GameStartRequestedEvent _)
-        {
-            if (!IsCurrentState<MenuState>())
+            if (_resetRoutine != null)
             {
-                return;
+                StopCoroutine(_resetRoutine);
+                _resetRoutine = null;
             }
 
-            DebugUtility.LogVerbose<GameManager>("Solicitação de início de jogo recebida.");
-            EventBus<GameStartEvent>.Raise(new GameStartEvent());
+            _resetRoutine = StartCoroutine(ReturnToMenuRoutine());
         }
 
-        private void OnPauseRequested(GamePauseRequestedEvent _)
+        #endregion
+
+        #region Internals
+
+        private bool IsCurrentState<TState>() where TState : class, IState
         {
-            if (!IsCurrentState<PlayingState>())
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<GameManager>("Solicitação de pausa recebida.");
-            EventBus<GamePauseEvent>.Raise(new GamePauseEvent(true));
-        }
-
-        private void OnResumeRequested(GameResumeRequestedEvent _)
-        {
-            if (!IsCurrentState<PausedState>())
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<GameManager>("Solicitação de retomada recebida.");
-            EventBus<GamePauseEvent>.Raise(new GamePauseEvent(false));
-        }
-
-        private void OnResetRequested(GameResetRequestedEvent _)
-        {
-            DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
-            ResetGame();
+            return GameManagerStateMachine.Instance.CurrentState is TState;
         }
 
         private void ConfigureDebug()
@@ -276,25 +299,52 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             var provider = DependencyManager.Provider;
 
+            // GameManager global
             provider.RegisterGlobal<IGameManager>(this, allowOverride: true);
 
+            // GameConfig global
             if (gameConfig != null)
             {
                 provider.RegisterGlobal(gameConfig, allowOverride: true);
             }
 
+            // StateMachine global
             if (!provider.TryGetGlobal<GameManagerStateMachine>(out _))
             {
                 provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
+            }
+
+            // Infra do novo pipeline de transição de cenas (para acesso via GameManager)
+            if (!provider.TryGetGlobal(out _sceneLoaderCore))
+            {
+                _sceneLoaderCore = new SceneLoaderCore();
+                provider.RegisterGlobal(_sceneLoaderCore, allowOverride: true);
+            }
+
+            if (!provider.TryGetGlobal(out _sceneTransitionPlanner))
+            {
+                _sceneTransitionPlanner = new SimpleSceneTransitionPlanner();
+                provider.RegisterGlobal(_sceneTransitionPlanner, allowOverride: true);
+            }
+
+            // FadeAwaiter é opcional: só configuramos se os serviços existirem
+            if (provider.TryGetGlobal(out IFadeService fadeService) &&
+                provider.TryGetGlobal(out ICoroutineRunner runner))
+            {
+                _fadeAwaiter = new FadeAwaiter(fadeService, runner);
+            }
+
+            if (!provider.TryGetGlobal(out _sceneTransitionService))
+            {
+                _sceneTransitionService = new SceneTransitionService(_sceneLoaderCore, _fadeAwaiter);
+                provider.RegisterGlobal(_sceneTransitionService, allowOverride: true);
             }
         }
 
         private DebugManager ResolveDebugManager()
         {
             if (debugManager != null)
-            {
                 return debugManager;
-            }
 
             if (TryGetComponent(out DebugManager localManager))
             {
@@ -304,6 +354,49 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             debugManager = FindFirstObjectByType<DebugManager>();
             return debugManager;
+        }
+
+        private async Task StartGameplayFromCurrentSceneAsync()
+        {
+            var state = SceneState.FromSceneManager();
+
+            var targetScenes = new List<string>
+            {
+                GameConfig.GameplayScene,
+                GameConfig.UIScene
+            };
+
+            var context = _sceneTransitionPlanner.BuildContext(
+                state,
+                targetScenes,
+                GameConfig.GameplayScene,
+                useFade: true);
+
+            DebugUtility.LogVerbose<GameManager>(
+                "[StartGameplayFromCurrentSceneAsync] Contexto: " + context);
+
+            await _sceneTransitionService.RunTransitionAsync(context);
+        }
+
+        private async Task GoToMenuFromCurrentSceneAsync()
+        {
+            var state = SceneState.FromSceneManager();
+
+            var targetScenes = new List<string>
+            {
+                GameConfig.MenuScene
+            };
+
+            var context = _sceneTransitionPlanner.BuildContext(
+                state,
+                targetScenes,
+                GameConfig.MenuScene,
+                useFade: true);
+
+            DebugUtility.LogVerbose<GameManager>(
+                "[GoToMenuFromCurrentSceneAsync] Contexto: " + context);
+
+            await _sceneTransitionService.RunTransitionAsync(context);
         }
 
         private IEnumerator ResetGameRoutine()
@@ -329,7 +422,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                     new SceneLoadData(ui, LoadSceneMode.Additive)
                 };
 
-                // Usa o pipeline de fade já existente no SceneLoaderService
                 yield return loader.LoadScenesWithFadeAsync(scenesToLoad);
             }
 
@@ -337,19 +429,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
             _resetInProgress = false;
             _resetRoutine = null;
-        }
-
-
-        public void ReturnToMenu()
-        {
-            // Se estiver no meio de um reset, você pode optar por ignorar ou cancelar.
-            if (_resetRoutine != null)
-            {
-                StopCoroutine(_resetRoutine);
-                _resetRoutine = null;
-            }
-
-            _resetRoutine = StartCoroutine(ReturnToMenuRoutine());
         }
 
         private IEnumerator ReturnToMenuRoutine()
@@ -364,12 +443,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 new SceneLoadData(menu, LoadSceneMode.Single)
             };
 
-            // Usa o mesmo pipeline de fade do serviço de cenas
             yield return loader.LoadScenesWithFadeAsync(scenesToLoad);
         }
+
         private IEnumerator WaitForMenuState()
         {
-            // Usa deltaTime não escalonado para respeitar pausas.
             const float timeoutSeconds = 1.5f;
             float elapsed = 0f;
 
@@ -379,5 +457,49 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 yield return null;
             }
         }
+
+        #endregion
+
+        #region Event Handlers
+
+        private void OnGameStart(GameStartEvent evt)
+        {
+            DebugUtility.LogVerbose<GameManager>("Evento de início de jogo recebido.");
+        }
+
+        private void OnStartRequested(GameStartRequestedEvent _)
+        {
+            if (!IsCurrentState<MenuState>())
+                return;
+
+            DebugUtility.LogVerbose<GameManager>("Solicitação de início de jogo recebida.");
+            EventBus<GameStartEvent>.Raise(new GameStartEvent());
+        }
+
+        private void OnPauseRequested(GamePauseRequestedEvent _)
+        {
+            if (!IsCurrentState<PlayingState>())
+                return;
+
+            DebugUtility.LogVerbose<GameManager>("Solicitação de pausa recebida.");
+            EventBus<GamePauseEvent>.Raise(new GamePauseEvent(true));
+        }
+
+        private void OnResumeRequested(GameResumeRequestedEvent _)
+        {
+            if (!IsCurrentState<PausedState>())
+                return;
+
+            DebugUtility.LogVerbose<GameManager>("Solicitação de retomada recebida.");
+            EventBus<GamePauseEvent>.Raise(new GamePauseEvent(false));
+        }
+
+        private void OnResetRequested(GameResetRequestedEvent _)
+        {
+            DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
+            ResetGame();
+        }
+
+        #endregion
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
         private bool hideWhenNoDesire = true;
 
-        [Inject] private IGameManager _gameManager;
+        [Inject] private IGameplayManager _gameplayManager;
 
         private bool _pendingIconResolve;
         private bool _warnedMissingIcon;
@@ -496,7 +497,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            Transform eaterTransform = (_gameManager ?? GameManager.Instance)?.WorldEater;
+            Transform eaterTransform = (_gameplayManager ?? GameplayManager.Instance)?.WorldEater;
             if (eaterTransform != null)
             {
                 if (!eaterTransform.TryGetComponent(out eaterBehavior))

@@ -1,7 +1,7 @@
-﻿using System;
-using UnityEngine;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+﻿﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using _ImmersiveGames.Scripts.LoaderSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.LoaderSystems
 {
@@ -16,10 +16,6 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
-        }
-        private void Start()
-        {
             if (DependencyManager.Provider.TryGetGlobal(out ISceneLoaderService loader))
             {
                 _loader = loader;
@@ -27,45 +23,57 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
             }
             else
             {
-                Debug.LogError("<color=red>[SceneLoaderTester] Falha ao injetar SceneLoaderService.</color>");
+                Debug.LogError("[SceneLoaderTester] ISceneLoaderService não encontrado no DependencyManager.");
             }
         }
 
         private void Update()
         {
-            if (_loader == null) return;
+            if (_loader == null)
+                return;
 
+            // 1: Ir para o Menu (Menu = Single, descarrega Gameplay + UI)
             if (Input.GetKeyDown(KeyCode.Alpha1))
             {
                 Debug.Log("<color=cyan>[SceneLoaderTester] Tecla 1 pressionada - Carregando MenuScene...</color>");
                 StartCoroutine(_loader.LoadScenesWithFadeAsync(
-                    new[]
+                    scenesToLoad: new[]
                     {
                         new SceneLoadData(menuScene, LoadSceneMode.Single)
                     },
-                    new[] { gameplayScene, uiScene }
+                    scenesToUnload: new[]
+                    {
+                        gameplayScene,
+                        uiScene
+                    }
                 ));
             }
 
+            // 2: Ir para Gameplay + UI (ambas Additive), descarregando Menu
             if (Input.GetKeyDown(KeyCode.Alpha2))
             {
                 Debug.Log("<color=cyan>[SceneLoaderTester] Tecla 2 pressionada - Carregando GameplayScene + UIScene...</color>");
                 StartCoroutine(_loader.LoadScenesWithFadeAsync(
-                    new[]
+                    scenesToLoad: new[]
                     {
-                        new SceneLoadData(gameplayScene, LoadSceneMode.Single),  // base
-                        new SceneLoadData(uiScene, LoadSceneMode.Additive)       // overlay
+                        new SceneLoadData(gameplayScene, LoadSceneMode.Additive),
+                        new SceneLoadData(uiScene, LoadSceneMode.Additive)
                     },
-                    new[] { menuScene }
+                    scenesToUnload: new[]
+                    {
+                        menuScene
+                    }
                 ));
             }
 
+            // R: Recarregar Gameplay atual (sem mexer na UI explicitamente)
             if (Input.GetKeyDown(KeyCode.R))
             {
                 Debug.Log("<color=yellow>[SceneLoaderTester] Tecla R pressionada - Recarregando GameplayScene...</color>");
                 StartCoroutine(_loader.ReloadSceneAsync(gameplayScene));
             }
 
+            // L: Listar cenas carregadas
             if (Input.GetKeyDown(KeyCode.L))
             {
                 Debug.Log("<color=grey>[SceneLoaderTester] Cenas carregadas atualmente:</color>");

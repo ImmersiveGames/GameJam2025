@@ -323,7 +323,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             Transform fallback = null;
             var desiredRole = _targetRole;
 
-            foreach (var behaviour in FindObjectsOfType<MonoBehaviour>(includeInactive: false))
+            foreach (var behaviour in FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
             {
                 if (behaviour is not IDefenseRoleProvider roleProvider)
                 {
