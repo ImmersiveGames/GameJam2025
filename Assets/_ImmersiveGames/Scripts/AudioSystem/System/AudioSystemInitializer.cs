@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -42,6 +43,30 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                     DebugUtility.Colors.CrucialInfo);
             }
 
+            // registra serviço de SFX global (pooling) dependente de volume service
+            if (DependencyManager.Provider != null && !DependencyManager.Provider.TryGetGlobal<IAudioSfxService>(out _))
+            {
+                var resolvedVolume = DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out var volumeService)
+                    ? volumeService
+                    : new AudioVolumeService(mathService ?? new AudioMathUtility());
+
+                var resolvedSettings = DependencyManager.Provider.TryGetGlobal(out AudioServiceSettings serviceSettings)
+                    ? serviceSettings
+                    : LoadDefaultAudioServiceSettings();
+
+                var resolvedConfig = DependencyManager.Provider.TryGetGlobal(out AudioConfig defaultConfig)
+                    ? defaultConfig
+                    : LoadDefaultAudioConfig();
+
+                var sfxService = new AudioSfxService(resolvedVolume, resolvedSettings, resolvedConfig);
+                DependencyManager.Provider.RegisterGlobal<IAudioSfxService>(sfxService);
+
+                DebugUtility.Log(
+                    typeof(AudioSystemInitializer),
+                    "AudioSfxService registrado no DI",
+                    DebugUtility.Colors.CrucialInfo);
+            }
+
             if (IsInitialized()) return;
 
             _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
@@ -73,6 +98,18 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         }
 
         private static bool IsInitialized() => DependencyManager.Provider?.TryGetGlobal<IAudioService>(out _) ?? false;
+
+        private static AudioServiceSettings LoadDefaultAudioServiceSettings()
+        {
+            var loaded = Resources.LoadAll<AudioServiceSettings>("Audio/AudioConfigs");
+            return loaded != null && loaded.Length > 0 ? loaded[0] : null;
+        }
+
+        private static AudioConfig LoadDefaultAudioConfig()
+        {
+            var loaded = Resources.LoadAll<AudioConfig>("Audio/AudioConfigs");
+            return loaded != null && loaded.Length > 0 ? loaded[0] : null;
+        }
 
         public static IAudioService GetAudioService()
         {
