@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0549e23a1231459cbf94d79ca8a61ef5, type: 3}
   m_Name: GameConfig
   m_EditorClassIdentifier: 
+  menuScene: MenuScene
+  gameplayScene: GameplayScene
+  uiScene: UIScene
+  menuSetup: {fileID: 11400000, guid: 1733f56f9c74699428fa54671a4b3ac4, type: 2}
+  gameplaySetup: {fileID: 11400000, guid: fe794fd6bc78ec64db6db0f5d8c79226, type: 2}
   timerGame: 300
   gameArea:
     serializedVersion: 2
@@ -19,3 +24,4 @@ MonoBehaviour:
     y: -800
     width: 1600
     height: 1600
+  debugMode: 0

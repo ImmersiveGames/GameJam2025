@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
-using _ImmersiveGames.Scripts.SceneManagement.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 new SceneTransitionStartedEvent(context));
 
             // 1) FadeIn opcional
-            if (context.useFade && _fadeAwaiter != null)
+            if (context.UseFade && _fadeAwaiter != null)
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
                     "Executando FadeIn...");
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             }
 
             // 2) Carregar cenas alvo (sempre Additive)
-            foreach (var sceneName in context.scenesToLoad)
+            foreach (var sceneName in context.ScenesToLoad)
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
                     $"Carregando cena alvo: {sceneName}");
@@ -65,15 +65,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             }
 
             // 3) Definir cena ativa, se houver alvo definido
-            if (!string.IsNullOrEmpty(context.targetActiveScene))
+            if (!string.IsNullOrEmpty(context.TargetActiveScene))
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"Definindo cena ativa: {context.targetActiveScene}");
-                await SetActiveSceneAsync(context.targetActiveScene);
+                    $"Definindo cena ativa: {context.TargetActiveScene}");
+                await SetActiveSceneAsync(context.TargetActiveScene);
             }
 
             // 4) Descarregar cenas obsoletas
-            foreach (var sceneName in context.scenesToUnload)
+            foreach (var sceneName in context.ScenesToUnload)
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
                     $"Descarregando cena obsoleta: {sceneName}");
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 new SceneTransitionScenesReadyEvent(context));
 
             // 5) FadeOut opcional
-            if (context.useFade && _fadeAwaiter != null)
+            if (context.UseFade && _fadeAwaiter != null)
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
                     "Executando FadeOut...");
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         /// <summary>
         /// Define a cena ativa usando SceneManager, sem depender de métodos extras no ISceneLoader.
-        /// Mantém o mesmo modelo assíncrono (Task) usando Task. Yield apenas para cooperar com o loop.
+        /// Mantém o mesmo modelo assíncrono (Task) usando Task.Yield apenas para cooperar com o loop.
         /// </summary>
         private static async Task SetActiveSceneAsync(string sceneName)
         {

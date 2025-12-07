@@ -1,7 +1,6 @@
-﻿using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
-namespace _ImmersiveGames.Scripts.SceneManagement.Events
+namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Disparado assim que o SceneTransitionService inicia o processamento
@@ -18,12 +17,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Events
     }
 
     /// <summary>
-    /// Disparado quando todas as cenas alvo já foram carregadas,
-    /// a cena ativa já foi definida e todas as cenas obsoletas
-    /// já foram descarregadas.
-    ///
-    /// Ou seja, o "estado de cena" já está pronto; o que falta,
-    /// se houver, é apenas completar o FadeOut.
+    /// Disparado quando todas as cenas alvo foram carregadas,
+    /// todas as cenas obsoletas foram descarregadas e a cena ativa
+    /// já foi definida. Representa o momento em que o "mundo" está pronto.
     /// </summary>
     public readonly struct SceneTransitionScenesReadyEvent : IEvent
     {
@@ -37,6 +33,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Events
 
     /// <summary>
     /// Disparado ao final da transição, depois do FadeOut (quando usado).
+    /// Representa a conclusão total da transição.
     /// </summary>
     public readonly struct SceneTransitionCompletedEvent : IEvent
     {

@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private ActorSkinController _actorSkinController;
         private IActor _ownerActor;
-        private bool _isInitialized;
+        private bool _isSinkinInitialized;
 
         // Event bindings para eventos globais
         private EventBinding<SkinEvents> _skinUpdateBinding;
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void Initialize()
         {
-            if (_isInitialized) return;
+            if (_isSinkinInitialized) return;
 
             _actorSkinController = GetComponentInParent<ActorSkinController>();
             _ownerActor = GetComponentInParent<IActor>();
@@ -55,12 +55,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 return;
             }
 
-            _isInitialized = true;
+            _isSinkinInitialized = true;
         }
 
         protected virtual void RegisterWithSkinController()
         {
-            if (!_isInitialized || _actorSkinController == null) return;
+            if (!_isSinkinInitialized || _actorSkinController == null) return;
 
             _actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
             _actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;

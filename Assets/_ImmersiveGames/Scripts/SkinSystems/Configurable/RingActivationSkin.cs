@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private bool _hasRing;
         private float _currentRotation;
-        private bool _isInitialized;
+        private bool _ringInitialized;
 
         #region Unity Lifecycle
         protected override void Start()
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 UpdateRingVisibility();
             }
             
-            _isInitialized = true;
+            _ringInitialized = true;
             if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Initialized - HasRing: {_hasRing}");
         }
         #endregion
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                     DebugUtility.LogVerbose<RingActivationSkin>($"Ring visibility changed: {wasActive} -> {_hasRing}");
                 }
             }
-            else if (_isInitialized && showDebugLogs)
+            else if (_ringInitialized && showDebugLogs)
             {
                 DebugUtility.LogWarning<RingActivationSkin>("Ring object is not assigned!");
             }

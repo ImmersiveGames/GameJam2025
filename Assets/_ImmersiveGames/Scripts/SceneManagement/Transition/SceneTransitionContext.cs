@@ -8,10 +8,17 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     /// </summary>
     public readonly struct SceneTransitionContext
     {
+        // Fields "legados" (mantidos para compatibilidade)
         public readonly IReadOnlyList<string> scenesToLoad;
         public readonly IReadOnlyList<string> scenesToUnload;
         public readonly string targetActiveScene;
         public readonly bool useFade;
+
+        // Propriedades modernas (usadas pelo SceneTransitionService)
+        public IReadOnlyList<string> ScenesToLoad => scenesToLoad;
+        public IReadOnlyList<string> ScenesToUnload => scenesToUnload;
+        public string TargetActiveScene => targetActiveScene;
+        public bool UseFade => useFade;
 
         public SceneTransitionContext(
             IReadOnlyList<string> scenesToLoad,
@@ -29,6 +36,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         {
             string loadStr = scenesToLoad == null ? "null" : string.Join(", ", scenesToLoad);
             string unloadStr = scenesToUnload == null ? "null" : string.Join(", ", scenesToUnload);
+
             return $"SceneTransitionContext(Load=[{loadStr}], Unload=[{unloadStr}], " +
                 $"TargetActive='{targetActiveScene}', UseFade={useFade})";
         }
