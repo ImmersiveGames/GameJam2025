@@ -15,8 +15,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         public HashSet<string> LoadedScenes { get; } = new HashSet<string>();
 
         /// <summary>
-        /// Nome da cena ativa atual (SceneManager.GetActiveScene()).
-        /// Pode ser string.Empty se nenhuma cena válida estiver ativa.
+        /// Nome da cena ativa atual (SceneManager. GetActiveScene()).
+        /// Pode ser string. Empty se nenhuma cena válida estiver ativa.
         /// </summary>
         public string ActiveSceneName { get; private set; } = string.Empty;
 

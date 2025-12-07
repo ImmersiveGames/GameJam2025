@@ -54,11 +54,9 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         }
         public IEnumerator LoadUISceneAdditive(string uiSceneName)
         {
-            if (!SceneManager.GetSceneByName(uiSceneName).isLoaded)
-            {
-                DebugUtility.LogVerbose<SceneLoader>($"Carregando cena de UI {uiSceneName} em modo aditivo.");
-                yield return SceneManager.LoadSceneAsync(uiSceneName, LoadSceneMode.Additive);
-            }
+            if (SceneManager.GetSceneByName(uiSceneName).isLoaded) yield break;
+            DebugUtility.LogVerbose<SceneLoader>($"Carregando cena de UI {uiSceneName} em modo aditivo.");
+            yield return SceneManager.LoadSceneAsync(uiSceneName, LoadSceneMode.Additive);
         }
         public void ReloadCurrentScene()
         {

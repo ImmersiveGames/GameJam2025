@@ -1,8 +1,7 @@
 ﻿using System;
 using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     [CreateAssetMenu(
         menuName = "ImmersiveGames/PlanetSystems/Defense/Entry Strategies/Arc",
@@ -66,17 +65,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             var sequence = DOTween.Sequence();
 
-            // 1) centro -> ponto intermediário
+            // 1) centro → ponto intermediário
             sequence.Append(
                 minion.DOMove(midPoint, halfDuration)
                       .SetEase(moveEase));
 
-            // 2) intermediário -> órbita
+            // 2) intermediário → órbita
             sequence.Append(
                 minion.DOMove(orbitPosition, halfDuration)
                       .SetEase(moveEase));
 
-            // Escala pequena -> final durante TODO o percurso
+            // Escala pequena → final durante TODO o percurso
             sequence.Join(
                 minion.DOScale(finalScale, entryDurationSeconds)
                       .SetEase(scaleEase));

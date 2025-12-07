@@ -7,13 +7,13 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
     /// </summary>
     public struct SceneLoadData
     {
-        public string SceneName;
-        public LoadSceneMode LoadMode;
+        public readonly string sceneName;
+        public readonly LoadSceneMode loadMode;
 
         public SceneLoadData(string sceneName, LoadSceneMode mode = LoadSceneMode.Additive)
         {
-            SceneName = sceneName;
-            LoadMode = mode;
+            this.sceneName = sceneName;
+            loadMode = mode;
         }
     }
 }

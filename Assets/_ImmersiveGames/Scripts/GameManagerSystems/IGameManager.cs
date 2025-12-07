@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     public interface IGameManager

@@ -65,12 +65,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return null;
             }
 
-            if (planetTransform.TryGetComponent(out PlanetMotion directMotion))
-            {
-                return directMotion;
-            }
+            return planetTransform.TryGetComponent(out PlanetMotion directMotion) ? directMotion : planetTransform.GetComponentInParent<PlanetMotion>();
 
-            return planetTransform.GetComponentInParent<PlanetMotion>();
         }
 
         private void LogMissingPlanetMotion(EaterBehavior behavior)

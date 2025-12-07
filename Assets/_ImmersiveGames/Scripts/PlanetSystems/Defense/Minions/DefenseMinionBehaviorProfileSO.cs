@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -11,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         fileName = "DefenseMinionBehaviorProfileV2",
         menuName = "ImmersiveGames/PlanetSystems/Defense/Minions/Behavior Profile V2",
         order = 201)]
-    public class DefenseMinionBehaviorProfileSO : ScriptableObject
+    public class DefenseMinionBehaviorProfileSo : ScriptableObject
     {
         [Header("Identidade (opcional, para debug/organização)")]
         [SerializeField]

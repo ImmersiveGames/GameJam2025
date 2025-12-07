@@ -1,7 +1,6 @@
 ﻿using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     [CreateAssetMenu(
         menuName = "ImmersiveGames/PlanetSystems/Defense/Chase Strategies/Direct",
@@ -14,7 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         [Tooltip("Fator de duração extra (1 = apenas distância/velocidade).")]
         [SerializeField, Min(0f)]
-        private float extraDurationFactor = 0f;
+        private float extraDurationFactor;
 
         public override Tween CreateChaseTween(
             Transform minion,

@@ -34,13 +34,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             if (entries == null || entries.Count == 0)
                 return defaultColor;
 
-            for (int i = 0; i < entries.Count; i++)
+            foreach (var entry in entries.Where(entry => entry != null && entry.resourceType == resourceType))
             {
-                var entry = entries[i];
-                if (entry != null && entry.resourceType == resourceType)
-                {
-                    return entry.iconColor;
-                }
+                return entry.iconColor;
             }
 
             return defaultColor;

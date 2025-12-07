@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         [Header("Pooling / Destruição")]
         [SerializeField] private bool returnToPoolOnDeath = true;
-        [SerializeField] private bool destroyGameObjectIfNoPool = false;
+        [SerializeField] private bool destroyGameObjectIfNoPool;
 
         [Header("Estratégias de Dano (executadas em sequência)")]
         [SerializeField] private List<DamageStrategySelection> strategyPipeline = new()
@@ -206,9 +206,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 targetResource,
                 _component,
                 _strategy,
-                _cooldowns,
-                _lifecycle,
-                spawnExplosionOnDeath ? _explosion : null);
+                _cooldowns);
 
             try
             {
@@ -259,14 +257,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            if (_lifecycleHandler.TryAttach(system))
-            {
-                _waitingForLifecycleBinding = false;
-            }
-            else
-            {
-                _waitingForLifecycleBinding = true;
-            }
+            _waitingForLifecycleBinding = !_lifecycleHandler.TryAttach(system);
         }
 
         private void SyncLifecycleOptions()
@@ -292,13 +283,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return null;
             }
 
-            if (!change.IsDecrease && change.NewValue > 0f)
+            if (change is { IsDecrease: false, NewValue: > 0f })
             {
                 return null;
             }
 
             float damageValue = Mathf.Abs(change.Delta);
-            var attackerId = ResolveLifecycleAttackerId(change.Source);
+            string attackerId = ResolveLifecycleAttackerId(change.Source);
             return new DamageContext(attackerId, _actor.ActorId, damageValue, targetResource, DamageType.Pure);
         }
 
@@ -322,38 +313,57 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
 
-            bool hasHitSound = hitSound != null && hitSound.clip != null;
-            bool hasDeathSound = deathSound != null && deathSound.clip != null;
-            bool hasReviveSound = reviveSound != null && reviveSound.clip != null;
+            var soundFlags = GetSoundFlags();
 
-            if (hasHitSound && notification.IsDamage)
-            {
-                var request = notification.Request;
-                var hitPosition = request != null && request.HasHitPosition
-                    ? request.HitPosition
-                    : transform.position;
-                var ctx = AudioContext.Default(hitPosition, audioEmitter.UsesSpatialBlend);
-                audioEmitter.Play(hitSound, ctx);
-            }
+            PlayHitSoundIfApplicable(notification, soundFlags);
 
             if (!notification.DeathStateChanged)
             {
                 return;
             }
 
+            HandleDeathOrRevive(notification, soundFlags);
+        }
+
+        private (bool hasHit, bool hasDeath, bool hasRevive) GetSoundFlags()
+        {
+            bool hasHitSound = hitSound != null && hitSound.clip != null;
+            bool hasDeathSound = deathSound != null && deathSound.clip != null;
+            bool hasReviveSound = reviveSound != null && reviveSound.clip != null;
+            return (hasHitSound, hasDeathSound, hasReviveSound);
+        }
+
+        private void PlayHitSoundIfApplicable(DamageLifecycleNotification notification, (bool hasHit, bool hasDeath, bool hasRevive) flags)
+        {
+            if (!flags.hasHit || !notification.IsDamage)
+            {
+                return;
+            }
+
+            var request = notification.Request;
+            var hitPosition = request is { hasHitPosition: true }
+                ? request.hitPosition
+                : transform.position;
+
+            var ctx = AudioContext.Default(hitPosition, audioEmitter.UsesSpatialBlend);
+            audioEmitter.Play(hitSound, ctx);
+        }
+
+        private void HandleDeathOrRevive(DamageLifecycleNotification notification, (bool hasHit, bool hasDeath, bool hasRevive) flags)
+        {
             var center = transform.position;
             var deathCtx = AudioContext.Default(center, audioEmitter.UsesSpatialBlend);
 
             if (notification.IsDead)
             {
-                if (hasDeathSound)
+                if (flags.hasDeath)
                 {
                     audioEmitter.Play(deathSound, deathCtx);
                 }
 
                 ExecuteDeathReturn();
             }
-            else if (hasReviveSound)
+            else if (flags.hasRevive)
             {
                 audioEmitter.Play(reviveSound, deathCtx);
             }
@@ -361,40 +371,68 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void HandleDamageWithoutResource(DamageContext ctx)
         {
-            if (ctx == null)
+            if (!IsValidNonResourceDamage(ctx))
             {
                 return;
             }
 
-            if (_cooldowns != null && !string.IsNullOrEmpty(ctx.AttackerId))
-            {
-                if (!_cooldowns.CanDealDamage(ctx.AttackerId, _receiverId))
-                {
-                    return;
-                }
-            }
-
-            if (audioEmitter != null)
-            {
-                var hasDeathSound = deathSound != null && deathSound.clip != null;
-                var hasHitSound = hitSound != null && hitSound.clip != null;
-                var sound = hasDeathSound ? deathSound : hasHitSound ? hitSound : null;
-
-                if (sound != null)
-                {
-                    var position = ctx.HasHitPosition ? ctx.HitPosition : transform.position;
-                    var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
-                    audioEmitter.Play(sound, audioCtx);
-                }
-            }
-
-            if (spawnExplosionOnDeath)
-            {
-                _explosion?.Initialize();
-                _explosion?.PlayExplosion(ctx);
-            }
-
+            PlayNonResourceDamageSound(ctx);
+            TriggerExplosionIfConfigured(ctx);
             ExecuteDeathReturn();
+        }
+
+        private bool IsValidNonResourceDamage(DamageContext ctx)
+        {
+            if (ctx == null)
+            {
+                return false;
+            }
+
+            if (_cooldowns != null && !string.IsNullOrEmpty(ctx.attackerId))
+            {
+                if (!_cooldowns.CanDealDamage(ctx.attackerId, _receiverId))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void PlayNonResourceDamageSound(DamageContext ctx)
+        {
+            if (audioEmitter == null)
+            {
+                return;
+            }
+
+            var sound = SelectDamageSound();
+            if (sound == null)
+            {
+                return;
+            }
+
+            var position = ctx.hasHitPosition ? ctx.hitPosition : transform.position;
+            var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
+            audioEmitter.Play(sound, audioCtx);
+        }
+
+        private SoundData SelectDamageSound()
+        {
+            bool hasDeathSound = deathSound != null && deathSound.clip != null;
+            bool hasHitSound = hitSound != null && hitSound.clip != null;
+            return hasDeathSound ? deathSound : (hasHitSound ? hitSound : null);
+        }
+
+        private void TriggerExplosionIfConfigured(DamageContext ctx)
+        {
+            if (!spawnExplosionOnDeath)
+            {
+                return;
+            }
+
+            _explosion?.Initialize();
+            _explosion?.PlayExplosion(ctx);
         }
 
         private void ExecuteDeathReturn()

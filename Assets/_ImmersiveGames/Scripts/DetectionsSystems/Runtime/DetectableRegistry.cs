@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 return;
             }
 
-            if (!_byType.TryGetValue(detectionType, out var set))
+            if (!_byType.TryGetValue(detectionType, out HashSet<IDetectable> set))
             {
                 set = new HashSet<IDetectable>();
                 _byType[detectionType] = set;
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 return;
             }
 
-            if (_byType.TryGetValue(detectionType, out var set))
+            if (_byType.TryGetValue(detectionType, out HashSet<IDetectable> set))
             {
                 set.Remove(detectable);
                 if (set.Count == 0)
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public static IReadOnlyCollection<IDetectable> GetByType(DetectionType detectionType)
         {
-            if (detectionType != null && _byType.TryGetValue(detectionType, out var set))
+            if (detectionType != null && _byType.TryGetValue(detectionType, out HashSet<IDetectable> set))
             {
                 return set;
             }

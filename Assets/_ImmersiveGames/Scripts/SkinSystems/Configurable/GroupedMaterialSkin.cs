@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -36,7 +37,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
 
         #region SkinConfigurable Implementation
-        public override void ConfigureSkin(ISkinConfig skinConfig)
+
+        protected override void ConfigureSkin(ISkinConfig skinConfig)
         {
             if (!applyOnSkinChange) return;
             
@@ -44,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Configured from skin");
         }
 
-        public override void ApplyDynamicModifications()
+        protected override void ApplyDynamicModifications()
         {
             ApplyGroupedMaterials();
             if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied dynamic modifications");
@@ -98,7 +100,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             // CADA SLOT SORTEIA SEU PRÓPRIO MATERIAL ALEATÓRIO
             foreach (var slot in materialSlots)
             {
-                if (slot != null && slot.IsValid && slot.CanApply())
+                if (slot is { IsValid: true } && slot.CanApply())
                 {
                     slot.ApplyRandomMaterial();
                 }
@@ -110,16 +112,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// <summary>
         /// Aplica um material específico a um grupo (todos os slots do grupo recebem o MESMO material)
         /// </summary>
-        public void ApplyMaterialToGroup(MaterialGroupConfig group, Material material)
+        private void ApplyMaterialToGroup(MaterialGroupConfig group, Material material)
         {
             if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
 
-            foreach (var slot in groupedSlot)
+            foreach (var slot in groupedSlot.Where(slot => slot != null && slot.CanApply()))
             {
-                if (slot != null && slot.CanApply())
-                {
-                    slot.ApplyMaterial(material);
-                }
+                slot.ApplyMaterial(material);
             }
 
             if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied specific material '{material.name}' to group '{group.GroupName}'");
@@ -128,16 +127,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// <summary>
         /// Randomiza os materiais de um grupo específico - CADA SLOT SORTEIA INDEPENDENTEMENTE
         /// </summary>
-        public void RandomizeGroup(MaterialGroupConfig group)
+        private void RandomizeGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.ContainsKey(group)) return;
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
 
-            foreach (var slot in _groupedSlots[group])
+            foreach (var slot in groupedSlot.Where(slot => slot != null && slot.CanApply()))
             {
-                if (slot != null && slot.CanApply())
-                {
-                    slot.ApplyRandomMaterial();
-                }
+                slot.ApplyRandomMaterial();
             }
 
             if (showDebugLogs) 
@@ -217,14 +213,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// </summary>
         public void ResetGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.ContainsKey(group)) return;
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) return;
 
-            foreach (var slot in _groupedSlots[group])
+            foreach (var slot in groupedSlot.Where(slot => slot != null))
             {
-                if (slot != null)
-                {
-                    slot.ResetToOriginal();
-                }
+                slot.ResetToOriginal();
             }
 
             if (showDebugLogs) DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset group '{group.GroupName}' to original");
@@ -235,21 +228,21 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         /// <summary>
         /// Obtém todos os grupos únicos
         /// </summary>
-        public MaterialGroupConfig[] GetUniqueGroups()
+        private MaterialGroupConfig[] GetUniqueGroups()
         {
             if (_groupedSlots == null) InitializeGroups();
-            return _groupedSlots?.Keys.ToArray() ?? new MaterialGroupConfig[0];
+            return _groupedSlots?.Keys.ToArray() ?? Array.Empty<MaterialGroupConfig>();
         }
 
         /// <summary>
         /// Obtém os slots de um grupo específico
         /// </summary>
-        public MaterialSlot[] GetSlotsForGroup(MaterialGroupConfig group)
+        private MaterialSlot[] GetSlotsForGroup(MaterialGroupConfig group)
         {
-            if (_groupedSlots == null || !_groupedSlots.ContainsKey(group)) 
-                return new MaterialSlot[0];
+            if (_groupedSlots == null || !_groupedSlots.TryGetValue(group, out List<MaterialSlot> groupedSlot)) 
+                return Array.Empty<MaterialSlot>();
             
-            return _groupedSlots[group].ToArray();
+            return groupedSlot.ToArray();
         }
 
         /// <summary>
@@ -271,26 +264,26 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 
                 groupStates.Add(new GroupState
                 {
-                    Group = group,
-                    SlotCount = slots.Length,
-                    UniqueMaterialsCount = uniqueMaterials.Length,
-                    UniqueMaterials = uniqueMaterials
+                    group = group,
+                    slotCount = slots.Length,
+                    uniqueMaterialsCount = uniqueMaterials.Length,
+                    uniqueMaterials = uniqueMaterials
                 });
             }
 
             return new GroupedMaterialState
             {
-                TotalGroups = groups.Length,
-                TotalSlots = materialSlots.Length,
-                ValidSlots = materialSlots.Count(s => s != null && s.IsValid),
-                GroupStates = groupStates.ToArray()
+                totalGroups = groups.Length,
+                totalSlots = materialSlots.Length,
+                validSlots = materialSlots.Count(s => s is { IsValid: true }),
+                groupStates = groupStates.ToArray()
             };
         }
 
         /// <summary>
         /// Obtém informações detalhadas sobre todos os slots
         /// </summary>
-        public SlotInfo[] GetAllSlotInfos()
+        private SlotInfo[] GetAllSlotInfos()
         {
             return materialSlots.Select(slot => slot?.GetSlotInfo() ?? new SlotInfo()).ToArray();
         }
@@ -306,7 +299,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             foreach (var slot in materialSlots)
             {
-                if (slot != null && slot.IsValid)
+                if (slot is { IsValid: true })
                 {
                     validSlots++;
                 }
@@ -338,12 +331,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             var state = GetGroupedMaterialState();
             
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Randomization Test:");
-            DebugUtility.LogVerbose<GroupedMaterialSkin>($"Total slots: {state.TotalSlots}, Valid: {state.ValidSlots}");
+            DebugUtility.LogVerbose<GroupedMaterialSkin>($"Total slots: {state.totalSlots}, Valid: {state.validSlots}");
             
-            foreach (var groupState in state.GroupStates)
+            foreach (var groupState in state.groupStates)
             {
-                DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {groupState.Group.GroupName}: {groupState.SlotCount} slots, {groupState.UniqueMaterialsCount} unique materials");
-                foreach (string material in groupState.UniqueMaterials)
+                DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {groupState.group.GroupName}: {groupState.slotCount} slots, {groupState.uniqueMaterialsCount} unique materials");
+                foreach (string material in groupState.uniqueMaterials)
                 {
                     DebugUtility.LogVerbose<GroupedMaterialSkin>($"    * {material}");
                 }
@@ -353,32 +346,32 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct GroupedMaterialState
     {
-        public int TotalGroups;
-        public int TotalSlots;
-        public int ValidSlots;
-        public GroupState[] GroupStates;
+        public int totalGroups;
+        public int totalSlots;
+        public int validSlots;
+        public GroupState[] groupStates;
 
         public override string ToString()
         {
-            int uniqueMaterials = GroupStates.Sum(gs => gs.UniqueMaterialsCount);
-            return $"Groups: {TotalGroups}, Slots: {ValidSlots}/{TotalSlots}, Unique Materials: {uniqueMaterials}";
+            int uniqueMaterials = groupStates.Sum(gs => gs.uniqueMaterialsCount);
+            return $"Groups: {totalGroups}, Slots: {validSlots}/{totalSlots}, Unique Materials: {uniqueMaterials}";
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct GroupState
     {
-        public MaterialGroupConfig Group;
-        public int SlotCount;
-        public int UniqueMaterialsCount;
-        public string[] UniqueMaterials;
+        public MaterialGroupConfig group;
+        public int slotCount;
+        public int uniqueMaterialsCount;
+        public string[] uniqueMaterials;
 
         public override string ToString()
         {
-            return $"{Group.GroupName}: {SlotCount} slots, {UniqueMaterialsCount} unique materials";
+            return $"{group.GroupName}: {slotCount} slots, {uniqueMaterialsCount} unique materials";
         }
     }
 }

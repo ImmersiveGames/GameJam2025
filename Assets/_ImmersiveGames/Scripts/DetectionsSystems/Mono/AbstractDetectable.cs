@@ -23,13 +23,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void Awake()
         {
-            _owner = GetComponent<IActor>();
-
-            if (_owner == null)
-            {
-                // Permite que detectáveis posicionados em objetos filhos utilizem o ator definido no pai.
-                _owner = GetComponentInParent<IActor>();
-            }
+            // Permite que detectáveis posicionados em objetos filhos utilizem o ator definido no pai.
+            _owner = GetComponent<IActor>() ?? GetComponentInParent<IActor>();
 
             if (_owner == null)
             {

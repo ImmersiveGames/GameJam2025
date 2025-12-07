@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             _currentOrbitAngle = startAngle;
 
             var effectiveCenter = OrbitCenter;
-            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+            var centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
             _heightOffset = transform.position.y - centerPosition.y;
 
             _orbitConfigured = true;
@@ -122,11 +122,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void ApplyOrbitPosition()
         {
-            Transform effectiveCenter = OrbitCenter;
-            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+            var effectiveCenter = OrbitCenter;
+            var centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
 
             Vector3 orbitOffset = new(Mathf.Cos(_currentOrbitAngle) * orbitRadius, 0f, Mathf.Sin(_currentOrbitAngle) * orbitRadius);
-            Vector3 heightOffset = Vector3.up * _heightOffset;
+            var heightOffset = Vector3.up * _heightOffset;
             transform.position = centerPosition + orbitOffset + heightOffset;
         }
 
@@ -148,8 +148,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            Transform effectiveCenter = OrbitCenter;
-            Vector3 centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
+            var effectiveCenter = OrbitCenter;
+            var centerPosition = effectiveCenter != null ? effectiveCenter.position : Vector3.zero;
             float radius = Mathf.Max(orbitRadius, 0f);
 
             if (radius <= 0f)
@@ -163,13 +163,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private static void DrawOrbitCircle(Vector3 center, float radius, int segments = 64)
         {
-            Vector3 previousPoint = center + new Vector3(radius, 0f, 0f);
+            var previousPoint = center + new Vector3(radius, 0f, 0f);
             float step = Mathf.PI * 2f / segments;
 
             for (int i = 1; i <= segments; i++)
             {
                 float angle = step * i;
-                Vector3 nextPoint = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                var nextPoint = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
                 Gizmos.DrawLine(previousPoint, nextPoint);
                 previousPoint = nextPoint;
             }

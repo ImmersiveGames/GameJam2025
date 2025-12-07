@@ -35,7 +35,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private string _objectId;
         private bool _isRegistered;
 
-        public bool IsInitialized { get; private set; }
+        private bool IsInitialized { get; set; }
         public IActor OwnerActor => _ownerActor;
 
         private void Awake()
@@ -164,7 +164,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         }
         #endregion
 
-        public void Initialize()
+        private void Initialize()
         {
             if (IsInitialized) return;
 
@@ -196,34 +196,34 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 return;
             }
 
-            var createdInstances = _skinService.ApplyConfig(config, _ownerActor);
+            IReadOnlyList<GameObject> createdInstances = _skinService.ApplyConfig(config, _ownerActor);
 
             NotifySkinApplied(config);
             NotifySkinInstancesCreated(config.ModelType, createdInstances);
         }
 
-        public void ApplySkinCollection(SkinCollectionData newCollection)
+        private void ApplySkinCollection(SkinCollectionData newCollection)
         {
             if (!ValidateInitialization()) return;
 
-            var createdByType = _skinService.ApplyCollection(newCollection, _ownerActor);
+            IReadOnlyDictionary<ModelType, IReadOnlyList<GameObject>> createdByType = _skinService.ApplyCollection(newCollection, _ownerActor);
 
             NotifySkinCollectionApplied(newCollection);
 
-            foreach (var pair in createdByType)
+            foreach (KeyValuePair<ModelType, IReadOnlyList<GameObject>> pair in createdByType)
             {
                 NotifySkinInstancesCreated(pair.Key, pair.Value);
             }
         }
 
-        public void SetSkinActive(bool active)
+        private void SetSkinActive(bool active)
         {
             _skinOwner?.SetSkinActive(active);
         }
 
         public List<GameObject> GetSkinInstances(ModelType type)
         {
-            var instances = _skinService?.GetInstancesOfType(type);
+            IReadOnlyList<GameObject> instances = _skinService?.GetInstancesOfType(type);
             return ConvertInstances(instances);
         }
 
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
         private void NotifySkinInstancesCreated(ModelType modelType, IReadOnlyList<GameObject> createdInstances)
         {
-            var instances = ConvertInstances(createdInstances);
+            List<GameObject> instances = ConvertInstances(createdInstances);
             if (instances.Count == 0) return;
 
             OnSkinInstancesCreated?.Invoke(modelType, instances);
@@ -332,7 +332,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         public List<T> GetComponentsFromSkinInstances<T>(ModelType type) where T : Component
         {
             var components = new List<T>();
-            var instances = GetSkinInstances(type);
+            List<GameObject> instances = GetSkinInstances(type);
             
             foreach (var instance in instances)
             {
@@ -350,7 +350,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         /// </summary>
         public T GetComponentFromSkinInstances<T>(ModelType type) where T : Component
         {
-            var instances = GetSkinInstances(type);
+            List<GameObject> instances = GetSkinInstances(type);
             
             foreach (var instance in instances)
             {

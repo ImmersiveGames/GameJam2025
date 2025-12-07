@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public float GetModifier(DamageType type)
         {
             EnsureCache();
-            return _cache.TryGetValue(type, out var multiplier) ? multiplier : 1f;
+            return _cache.GetValueOrDefault(type, 1f);
         }
 
         public bool TryGetModifier(DamageType type, out float multiplier)
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 
             foreach (var entry in entries)
             {
-                var safeMultiplier = Mathf.Max(0f, entry.multiplier);
+                float safeMultiplier = Mathf.Max(0f, entry.multiplier);
                 _cache[entry.type] = safeMultiplier;
             }
 

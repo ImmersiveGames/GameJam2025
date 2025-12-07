@@ -14,23 +14,23 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         /// <summary>
         /// Tipo de modelo ao qual esse estado se refere.
         /// </summary>
-        public ModelType ModelType;
+        public ModelType modelType;
 
         /// <summary>
         /// Bounds em espaço de mundo que englobam todas as instâncias da skin.
         /// Calculado usando CalculateRealLength para lidar com objetos compostos.
         /// </summary>
-        public Bounds WorldBounds;
+        public Bounds worldBounds;
 
         /// <summary>
         /// Centro do bounds em espaço de mundo.
         /// </summary>
-        public Vector3 Center => WorldBounds.center;
+        public Vector3 Center => worldBounds.center;
 
         /// <summary>
         /// Tamanho (largura, altura, profundidade) do bounds em espaço de mundo.
         /// </summary>
-        public Vector3 Size => WorldBounds.size;
+        public Vector3 Size => worldBounds.size;
 
         /// <summary>
         /// Maior dimensão entre X, Y e Z (útil para radius aproximado).
@@ -45,8 +45,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         public SkinRuntimeState(ModelType modelType, Bounds worldBounds)
         {
-            ModelType = modelType;
-            WorldBounds = worldBounds;
+            this.modelType = modelType;
+            this.worldBounds = worldBounds;
         }
 
         /// <summary>
@@ -61,6 +61,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         /// Indica se o bounds é válido (tamanho maior que zero em pelo menos um eixo).
         /// </summary>
         public bool HasValidBounds =>
-            WorldBounds.size.x > 0f || WorldBounds.size.y > 0f || WorldBounds.size.z > 0f;
+            worldBounds.size.x > 0f || worldBounds.size.y > 0f || worldBounds.size.z > 0f;
     }
 }

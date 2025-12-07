@@ -53,15 +53,15 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
             if (_main == null) return;
 
             _targetValue = Mathf.Clamp01(target);
-            _mainTween?.Kill(false);
-            _residualTween?.Kill(false);
+            _mainTween?.Kill();
+            _residualTween?.Kill();
 
             float mainSpeed = _profile.mainSpeed;
             float residualSpeed = _profile.residualSpeed;
 
             // Define easings
-            Ease mainEase = _profile.mainEase;
-            Ease residualEase = _profile.residualEase;
+            var mainEase = _profile.mainEase;
+            var residualEase = _profile.residualEase;
 
             // === Barra Principal ===
             _mainTween = DOTween.To(

@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
         public void ForceCheck()
         {
-            foreach (var kv in _thresholds)
+            foreach (KeyValuePair<ResourceType, float[]> kv in _thresholds)
             {
                 var val = _system.Get(kv.Key);
                 float pct = val?.GetPercentage() ?? 0f;

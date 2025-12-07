@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var record = _history.Pop();
-            var restoredDamage = record.Context?.CalculatedDamage ?? 0f;
+            float restoredDamage = record.Context?.CalculatedDamage ?? 0f;
             UndoInternal(record.Context, record.ExecutedCommands);
             RaisePipelineUndo(record.Context, restoredDamage);
             return true;
@@ -92,13 +92,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var payload = new DamagePipelineStarted(
-                request.AttackerId,
-                request.TargetId,
+                request.attackerId,
+                request.targetId,
                 context.TargetResource,
-                request.DamageType,
-                request.DamageValue);
+                request.damageType,
+                request.damageValue);
 
-            DamageEventDispatcher.RaiseForParticipants(payload, request.AttackerId, request.TargetId);
+            DamageEventDispatcher.RaiseForParticipants(payload, request.attackerId, request.targetId);
         }
 
         private static void RaisePipelineCompleted(DamageCommandContext context)
@@ -110,14 +110,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var payload = new DamagePipelineCompleted(
-                request.AttackerId,
-                request.TargetId,
+                request.attackerId,
+                request.targetId,
                 context.TargetResource,
-                request.DamageType,
-                request.DamageValue,
+                request.damageType,
+                request.damageValue,
                 context.CalculatedDamage);
 
-            DamageEventDispatcher.RaiseForParticipants(payload, request.AttackerId, request.TargetId);
+            DamageEventDispatcher.RaiseForParticipants(payload, request.attackerId, request.targetId);
         }
 
         private static void RaisePipelineFailed(DamageCommandContext context, IDamageCommand failedCommand)
@@ -129,14 +129,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var payload = new DamagePipelineFailed(
-                request.AttackerId,
-                request.TargetId,
+                request.attackerId,
+                request.targetId,
                 context.TargetResource,
-                request.DamageType,
-                request.DamageValue,
+                request.damageType,
+                request.damageValue,
                 failedCommand?.GetType().Name ?? "UnknownCommand");
 
-            DamageEventDispatcher.RaiseForParticipants(payload, request.AttackerId, request.TargetId);
+            DamageEventDispatcher.RaiseForParticipants(payload, request.attackerId, request.targetId);
         }
 
         private static void RaisePipelineUndo(DamageCommandContext context, float restoredDamage)
@@ -148,13 +148,13 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var payload = new DamagePipelineUndone(
-                request.AttackerId,
-                request.TargetId,
+                request.attackerId,
+                request.targetId,
                 context.TargetResource,
-                request.DamageType,
+                request.damageType,
                 restoredDamage);
 
-            DamageEventDispatcher.RaiseForParticipants(payload, request.AttackerId, request.TargetId);
+            DamageEventDispatcher.RaiseForParticipants(payload, request.attackerId, request.targetId);
         }
 
     }

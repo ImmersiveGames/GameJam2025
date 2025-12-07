@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     [CreateAssetMenu(
         fileName = "RadialEvenSpawnPattern",

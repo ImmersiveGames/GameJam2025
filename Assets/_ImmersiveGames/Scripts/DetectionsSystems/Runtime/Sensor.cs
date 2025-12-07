@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -106,7 +107,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private void DetectUsingRegistry()
         {
-            var detectables = DetectableRegistry.GetByType(DetectionType);
+            IReadOnlyCollection<IDetectable> detectables = DetectableRegistry.GetByType(DetectionType);
             if (detectables.Count == 0)
             {
                 return;
@@ -114,20 +115,43 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
             foreach (var detectable in detectables)
             {
-                if (detectable == null) continue;
-                if (_currentDetections.Contains(detectable)) continue;
-                if (IsSelfOrChild(detectable, _detector)) continue;
-
-                if (detectable is not MonoBehaviour detectableMono) continue;
-                if (!detectableMono.isActiveAndEnabled || !detectableMono.gameObject.activeInHierarchy) continue;
-                if (!MatchesLayer(detectableMono.gameObject.layer)) continue;
+                if (ShouldSkipDetectable(detectable)) continue;
+                if (!TryGetDetectableMono(detectable, out var detectableMono)) continue;
+                if (!IsMonoEligible(detectableMono)) continue;
 
                 var targetPosition = GetDetectablePosition(detectable, detectableMono);
-                if (!IsWithinRadius(targetPosition)) continue;
-                if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(targetPosition)) continue;
+                if (!IsWithinDetectionVolume(targetPosition)) continue;
 
                 _currentDetections.Add(detectable);
             }
+        }
+
+        private bool ShouldSkipDetectable(IDetectable detectable)
+        {
+            if (detectable == null) return true;
+            if (_currentDetections.Contains(detectable)) return true;
+            if (IsSelfOrChild(detectable, _detector)) return true;
+            return false;
+        }
+
+        private bool TryGetDetectableMono(IDetectable detectable, out MonoBehaviour detectableMono)
+        {
+            detectableMono = detectable as MonoBehaviour;
+            return detectableMono != null;
+        }
+
+        private bool IsMonoEligible(MonoBehaviour detectableMono)
+        {
+            if (!detectableMono.isActiveAndEnabled || !detectableMono.gameObject.activeInHierarchy) return false;
+            if (!MatchesLayer(detectableMono.gameObject.layer)) return false;
+            return true;
+        }
+
+        private bool IsWithinDetectionVolume(Vector3 targetPosition)
+        {
+            if (!IsWithinRadius(targetPosition)) return false;
+            if (Config.DetectionMode == SensorDetectionMode.Conical && !IsInCone(targetPosition)) return false;
+            return true;
         }
 
         private bool IsInCone(Vector3 targetPosition)
@@ -183,16 +207,17 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         {
             int currentFrame = Time.frameCount;
 
-            // Novas detecções
-            for (int i = 0; i < current.Count; i++)
+            HandleNewDetections(current, currentFrame);
+            HandleLostDetections(current, currentFrame);
+
+            // Limpar caches antigos (mais de 1 frame atrás) para evitar memory leak
+            CleanupFrameCaches(currentFrame);
+        }
+
+        private void HandleNewDetections(List<IDetectable> current, int currentFrame)
+        {
+            foreach (var detectable in current.Where(detectable => !_detected.Contains(detectable)).Where(detectable => !AlreadyProcessedThisFrame(_enterEventFrameCache, detectable, currentFrame)))
             {
-                var detectable = current[i];
-                if (_detected.Contains(detectable)) continue;
-
-                // Verificar se já processamos este detectable neste frame
-                if (_enterEventFrameCache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame)
-                    continue;
-
                 _detected.Add(detectable);
                 _enterEventFrameCache[detectable] = currentFrame;
 
@@ -201,16 +226,15 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 // APENAS EventBus
                 EventBus<DetectionEnterEvent>.Raise(new DetectionEnterEvent(detectable, _detector, DetectionType));
             }
+        }
 
-            // Detecções perdidas
+        private void HandleLostDetections(List<IDetectable> current, int currentFrame)
+        {
             for (int i = _detected.Count - 1; i >= 0; i--)
             {
                 var detectable = _detected[i];
                 if (current.Contains(detectable)) continue;
-
-                // Verificar se já processamos este detectable neste frame
-                if (_exitEventFrameCache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame)
-                    continue;
+                if (AlreadyProcessedThisFrame(_exitEventFrameCache, detectable, currentFrame)) continue;
 
                 _detected.RemoveAt(i);
                 _exitEventFrameCache[detectable] = currentFrame;
@@ -220,9 +244,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 // APENAS EventBus
                 EventBus<DetectionExitEvent>.Raise(new DetectionExitEvent(detectable, _detector, DetectionType));
             }
+        }
 
-            // Limpar caches antigos (mais de 1 frame atrás) para evitar memory leak
-            CleanupFrameCaches(currentFrame);
+        private static bool AlreadyProcessedThisFrame(Dictionary<IDetectable, int> cache, IDetectable detectable, int currentFrame)
+        {
+            return cache.TryGetValue(detectable, out int lastFrame) && lastFrame == currentFrame;
         }
 
         private void ForceClearDetections()
@@ -255,7 +281,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             // Remove entradas com mais de 1 frame de idade
             _cleanupBuffer.Clear();
 
-            foreach (var kvp in _enterEventFrameCache)
+            foreach (KeyValuePair<IDetectable, int> kvp in _enterEventFrameCache)
             {
                 if (kvp.Value < currentFrame - 1)
                 {
@@ -268,7 +294,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
             _cleanupBuffer.Clear();
 
-            foreach (var kvp in _exitEventFrameCache)
+            foreach (KeyValuePair<IDetectable, int> kvp in _exitEventFrameCache)
             {
                 if (kvp.Value < currentFrame - 1)
                 {

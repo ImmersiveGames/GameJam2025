@@ -11,19 +11,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             var damageEvent = new DamageEvent(
-                request.AttackerId,
-                request.TargetId,
+                request.attackerId,
+                request.targetId,
                 context.CalculatedDamage,
                 context.TargetResource,
-                request.DamageType,
-                request.HitPosition
+                request.damageType,
+                request.hitPosition
             );
 
             context.RaisedDamageEvent = damageEvent;
             DamageEventDispatcher.RaiseForParticipants(
                 damageEvent,
-                request.AttackerId,
-                request.TargetId);
+                request.attackerId,
+                request.targetId);
 
             return true;
         }
@@ -37,18 +37,18 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 
             var damageEvent = context.RaisedDamageEvent.Value;
             var revertedEvent = new DamageEventReverted(
-                damageEvent.AttackerId,
-                damageEvent.TargetId,
-                damageEvent.FinalDamage,
-                damageEvent.ResourceType,
-                damageEvent.DamageType,
-                damageEvent.HitPosition
+                damageEvent.attackerId,
+                damageEvent.targetId,
+                damageEvent.finalDamage,
+                damageEvent.resourceType,
+                damageEvent.damageType,
+                damageEvent.hitPosition
             );
 
             DamageEventDispatcher.RaiseForParticipants(
                 revertedEvent,
-                damageEvent.AttackerId,
-                damageEvent.TargetId);
+                damageEvent.attackerId,
+                damageEvent.targetId);
 
             context.RaisedDamageEvent = null;
         }

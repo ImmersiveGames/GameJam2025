@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -160,6 +159,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // TODO: Remover debug de fontes após validação completa.
             return DefenseRole.Unknown;
         }
+        //TODO:verificar essa função essatransformação de Idetector com IDefenseRoleProvider
 
         private static DefenseRole TryResolveFromDetector(IDetector detector)
         {

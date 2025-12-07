@@ -1,7 +1,5 @@
 ﻿using System.Collections;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
 {
@@ -35,14 +33,14 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         {
             var tcs = new TaskCompletionSource<bool>();
 
+            _runner.Run(Wrapper());
+            return tcs.Task;
+
             IEnumerator Wrapper()
             {
                 yield return fadeRoutine;
                 tcs.SetResult(true);
             }
-
-            _runner.Run(Wrapper());
-            return tcs.Task;
         }
     }
 }

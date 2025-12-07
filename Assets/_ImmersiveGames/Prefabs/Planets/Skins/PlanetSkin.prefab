@@ -115,7 +115,6 @@ GameObject:
   - component: {fileID: 7420330348455882811}
   - component: {fileID: 1296112839031471060}
   - component: {fileID: -673386226977165452}
-  - component: {fileID: 101444860475829702}
   m_Layer: 10
   m_Name: PlanetSkin
   m_TagString: Untagged
@@ -281,7 +280,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cc33f5798e149ca9d10ecbe4320fe8e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  expectedActorId: 
   thresholdConfigs:
   - resourceType: 0
     threshold: 0.25
@@ -341,29 +339,6 @@ MonoBehaviour:
             m_BoolArgument: 0
           m_CallState: 2
   showDebugLogs: 1
---- !u!114 &101444860475829702
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2677257219484125173}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dbda5336283d42378a6bc4b04d888d4a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ringSkin: {fileID: -7696712274100365468}
-  transformSkin: {fileID: 7153256321321909511}
-  materialSkin: {fileID: 7420330348455882811}
-  randomizeAllGroupsKey: 118
-  resetAllMaterialsKey: 98
-  cycleGroupMaterialsKey: 110
-  testDiversityKey: 109
-  randomizeAllKey: 32
-  resetAllKey: 8
-  showDebugMessages: 1
-  logOnStart: 1
 --- !u!1001 &1040595481333703159
 PrefabInstance:
   m_ObjectHideFlags: 0

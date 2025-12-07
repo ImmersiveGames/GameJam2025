@@ -10,14 +10,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
     
     public class MarkPlanet : MonoBehaviour
     {
-        private FlagMarkPlanet _flagMark;
         private IPlanetActor _planetActor;
-        private bool _isMarked;
         private bool _hasSearchedForFlag;
 
         public IActor PlanetActor => _planetActor?.PlanetActor;
-        public bool IsMarked => _isMarked;
-        public FlagMarkPlanet FlagMark => _flagMark;
+        private bool IsMarked { get; set; }
+        private FlagMarkPlanet FlagMark { get; set; }
 
         private void Awake()
         {
@@ -29,19 +27,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
                 return;
             }
             
-            _isMarked = false;
+            IsMarked = false;
             // Não busca a flag no Awake - será buscada sob demanda
         }
 
         private bool EnsureFlagMark()
         {
-            if (_flagMark != null) return true;
+            if (FlagMark != null) return true;
             if (_hasSearchedForFlag) return false;
 
             _hasSearchedForFlag = true;
-            _flagMark = FindFlagMarkInChildren();
+            FlagMark = FindFlagMarkInChildren();
             
-            return _flagMark != null;
+            return FlagMark != null;
         }
 
         private FlagMarkPlanet FindFlagMarkInChildren()
@@ -61,7 +59,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         private void Mark()
         {
-            if (_isMarked) 
+            if (IsMarked) 
             {
                 DebugUtility.LogVerbose<MarkPlanet>($"Planeta {gameObject.name} já está marcado");
                 return;
@@ -73,8 +71,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
                 return;
             }
 
-            _flagMark.SetFlagActive(true);
-            _isMarked = true;
+            FlagMark.SetFlagActive(true);
+            IsMarked = true;
 
             DebugUtility.LogVerbose<MarkPlanet>($"Planeta {gameObject.name} MARCADO");
 
@@ -83,7 +81,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         public void Unmark()
         {
-            if (!_isMarked) 
+            if (!IsMarked) 
             {
                 DebugUtility.LogVerbose<MarkPlanet>($"Planeta {gameObject.name} já não está marcado");
                 return;
@@ -95,8 +93,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
                 return;
             }
 
-            _flagMark.SetFlagActive(false);
-            _isMarked = false;
+            FlagMark.SetFlagActive(false);
+            IsMarked = false;
 
             DebugUtility.LogVerbose<MarkPlanet>($"Planeta {gameObject.name} DESMARCADO");
 
@@ -105,7 +103,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         public void ToggleMark()
         {
-            if (_isMarked)
+            if (IsMarked)
                 Unmark();
             else
                 Mark();
@@ -115,13 +113,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         public void RefreshFlagMark()
         {
             _hasSearchedForFlag = false;
-            _flagMark = null;
+            FlagMark = null;
             EnsureFlagMark();
         }
 
         private void OnDestroy()
         {
-            if (_isMarked)
+            if (IsMarked)
             {
                 Unmark();
             }
@@ -129,7 +127,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         private void OnDisable()
         {
-            if (_isMarked)
+            if (IsMarked)
             {
                 Unmark();
             }
@@ -137,7 +135,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         private void OnDrawGizmosSelected()
         {
-            if (!_isMarked) return;
+            if (!IsMarked) return;
 
             Gizmos.color = Color.green;
             Gizmos.DrawWireSphere(transform.position, 1f);

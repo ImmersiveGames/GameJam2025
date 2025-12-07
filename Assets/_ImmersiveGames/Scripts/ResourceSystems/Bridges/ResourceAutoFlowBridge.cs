@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private bool _autoResumeAllowed;
 
         public bool HasAutoFlowService => _autoFlow != null;
-        public bool IsAutoFlowActive => _autoFlow != null && !_autoFlow.IsPaused;
+        public bool IsAutoFlowActive => _autoFlow is { IsPaused: false };
         public bool AutoResumeAllowed => _autoResumeAllowed;
         public bool StartPaused => startPaused;
 
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return false;
             }
 
-            // Assim que o jogador solicitar a retomada manual, liberamos o auto-resume.
+            // Assim que o jogador solicitar a retomada manual, liberamos o autorresume.
             if (!_autoResumeAllowed)
             {
                 _autoResumeAllowed = true;
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _automaticPauseCount = Mathf.Max(0, _automaticPauseCount) + 1;
             CancelPendingResume();
 
-            if (_autoFlow != null && !_autoFlow.IsPaused)
+            if (_autoFlow is { IsPaused: false })
             {
                 _autoFlow.Pause();
                 string actorId = actor?.ActorId ?? name;
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return;
             }
 
-            if (context.IsIncrease && context.ReachedMax)
+            if (context is { IsIncrease: true, ReachedMax: true })
             {
                 DebugUtility.LogVerbose<ResourceAutoFlowBridge>($"🔒 AutoFlow mantido em pausa porque {context.ResourceType} atingiu o valor máximo.", null, this);
                 return;

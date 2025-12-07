@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -49,15 +48,6 @@ namespace _ImmersiveGames.Scripts.UI
             List<IDetectable> planetList = PlanetsManager.Instance.GetActivePlanets();
 
             if (planetList.Count == 0) DebugUtility.LogVerbose<DirectionIndicatorManager>("NÃO TEM PLANETA SPAWNADO");
-
-            foreach (var planet in planetList)
-            {
-                /*SpawnIndicator(
-                planet.GetPlanetsMaster().transform,
-                planet.GetResource().ResourceIcon,
-                false
-            );*/
-            }
 
             if (planetList.Count > 0) _hasSpawnedPlanets = true;
         }

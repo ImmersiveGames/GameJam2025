@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using ImprovedTimers;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -394,9 +393,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     ? loop.primaryTargetLabel
                     : loop.detectionType?.TypeName ?? "Unknown";
 
-                var targetRole = loop.strategy != null
-                    ? loop.strategy.ResolveTargetRole(targetLabel, loop.primaryTargetRole)
-                    : loop.primaryTargetRole;
+                var targetRole = loop.strategy?.ResolveTargetRole(targetLabel, loop.primaryTargetRole) ?? loop.primaryTargetRole;
 
                 var spawnDirection = offset.sqrMagnitude > 0.0001f
                     ? offset.normalized
@@ -494,12 +491,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             // Perfil opcional definido na wave, usado como camada de override acima do profile por role.
             var waveProfile = context?.WavePreset?.WaveBehaviorProfile;
             var roleProfile = context?.MinionBehaviorProfile;
-            DefenseMinionBehaviorProfileSO legacyProfile = null;
 
-            var selectedProfile = strategy?.SelectMinionProfile(role, waveProfile, roleProfile ?? legacyProfile)
+            var selectedProfile = strategy?.SelectMinionProfile(role, waveProfile, roleProfile)
                                    ?? waveProfile
-                                   ?? roleProfile
-                                   ?? legacyProfile;
+                                   ?? roleProfile;
 
             controller.ApplyProfile(selectedProfile);
 
@@ -518,9 +513,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             lock (_syncRoot)
             {
-                return _strategies.TryGetValue(planet, out var strategy)
-                    ? strategy
-                    : null;
+                return _strategies.GetValueOrDefault(planet);
             }
         }
 
@@ -532,7 +525,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (preset != null && raw <= 0)
             {
                 DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
-                    $"NumberOfMinionsPerWave inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
+                    $"NumberOfMinionsPerWave inválido em '{preset.name}' para planeta {context.Planet?.ActorName ?? "Unknown"}.");
             }
 
             return Mathf.Max(1, raw);
@@ -546,7 +539,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             if (preset != null && raw <= 0f)
             {
                 DebugUtility.LogError<RealPlanetDefenseWaveRunner>(
-                    $"IntervalBetweenWaves inválido em '{preset.name}' para planeta {context?.Planet?.ActorName ?? "Unknown"}.");
+                    $"IntervalBetweenWaves inválido em '{preset.name}' para planeta {context.Planet?.ActorName ?? "Unknown"}.");
             }
 
             return Mathf.Max(0.1f, raw);

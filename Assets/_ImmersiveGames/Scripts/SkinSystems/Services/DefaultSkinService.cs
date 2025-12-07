@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
         }
 
-        public DefaultSkinService(SkinContainerService skinContainerService, SkinModelFactory skinModelFactory, IEnumerable<ISkinInstancePostProcessor> postProcessors)
+        private DefaultSkinService(SkinContainerService skinContainerService, SkinModelFactory skinModelFactory, IEnumerable<ISkinInstancePostProcessor> postProcessors)
         {
             _skinContainerService = skinContainerService ?? throw new ArgumentNullException(nameof(skinContainerService));
             _skinModelFactory = skinModelFactory ?? throw new ArgumentNullException(nameof(skinModelFactory));
@@ -91,21 +92,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             var actor = owner ?? _ownerActor;
             var instances = new List<GameObject>(prefabs.Count);
-
-            for (int i = 0; i < prefabs.Count; i++)
-            {
-                var prefab = prefabs[i];
-                if (prefab == null)
-                {
-                    continue;
-                }
-
-                var instance = _skinModelFactory.Instantiate(prefab, container, actor, config);
-                if (instance != null)
-                {
-                    instances.Add(instance);
-                }
-            }
+            instances.AddRange(from prefab in prefabs where prefab != null select _skinModelFactory.Instantiate(prefab, container, actor, config) into instance where instance != null select instance);
 
             if (instances.Count == 0)
             {
@@ -147,12 +134,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
         private void EnsureDefaultPostProcessor()
         {
-            for (int i = 0; i < _postProcessors.Count; i++)
+            if (_postProcessors.OfType<DynamicCanvasBinderPostProcessor>().Any())
             {
-                if (_postProcessors[i] is DynamicCanvasBinderPostProcessor)
-                {
-                    return;
-                }
+                return;
             }
 
             _postProcessors.Add(new DynamicCanvasBinderPostProcessor());
@@ -162,12 +146,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!_instances.TryGetValue(type, out var instances)) return;
 
-            foreach (var instance in instances)
+            foreach (var instance in instances.Where(instance => instance != null))
             {
-                if (instance != null)
-                {
-                    Object.Destroy(instance);
-                }
+                Object.Destroy(instance);
             }
 
             _instances.Remove(type);
@@ -183,9 +164,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             var keys = new ModelType[_instances.Count];
             _instances.Keys.CopyTo(keys, 0);
 
-            for (int i = 0; i < keys.Length; i++)
+            foreach (var t in keys)
             {
-                ClearInstancesOfType(keys[i]);
+                ClearInstancesOfType(t);
             }
 
             _instances.Clear();

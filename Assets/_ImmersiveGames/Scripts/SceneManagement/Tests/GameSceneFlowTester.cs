@@ -89,7 +89,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Tests
             {
                 await action();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogError("[GameSceneFlowTester] Erro ao executar ação assíncrona: " + e);
             }

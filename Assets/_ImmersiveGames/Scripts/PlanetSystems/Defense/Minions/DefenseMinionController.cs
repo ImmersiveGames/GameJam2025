@@ -1,5 +1,5 @@
-using System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
@@ -11,14 +11,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     [RequireComponent(typeof(MinionChaseHandler))]
     public sealed class DefenseMinionController : MonoBehaviour
     {
-        private enum MinionState
-        {
-            Inactive,
-            Entry,
-            OrbitWait,
-            Chase
-        }
-
         private const float DefaultEntryDurationSeconds = 0.75f;
         private const float DefaultInitialScaleFactor = 0.2f;
         private const float DefaultOrbitIdleDelaySeconds = 0.75f;
@@ -26,12 +18,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private const string DefaultTargetLabel = "Unknown";
 
         // Campos de runtime, sempre preenchidos via profile para evitar dados duplicados em prefabs.
-        private float entryDurationSeconds = DefaultEntryDurationSeconds;
-        private float initialScaleFactor   = DefaultInitialScaleFactor;
-        private float orbitIdleDelaySeconds = DefaultOrbitIdleDelaySeconds;
-        private float chaseSpeed = DefaultChaseSpeed;
-        private MinionEntryStrategySo entryStrategy;
-        private MinionChaseStrategySo chaseStrategy;
+        private float _entryDurationSeconds = DefaultEntryDurationSeconds;
+        private float _initialScaleFactor   = DefaultInitialScaleFactor;
+        private float _orbitIdleDelaySeconds = DefaultOrbitIdleDelaySeconds;
+        private float _chaseSpeed = DefaultChaseSpeed;
+        private MinionEntryStrategySo _entryStrategy;
+        private MinionChaseStrategySo _chaseStrategy;
 
         [Header("Resolução de alvo / Role (fallback)")]
         [SerializeField]
@@ -39,8 +31,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private Vector3 _finalScale;
         private bool _finalScaleCaptured;
-
-        private MinionState _state = MinionState.Inactive;
+        
 
         private Vector3 _planetCenter;
         private Vector3 _orbitPosition;
@@ -49,7 +40,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private string _targetLabel = DefaultTargetLabel;
         private DefenseRole _targetRole = DefenseRole.Unknown;
         private DetectionType _detectionType;
-        private bool _profileApplied;
         private IPoolable _poolable;
 
         [SerializeField]
@@ -138,19 +128,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #endregion
 
-        #region API pública
-
-        #endregion
-
         #region Entry + OrbitWait (com estratégia)
 
         private void StartEntry()
         {
             CancelHandlers();
-            _state = MinionState.Entry;
 
             DebugUtility.LogVerbose<DefenseMinionController>(
-                $"[Entry] {name} iniciando entrada com estratégia '{entryStrategy?.name ?? "DEFAULT"}' " +
+                $"[Entry] {name} iniciando entrada com estratégia '{_entryStrategy?.name ?? "DEFAULT"}' " +
                 $"do centro {_planetCenter} para órbita {_orbitPosition} " +
                 $"contra alvo '{_targetLabel}' (Role: {_targetRole}, TargetTF: {_targetTransform?.name ?? "null"}).");
 
@@ -158,9 +143,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _planetCenter,
                 _orbitPosition,
                 _finalScale,
-                entryDurationSeconds,
-                initialScaleFactor,
-                entryStrategy,
+                _entryDurationSeconds,
+                _initialScaleFactor,
+                _entryStrategy,
                 OnEntryCompleted);
 
             void OnEntryCompleted()
@@ -170,14 +155,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     return;
                 }
 
-                _state = MinionState.OrbitWait;
-
                 DebugUtility.LogVerbose<DefenseMinionController>(
                     $"[Entry] {name} concluiu entrada. Iniciando idle em órbita antes da perseguição.");
 
                 if (orbitWaitHandler != null && orbitWaitHandler.isActiveAndEnabled)
                 {
-                    orbitWaitHandler.BeginOrbitWait(orbitIdleDelaySeconds, StartChase);
+                    orbitWaitHandler.BeginOrbitWait(_orbitIdleDelaySeconds, StartChase);
                 }
                 else
                 {
@@ -207,14 +190,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            _state = MinionState.Chase;
-
             chaseHandler.BeginChase(
                 _targetTransform,
                 _targetLabel,
                 _targetRole,
-                chaseSpeed,
-                chaseStrategy,
+                _chaseSpeed,
+                _chaseStrategy,
                 ResolveTargetTransform,
                 HandleChaseStopped);
         }
@@ -263,14 +244,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             ResetRuntimeState();
         }
 
-        private bool ReturnToPool()
+        private void ReturnToPool()
         {
-            if (_poolable == null)
-            {
-                _poolable = GetComponent<IPoolable>();
-            }
-
-            _state = MinionState.Inactive;
+            _poolable ??= GetComponent<IPoolable>();
 
             if (_poolable == null)
             {
@@ -278,29 +254,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     $"[Pool] {name} não possui IPoolable; desativando GameObject para evitar estado zombie.",
                     this);
                 gameObject.SetActive(false);
-                return false;
+                return;
             }
 
             if (_poolable is PooledObject pooled && pooled.GetPool != null)
             {
                 pooled.GetPool.ReturnObject(_poolable);
-                return true;
+                return;
             }
 
             _poolable.Deactivate();
-            return true;
         }
 
         private void ResetRuntimeState()
         {
-            _state = MinionState.Inactive;
             _targetTransform = null;
             _targetLabel = DefaultTargetLabel;
             _targetRole = DefenseRole.Unknown;
             _detectionType = null;
             _planetCenter = Vector3.zero;
             _orbitPosition = Vector3.zero;
-            _profileApplied = false;
         }
 
         #endregion
@@ -355,21 +328,21 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         #endregion
 
-        public void ApplyProfile(DefenseMinionBehaviorProfileSO profileV2)
+        public void ApplyProfile(DefenseMinionBehaviorProfileSo profileV2)
         {
             if (profileV2 != null)
             {
                 // Entrada / órbita
-                entryDurationSeconds  = Mathf.Max(0.1f, profileV2.EntryDuration);
-                initialScaleFactor    = Mathf.Clamp(profileV2.InitialScaleFactor, 0.05f, 1f);
-                orbitIdleDelaySeconds = Mathf.Max(0f, profileV2.OrbitIdleSeconds);
+                _entryDurationSeconds  = Mathf.Max(0.1f, profileV2.EntryDuration);
+                _initialScaleFactor    = Mathf.Clamp(profileV2.InitialScaleFactor, 0.05f, 1f);
+                _orbitIdleDelaySeconds = Mathf.Max(0f, profileV2.OrbitIdleSeconds);
 
                 // Estratégias
-                entryStrategy = profileV2.EntryStrategy;
-                chaseStrategy = profileV2.ChaseStrategy;
+                _entryStrategy = profileV2.EntryStrategy;
+                _chaseStrategy = profileV2.ChaseStrategy;
 
                 // Perseguição
-                chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
+                _chaseSpeed = Mathf.Max(0.1f, profileV2.ChaseSpeed);
 
                 // Configuração de rotação na perseguição
                 if (chaseHandler == null)
@@ -383,25 +356,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         profileV2.SnapFacingOnChaseStart,
                         profileV2.ChaseRotationLerpFactor);
                 }
-
-                _profileApplied = true;
+                
 
                 DebugUtility.LogVerbose<DefenseMinionController>(
                     $"[Profile] {name} aplicou profile v2 '{profileV2.VariantId}': " +
-                    $"Entry={entryDurationSeconds:0.00}s, " +
-                    $"ScaleFactor={initialScaleFactor:0.00}, " +
-                    $"OrbitIdle={orbitIdleDelaySeconds:0.00}s, " +
-                    $"ChaseSpeed={chaseSpeed:0.00}, " +
-                    $"EntryStrategy={(entryStrategy != null ? entryStrategy.name : "NONE")}, " +
-                    $"ChaseStrategy={(chaseStrategy != null ? chaseStrategy.name : "NONE")}, " +
+                    $"Entry={_entryDurationSeconds:0.00}s, " +
+                    $"ScaleFactor={_initialScaleFactor:0.00}, " +
+                    $"OrbitIdle={_orbitIdleDelaySeconds:0.00}s, " +
+                    $"ChaseSpeed={_chaseSpeed:0.00}, " +
+                    $"EntryStrategy={(_entryStrategy != null ? _entryStrategy.name : "NONE")}, " +
+                    $"ChaseStrategy={(_chaseStrategy != null ? _chaseStrategy.name : "NONE")}, " +
                     $"SnapFacing={profileV2.SnapFacingOnChaseStart}, " +
                     $"ChaseRotLerp={profileV2.ChaseRotationLerpFactor:0.00}",
                     null,this);
 
                 return;
             }
-
-            _profileApplied = false;
 
             DebugUtility.LogWarning<DefenseMinionController>(
                 $"[Profile] {name} recebeu profile nulo. Mantendo configurações atuais de prefab (uso NÃO recomendado).",

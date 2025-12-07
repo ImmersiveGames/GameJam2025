@@ -22,9 +22,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public MaterialGroupConfig MaterialGroup => materialGroup;
         public Material CurrentAppliedMaterial => _currentAppliedMaterial;
         
-        public bool IsValid => targetRenderers != null && 
-                              targetRenderers.Length > 0 && 
-                              materialGroup != null;
+        public bool IsValid => targetRenderers is { Length: > 0 } && 
+            materialGroup != null;
 
         public void Initialize()
         {
@@ -151,12 +150,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         {
             return new SlotInfo
             {
-                RendererCount = targetRenderers?.Length ?? 0,
-                MaterialIndex = materialIndex,
-                GroupName = materialGroup?.GroupName ?? "None",
-                CurrentMaterial = _currentAppliedMaterial?.name ?? "None",
-                IsValid = IsValid,
-                CanApply = CanApply()
+                rendererCount = targetRenderers?.Length ?? 0,
+                materialIndex = materialIndex,
+                groupName = materialGroup?.GroupName ?? "None",
+                currentMaterial = _currentAppliedMaterial?.name ?? "None",
+                isValid = IsValid,
+                canApply = CanApply()
             };
         }
     }
@@ -164,16 +163,16 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     [Serializable]
     public struct SlotInfo
     {
-        public int RendererCount;
-        public int MaterialIndex;
-        public string GroupName;
-        public string CurrentMaterial;
-        public bool IsValid;
-        public bool CanApply;
+        public int rendererCount;
+        public int materialIndex;
+        public string groupName;
+        public string currentMaterial;
+        public bool isValid;
+        public bool canApply;
 
         public override string ToString()
         {
-            return $"{GroupName} (Index: {MaterialIndex}, Renderers: {RendererCount}, Material: {CurrentMaterial})";
+            return $"{groupName} (Index: {materialIndex}, Renderers: {rendererCount}, Material: {currentMaterial})";
         }
     }
 }

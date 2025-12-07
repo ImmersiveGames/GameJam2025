@@ -13,10 +13,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         [SerializeField] protected ModelType targetModelType = ModelType.ModelRoot;
         [SerializeField] protected bool autoRegister = true;
         [SerializeField] protected bool useGlobalEvents = true;
-        
-        protected ActorSkinController actorSkinController;
-        protected IActor ownerActor;
-        protected bool isInitialized;
+
+        private ActorSkinController _actorSkinController;
+        private IActor _ownerActor;
+        private bool _isInitialized;
 
         // Event bindings para eventos globais
         private EventBinding<SkinEvents> _skinUpdateBinding;
@@ -44,56 +44,56 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         protected virtual void Initialize()
         {
-            if (isInitialized) return;
+            if (_isInitialized) return;
 
-            actorSkinController = GetComponentInParent<ActorSkinController>();
-            ownerActor = GetComponentInParent<IActor>();
+            _actorSkinController = GetComponentInParent<ActorSkinController>();
+            _ownerActor = GetComponentInParent<IActor>();
             
-            if (actorSkinController == null)
+            if (_actorSkinController == null)
             {
                 DebugUtility.LogWarning<SkinConfigurable>($"SkinConfigurable: No ActorSkinController found in parent hierarchy of {gameObject.name}");
                 return;
             }
 
-            isInitialized = true;
+            _isInitialized = true;
         }
 
         protected virtual void RegisterWithSkinController()
         {
-            if (!isInitialized || actorSkinController == null) return;
+            if (!_isInitialized || _actorSkinController == null) return;
 
-            actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
-            actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;
-            actorSkinController.OnSkinInstancesCreated += OnActorSkinInstancesCreatedHandler;
+            _actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
+            _actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;
+            _actorSkinController.OnSkinInstancesCreated += OnActorSkinInstancesCreatedHandler;
         }
 
         protected virtual void UnregisterFromSkinController()
         {
-            if (actorSkinController != null)
+            if (_actorSkinController != null)
             {
-                actorSkinController.OnSkinApplied -= OnActorSkinAppliedHandler;
-                actorSkinController.OnSkinCollectionApplied -= OnActorSkinCollectionAppliedHandler;
-                actorSkinController.OnSkinInstancesCreated -= OnActorSkinInstancesCreatedHandler;
+                _actorSkinController.OnSkinApplied -= OnActorSkinAppliedHandler;
+                _actorSkinController.OnSkinCollectionApplied -= OnActorSkinCollectionAppliedHandler;
+                _actorSkinController.OnSkinInstancesCreated -= OnActorSkinInstancesCreatedHandler;
             }
         }
 
         protected virtual void RegisterGlobalEvents()
         {
-            if (!useGlobalEvents || ownerActor == null) return;
+            if (!useGlobalEvents || _ownerActor == null) return;
 
             _skinUpdateBinding = new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
             
-            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, ownerActor);
-            FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, ownerActor);
+            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
+            FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _ownerActor);
         }
 
         protected virtual void UnregisterGlobalEvents()
         {
-            if (ownerActor != null)
+            if (_ownerActor != null)
             {
-                FilteredEventBus<SkinEvents>.Unregister(ownerActor);
-                FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(ownerActor);
+                FilteredEventBus<SkinEvents>.Unregister(_ownerActor);
+                FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_ownerActor);
             }
         }
 
@@ -131,24 +131,24 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         // Métodos abstratos principais
-        public abstract void ConfigureSkin(ISkinConfig skinConfig);
-        public abstract void ApplyDynamicModifications();
-        public virtual void ConfigureSkinInstances(List<GameObject> instances) { }
+        protected abstract void ConfigureSkin(ISkinConfig skinConfig);
+        protected abstract void ApplyDynamicModifications();
+        protected virtual void ConfigureSkinInstances(List<GameObject> instances) { }
 
         // Métodos de utilidade
         protected List<GameObject> GetSkinInstances()
         {
-            return actorSkinController?.GetSkinInstances(targetModelType);
+            return _actorSkinController?.GetSkinInstances(targetModelType);
         }
 
         protected Transform GetSkinContainer()
         {
-            return actorSkinController?.GetSkinContainer(targetModelType);
+            return _actorSkinController?.GetSkinContainer(targetModelType);
         }
 
         public void ReconfigureCurrentSkin()
         {
-            if (actorSkinController != null)
+            if (_actorSkinController != null)
             {
                 List<GameObject> instances = GetSkinInstances();
                 if (instances is { Count: > 0 })

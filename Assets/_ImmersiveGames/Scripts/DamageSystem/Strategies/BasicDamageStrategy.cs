@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
     [Serializable]
     public class BasicDamageStrategy : IDamageStrategy
     {
-        public float CalculateDamage(DamageContext ctx) => ctx.DamageValue;
+        public float CalculateDamage(DamageContext ctx) => ctx.damageValue;
     }
 
     /// <summary>
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         {
             bool isCritical = UnityEngine.Random.value <= Mathf.Clamp01(criticalChance);
             float multiplier = Mathf.Max(1f, criticalMultiplier);
-            return ctx.DamageValue * (isCritical ? multiplier : 1f);
+            return ctx.damageValue * (isCritical ? multiplier : 1f);
         }
     }
 
@@ -41,8 +41,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public float CalculateDamage(DamageContext ctx)
         {
             var table = modifiers ?? new DamageModifiers();
-            float multiplier = table.GetModifier(ctx.DamageType);
-            return ctx.DamageValue * multiplier;
+            float multiplier = table.GetModifier(ctx.damageType);
+            return ctx.damageValue * multiplier;
         }
     }
 
@@ -73,20 +73,20 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
         public float CalculateDamage(DamageContext ctx)
         {
             if (_strategies == null || _strategies.Count == 0)
-                return ctx.DamageValue;
+                return ctx.damageValue;
 
-            float current = ctx.DamageValue;
+            float current = ctx.damageValue;
 
             foreach (var strategy in _strategies)
             {
                 var strategyContext = new DamageContext(
-                    ctx.AttackerId,
-                    ctx.TargetId,
+                    ctx.attackerId,
+                    ctx.targetId,
                     current,
-                    ctx.TargetResource,
-                    ctx.DamageType,
-                    ctx.HitPosition,
-                    ctx.HitNormal
+                    ctx.targetResource,
+                    ctx.damageType,
+                    ctx.hitPosition,
+                    ctx.hitNormal
                 );
 
                 current = strategy.CalculateDamage(strategyContext);

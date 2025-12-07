@@ -19,17 +19,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [Header("Camadas válidas para causar dano")]
         [SerializeField] private LayerMask targetLayers;
 
-        private IActor actor;
-        private PooledObject pooledObject;
-        private int lastProcessedFrame = -1;
-        private GameObject lastProcessedTarget;
+        private IActor _actor;
+        private PooledObject _pooledObject;
+        private int _lastProcessedFrame = -1;
+        private GameObject _lastProcessedTarget;
 
         private void Awake()
         {
-            actor = GetComponent<IActor>();
-            pooledObject = GetComponent<PooledObject>();
+            _actor = GetComponent<IActor>();
+            _pooledObject = GetComponent<PooledObject>();
 
-            if (actor == null && pooledObject == null)
+            if (_actor == null && _pooledObject == null)
             {
                 DebugUtility.LogWarning<DamageDealer>(
                     "Nenhum IActor ou PooledObject encontrado. O dano ficará sem ator associado.", this);
@@ -84,11 +84,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private IActor ResolveActor()
         {
-            if (actor != null)
-                return actor;
+            if (_actor != null)
+                return _actor;
 
-            if (pooledObject != null && pooledObject.Spawner != null)
-                return pooledObject.Spawner;
+            if (_pooledObject != null && _pooledObject.Spawner != null)
+                return _pooledObject.Spawner;
 
             return null;
         }
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (other == null) return false;
             if (!IsTargetLayerValid(other.layer)) return false;
 
-            if (lastProcessedFrame == Time.frameCount && lastProcessedTarget == other)
+            if (_lastProcessedFrame == Time.frameCount && _lastProcessedTarget == other)
                 return false;
 
             var receiver = other.GetComponentInParent<IDamageReceiver>();
@@ -117,8 +117,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             DealDamage(receiver, ctx);
 
-            lastProcessedFrame = Time.frameCount;
-            lastProcessedTarget = other;
+            _lastProcessedFrame = Time.frameCount;
+            _lastProcessedTarget = other;
 
             return true;
         }

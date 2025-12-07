@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (!IsMatchingEntity(evt.EntityId))
+            if (!IsMatchingEntity(evt.entityId))
             {
                 return;
             }
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
 
         private void OnReviveEvent(ReviveEvent evt)
         {
-            if (!IsMatchingEntity(evt.EntityId))
+            if (!IsMatchingEntity(evt.entityId))
             {
                 return;
             }
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
 
         private void OnResetEvent(ResetEvent evt)
         {
-            if (!IsMatchingEntity(evt.EntityId))
+            if (!IsMatchingEntity(evt.entityId))
             {
                 return;
             }

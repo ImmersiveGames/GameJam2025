@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -39,7 +40,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return null;
 
             var key = (attackerId, targetId);
-            return _cooldowns.TryGetValue(key, out var value) ? value : null;
+            return _cooldowns.TryGetValue(key, out float value) ? value : null;
         }
 
         public void RestoreCooldown(string attackerId, string targetId, float? timestamp)
@@ -61,12 +62,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         public void ClearForActor(string actorId)
         {
-            var keysToRemove = new List<(string, string)>();
-            foreach (var kvp in _cooldowns)
-            {
-                if (kvp.Key.attackerId == actorId || kvp.Key.targetId == actorId)
-                    keysToRemove.Add(kvp.Key);
-            }
+            var keysToRemove = (from kvp in _cooldowns where kvp.Key.attackerId == actorId || kvp.Key.targetId == actorId select kvp.Key).ToList();
 
             foreach (var key in keysToRemove)
                 _cooldowns.Remove(key);

@@ -241,8 +241,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             float finalVol = _volumeService.CalculateSfxVolume(soundData, config, ResolveSettings(), context);
 
             // cria AudioSource temporário (usa mixer-group do SoundData ou do config)
-            var go = new GameObject($"OneShot_{soundData.clip.name}");
-            go.transform.position = context.position;
+            var go = new GameObject($"OneShot_{soundData.clip.name}")
+            {
+                transform =
+                {
+                    position = context.position
+                }
+            };
             var src = go.AddComponent<AudioSource>();
             src.clip = soundData.clip;
             src.outputAudioMixerGroup = soundData.mixerGroup ?? config?.defaultMixerGroup;

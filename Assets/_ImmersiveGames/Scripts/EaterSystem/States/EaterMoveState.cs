@@ -157,12 +157,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void StopDirectionTimer()
         {
-            if (_directionTimer == null)
-            {
-                return;
-            }
-
-            _directionTimer.Stop();
+            _directionTimer?.Stop();
         }
     }
 }

@@ -188,10 +188,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void DebugInstanceConfigs()
         {
             DebugUtility.LogVerbose<ResourceSystem>($"🔍 Instance Configs for {EntityId}:");
-            foreach (var kvp in _instanceConfigs)
+            foreach (var (resourceType, resourceInstanceConfig) in _instanceConfigs)
             {
-                var config = kvp.Value;
-                DebugUtility.LogVerbose<ResourceSystem>($"  - {kvp.Key}: Config={config != null}, Style={config.slotStyle != null} ({config.slotStyle?.name})");
+                DebugUtility.LogVerbose<ResourceSystem>($"  - {resourceType}: Config={resourceInstanceConfig != null}, Style={resourceInstanceConfig?.slotStyle != null} ({resourceInstanceConfig?.slotStyle?.name})");
             }
         }
        

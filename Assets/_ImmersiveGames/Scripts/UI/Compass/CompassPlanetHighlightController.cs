@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using _ImmersiveGames.Scripts.CompassSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -55,7 +53,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             }
         }
 
-        public void SetMarkedPlanet(PlanetsMaster planet)
+        private void SetMarkedPlanet(PlanetsMaster planet)
         {
             _markedPlanet = planet;
             UpdateIconHighlights();
@@ -80,7 +78,7 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
                 bool isMarked = planetMaster != null && planetMaster == _markedPlanet;
 
-                Color? tint = tintMarkedIcon ? markedColorTint : (Color?)null;
+                Color? tint = tintMarkedIcon ? markedColorTint : null;
                 icon.SetMarked(isMarked, markedScaleMultiplier, tint);
             });
         }

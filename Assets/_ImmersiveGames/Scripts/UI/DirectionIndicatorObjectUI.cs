@@ -27,8 +27,7 @@ namespace _ImmersiveGames.Scripts.UI
 
             var screenPos = _mainCamera.WorldToScreenPoint(_indicatorTarget.position);
 
-            bool onScreen = screenPos.z > 0 &&
-                screenPos.x > 0 && screenPos.x < Screen.width &&
+            bool onScreen = screenPos is { z: > 0, x: > 0 } && screenPos.x < Screen.width &&
                 screenPos.y > 0 && screenPos.y < Screen.height;
 
             if (onScreen)
@@ -62,15 +61,14 @@ namespace _ImmersiveGames.Scripts.UI
             indicator.rotation = Quaternion.Euler(0, 0, angle - 90f);
         }
 
-        public void Setup(Transform indicatorTarget, Sprite indicatorIcon, bool isHidden)
+        public void Setup(Transform indicatorTarget, Sprite icon, bool isHidden)
         {
             _indicatorTarget = indicatorTarget;
-            this.indicatorIcon.sprite = indicatorIcon;
-            if (isHidden) Hide(true);
-            else Hide(false);
+            indicatorIcon.sprite = icon;
+            Hide(isHidden);
         }
 
-        public void Hide(bool isHidden)
+        private void Hide(bool isHidden)
         {
             indicatorIcon.enabled = !isHidden;
             indicatorHideText.enabled = isHidden;

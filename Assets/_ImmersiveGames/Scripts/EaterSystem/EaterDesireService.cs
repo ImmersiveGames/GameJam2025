@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;
@@ -52,8 +51,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         private bool IsActive => _phase != DesireCyclePhase.Inactive;
-        public bool HasActiveDesire => (_phase != DesireCyclePhase.Inactive && _currentDesire.HasValue) || HasLockedDesire;
-        public bool HasLockedDesire => _lockedSnapshot.HasValue;
+        private bool HasActiveDesire => (_phase != DesireCyclePhase.Inactive && _currentDesire.HasValue) || HasLockedDesire;
+        private bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()
         {
@@ -298,7 +297,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!TrySelectDesire(out PlanetResources desire, out bool available, out int availableCount, out float selectionWeight))
+            if (!TrySelectDesire(out var desire, out bool available, out int availableCount, out float selectionWeight))
             {
                 DebugUtility.LogWarning(
                     "Não foi possível selecionar um desejo válido para o Eater.",
@@ -393,7 +392,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             _recentLookup.Clear();
             if (_recentDesires.Count > 0)
             {
-                foreach (PlanetResources recent in _recentDesires)
+                foreach (var recent in _recentDesires)
                 {
                     _recentLookup.Add(recent);
                 }
@@ -401,9 +400,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             float totalWeight = 0f;
 
-            for (int i = 0; i < _resourcePool.Length; i++)
+            foreach (var resource in _resourcePool)
             {
-                PlanetResources resource = _resourcePool[i];
                 availability.TryGetValue(resource, out int resourceCount);
                 bool isAvailable = resourceCount > 0;
                 bool penalize = shouldPenalizeRecents && _recentLookup.Contains(resource);
@@ -427,7 +425,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     return TrySelectDesire(out desire, out available, out availableCount, out selectionWeight);
                 }
 
-                PlanetResources fallbackResource = _resourcePool[UnityEngine.Random.Range(0, _resourcePool.Length)];
+                var fallbackResource = _resourcePool[UnityEngine.Random.Range(0, _resourcePool.Length)];
                 availability.TryGetValue(fallbackResource, out int fallbackCount);
                 desire = fallbackResource;
                 available = fallbackCount > 0;
@@ -447,7 +445,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         _debugBuilder.Append(" | ");
                     }
 
-                    WeightedDesireCandidate candidate = _candidateBuffer[i];
+                    var candidate = _candidateBuffer[i];
                     _debugBuilder
                         .Append(candidate.Resource)
                         .Append(" (disp=").Append(candidate.IsAvailable)
@@ -465,7 +463,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (totalWeight <= 0f)
             {
-                WeightedDesireCandidate fallbackCandidate = _candidateBuffer[UnityEngine.Random.Range(0, _candidateBuffer.Count)];
+                var fallbackCandidate = _candidateBuffer[UnityEngine.Random.Range(0, _candidateBuffer.Count)];
                 desire = fallbackCandidate.Resource;
                 available = fallbackCandidate.IsAvailable;
                 availableCount = fallbackCandidate.AvailableCount;
@@ -474,21 +472,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             float roll = UnityEngine.Random.value * totalWeight;
-            for (int i = 0; i < _candidateBuffer.Count; i++)
+            foreach (var candidate in _candidateBuffer)
             {
-                WeightedDesireCandidate candidate = _candidateBuffer[i];
                 roll -= candidate.Weight;
-                if (roll <= 0f)
-                {
-                    desire = candidate.Resource;
-                    available = candidate.IsAvailable;
-                    availableCount = candidate.AvailableCount;
-                    selectionWeight = candidate.Weight;
-                    return true;
-                }
+                if (!(roll <= 0f)) continue;
+                desire = candidate.Resource;
+                available = candidate.IsAvailable;
+                availableCount = candidate.AvailableCount;
+                selectionWeight = candidate.Weight;
+                return true;
             }
 
-            WeightedDesireCandidate lastCandidate = _candidateBuffer[_candidateBuffer.Count - 1];
+            var lastCandidate = _candidateBuffer[^1];
             desire = lastCandidate.Resource;
             available = lastCandidate.IsAvailable;
             availableCount = lastCandidate.AvailableCount;
@@ -500,7 +495,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _availabilityBuffer.Clear();
 
-            PlanetsManager manager = PlanetsManager.Instance;
+            var manager = PlanetsManager.Instance;
             if (manager == null)
             {
                 return _availabilityBuffer;
@@ -514,7 +509,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             foreach (var pair in map)
             {
-                PlanetResources resourceType = pair.Value;
+                var resourceType = pair.Value;
                 if (_availabilityBuffer.TryGetValue(resourceType, out int count))
                 {
                     _availabilityBuffer[resourceType] = count + 1;
@@ -601,7 +596,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            SoundData sound = _config.DesireSelectedSound;
+            var sound = _config.DesireSelectedSound;
             if (sound == null || sound.clip == null)
             {
                 if (!_missingSoundLogged)
@@ -630,7 +625,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            Vector3 position = _master != null ? _master.transform.position : Vector3.zero;
+            var position = _master != null ? _master.transform.position : Vector3.zero;
             var context = AudioContext.Default(position, _audioEmitter.UsesSpatialBlend);
             _audioEmitter.Play(sound, context);
         }

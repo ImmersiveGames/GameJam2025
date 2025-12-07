@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.FadeSystem
 {

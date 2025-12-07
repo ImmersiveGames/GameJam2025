@@ -1222,11 +1222,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2009245416}
+  - component: {fileID: 2009245422}
   - component: {fileID: 2009245418}
   - component: {fileID: 2009245419}
-  - component: {fileID: 2009245420}
   - component: {fileID: 2009245421}
-  - component: {fileID: 2009245422}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1275,20 +1274,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   players: []
---- !u!114 &2009245420
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2009245414}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34f6f669713c4b89828f2ecb5ac582d4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainMenuBGM: {fileID: 11400000, guid: 8efc58f3de6d2e44e83315ad00e8fd43, type: 2}
-  bgmFadeDuration: 2
 --- !u!114 &2009245421
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1305,7 +1290,7 @@ MonoBehaviour:
   initialPlanetCount: 3
   planetsRoot: {fileID: 1533458242}
   initialOrbitRadius: 5
-  minimumOrbitSpacing: 5
+  minimumOrbitSpacing: 15
   randomizeInitialAngle: 1
   orbitSpeedRange: {x: 5, y: 15}
   selfRotationSpeedRange: {x: -20, y: 20}

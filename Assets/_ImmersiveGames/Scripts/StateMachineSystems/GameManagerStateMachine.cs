@@ -18,12 +18,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         private EventBinding<GamePauseRequestedEvent> _pauseRequestedBinding;
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
-        private EventTriggeredPredicate<GameOverEvent> _gameOverPredicate;
-        private EventTriggeredPredicate<GameVictoryEvent> _victoryPredicate;
-        private EventTriggeredPredicate<GameStartRequestedEvent> _startRequestedPredicate;
-        private EventTriggeredPredicate<GamePauseRequestedEvent> _pauseRequestedPredicate;
-        private EventTriggeredPredicate<GameResumeRequestedEvent> _resumeRequestedPredicate;
-        private EventTriggeredPredicate<GameResetRequestedEvent> _resetRequestedPredicate;
+        private EventTriggeredPredicate _gameOverPredicate;
+        private EventTriggeredPredicate _victoryPredicate;
+        private EventTriggeredPredicate _startRequestedPredicate;
+        private EventTriggeredPredicate _pauseRequestedPredicate;
+        private EventTriggeredPredicate _resumeRequestedPredicate;
+        private EventTriggeredPredicate _resetRequestedPredicate;
 
         public IState CurrentState => _stateMachine?.CurrentState;
 
@@ -65,12 +65,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             builder.AddState(new VictoryState(_gameManager), out var victoryState);
 
             // Transições baseadas em eventos do ciclo de jogo
-            _startRequestedPredicate = new EventTriggeredPredicate<GameStartRequestedEvent>(() => { });
-            _pauseRequestedPredicate = new EventTriggeredPredicate<GamePauseRequestedEvent>(() => { });
-            _resumeRequestedPredicate = new EventTriggeredPredicate<GameResumeRequestedEvent>(() => { });
-            _resetRequestedPredicate = new EventTriggeredPredicate<GameResetRequestedEvent>(() => { });
-            _gameOverPredicate = new EventTriggeredPredicate<GameOverEvent>(() => { });
-            _victoryPredicate = new EventTriggeredPredicate<GameVictoryEvent>(() => { });
+            _startRequestedPredicate = new EventTriggeredPredicate(() => { });
+            _pauseRequestedPredicate = new EventTriggeredPredicate(() => { });
+            _resumeRequestedPredicate = new EventTriggeredPredicate(() => { });
+            _resetRequestedPredicate = new EventTriggeredPredicate(() => { });
+            _gameOverPredicate = new EventTriggeredPredicate(() => { });
+            _victoryPredicate = new EventTriggeredPredicate(() => { });
             builder.At(menuState, playingState, _startRequestedPredicate);
             builder.At(playingState, pausedState, _pauseRequestedPredicate);
             builder.At(pausedState, playingState, _resumeRequestedPredicate);

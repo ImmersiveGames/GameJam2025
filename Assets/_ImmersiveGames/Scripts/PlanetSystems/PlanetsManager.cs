@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             for (int i = 0; i < initialPlanetCount; i++)
             {
-                PlanetsMaster planetInstance = Instantiate(planetPrefab, planetsRoot);
+                var planetInstance = Instantiate(planetPrefab, planetsRoot);
                 planetInstance.name = $"{planetPrefab.name}_{i + 1}";
 
                 RegisterPlanet(planetInstance);
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             _spawnedPlanets.Add(planetInstance);
 
-            PlanetResourcesSo resource = DrawPlanetResource();
+            var resource = DrawPlanetResource();
             if (resource == null)
             {
                 DebugUtility.LogWarning<PlanetsManager>("Nenhum recurso disponível para atribuir ao planeta instanciado.");
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             planetInstance.AssignResource(resource);
             CacheResourceDefinition(resource);
 
-            PlanetResources resourceType = resource != null ? resource.ResourceType : default;
+            var resourceType = resource != null ? resource.ResourceType : default;
             _planetResourcesMap[planetInstance] = resourceType;
             _planetsByActorId[planetInstance.ActorId] = planetInstance;
             RegisterActiveDetectables(planetInstance);
@@ -153,13 +153,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            Vector3 centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
+            var centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
             float previousOrbitRadius = 0f;
             float previousPlanetRadius = 0f;
 
             for (int i = 0; i < _spawnedPlanets.Count; i++)
             {
-                PlanetsMaster planet = _spawnedPlanets[i];
+                var planet = _spawnedPlanets[i];
                 if (planet == null)
                 {
                     continue;
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                     : Mathf.PI * 2f * (i / (float)_spawnedPlanets.Count);
 
                 Vector3 offset = new(Mathf.Cos(angle) * orbitRadius, 0f, Mathf.Sin(angle) * orbitRadius);
-                Vector3 targetPosition = centerPosition + offset;
+                var targetPosition = centerPosition + offset;
                 planet.transform.position = targetPosition;
 
                 ConfigurePlanetMotion(planet, orbitRadius, angle);
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return 0f;
             }
 
-            Bounds bounds = CalculateRealLength.GetBounds(planetObject);
+            var bounds = CalculateRealLength.GetBounds(planetObject);
             float radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
 
             if (radius > 0f)
@@ -220,7 +220,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             // Fallback para casos onde ainda não há renderizadores válidos (ex.: placeholders).
-            Vector3 scale = planetObject.transform.lossyScale;
+            var scale = planetObject.transform.lossyScale;
             radius = Mathf.Max(scale.x, scale.z) * 0.5f;
             return radius > 0f ? radius : 0.5f;
         }
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             int randomIndex = Random.Range(0, availableResources.Count);
-            PlanetResourcesSo resource = availableResources[randomIndex];
+            var resource = availableResources[randomIndex];
             CacheResourceDefinition(resource);
             return resource;
         }
@@ -253,9 +253,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            for (int i = 0; i < availableResources.Count; i++)
+            foreach (var t in availableResources)
             {
-                CacheResourceDefinition(availableResources[i]);
+                CacheResourceDefinition(t);
             }
         }
 
@@ -266,13 +266,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            PlanetResources resourceType = resource.ResourceType;
-            if (_resourceDefinitions.ContainsKey(resourceType))
-            {
-                return;
-            }
+            var resourceType = resource.ResourceType;
+            if (!_resourceDefinitions.TryAdd(resourceType, resource))
+            { }
 
-            _resourceDefinitions.Add(resourceType, resource);
         }
 
         public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
@@ -298,7 +295,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return false;
             }
 
-            if (_planetsByActorId.TryGetValue(actorId, out PlanetsMaster cached) && cached != null)
+            if (_planetsByActorId.TryGetValue(actorId, out var cached) && cached != null)
             {
                 planet = cached;
                 return true;
@@ -311,20 +308,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return true;
             }
 
-            for (int i = 0; i < _spawnedPlanets.Count; i++)
+            foreach (var candidate in _spawnedPlanets.Where(candidate => candidate != null).Where(candidate => candidate.ActorId == actorId))
             {
-                PlanetsMaster candidate = _spawnedPlanets[i];
-                if (candidate == null)
-                {
-                    continue;
-                }
-
-                if (candidate.ActorId == actorId)
-                {
-                    planet = candidate;
-                    _planetsByActorId[actorId] = candidate;
-                    return true;
-                }
+                planet = candidate;
+                _planetsByActorId[actorId] = candidate;
+                return true;
             }
 
             return false;
@@ -340,19 +328,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             string actorId = planetActor.ActorId;
-            for (int i = 0; i < _activePlanets.Count; i++)
+            foreach (var candidate in _activePlanets.Where(candidate => candidate?.Owner != null).Where(candidate => candidate.Owner.ActorId == actorId))
             {
-                IDetectable candidate = _activePlanets[i];
-                if (candidate?.Owner == null)
-                {
-                    continue;
-                }
-
-                if (candidate.Owner.ActorId == actorId)
-                {
-                    detectable = candidate;
-                    return true;
-                }
+                detectable = candidate;
+                return true;
             }
 
             return false;
@@ -373,14 +352,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnPlanetDeath(DeathEvent evt)
         {
-            if (evt.EntityId == null)
+            if (evt.entityId == null)
             {
                 return;
             }
 
-            if (!_planetsByActorId.TryGetValue(evt.EntityId, out PlanetsMaster planet) || planet == null)
+            if (!_planetsByActorId.TryGetValue(evt.entityId, out var planet) || planet == null)
             {
-                _planetsByActorId.Remove(evt.EntityId);
+                _planetsByActorId.Remove(evt.entityId);
                 return;
             }
 
@@ -426,10 +405,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var detectables = planet.GetComponentsInChildren<IDetectable>(true);
-            for (int i = 0; i < detectables.Length; i++)
+            IDetectable[] detectables = planet.GetComponentsInChildren<IDetectable>(true);
+            foreach (var t in detectables)
             {
-                RegisterActiveDetectable(detectables[i]);
+                RegisterActiveDetectable(t);
             }
         }
 
@@ -440,10 +419,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            var detectables = planet.GetComponentsInChildren<IDetectable>(true);
-            for (int i = 0; i < detectables.Length; i++)
+            IDetectable[] detectables = planet.GetComponentsInChildren<IDetectable>(true);
+            foreach (var t in detectables)
             {
-                UnregisterActiveDetectable(detectables[i]);
+                UnregisterActiveDetectable(t);
             }
         }
 
@@ -469,11 +448,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
         private void OnDestroy()
         {
-            if (_planetDeathBinding != null)
-            {
-                EventBus<DeathEvent>.Unregister(_planetDeathBinding);
-                _planetDeathBinding = null;
-            }
+            if (_planetDeathBinding == null) return;
+            EventBus<DeathEvent>.Unregister(_planetDeathBinding);
+            _planetDeathBinding = null;
         }
 
 #if UNITY_EDITOR
@@ -484,7 +461,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            Vector3 centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
+            var centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
             Gizmos.color = orbitGizmosColor;
 
             foreach (float radius in _orbitRadii)
@@ -500,13 +477,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            Vector3 previousPoint = center + new Vector3(radius, 0f, 0f);
+            var previousPoint = center + new Vector3(radius, 0f, 0f);
             float step = Mathf.PI * 2f / segments;
 
             for (int i = 1; i <= segments; i++)
             {
                 float angle = step * i;
-                Vector3 nextPoint = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                var nextPoint = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
                 Gizmos.DrawLine(previousPoint, nextPoint);
                 previousPoint = nextPoint;
             }

@@ -29,21 +29,21 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
         {
             foreach (var sceneData in scenes)
             {
-                if (!IsSceneLoaded(sceneData.SceneName))
+                if (!IsSceneLoaded(sceneData.sceneName))
                 {
-                    Debug.Log($"[SceneLoaderService] Carregando cena: {sceneData.SceneName} (Modo: {sceneData.LoadMode})");
-                    var op = SceneManager.LoadSceneAsync(sceneData.SceneName, sceneData.LoadMode);
+                    Debug.Log($"[SceneLoaderService] Carregando cena: {sceneData.sceneName} (Modo: {sceneData.loadMode})");
+                    var op = SceneManager.LoadSceneAsync(sceneData.sceneName, sceneData.loadMode);
                     if (op == null)
                     {
-                        Debug.LogError($"[SceneLoaderService] Falha ao carregar: {sceneData.SceneName}");
+                        Debug.LogError($"[SceneLoaderService] Falha ao carregar: {sceneData.sceneName}");
                         continue;
                     }
 
                     yield return op;
 
-                    if (sceneData.LoadMode == LoadSceneMode.Single)
+                    if (sceneData.loadMode == LoadSceneMode.Single)
                     {
-                        var loaded = SceneManager.GetSceneByName(sceneData.SceneName);
+                        var loaded = SceneManager.GetSceneByName(sceneData.sceneName);
                         if (loaded.IsValid())
                         {
                             SceneManager.SetActiveScene(loaded);

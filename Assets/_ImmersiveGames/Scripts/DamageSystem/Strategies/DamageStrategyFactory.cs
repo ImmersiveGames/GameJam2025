@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
@@ -71,24 +72,15 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
                 return Create(selections[0]);
 
             var strategies = new List<IDamageStrategy>(selections.Count);
+            strategies.AddRange(from selection in selections where selection != null select Create(selection) into strategy where strategy != null select strategy);
 
-            foreach (var selection in selections)
+            return strategies.Count switch
             {
-                if (selection == null)
-                    continue;
+                0 => new BasicDamageStrategy(),
+                1 => strategies[0],
+                _ => new CompositeDamageStrategy(strategies)
+            };
 
-                var strategy = Create(selection);
-                if (strategy != null)
-                    strategies.Add(strategy);
-            }
-
-            if (strategies.Count == 0)
-                return new BasicDamageStrategy();
-
-            if (strategies.Count == 1)
-                return strategies[0];
-
-            return new CompositeDamageStrategy(strategies);
         }
     }
 }

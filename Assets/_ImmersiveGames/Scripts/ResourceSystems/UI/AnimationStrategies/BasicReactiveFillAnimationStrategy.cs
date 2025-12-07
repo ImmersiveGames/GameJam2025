@@ -14,27 +14,23 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
         private Image _main;
         private Image _residual;
         private FillAnimationProfile _profile;
-        private MonoBehaviour _owner;
 
         private float _currentValue;
         private Tween _mainTween;
         private Tween _residualTween;
         private float _targetValue;
-        private float _lastAppliedValue;
 
         public void Initialize(Image main, Image residual, FillAnimationProfile profile, MonoBehaviour owner)
         {
             _main = main;
             _residual = residual;
             _profile = profile;
-            _owner = owner;
 
             _mainTween?.Kill();
             _residualTween?.Kill();
 
             _currentValue = main != null ? main.fillAmount : 1f;
             _targetValue = _currentValue;
-            _lastAppliedValue = _currentValue;
         }
 
         public void SetInstant(float value)
@@ -44,7 +40,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
 
             _currentValue = value;
             _targetValue = value;
-            _lastAppliedValue = value;
 
             if (_main != null)
                 _main.fillAmount = value;
@@ -58,7 +53,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
             if (_main == null) return;
 
             _targetValue = Mathf.Clamp01(target);
-            _mainTween?.Kill(false);
+            _mainTween?.Kill();
 
             // === 1️⃣ ANIMAÇÃO PRINCIPAL ===
             _mainTween = DOTween.To(
@@ -71,11 +66,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
              {
                  _currentValue = _main.fillAmount;
              })
-             .OnComplete(() =>
-             {
-                 _lastAppliedValue = _main.fillAmount;
-                 TryAnimateResidual();
-             });
+             .OnComplete(TryAnimateResidual);
         }
 
         private void TryAnimateResidual()
@@ -83,7 +74,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.AnimationStrategies
             if (_residual == null) return;
 
             // Cancela se já tiver uma animação em andamento
-            _residualTween?.Kill(false);
+            _residualTween?.Kill();
 
             // === 2️⃣ ANIMAÇÃO RESIDUAL ===
             _residualTween = DOTween.Sequence()

@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -17,7 +15,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         // V2 (nova, baseada em DefenseEntryConfigSO)
         void ConfigureDefenseEntriesV2(
             PlanetsMaster planet,
-            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            IReadOnlyList<DefenseEntryConfigSo> defenseEntries,
             DefenseChoiceMode defenseChoiceMode);
 
         PlanetDefenseSetupContext ResolveEffectiveConfig(
@@ -47,10 +45,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         void OnEngaged(PlanetsMaster planet, DetectionType detectionType);
         void OnDisengaged(PlanetsMaster planet, DetectionType detectionType);
 
-        DefenseMinionBehaviorProfileSO SelectMinionProfile(
+        DefenseMinionBehaviorProfileSo SelectMinionProfile(
             DefenseRole targetRole,
-            DefenseMinionBehaviorProfileSO waveProfile,
-            DefenseMinionBehaviorProfileSO minionProfile);
+            DefenseMinionBehaviorProfileSo waveProfile,
+            DefenseMinionBehaviorProfileSo minionProfile);
 
         /// <summary>
         /// Resolve dinamicamente o <see cref="DefenseRole"/> desejado para o alvo atual,

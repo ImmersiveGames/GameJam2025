@@ -40,6 +40,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         /// <summary>
         /// Verifica se o grupo tem materiais disponíveis
         /// </summary>
-        public bool HasMaterials => availableMaterials != null && availableMaterials.Length > 0;
+        public bool HasMaterials => availableMaterials is { Length: > 0 };
     }
 }

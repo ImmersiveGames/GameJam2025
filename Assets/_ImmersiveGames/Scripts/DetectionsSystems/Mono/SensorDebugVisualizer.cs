@@ -149,9 +149,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             if (sensor.CurrentlyDetected.Count == 0) return;
 
             Gizmos.color = sensor.Config.DetectingColor;
-            for (int i = 0; i < sensor.CurrentlyDetected.Count; i++)
+            foreach (var detectable in sensor.CurrentlyDetected)
             {
-                var detectable = sensor.CurrentlyDetected[i];
                 if (detectable == null) continue;
 
                 if (!TryGetDetectablePosition(detectable, out var targetPosition)) continue;

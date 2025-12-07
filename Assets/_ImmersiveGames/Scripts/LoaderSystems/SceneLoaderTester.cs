@@ -1,6 +1,5 @@
 ﻿﻿using UnityEngine;
 using UnityEngine.SceneManagement;
-using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.Scripts.LoaderSystems
@@ -56,8 +55,8 @@ namespace _ImmersiveGames.Scripts.LoaderSystems
                 StartCoroutine(_loader.LoadScenesWithFadeAsync(
                     scenesToLoad: new[]
                     {
-                        new SceneLoadData(gameplayScene, LoadSceneMode.Additive),
-                        new SceneLoadData(uiScene, LoadSceneMode.Additive)
+                        new SceneLoadData(gameplayScene),
+                        new SceneLoadData(uiScene)
                     },
                     scenesToUnload: new[]
                     {

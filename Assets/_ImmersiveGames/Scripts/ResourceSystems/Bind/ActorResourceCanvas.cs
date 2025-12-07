@@ -82,11 +82,11 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             }
         }
 
-        protected void SetupCanvasId()
+        private void SetupCanvasId()
         {
             if (autoGenerateCanvasId)
             {
-                var actor = GetComponentInParent<_ImmersiveGames.Scripts.ActorSystems.IActor>();
+                var actor = GetComponentInParent<ActorSystems.IActor>();
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
                     _canvasIdResolved = $"{actor.ActorId}_Canvas";
                 else
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Bind
             CreateSlotForActor(actorId, resourceType, data);
         }
 
-        protected void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
+        private void CreateSlotForActor(string actorId, ResourceType resourceType, IResourceValue data, ResourceInstanceConfig instanceConfig = null)
         {
             if (!_actorSlots.TryGetValue(actorId, out var actorDict))
             {

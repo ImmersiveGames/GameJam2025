@@ -99,16 +99,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
         }
 
-        private void SetPartActive(int partIndex, bool active)
-        {
-            if (IsValidPartIndex(partIndex) && parts[partIndex] != null)
-            {
-                parts[partIndex].SetActive(active);
-                if (showDebugLogs)
-                    DebugUtility.LogVerbose<PartsController>($"Set part {partIndex} to {active} on {gameObject.name}");
-            }
-        }
-
         private void SetAllParts(bool active)
         {
             foreach (var part in parts)

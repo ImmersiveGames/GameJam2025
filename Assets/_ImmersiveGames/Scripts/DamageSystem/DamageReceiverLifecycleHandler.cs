@@ -101,7 +101,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             var context = ResolveContext(change, stateChanged);
 
-            if (stateChanged && _lifecycleModule.IsDead && _explosionModule != null && _explosionModule.HasConfiguration)
+            if (stateChanged && _lifecycleModule.IsDead && _explosionModule is { HasConfiguration: true })
             {
                 _explosionModule.PlayExplosion(context);
             }

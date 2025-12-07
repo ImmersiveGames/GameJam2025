@@ -17,64 +17,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void EnsureAudioSystemInitialized()
         {
-            IAudioMathService mathService = null;
+            // Garantir serviços base no DI
+            RegisterMathServiceIfNeeded();
+            RegisterVolumeServiceIfNeeded();
+            RegisterSfxServiceIfNeeded();
 
-            // registra math service se DI disponível e ainda não registrado
-            if (DependencyManager.Provider != null && !DependencyManager.Provider.TryGetGlobal(out mathService))
-            {
-                DependencyManager.Instance.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
-                DebugUtility.LogVerbose(
-                    typeof(AudioSystemInitializer),
-                    "AudioMathUtility registrado no DI",
-                    DebugUtility.Colors.CrucialInfo);
-            }
-
-            // registra volume service dependente do math service
-            if (DependencyManager.Provider != null && !DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out _))
-            {
-                mathService ??= DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out var globalMath)
-                    ? globalMath
-                    : new AudioMathUtility();
-
-                DependencyManager.Provider.RegisterGlobal<IAudioVolumeService>(new AudioVolumeService(mathService));
-                DebugUtility.Log(
-                    typeof(AudioSystemInitializer),
-                    "AudioVolumeService registrado no DI",
-                    DebugUtility.Colors.CrucialInfo);
-            }
-
-            // registra serviço de SFX global (pooling) dependente de volume service
-            if (DependencyManager.Provider != null && !DependencyManager.Provider.TryGetGlobal<IAudioSfxService>(out _))
-            {
-                var resolvedVolume = DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out var volumeService)
-                    ? volumeService
-                    : new AudioVolumeService(mathService ?? new AudioMathUtility());
-
-                var resolvedSettings = DependencyManager.Provider.TryGetGlobal(out AudioServiceSettings serviceSettings)
-                    ? serviceSettings
-                    : LoadDefaultAudioServiceSettings();
-
-                var resolvedConfig = DependencyManager.Provider.TryGetGlobal(out AudioConfig defaultConfig)
-                    ? defaultConfig
-                    : LoadDefaultAudioConfig();
-
-                var sfxService = new AudioSfxService(resolvedVolume, resolvedSettings, resolvedConfig);
-                DependencyManager.Provider.RegisterGlobal<IAudioSfxService>(sfxService);
-
-                DebugUtility.Log(
-                    typeof(AudioSystemInitializer),
-                    "AudioSfxService registrado no DI",
-                    DebugUtility.Colors.CrucialInfo);
-            }
-
+            // Já existe serviço global de áudio válido?
             if (IsInitialized()) return;
 
-            if (_cachedAudioManager != null && !_cachedAudioManager)
-            {
-                _cachedAudioManager = null;
-            }
-
-            _cachedAudioManager = _cachedAudioManager != null ? _cachedAudioManager : Object.FindAnyObjectByType<AudioManager>();
+            // Garantir referência do AudioManager em cena
+            RefreshCachedAudioManagerReference();
             if (_cachedAudioManager != null)
             {
                 if (!_cachedAudioManager.IsInitialized)
@@ -83,6 +35,89 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             CreateAudioManagerFromResources();
+        }
+
+        private static void RegisterMathServiceIfNeeded()
+        {
+            if (DependencyManager.Provider == null) return;
+
+            if (!DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out _))
+            {
+                DependencyManager.Instance.RegisterGlobal<IAudioMathService>(new AudioMathUtility());
+                DebugUtility.LogVerbose(
+                    typeof(AudioSystemInitializer),
+                    "AudioMathUtility registrado no DI",
+                    DebugUtility.Colors.CrucialInfo);
+            }
+        }
+
+        private static IAudioMathService ResolveMathService()
+        {
+            if (DependencyManager.Provider == null)
+                return new AudioMathUtility();
+
+            if (DependencyManager.Provider.TryGetGlobal<IAudioMathService>(out var math))
+                return math;
+
+            var newMath = new AudioMathUtility();
+            DependencyManager.Instance.RegisterGlobal<IAudioMathService>(newMath);
+            DebugUtility.LogVerbose(
+                typeof(AudioSystemInitializer),
+                "AudioMathUtility registrado no DI",
+                DebugUtility.Colors.CrucialInfo);
+            return newMath;
+        }
+
+        private static void RegisterVolumeServiceIfNeeded()
+        {
+            if (DependencyManager.Provider == null) return;
+            if (DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out _)) return;
+
+            var mathService = ResolveMathService();
+            DependencyManager.Provider.RegisterGlobal<IAudioVolumeService>(new AudioVolumeService(mathService));
+            DebugUtility.Log(
+                typeof(AudioSystemInitializer),
+                "AudioVolumeService registrado no DI",
+                DebugUtility.Colors.CrucialInfo);
+        }
+
+        private static void RegisterSfxServiceIfNeeded()
+        {
+            if (DependencyManager.Provider == null) return;
+            if (DependencyManager.Provider.TryGetGlobal<IAudioSfxService>(out _)) return;
+
+            var resolvedVolume = DependencyManager.Provider.TryGetGlobal<IAudioVolumeService>(out var volumeService)
+                ? volumeService
+                : new AudioVolumeService(ResolveMathService());
+
+            var resolvedSettings = DependencyManager.Provider.TryGetGlobal(out AudioServiceSettings serviceSettings)
+                ? serviceSettings
+                : LoadDefaultAudioServiceSettings();
+
+            var resolvedConfig = DependencyManager.Provider.TryGetGlobal(out AudioConfig defaultConfig)
+                ? defaultConfig
+                : LoadDefaultAudioConfig();
+
+            var sfxService = new AudioSfxService(resolvedVolume, resolvedSettings, resolvedConfig);
+            DependencyManager.Provider.RegisterGlobal<IAudioSfxService>(sfxService);
+
+            DebugUtility.Log(
+                typeof(AudioSystemInitializer),
+                "AudioSfxService registrado no DI",
+                DebugUtility.Colors.CrucialInfo);
+        }
+
+        private static void RefreshCachedAudioManagerReference()
+        {
+            if (_cachedAudioManager != null && !_cachedAudioManager)
+            {
+                _cachedAudioManager = null;
+            }
+
+            if (_cachedAudioManager == null)
+            {
+                _cachedAudioManager = Object.FindAnyObjectByType<AudioManager>();
+            }
         }
 
         private static void CreateAudioManagerFromResources()
@@ -126,14 +161,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private static AudioServiceSettings LoadDefaultAudioServiceSettings()
         {
-            var loaded = Resources.LoadAll<AudioServiceSettings>("Audio/AudioConfigs");
-            return loaded != null && loaded.Length > 0 ? loaded[0] : null;
+            AudioServiceSettings[] loaded = Resources.LoadAll<AudioServiceSettings>("Audio/AudioConfigs");
+            return loaded is { Length: > 0 } ? loaded[0] : null;
         }
 
         private static AudioConfig LoadDefaultAudioConfig()
         {
-            var loaded = Resources.LoadAll<AudioConfig>("Audio/AudioConfigs");
-            return loaded != null && loaded.Length > 0 ? loaded[0] : null;
+            AudioConfig[] loaded = Resources.LoadAll<AudioConfig>("Audio/AudioConfigs");
+            return loaded is { Length: > 0 } ? loaded[0] : null;
         }
 
         public static IAudioService GetAudioService()

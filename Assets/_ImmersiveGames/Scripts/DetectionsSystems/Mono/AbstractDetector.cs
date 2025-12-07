@@ -120,7 +120,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                 _processedEvents.Remove(key);
         }
 
-        protected static string GetName(IDetectable detectable)
+        private static string GetName(IDetectable detectable)
         {
             return detectable.Owner?.ActorName ?? detectable.ToString();
         }

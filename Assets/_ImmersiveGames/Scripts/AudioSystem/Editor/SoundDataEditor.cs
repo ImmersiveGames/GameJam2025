@@ -115,7 +115,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
                 return;
             }
 
-            // Configurações base do AudioSource respeitando SoundData
+            // Configurações-base do AudioSource respeitando SoundData
             source.hideFlags = HideFlags.HideAndDontSave;
             source.clip = data.clip;
             source.outputAudioMixerGroup = data.mixerGroup;

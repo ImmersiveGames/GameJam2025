@@ -11,28 +11,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     public class DamageLifecycleModule
     {
         private readonly string _entityId;
-        private bool _isDead;
-        private bool _disableSkinOnDeath = true;
-        private bool _triggerGameOverOnDeath;
 
         public DamageLifecycleModule(string entityId)
         {
             _entityId = entityId;
-            _isDead = false;
+            IsDead = false;
         }
 
-        public bool IsDead => _isDead;
-        public bool DisableSkinOnDeath
-        {
-            get => _disableSkinOnDeath;
-            set => _disableSkinOnDeath = value;
-        }
+        public bool IsDead { get; private set; }
+        public bool DisableSkinOnDeath { get; set; } = true;
 
-        public bool TriggerGameOverOnDeath
-        {
-            get => _triggerGameOverOnDeath;
-            set => _triggerGameOverOnDeath = value;
-        }
+        public bool TriggerGameOverOnDeath { get; set; }
 
         public void CheckDeath(ResourceSystem system, ResourceType resourceType)
         {
@@ -41,36 +30,32 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             if (value.GetCurrentValue() > 0)
             {
-                if (_isDead)
-                {
-                    _isDead = false;
-                    FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
-                }
+                if (!IsDead) return;
+                IsDead = false;
+                FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
                 return;
             }
 
-            if (!_isDead)
-            {
-                _isDead = true;
-                FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath, _triggerGameOverOnDeath),
-                    _entityId);
-            }
+            if (IsDead) return;
+            IsDead = true;
+            FilteredEventBus<DeathEvent>.RaiseFiltered(
+                new DeathEvent(_entityId, resourceType, DisableSkinOnDeath, TriggerGameOverOnDeath),
+                _entityId);
         }
 
         public void RevertDeathState(bool previousState, ResourceType resourceType)
         {
-            if (_isDead == previousState)
+            if (IsDead == previousState)
             {
                 return;
             }
 
-            _isDead = previousState;
+            IsDead = previousState;
 
-            if (_isDead)
+            if (IsDead)
             {
                 FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, resourceType, _disableSkinOnDeath, _triggerGameOverOnDeath),
+                    new DeathEvent(_entityId, resourceType, DisableSkinOnDeath, TriggerGameOverOnDeath),
                     _entityId);
             }
             else
@@ -81,7 +66,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         public void Clear()
         {
-            _isDead = false;
+            IsDead = false;
             FilteredEventBus<ResetEvent>.RaiseFiltered(new ResetEvent(_entityId), _entityId);
         }
     }

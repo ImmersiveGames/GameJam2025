@@ -96,7 +96,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 
         private void OnDamageEvent(DamageEvent evt)
         {
-            if (evt.TargetId != Actor?.ActorId)
+            if (evt.targetId != Actor?.ActorId)
             {
                 return;
             }
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (evt.EntityId != Actor?.ActorId)
+            if (evt.entityId != Actor?.ActorId)
             {
                 return;
             }
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 
         private void OnReviveEvent(ReviveEvent evt)
         {
-            if (evt.EntityId != Actor?.ActorId)
+            if (evt.entityId != Actor?.ActorId)
             {
                 return;
             }

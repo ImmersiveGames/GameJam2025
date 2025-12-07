@@ -9,12 +9,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
     public abstract class GameStateBase : IState
     {
         protected readonly GameManager gameManager;
-        protected readonly HashSet<ActionType> allowedActions;
+        private readonly HashSet<ActionType> _allowedActions;
 
         protected GameStateBase(GameManager gameManager)
         {
             this.gameManager = gameManager;
-            allowedActions = new HashSet<ActionType>();
+            _allowedActions = new HashSet<ActionType>();
         }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             foreach (ActionType action in actions)
             {
-                allowedActions.Add(action);
+                _allowedActions.Add(action);
             }
         }
 
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public virtual void Update() { }
         public virtual bool CanPerformAction(ActionType action)
         {
-            return allowedActions.Contains(action);
+            return _allowedActions.Contains(action);
         }
         public virtual bool IsGameActive() => false;
         public virtual void FixedUpdate() { }

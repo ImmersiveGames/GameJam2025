@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// <summary>
     /// Representa um preset de wave, definindo quantas vezes uma entrada é
     /// disparada e quantos minions surgem em cada disparo (lote). Mantém o
-    /// SRP ao separar a configuração de wave do mapeamento por target role
+    /// SRP ao separar a configuração de wave do mapeamento por alvo role
     /// feito pelo DefenseEntryConfigSO.
     /// </summary>
     [CreateAssetMenu(
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Comportamento da Wave (opcional)")]
         [Tooltip("Perfil de comportamento específico desta wave, opcional.")]
         [SerializeField]
-        private DefenseMinionBehaviorProfileSO waveBehaviorProfile;
+        private DefenseMinionBehaviorProfileSo waveBehaviorProfile;
 
         /// <summary>
         /// Pool obrigatório para instanciar minions desta onda.
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Perfil opcional que ajusta o comportamento dos minions desta wave.
         /// </summary>
-        public DefenseMinionBehaviorProfileSO WaveBehaviorProfile => waveBehaviorProfile;
+        public DefenseMinionBehaviorProfileSo WaveBehaviorProfile => waveBehaviorProfile;
 
 #if UNITY_EDITOR
         private void OnValidate()

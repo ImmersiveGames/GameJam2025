@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -71,9 +70,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _orchestrator.PrepareRunners(context);
 
             string targetLabel = engagedEvent.Detector.Owner?.ActorName ?? engagedEvent.Detector.ToString();
-            var targetRole = context.Strategy != null
-                ? context.Strategy.ResolveTargetRole(targetLabel, engagedEvent.TargetRole)
-                : engagedEvent.TargetRole;
+            var targetRole = context.Strategy?.ResolveTargetRole(targetLabel, engagedEvent.TargetRole) ?? engagedEvent.TargetRole;
 
             _orchestrator.ConfigurePrimaryTarget(
                 state.Planet,
@@ -126,7 +123,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _orchestrator?.ReleasePools(disabledEvent.Planet);
             }
 
-            var detectionType = _stateManager?.TryGetDetectionType(disabledEvent.Planet);
+            _stateManager?.TryGetDetectionType(disabledEvent.Planet);
             _stateManager?.ClearPlanet(disabledEvent.Planet);
             _orchestrator?.ClearContext(disabledEvent.Planet);
         }

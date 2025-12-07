@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             }
         }
 
-        public Transform CreateOrReuseContainer(ModelType type, Transform parent)
+        private Transform CreateOrReuseContainer(ModelType type, Transform parent)
         {
             if (parent == null) return null;
 
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             return container;
         }
 
-        public void ClearContainer(ModelType type)
+        private void ClearContainer(ModelType type)
         {
             if (!_containers.TryGetValue(type, out var container) || container == null) return;
             for (int i = container.childCount - 1; i >= 0; i--)

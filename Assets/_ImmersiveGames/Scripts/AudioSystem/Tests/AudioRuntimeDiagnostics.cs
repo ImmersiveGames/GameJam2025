@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         [Header("Log Periódico (opcional)")]
         [Tooltip("Se verdadeiro, registra resumo no Console periodicamente.")]
-        public bool logSummaryPeriodically = false;
+        public bool logSummaryPeriodically;
 
         [Tooltip("Intervalo para log periódico (segundos).")]
         [Range(1f, 60f)]
@@ -48,7 +49,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IAudioSfxService _sfxService;
         private IAudioService _audioService;
-        private IAudioVolumeService _volumeService;
         private AudioManager _audioManager; // para acesso ao AudioSource de BGM
 
         private float _updateTimer;
@@ -82,7 +82,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
                 DependencyManager.Provider.TryGetGlobal(out _audioService);
-                DependencyManager.Provider.TryGetGlobal(out _volumeService);
                 DependencyManager.Provider.TryGetGlobal(out _audioManager);
             }
 
@@ -109,26 +108,38 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Update()
         {
+            HandleOverlayToggle();
+            HandleSnapshotUpdate();
+            HandlePeriodicLog();
+        }
+
+        private void HandleOverlayToggle()
+        {
             if (Input.GetKeyDown(toggleOverlayKey))
             {
                 overlayEnabled = !overlayEnabled;
             }
+        }
 
+        private void HandleSnapshotUpdate()
+        {
             _updateTimer += Time.unscaledDeltaTime;
             if (_updateTimer >= updateInterval)
             {
                 _updateTimer = 0f;
                 RefreshSnapshot();
             }
+        }
 
-            if (logSummaryPeriodically)
+        private void HandlePeriodicLog()
+        {
+            if (!logSummaryPeriodically) return;
+
+            _logTimer += Time.unscaledDeltaTime;
+            if (_logTimer >= logInterval)
             {
-                _logTimer += Time.unscaledDeltaTime;
-                if (_logTimer >= logInterval)
-                {
-                    _logTimer = 0f;
-                    LogSummaryToConsole();
-                }
+                _logTimer = 0f;
+                LogSummaryToConsole();
             }
         }
 
@@ -140,40 +151,48 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void RefreshBgmSnapshot()
         {
-            _bgmStatus = "N/A";
-            _bgmIsPlaying = false;
-            _bgmIsPaused = false;
-            _bgmVolume = 0f;
+            ResetBgmSnapshotDefaults();
 
-            AudioSource bgmSource = null;
-
-            if (_audioManager != null && _audioManager.BgmAudioSource != null)
-            {
-                bgmSource = _audioManager.BgmAudioSource;
-            }
-            else
-            {
-                // fallback: tenta encontrar qualquer AudioSource com tag/nome sugestivo,
-                // mas sem inventar muita lógica. Isso é apenas um fallback de debug.
-                var allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
-                foreach (var src in allSources)
-                {
-                    if (!src.isActiveAndEnabled) continue;
-                    if (src.loop && src.clip != null)
-                    {
-                        bgmSource = src;
-                        break;
-                    }
-                }
-            }
-
+            var bgmSource = GetPrimaryBgmSource() ?? FindFallbackBgmSource();
             if (bgmSource == null)
             {
                 _bgmStatus = "Nenhuma fonte de BGM detectada";
                 return;
             }
 
-            var clipName = bgmSource.clip != null ? bgmSource.clip.name : "(sem clip)";
+            UpdateBgmSnapshotFromSource(bgmSource);
+        }
+
+        private void ResetBgmSnapshotDefaults()
+        {
+            _bgmStatus = "N/A";
+            _bgmIsPlaying = false;
+            _bgmIsPaused = false;
+            _bgmVolume = 0f;
+        }
+
+        private AudioSource GetPrimaryBgmSource()
+        {
+            if (_audioManager != null && _audioManager.BgmAudioSource != null)
+            {
+                return _audioManager.BgmAudioSource;
+            }
+
+            return null;
+        }
+
+        private AudioSource FindFallbackBgmSource()
+        {
+            // Fallback: tenta encontrar qualquer AudioSource com tag/nome sugestivo,
+            // mas sem inventar muita lógica. Isso é apenas um fallback de debug.
+            AudioSource[] allSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            return allSources.Where(src => src.isActiveAndEnabled).FirstOrDefault(src => src.loop && src.clip != null);
+
+        }
+
+        private void UpdateBgmSnapshotFromSource(AudioSource bgmSource)
+        {
+            string clipName = bgmSource.clip != null ? bgmSource.clip.name : "(sem clip)";
             _bgmIsPlaying = bgmSource.isPlaying;
             _bgmVolume = bgmSource.volume;
 
@@ -188,7 +207,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         {
             _emittersSnapshot.Clear();
 
-            var emitters = FindObjectsByType<SoundEmitter>(FindObjectsSortMode.None);
+            SoundEmitter[] emitters = FindObjectsByType<SoundEmitter>(FindObjectsSortMode.None);
             _sfxEmitterTotal = emitters.Length;
             _sfxEmitterPlaying = 0;
 

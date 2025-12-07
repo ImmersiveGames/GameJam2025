@@ -2,7 +2,6 @@ using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem
@@ -22,12 +21,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         private float _fadeIn;
 
         public SoundBuilder() : this(ResolveSfxService())
-        {
-        }
-
-        // Assinatura antiga preservada para compatibilidade, parâmetros são ignorados.
-        public SoundBuilder(ObjectPool _, IAudioMathService __, IAudioVolumeService ___, AudioServiceSettings ____, AudioConfig _____)
-            : this()
         {
         }
 
@@ -91,10 +84,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             _sfxService.PlayOneShot(_sound, context, _fadeIn);
 
-            if (_sound.randomPitch != originalRandomPitch)
-            {
+            if (_sound.randomPitch == originalRandomPitch) return;
+            if (_sound != null)
                 _sound.randomPitch = originalRandomPitch;
-            }
         }
 
         private static IAudioSfxService ResolveSfxService()

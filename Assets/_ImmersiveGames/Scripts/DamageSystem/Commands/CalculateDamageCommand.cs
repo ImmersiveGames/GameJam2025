@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             var strategy = context.Strategy;
             if (strategy == null)
             {
-                context.CalculatedDamage = context.Request.DamageValue;
+                context.CalculatedDamage = context.Request.damageValue;
                 context.DamageCalculated = true;
                 return true;
             }
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 
         public void Undo(DamageCommandContext context)
         {
-            if (context == null || !context.DamageCalculated)
+            if (context is not { DamageCalculated: true })
             {
                 return;
             }

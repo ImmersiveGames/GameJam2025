@@ -52,7 +52,6 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 yield break;
             }
 
-            float start = currentAlpha;
             float time = 0f;
 
             Debug.Log($"[FadeController] Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
@@ -61,7 +60,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             {
                 time += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(time / duration);
-                canvasGroup.alpha = Mathf.Lerp(start, targetAlpha, t);
+                canvasGroup.alpha = Mathf.Lerp(currentAlpha, targetAlpha, t);
                 yield return null;
             }
 

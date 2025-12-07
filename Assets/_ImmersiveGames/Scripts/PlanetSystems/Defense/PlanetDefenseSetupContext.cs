@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -19,9 +18,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             DefenseRole defenseRole,
             PlanetResourcesSo planetResource = null,
             IDefenseStrategy strategy = null,
-            DefenseEntryConfigSO entryConfig = null,
+            DefenseEntryConfigSo entryConfig = null,
             WavePresetSo wavePreset = null,
-            DefenseMinionBehaviorProfileSO minionBehaviorProfile = null,
+            DefenseMinionBehaviorProfileSo minionBehaviorProfile = null,
             Vector3 spawnOffset = default,
             float spawnRadius = 0f)
         {
@@ -42,9 +41,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public DefenseRole DefenseRole { get; }
         public PlanetResourcesSo PlanetResource { get; }
         public IDefenseStrategy Strategy { get; }
-        public DefenseEntryConfigSO EntryConfig { get; }
+        public DefenseEntryConfigSo EntryConfig { get; }
         public WavePresetSo WavePreset { get; }
-        public DefenseMinionBehaviorProfileSO MinionBehaviorProfile { get; }
+        public DefenseMinionBehaviorProfileSo MinionBehaviorProfile { get; }
         public Vector3 SpawnOffset { get; }
         public float SpawnRadius { get; }
     }

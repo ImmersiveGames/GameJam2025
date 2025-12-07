@@ -5,13 +5,13 @@ namespace _ImmersiveGames.Scripts.UI
     {
         private Camera _mainCamera;
 
-        void Start()
+        private void Start()
         {
             // Obt�m a c�mera principal
             _mainCamera = Camera.main;
         }
 
-        void LateUpdate()
+        private void LateUpdate()
         {
             if (_mainCamera != null)
             {

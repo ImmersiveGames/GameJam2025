@@ -1,8 +1,7 @@
 ﻿using System;
 using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     [CreateAssetMenu(
         menuName = "ImmersiveGames/PlanetSystems/Defense/Entry Strategies/Straight",

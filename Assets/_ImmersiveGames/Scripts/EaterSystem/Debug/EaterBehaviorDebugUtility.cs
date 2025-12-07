@@ -78,24 +78,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
                 return;
             }
 
-            /*var snapshot = behavior.CreateDebugSnapshot();
-            if (!snapshot.IsValid)
-            {
-                DebugUtility.LogWarning<EaterBehaviorDebugUtility>("Snapshot inválido.", this);
-                return;
-            }
-
-            _builder.Clear();
-            _builder.AppendLine("📸 Snapshot do Eater");
-            _builder.AppendLine($"- Estado atual: {snapshot.CurrentState}");
-            _builder.AppendLine($"- Fome: {snapshot.IsHungry}, Comendo: {snapshot.IsEating}");
-            _builder.AppendLine($"- Alvo: {(snapshot.HasTarget ? snapshot.TargetName : "Nenhum")}");
-            _builder.AppendLine($"- Contato de proximidade: {snapshot.HasProximityContact}");
-            if (snapshot.HasProximityContact)
-            {
-                _builder.AppendLine($"- Último ponto de contato: {snapshot.LastProximityPoint}");
-            }*/
-
             DebugUtility.LogVerbose(_builder.ToString(), instance: this);
         }
 

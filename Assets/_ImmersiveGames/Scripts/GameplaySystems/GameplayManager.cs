@@ -27,11 +27,5 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
                 "GameplayManager inicializado.",
                 DebugUtility.Colors.Success);
         }
-
-        private void OnDestroy()
-        {
-            // Se no futuro quiser tratar ciclo de vida:
-            // - hoje não temos UnregisterGlobal, então só confiamos no ciclo de cena.
-        }
     }
 }

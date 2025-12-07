@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.ResourceSystems.Services;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.ResourceSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -20,7 +22,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
                 return;
             }
 
-            var all = resourceSystem.GetAll();
+            IReadOnlyDictionary<ResourceType, IResourceValue> all = resourceSystem.GetAll();
             if (all.Count == 0)
             {
                 DebugUtility.LogVerbose<ResourceThresholdBridge>($"Sem recursos em {actor.ActorId}. Desativando.");

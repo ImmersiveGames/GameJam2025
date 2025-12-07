@@ -11,9 +11,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return request != null;
             }
 
-            context.PreviousCooldownTimestamp = cooldownModule.PeekCooldown(request.AttackerId, request.TargetId);
+            context.PreviousCooldownTimestamp = cooldownModule.PeekCooldown(request.attackerId, request.targetId);
 
-            var canDeal = cooldownModule.CanDealDamage(request.AttackerId, request.TargetId);
+            bool canDeal = cooldownModule.CanDealDamage(request.attackerId, request.targetId);
             context.CooldownRegistered = canDeal;
 
             if (!canDeal)
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return;
             }
 
-            cooldownModule.RestoreCooldown(request.AttackerId, request.TargetId, context.PreviousCooldownTimestamp);
+            cooldownModule.RestoreCooldown(request.attackerId, request.targetId, context.PreviousCooldownTimestamp);
             context.CooldownRegistered = false;
             context.PreviousCooldownTimestamp = null;
         }

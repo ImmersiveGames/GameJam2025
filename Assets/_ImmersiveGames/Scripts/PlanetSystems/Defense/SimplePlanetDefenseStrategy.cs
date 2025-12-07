@@ -14,30 +14,29 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     {
         private const string DefaultStrategyId = "SimplePresetStrategy";
 
-        private readonly string strategyId;
-        private readonly DefenseTargetMode targetMode;
-        private readonly DefenseRole preferredRole;
-        private readonly Dictionary<string, DefenseRole> cachedRoles;
+        private readonly DefenseTargetMode _targetMode;
+        private readonly DefenseRole _preferredRole;
+        private readonly Dictionary<string, DefenseRole> _cachedRoles;
 
         public SimplePlanetDefenseStrategy(
             DefenseTargetMode targetMode = DefenseTargetMode.PreferPlayer,
             string customStrategyId = DefaultStrategyId)
         {
-            this.targetMode = targetMode;
-            preferredRole = ResolvePreferredRole(targetMode);
-            strategyId = string.IsNullOrWhiteSpace(customStrategyId) ? DefaultStrategyId : customStrategyId;
-            cachedRoles = new Dictionary<string, DefenseRole>(StringComparer.OrdinalIgnoreCase);
+            this._targetMode = targetMode;
+            _preferredRole = ResolvePreferredRole(targetMode);
+            StrategyId = string.IsNullOrWhiteSpace(customStrategyId) ? DefaultStrategyId : customStrategyId;
+            _cachedRoles = new Dictionary<string, DefenseRole>(StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
         /// Identificador amigável para logs e debugging.
         /// </summary>
-        public string StrategyId => strategyId;
+        public string StrategyId { get; }
 
         /// <summary>
         /// Role preferido com base no modo selecionado.
         /// </summary>
-        public DefenseRole TargetRole => preferredRole;
+        public DefenseRole TargetRole => _preferredRole;
 
         /// <summary>
         /// Não altera contexto; mantém neutralidade com presets existentes.
@@ -50,19 +49,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         public void OnEngaged(PlanetsMaster planet, DetectionType detectionType)
         {
             DebugUtility.LogVerbose<SimplePlanetDefenseStrategy>(
-                $"[Strategy] {StrategyId} engaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}). Mode={targetMode}.");
+                $"[Strategy] {StrategyId} engaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}). Mode={_targetMode}.");
         }
 
         public void OnDisengaged(PlanetsMaster planet, DetectionType detectionType)
         {
             DebugUtility.LogVerbose<SimplePlanetDefenseStrategy>(
-                $"[Strategy] {StrategyId} disengaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}). Mode={targetMode}.");
+                $"[Strategy] {StrategyId} disengaged for {planet?.ActorName ?? "Unknown"} ({detectionType?.TypeName ?? "Unknown"}). Mode={_targetMode}.");
         }
 
-        public DefenseMinionBehaviorProfileSO SelectMinionProfile(
+        public DefenseMinionBehaviorProfileSo SelectMinionProfile(
             DefenseRole targetRole,
-            DefenseMinionBehaviorProfileSO waveProfile,
-            DefenseMinionBehaviorProfileSO minionProfile)
+            DefenseMinionBehaviorProfileSo waveProfile,
+            DefenseMinionBehaviorProfileSo minionProfile)
         {
             // Respeita prioridade existente: wave profile > minion profile do pool.
             return waveProfile != null ? waveProfile : minionProfile;
@@ -79,13 +78,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             }
 
             var cacheKey = targetIdentifier ?? string.Empty;
-            if (cachedRoles.TryGetValue(cacheKey, out var cachedRole))
+            if (_cachedRoles.TryGetValue(cacheKey, out var cachedRole))
             {
                 return cachedRole;
             }
 
             var resolvedRole = ResolveRoleByMode(targetIdentifier);
-            cachedRoles[cacheKey] = resolvedRole;
+            _cachedRoles[cacheKey] = resolvedRole;
             return resolvedRole;
         }
 
@@ -93,7 +92,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         {
             var identifierRole = TryResolveIdentifier(targetIdentifier);
 
-            switch (targetMode)
+            switch (_targetMode)
             {
                 case DefenseTargetMode.PlayerOnly:
                     return DefenseRole.Player;
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 case DefenseTargetMode.PreferEater:
                     return identifierRole != DefenseRole.Unknown ? identifierRole : DefenseRole.Eater;
                 default:
-                    return preferredRole;
+                    return _preferredRole;
             }
         }
 

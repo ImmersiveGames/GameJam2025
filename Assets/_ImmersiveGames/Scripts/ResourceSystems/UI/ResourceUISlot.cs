@@ -27,7 +27,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
         private Tween _colorTween;
 
         private float _currentFill;
-        private float _previousFill;
         private string _currentText = "";
         private bool _isFirstConfigure = true;
         private ResourceUIStyle _currentStyle;
@@ -67,7 +66,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             _currentStyle = config?.slotStyle;
 
             _currentFill = 1f;
-            _previousFill = 1f;
 
             ApplyBaseStyleImmediate();
 
@@ -113,7 +111,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
 
             DebugUtility.LogVerbose<ResourceUISlot>($"🔄 Slot Configure: {Type} - Previous: {_currentFill}, New: {newValue}, Style: {_currentStyle?.name ?? "None"}");
 
-            _previousFill = _currentFill;
             _currentFill = newValue;
             _currentText = $"{data.GetCurrentValue():0}/{data.GetMaxValue():0}";
 
@@ -167,7 +164,6 @@ namespace _ImmersiveGames.Scripts.ResourceSystems
             }
             StopAllCoroutines();
             _currentFill = 0f;
-            _previousFill = 0f;
             _isFirstConfigure = true;
             _currentStyle = null;
             SetVisible(false);

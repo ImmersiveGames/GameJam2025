@@ -12,12 +12,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         public ActorResourceComponent Component { get; }
         public IDamageStrategy Strategy { get; }
         public DamageCooldownModule CooldownModule { get; }
-        public DamageLifecycleModule LifecycleModule { get; }
-        public DamageExplosionModule ExplosionModule { get; }
         public ResourceSystem ResourceSystem { get; set; }
         public float CalculatedDamage { get; set; }
         public float PreviousCalculatedDamage { get; set; }
-        public float PreviousLastDamageTime { get; set; }
+        private float PreviousLastDamageTime { get; set; }
         public bool DamageApplied { get; set; }
         public bool DamageCalculated { get; set; }
         public float? PreviousCooldownTimestamp { get; set; }
@@ -25,25 +23,21 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         public DamageEvent? RaisedDamageEvent { get; set; }
         public bool? PreviousDeathState { get; set; }
         public bool DeathStateChanged { get; set; }
-        public Dictionary<ResourceType, float> ResourceSnapshot { get; } = new();
+        private Dictionary<ResourceType, float> ResourceSnapshot { get; } = new();
 
         public DamageCommandContext(
             DamageContext request,
             ResourceType targetResource,
             ActorResourceComponent component,
             IDamageStrategy strategy,
-            DamageCooldownModule cooldownModule,
-            DamageLifecycleModule lifecycleModule,
-            DamageExplosionModule explosionModule)
+            DamageCooldownModule cooldownModule)
         {
             Request = request;
             TargetResource = targetResource;
             Component = component;
             Strategy = strategy;
             CooldownModule = cooldownModule;
-            LifecycleModule = lifecycleModule;
-            ExplosionModule = explosionModule;
-            CalculatedDamage = request?.DamageValue ?? 0f;
+            CalculatedDamage = request?.damageValue ?? 0f;
             PreviousCalculatedDamage = CalculatedDamage;
         }
 
@@ -77,7 +71,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return;
             }
 
-            foreach (var snapshot in ResourceSnapshot)
+            foreach (KeyValuePair<ResourceType, float> snapshot in ResourceSnapshot)
             {
                 ResourceSystem.Set(snapshot.Key, snapshot.Value);
             }

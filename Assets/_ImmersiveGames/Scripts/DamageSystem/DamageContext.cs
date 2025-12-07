@@ -7,38 +7,38 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     [Serializable]
     public class DamageContext
     {
-        public readonly string AttackerId;
-        public readonly string TargetId;
-        public readonly float DamageValue;
-        public readonly ResourceType TargetResource;
-        public readonly DamageType DamageType;
-        public readonly Vector3 HitPosition;
-        public readonly Vector3 HitNormal;
-        public readonly bool HasHitPosition;
-        public readonly float Timestamp;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly float damageValue;
+        public readonly ResourceType targetResource;
+        public readonly DamageType damageType;
+        public readonly Vector3 hitPosition;
+        public readonly Vector3 hitNormal;
+        public readonly bool hasHitPosition;
+        public readonly float timestamp;
 
         public DamageContext(string attackerId, string targetId, float damageValue, ResourceType targetResource,
             DamageType damageType = DamageType.Physical,
             Vector3? hitPosition = null, Vector3? hitNormal = null)
         {
-            AttackerId = attackerId ?? string.Empty;
-            TargetId = targetId ?? string.Empty;
-            DamageValue = damageValue;
-            TargetResource = targetResource;
-            DamageType = damageType;
+            this.attackerId = attackerId ?? string.Empty;
+            this.targetId = targetId ?? string.Empty;
+            this.damageValue = damageValue;
+            this.targetResource = targetResource;
+            this.damageType = damageType;
             if (hitPosition.HasValue)
             {
-                HitPosition = hitPosition.Value;
-                HasHitPosition = true;
+                this.hitPosition = hitPosition.Value;
+                hasHitPosition = true;
             }
             else
             {
-                HitPosition = Vector3.zero;
-                HasHitPosition = false;
+                this.hitPosition = Vector3.zero;
+                hasHitPosition = false;
             }
 
-            HitNormal = hitNormal ?? Vector3.zero;
-            Timestamp = Time.time;
+            this.hitNormal = hitNormal ?? Vector3.zero;
+            timestamp = Time.time;
         }
     }
 }

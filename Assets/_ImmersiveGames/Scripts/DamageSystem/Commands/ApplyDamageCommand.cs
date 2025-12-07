@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 
         public void Undo(DamageCommandContext context)
         {
-            if (context == null || !context.DamageApplied)
+            if (context is not { DamageApplied: true })
             {
                 return;
             }

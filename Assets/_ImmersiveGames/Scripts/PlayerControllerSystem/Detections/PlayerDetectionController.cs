@@ -87,7 +87,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             if (detectionType == planetDefenseDetectionType)
             {
                 HandlePlanetDefenseLost(detectable);
-                return;
             }
         }
 

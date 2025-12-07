@@ -1,5 +1,4 @@
 ﻿using System;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 namespace _ImmersiveGames.Scripts.StateMachineSystems 
 {
@@ -71,7 +70,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         /// <returns>Verdadeiro caso a transição deva ocorrer.</returns>
         protected abstract bool EvaluateInternal();
     }
-    public class EventTriggeredPredicate<T> : ActionPredicate where T : IEvent
+    public class EventTriggeredPredicate : ActionPredicate
     {
         private bool _triggered;
 

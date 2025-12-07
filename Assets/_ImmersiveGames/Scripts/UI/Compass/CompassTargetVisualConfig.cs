@@ -41,6 +41,6 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         // Nesse modo, iconSprite pode ficar nulo e undiscoveredPlanetIcon define o ícone genérico exibido antes
         // da descoberta do recurso; após revelado, o ícone muda para o ResourceIcon do planeta e pode aplicar
         // estilos adicionais via PlanetResourceCompassStyleDatabase (apenas cor por tipo de recurso). O tamanho
-        // permanece definido pelo baseSize desta configuração de target type.
+        // permanece definido pelo baseSize desta configuração de alvo type.
     }
 }

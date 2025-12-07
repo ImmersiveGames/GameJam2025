@@ -50,7 +50,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
 
         #region SkinConfigurable Implementation
-        public override void ConfigureSkin(ISkinConfig skinConfig)
+
+        protected override void ConfigureSkin(ISkinConfig skinConfig)
         {
             if (reapplyScaleOnNewSkin || reapplyRotationOnNewSkin)
             {
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
         }
 
-        public override void ApplyDynamicModifications()
+        protected override void ApplyDynamicModifications()
         {
             ApplyRandomTransform();
         }

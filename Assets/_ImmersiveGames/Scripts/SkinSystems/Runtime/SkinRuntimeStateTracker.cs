@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         [Header("Dependency Injection")]
         [Tooltip("Se verdadeiro, também registra este tracker como serviço global além do registro por objeto.")]
-        [SerializeField] private bool registerAsGlobalService = false;
+        [SerializeField] private bool registerAsGlobalService;
 
         [Header("Fallback de Medição")]
         [Tooltip("Quando verdadeiro, se nenhuma skin tiver sido criada ainda, o tracker calcula um estado inicial a partir do root do ator (ex.: planeta já montado no prefab).")]
@@ -46,8 +46,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
         // Para debug de DI
         private string _objectId;
-        private bool _isRegisteredForObject;
-        private bool _isRegisteredGlobal;
         private bool _initialStateComputedFromRoot;
 
         #region Unity Lifecycle
@@ -83,64 +81,66 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             UnregisterFromControllerEvents();
         }
 
-        private void OnDestroy()
-        {
-            // Limpeza específica fica a cargo do DependencyManager (ClearObjectServices/ClearGlobalServices)
-        }
-
         #endregion
 
         #region Dependency Manager Registration
 
         private void RegisterWithDependencyManager()
         {
+            RegisterAsObjectServiceIfPossible();
+            RegisterAsGlobalServiceIfRequested();
+        }
+
+        private void RegisterAsObjectServiceIfPossible()
+        {
             if (skinController == null || skinController.OwnerActor == null)
             {
                 DebugUtility.LogWarning<SkinRuntimeStateTracker>(
                     $"SkinRuntimeStateTracker em {name} não possui ActorSkinController/OwnerActor válido para registro por objeto.");
-            }
-            else
-            {
-                _objectId = skinController.OwnerActor.ActorId;
-
-                if (!string.IsNullOrEmpty(_objectId))
-                {
-                    try
-                    {
-                        DependencyManager.Provider.RegisterForObject(_objectId, this);
-                        _isRegisteredForObject = true;
-
-                        DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                            $"SkinRuntimeStateTracker registrado no DependencyManager como serviço de objeto. ActorId={_objectId}, GameObject={name}");
-                    }
-                    catch (Exception e)
-                    {
-                        DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                            $"Falha ao registrar SkinRuntimeStateTracker como serviço de objeto no DependencyManager: {e.Message}");
-                    }
-                }
-                else
-                {
-                    DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                        $"SkinRuntimeStateTracker em {name} encontrou OwnerActor sem ActorId. Registro por objeto ignorado.");
-                }
+                return;
             }
 
-            if (registerAsGlobalService)
-            {
-                try
-                {
-                    DependencyManager.Provider.RegisterGlobal(this);
-                    _isRegisteredGlobal = true;
+            _objectId = skinController.OwnerActor.ActorId;
 
-                    DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                        $"SkinRuntimeStateTracker registrado como serviço global no DependencyManager. GameObject={name}");
-                }
-                catch (Exception e)
-                {
-                    DebugUtility.LogWarning<SkinRuntimeStateTracker>(
-                        $"Falha ao registrar SkinRuntimeStateTracker como serviço global no DependencyManager: {e.Message}");
-                }
+            if (string.IsNullOrEmpty(_objectId))
+            {
+                DebugUtility.LogWarning<SkinRuntimeStateTracker>(
+                    $"SkinRuntimeStateTracker em {name} encontrou OwnerActor sem ActorId. Registro por objeto ignorado.");
+                return;
+            }
+
+            TryRegisterForObject(_objectId);
+        }
+
+        private void RegisterAsGlobalServiceIfRequested()
+        {
+            if (!registerAsGlobalService) return;
+
+            try
+            {
+                DependencyManager.Provider.RegisterGlobal(this);
+                DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
+                    $"SkinRuntimeStateTracker registrado como serviço global no DependencyManager. GameObject={name}");
+            }
+            catch (Exception e)
+            {
+                DebugUtility.LogWarning<SkinRuntimeStateTracker>(
+                    $"Falha ao registrar SkinRuntimeStateTracker como serviço global no DependencyManager: {e.Message}");
+            }
+        }
+
+        private void TryRegisterForObject(string objectId)
+        {
+            try
+            {
+                DependencyManager.Provider.RegisterForObject(objectId, this);
+                DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
+                    $"SkinRuntimeStateTracker registrado no DependencyManager como serviço de objeto. ActorId={objectId}, GameObject={name}");
+            }
+            catch (Exception e)
+            {
+                DebugUtility.LogWarning<SkinRuntimeStateTracker>(
+                    $"Falha ao registrar SkinRuntimeStateTracker como serviço de objeto no DependencyManager: {e.Message}");
             }
         }
 
@@ -241,9 +241,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             bool hasBounds = false;
             var result = new Bounds(Vector3.zero, Vector3.zero);
 
-            for (int i = 0; i < instances.Count; i++)
+            foreach (var instance in instances)
             {
-                var instance = instances[i];
                 if (instance == null) continue;
 
                 // Usa CalculateRealLength para lidar com objetos compostos e IgnoreBoundsFlag
@@ -266,7 +265,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 
             if (!hasBounds)
             {
-                // Nenhuma instância com bounds válido encontrada
+                // Nenhuma instância com bounds válida encontrada
                 return new Bounds(Vector3.zero, Vector3.zero);
             }
 
@@ -289,7 +288,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 : SkinRuntimeState.Empty(type);
         }
 
-        public void RecalculateState(ModelType type)
+        private void RecalculateState(ModelType type)
         {
             if (!_instancesByType.TryGetValue(type, out var instances) || instances == null || instances.Count == 0)
             {
@@ -304,9 +303,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
         public void RecalculateAllStates()
         {
             var keys = new List<ModelType>(_instancesByType.Keys);
-            for (int i = 0; i < keys.Count; i++)
+            foreach (var t in keys)
             {
-                RecalculateState(keys[i]);
+                RecalculateState(t);
             }
         }
 
@@ -333,7 +332,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
             {
                 var state = kvp.Value;
                 DebugUtility.LogVerbose<SkinRuntimeStateTracker>(
-                    $"[{name}] ModelType={state.ModelType} | Center={state.Center} | Size={state.Size} | Radius≈{state.ApproxRadius:F2} | HasValidBounds={state.HasValidBounds}");
+                    $"[{name}] ModelType={state.modelType} | Center={state.Center} | Size={state.Size} | Radius≈{state.ApproxRadius:F2} | HasValidBounds={state.HasValidBounds}");
             }
         }
 

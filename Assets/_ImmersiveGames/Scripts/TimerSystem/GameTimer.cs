@@ -179,7 +179,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
 
         /// <summary>
-        /// Reage ao GameStart unificando a liberação do lock de auto-start e inicializando uma nova sessão.
+        /// Reage ao GameStart unificando a liberação do lock de autosstart e inicializando uma nova sessão.
         /// </summary>
         private void HandleGameStart()
         {
@@ -249,23 +249,20 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             EventBus<EventTimeEnded>.Raise(new EventTimeEnded(_configuredDuration));
 
-            IGameManager manager = ResolvedGameManager;
+            var manager = ResolvedGameManager;
             if (manager == null || !manager.TryTriggerGameOver("Timer expired"))
             {
                 DebugUtility.LogWarning<GameTimer>("GameManager indisponível ou estado atual não permite GameOver.", context: this);
             }
         }
 
-        /// <summary>Interrompe a sessão atual e opcionalmente restaura o valor configurado.</summary>
+        /// <summary>Interrompe a sessão atual e restaura opcionalmente o valor configurado.</summary>
         private void StopSession(bool resetToConfigured, float? overrideRemaining = null, string reason = null)
         {
             float current = overrideRemaining ?? ReadTimerTime();
             current = Mathf.Clamp(current, 0f, Mathf.Max(_configuredDuration, current));
 
-            if (_timer != null)
-            {
-                _timer.Stop();
-            }
+            _timer?.Stop();
 
             _sessionActive = false;
             _isPaused = false;
@@ -367,7 +364,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
             }
 
-            GameManagerStateMachine stateMachine = GameManagerStateMachine.Instance;
+            var stateMachine = GameManagerStateMachine.Instance;
             if (stateMachine == null || stateMachine.CurrentState is not PlayingState)
             {
                 return;

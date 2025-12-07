@@ -33,12 +33,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             if (!HasConfiguration)
             {
-                if (!_missingConfigLogged)
-                {
-                    DebugUtility.LogVerbose<DamageExplosionModule>(
-                        "Pool de explosão não configurado. Nenhuma explosão será reproduzida.");
-                    _missingConfigLogged = true;
-                }
+                if (_missingConfigLogged) return;
+                DebugUtility.LogVerbose<DamageExplosionModule>(
+                    "Pool de explosão não configurado. Nenhuma explosão será reproduzida.");
+                _missingConfigLogged = true;
                 return;
             }
 
@@ -83,9 +81,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private Vector3 ResolveExplosionPosition(DamageContext context)
         {
-            if (context.HasHitPosition)
+            if (context.hasHitPosition)
             {
-                return context.HitPosition + _offset;
+                return context.hitPosition + _offset;
             }
 
             if (_ownerTransform != null)

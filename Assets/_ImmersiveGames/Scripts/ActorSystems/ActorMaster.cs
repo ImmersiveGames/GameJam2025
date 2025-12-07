@@ -54,8 +54,8 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
         private void OnDeath(DeathEvent e)
         {
-            DebugUtility.LogVerbose<ActorMaster>($"💀 {ActorId} morreu por {e.ResourceType}!");
-            if (e.DisableSkin)
+            DebugUtility.LogVerbose<ActorMaster>($"💀 {ActorId} morreu por {e.resourceType}!");
+            if (e.disableSkin)
             {
                 SetSkinActive(false);
             }
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
         private void OnDamage(DamageEvent e)
         {
-            DebugUtility.LogVerbose<ActorMaster>($"⚔️ {ActorId} recebeu {e.FinalDamage} de {e.AttackerId}");
+            DebugUtility.LogVerbose<ActorMaster>($"⚔️ {ActorId} recebeu {e.finalDamage} de {e.attackerId}");
             // Local para feedbacks visuais/áudio (commit futuro)
         }
 

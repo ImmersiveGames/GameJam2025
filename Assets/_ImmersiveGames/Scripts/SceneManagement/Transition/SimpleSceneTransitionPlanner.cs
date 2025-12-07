@@ -5,8 +5,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Implementação básica do planner:
-    /// - ScenesToLoad  = targetScenes - currentState.LoadedScenes
-    /// - ScenesToUnload = currentState.LoadedScenes - targetScenes
+    /// - ScenesToLoad  = targetScenes - currentState. LoadedScenes
+    /// - ScenesToUnload = currentState. LoadedScenes - targetScenes
     /// - TargetActiveScene:
     ///     - usa explicitTargetActiveScene se não for vazio;
     ///     - senão, usa a primeira cena do targetScenes;
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 return explicitTargetActiveScene;
 
             // 2) Se há cenas alvo, usa a primeira
-            if (targetScenes != null && targetScenes.Count > 0)
+            if (targetScenes is { Count: > 0 })
                 return targetScenes[0];
 
             // 3) Se não há alvo, mantém a atual (não é o caso típico, mas é seguro)

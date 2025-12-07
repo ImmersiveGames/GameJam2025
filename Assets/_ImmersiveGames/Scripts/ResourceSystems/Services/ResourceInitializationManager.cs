@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
     public class ResourceInitializationManager : PersistentSingleton<ResourceInitializationManager>
     {
         // Pendentes: objectId -> componente
-        public readonly Dictionary<string, IInjectableComponent> _pendingComponents = new();
+        private readonly Dictionary<string, IInjectableComponent> _pendingComponents = new();
 
         // controla tentativas por componente para evitar loops infinitos
         private readonly Dictionary<string, int> _attemptCounts = new();
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             float wait = BaseRetryDelay * (attemptIndex + 1);
             yield return new WaitForSeconds(wait);
 
-            if (!_pendingComponents.ContainsKey(objectId) || component == null)
+            if (!_pendingComponents.ContainsKey(objectId))
                 yield break;
 
             try
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         }
 
         /// <summary>
-        /// Método utilitário para forçar tentativa de injeção em todos pendentes.
+        /// Método utilitário para forçar tentativa de injeção em todos os pendentes.
         /// Útil durante debugging ou quando você sabe que uma dependência global acabou de ficar disponível.
         /// </summary>
         public void TryInjectAllPending()

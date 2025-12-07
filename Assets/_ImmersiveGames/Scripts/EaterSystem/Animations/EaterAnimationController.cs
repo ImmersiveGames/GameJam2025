@@ -73,8 +73,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
                 $"Eventos de dano registrados para {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
         }
-        protected new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
-        protected int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
+        private new int DeathHash => EaterAnimationConfig?.DeathHash ?? Animator.StringToHash("Dead");
+        private int EatingHash => EaterAnimationConfig?.EatingHash ?? Animator.StringToHash("isEating");
         protected int HappyHash => EaterAnimationConfig?.HappyHash ?? Animator.StringToHash("Happy");
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
         
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         private void OnDamageEvent(DamageEvent evt)
         {
-            if (evt.TargetId != Actor?.ActorId)
+            if (evt.targetId != Actor?.ActorId)
             {
                 return;
             }
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         private void OnDeathEvent(DeathEvent evt)
         {
-            if (evt.EntityId != Actor?.ActorId)
+            if (evt.entityId != Actor?.ActorId)
             {
                 return;
             }
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 
         private void OnReviveEvent(ReviveEvent evt)
         {
-            if (evt.EntityId != Actor?.ActorId)
+            if (evt.entityId != Actor?.ActorId)
             {
                 return;
             }

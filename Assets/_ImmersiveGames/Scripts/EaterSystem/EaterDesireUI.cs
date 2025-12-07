@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
-using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;

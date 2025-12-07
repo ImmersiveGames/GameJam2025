@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 
@@ -27,7 +26,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _configured[planet] = context;
 
             var poolData = context.WavePreset?.PoolData;
-            if (context == null || context.WavePreset == null || poolData == null)
+            if (context.WavePreset == null || poolData == null)
             {
                 DebugUtility.LogWarning<RealPlanetDefensePoolRunner>(
                     $"PoolData ausente ou WavePreset nulo para {planet.ActorName}; defesa poderá falhar por falta de pool.");
@@ -90,7 +89,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             _configured[planet] = context;
 
             var poolData = context.WavePreset?.PoolData;
-            if (context == null || context.WavePreset == null || poolData == null)
+            if (context.WavePreset == null || poolData == null)
             {
                 DebugUtility.LogWarning<RealPlanetDefensePoolRunner>(
                     $"PoolData ausente ou WavePreset nulo para {planet.ActorName}; warm-up cancelado.");
@@ -120,7 +119,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 _planetPools[planet] = pool;
             }
 
-            string poolName = poolData?.ObjectName ?? pool.name;
+            string poolName = poolData.ObjectName ?? pool.name;
             if (!_warmedPlanets.Add(planet))
             {
                 DebugUtility.LogVerbose<RealPlanetDefensePoolRunner>($"Pool '{poolName}' já aquecida para planeta {planet.ActorName}.");

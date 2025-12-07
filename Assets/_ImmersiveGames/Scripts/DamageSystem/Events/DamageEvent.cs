@@ -6,151 +6,151 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 {
     public struct DamageEvent : IEvent
     {
-        public string AttackerId;
-        public string TargetId;
-        public float FinalDamage;
-        public ResourceType ResourceType;
-        public DamageType DamageType;
-        public Vector3 HitPosition;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly float finalDamage;
+        public readonly ResourceType resourceType;
+        public readonly DamageType damageType;
+        public Vector3 hitPosition;
     
         public DamageEvent(string attackerId, string targetId, float finalDamage,
             ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            FinalDamage = finalDamage;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            HitPosition = hitPosition;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.finalDamage = finalDamage;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.hitPosition = hitPosition;
         }
     }
 
     public struct DamageEventReverted : IEvent
     {
-        public string AttackerId;
-        public string TargetId;
-        public float RestoredDamage;
-        public ResourceType ResourceType;
-        public DamageType DamageType;
-        public Vector3 HitPosition;
+        public string attackerId;
+        public string targetId;
+        public float restoredDamage;
+        public ResourceType resourceType;
+        public DamageType damageType;
+        public Vector3 hitPosition;
 
         public DamageEventReverted(string attackerId, string targetId, float restoredDamage,
             ResourceType resourceType, DamageType damageType, Vector3 hitPosition)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            RestoredDamage = restoredDamage;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            HitPosition = hitPosition;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.restoredDamage = restoredDamage;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.hitPosition = hitPosition;
         }
     }
 
     public struct DeathEvent : IEvent
     {
-        public readonly string EntityId;
-        public readonly ResourceType ResourceType;
-        public readonly bool DisableSkin;
-        public readonly bool TriggersGameOver;
+        public readonly string entityId;
+        public readonly ResourceType resourceType;
+        public readonly bool disableSkin;
+        public readonly bool triggersGameOver;
 
         public DeathEvent(string entityId, ResourceType resourceType, bool disableSkin = true, bool triggersGameOver = false)
         {
-            EntityId = entityId;
-            ResourceType = resourceType;
-            DisableSkin = disableSkin;
-            TriggersGameOver = triggersGameOver;
+            this.entityId = entityId;
+            this.resourceType = resourceType;
+            this.disableSkin = disableSkin;
+            this.triggersGameOver = triggersGameOver;
         }
     }
 
     public struct ReviveEvent: IEvent
     {
-        public readonly string EntityId;
-        public ReviveEvent(string id) => EntityId = id;
+        public readonly string entityId;
+        public ReviveEvent(string id) => entityId = id;
     }
 
     public struct ResetEvent: IEvent
     {
-        public readonly string EntityId;
-        public ResetEvent(string id) => EntityId = id;
+        public readonly string entityId;
+        public ResetEvent(string id) => entityId = id;
     }
 
     public struct DamagePipelineStarted : IEvent
     {
-        public readonly string AttackerId;
-        public readonly string TargetId;
-        public readonly ResourceType ResourceType;
-        public readonly DamageType DamageType;
-        public readonly float RequestedDamage;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly ResourceType resourceType;
+        public readonly DamageType damageType;
+        public readonly float requestedDamage;
 
         public DamagePipelineStarted(string attackerId, string targetId, ResourceType resourceType,
             DamageType damageType, float requestedDamage)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            RequestedDamage = requestedDamage;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.requestedDamage = requestedDamage;
         }
     }
 
     public struct DamagePipelineCompleted : IEvent
     {
-        public readonly string AttackerId;
-        public readonly string TargetId;
-        public readonly ResourceType ResourceType;
-        public readonly DamageType DamageType;
-        public readonly float RequestedDamage;
-        public readonly float FinalDamage;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly ResourceType resourceType;
+        public readonly DamageType damageType;
+        public readonly float requestedDamage;
+        public readonly float finalDamage;
 
         public DamagePipelineCompleted(string attackerId, string targetId, ResourceType resourceType,
             DamageType damageType, float requestedDamage, float finalDamage)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            RequestedDamage = requestedDamage;
-            FinalDamage = finalDamage;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.requestedDamage = requestedDamage;
+            this.finalDamage = finalDamage;
         }
     }
 
     public struct DamagePipelineFailed : IEvent
     {
-        public readonly string AttackerId;
-        public readonly string TargetId;
-        public readonly ResourceType ResourceType;
-        public readonly DamageType DamageType;
-        public readonly float RequestedDamage;
-        public readonly string FailedCommandName;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly ResourceType resourceType;
+        public readonly DamageType damageType;
+        public readonly float requestedDamage;
+        public readonly string failedCommandName;
 
         public DamagePipelineFailed(string attackerId, string targetId, ResourceType resourceType,
             DamageType damageType, float requestedDamage, string failedCommandName)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            RequestedDamage = requestedDamage;
-            FailedCommandName = failedCommandName;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.requestedDamage = requestedDamage;
+            this.failedCommandName = failedCommandName;
         }
     }
 
     public struct DamagePipelineUndone : IEvent
     {
-        public readonly string AttackerId;
-        public readonly string TargetId;
-        public readonly ResourceType ResourceType;
-        public readonly DamageType DamageType;
-        public readonly float RestoredDamage;
+        public readonly string attackerId;
+        public readonly string targetId;
+        public readonly ResourceType resourceType;
+        public readonly DamageType damageType;
+        public readonly float restoredDamage;
 
         public DamagePipelineUndone(string attackerId, string targetId, ResourceType resourceType,
             DamageType damageType, float restoredDamage)
         {
-            AttackerId = attackerId;
-            TargetId = targetId;
-            ResourceType = resourceType;
-            DamageType = damageType;
-            RestoredDamage = restoredDamage;
+            this.attackerId = attackerId;
+            this.targetId = targetId;
+            this.resourceType = resourceType;
+            this.damageType = damageType;
+            this.restoredDamage = restoredDamage;
         }
     }
 }

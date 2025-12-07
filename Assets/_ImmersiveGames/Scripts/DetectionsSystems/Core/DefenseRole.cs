@@ -1,7 +1,7 @@
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
 {
     /// <summary>
-    /// Representa o target role do objeto detectado em relação ao planeta
+    /// Representa o alvo role do objeto detectado em relação ao planeta
     /// (por exemplo, Player, Eater, Unknown). Usado para escolher presets
     /// de wave e configuração de entrada da defesa, sem definir o
     /// comportamento dos minions.

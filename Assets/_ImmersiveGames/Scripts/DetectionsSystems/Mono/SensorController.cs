@@ -10,10 +10,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
     {
         [SerializeField] private SensorCollection collection;
 
-        private DetectorService _service;
         private IDetector _detector;
 
-        public DetectorService Service => _service;
+        public DetectorService Service { get; private set; }
         public SensorCollection Collection => collection;
 
         private void Awake()
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                 return;
             }
 
-            _service = new DetectorService(transform, _detector, collection);
+            Service = new DetectorService(transform, _detector, collection);
 
             DebugUtility.Log<SensorController>($"Configurado com {collection.Sensors.Count} sensores em {gameObject.name}");
         }
@@ -54,7 +53,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         private void Update()
         {
-            _service?.Update(Time.deltaTime);
+            Service?.Update(Time.deltaTime);
         }
     }
 }

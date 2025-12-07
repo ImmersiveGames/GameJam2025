@@ -16,8 +16,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         [Header("Comportamento padrão deste tipo de minion")]
         [Tooltip("Profile v2 (com estratégias) aplicado a todos os minions que usam este data.")]
         [SerializeField]
-        private DefenseMinionBehaviorProfileSO behaviorProfileV2;
+        private DefenseMinionBehaviorProfileSo behaviorProfileV2;
 
-        public DefenseMinionBehaviorProfileSO BehaviorProfileV2 => behaviorProfileV2;
+        public DefenseMinionBehaviorProfileSo BehaviorProfileV2 => behaviorProfileV2;
     }
 }

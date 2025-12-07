@@ -45,7 +45,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
 
         #region SkinConfigurable Implementation
-        public override void ConfigureSkin(ISkinConfig skinConfig)
+
+        protected override void ConfigureSkin(ISkinConfig skinConfig)
         {
             if (!applyOnSkinChange) return;
             
@@ -53,7 +54,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Configured from skin: {_hasRing}, Rotation: {_currentRotation}°");
         }
 
-        public override void ApplyDynamicModifications()
+        protected override void ApplyDynamicModifications()
         {
             UpdateRingVisibility();
             if (showDebugLogs) DebugUtility.LogVerbose<RingActivationSkin>($"Applied dynamic modifications");
@@ -176,9 +177,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             return new RingState
             {
-                HasRing = _hasRing,
-                Rotation = _currentRotation,
-                IsVisible = ringObject != null && ringObject.activeSelf
+                hasRing = _hasRing,
+                rotation = _currentRotation,
+                isVisible = ringObject != null && ringObject.activeSelf
             };
         }
         #endregion
@@ -209,13 +210,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
     [System.Serializable]
     public struct RingState
     {
-        public bool HasRing;
-        public float Rotation;
-        public bool IsVisible;
+        public bool hasRing;
+        public float rotation;
+        public bool isVisible;
 
         public override string ToString()
         {
-            return $"Ring: {HasRing}, Rotation: {Rotation}°, Visible: {IsVisible}";
+            return $"Ring: {hasRing}, Rotation: {rotation}°, Visible: {isVisible}";
         }
     }
 }

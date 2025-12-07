@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
@@ -106,17 +107,8 @@ namespace _ImmersiveGames.Scripts.FXSystems
 
         private bool AnyParticleAlive()
         {
-            if (particleSystems == null) return false;
+            return particleSystems != null && particleSystems.Any(ps => ps != null && ps.IsAlive(true));
 
-            foreach (var ps in particleSystems)
-            {
-                if (ps != null && ps.IsAlive(true))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

@@ -46,8 +46,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private EaterEatingState _eatingState;
         private EaterDeathState _deathState;
 
-        private EaterMaster _master;
-        private EaterConfigSo _config;
         private PlayerManager _playerManager;
         private PlanetMarkingManager _planetMarkingManager;
 
@@ -79,8 +77,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         private void Awake()
         {
-            _master = GetComponent<EaterMaster>();
-            _config = _master != null ? _master.Config : null;
+            Master = GetComponent<EaterMaster>();
+            Config = Master != null ? Master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
@@ -99,8 +97,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            _master ??= GetComponent<EaterMaster>();
-            _config = _master != null ? _master.Config : null;
+            Master ??= GetComponent<EaterMaster>();
+            Config = Master != null ? Master.Config : null;
             _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
@@ -313,13 +311,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return _deathPredicate;
             }
 
-            if (_master == null)
+            if (Master == null)
             {
                 LogMissingMasterForPredicates();
                 return FalsePredicate.Instance;
             }
 
-            _deathPredicate = new DeathEventPredicate(_master.ActorId);
+            _deathPredicate = new DeathEventPredicate(Master.ActorId);
             return _deathPredicate;
         }
 
@@ -330,13 +328,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return _revivePredicate;
             }
 
-            if (_master == null)
+            if (Master == null)
             {
                 LogMissingMasterForPredicates();
                 return FalsePredicate.Instance;
             }
 
-            _revivePredicate = new ReviveEventPredicate(_master.ActorId);
+            _revivePredicate = new ReviveEventPredicate(Master.ActorId);
             return _revivePredicate;
         }
 
@@ -413,8 +411,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return desiredPosition;
             }
 
-            float maxDistance = Mathf.Max(0f, _config?.WanderingMaxDistanceFromPlayer ?? 0f);
-            float minDistance = Mathf.Max(0f, _config?.WanderingMinDistanceFromPlayer ?? 0f);
+            float maxDistance = Mathf.Max(0f, Config?.WanderingMaxDistanceFromPlayer ?? 0f);
+            float minDistance = Mathf.Max(0f, Config?.WanderingMinDistanceFromPlayer ?? 0f);
 
             if (maxDistance <= 0f && minDistance <= 0f)
             {
@@ -458,9 +456,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             return desiredPosition;
         }
 
-        internal EaterMaster Master => _master;
+        internal EaterMaster Master { get; private set; }
 
-        internal EaterConfigSo Config => _config;
+        internal EaterConfigSo Config { get; private set; }
 
         internal Transform CurrentTargetPlanet => _planetMarkingManager?.CurrentlyMarkedPlanet != null
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
@@ -481,7 +479,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_animationController == null)
             {
-                string actorId = _master != null ? _master.ActorId : null;
+                string actorId = Master != null ? Master.ActorId : null;
                 if (!string.IsNullOrEmpty(actorId))
                 {
                     if (DependencyManager.Provider.TryGetForObject(actorId, out EaterAnimationController resolvedController))
@@ -513,9 +511,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_audioEmitter == null)
             {
-                if (_master != null)
+                if (Master != null)
                 {
-                    string actorId = _master.ActorId;
+                    string actorId = Master.ActorId;
                     if (!string.IsNullOrEmpty(actorId)
                         && DependencyManager.Provider.TryGetForObject(actorId, out EntityAudioEmitter resolvedEmitter))
                     {
@@ -563,7 +561,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            string attackerId = _master != null ? _master.ActorId : string.Empty;
+            string attackerId = Master != null ? Master.ActorId : string.Empty;
             string targetId = damageReceiver.GetReceiverId();
             Vector3 hitPosition = transform.position;
 
@@ -576,9 +574,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             if (_selfDamageReceiver == null)
             {
-                if (_master != null)
+                if (Master != null)
                 {
-                    string actorId = _master.ActorId;
+                    string actorId = Master.ActorId;
                     if (!string.IsNullOrEmpty(actorId)
                         && DependencyManager.Provider.TryGetForObject(actorId, out IDamageReceiver resolvedReceiver))
                     {
@@ -692,25 +690,25 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
         internal float GetRandomRoamingSpeed()
         {
-            if (_config == null)
+            if (Config == null)
             {
                 return 0f;
             }
 
-            float min = _config.MinSpeed;
-            float max = _config.MaxSpeed;
+            float min = Config.MinSpeed;
+            float max = Config.MaxSpeed;
             return Random.Range(min, max);
         }
 
         internal float GetChaseSpeed()
         {
-            if (_config == null)
+            if (Config == null)
             {
                 return 0f;
             }
 
-            float baseSpeed = _config.MaxSpeed;
-            return baseSpeed * _config.MultiplierChase;
+            float baseSpeed = Config.MaxSpeed;
+            return baseSpeed * Config.MultiplierChase;
         }
 
         internal void Move(Vector3 direction, float speed, float deltaTime, bool respectPlayerBounds)
@@ -743,7 +741,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             }
 
             Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
-            float rotationSpeed = _config != null ? _config.RotationSpeed : 5f;
+            float rotationSpeed = Config != null ? Config.RotationSpeed : 5f;
             rotationSpeed = Mathf.Max(0f, rotationSpeed);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, deltaTime * rotationSpeed);
         }
@@ -954,7 +952,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            if (_master == null || _config == null)
+            if (Master == null || Config == null)
             {
                 if (logStateTransitions && !_missingDesireServiceLogged)
                 {
@@ -965,7 +963,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            _desireService = new EaterDesireService(_master, _config, _audioEmitter);
+            _desireService = new EaterDesireService(Master, Config, _audioEmitter);
             _desireService.EventDesireChanged += HandleDesireChanged;
             _missingDesireServiceLogged = false;
             return true;

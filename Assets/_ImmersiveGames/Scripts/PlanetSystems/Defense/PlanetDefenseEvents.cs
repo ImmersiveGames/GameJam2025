@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
     /// <summary>
     /// Evento de runtime emitido a cada minion spawnado por uma onda, facilitando
-    /// telemetria ou efeitos adicionais sem acoplamento direto ao runner ou dados
+    /// telemetria ou efeitos adicionais sem acoplamento direto ao runner, ou dados
     /// de configuração (não utiliza ScriptableObjects de definição de minion ou wave).
     /// </summary>
     /// <remarks>

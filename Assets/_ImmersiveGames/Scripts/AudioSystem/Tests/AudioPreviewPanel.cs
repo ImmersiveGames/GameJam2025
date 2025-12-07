@@ -1,11 +1,9 @@
-﻿using UnityEngine;
-using _ImmersiveGames.Scripts.AudioSystem;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
+﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-
-namespace _ImmersiveGames.Scripts.AudioSystem.Debugging
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using UnityEngine;
+namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
     /// Painel simples de preview de áudio em runtime.
@@ -125,9 +123,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Debugging
 
             _sfxIndex = Mathf.Clamp(_sfxIndex, 0, sfxClips.Length - 1);
             var current = sfxClips[_sfxIndex];
-            var name = current != null ? current.name : "(null)";
+            string currentName = current != null ? current.name : "(null)";
 
-            GUILayout.Label($"Selecionado: [{_sfxIndex}] {name}");
+            GUILayout.Label($"Selecionado: [{_sfxIndex}] {currentName}");
 
             GUILayout.BeginHorizontal();
 
@@ -185,9 +183,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Debugging
 
             _bgmIndex = Mathf.Clamp(_bgmIndex, 0, bgmClips.Length - 1);
             var current = bgmClips[_bgmIndex];
-            var name = current != null ? current.name : "(null)";
+            string currentName = current != null ? current.name : "(null)";
 
-            GUILayout.Label($"Selecionado: [{_bgmIndex}] {name}");
+            GUILayout.Label($"Selecionado: [{_bgmIndex}] {currentName}");
 
             GUILayout.BeginHorizontal();
 

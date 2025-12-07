@@ -3,15 +3,14 @@ using DG.Tweening;
 using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     /// <summary>
     /// Estratégia de perseguição em zigzag usando DOTween.
     ///
     /// A ideia:
     /// - Move o minion até o alvo em linha reta (DOMove)
-    /// - Ao mesmo tempo aplica um deslocamento lateral oscilando (DOBlendableMoveBy com LoopType.Yoyo)
+    /// - Ao mesmo tempo, aplica um deslocamento lateral oscilando (DOBlendableMoveBy com LoopType. Yoyo)
     /// - O resultado é um caminho "serpenteando" até o alvo.
     /// </summary>
     [CreateAssetMenu(

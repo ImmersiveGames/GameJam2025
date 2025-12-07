@@ -27,9 +27,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Configs
         /// </summary>
         public bool HasFillGradient()
         {
-            return fillGradient != null &&
-                   fillGradient.colorKeys != null &&
-                   fillGradient.colorKeys.Length > 0;
+            return fillGradient is { colorKeys: { Length: > 0 } };
         }
     }
 }

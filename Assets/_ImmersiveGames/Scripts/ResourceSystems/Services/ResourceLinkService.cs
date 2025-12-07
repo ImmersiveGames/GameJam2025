@@ -50,7 +50,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             if (_links.TryGetValue(actorId, out var dict) && dict.Remove(src))
                 DebugUtility.LogVerbose<ResourceLinkService>($"Link removido: {actorId} - {src}");
-            if (dict != null && dict.Count == 0) _links.Remove(actorId);
+            if (dict is { Count: 0 }) _links.Remove(actorId);
         }
 
         public void UnregisterAllLinks(string actorId)

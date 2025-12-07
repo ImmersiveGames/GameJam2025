@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Runtime;
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
     /// Orquestrador focado em preparar contexto, pools e runner de waves.
-    /// Resolve target role para escolher a entrada (Entry) correta e o preset
+    /// Resolve alvo role para escolher a entrada (Entry) correta e o preset
     /// de wave associado, mantendo cache por planeta e delegando logs ao
     /// DebugUtility para acompanhamento no Editor. Não define comportamento
     /// de minions — apenas como e onde eles entram.
@@ -23,7 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private readonly Dictionary<PlanetsMaster, DefenseEntryConfigV2> _configuredDefenseEntriesV2 = new();
         private readonly Dictionary<PlanetsMaster, Dictionary<(DetectionType detectionType, DefenseRole role), PlanetDefenseSetupContext>> _resolvedContexts = new();
         private readonly Dictionary<PlanetsMaster, int> _sequentialIndices = new();
-        private readonly Dictionary<PlanetsMaster, Dictionary<int, DefenseEntryConfigSO>> _sequentialEntryCacheV2 = new();
+        private readonly Dictionary<PlanetsMaster, Dictionary<int, DefenseEntryConfigSo>> _sequentialEntryCacheV2 = new();
         private readonly Dictionary<PlanetsMaster, float> _cachedApproxRadii = new();
         private const bool WarmUpPools = true;
 
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public void ConfigureDefenseEntriesV2(
             PlanetsMaster planet,
-            IReadOnlyList<DefenseEntryConfigSO> defenseEntries,
+            IReadOnlyList<DefenseEntryConfigSo> defenseEntries,
             DefenseChoiceMode defenseChoiceMode)
         {
             if (planet == null)
@@ -51,7 +50,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            var entries = defenseEntries ?? Array.Empty<DefenseEntryConfigSO>();
+            var entries = defenseEntries ?? Array.Empty<DefenseEntryConfigSo>();
             _configuredDefenseEntriesV2[planet] = new DefenseEntryConfigV2(entries, defenseChoiceMode);
             ClearCachedContext(planet);
 
@@ -221,11 +220,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (!_configuredDefenseEntriesV2.TryGetValue(planet, out var configuration))
             {
-                DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração v2 registrada para {planet?.ActorName ?? "planeta nulo"}.");
+                DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Nenhuma configuração v2 registrada para {planet.ActorName ?? "planeta nulo"}.");
                 return false;
             }
 
-            if (configuration.Entries == null || configuration.Entries.Count == 0)
+            if (configuration.entries == null || configuration.entries.Count == 0)
             {
                 DebugUtility.LogWarning<PlanetDefenseOrchestrationService>($"Entradas v2 vazias para {planet.ActorName}; configure DefenseEntryConfigSO.");
                 return false;
@@ -270,23 +269,22 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return true;
         }
 
-        private DefenseEntryConfigSO SelectEntry(DefenseEntryConfigV2 configuration, PlanetsMaster planet)
+        private DefenseEntryConfigSo SelectEntry(DefenseEntryConfigV2 configuration, PlanetsMaster planet)
         {
-            if (configuration.Entries == null || configuration.Entries.Count == 0)
+            if (configuration.entries == null || configuration.entries.Count == 0)
             {
                 DebugUtility.LogError<PlanetDefenseOrchestrationService>($"Lista de entradas v2 vazia para {planet.ActorName}; configure ao menos uma entrada.");
                 return null;
             }
 
-            return configuration.ChoiceMode switch
+            return configuration.choiceMode switch
             {
-                DefenseChoiceMode.Random => SelectRandomEntry(configuration.Entries),
-                DefenseChoiceMode.Sequential => SelectSequentialEntry(configuration.Entries, planet),
-                _ => SelectSequentialEntry(configuration.Entries, planet)
+                DefenseChoiceMode.Random => SelectRandomEntry(configuration.entries),
+                _ => SelectSequentialEntry(configuration.entries, planet)
             };
         }
 
-        private DefenseEntryConfigSO SelectRandomEntry(IReadOnlyList<DefenseEntryConfigSO> entries)
+        private DefenseEntryConfigSo SelectRandomEntry(IReadOnlyList<DefenseEntryConfigSo> entries)
         {
             if (entries.Count == 0)
             {
@@ -297,12 +295,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return entries[index];
         }
 
-        private DefenseEntryConfigSO SelectSequentialEntry(IReadOnlyList<DefenseEntryConfigSO> entries, PlanetsMaster planet)
+        private DefenseEntryConfigSo SelectSequentialEntry(IReadOnlyList<DefenseEntryConfigSo> entries, PlanetsMaster planet)
         {
-            if (!_sequentialIndices.TryGetValue(planet, out var currentIndex))
-            {
-                currentIndex = 0;
-            }
+            var currentIndex = _sequentialIndices.GetValueOrDefault(planet, 0);
 
             if (entries.Count == 0)
             {
@@ -322,17 +317,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             return entry;
         }
 
-        private DefenseEntryConfigSO ResolveCachedSequentialEntryV2(PlanetsMaster planet, int index)
+        private DefenseEntryConfigSo ResolveCachedSequentialEntryV2(PlanetsMaster planet, int index)
         {
             if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
             {
                 return null;
             }
 
-            return cache.TryGetValue(index, out var cached) ? cached : null;
+            return cache.GetValueOrDefault(index);
         }
 
-        private void CacheSequentialEntryV2(PlanetsMaster planet, int index, DefenseEntryConfigSO entry)
+        private void CacheSequentialEntryV2(PlanetsMaster planet, int index, DefenseEntryConfigSo entry)
         {
             if (planet == null || entry == null)
             {
@@ -341,14 +336,14 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
             if (!_sequentialEntryCacheV2.TryGetValue(planet, out var cache) || cache == null)
             {
-                cache = new Dictionary<int, DefenseEntryConfigSO>();
+                cache = new Dictionary<int, DefenseEntryConfigSo>();
                 _sequentialEntryCacheV2[planet] = cache;
             }
 
             cache[index] = entry;
         }
 
-        private DefenseEntryConfigSO.RoleDefenseConfig ResolveRoleConfig(DefenseEntryConfigSO entry, DefenseRole targetRole)
+        private DefenseEntryConfigSo.RoleDefenseConfig ResolveRoleConfig(DefenseEntryConfigSo entry, DefenseRole targetRole)
         {
             if (entry == null)
             {
@@ -417,13 +412,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private readonly struct DefenseEntryConfigV2
         {
-            public readonly IReadOnlyList<DefenseEntryConfigSO> Entries;
-            public readonly DefenseChoiceMode ChoiceMode;
+            public readonly IReadOnlyList<DefenseEntryConfigSo> entries;
+            public readonly DefenseChoiceMode choiceMode;
 
-            public DefenseEntryConfigV2(IReadOnlyList<DefenseEntryConfigSO> entries, DefenseChoiceMode choiceMode)
+            public DefenseEntryConfigV2(IReadOnlyList<DefenseEntryConfigSo> entries, DefenseChoiceMode choiceMode)
             {
-                Entries = entries;
-                ChoiceMode = choiceMode;
+                this.entries = entries;
+                this.choiceMode = choiceMode;
             }
         }
     }

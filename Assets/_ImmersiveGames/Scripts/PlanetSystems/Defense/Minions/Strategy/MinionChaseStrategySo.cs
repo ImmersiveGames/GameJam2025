@@ -1,7 +1,6 @@
 ﻿using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
 {
     /// <summary>
     /// Base para estratégias de perseguição de minions.

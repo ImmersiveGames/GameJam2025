@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
 
         private void OnPlanetsInitialized(PlanetsInitializationCompletedEvent evt)
         {
-            var assignments = evt.PlanetResourcesMap ?? new Dictionary<IPlanetActor, PlanetResources>();
+            IReadOnlyDictionary<IPlanetActor, PlanetResources> assignments = evt.PlanetResourcesMap ?? new Dictionary<IPlanetActor, PlanetResources>();
             if (assignments.Count == 0)
             {
                 DebugUtility.LogVerbose<PlanetsInitializationLogger>("Nenhum planeta foi instanciado neste ciclo inicial.");

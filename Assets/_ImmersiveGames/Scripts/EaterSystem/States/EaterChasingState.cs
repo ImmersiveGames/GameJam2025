@@ -54,10 +54,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             EnsureHaltConsistency(target);
 
-            var nav = ComputeNavigationVectors(target, targetCollider, targetCenter);
-            var centerDirection = nav.centerDir;
-            var surfaceDistance = nav.surfaceDist;
-            var surfaceDirection = nav.surfaceDir;
+            (var centerDirection, float surfaceDistance, var surfaceDirection) = ComputeNavigationVectors(target, targetCollider, targetCenter);
 
             float stopDistance = ResolveStopDistance();
             if (stopDistance <= 0f)
@@ -80,6 +77,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             ChaseTarget(target, targetCenter, surfaceDirection, surfaceDistance, stopDistance);
+            return;
 
             // -------- Funções locais para reduzir complexidade --------
 

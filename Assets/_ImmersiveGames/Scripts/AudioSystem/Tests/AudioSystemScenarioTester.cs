@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using UnityEngine;
-using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Update()
         {
-            // Triggers manuais para rerrodar cenários
+            // Triggers manuais para rer rodar cenários
             if (Input.GetKeyDown(KeyCode.T))
             {
                 if (_runningSfxScenario != null)
@@ -142,6 +141,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
             var position = transform.position;
 
+            yield return RunOneShotBasicTest();
+            yield return RunSpatialVsNonSpatialTest(position);
+            yield return RunRandomPitchTest(position);
+            yield return RunFadeInTest(position);
+            yield return RunStressTest(position);
+
+            Debug.Log("====================================================");
+            Debug.Log("[AudioTest][SFX] Cenário de SFX (Etapa 4) concluído.");
+            Debug.Log("====================================================");
+        }
+
+        private IEnumerator RunOneShotBasicTest()
+        {
             // 4.1 – Teste de one-shot básico
             if (basicSfx != null)
             {
@@ -155,8 +167,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
 
             yield return new WaitForSeconds(stepDelay);
+        }
 
-            // 4.2 – Spatial vs Non-Spatial
+        private IEnumerator RunSpatialVsNonSpatialTest(Vector3 position)
+        {
+            // 4.2 – Spatial vs. Non-Spatial
             if (spatialSfx != null)
             {
                 Debug.Log("[AudioTest][SFX] 4.2 - Spatial SFX (posicione a câmera em volta para perceber pan/volume).");
@@ -175,15 +190,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
 
             yield return new WaitForSeconds(blockDelay);
+        }
 
+        private IEnumerator RunRandomPitchTest(Vector3 position)
+        {
             // 4.3 – Random Pitch (múltiplas instâncias)
             if (randomPitchSfx != null)
             {
                 Debug.Log("[AudioTest][SFX] 4.3 - Random Pitch (10 instâncias rápidas).");
                 for (int i = 0; i < 10; i++)
                 {
-                    // Aqui, usamos um leve truque: variamos o volumeOverride para também testar contextMultiplier,
-                    // mas o foco é randomPitch configurado no próprio SoundData (se existir).
                     var ctx = AudioContext.Default(position, useSpatial: false, volMult: 1f);
                     _sfxService.PlayOneShot(randomPitchSfx, ctx);
                     yield return new WaitForSeconds(0.1f);
@@ -195,7 +211,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
 
             yield return new WaitForSeconds(blockDelay);
+        }
 
+        private IEnumerator RunFadeInTest(Vector3 position)
+        {
             // 4.4 – Fade-in
             if (fadeInSfx != null)
             {
@@ -209,7 +228,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             }
 
             yield return new WaitForSeconds(blockDelay);
+        }
 
+        private IEnumerator RunStressTest(Vector3 position)
+        {
             // 4.5 – Stress test (múltiplos SFX em sequência)
             if (stressSfx != null)
             {
@@ -226,10 +248,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             {
                 Debug.LogWarning("[AudioTest][SFX] 4.5 - stressSfx não configurado.");
             }
-
-            Debug.Log("====================================================");
-            Debug.Log("[AudioTest][SFX] Cenário de SFX (Etapa 4) concluído.");
-            Debug.Log("====================================================");
         }
 
         #endregion

@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
             if (!originalLoop)
             {
-                sound.loop = originalLoop;
+                sound.loop = false;
             }
 
             poolable.SetSpatialBlend(context.useSpatial ? sound.spatialBlend : 0f);
@@ -71,9 +71,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             var mixer = sound.mixerGroup ?? _defaultConfig?.defaultMixerGroup;
             poolable.SetMixerGroup(mixer);
 
-            float finalVolume = _volumeService != null
-                ? _volumeService.CalculateSfxVolume(sound, _defaultConfig, _serviceSettings, context)
-                : Mathf.Clamp01(sound.volume);
+            float finalVolume = _volumeService?.CalculateSfxVolume(sound, _defaultConfig, _serviceSettings, context) ?? Mathf.Clamp01(sound.volume);
 
             float multiplier = sound.volume > 0f ? Mathf.Clamp01(finalVolume / sound.volume) : Mathf.Clamp01(finalVolume);
             poolable.SetVolumeMultiplier(multiplier);
@@ -126,13 +124,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 _emitter = emitter;
             }
 
-            public bool IsPlaying
-            {
-                get
-                {
-                    return _emitter != null && _emitter.gameObject != null && _emitter.gameObject.activeInHierarchy;
-                }
-            }
+            public bool IsPlaying => _emitter != null && _emitter.gameObject != null && _emitter.gameObject.activeInHierarchy;
 
             public void Stop(float fadeOutSeconds = 0f)
             {

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -38,36 +37,5 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         }
 
         public IReadOnlyList<Sensor> GetSensors() => _sensors;
-
-        public bool IsAnySensorDetecting() => _sensors.Any(sensor => sensor.IsDetecting);
-
-        public int GetTotalDetections() => _sensors.Sum(sensor => sensor.CurrentlyDetected.Count);
-
-        public bool TryGetSensor(DetectionType detectionType, out Sensor sensor)
-        {
-            sensor = null;
-
-            if (detectionType == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < _sensors.Count; i++)
-            {
-                Sensor candidate = _sensors[i];
-                if (candidate?.Config?.DetectionType == null)
-                {
-                    continue;
-                }
-
-                if (candidate.Config.DetectionType == detectionType)
-                {
-                    sensor = candidate;
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }
