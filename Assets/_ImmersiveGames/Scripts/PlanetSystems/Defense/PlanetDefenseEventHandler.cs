@@ -107,10 +107,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetForObject(_planetsMaster, out PlanetDefenseEventService resolved))
+            string objectId = _planetsMaster.ActorId;
+
+            if (!DependencyManager.Provider.TryGetForObject(objectId, out PlanetDefenseEventService resolved))
             {
-                var service = new PlanetDefenseEventService(_planetsMaster);
-                DependencyManager.Provider.SetForObject(_planetsMaster, service);
+                var service = new PlanetDefenseEventService();
+                service.SetOwnerObjectId(objectId);
+                DependencyManager.Provider.RegisterForObject(objectId, service);
+                DependencyManager.Provider.InjectDependencies(service, objectId);
+                service.OnDependenciesInjected();
                 _service = service;
                 return;
             }
