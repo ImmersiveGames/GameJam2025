@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 TryResolveService();
             }
 
-            // Registro explícito dos bindings para este planeta (ActorId).
+            // Registro explícito dos bindings para este planeta.
             EventBus<PlanetDefenseEngagedEvent>.Register(_engagedBinding);
             EventBus<PlanetDefenseDisengagedEvent>.Register(_disengagedBinding);
             EventBus<PlanetDefenseDisabledEvent>.Register(_disabledBinding);
@@ -97,8 +97,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
 
         /// <summary>
-        /// Resolve o serviço registrado para o mesmo ActorId do planeta.
-        /// Se não encontrar, mantém o handler desassociado (logs evitarão chamadas nulas).
+        /// Resolve o serviço registrado para a instância atual do planeta.
+        /// Se não encontrar, registra um novo serviço vinculado a este PlanetsMaster.
         /// </summary>
         private void TryResolveService()
         {
@@ -107,15 +107,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return;
             }
 
-            if (DependencyManager.Provider.TryGetForObject(_planetsMaster.ActorId, out PlanetDefenseEventService resolved))
+            if (!DependencyManager.Provider.TryGetForObject(_planetsMaster, out PlanetDefenseEventService resolved))
             {
-                _service = resolved;
+                var service = new PlanetDefenseEventService(_planetsMaster);
+                DependencyManager.Provider.SetForObject(_planetsMaster, service);
+                _service = service;
+                return;
             }
-            else
-            {
-                DebugUtility.LogWarning<PlanetDefenseEventHandler>(
-                    $"Nenhum PlanetDefenseEventService encontrado para ActorId {_planetsMaster.ActorId}; eventos serão ignorados.");
-            }
+
+            _service = resolved;
         }
 
         private bool IsForThisPlanet(PlanetsMaster planet)
