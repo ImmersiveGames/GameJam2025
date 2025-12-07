@@ -1,8 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.SceneManagement.Hud;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,113 +13,183 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     public interface ISceneTransitionService
     {
-        /// <summary>
-        /// Executa uma transição completa com base no contexto recebido:
-        /// - (Opcional) FadeIn
-        /// - Load cenas alvo (Additive)
-        /// - Set active scene
-        /// - Unload cenas obsoletas
-        /// - (Opcional) FadeOut
-        /// </summary>
         Task RunTransitionAsync(SceneTransitionContext context);
     }
 
-    /// <summary>
-    /// Implementação padrão do serviço de transição de cenas.
-    /// Usa ISceneLoader para carregar/descarregar e um IFadeAwaiter opcional
-    /// para coordenar o fade sem usar corrotinas.
-    /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionService : ISceneTransitionService
     {
         private readonly ISceneLoader _sceneLoader;
-        private readonly IFadeAwaiter _fadeAwaiter;
+        private readonly IFadeService _fadeService;
+        private ISceneLoadingHudTaskService _hudService;
 
-        public SceneTransitionService(ISceneLoader sceneLoader, IFadeAwaiter fadeAwaiter)
+        /// <summary>
+        /// Tempo mínimo (em segundos, tempo não escalado) que o HUD de loading
+        /// deve permanecer visível para evitar "piscar".
+        /// </summary>
+        private const float MinHudVisibleSeconds = 0.5f;
+
+        public SceneTransitionService(
+            ISceneLoader sceneLoader,
+            IFadeService fadeService)
         {
-            _sceneLoader = sceneLoader;
-            _fadeAwaiter = fadeAwaiter;
+            _sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader));
+            _fadeService = fadeService; // pode ser null (sem fade)
+        }
+
+        private bool EnsureHudService()
+        {
+            if (_hudService != null)
+                return true;
+
+            var provider = DependencyManager.Provider;
+            if (provider != null && provider.TryGetGlobal<ISceneLoadingHudTaskService>(out var hudService))
+            {
+                _hudService = hudService;
+                DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Serviço de HUD localizado via DI.");
+                return true;
+            }
+
+            DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Serviço de HUD NÃO localizado. Seguindo sem HUD.");
+            return false;
         }
 
         public async Task RunTransitionAsync(SceneTransitionContext context)
         {
-            DebugUtility.LogVerbose<SceneTransitionService>(
-                "Iniciando transição...");
-            DebugUtility.LogVerbose<SceneTransitionService>(
-                "Contexto recebido: " + context);
+            EnsureHudService();
 
-            // Notifica início da transição (antes de qualquer efeito visual ou load/unload)
+            DebugUtility.Log<SceneTransitionService>(
+                $"Iniciando transição...\nContexto = {context}",
+                DebugUtility.Colors.Info);
+
+            // 1) Notifica início da transição
             EventBus<SceneTransitionStartedEvent>.Raise(
                 new SceneTransitionStartedEvent(context));
 
-            // 1) FadeIn opcional
-            if (context.UseFade && _fadeAwaiter != null)
+            // 2) FASE 1: FadeIn (escurece tudo primeiro)
+            if (context.useFade && _fadeService != null)
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    "Executando FadeIn...");
-                await _fadeAwaiter.FadeInAsync();
+                DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeIn...");
+                await _fadeService.FadeInAsync();
             }
 
-            // 2) Carregar cenas alvo (sempre Additive)
-            foreach (var sceneName in context.ScenesToLoad)
+            // Guardaremos aqui quando o HUD foi exibido, para garantir tempo mínimo de exibição.
+            float hudShownAt = -1f;
+
+            // 3) FASE 2: HUD - exibe overlay de loading sobre tela escura
+            if (_hudService != null)
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"Carregando cena alvo: {sceneName}");
-                await _sceneLoader.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+                DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Exibindo HUD de loading...");
+                await _hudService.ShowLoadingAsync(context);
+
+                hudShownAt = Time.unscaledTime;
             }
 
-            // 3) Definir cena ativa, se houver alvo definido
-            if (!string.IsNullOrEmpty(context.TargetActiveScene))
+            // 4) FASE 3: Carregamento das cenas alvo
+            if (context.scenesToLoad != null && context.scenesToLoad.Count > 0)
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"Definindo cena ativa: {context.TargetActiveScene}");
-                await SetActiveSceneAsync(context.TargetActiveScene);
+                    $"[Scenes] Carregando cenas alvo: [{string.Join(", ", context.scenesToLoad)}]");
+
+                foreach (var sceneName in context.scenesToLoad)
+                {
+                    if (string.IsNullOrWhiteSpace(sceneName))
+                        continue;
+
+                    DebugUtility.LogVerbose<SceneTransitionService>(
+                        $"[Scenes] Carregando cena '{sceneName}' (mode=Additive).");
+
+                    await _sceneLoader.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+                }
             }
 
-            // 4) Descarregar cenas obsoletas
-            foreach (var sceneName in context.ScenesToUnload)
+            // 5) FASE 4: Define a cena ativa (se especificada)
+            if (!string.IsNullOrWhiteSpace(context.targetActiveScene))
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"Descarregando cena obsoleta: {sceneName}");
-                await _sceneLoader.UnloadSceneAsync(sceneName);
+                    $"[Scenes] Definindo cena ativa: '{context.targetActiveScene}'");
+
+                await SetActiveSceneAsync(context.targetActiveScene);
             }
 
-            // Neste ponto:
-            // - Todas as cenas alvo estão carregadas
-            // - Todas as cenas obsoletas foram descarregadas
-            // - A cena ativa já foi definida
+            // 6) FASE 5: Descarrega as cenas obsoletas
+            if (context.scenesToUnload != null && context.scenesToUnload.Count > 0)
+            {
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[Scenes] Descarregando cenas obsoletas: [{string.Join(", ", context.scenesToUnload)}]");
+
+                foreach (var sceneName in context.scenesToUnload)
+                {
+                    if (string.IsNullOrWhiteSpace(sceneName))
+                        continue;
+
+                    DebugUtility.LogVerbose<SceneTransitionService>(
+                        $"[Scenes] Descarregando cena '{sceneName}'.");
+
+                    await _sceneLoader.UnloadSceneAsync(sceneName);
+                }
+            }
+
+            // 7) FASE 6: HUD - cenas prontas (texto "Finalizando carregamento...", 100%)
+            if (_hudService != null)
+            {
+                DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Marcando cenas como prontas no HUD...");
+                await _hudService.MarkScenesReadyAsync(context);
+            }
+
+            // 8) Notifica que as cenas já estão prontas
             EventBus<SceneTransitionScenesReadyEvent>.Raise(
                 new SceneTransitionScenesReadyEvent(context));
 
-            // 5) FadeOut opcional
-            if (context.UseFade && _fadeAwaiter != null)
+            // 9) FASE 7: HUD - oculta overlay de loading ANTES do fade-out,
+            // garantindo um tempo mínimo de exibição.
+            if (_hudService != null)
             {
-                DebugUtility.LogVerbose<SceneTransitionService>(
-                    "Executando FadeOut...");
-                await _fadeAwaiter.FadeOutAsync();
+                if (hudShownAt > 0f)
+                {
+                    float elapsed = Time.unscaledTime - hudShownAt;
+                    if (elapsed < MinHudVisibleSeconds)
+                    {
+                        float remaining = MinHudVisibleSeconds - elapsed;
+                        DebugUtility.LogVerbose<SceneTransitionService>(
+                            $"[HUD] Aguardando {remaining:0.000}s para garantir tempo mínimo de HUD visível...");
+
+                        // Task.Delay usa tempo de relógio; como é curto, é suficiente para suavizar a percepção.
+                        int ms = Mathf.CeilToInt(remaining * 1000f);
+                        await Task.Delay(ms);
+                    }
+                }
+
+                DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Ocultando HUD de loading...");
+                await _hudService.HideLoadingAsync(context);
             }
 
-            DebugUtility.LogVerbose<SceneTransitionService>(
-                "Transição concluída.");
+            // 10) FASE 8: FadeOut (revela as novas cenas sem HUD)
+            if (context.useFade && _fadeService != null)
+            {
+                DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeOut...");
+                await _fadeService.FadeOutAsync();
+            }
 
-            // 6) Notifica conclusão total (incluindo FadeOut)
+            // 11) Notifica conclusão da transição
             EventBus<SceneTransitionCompletedEvent>.Raise(
                 new SceneTransitionCompletedEvent(context));
+
+            DebugUtility.Log<SceneTransitionService>(
+                "Transição concluída.",
+                DebugUtility.Colors.Info);
         }
 
-        /// <summary>
-        /// Define a cena ativa usando SceneManager, sem depender de métodos extras no ISceneLoader.
-        /// Mantém o mesmo modelo assíncrono (Task) usando Task.Yield apenas para cooperar com o loop.
-        /// </summary>
         private static async Task SetActiveSceneAsync(string sceneName)
         {
-            if (string.IsNullOrEmpty(sceneName))
+            if (string.IsNullOrWhiteSpace(sceneName))
                 return;
 
             var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid())
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
-                    $"SetActiveSceneAsync: cena '{sceneName}' não encontrada ou inválida.");
+                    $"SetActiveSceneAsync: cena '{sceneName}' não é válida.");
                 return;
             }
 
@@ -128,8 +201,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             }
 
             SceneManager.SetActiveScene(scene);
-
-            // Pequena rendição para manter a semântica assíncrona
             await Task.Yield();
         }
     }

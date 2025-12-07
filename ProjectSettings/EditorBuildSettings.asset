@@ -21,17 +21,8 @@ EditorBuildSettings:
     path: Assets/_ImmersiveGames/Scenes/FadeScene.unity
     guid: d2c8180500b5143429cdad281dd64da2
   - enabled: 1
-    path: Assets/_ImmersiveGames/Scenes/Scena1.unity
+    path: Assets/_ImmersiveGames/Scenes/UIGlobalScene.unity
     guid: 2666ccfa7e3947844b0054455e6aeffd
-  - enabled: 1
-    path: Assets/_ImmersiveGames/Scenes/Scena2.unity
-    guid: 2e40fe4f45268f14284601306977d745
-  - enabled: 1
-    path: Assets/_ImmersiveGames/Scenes/Scena3.unity
-    guid: f995e1af15cd2a24d8df5f4631cec1b4
-  - enabled: 1
-    path: Assets/_ImmersiveGames/Scenes/Scena4Add.unity
-    guid: 0a78c71f277e6ec40b6af982a1573748
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 108886296fc74d142975b35c76c1d56f, type: 2}
   m_UseUCBPForAssetBundles: 0

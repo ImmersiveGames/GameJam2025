@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         /// </summary>
         public string ActiveSceneName { get; private set; } = string.Empty;
 
-        private SceneState() { }
+        public SceneState() { }
 
         /// <summary>
         /// Cria um SceneState lendo diretamente o SceneManager.

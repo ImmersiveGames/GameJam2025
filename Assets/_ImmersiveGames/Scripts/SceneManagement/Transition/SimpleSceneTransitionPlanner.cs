@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Implementação básica do planner:
-    /// - ScenesToLoad  = targetScenes - currentState. LoadedScenes
-    /// - ScenesToUnload = currentState. LoadedScenes - targetScenes
+    /// - ScenesToLoad  = targetScenes - currentState.LoadedScenes
+    /// - ScenesToUnload = currentState.LoadedScenes - targetScenes,
+    ///   desconsiderando cenas persistentes (como a UIGlobalScene).
     /// - TargetActiveScene:
     ///     - usa explicitTargetActiveScene se não for vazio;
     ///     - senão, usa a primeira cena do targetScenes;
@@ -14,6 +16,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     /// </summary>
     public class SimpleSceneTransitionPlanner : ISceneTransitionPlanner
     {
+        /// <summary>
+        /// Cenas consideradas "persistentes" pelo planner e que
+        /// nunca devem ser incluídas em ScenesToUnload.
+        /// </summary>
+        private static readonly HashSet<string> PersistentScenes = new HashSet<string>
+        {
+            "UIGlobalScene"
+        };
+
         public SceneTransitionContext BuildContext(
             SceneState currentState,
             IReadOnlyList<string> targetScenes,
@@ -22,34 +33,42 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         {
             if (currentState == null)
             {
-                Debug.LogError("[SimpleSceneTransitionPlanner] currentState é null.");
-                return default;
+                DebugUtility.LogWarning<SimpleSceneTransitionPlanner>(
+                    "currentState nulo; usando estado vazio.");
+                currentState = new SceneState();
             }
 
             targetScenes ??= new List<string>();
 
-            // Normaliza lista de alvo em um HashSet para diffs
+            // Conjunto das cenas alvo
             var targetSet = new HashSet<string>(targetScenes);
 
             var scenesToLoad = new List<string>();
             var scenesToUnload = new List<string>();
 
-            // Quais precisamos carregar? (estão no target, mas não estão carregadas ainda)
-            foreach (var targetScene in targetSet)
+            // ScenesToLoad = target - loaded
+            foreach (var scene in targetSet)
             {
-                if (!currentState.LoadedScenes.Contains(targetScene))
-                    scenesToLoad.Add(targetScene);
+                if (!currentState.LoadedScenes.Contains(scene))
+                {
+                    scenesToLoad.Add(scene);
+                }
             }
 
-            // Quais precisamos descarregar? (estão carregadas, mas não fazem parte do target)
-            foreach (var loaded in currentState.LoadedScenes)
+            // ScenesToUnload = loaded - target, ignorando cenas persistentes
+            foreach (var loadedScene in currentState.LoadedScenes)
             {
-                if (!targetSet.Contains(loaded))
-                    scenesToUnload.Add(loaded);
+                // Nunca descarrega cenas persistentes
+                if (PersistentScenes.Contains(loadedScene))
+                    continue;
+
+                if (!targetSet.Contains(loadedScene))
+                {
+                    scenesToUnload.Add(loadedScene);
+                }
             }
 
-            // Determinar cena ativa alvo
-            string targetActiveScene = DetermineTargetActiveScene(
+            var targetActive = ResolveTargetActiveScene(
                 currentState,
                 targetScenes,
                 explicitTargetActiveScene);
@@ -57,20 +76,25 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             var context = new SceneTransitionContext(
                 scenesToLoad,
                 scenesToUnload,
-                targetActiveScene,
+                targetActive,
                 useFade);
 
-            Debug.Log($"[SimpleSceneTransitionPlanner] Contexto criado: {context}");
+            DebugUtility.Log<SimpleSceneTransitionPlanner>(
+                $"Contexto criado: {context}",
+                DebugUtility.Colors.Info);
 
             return context;
         }
 
-        private string DetermineTargetActiveScene(
+        /// <summary>
+        /// Resolve qual será a cena ativa após a transição.
+        /// </summary>
+        private static string ResolveTargetActiveScene(
             SceneState currentState,
             IReadOnlyList<string> targetScenes,
             string explicitTargetActiveScene)
         {
-            // 1) Preferência: valor explícito
+            // 1) Se veio explicitTargetActiveScene, usa ele
             if (!string.IsNullOrWhiteSpace(explicitTargetActiveScene))
                 return explicitTargetActiveScene;
 

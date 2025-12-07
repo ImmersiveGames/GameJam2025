@@ -1,42 +1,35 @@
-﻿using System.Collections;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
 {
     /// <summary>
-    /// Serviço de fade da tela. Expõe métodos fire-and-forget
-    /// e também corrotinas aguardáveis.
+    /// Serviço de fade da tela baseado em Task.
+    /// - FadeInAsync / FadeOutAsync: API principal assíncrona.
+    /// - RequestFadeIn / RequestFadeOut: wrappers fire-and-forget para código legado.
     /// </summary>
     public interface IFadeService
     {
-        /// <summary>Dispara um FadeIn (tela escurecendo até alpha=1) de forma assíncrona.</summary>
+        /// <summary>
+        /// Dispara um FadeIn de forma fire-and-forget (para código legado).
+        /// Internamente chama FadeInAsync().
+        /// </summary>
         void RequestFadeIn();
 
-        /// <summary>Dispara um FadeOut (tela clareando até alpha=0) de forma assíncrona.</summary>
+        /// <summary>
+        /// Dispara um FadeOut de forma fire-and-forget (para código legado).
+        /// Internamente chama FadeOutAsync().
+        /// </summary>
         void RequestFadeOut();
 
-        /// <summary>Executa FadeIn e só retorna quando o efeito terminar.</summary>
-        IEnumerator FadeInAsync();
-
-        /// <summary>Executa FadeOut e só retorna quando o efeito terminar.</summary>
-        IEnumerator FadeOutAsync();
-    }
-
-    /// <summary>
-    /// Runner global de corrotinas, para desacoplar serviços de MonoBehaviours específicos.
-    /// </summary>
-    public interface ICoroutineRunner
-    {
-        Coroutine Run(IEnumerator coroutine);
-    }
-    /// <summary>
-    /// Adaptador para aguardar o término de fades usando async/await,
-    /// encapsulando o uso de corrotinas do IFadeService.
-    /// </summary>
-    public interface IFadeAwaiter
-    {
+        /// <summary>
+        /// Executa FadeIn e só retorna quando o efeito terminar.
+        /// </summary>
         Task FadeInAsync();
+
+        /// <summary>
+        /// Executa FadeOut e só retorna quando o efeito terminar.
+        /// </summary>
         Task FadeOutAsync();
     }
 }

@@ -1,7 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
@@ -17,22 +15,15 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     public sealed partial class GameManager
     {
-        private Coroutine _resetRoutine;
         private bool _resetInProgress;
 
         // Infra moderna de cenas
         private ISceneLoader _sceneLoader;
         private ISceneTransitionPlanner _sceneTransitionPlanner;
         private ISceneTransitionService _sceneTransitionService;
-        private IFadeAwaiter _fadeAwaiter;
 
         #region Public Scene Flow API
 
-        /// <summary>
-        /// Reset completo do jogo utilizando o pipeline moderno de transição de cenas.
-        /// Mantém a semântica anterior (eventos de reset e espera do MenuState),
-        /// mas agora usa SceneState + Planner + SceneTransitionService.
-        /// </summary>
         public void ResetGame()
         {
             if (_resetInProgress)
@@ -42,22 +33,15 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return;
             }
 
-            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline moderno de transição).");
-            _resetRoutine = StartCoroutine(ResetGameRoutine());
+            DebugUtility.LogVerbose<GameManager>("Resetando o jogo (pipeline moderno de transição, Task-based).");
+            _resetInProgress = true;
+
+            _ = ResetGameAsync();
         }
 
-        /// <summary>
-        /// Solicita retorno para o Menu usando o mesmo pipeline moderno de transição de cenas.
-        /// </summary>
         public void ReturnToMenu()
         {
-            if (_resetRoutine != null)
-            {
-                StopCoroutine(_resetRoutine);
-                _resetRoutine = null;
-            }
-
-            _resetRoutine = StartCoroutine(ReturnToMenuRoutine());
+            _ = ReturnToMenuAsync();
         }
 
         #endregion
@@ -88,9 +72,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #region Modern Scene Flow Helpers
 
-        /// <summary>
-        /// Resolve serviços de transição se ainda não estiverem populados.
-        /// </summary>
         private void EnsureSceneTransitionServices()
         {
             var provider = DependencyManager.Provider;
@@ -133,20 +114,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                     DebugUtility.LogWarning<GameManager>("[DI] ISceneTransitionService não encontrado.");
                 }
             }
-
-            if (_fadeAwaiter == null)
-            {
-                if (provider.TryGetGlobal(out IFadeAwaiter fadeAwaiter))
-                {
-                    _fadeAwaiter = fadeAwaiter;
-                    DebugUtility.LogVerbose<GameManager>("[DI] IFadeAwaiter resolvido com sucesso.");
-                }
-                else
-                {
-                    // Não é crítico: o SceneTransitionService funciona sem fadeAwaiter (só não vai usar fade).
-                    DebugUtility.LogVerbose<GameManager>("[DI] IFadeAwaiter não encontrado (fade assíncrono será ignorado).");
-                }
-            }
         }
 
         private (List<string> scenesToLoad, string activeScene, bool useFade) BuildGameplayTargetFromConfig()
@@ -156,7 +123,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return (null, null, true);
             }
 
-            // Preferência: usar SceneSetup se configurado
             SceneSetup setup = GameConfig.GameplaySetup;
             if (setup != null && setup.Scenes != null && setup.Scenes.Count > 0)
             {
@@ -177,7 +143,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return (scenes, active, setup.UseFade);
             }
 
-            // Fallback: usa strings antigas do GameConfig
             var legacyScenes = new List<string>();
             if (!string.IsNullOrWhiteSpace(GameConfig.GameplayScene))
                 legacyScenes.Add(GameConfig.GameplayScene);
@@ -217,7 +182,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return (scenes, active, setup.UseFade);
             }
 
-            // Fallback: usa string antiga do GameConfig
             if (string.IsNullOrWhiteSpace(GameConfig.MenuScene))
                 return (null, null, true);
 
@@ -225,11 +189,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             return (legacyScenes, GameConfig.MenuScene, true);
         }
 
-        /// <summary>
-        /// Helper interno para transicionar da cena atual para o Gameplay+UI
-        /// usando SceneState + Planner + SceneTransitionService.
-        /// Usa SceneSetup do GameConfig se configurado.
-        /// </summary>
         private async Task StartGameplayFromCurrentSceneAsync()
         {
             EnsureSceneTransitionServices();
@@ -265,11 +224,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             await _sceneTransitionService.RunTransitionAsync(context);
         }
 
-        /// <summary>
-        /// Helper interno para transicionar da cena atual para o Menu usando
-        /// SceneState + Planner + SceneTransitionService.
-        /// Usa SceneSetup do GameConfig se configurado.
-        /// </summary>
         private async Task GoToMenuFromCurrentSceneAsync()
         {
             EnsureSceneTransitionServices();
@@ -307,111 +261,106 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #endregion
 
-        #region Reset / ReturnToMenu Routines (bridge para eventos legados)
+        #region Reset / ReturnToMenu Routines (Task-based)
 
-        private IEnumerator ResetGameRoutine()
+        private async Task ResetGameAsync()
         {
-            _resetInProgress = true;
-
-            EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
-            yield return new WaitForEndOfFrame();
-            yield return WaitForMenuState();
-
-            Time.timeScale = 1f;
-
-            GameManagerStateMachine.Instance.Rebuild(this);
-
-            EnsureSceneTransitionServices();
-
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+            try
             {
-                DebugUtility.LogWarning<GameManager>(
-                    "Infra de transição de cenas não configurada; reset não alterou cenas.");
-            }
-            else
-            {
-                var (scenesToLoad, activeScene, useFade) = BuildGameplayTargetFromConfig();
-                if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+                EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
+
+                await Task.Yield();
+                await WaitForMenuStateAsync();
+
+                Time.timeScale = 1f;
+
+                GameManagerStateMachine.Instance.Rebuild(this);
+
+                EnsureSceneTransitionServices();
+
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
                 {
-                    DebugUtility.LogError<GameManager>(
-                        "[ResetGameRoutine] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                    DebugUtility.LogWarning<GameManager>(
+                        "Infra de transição de cenas não configurada; reset não alterou cenas.");
                 }
                 else
                 {
-                    SceneState state = SceneState.FromSceneManager();
+                    var (scenesToLoad, activeScene, useFade) = BuildGameplayTargetFromConfig();
+                    if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+                    {
+                        DebugUtility.LogError<GameManager>(
+                            "[ResetGameAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                    }
+                    else
+                    {
+                        SceneState state = SceneState.FromSceneManager();
 
-                    SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                        state,
-                        scenesToLoad,
-                        activeScene,
-                        useFade);
+                        SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
+                            state,
+                            scenesToLoad,
+                            activeScene,
+                            useFade);
 
-                    DebugUtility.LogVerbose<GameManager>(
-                        "[ResetGameRoutine] Contexto montado: " + context);
+                        DebugUtility.LogVerbose<GameManager>(
+                            "[ResetGameAsync] Contexto montado: " + context);
 
-                    Task task = _sceneTransitionService.RunTransitionAsync(context);
-                    yield return WaitForTask(task);
+                        await _sceneTransitionService.RunTransitionAsync(context);
+                    }
                 }
+
+                EventBus<GameResetCompletedEvent>.Raise(new GameResetCompletedEvent());
             }
-
-            EventBus<GameResetCompletedEvent>.Raise(new GameResetCompletedEvent());
-
-            _resetInProgress = false;
-            _resetRoutine = null;
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError<GameManager>($"[ResetGameAsync] Exceção durante o reset: {ex}");
+            }
+            finally
+            {
+                _resetInProgress = false;
+            }
         }
 
-        private IEnumerator ReturnToMenuRoutine()
+        private async Task ReturnToMenuAsync()
         {
-            EnsureSceneTransitionServices();
-
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+            try
             {
-                DebugUtility.LogWarning<GameManager>(
-                    "Infra de transição de cenas não configurada; ReturnToMenu ignorado.");
-                yield break;
+                EnsureSceneTransitionServices();
+
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+                {
+                    DebugUtility.LogWarning<GameManager>(
+                        "Infra de transição de cenas não configurada; ReturnToMenu ignorado.");
+                    return;
+                }
+
+                var (scenesToLoad, activeScene, useFade) = BuildMenuTargetFromConfig();
+                if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+                {
+                    DebugUtility.LogError<GameManager>(
+                        "[ReturnToMenuAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                    return;
+                }
+
+                SceneState state = SceneState.FromSceneManager();
+
+                SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
+                    state,
+                    scenesToLoad,
+                    activeScene,
+                    useFade);
+
+                DebugUtility.LogVerbose<GameManager>(
+                    "[ReturnToMenuAsync] Contexto montado: " + context);
+
+                await _sceneTransitionService.RunTransitionAsync(context);
             }
-
-            var (scenesToLoad, activeScene, useFade) = BuildMenuTargetFromConfig();
-            if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+            catch (System.Exception ex)
             {
-                DebugUtility.LogError<GameManager>(
-                    "[ReturnToMenuRoutine] Configuração de cenas inválida no GameConfig/SceneSetup.");
-                yield break;
-            }
-
-            SceneState state = SceneState.FromSceneManager();
-
-            SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                state,
-                scenesToLoad,
-                activeScene,
-                useFade);
-
-            DebugUtility.LogVerbose<GameManager>(
-                "[ReturnToMenuRoutine] Contexto montado: " + context);
-
-            Task task = _sceneTransitionService.RunTransitionAsync(context);
-            yield return WaitForTask(task);
-        }
-
-        private static IEnumerator WaitForTask(Task task)
-        {
-            if (task == null)
-                yield break;
-
-            while (!task.IsCompleted)
-            {
-                yield return null;
-            }
-
-            if (task.IsFaulted)
-            {
-                DebugUtility.LogError<GameManager>(
-                    $"Task de transição falhou: {task.Exception}");
+                DebugUtility.LogError<GameManager>($"[ReturnToMenuAsync] Exceção durante retorno ao menu: {ex}");
             }
         }
 
-        private IEnumerator WaitForMenuState()
+        private async Task WaitForMenuStateAsync()
         {
             const float timeoutSeconds = 1.5f;
             float elapsed = 0f;
@@ -419,7 +368,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             while (!(GameManagerStateMachine.Instance.CurrentState is MenuState) && elapsed < timeoutSeconds)
             {
                 elapsed += Time.unscaledDeltaTime;
-                yield return null;
+                await Task.Yield();
             }
         }
 

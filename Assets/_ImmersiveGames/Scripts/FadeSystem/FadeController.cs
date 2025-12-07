@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿using System.Threading.Tasks;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
@@ -25,23 +25,17 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             }
         }
 
-        public IEnumerator FadeIn()
-        {
-            return FadeTo(1f);
-        }
-
-        public IEnumerator FadeOut()
-        {
-            return FadeTo(0f);
-        }
+        public Task FadeInAsync()  => FadeToAsync(1f);
+        public Task FadeOutAsync() => FadeToAsync(0f);
 
         /// <summary>
-        /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída).
+        /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída),
+        /// sem uso de corrotinas, apenas Task + Task.Yield.
         /// </summary>
-        public IEnumerator FadeTo(float targetAlpha)
+        public async Task FadeToAsync(float targetAlpha)
         {
             if (canvasGroup == null)
-                yield break;
+                return;
 
             float currentAlpha = canvasGroup.alpha;
             float duration = targetAlpha > currentAlpha ? fadeInDuration : fadeOutDuration;
@@ -49,7 +43,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             if (duration <= 0f)
             {
                 canvasGroup.alpha = targetAlpha;
-                yield break;
+                return;
             }
 
             float time = 0f;
@@ -61,7 +55,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 time += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(time / duration);
                 canvasGroup.alpha = Mathf.Lerp(currentAlpha, targetAlpha, t);
-                yield return null;
+                await Task.Yield();
             }
 
             canvasGroup.alpha = targetAlpha;

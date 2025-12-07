@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.FadeSystem;
-using _ImmersiveGames.Scripts.LoaderSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -45,21 +44,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 // Serviços "puros" que não dependem de outros
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
 
-                // CORRETO: Registrar o CoroutineRunner primeiro
-                EnsureGlobal<ICoroutineRunner>(() =>
-                {
-                    var go = new GameObject("GlobalCoroutineRunner");
-                    Object.DontDestroyOnLoad(go);
-                    return go.AddComponent<GlobalCoroutineRunner>();
-                });
-
                 // Fade e loader legado (ainda usado por sistemas antigos)
                 EnsureGlobal<IFadeService>(() => new FadeService());
-                EnsureGlobal<ISceneLoaderService>(() => new SceneLoaderService());
 
                 // --- Novo pipeline moderno de Scene Management ---
-                // Registramos o core loader baseado em Task, o planner de contexto
-                // e o serviço de transição de cenas usado pelo GameManager e por outros sistemas.
 
                 EnsureGlobal<ISceneLoader>(() =>
                 {
@@ -73,31 +61,12 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     return new SimpleSceneTransitionPlanner();
                 });
 
-                EnsureGlobal<IFadeAwaiter>(() =>
-                {
-                    // IFadeAwaiter encapsula IFadeService + ICoroutineRunner em uma API baseada em Task.
-                    var provider = DependencyManager.Provider;
-
-                    provider.TryGetGlobal(out IFadeService fadeService);
-                    provider.TryGetGlobal(out ICoroutineRunner coroutineRunner);
-
-                    if (fadeService == null || coroutineRunner == null)
-                    {
-                        DebugUtility.LogWarning<DependencyBootstrapper>(
-                            "[SceneTransition] Não foi possível criar FadeAwaiter: IFadeService ou ICoroutineRunner não encontrados. " +
-                            "Transições continuarão, mas sem Fade assíncrono.");
-                        return null;
-                    }
-
-                    return new FadeAwaiter(fadeService, coroutineRunner);
-                });
-
                 EnsureGlobal<ISceneTransitionService>(() =>
                 {
                     var provider = DependencyManager.Provider;
 
                     provider.TryGetGlobal(out ISceneLoader sceneLoader);
-                    provider.TryGetGlobal(out IFadeAwaiter fadeAwaiter);
+                    provider.TryGetGlobal(out IFadeService fadeService);
 
                     if (sceneLoader == null)
                     {
@@ -107,7 +76,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                         return null;
                     }
 
-                    return new SceneTransitionService(sceneLoader, fadeAwaiter);
+                    if (fadeService == null)
+                    {
+                        DebugUtility.LogWarning<DependencyBootstrapper>(
+                            "[SceneTransition] IFadeService não encontrado ao criar SceneTransitionService. " +
+                            "Transições funcionarão, mas sem fade.");
+                    }
+
+                    return new SceneTransitionService(sceneLoader, fadeService);
                 });
 
                 // ResourceInitializationManager - singleton próprio
