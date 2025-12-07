@@ -12,7 +12,6 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityUtils;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
@@ -28,10 +27,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
             DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
 
-            // Garante criação do DependencyManager
             if (!DependencyManager.HasInstance)
             {
-                var _ = DependencyManager.Provider; // força criação
+                var _ = DependencyManager.Provider;
             }
 
             Instance.RegisterEssentialServices();
@@ -41,25 +39,20 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             try
             {
-                // Serviços "puros" que não dependem de outros
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
 
-                // Fade e loader legado (ainda usado por sistemas antigos)
-                EnsureGlobal<IFadeService>(() => new FadeService());
-
-                // --- Novo pipeline moderno de Scene Management ---
-
-                EnsureGlobal<ISceneLoader>(() =>
+                // Fade + pré-carregamento da FadeScene
+                EnsureGlobal<IFadeService>(() =>
                 {
-                    // Loader moderno, baseado em Task (SceneLoaderCore)
-                    return new SceneLoaderCore();
+                    var fadeService = new FadeService();
+                    // Pré-load da FadeScene em a background (Task-based, sem bloquear bootstrap)
+                    _ = fadeService.PreloadAsync();
+                    return fadeService;
                 });
 
-                EnsureGlobal<ISceneTransitionPlanner>(() =>
-                {
-                    // Planejador simples de contexto de transição (carregar/alvo/unload/fade)
-                    return new SimpleSceneTransitionPlanner();
-                });
+                EnsureGlobal<ISceneLoader>(() => new SceneLoaderCore());
+
+                EnsureGlobal<ISceneTransitionPlanner>(() => new SimpleSceneTransitionPlanner());
 
                 EnsureGlobal<ISceneTransitionService>(() =>
                 {
@@ -86,32 +79,24 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     return new SceneTransitionService(sceneLoader, fadeService);
                 });
 
-                // ResourceInitializationManager - singleton próprio
                 var initManager = ResourceInitializationManager.Instance;
                 EnsureGlobal(() => initManager);
 
-                // CanvasPipelineManager - singleton próprio
                 var pipelineManager = CanvasPipelineManager.Instance;
                 EnsureGlobal(() => pipelineManager);
 
-                // Orchestrator - depende do pipeline (mas não forçamos injeção aqui).
-                // Registramos globalmente se ainda não existir.
                 EnsureGlobal<IActorResourceOrchestrator>(() => new ActorResourceOrchestratorService());
 
-                // Registrar injeções para serviços globais no initManager (garante que receberão DI se precisarem)
                 initManager.RegisterForInjection(pipelineManager);
                 if (DependencyManager.Provider.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator))
                 {
                     initManager.RegisterForInjection((IInjectableComponent)orchestrator);
                 }
 
-                // Registrar EventBuses (dinâmicos) - idempotente
                 RegisterEventBuses();
 
-                // Registrar StateDependentService se não houver
                 EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
-                // Configuração e componentes de defesa planetária
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
                 EnsureGlobal<IPlanetDefenseWaveRunner>(() =>
@@ -132,7 +117,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             }
         }
 
-        // Garante registro global idempotente com fábrica
         private void EnsureGlobal<T>(Func<T> factory) where T : class
         {
             if (!DependencyManager.Provider.TryGetGlobal<T>(out var existing) || existing == null)
@@ -159,7 +143,6 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     var busInterfaceType = typeof(IEventBus<>).MakeGenericType(eventType);
                     var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
 
-                    // verifica se já existe um registro para esse tipo
                     var tryGetMethod = typeof(DependencyManager)
                         .GetMethod("TryGetGlobal", BindingFlags.Instance | BindingFlags.Public);
                     var genericTryGet = tryGetMethod?.MakeGenericMethod(busInterfaceType);

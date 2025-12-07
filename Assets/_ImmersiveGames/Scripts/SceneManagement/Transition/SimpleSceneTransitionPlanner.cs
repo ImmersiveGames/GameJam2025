@@ -1,6 +1,5 @@
 ﻿﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {

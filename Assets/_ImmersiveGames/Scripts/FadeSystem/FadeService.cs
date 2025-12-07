@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 {
     /// <summary>
     /// Implementação padrão do IFadeService usando apenas Task/async-await.
-    /// - Carrega a FadeScene uma única vez (lazy).
+    /// - Carrega a FadeScene uma única vez (lazy ou via PreloadAsync).
     /// - Instancia um FadeController persistente (DontDestroyOnLoad).
     /// - Sincroniza chamadas concorrentes com SemaphoreSlim.
     /// </summary>
@@ -56,6 +56,15 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         public Task FadeOutAsync() => RunFadeAsync(0f);
 
         #endregion
+
+        /// <summary>
+        /// Método explícito para pré-carregar a FadeScene e inicializar o FadeController,
+        /// sem executar nenhum fade. Usado pelo bootstrap para evitar custo na primeira transição.
+        /// </summary>
+        public Task PreloadAsync()
+        {
+            return EnsureInitializedAsync();
+        }
 
         #region Internals
 

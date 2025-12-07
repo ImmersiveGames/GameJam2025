@@ -11,6 +11,13 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         [SerializeField] private float fadeInDuration = 0.5f;
         [SerializeField] private float fadeOutDuration = 0.5f;
 
+        [Header("Fade Curves")]
+        [Tooltip("Curva de easing usada no FadeIn (0->1). Se nula ou vazia, usa lerp linear.")]
+        [SerializeField] private AnimationCurve fadeInCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+        [Tooltip("Curva de easing usada no FadeOut (1->0). Se nula ou vazia, usa lerp linear.")]
+        [SerializeField] private AnimationCurve fadeOutCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
         private void Awake()
         {
             if (canvasGroup == null)
@@ -30,7 +37,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
         /// <summary>
         /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída),
-        /// sem uso de corrotinas, apenas Task + Task.Yield.
+        /// com easing controlado por AnimationCurve.
         /// </summary>
         public async Task FadeToAsync(float targetAlpha)
         {
@@ -38,7 +45,10 @@ namespace _ImmersiveGames.Scripts.FadeSystem
                 return;
 
             float currentAlpha = canvasGroup.alpha;
-            float duration = targetAlpha > currentAlpha ? fadeInDuration : fadeOutDuration;
+            bool isFadeIn = targetAlpha > currentAlpha;
+
+            float duration = isFadeIn ? fadeInDuration : fadeOutDuration;
+            AnimationCurve curve = isFadeIn ? fadeInCurve : fadeOutCurve;
 
             if (duration <= 0f)
             {
@@ -54,13 +64,27 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             {
                 time += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(time / duration);
-                canvasGroup.alpha = Mathf.Lerp(currentAlpha, targetAlpha, t);
+
+                float evaluatedT = EvaluateCurve(curve, t);
+                canvasGroup.alpha = Mathf.Lerp(currentAlpha, targetAlpha, evaluatedT);
+
                 await Task.Yield();
             }
 
             canvasGroup.alpha = targetAlpha;
 
             Debug.Log($"[FadeController] Fade concluído para alpha = {targetAlpha}");
+        }
+
+        /// <summary>
+        /// Avalia a curva, caindo para linear caso a curva seja nula ou vazia.
+        /// </summary>
+        private static float EvaluateCurve(AnimationCurve curve, float t)
+        {
+            if (curve == null || curve.keys == null || curve.keys.Length == 0)
+                return t;
+
+            return curve.Evaluate(t);
         }
     }
 }
