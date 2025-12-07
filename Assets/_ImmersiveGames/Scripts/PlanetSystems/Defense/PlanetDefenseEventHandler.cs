@@ -120,7 +120,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         private bool IsForThisPlanet(PlanetsMaster planet)
         {
-            return planet != null && _planetsMaster != null && planet.ActorId == _planetsMaster.ActorId;
+            return planet != null && _planetsMaster != null && planet == _planetsMaster;
         }
     }
 }
