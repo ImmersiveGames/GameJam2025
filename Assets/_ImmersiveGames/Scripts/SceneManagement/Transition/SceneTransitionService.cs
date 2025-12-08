@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading;
+﻿﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
@@ -16,10 +15,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     {
         /// <summary>
         /// Executa uma transição completa com base no contexto recebido.
-        /// Pode ser cancelada via CancellationToken. Cancelamento é cooperativo
-        /// e verificado entre fases (não interrompe AsyncOperations de Unity).
+        /// O fluxo é coordenado via Tasks (sem uso de CancellationToken).
         /// </summary>
-        Task RunTransitionAsync(SceneTransitionContext context, CancellationToken cancellationToken = default);
+        Task RunTransitionAsync(SceneTransitionContext context);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
@@ -33,7 +31,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         /// Tempo mínimo (em segundos, tempo não escalado) que o HUD de loading
         /// deve permanecer visível para evitar "piscar".
         /// </summary>
-        private const float MinHudVisibleSeconds = 0.5f;
+        private const float DefaultMinHudVisibleSeconds = 0.5f;
 
         public SceneTransitionService(
             ISceneLoader sceneLoader,
@@ -41,6 +39,17 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         {
             _sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader));
             _fadeService = fadeService;
+        }
+
+        private static float GetMinHudVisibleSeconds(SceneTransitionContext context)
+        {
+            var profile = context.transitionProfile;
+            if (profile != null && profile.MinHudVisibleSeconds > 0f)
+            {
+                return profile.MinHudVisibleSeconds;
+            }
+
+            return DefaultMinHudVisibleSeconds;
         }
 
         private bool EnsureHudService()
@@ -60,7 +69,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             return false;
         }
 
-        public async Task RunTransitionAsync(SceneTransitionContext context, CancellationToken cancellationToken = default)
+        public async Task RunTransitionAsync(SceneTransitionContext context)
         {
             EnsureHudService();
 
@@ -70,8 +79,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
             try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 EventBus<SceneTransitionStartedEvent>.Raise(
                     new SceneTransitionStartedEvent(context));
 
@@ -82,8 +89,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     await _fadeService.FadeInAsync();
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-
                 float hudShownAt = -1f;
 
                 // 2) HUD Show
@@ -93,8 +98,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     await _hudService.ShowLoadingAsync(context);
                     hudShownAt = Time.unscaledTime;
                 }
-
-                cancellationToken.ThrowIfCancellationRequested();
 
                 // 3) Load cenas alvo
                 if (context.scenesToLoad != null && context.scenesToLoad.Count > 0)
@@ -111,8 +114,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                             $"[Scenes] Carregando cena '{sceneName}' (mode=Additive).");
 
                         await _sceneLoader.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
-
-                        cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
 
@@ -124,8 +125,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
                     await SetActiveSceneAsync(context.targetActiveScene);
                 }
-
-                cancellationToken.ThrowIfCancellationRequested();
 
                 // 5) Unload cenas obsoletas
                 if (context.scenesToUnload != null && context.scenesToUnload.Count > 0)
@@ -142,8 +141,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                             $"[Scenes] Descarregando cena '{sceneName}'.");
 
                         await _sceneLoader.UnloadSceneAsync(sceneName);
-
-                        cancellationToken.ThrowIfCancellationRequested();
                     }
                 }
 
@@ -157,30 +154,27 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(
                     new SceneTransitionScenesReadyEvent(context));
 
-                cancellationToken.ThrowIfCancellationRequested();
-
                 // 7) HUD Hide (com tempo mínimo de visibilidade)
                 if (_hudService != null)
                 {
                     if (hudShownAt > 0f)
                     {
                         float elapsed = Time.unscaledTime - hudShownAt;
-                        if (elapsed < MinHudVisibleSeconds)
+                        float minVisible = GetMinHudVisibleSeconds(context);
+                        if (elapsed < minVisible)
                         {
-                            float remaining = MinHudVisibleSeconds - elapsed;
+                            float remaining = minVisible - elapsed;
                             DebugUtility.LogVerbose<SceneTransitionService>(
                                 $"[HUD] Aguardando {remaining:0.000}s para garantir tempo mínimo de HUD visível...");
 
                             int ms = Mathf.CeilToInt(remaining * 1000f);
-                            await Task.Delay(ms, cancellationToken);
+                            await Task.Delay(ms);
                         }
                     }
 
                     DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Ocultando HUD de loading...");
                     await _hudService.HideLoadingAsync(context);
                 }
-
-                cancellationToken.ThrowIfCancellationRequested();
 
                 // 8) FadeOut
                 if (context.useFade && _fadeService != null)
@@ -196,11 +190,10 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     "Transição concluída.",
                     DebugUtility.Colors.Info);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                DebugUtility.LogWarning<SceneTransitionService>(
-                    "Transição cancelada via CancellationToken.");
-                // Opcional: emitir algum evento específico de cancelamento, se quiser.
+                DebugUtility.LogError<SceneTransitionService>(
+                    $"Exceção durante transição de cenas: {ex}");
             }
         }
 

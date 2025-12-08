@@ -30,5 +30,6 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         /// Executa FadeOut e só retorna quando o efeito terminar.
         /// </summary>
         Task FadeOutAsync();
+        
     }
 }

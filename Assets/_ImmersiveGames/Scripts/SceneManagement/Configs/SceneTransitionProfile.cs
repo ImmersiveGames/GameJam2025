@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿﻿using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 {
@@ -47,6 +47,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         [Tooltip("Template da descrição ao iniciar. Use {Scenes} para listar cenas.")]
         [SerializeField] private string loadingDescriptionTemplate = "Carregando: {Scenes}";
 
+        [Tooltip("Título exibido ao finalizar o carregamento.")]
+        [SerializeField] private string finishingTitle = "";
+
         [Tooltip("Descrição ao marcar cenas como prontas.")]
         [SerializeField] private string finishingDescription = "Finalizando carregamento...";
 
@@ -65,6 +68,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 
         public string LoadingTitle => loadingTitle;
         public string LoadingDescriptionTemplate => loadingDescriptionTemplate;
+        public string FinishingTitle => finishingTitle;
         public string FinishingDescription => finishingDescription;
 
 #if UNITY_EDITOR

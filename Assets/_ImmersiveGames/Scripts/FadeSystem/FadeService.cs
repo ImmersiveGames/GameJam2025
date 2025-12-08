@@ -1,5 +1,7 @@
-﻿using System.Threading;
+﻿using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,9 +26,24 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         private readonly EventBinding<FadeInRequestedEvent> _fadeInBinding;
         private readonly EventBinding<FadeOutRequestedEvent> _fadeOutBinding;
 
+        // --- Integração com SceneTransitionProfile (Fase 2) ---
+
+        private SceneTransitionProfile _currentProfile;
+
+        private bool _defaultsCaptured;
+        private float _defaultFadeInDuration;
+        private float _defaultFadeOutDuration;
+        private AnimationCurve _defaultFadeInCurve;
+        private AnimationCurve _defaultFadeOutCurve;
+
+        private static FieldInfo _fiFadeInDuration;
+        private static FieldInfo _fiFadeOutDuration;
+        private static FieldInfo _fiFadeInCurve;
+        private static FieldInfo _fiFadeOutCurve;
+
         public FadeService()
         {
-            _fadeInBinding  = new EventBinding<FadeInRequestedEvent>(_ => RequestFadeIn());
+            _fadeInBinding = new EventBinding<FadeInRequestedEvent>(_ => RequestFadeIn());
             _fadeOutBinding = new EventBinding<FadeOutRequestedEvent>(_ => RequestFadeOut());
 
             EventBus<FadeInRequestedEvent>.Register(_fadeInBinding);
@@ -52,7 +69,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             _ = FadeOutAsync();
         }
 
-        public Task FadeInAsync()  => RunFadeAsync(1f);
+        public Task FadeInAsync() => RunFadeAsync(1f);
         public Task FadeOutAsync() => RunFadeAsync(0f);
 
         #endregion
@@ -66,6 +83,16 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             return EnsureInitializedAsync();
         }
 
+        /// <summary>
+        /// Configura o serviço de Fade com base em um SceneTransitionProfile.
+        /// - Se profile for null, o serviço volta para os valores padrão do FadeController.
+        /// - Se profile.UseFade = false, as durações/curvas voltam para os defaults (o SceneTransitionService já decide se usa fade ou não).
+        /// </summary>
+        public void ConfigureFromProfile(SceneTransitionProfile profile)
+        {
+            _currentProfile = profile;
+        }
+
         #region Internals
 
         private async Task RunFadeAsync(float targetAlpha)
@@ -77,6 +104,9 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
                 if (_fadeController != null)
                 {
+                    // Aplica (ou restaura) os parâmetros de fade com base no perfil atual.
+                    ApplyProfileToControllerIfNeeded();
+
                     if (targetAlpha >= 1f - 0.0001f)
                     {
                         await _fadeController.FadeInAsync();
@@ -118,7 +148,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
         private async Task InitializeControllerAsync()
         {
-            Debug.Log("[FadeService] Carregando FadeScene para inicialização do fade...");
+            Debug.Log("[FadeService] Carregando FadeScene para inicialização do fade.");
 
             AsyncOperation loadOp;
             try
@@ -181,21 +211,119 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             }
 
             Debug.Log("[FadeService] Descarregando FadeScene container após inicialização.");
-            AsyncOperation unloadOp = null;
             try
             {
-                unloadOp = SceneManager.UnloadSceneAsync(FadeSceneName);
+                var unloadOp = SceneManager.UnloadSceneAsync(scene);
+                if (unloadOp != null)
+                {
+                    while (!unloadOp.isDone)
+                        await Task.Yield();
+                }
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"[FadeService] Erro ao iniciar unload da cena '{FadeSceneName}': {e}");
+                Debug.LogError($"[FadeService] Erro ao descarregar FadeScene: {e}");
+            }
+        }
+
+        /// <summary>
+        /// Usa reflexão para capturar os valores default do FadeController na primeira vez
+        /// e, a cada chamada, aplica overrides vindos do SceneTransitionProfile (se houver).
+        /// </summary>
+        private void ApplyProfileToControllerIfNeeded()
+        {
+            if (_fadeController == null)
+                return;
+
+            EnsureFieldInfos();
+
+            if (!_defaultsCaptured)
+            {
+                _defaultFadeInDuration = ReadFloatField(_fiFadeInDuration, _fadeController, 0.5f);
+                _defaultFadeOutDuration = ReadFloatField(_fiFadeOutDuration, _fadeController, 0.5f);
+                _defaultFadeInCurve = ReadCurveField(_fiFadeInCurve, _fadeController) ?? AnimationCurve.Linear(0, 0, 1, 1);
+                _defaultFadeOutCurve = ReadCurveField(_fiFadeOutCurve, _fadeController) ?? AnimationCurve.Linear(0, 0, 1, 1);
+
+                _defaultsCaptured = true;
             }
 
-            if (unloadOp != null)
+            // Se não há perfil, volta para defaults.
+            if (_currentProfile == null)
             {
-                while (!unloadOp.isDone)
-                    await Task.Yield();
+                WriteFloatField(_fiFadeInDuration, _fadeController, _defaultFadeInDuration);
+                WriteFloatField(_fiFadeOutDuration, _fadeController, _defaultFadeOutDuration);
+                WriteCurveField(_fiFadeInCurve, _fadeController, _defaultFadeInCurve);
+                WriteCurveField(_fiFadeOutCurve, _fadeController, _defaultFadeOutCurve);
+                return;
             }
+
+            // Se o perfil explicitamente desabilita fade, voltamos para defaults.
+            if (!_currentProfile.UseFade)
+            {
+                WriteFloatField(_fiFadeInDuration, _fadeController, _defaultFadeInDuration);
+                WriteFloatField(_fiFadeOutDuration, _fadeController, _defaultFadeOutDuration);
+                WriteCurveField(_fiFadeInCurve, _fadeController, _defaultFadeInCurve);
+                WriteCurveField(_fiFadeOutCurve, _fadeController, _defaultFadeOutCurve);
+                return;
+            }
+
+            // Aplica overrides se fornecidos; caso contrário, usa defaults.
+            float fadeInDuration = _currentProfile.FadeInDuration > 0f
+                ? _currentProfile.FadeInDuration
+                : _defaultFadeInDuration;
+
+            float fadeOutDuration = _currentProfile.FadeOutDuration > 0f
+                ? _currentProfile.FadeOutDuration
+                : _defaultFadeOutDuration;
+
+            var fadeInCurve = _currentProfile.FadeInCurve != null
+                ? _currentProfile.FadeInCurve
+                : _defaultFadeInCurve;
+
+            var fadeOutCurve = _currentProfile.FadeOutCurve != null
+                ? _currentProfile.FadeOutCurve
+                : _defaultFadeOutCurve;
+
+            WriteFloatField(_fiFadeInDuration, _fadeController, fadeInDuration);
+            WriteFloatField(_fiFadeOutDuration, _fadeController, fadeOutDuration);
+            WriteCurveField(_fiFadeInCurve, _fadeController, fadeInCurve);
+            WriteCurveField(_fiFadeOutCurve, _fadeController, fadeOutCurve);
+        }
+
+        private static void EnsureFieldInfos()
+        {
+            if (_fiFadeInDuration != null) return;
+
+            var t = typeof(FadeController);
+            _fiFadeInDuration = t.GetField("fadeInDuration", BindingFlags.Instance | BindingFlags.NonPublic);
+            _fiFadeOutDuration = t.GetField("fadeOutDuration", BindingFlags.Instance | BindingFlags.NonPublic);
+            _fiFadeInCurve = t.GetField("fadeInCurve", BindingFlags.Instance | BindingFlags.NonPublic);
+            _fiFadeOutCurve = t.GetField("fadeOutCurve", BindingFlags.Instance | BindingFlags.NonPublic);
+        }
+
+        private static float ReadFloatField(FieldInfo fi, object target, float fallback)
+        {
+            if (fi == null || target == null) return fallback;
+            var value = fi.GetValue(target);
+            return value is float f ? f : fallback;
+        }
+
+        private static AnimationCurve ReadCurveField(FieldInfo fi, object target)
+        {
+            if (fi == null || target == null) return null;
+            return fi.GetValue(target) as AnimationCurve;
+        }
+
+        private static void WriteFloatField(FieldInfo fi, object target, float value)
+        {
+            if (fi == null || target == null) return;
+            fi.SetValue(target, value);
+        }
+
+        private static void WriteCurveField(FieldInfo fi, object target, AnimationCurve curve)
+        {
+            if (fi == null || target == null) return;
+            fi.SetValue(target, curve);
         }
 
         #endregion
