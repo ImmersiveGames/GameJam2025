@@ -340,9 +340,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1063722848675155205, guid: 5c0c3a7c3176aa9418c2a28aecdca462, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4192944951038459873, guid: 5c0c3a7c3176aa9418c2a28aecdca462, type: 3}
       propertyPath: m_Name
       value: BootstrapManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 4455036682253472871, guid: 5c0c3a7c3176aa9418c2a28aecdca462, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

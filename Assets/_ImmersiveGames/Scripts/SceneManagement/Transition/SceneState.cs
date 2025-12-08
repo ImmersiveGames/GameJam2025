@@ -6,8 +6,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Representa um snapshot do estado atual de cenas no jogo.
+    /// 
+    /// É usado pelo planner para decidir:
+    /// - quais cenas devem ser carregadas;
+    /// - quais podem ser descarregadas;
+    /// - qual é a cena ativa atual.
     /// </summary>
-    public class SceneState
+    public sealed class SceneState
     {
         /// <summary>
         /// Conjunto de nomes de cenas atualmente carregadas.
@@ -15,42 +20,38 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         public HashSet<string> LoadedScenes { get; } = new HashSet<string>();
 
         /// <summary>
-        /// Nome da cena ativa atual (SceneManager. GetActiveScene()).
-        /// Pode ser string. Empty se nenhuma cena válida estiver ativa.
+        /// Nome da cena ativa no momento do snapshot.
         /// </summary>
-        public string ActiveSceneName { get; private set; } = string.Empty;
+        public string ActiveSceneName { get; private set; }
 
-        public SceneState() { }
+        private SceneState()
+        {
+        }
 
         /// <summary>
-        /// Cria um SceneState lendo diretamente o SceneManager.
-        /// Não usa reflexão nem corrotinas.
+        /// Captura o estado atual de cenas da Unity (SceneManager).
         /// </summary>
-        public static SceneState FromSceneManager()
+        public static SceneState Capture()
         {
             var state = new SceneState();
 
-            // Coleta todas as cenas carregadas
-            int count = SceneManager.sceneCount;
-            for (int i = 0; i < count; i++)
+            int sceneCount = SceneManager.sceneCount;
+            for (int i = 0; i < sceneCount; i++)
             {
-                var scene = SceneManager.GetSceneAt(i);
+                Scene scene = SceneManager.GetSceneAt(i);
                 if (scene.IsValid() && scene.isLoaded)
+                {
                     state.LoadedScenes.Add(scene.name);
+                }
             }
 
-            // Cena ativa
             var activeScene = SceneManager.GetActiveScene();
-            if (activeScene.IsValid() && activeScene.isLoaded)
-                state.ActiveSceneName = activeScene.name;
-            else
-                state.ActiveSceneName = string.Empty;
+            state.ActiveSceneName = activeScene.IsValid() ? activeScene.name : string.Empty;
 
             Debug.Log(
-                "[SceneState] Snapshot criado. " +
-                "Loaded=[" + string.Join(", ", state.LoadedScenes) + "] | " +
-                "Active='" + state.ActiveSceneName + "'"
-            );
+                "[SceneState] Snapshot criado. Loaded=[" +
+                string.Join(", ", state.LoadedScenes) +
+                "] | Active='" + state.ActiveSceneName + "'");
 
             return state;
         }

@@ -9,11 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06b19fdd5543476fbe210cae0eeb86a1, type: 3}
-  m_Name: MenuSceneSetup
+  m_Script: {fileID: 11500000, guid: 7afe8cad45df4b308e66bdc06460c39e, type: 3}
+  m_Name: SceneGroupProfileMenu
   m_EditorClassIdentifier: 
-  id: MenuScene
-  scenes:
+  id: menuscene
+  displayName: MenuScene Profile
+  sceneNames:
   - MenuScene
-  activeScene: MenuScene
-  useFade: 1
+  activeSceneName: MenuScene
+  transitionProfile: {fileID: 11400000, guid: da5ba9c0f97c1b44a848020a0e8ea5ed, type: 2}
+  forceUseFade: 1

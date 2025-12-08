@@ -13,8 +13,20 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
+    /// <summary>
+    /// Parte do GameManager responsável por orquestrar o fluxo de cenas
+    /// usando o pipeline moderno (SceneFlowMap + SceneGroupProfile + SceneTransitionService).
+    /// 
+    /// Esta partial substitui o fluxo antigo baseado em corrotinas e listas de cenas
+    /// e utiliza apenas Task/async-await.
+    /// </summary>
     public sealed partial class GameManager
     {
+        [Header("Scene Flow (Modern)")]
+        [SerializeField]
+        [Tooltip("Mapa lógico de grupos de cena usado para Menu, Gameplay e fluxos adicionais.")]
+        private SceneFlowMap sceneFlowMap;
+
         private bool _resetInProgress;
 
         // Infra moderna de cenas
@@ -24,6 +36,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #region Public Scene Flow API
 
+        /// <summary>
+        /// Solicita um reset completo de jogo.
+        /// Implementação padrão:
+        /// - Garante que estamos em estado de Menu;
+        /// - Reconstrói a GameStateMachine;
+        /// - Vai para o grupo de Gameplay configurado no SceneFlowMap.
+        /// </summary>
         public void ResetGame()
         {
             if (_resetInProgress)
@@ -39,6 +58,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _ = ResetGameAsync();
         }
 
+        /// <summary>
+        /// Solicita retorno ao Menu (grupo menuGroup do SceneFlowMap).
+        /// </summary>
         public void ReturnToMenu()
         {
             _ = ReturnToMenuAsync();
@@ -116,107 +138,57 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
         }
 
-        private (List<string> scenesToLoad, string activeScene, bool useFade) BuildGameplayTargetFromConfig()
+        private SceneGroupProfile GetGameplayGroup()
         {
-            if (GameConfig == null)
-            {
-                return (null, null, true);
-            }
+            if (sceneFlowMap != null && sceneFlowMap.GameplayGroup != null)
+                return sceneFlowMap.GameplayGroup;
 
-            SceneSetup setup = GameConfig.GameplaySetup;
-            if (setup != null && setup.Scenes != null && setup.Scenes.Count > 0)
-            {
-                var scenes = new List<string>(setup.Scenes.Count);
-                foreach (var s in setup.Scenes)
-                {
-                    if (!string.IsNullOrWhiteSpace(s))
-                        scenes.Add(s);
-                }
-
-                if (scenes.Count == 0)
-                    return (null, null, setup.UseFade);
-
-                string active = string.IsNullOrWhiteSpace(setup.ActiveScene)
-                    ? scenes[0]
-                    : setup.ActiveScene;
-
-                return (scenes, active, setup.UseFade);
-            }
-
-            var legacyScenes = new List<string>();
-            if (!string.IsNullOrWhiteSpace(GameConfig.GameplayScene))
-                legacyScenes.Add(GameConfig.GameplayScene);
-            if (!string.IsNullOrWhiteSpace(GameConfig.UIScene))
-                legacyScenes.Add(GameConfig.UIScene);
-
-            if (legacyScenes.Count == 0)
-                return (null, null, true);
-
-            return (legacyScenes, GameConfig.GameplayScene, true);
+            DebugUtility.LogWarning<GameManager>(
+                "[SceneFlow] SceneFlowMap ou GameplayGroup não configurados. " +
+                "Certifique-se de atribuir um SceneFlowMap ao GameManager no inspector.");
+            return null;
         }
 
-        private (List<string> scenesToLoad, string activeScene, bool useFade) BuildMenuTargetFromConfig()
+        private SceneGroupProfile GetMenuGroup()
         {
-            if (GameConfig == null)
-            {
-                return (null, null, true);
-            }
+            if (sceneFlowMap != null && sceneFlowMap.MenuGroup != null)
+                return sceneFlowMap.MenuGroup;
 
-            SceneSetup setup = GameConfig.MenuSetup;
-            if (setup != null && setup.Scenes != null && setup.Scenes.Count > 0)
-            {
-                var scenes = new List<string>(setup.Scenes.Count);
-                foreach (var s in setup.Scenes)
-                {
-                    if (!string.IsNullOrWhiteSpace(s))
-                        scenes.Add(s);
-                }
-
-                if (scenes.Count == 0)
-                    return (null, null, setup.UseFade);
-
-                string active = string.IsNullOrWhiteSpace(setup.ActiveScene)
-                    ? scenes[0]
-                    : setup.ActiveScene;
-
-                return (scenes, active, setup.UseFade);
-            }
-
-            if (string.IsNullOrWhiteSpace(GameConfig.MenuScene))
-                return (null, null, true);
-
-            var legacyScenes = new List<string> { GameConfig.MenuScene };
-            return (legacyScenes, GameConfig.MenuScene, true);
+            DebugUtility.LogWarning<GameManager>(
+                "[SceneFlow] SceneFlowMap ou MenuGroup não configurados. " +
+                "Certifique-se de atribuir um SceneFlowMap ao GameManager no inspector.");
+            return null;
         }
 
+        /// <summary>
+        /// A partir da cena atual, transita para o grupo de Gameplay definido no SceneFlowMap.
+        /// </summary>
         private async Task StartGameplayFromCurrentSceneAsync()
         {
             EnsureSceneTransitionServices();
 
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+            if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
             {
                 DebugUtility.LogWarning<GameManager>(
                     "StartGameplayFromCurrentSceneAsync chamado sem infraestrutura de transição configurada.");
                 return;
             }
 
-            var (scenesToLoad, activeScene, useFade) = BuildGameplayTargetFromConfig();
-            if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+            var targetGroup = GetGameplayGroup();
+            if (targetGroup == null)
             {
                 DebugUtility.LogError<GameManager>(
-                    "[StartGameplayFromCurrentSceneAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                    "[StartGameplayFromCurrentSceneAsync] GameplayGroup não configurado no SceneFlowMap.");
                 return;
             }
 
-            SceneState state = SceneState.FromSceneManager();
+            SceneState state = SceneState.Capture();
             DebugUtility.LogVerbose<GameManager>(
                 $"[StartGameplayFromCurrentSceneAsync] SceneState atual: {state}");
 
             SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
                 state,
-                scenesToLoad,
-                activeScene,
-                useFade);
+                targetGroup);
 
             DebugUtility.LogVerbose<GameManager>(
                 "[StartGameplayFromCurrentSceneAsync] Contexto montado: " + context);
@@ -224,34 +196,35 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             await _sceneTransitionService.RunTransitionAsync(context);
         }
 
+        /// <summary>
+        /// A partir da cena atual, transita para o grupo de Menu definido no SceneFlowMap.
+        /// </summary>
         private async Task GoToMenuFromCurrentSceneAsync()
         {
             EnsureSceneTransitionServices();
 
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+            if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
             {
                 DebugUtility.LogWarning<GameManager>(
                     "GoToMenuFromCurrentSceneAsync chamado sem infraestrutura de transição configurada.");
                 return;
             }
 
-            var (scenesToLoad, activeScene, useFade) = BuildMenuTargetFromConfig();
-            if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+            var targetGroup = GetMenuGroup();
+            if (targetGroup == null)
             {
                 DebugUtility.LogError<GameManager>(
-                    "[GoToMenuFromCurrentSceneAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                    "[GoToMenuFromCurrentSceneAsync] MenuGroup não configurado no SceneFlowMap.");
                 return;
             }
 
-            SceneState state = SceneState.FromSceneManager();
+            SceneState state = SceneState.Capture();
             DebugUtility.LogVerbose<GameManager>(
                 $"[GoToMenuFromCurrentSceneAsync] SceneState atual: {state}");
 
             SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
                 state,
-                scenesToLoad,
-                activeScene,
-                useFade);
+                targetGroup);
 
             DebugUtility.LogVerbose<GameManager>(
                 "[GoToMenuFromCurrentSceneAsync] Contexto montado: " + context);
@@ -269,6 +242,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
 
+                // Garante que estamos em MenuState antes de reconstruir o jogo
                 await Task.Yield();
                 await WaitForMenuStateAsync();
 
@@ -278,28 +252,26 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
                 EnsureSceneTransitionServices();
 
-                if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
                         "Infra de transição de cenas não configurada; reset não alterou cenas.");
                 }
                 else
                 {
-                    var (scenesToLoad, activeScene, useFade) = BuildGameplayTargetFromConfig();
-                    if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+                    var targetGroup = GetGameplayGroup();
+                    if (targetGroup == null)
                     {
                         DebugUtility.LogError<GameManager>(
-                            "[ResetGameAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                            "[ResetGameAsync] GameplayGroup não configurado no SceneFlowMap.");
                     }
                     else
                     {
-                        SceneState state = SceneState.FromSceneManager();
+                        SceneState state = SceneState.Capture();
 
                         SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
                             state,
-                            scenesToLoad,
-                            activeScene,
-                            useFade);
+                            targetGroup);
 
                         DebugUtility.LogVerbose<GameManager>(
                             "[ResetGameAsync] Contexto montado: " + context);
@@ -326,28 +298,26 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 EnsureSceneTransitionServices();
 
-                if (_sceneTransitionPlanner == null || _sceneTransitionService == null || GameConfig == null)
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
                 {
                     DebugUtility.LogWarning<GameManager>(
                         "Infra de transição de cenas não configurada; ReturnToMenu ignorado.");
                     return;
                 }
 
-                var (scenesToLoad, activeScene, useFade) = BuildMenuTargetFromConfig();
-                if (scenesToLoad == null || scenesToLoad.Count == 0 || string.IsNullOrWhiteSpace(activeScene))
+                var targetGroup = GetMenuGroup();
+                if (targetGroup == null)
                 {
                     DebugUtility.LogError<GameManager>(
-                        "[ReturnToMenuAsync] Configuração de cenas inválida no GameConfig/SceneSetup.");
+                        "[ReturnToMenuAsync] MenuGroup não configurado no SceneFlowMap.");
                     return;
                 }
 
-                SceneState state = SceneState.FromSceneManager();
+                SceneState state = SceneState.Capture();
 
                 SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
                     state,
-                    scenesToLoad,
-                    activeScene,
-                    useFade);
+                    targetGroup);
 
                 DebugUtility.LogVerbose<GameManager>(
                     "[ReturnToMenuAsync] Contexto montado: " + context);
@@ -360,6 +330,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
         }
 
+        /// <summary>
+        /// Aguardar até que o estado atual do GameManager seja MenuState,
+        /// ou até um timeout de segurança.
+        /// </summary>
         private async Task WaitForMenuStateAsync()
         {
             const float timeoutSeconds = 1.5f;

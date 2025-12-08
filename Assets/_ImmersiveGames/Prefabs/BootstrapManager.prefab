@@ -50,6 +50,7 @@ MonoBehaviour:
   AutoUnparentOnAwake: 1
   gameConfig: {fileID: 11400000, guid: 5ac9dfd1e72e0e44fbf890e2d30e1697, type: 2}
   debugManager: {fileID: 1063722848675155205}
+  sceneFlowMap: {fileID: 11400000, guid: 3b5d0344e471c804ebfec0b4a06881c5, type: 2}
 --- !u!114 &1063722848675155205
 MonoBehaviour:
   m_ObjectHideFlags: 0
