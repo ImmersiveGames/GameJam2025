@@ -10,7 +10,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Bootstrap
     /// Não é descarregada pelas transições normais.
     /// </summary>
     [DefaultExecutionOrder(-200)]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class UIGlobalBootstrapper : MonoBehaviour
     {
         [SerializeField] private string uiGlobalSceneName = "UIGlobalScene";

@@ -1,4 +1,4 @@
-﻿﻿using UnityEngine;
+﻿using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 {
@@ -9,37 +9,39 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
     /// - tempos de fade;
     /// - curvas de easing do fade;
     /// - tempo mínimo de HUD;
+    /// - tempos de fade da HUD;
     /// - textos padrão para HUD.
-    /// 
-    /// Integra-se com:
-    /// - FadeController (durations/curves);
-    /// - SceneTransitionService (tempo mínimo de HUD);
-    /// - SceneLoadingHudController (textos).
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneTransitionProfile",
-        menuName = "ImmersiveGames/Scene Flow/Scene Transition Profile",
-        order = 1)]
+        menuName = "ImmersiveGames/Scene Management/Scene Transition Profile")]
     public class SceneTransitionProfile : ScriptableObject
     {
-        [Header("Fade Global")]
-        [Tooltip("Se falso, transições usando este perfil não utilizarão fade.")]
+        [Header("Fade de Tela")]
+        [Tooltip("Se verdadeiro, a transição usará fade de tela (FadeIn/FadeOut).")]
         [SerializeField] private bool useFade = true;
 
-        [Header("Fade Durations (Tempo não escalonado)")]
-        [SerializeField] private float fadeInDuration = 0.5f;
-        [SerializeField] private float fadeOutDuration = 0.5f;
+        [Tooltip("Duração do FadeIn (em segundos, tempo não escalonado).")]
+        [SerializeField] private float fadeInDuration = 0.35f;
 
-        [Header("Fade Curves")]
+        [Tooltip("Duração do FadeOut (em segundos, tempo não escalonado).")]
+        [SerializeField] private float fadeOutDuration = 0.35f;
+
         [Tooltip("Curva de easing usada no FadeIn (0->1). Se nula ou vazia, será usado lerp linear.")]
         [SerializeField] private AnimationCurve fadeInCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
         [Tooltip("Curva de easing usada no FadeOut (1->0). Se nula ou vazia, será usado lerp linear.")]
-        [SerializeField] private AnimationCurve fadeOutCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [SerializeField] private AnimationCurve fadeOutCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
         [Header("HUD de Loading")]
         [Tooltip("Tempo mínimo (em segundos, tempo não escalonado) que o HUD deve permanecer visível.")]
         [SerializeField] private float minHudVisibleSeconds = 0.5f;
+
+        [Tooltip("Duração do fade de entrada da HUD (em segundos, tempo não escalonado). 0 ou negativo usa um default interno da view.")]
+        [SerializeField] private float hudFadeInDuration = 0.35f;
+
+        [Tooltip("Duração do fade de saída da HUD (em segundos, tempo não escalonado). 0 ou negativo usa um default interno da view.")]
+        [SerializeField] private float hudFadeOutDuration = 0.35f;
 
         [Tooltip("Título padrão do HUD de loading.")]
         [SerializeField] private string loadingTitle = "Carregando";
@@ -53,23 +55,23 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         [Tooltip("Descrição ao marcar cenas como prontas.")]
         [SerializeField] private string finishingDescription = "Finalizando carregamento...";
 
-        /// <summary>
-        /// Indica se esta transição deve usar fade.
-        /// </summary>
         public bool UseFade => useFade;
 
-        public float FadeInDuration => fadeInDuration;
+        public float FadeInDuration  => fadeInDuration;
         public float FadeOutDuration => fadeOutDuration;
 
-        public AnimationCurve FadeInCurve => fadeInCurve;
+        public AnimationCurve FadeInCurve  => fadeInCurve;
         public AnimationCurve FadeOutCurve => fadeOutCurve;
 
         public float MinHudVisibleSeconds => minHudVisibleSeconds;
 
-        public string LoadingTitle => loadingTitle;
+        public float HudFadeInDuration  => hudFadeInDuration;
+        public float HudFadeOutDuration => hudFadeOutDuration;
+
+        public string LoadingTitle               => loadingTitle;
         public string LoadingDescriptionTemplate => loadingDescriptionTemplate;
-        public string FinishingTitle => finishingTitle;
-        public string FinishingDescription => finishingDescription;
+        public string FinishingTitle             => finishingTitle;
+        public string FinishingDescription       => finishingDescription;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -77,6 +79,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
             if (fadeInDuration < 0f) fadeInDuration = 0f;
             if (fadeOutDuration < 0f) fadeOutDuration = 0f;
             if (minHudVisibleSeconds < 0f) minHudVisibleSeconds = 0f;
+            if (hudFadeInDuration < 0f) hudFadeInDuration = 0f;
+            if (hudFadeOutDuration < 0f) hudFadeOutDuration = 0f;
         }
 #endif
     }

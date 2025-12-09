@@ -8,6 +8,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class GameManagerStateMachine : Singleton<GameManagerStateMachine>
     {
         private StateMachine _stateMachine;
@@ -26,6 +27,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         private EventTriggeredPredicate _resetRequestedPredicate;
 
         public IState CurrentState => _stateMachine?.CurrentState;
+
+        protected override void Awake()
+        {
+            base.Awake();
+            DontDestroyOnLoad(gameObject);
+        }
 
         private void Update() => _stateMachine?.Update();
         private void FixedUpdate() => _stateMachine?.FixedUpdate();

@@ -1,10 +1,10 @@
-﻿﻿using System;
+﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
+using _ImmersiveGames.Scripts.SceneManagement.Hud;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.SceneManagement.Hud;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,7 +20,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         Task RunTransitionAsync(SceneTransitionContext context);
     }
 
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneTransitionService : ISceneTransitionService
     {
         private readonly ISceneLoader _sceneLoader;
@@ -29,7 +28,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         /// <summary>
         /// Tempo mínimo (em segundos, tempo não escalado) que o HUD de loading
-        /// deve permanecer visível para evitar "piscar".
+        /// deve permanecer visível para evitar "piscar", caso o perfil não defina um valor.
         /// </summary>
         private const float DefaultMinHudVisibleSeconds = 0.5f;
 
@@ -71,6 +70,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         public async Task RunTransitionAsync(SceneTransitionContext context)
         {
+
             EnsureHudService();
 
             DebugUtility.Log<SceneTransitionService>(
@@ -87,6 +87,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeIn...");
                     await _fadeService.FadeInAsync();
+
+                    // Progresso inicial após concluir o FadeIn.
+                    _hudService?.SetProgress(0.05f);
                 }
 
                 float hudShownAt = -1f;
@@ -97,6 +100,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Exibindo HUD de loading...");
                     await _hudService.ShowLoadingAsync(context);
                     hudShownAt = Time.unscaledTime;
+
+                    // Progresso após a HUD estar visível na tela.
+                    _hudService.SetProgress(0.10f);
                 }
 
                 // 3) Load cenas alvo
@@ -104,6 +110,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
                         $"[Scenes] Carregando cenas alvo: [{string.Join(", ", context.scenesToLoad)}]");
+
+                    int totalToLoad = context.scenesToLoad.Count;
+                    int loadedCount = 0;
 
                     foreach (var sceneName in context.scenesToLoad)
                     {
@@ -114,10 +123,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                             $"[Scenes] Carregando cena '{sceneName}' (mode=Additive).");
 
                         await _sceneLoader.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+
+                        loadedCount++;
+                        float t = Mathf.Clamp01((float)loadedCount / totalToLoad);
+                        float progress = Mathf.Lerp(0.10f, 0.90f, t);
+                        _hudService?.SetProgress(progress);
                     }
                 }
 
-                // 4) Set active
+                // 4) Set active scene
                 if (!string.IsNullOrWhiteSpace(context.targetActiveScene))
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
@@ -127,7 +141,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 }
 
                 // 5) Unload cenas obsoletas
-                if (context.scenesToUnload != null && context.scenesToUnload.Count > 0)
+                if (context.scenesToUnload is { Count: > 0 })
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>(
                         $"[Scenes] Descarregando cenas obsoletas: [{string.Join(", ", context.scenesToUnload)}]");
@@ -149,6 +163,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>("[HUD] Marcando cenas como prontas no HUD...");
                     await _hudService.MarkScenesReadyAsync(context);
+
+                    // Progresso quase final após as cenas estarem prontas.
+                    _hudService.SetProgress(0.95f);
                 }
 
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(
@@ -181,6 +198,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                 {
                     DebugUtility.LogVerbose<SceneTransitionService>("[Fade] Executando FadeOut...");
                     await _fadeService.FadeOutAsync();
+
+                    // Progresso final da transição.
+                    _hudService?.SetProgress(1.0f);
                 }
 
                 EventBus<SceneTransitionCompletedEvent>.Raise(

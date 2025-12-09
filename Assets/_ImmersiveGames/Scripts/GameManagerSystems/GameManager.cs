@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnDestroy()
         {
-            // Rotinas de reset e fluxo de cena são gerenciadas na partial GameManager.SceneFlow.
+            // Rotinas de reset e fluxo de cena são gerenciadas na partial GameManager. SceneFlow.
 
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);

@@ -2,6 +2,7 @@
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Hud
 {
@@ -25,15 +26,18 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         [SerializeField] private TMP_Text descriptionLabel;
         [SerializeField] private TMP_Text progressLabel;
 
+        [Header("Barra de Progresso (Opcional)")]
+        [Tooltip("Slider opcional para exibir o progresso de carregamento (0..1). Se nulo, apenas o texto de progresso será atualizado.")]
+        [SerializeField] private Slider progressSlider;
+
         [Header("Configuração Inicial")]
         [SerializeField] private bool startHidden = true;
 
-        [Header("Animação")]
-        [Tooltip("Duração do fade de entrada do HUD (em segundos, tempo não escalonado).")]
-        [SerializeField] private float fadeInDuration = 0.35f;
+        private const float DefaultFadeInDuration  = 0.35f;
+        private const float DefaultFadeOutDuration = 0.35f;
 
-        [Tooltip("Duração do fade de saída do HUD (em segundos, tempo não escalonado).")]
-        [SerializeField] private float fadeOutDuration = 0.35f;
+        private float _fadeInDuration  = DefaultFadeInDuration;
+        private float _fadeOutDuration = DefaultFadeOutDuration;
 
         private void Awake()
         {
@@ -52,10 +56,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         /// <summary>
         /// Deixa a HUD invisível, sem desativar o GameObject.
         /// </summary>
-        public void InitializeHidden()
+        private void InitializeHidden()
         {
             SetTexts(string.Empty, string.Empty, string.Empty);
             SetVisible(false);
+            SetProgressInternal(0f);
         }
 
         /// <summary>
@@ -64,6 +69,20 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         public void InitializeVisible()
         {
             SetVisible(true);
+            SetProgressInternal(0f);
+        }
+
+        /// <summary>
+        /// Configura as durações de fade de entrada/saída da HUD.
+        /// Valores menores ou iguais a zero fazem a view usar os defaults internos.
+        /// </summary>
+        public void ConfigureDurations(float fadeInSeconds, float fadeOutSeconds)
+        {
+            _fadeInDuration  = fadeInSeconds  > 0f ? fadeInSeconds  : DefaultFadeInDuration;
+            _fadeOutDuration = fadeOutSeconds > 0f ? fadeOutSeconds : DefaultFadeOutDuration;
+
+            DebugUtility.LogVerbose<SceneLoadingHudView>(
+                $"[HUD VIEW] ConfigureDurations chamado. fadeIn={_fadeInDuration:0.000}, fadeOut={_fadeOutDuration:0.000}");
         }
 
         /// <summary>
@@ -87,7 +106,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             SetTexts(title, description, progress);
             return FadeAlphaAsync(
                 targetAlpha: 1f,
-                duration: fadeInDuration,
+                duration: _fadeInDuration,
                 ensureActiveAtStart: true,
                 deactivateRootOnZero: false);
         }
@@ -99,6 +118,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         {
             DebugUtility.LogVerbose<SceneLoadingHudView>("[HUD VIEW] UpdateTexts chamado.");
             SetTexts(title, description, progress);
+        }
+
+        /// <summary>
+        /// Atualiza o valor de progresso (0..1), afetando texto e slider (se houver).
+        /// </summary>
+        public void SetProgress(float normalized)
+        {
+            SetProgressInternal(Mathf.Clamp01(normalized));
         }
 
         /// <summary>
@@ -120,7 +147,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             DebugUtility.LogVerbose<SceneLoadingHudView>("[HUD VIEW] HideLoadingPanelAsync chamado.");
             return FadeAlphaAsync(
                 targetAlpha: 0f,
-                duration: fadeOutDuration,
+                duration: _fadeOutDuration,
                 ensureActiveAtStart: false,
                 deactivateRootOnZero: true);
         }
@@ -155,6 +182,21 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
 
             DebugUtility.LogVerbose<SceneLoadingHudView>(
                 $"[HUD VIEW] SetVisible({visible}) | rootContainer.activeSelf={(rootContainer != null ? rootContainer.activeSelf.ToString() : "null")} | alpha={(canvasGroup != null ? canvasGroup.alpha.ToString("0.00") : "n/a")}");
+        }
+
+        private void SetProgressInternal(float value)
+        {
+            if (progressSlider != null)
+                progressSlider.value = value;
+
+            if (progressLabel != null)
+            {
+                int percent = Mathf.RoundToInt(value * 100f);
+                progressLabel.text = $"{percent}%";
+            }
+
+            DebugUtility.LogVerbose<SceneLoadingHudView>(
+                $"[HUD VIEW] SetProgressInternal({value:0.00})");
         }
 
         /// <summary>

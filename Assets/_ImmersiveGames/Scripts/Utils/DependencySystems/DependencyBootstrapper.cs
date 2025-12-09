@@ -42,13 +42,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
 
                 // Fade + pré-carregamento da FadeScene
-                EnsureGlobal<IFadeService>(() =>
-                {
-                    var fadeService = new FadeService();
-                    // Pré-load da FadeScene em a background (Task-based, sem bloquear bootstrap)
-                    _ = fadeService.PreloadAsync();
-                    return fadeService;
-                });
+                EnsureGlobal<IFadeService>(() =>new FadeService());
 
                 EnsureGlobal<ISceneLoader>(() => new SceneLoaderCore());
 

@@ -10,7 +10,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Isola a responsabilidade de animação de entrada do minion, do centro do planeta até a órbita.
     /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class MinionEntryHandler : MonoBehaviour
     {
         private Sequence _entrySequence;

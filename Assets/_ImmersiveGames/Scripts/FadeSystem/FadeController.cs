@@ -1,35 +1,61 @@
 ﻿using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.FadeSystem
 {
+    /// <summary>
+    /// Executor de fade:
+    /// - Não conhece SceneTransitionProfile.
+    /// - Recebe duração/curvas em tempo de execução via Configure.
+    /// - Usa AnimationCurve para interpolar alpha do CanvasGroup.
+    /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
     public class FadeController : MonoBehaviour
     {
         [SerializeField] private CanvasGroup canvasGroup;
 
-        [Header("Fade Durations")]
-        [SerializeField] private float fadeInDuration = 0.5f;
-        [SerializeField] private float fadeOutDuration = 0.5f;
+        // Configuração de runtime (vem do FadeService).
+        private float _fadeInDuration  = 0.5f;
+        private float _fadeOutDuration = 0.5f;
+        private AnimationCurve _fadeInCurve;
+        private AnimationCurve _fadeOutCurve;
 
-        [Header("Fade Curves")]
-        [Tooltip("Curva de easing usada no FadeIn (0->1). Se nula ou vazia, usa lerp linear.")]
-        [SerializeField] private AnimationCurve fadeInCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-
-        [Tooltip("Curva de easing usada no FadeOut (1->0). Se nula ou vazia, usa lerp linear.")]
-        [SerializeField] private AnimationCurve fadeOutCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        private static readonly AnimationCurve LinearCurve =
+            AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
         private void Awake()
         {
             if (canvasGroup == null)
                 canvasGroup = GetComponent<CanvasGroup>();
 
-            Debug.Log("[FadeController] Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
+            DebugUtility.LogVerbose<FadeController>("Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
 
             if (canvasGroup != null)
             {
                 // Sempre começa transparente
                 canvasGroup.alpha = 0f;
             }
+
+            // Defaults internos (só usados se ninguém configurar nada).
+            _fadeInCurve  = LinearCurve;
+            _fadeOutCurve = LinearCurve;
+        }
+
+        /// <summary>
+        /// Define a configuração de fade a ser usada nas próximas chamadas.
+        /// </summary>
+        public void Configure(
+            float fadeInDuration,
+            float fadeOutDuration,
+            AnimationCurve fadeInCurve,
+            AnimationCurve fadeOutCurve)
+        {
+            _fadeInDuration  = fadeInDuration  > 0f ? fadeInDuration  : 0.5f;
+            _fadeOutDuration = fadeOutDuration > 0f ? fadeOutDuration : 0.5f;
+
+            _fadeInCurve  = fadeInCurve is { keys: { Length: > 0 } } ? fadeInCurve  : LinearCurve;
+            _fadeOutCurve = fadeOutCurve is { keys: { Length: > 0 } } ? fadeOutCurve : LinearCurve;
         }
 
         public Task FadeInAsync()  => FadeToAsync(1f);
@@ -39,7 +65,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         /// Faz o fade até o alpha alvo usando a duração apropriada (entrada ou saída),
         /// com easing controlado por AnimationCurve.
         /// </summary>
-        public async Task FadeToAsync(float targetAlpha)
+        private async Task FadeToAsync(float targetAlpha)
         {
             if (canvasGroup == null)
                 return;
@@ -47,8 +73,8 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             float currentAlpha = canvasGroup.alpha;
             bool isFadeIn = targetAlpha > currentAlpha;
 
-            float duration = isFadeIn ? fadeInDuration : fadeOutDuration;
-            AnimationCurve curve = isFadeIn ? fadeInCurve : fadeOutCurve;
+            float duration = isFadeIn ? _fadeInDuration : _fadeOutDuration;
+            AnimationCurve curve = isFadeIn ? _fadeInCurve : _fadeOutCurve;
 
             if (duration <= 0f)
             {
@@ -58,7 +84,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             float time = 0f;
 
-            Debug.Log($"[FadeController] Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
+            DebugUtility.LogVerbose<FadeController>("Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
 
             while (time < duration)
             {
@@ -73,7 +99,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             canvasGroup.alpha = targetAlpha;
 
-            Debug.Log($"[FadeController] Fade concluído para alpha = {targetAlpha}");
+            DebugUtility.LogVerbose<FadeController>("Fade concluído para alpha = {targetAlpha}");
         }
 
         /// <summary>
@@ -81,7 +107,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         /// </summary>
         private static float EvaluateCurve(AnimationCurve curve, float t)
         {
-            if (curve == null || curve.keys == null || curve.keys.Length == 0)
+            if (curve?.keys == null || curve.keys.Length == 0)
                 return t;
 
             return curve.Evaluate(t);

@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public abstract class GameStateBase : IState
     {
         protected readonly GameManager gameManager;

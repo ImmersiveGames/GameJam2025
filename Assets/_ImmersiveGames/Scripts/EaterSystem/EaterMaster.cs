@@ -1,12 +1,10 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterMaster : ActorMaster, IEaterActor
     {
         [Header("Configuração")]

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
@@ -23,7 +25,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         fileName = "SceneFlowMap",
         menuName = "ImmersiveGames/Scene Flow/Scene Flow Map",
         order = 2)]
-    
+   [DebugLevel(DebugLevel.Verbose)] 
     public class SceneFlowMap : ScriptableObject
     {
         [Header("Grupos Padrão")]
@@ -69,16 +71,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
             if (string.IsNullOrWhiteSpace(key) || namedGroups == null)
                 return null;
 
-            for (int i = 0; i < namedGroups.Count; i++)
-            {
-                var entry = namedGroups[i];
-                if (entry != null && string.Equals(entry.key, key, StringComparison.Ordinal))
-                {
-                    return entry.group;
-                }
-            }
+            return (from entry in namedGroups where entry != null && string.Equals(entry.key, key, StringComparison.Ordinal) select entry.@group).FirstOrDefault();
 
-            return null;
         }
 
         /// <summary>
@@ -93,22 +87,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (namedGroups == null)
-                namedGroups = new List<NamedGroupEntry>();
+            namedGroups ??= new List<NamedGroupEntry>();
 
             // Apenas detecta chaves duplicadas e avisa, sem apagar nada.
             var seenKeys = new HashSet<string>(StringComparer.Ordinal);
-            foreach (var entry in namedGroups)
+            foreach (var entry in namedGroups.Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.key)).Where(entry => !seenKeys.Add(entry.key)))
             {
-                if (entry == null || string.IsNullOrWhiteSpace(entry.key))
-                    continue;
-
-                if (!seenKeys.Add(entry.key))
-                {
-                    Debug.LogWarning(
-                        $"[SceneFlowMap] Chave duplicada '{entry.key}' detectada em '{name}'. " +
-                        "Chaves devem ser únicas (ajuste manualmente no inspector).");
-                }
+                DebugUtility.LogWarning<SceneFlowMap>(
+                    $"Chave duplicada '{entry.key}' detectada em '{name}'. " +
+                    "Chaves devem ser únicas (ajuste manualmente no inspector).");
             }
         }
 #endif

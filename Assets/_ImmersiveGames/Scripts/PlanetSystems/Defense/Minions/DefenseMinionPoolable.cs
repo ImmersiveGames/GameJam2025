@@ -13,7 +13,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// - DamageDealer / colisão / retorno ao pool
     /// - LifetimeManager
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class DefenseMinionPoolable : BulletPoolable
     {
         protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)

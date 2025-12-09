@@ -1,5 +1,4 @@
 ﻿using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>

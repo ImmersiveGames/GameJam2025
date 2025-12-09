@@ -66,4 +66,5 @@ MonoBehaviour:
   minHudVisibleSeconds: 0.5
   loadingTitle: Carregando
   loadingDescriptionTemplate: 'Carregando: {Scenes}'
+  finishingTitle: "Finaliza\xE7\xE3o"
   finishingDescription: Finalizando carregamento...

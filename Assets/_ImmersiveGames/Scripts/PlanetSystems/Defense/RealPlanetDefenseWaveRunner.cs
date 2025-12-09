@@ -17,7 +17,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// pelo orquestrador, repetindo-as conforme o preset de wave e respeitando o
     /// target role do alvo primário quando definido.
     /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class RealPlanetDefenseWaveRunner : IPlanetDefenseWaveRunner, IInjectableComponent
     {
         private sealed class WaveLoop

@@ -2,13 +2,12 @@
 using System.Linq;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {
     /// <summary>
     /// Implementação básica do planner:
-    /// - ScenesToLoad  = targetScenes - currentState.LoadedScenes
+    /// - ScenesToLoad  = targetScenes - currentState. LoadedScenes
     /// - ScenesToUnload = currentState.LoadedScenes - targetScenes,
     ///   desconsiderando cenas persistentes (como a UIGlobalScene).
     /// - TargetActiveScene:
@@ -46,7 +45,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
         /// Construtor com configuração explícita.
         /// Permite injetar lista de cenas persistentes e um perfil default.
         /// </summary>
-        public SimpleSceneTransitionPlanner(
+        private SimpleSceneTransitionPlanner(
             IEnumerable<string> persistentScenes,
             SceneTransitionProfile defaultTransitionProfile)
         {
@@ -76,11 +75,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     useFade: useFade);
             }
 
-            var targetList = targetScenes != null
+            List<string> targetList = targetScenes != null
                 ? targetScenes.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToList()
                 : new List<string>();
 
-            var (toLoad, toUnload) = ComputeDiff(
+            (List<string> toLoad, List<string> toUnload) = ComputeDiff(
                 currentState,
                 targetList,
                 _persistentScenes);
@@ -129,13 +128,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
                     useFade: false);
             }
 
-            var targetScenes = targetGroup.SceneNames?
+            List<string> targetScenes = targetGroup.SceneNames?
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct()
                 .ToList()
                 ?? new List<string>();
 
-            var (toLoad, toUnload) = ComputeDiff(
+            (List<string> toLoad, List<string> toUnload) = ComputeDiff(
                 currentState,
                 targetScenes,
                 _persistentScenes);
@@ -200,31 +199,17 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             IReadOnlyList<string> targetScenes,
             IReadOnlyCollection<string> persistentScenes)
         {
-            var toLoad = new List<string>();
-            var toUnload = new List<string>();
 
             var targetSet = new HashSet<string>(targetScenes ?? new List<string>());
-            var persistentSet = persistentScenes != null
+            HashSet<string> persistentSet = persistentScenes != null
                 ? new HashSet<string>(persistentScenes)
                 : new HashSet<string>();
 
-            // Tudo que está no target e não está carregado -> Load
-            foreach (var scene in targetSet)
-            {
-                if (!currentState.LoadedScenes.Contains(scene))
-                {
-                    toLoad.Add(scene);
-                }
-            }
+            // Tudo que está no alvo e não está carregado → Load
+            var toLoad = targetSet.Where(scene => !currentState.LoadedScenes.Contains(scene)).ToList();
 
-            // Tudo que está carregado, não está no target e não é persistente -> Unload
-            foreach (var loaded in currentState.LoadedScenes)
-            {
-                if (!targetSet.Contains(loaded) && !persistentSet.Contains(loaded))
-                {
-                    toUnload.Add(loaded);
-                }
-            }
+            // Tudo que está carregado, não está no alvo e não é persistente → Unload
+            var toUnload = currentState.LoadedScenes.Where(loaded => !targetSet.Contains(loaded) && !persistentSet.Contains(loaded)).ToList();
 
             return (toLoad, toUnload);
         }

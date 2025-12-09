@@ -1,6 +1,5 @@
 using System;
 using DG.Tweening;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
@@ -9,7 +8,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Responsável apenas por aguardar o tempo de idle em órbita antes de liberar a perseguição.
     /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class MinionOrbitWaitHandler : MonoBehaviour
     {
         private Tween _orbitWaitTween;

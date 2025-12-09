@@ -11,7 +11,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
     /// Responsável apenas pela perseguição do alvo após a fase de órbita.
     /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class MinionChaseHandler : MonoBehaviour
     {
         public enum ChaseStopReason

@@ -24,8 +24,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         // Novos metadados (opcionais) para integração com perfis/grupos
         public readonly SceneTransitionProfile transitionProfile;
-        public readonly SceneGroupProfile fromGroupProfile;
-        public readonly SceneGroupProfile toGroupProfile;
+        private readonly SceneGroupProfile _fromGroupProfile;
+        private readonly SceneGroupProfile _toGroupProfile;
 
         /// <summary>
         /// Construtor legado, para compatibilidade com chamadas existentes.
@@ -41,9 +41,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             this.targetActiveScene = targetActiveScene;
             this.useFade = useFade;
 
-            this.transitionProfile = null;
-            this.fromGroupProfile = null;
-            this.toGroupProfile = null;
+            transitionProfile = null;
+            _fromGroupProfile = null;
+            _toGroupProfile = null;
         }
 
         /// <summary>
@@ -64,8 +64,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             this.useFade = useFade;
 
             this.transitionProfile = transitionProfile;
-            this.fromGroupProfile = fromGroupProfile;
-            this.toGroupProfile = toGroupProfile;
+            _fromGroupProfile = fromGroupProfile;
+            _toGroupProfile = toGroupProfile;
         }
 
         public override string ToString()
@@ -73,8 +73,8 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             string loadStr = scenesToLoad == null ? "null" : string.Join(", ", scenesToLoad);
             string unloadStr = scenesToUnload == null ? "null" : string.Join(", ", scenesToUnload);
             string profileId = transitionProfile == null ? "null" : transitionProfile.name;
-            string fromId = fromGroupProfile == null ? "null" : fromGroupProfile.Id;
-            string toId = toGroupProfile == null ? "null" : toGroupProfile.Id;
+            string fromId = _fromGroupProfile == null ? "null" : _fromGroupProfile.Id;
+            string toId = _toGroupProfile == null ? "null" : _toGroupProfile.Id;
 
             return $"SceneTransitionContext(Load=[{loadStr}], Unload=[{unloadStr}], " +
                    $"TargetActive='{targetActiveScene}', UseFade={useFade}, " +

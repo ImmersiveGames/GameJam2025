@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -12,6 +13,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     /// - quais podem ser descarregadas;
     /// - qual é a cena ativa atual.
     /// </summary>
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneState
     {
         /// <summary>
@@ -38,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             int sceneCount = SceneManager.sceneCount;
             for (int i = 0; i < sceneCount; i++)
             {
-                Scene scene = SceneManager.GetSceneAt(i);
+                var scene = SceneManager.GetSceneAt(i);
                 if (scene.IsValid() && scene.isLoaded)
                 {
                     state.LoadedScenes.Add(scene.name);
@@ -48,7 +50,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             var activeScene = SceneManager.GetActiveScene();
             state.ActiveSceneName = activeScene.IsValid() ? activeScene.name : string.Empty;
 
-            Debug.Log(
+            DebugUtility.LogVerbose<SceneState>(
                 "[SceneState] Snapshot criado. Loaded=[" +
                 string.Join(", ", state.LoadedScenes) +
                 "] | Active='" + state.ActiveSceneName + "'");

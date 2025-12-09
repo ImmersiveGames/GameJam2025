@@ -77,8 +77,31 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            // Apenas garante que a lista não é null para evitar NullReference no inspector.
+            // Garante que a lista não é null.
             sceneNames ??= new List<string>();
+
+            // Remove entradas nulas ou em branco para evitar lixo no inspector.
+            for (int i = sceneNames.Count - 1; i >= 0; i--)
+            {
+                if (string.IsNullOrWhiteSpace(sceneNames[i]))
+                    sceneNames.RemoveAt(i);
+            }
+
+            // Warning se não houver nenhuma cena configurada.
+            if (sceneNames.Count == 0)
+            {
+                Debug.LogWarning(
+                    $"[SceneGroupProfile] Grupo '{name}' não possui nenhuma cena configurada (sceneNames vazio).");
+            }
+
+            // Warning se a cena ativa alvo não estiver na lista de cenas do grupo.
+            if (!string.IsNullOrWhiteSpace(activeSceneName) &&
+                !sceneNames.Contains(activeSceneName))
+            {
+                Debug.LogWarning(
+                    $"[SceneGroupProfile] Grupo '{name}' possui ActiveSceneName='{activeSceneName}' " +
+                    "que não está presente em sceneNames. Verifique o nome da cena.");
+            }
         }
 #endif
     }

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -14,7 +15,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
     /// Não usa corrotinas diretamente; a coordenação é feita via Tasks.
     /// </summary>
     [DefaultExecutionOrder(-50)]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneLoadingHudController :
         MonoBehaviour,
         ISceneLoadingHudService,
@@ -52,10 +52,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
                 enabled = false;
                 return;
             }
-
-            // NÃO vamos mexer no activeSelf da view aqui,
-            // porque ela pode estar configurada na cena para iniciar desativada.
-            // Em vez disso, vamos garantir que ela fique ativa quando formos exibir o loading.
 
             // Descobre e guarda o Canvas pai (mesmo que esteja inativo)
             _canvas = view.GetComponentInParent<Canvas>(true);
@@ -149,19 +145,53 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             if (view == null)
                 return Task.CompletedTask;
 
-            // Este é o ponto em que garantimos que tudo esteja ativo.
             EnsureCanvasAndViewActive();
 
-            string title = "Carregando";
-            string description = context.scenesToLoad != null && context.scenesToLoad.Count > 0
-                ? $"Carregando: {string.Join(", ", context.scenesToLoad)}"
-                : "Preparando cena...";
+            var profile = context.transitionProfile;
+            string title;
+            string description;
+
+            if (profile != null && !string.IsNullOrWhiteSpace(profile.LoadingTitle))
+            {
+                title = profile.LoadingTitle;
+            }
+            else
+            {
+                title = "Carregando";
+            }
+
+            if (profile != null && !string.IsNullOrWhiteSpace(profile.LoadingDescriptionTemplate))
+            {
+                string scenesText = (context.scenesToLoad != null && context.scenesToLoad.Count > 0)
+                    ? string.Join(", ", context.scenesToLoad)
+                    : "cenas";
+
+                description = profile.LoadingDescriptionTemplate.Replace("{Scenes}", scenesText);
+            }
+            else
+            {
+                description = context.scenesToLoad != null && context.scenesToLoad.Count > 0
+                    ? $"Carregando: {string.Join(", ", context.scenesToLoad)}"
+                    : "Preparando cena...";
+            }
+
+            if (profile != null)
+            {
+                view.ConfigureDurations(profile.HudFadeInDuration, profile.HudFadeOutDuration);
+            }
+            else
+            {
+                // Usa defaults internos da view.
+                view.ConfigureDurations(0f, 0f);
+            }
+
+            // Inicializa sempre com 0%.
+            view.SetProgress(0f);
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
                 "[HUD CTRL] ShowLoadingAsync chamado. " +
                 $"view.activeInHierarchy={view.gameObject.activeInHierarchy}");
 
-            // Agora usamos a versão com fade-in (Task).
             return view.ShowLoadingPanelAsync(title, description, "0%");
         }
 
@@ -170,13 +200,22 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             if (view == null)
                 return Task.CompletedTask;
 
-            // Se por algum motivo alguém desativou no meio da transição, reativa aqui também.
             EnsureCanvasAndViewActive();
+
+            var profile = context.transitionProfile;
+
+            string title = (profile != null && !string.IsNullOrWhiteSpace(profile.FinishingTitle))
+                ? profile.FinishingTitle
+                : "Carregando";
+
+            string description = (profile != null && !string.IsNullOrWhiteSpace(profile.FinishingDescription))
+                ? profile.FinishingDescription
+                : "Finalizando carregamento...";
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
                 "[HUD CTRL] MarkScenesReadyAsync chamado.");
 
-            view.UpdateTexts("Carregando", "Finalizando carregamento...", "100%");
+            view.UpdateTexts(title, description, "100%");
             return Task.CompletedTask;
         }
 
@@ -185,15 +224,20 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             if (view == null)
                 return Task.CompletedTask;
 
-            // Mesmo escondendo, garantimos que o objeto exista/esteja ativo
-            // (HideLoadingPanelAsync vai apenas animar alpha e rootContainer).
             EnsureCanvasAndViewActive();
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
                 "[HUD CTRL] HideLoadingAsync chamado.");
 
-            // Agora usamos a versão com fade-out (Task).
             return view.HideLoadingPanelAsync();
+        }
+
+        public void SetProgress(float value)
+        {
+            if (view == null)
+                return;
+
+            view.SetProgress(value);
         }
 
         #endregion
@@ -207,5 +251,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         Task ShowLoadingAsync(SceneTransitionContext context);
         Task MarkScenesReadyAsync(SceneTransitionContext context);
         Task HideLoadingAsync(SceneTransitionContext context);
+
+        /// <summary>
+        /// Atualiza o progresso normalizado (0..1) da transição.
+        /// Implementações podem simplesmente ignorar se não suportarem barra de progresso.
+        /// </summary>
+        void SetProgress(float value);
     }
 }

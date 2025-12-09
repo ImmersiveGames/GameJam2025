@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior Debug Utility")]
-    [DebugLevel(DebugLevel.Verbose)]
+
     public sealed class EaterBehaviorDebugUtility : MonoBehaviour
     {
         [Header("Referências")]

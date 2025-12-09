@@ -18,5 +18,5 @@ MonoBehaviour:
   - GameplayScene
   - UIScene
   activeSceneName: GameplayScene
-  transitionProfile: {fileID: 11400000, guid: 20e31d1720eaa16459880cf7027a55e9, type: 2}
+  transitionProfile: {fileID: 11400000, guid: da5ba9c0f97c1b44a848020a0e8ea5ed, type: 2}
   forceUseFade: 1

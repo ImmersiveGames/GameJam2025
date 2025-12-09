@@ -1,323 +1,563 @@
-﻿# 🎬 Sistema de Fade + Gerenciamento de Transição de Cenas
+﻿# **Scene Flow System (SFS)**
 
-### Guia de Uso e Arquitetura (v2.0 — Task-Based, Zero Corrotinas)
-
----
-
-## 📚 **Índice**
-
-1. [Visão Geral](#visão-geral)
-2. [Arquitetura do Sistema](#arquitetura-do-sistema)
-3. [Fluxo Completo de Transição](#fluxo-completo-de-transição)
-4. [Componentes Essenciais](#componentes-essenciais)
-5. [Ciclo de Vida e Pré-Carregamento](#ciclo-de-vida-e-pré-carregamento)
-6. [Integração Passo a Passo](#integração-passo-a-passo)
-7. [Configurações no Editor](#configurações-no-editor)
-8. [Boas Práticas e Troubleshooting](#boas-práticas-e-troubleshooting)
-9. [Extensões Futuras Sugeridas](#extensões-futuras-sugeridas)
+### *Pipeline Moderno de Transição de Cenas — Fade, HUD, Scene Groups & Context Planning*
 
 ---
 
-## 🎯 **Visão Geral**
+# **1. Visão Geral**
 
-O sistema de **Scene Flow + Fade** provê uma infraestrutura robusta, assíncrona e totalmente desacoplada para:
+O **Scene Flow System (SFS)** é o pipeline oficial de gerenciamento e transição de cenas para projetos Unity dentro do ecossistema *ImmersiveGames*.
 
-* Troca de cenas **aditivas**
-* Controle de fade-in/fade-out
-* HUD de loading com transição animada
-* Pipeline ordenado e previsível
-* 0% de corrotinas – tudo movido para `Task` + `async/await`
+Ele substitui completamente sistemas antigos como:
 
-O objetivo principal é garantir:
+* `SceneSetup` (LEGADO – removido)
+* Strings de cenas no `GameConfig` (LEGADO – removido)
+* Fluxos manuais e scene loaders ad hoc
 
-1. Experiência visual consistente
-2. Transições estável independente da carga real
-3. Modularidade e extensão por DI (DependencyManager)
-4. Possibilidade de instrumentação via EventBus
+O SFS é:
+
+* **100% orientado a dados (ScriptableObjects)**
+* **Determinístico e previsível**
+* **Extensível e isolado por camadas**
+* Integrado com:
+
+    * Fade animado por **AnimationCurve**
+    * HUD global de carregamento
+    * Eventos de transição
+    * SceneLoader async padrão do projeto
 
 ---
 
-## 🧠 **Arquitetura do Sistema**
+# **2. Arquitetura Geral**
+
+A arquitetura é composta de 3 camadas:
 
 ```
-SceneTransitionPlanner (define o contexto)
-        │
-        ▼
-SceneTransitionService (orquestrador principal)
-        │
-        ├── IFadeService
-        │       └── FadeService
-        │               └── FadeController (AnimationCurve)
-        │
-        ├── ISceneLoader
-        │       └── SceneLoaderCore
-        │
-        └── ISceneLoadingHudTaskService
-                └── SceneLoadingHudController
-                        └── SceneLoadingHudView (CanvasGroup fade)
+GAME LAYER (Top)
+ └── GameManager.SceneFlow
+       ├── SceneFlowMap (SO)
+       └── SceneGroupProfile (SO)
+PIPELINE LAYER (Core)
+ ├── SceneTransitionPlanner
+ └── SceneTransitionService
+SYSTEM LAYER (Runtime Executors)
+ ├── FadeService → FadeController
+ ├── SceneLoader
+ └── SceneLoadingHudService → SceneLoadingHudView
 ```
-
-Além disso, o fluxo emite eventos:
-
-```
-SceneTransitionStartedEvent
-SceneTransitionScenesReadyEvent
-SceneTransitionCompletedEvent
-```
-
-Para permitir integração com UI, IA, áudio, analytics, etc.
 
 ---
 
-## 🔄 **Fluxo Completo de Transição**
+## **2.1 Fluxo Resumido**
 
-A transição segue **sempre** está ordem:
-
-1. **FadeIn** (escurecer a tela)
-2. **Exibir HUD** (fade-in do painel de loading)
-3. **Carregar cenas alvo (Additive)**
-4. **Definir cena ativa**
-5. **Descarregar cenas antigas**
-6. **HUD → “Finalizando...”**
-7. **Garantir tempo mínimo de HUD visível**
-8. **Ocultar HUD** (fade-out)
-9. **FadeOut** (revelar cena final)
-10. **Evento: Transição Concluída**
-
-O sistema garante:
-
-* Nenhum frame de “flash branco”
-* HUD nunca pisca ou some instantaneamente
-* Fade é sempre suave graças ao `AnimationCurve`
-* Ordem sempre determinística
-
----
-
-## 🧩 **Componentes Essenciais**
-
----
-
-### **1. IFadeService**
-
-Contratos principais:
-
-```csharp
-Task FadeInAsync();
-Task FadeOutAsync();
-void RequestFadeIn();
-void RequestFadeOut();
-Task PreloadAsync();
+```
+GameManager                 Usuário solicita transição (GoToMenu / Gameplay)
+   │
+   ├── SceneFlowMap         SFS escolhe grupo destino via ScriptableObject
+   │
+   ├── SceneTransitionPlanner
+   │        Compara estado atual vs grupo destino → gera SceneTransitionContext
+   │
+   └── SceneTransitionService
+            │
+            ├── FadeService.ApplyProfile()
+            ├── HUD.ShowLoading()
+            ├── SceneLoader.LoadSceneAsync()
+            ├── SceneLoader.UnloadSceneAsync()
+            ├── HUD.MarkScenesReady()
+            ├── HUD.HideLoading()
+            └── FadeService.FadeOut()
 ```
 
-Fornecido pela implementação:
+---
 
-### **FadeService**
+# **3. ScriptableObjects Fundamentais**
 
-Responsável por:
+O SFS segue a regra central:
 
-* Carregar a FadeScene (somente uma vez)
-* Instanciar `FadeController` persistente
-* Sincronizar chamadas concorrentes via `SemaphoreSlim`
-* Pré-carregar no bootstrap (`DependencyBootstrapper`)
+> **Toda configuração deve estar em ScriptableObjects.
+> Código não carrega strings de cena.**
 
 ---
 
-### **2. FadeController**
+## **3.1 SceneFlowMap**
 
-*(Task-based, sem corrotinas)*
+Mapa mestre de todos os fluxos do jogo.
 
-Funções:
+```cs
+public class SceneFlowMap : ScriptableObject
+{
+    public SceneGroupProfile MenuGroup;
+    public SceneGroupProfile GameplayGroup;
 
-* Animar `CanvasGroup.alpha` usando `Time.unscaledDeltaTime`
-* Utilizar curvas de easing via `AnimationCurve`:
+    [Serializable]
+    public struct NamedGroupEntry
+    {
+        public string key;
+        public SceneGroupProfile group;
+    }
 
-```csharp
-[SerializeField] AnimationCurve fadeInCurve;
-[SerializeField] AnimationCurve fadeOutCurve;
+    [SerializeField] private List<NamedGroupEntry> namedGroups;
+}
 ```
 
-Em vez de `lerp` linear.
+### Função
+
+Ele garante:
+
+* Quais são os grupos principais do jogo (Menu, Gameplay, Lobby, Boss, etc.)
+* Um dicionário expandível de grupos extras via chave (`namedGroups`)
+
+### Exemplo no Inspector:
+
+```
+SceneFlowMap
+  - MenuGroup       → MenuGroupProfile
+  - GameplayGroup   → GameplayGroupProfile
+  - namedGroups:
+        "Boss01" → BossGroupProfile
+        "Shop"   → ShopGroupProfile
+```
 
 ---
 
-### **3. SceneTransitionPlanner**
+## **3.2 SceneGroupProfile**
 
-Gera o `SceneTransitionContext`:
+Define um “grupo de cenas” que devem existir juntas.
 
-```csharp
-Load = ["GameplayScene", "UIScene"]
-Unload = ["MenuScene"]
-TargetActive = "GameplayScene"
+```cs
+sceneNames: ["GameplayScene", "UIScene"]
+activeSceneName: "GameplayScene"
+transitionProfile: GameplayTransitionProfile
+```
+
+### Função
+
+* Lista de cenas a carregar
+* Indica qual será a cena ativa
+* Limpa erros do usuário (cenas vazias/nulas)
+* Centraliza tempos mínimos e perfil visual
+
+### Exemplo
+
+```
+SceneGroupProfile: Gameplay
+
+Scenes:
+  - GameplayScene
+  - UIScene
+Active Scene: GameplayScene
+Transition Profile: GameplayTransitionProfile
+Use Fade: Yes
+```
+
+---
+
+## **3.3 SceneTransitionProfile**
+
+Fonte de verdade para:
+
+* FadeInDuration
+* FadeOutDuration
+* FadeInCurve
+* FadeOutCurve
+* Títulos e descrições do HUD
+* Tempo mínimo visível do HUD
+
+O **FadeController NÃO tem configuração via inspector** — ele só executa as curvas/durações deste SO.
+
+### Exemplo:
+
+```
 UseFade = true
+FadeInDuration = 0.5
+FadeOutDuration = 0.7
+FadeInCurve = EaseOut
+FadeOutCurve = EaseIn
+MinHudVisibleSeconds = 0.8
+
+LoadingTitle = "Iniciando..."
+LoadingDescriptionTemplate = "Carregando: {Scenes}"
+FinishingTitle = "Pronto!"
+FinishingDescription = "Carregamento concluído."
 ```
 
-É intercambiável; você pode criar planners para cutscenes, arenas, etc.
-
 ---
 
-### **4. SceneTransitionService**
+# **4. Pipeline Interno do Scene Flow System**
 
-*(Orquestrador principal)*
+## **4.1 SceneTransitionPlanner (SimpleSceneTransitionPlanner)**
 
-O único responsável por “coreografar”:
+Responsável por comparar:
 
-* fade → hud → load → unload → hud → fade
-* resiliência a cenas que carregam rápido
-* sincronização com HUD
-* emissão de eventos
-* sem corrotinas, tudo `await`
+* Estado atual (`SceneState.Capture()`)
+* Estado desejado (`SceneGroupProfile`)
 
----
+E gerar:
 
-### **5. SceneLoadingHudController + SceneLoadingHudView**
+* Cenas a carregar
+* Cenas a descarregar
+* Cena ativa final
+* Perfil de transição
+* Flags de fade
 
-Responsáveis por:
+### Exemplo de contexto gerado:
 
-* Fade-in/out do HUD
-* Atualização de textos
-* Mostrar/esconder sem jamais desativar objetos críticos
-* Compatíveis com canvases ativados/desativados em runtime
-
----
-
-### **6. SceneLoaderCore**
-
-Wrapper para `LoadSceneAsync` / `UnloadSceneAsync` convertidos para `Task`.
-
----
-
-## 🔥 **Ciclo de Vida e Pré-Carregamento**
-
-O FadeService, dentro do `DependencyBootstrapper`, agora executa:
-
-```csharp
-_ = fadeService.PreloadAsync();
-```
-
-Isso evita:
-
-* Travamento na primeira transição
-* Aquele “soluço” no primeiro fade-in
-
-Com pré-load, a transição inicial já é suave e imediata.
-
----
-
-## 🚀 **Integração Passo a Passo**
-
-### **1) Criar o contexto**
-
-```csharp
-var context = new SceneTransitionContext(
-    scenesToLoad: new[] { "GameplayScene", "UIScene" },
-    scenesToUnload: new[] { "MenuScene" },
+```cs
+SceneTransitionContext:
+{
+    scenesToLoad: ["GameplayScene", "UIScene"],
+    scenesToUnload: ["MenuScene"],
     targetActiveScene: "GameplayScene",
-    useFade: true
+    useFade: true,
+    transitionProfile: GameplayTransitionProfile
+}
+```
+
+---
+
+## **4.2 SceneTransitionService**
+
+Executor do fluxo.
+
+### Ordem exata (sem CancellationToken):
+
+```
+FadeIn
+HUD.ShowLoading
+Load (additive)
+SetActiveScene
+Unload (antigos)
+HUD.MarkScenesReady
+Garantir tempo mínimo de HUD
+HUD.Hide
+FadeOut
+```
+
+### Integração FadeService
+
+Antes do primeiro fade:
+
+```cs
+fadeService.ConfigureFromProfile(context.transitionProfile);
+```
+
+### Eventos emitidos:
+
+* `SceneTransitionStartedEvent`
+* `SceneTransitionScenesReadyEvent`
+* `SceneTransitionCompletedEvent`
+
+---
+
+## **4.3 FadeService + FadeController**
+
+### Princípios:
+
+* FadeController não guarda valores em inspector.
+* FadeService aplica valores do perfil:
+
+```cs
+fadeController.Configure(
+    profile.FadeInDuration,
+    profile.FadeOutDuration,
+    profile.FadeInCurve,
+    profile.FadeOutCurve
 );
 ```
 
----
+### Fluxo:
 
-### **2) Solicitar a transição via ISceneTransitionService**
-
-```csharp
-DependencyManager.Provider
-    .GetGlobal<ISceneTransitionService>()
-    .RunTransitionAsync(context);
+```
+FadeService
+   └── Locate FadeController
+   └── ApplyProfile(SceneTransitionProfile)
+   └── FadeIn or FadeOut
 ```
 
 ---
 
-### **3) Ou usar a camada superior (GameManager)**
+## **4.4 SceneLoadingHudController**
 
-```csharp
-await GameManager.SceneFlow.LoadGameplayAsync();
+Centraliza HUD de loading.
+
+### Em ShowLoadingAsync:
+
+* Lê perfil do contexto
+* Aplica:
+
+    * LoadingTitle
+    * LoadingDescriptionTemplate ("{Scenes}")
+
+### Em MarkScenesReadyAsync:
+
+* Aplica:
+
+    * FinishingTitle
+    * FinishingDescription
+
+---
+
+# **5. Configuração Inicial — Passo a Passo (IMPORTANTE)**
+
+## **Passo 1 — Criar grupos**
+
+1. Crie 2 `SceneGroupProfile`:
+
+    * MenuGroup
+    * GameplayGroup
+
+2. Preencha:
+
+    * Lista de cenas
+    * Cena ativa
+
+3. Defina `TransitionProfile`.
+
+---
+
+## **Passo 2 — Criar SceneFlowMap**
+
+```
+SceneFlowMap
+  MenuGroup → MenuGroupProfile
+  GameplayGroup → GameplayGroupProfile
 ```
 
 ---
 
-### **4) Ou disparar fade manual**
+## **Passo 3 — Configurar Fade**
 
-```csharp
-var fade = DependencyManager.Provider.Resolve<IFadeService>();
-await fade.FadeInAsync();
-await fade.FadeOutAsync();
+Crie uma cena **FadeScene** contendo:
+
+* Canvas fullscreen
+* CanvasGroup
+* FadeController
+
+---
+
+## **Passo 4 — Configurar HUD Global**
+
+Crie uma cena **UIGlobalScene**:
+
+* Canvas
+* SceneLoadingHudView
+* SceneLoadingHudController (registrado global via DI)
+
+---
+
+## **Passo 5 — Registrar no GameManager**
+
+O fluxo moderno já está implementado em:
+
+```
+GameManager.SceneFlow.cs
+```
+
+Chamadas:
+
+```cs
+await GoToMenuFromCurrentSceneAsync();
+await StartGameplayFromCurrentSceneAsync();
 ```
 
 ---
 
-## 🛠️ **Configurações no Editor**
+# **6. Exemplos Práticos**
 
-### **FadeScene**
+## **6.1 Ir para o menu**
 
-* Deve conter **apenas** um GameObject com `FadeController`.
-* `CanvasGroup.alpha` deve começar em `0`.
-* Curvas sugeridas:
-
-    * FadeIn: Ease-In-Out suave
-    * FadeOut: Ease-Out mais curto
-
-### **HUD (UIGlobalScene)**
-
-* `SceneLoadingHudView` deve estar com:
-
-    * `startHidden = true`
-    * `fadeInDuration = 0.35`
-    * `fadeOutDuration = 0.35`
-
-### **Canvas**
-
-* Sorting Order recomendado: **5000** ou maior que todos os outros canvases.
-* `overrideSorting = true`
+```cs
+await GameManager.Instance.GoToMenuFromCurrentSceneAsync();
+```
 
 ---
 
-## 🧪 **Boas Práticas e Troubleshooting**
+## **6.2 Ir para o gameplay**
 
-| Problema                   | Causa Provável                           | Solução                                                         |
-| -------------------------- | ---------------------------------------- | --------------------------------------------------------------- |
-| Fade demora muito ou pouco | Curvas diferentes ou durations distintos | Ajustar `fadeInDuration`, `fadeOutDuration`, AnimationCurve     |
-| HUD “pisca”                | Cena carrega muito rápido                | Ajustar `MinHudVisibleSeconds`                                  |
-| HUD não aparece            | Canvas desativado por terceiros          | `EnsureCanvasAndViewActive()` reativa automaticamente           |
-| Fade piscando              | FadeScene não pré-carregada              | Confirmar bootstrap executando `PreloadAsync()`                 |
-| EventSystem duplicado      | Cenas UI carregadas sem controle         | Garanta somente 1 EventSystem ou destrua o duplicado via script |
+```cs
+await GameManager.Instance.StartGameplayFromCurrentSceneAsync();
+```
 
 ---
 
-## 🧱 **Extensões Futuras Sugeridas**
+## **6.3 Criar tecla de debug**
 
-1. **Fade por cor ou textura**
-   Permitindo blecaute, branco, ou texturas personalizadas.
+```cs
+void Update()
+{
+    if (Input.GetKeyDown(KeyCode.F1))
+        _ = GameManager.Instance.GoToMenuFromCurrentSceneAsync();
 
-2. **Perfis de transição (ScriptableObject)**
-   Tempo de fade e HUD variáveis por tipo de cena (Menu, Gameplay, Cutscene, BossFight).
-
-3. **Progress real baseado em AsyncOperation.progress**
-   Para HUD de carregamento detalhado.
-
-4. **Transições em cadeia (queue)**
-   Sistemas que empilham múltiplos contextos e executam em sequência.
-
-5. **Modo Instantâneo (sem fade/HUD)**
-   Para mudanças internas invisíveis.
+    if (Input.GetKeyDown(KeyCode.F2))
+        _ = GameManager.Instance.StartGameplayFromCurrentSceneAsync();
+}
+```
 
 ---
 
-# ✅ **Conclusão**
+## **6.4 Criar novo grupo (Boss Battle)**
 
-O sistema atual é:
+1. Duplique um `SceneGroupProfile`
+2. Preencha cenas:
 
-* **100% assíncrono**
-* **Totalmente livre de corrotinas**
-* **Determinístico e previsível**
-* **Extensível por DI**
-* **Com fade cinematográfico usando curvas**
-* **HUD suave (fade-in/out), com tempo mínimo garantido**
-* **Capaz de lidar com múltiplas transições de forma estável**
+    * GameplayScene
+    * UIScene
+    * BossArenaScene
+3. Adicione no SceneFlowMap:
 
-Se quiser, posso:
+```
+namedGroups:
+    "Boss" → BossGroupProfile
+```
 
-* Gerar uma versão **Markdown com formatação avançada**,
-* Criar **diagramas gráficos**,
-* Criar **README separado para FadeSystem e SceneFlow**,
-* Criar **diagramas PlantUML** para documentação interna.
+4. Chame via planner:
+
+```cs
+var bossGroup = sceneFlowMap.GetGroup("Boss");
+var ctx = planner.BuildContext(SceneState.Capture(), bossGroup);
+await transitionService.RunTransitionAsync(ctx);
+```
+
+---
+
+# **7. Diagramas**
+
+## **7.1 Pipeline do Fade**
+
+```
+SceneTransitionService
+   └── FadeService.ConfigureFromProfile()
+         └── FadeController.Configure()
+               └── FadeToAsync()
+```
+
+---
+
+## **7.2 Pipeline da Transição**
+
+```
+[Start]
+   ↓
+FadeIn
+   ↓
+HUD.Show
+   ↓
+Load Additive Scenes
+   ↓
+Set Active Scene
+   ↓
+Unload Old Scenes
+   ↓
+HUD.MarkReady
+   ↓
+Wait Min HUD Time
+   ↓
+HUD.Hide
+   ↓
+FadeOut
+   ↓
+[Complete]
+```
+
+---
+
+# **8. Boas Práticas**
+
+### ✔ Fonte de verdade sempre nos ScriptableObjects
+
+Nada de strings de cena no código.
+
+### ✔ Nunca referenciar diretamente nomes de cenas
+
+Sempre via SceneGroupProfile.
+
+### ✔ Cada grupo deve ter UMA cena ativa
+
+Evita comportamentos inconsistentes.
+
+### ✔ Durations/Curves só no TransitionProfile
+
+Evita duplicações e erros de configuração.
+
+### ✔ HUD sempre veio antes do FadeOut
+
+Para evitar flickers.
+
+### ✔ Evitar remover cenas da lista manualmente em runtime
+
+Sempre deixar o Planner decidir.
+
+---
+
+# **9. Debug Checklist**
+
+### HUD não aparece?
+
+* Verificar se `SceneLoadingHudController` está registrado global.
+* Verificar se UIGlobalScene está carregada no bootstrap.
+
+### Fade não aparece?
+
+* Verificar TransitionProfile.UseFade.
+* Verificar FadeScene carregada.
+
+### Cena ativa errada?
+
+* ActiveSceneName do SceneGroupProfile incorreto.
+
+### Cena não descarrega?
+
+* Verificar SceneFlowMap → grupos conflitantes.
+
+### Perfil não aplicado?
+
+* Verificar TransitionProfile associado no SceneGroupProfile.
+
+---
+
+# **10. Estrutura Recomendada de Pastas**
+
+```
+/Assets/_Game
+    /SceneFlow
+        SceneFlowMap.asset
+        MenuGroupProfile.asset
+        GameplayGroupProfile.asset
+        Profiles/
+            MenuTransitionProfile.asset
+            GameplayTransitionProfile.asset
+    /Fade
+        FadeScene.unity
+        FadeController.cs
+        FadeService.cs
+    /HUD
+        UIGlobalScene.unity
+        SceneLoadingHudView.cs
+        SceneLoadingHudController.cs
+    /Core
+        SceneTransitionService.cs
+        SceneTransitionPlanner.cs
+        SceneState.cs
+```
+
+---
+
+# **Conclusão**
+
+O **Scene Flow System (SFS)** entrega:
+
+* Pipeline robusto
+* Configurável via ScriptableObjects
+* Integrado com Fade & HUD
+* Determinístico e seguro
+* Simples de estender
+* Sem legado
+
+Você agora possui:
+
+* A documentação oficial
+* Um framework sólido para qualquer fluxo de cena
+* Uma base para futuros módulos (cutscenes, checkpoints, loading avançado, etc.)
+
+---
