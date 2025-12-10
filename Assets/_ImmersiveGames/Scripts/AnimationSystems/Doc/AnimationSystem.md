@@ -1,137 +1,197 @@
-﻿# Sistema de Animação — Guia de Uso (v1.0)
+﻿# Sistema de Animação — Guia de Uso (v1.1)
 
 ## Índice
 - [Visão Geral](#visão-geral)
 - [Componentes Principais](#componentes-principais)
 - [Fluxo de Inicialização](#fluxo-de-inicialização)
 - [Registro e Injeção](#registro-e-injeção)
-- [Troca de Skin (Animator em Runtime)](#troca-de-skin)
+- [Troca de Skin (Animator em Runtime)](#troca-de-skin-animator-em-runtime)
 - [Configuração de Animações](#configuração-de-animações)
-- [Boas Práticas (OBRIGATÓRIO)](#boas-práticas)
+- [Boas Práticas (OBRIGATÓRIO)](#boas-práticas-obrigatório)
+- [Histórico de Versão](#histórico-de-versão)
 
 ---
 
 ## Visão Geral
 
-Sistema de animação robusto, preparado para:
-- Multiplayer local (4+ jogadores simultâneos)
-- Troca dinâmica de skins (Animator muda em runtime)
-- Alta performance (zero GC em runtime)
-- Total compatibilidade com o seu DependencyManager + Provider
+Sistema de animação desacoplado, preparado para:
 
-**Funciona 100% com a hierarquia atual dos prefabs (EaterPrefab e Player01)**
+- Multiplayer local (uso de `ActorId` para escopo de serviços).
+- Troca de **skin** em runtime (Animator pode mudar).
+- Separação clara entre:
+   - Descoberta/fornecimento de `Animator` (`AnimationResolver` / `IAnimatorProvider`).
+   - Regras de animação de gameplay (`AnimationControllerBase` + controllers concretos).
+   - Dados de animação (`AnimationConfig` via ScriptableObject).
+   - Serviços de apoio (`AnimationConfigProvider`, `GlobalAnimationService`).
+
+Objetivos principais:
+
+- Respeitar SOLID:
+   - SRP: cada classe com responsabilidade única bem definida.
+   - DIP: sistemas dependem de **interfaces** (`IAnimatorProvider`, `IActorAnimationController`), não de implementações concretas.
+- Facilitar manutenção e testes:
+   - Controllers de animação testáveis isoladamente.
+   - Resolvedor de Animator plugável e sensível ao sistema de skin.
 
 ---
 
 ## Componentes Principais
 
-| Componente                  | Responsabilidade                                      | Observação                                      |
-|-----------------------------|--------------------------------------------------------|-------------------------------------------------|
-| `AnimationResolver`         | Resolve o Animator atual (skin ou fallback) e notifica mudanças | `[DefaultExecutionOrder(-50)]` – roda cedo |
-| `AnimationControllerBase`   | Base abstrata para todos os controllers de animação | Injeção sem ActorId + fallback local |
-| `IAnimatorProvider`         | Interface para obter Animator e escutar mudanças | Usado pelo DI |
-| `AnimationConfig`           | ScriptableObject com nomes das animações e hashes | Cache automático de hashes |
-| `AnimationConfigProvider`   | Serviço global que fornece configs por tipo | Registrado no bootstrap |
-| `GlobalAnimationService`    | Serviço global para PlayAllIdle() etc. | Opcional |
+| Componente                   | Responsabilidade                                               | Observações                                         |
+|-----------------------------|----------------------------------------------------------------|-----------------------------------------------------|
+| `AnimationResolver`         | Resolve o `Animator` atual do ator e notifica mudanças         | Integra com `ActorSkinController` + `FilteredEventBus` |
+| `AnimationControllerBase`   | Base abstrata para controllers de animação de cada ator        | Resolve `AnimationConfig`, gerencia DI por `ActorId` |
+| `IAnimatorProvider`         | Interface para obter um `Animator`                             | Implementada por `AnimationResolver`                |
+| `IActorAnimationController` | Interface para comandos de animação básicos (Hit, Death, etc.) | Usada por `GlobalAnimationService` e gameplay       |
+| `AnimationConfig`           | ScriptableObject com nomes e hashes de animações               | Por tipo de controller / prefab                     |
+| `AnimationConfigProvider`   | Serviço global de fornecimento de configs                      | Registrado no bootstrap                             |
+| `GlobalAnimationService`    | Serviço global opcional (ex.: `PlayAllIdle`)                   | Controllers podem se registrar nele                 |
+| `AnimationBootstrapper`     | Inicializa configs e serviços globais na carga do jogo         | Usa `RuntimeInitializeOnLoadMethod`                 |
 
 ---
 
 ## Fluxo de Inicialização
 
-1. `AnimationBootstrapper.Initialize()` → registra `AnimationConfigProvider` e `GlobalAnimationService`
-2. `AnimationResolver.Awake()` → registra `IAnimatorProvider` no escopo do ActorId
-3. `AnimationControllerBase.Awake()` →
-    - `DependencyManager.Provider.InjectDependencies(this)` (sem ActorId)
-    - `GetComponent<AnimationResolver>()` → fallback local
-    - Subscreve `OnAnimatorChanged`
-    - Carrega `AnimationConfig`
-4. `AnimationResolver.Start()` → conecta com SkinController e escuta eventos de skin
+1. **Bootstrap global**
+
+   - `AnimationBootstrapper.Initialize()` é chamado pelo Unity em `SubsystemRegistration`.
+   - Responsabilidades:
+      - Criar `AnimationConfigProvider`.
+      - Registrar configs padrão por tipo de controller:
+         - `"PlayerAnimationController"` → `DefaultPlayerAnimationConfig`
+         - `"EaterAnimationController"` → `DefaultEaterAnimationConfig`
+         - `"EnemyAnimationController"` → `DefaultEnemyAnimationConfig`
+      - Registrar `AnimationConfigProvider` como serviço global no `DependencyManager`.
+      - Criar e registrar `GlobalAnimationService` global.
+
+2. **Resolver de Animator por ator**
+
+   - Em cada prefab com animação:
+      - `AnimationResolver.Awake()`:
+         - Obtém `IActor` local.
+         - Registra `IAnimatorProvider` no escopo daquele `ActorId` usando o `DependencyManager`.
+      - `AnimationResolver.Start()`:
+         - Localiza `ActorSkinController` (via DI por `ActorId` ou via componentes na hierarquia).
+         - Registra listeners nos eventos de skin (globais e locais).
+
+3. **Controller de Animação do ator**
+
+   - `AnimationControllerBase.Awake()`:
+      - Injeta dependências do objeto via `DependencyManager.Provider.InjectDependencies(this)`.
+      - Garante presença de:
+         - `AnimationResolver` (obrigatório).
+         - `ActorMaster` (obrigatório).
+      - Assina o evento `OnAnimatorChanged` do `AnimationResolver`.
+      - Resolve `AnimationConfig`:
+         - Se `animationConfig` não estiver atribuída no Inspector:
+            - Tenta obter via `AnimationConfigProvider.GetConfig(GetType().Name)`.
+         - Se ainda assim for `null`:
+            - Cria uma `AnimationConfig` padrão em runtime e loga um warning.
+      - Obtém o `Animator` atual via `_animationResolver.GetAnimator()`.
+      - Registra o próprio controller para o `ActorId` no `DependencyManager.Instance`.
+
+4. **Desligamento / Ciclo de vida**
+
+   - `AnimationControllerBase.OnDisable()`:
+      - Se registrou serviços para o `ActorId`, chama `ClearObjectServices(Actor.ActorId)` e loga a remoção.
+   - `AnimationControllerBase.OnDestroy()`:
+      - Remove assinatura de `OnAnimatorChanged` no `AnimationResolver`.
+   - `AnimationResolver.OnDisable()` / `OnDestroy()`:
+      - Desregistra todos os listeners (EventBus e eventos do `ActorSkinController`) de forma segura.
 
 ---
 
 ## Registro e Injeção
 
-### Registro (AnimationResolver)
+### 1. Configs de animação (`AnimationConfig`)
 
-```csharp
-private void Awake()
-{
-    _actor = GetComponent<IActor>();
-    if (_actor != null && !string.IsNullOrEmpty(_actor.ActorId))
-    {
-        DependencyManager.Provider.RegisterForObject(_actor.ActorId, this as IAnimatorProvider);
-    }
-}
-```
+- Registradas por **ID de config** (`string`) no `AnimationConfigProvider`.
+- Convenção padrão:
+   - ID = `GetType().Name` do controller de animação.
+   - Exemplo: `PlayerAnimationController` → `DefaultPlayerAnimationConfig`.
 
-### Injeção (AnimationControllerBase)
+- Registro padrão acontece no `AnimationBootstrapper`:
+   - Usa `Resources.Load<AnimationConfig>(...)` para carregar assets fixos.
+   - Se o asset não for encontrado:
+      - É logado um `Warning`.
+      - O controller usará uma `AnimationConfig` gerada em runtime (nomes padrão).
 
-```csharp
-protected virtual void Awake()
-{
-    // Injeção SEM ActorId — como no original que funcionava
-    DependencyManager.Provider.InjectDependencies(this);
+### 2. Serviços por ator (`ActorId`)
 
-    animationResolver = GetComponent<AnimationResolver>();
-    // ... resto do código
-}
-```
+- `AnimationResolver`:
+   - Registra `IAnimatorProvider` para o `ActorId` do `IActor`.
+   - Permite que outros sistemas resolvam o Animator daquele ator sem depender diretamente do GameObject.
 
-**Importante**: A injeção é feita **sem passar ActorId** — o injector usa o escopo do objeto atual e o fallback `GetComponent` garante que funcione mesmo se o DI falhar.
+- `AnimationControllerBase`:
+   - Registra o próprio controller no `DependencyManager.Instance` para o `ActorId` do `ActorMaster`.
+   - No `OnDisable()`, chama `ClearObjectServices(Actor.ActorId)` para limpar serviços desse objeto (seguindo o padrão já utilizado no projeto).
+
+> Importante: o sistema assume que `ActorId` é único e consistente por ator (especialmente em multiplayer local).
 
 ---
 
 ## Troca de Skin (Animator em Runtime)
 
-O `AnimationResolver` escuta eventos globais e locais de skin:
+O fluxo de troca de skin é totalmente transparente para o controller de animação:
 
-- `SkinUpdateEvent`
-- `SkinInstancesCreatedEvent`
-- Eventos locais do `SkinController`
+1. **Descoberta inicial do Animator**
 
-Quando o ModelRoot muda → `RefreshAnimator()` → `OnAnimatorChanged?.Invoke(newAnimator)`
+   - `AnimationResolver.ResolveAnimator()`:
+      - Se existir `ActorSkinController`:
+         - Busca `Animator` nos skin instances do `ModelType.ModelRoot`.
+         - Usa o primeiro `Animator` encontrado.
+      - Caso contrário:
+         - Faz `GetComponentInChildren<Animator>(true)` para fallback.
 
-O `AnimationControllerBase` recebe no `OnAnimatorChanged` e atualiza o `animator`.
+2. **Eventos que disparam atualização de Animator**
 
-**Funciona perfeitamente com troca de skin em multiplayer local.**
+   O `AnimationResolver` escuta:
+
+   - Eventos globais via `FilteredEventBus`:
+      - `SkinEvents` (quando uma skin é aplicada/atualizada).
+      - `SkinInstancesCreatedEvent` (quando as instâncias de modelo são criadas).
+   - Eventos locais do `ActorSkinController`:
+      - `OnSkinApplied(ISkinConfig config)`
+      - `OnSkinInstancesCreated(ModelType modelType, List<GameObject> instances)`
+
+3. **Atualização do Animator**
+
+   - Quando um desses eventos indica mudança no `ModelType.ModelRoot`:
+      - `RefreshAnimator()`:
+         - Zera `_cachedAnimator`.
+         - Resolve um novo `Animator` (`ResolveAnimator()`).
+         - Dispara `OnAnimatorChanged(newAnimator)`.
+
+4. **Controllers reagindo à mudança**
+
+   - `AnimationControllerBase` está inscrito em `OnAnimatorChanged`:
+      - Quando chamado, atualiza o campo `animator`.
+   - Controllers concretos continuam chamando `PlayHash(...)` normalmente, sem precisar saber que a skin mudou.
 
 ---
 
 ## Configuração de Animações
 
-1. Crie um `AnimationConfig` (ScriptableObject)
-2. Preencha os nomes das animações (Idle, GetHit, Die, Revive)
-3. No `AnimationBootstrapper`, registre:
+### `AnimationConfig` (ScriptableObject)
+
+Campos:
+
+- `idleAnimation`  (default `"Idle"`)
+- `hitAnimation`   (default `"GetHit"`)
+- `deathAnimation` (default `"Die"`)
+- `reviveAnimation` (default `"Revive"`)
+
+Para cada campo existe um hash correspondente:
+
+- `IdleHash`, `HitHash`, `DeathHash`, `ReviveHash`
+
+Uso típico dentro de um controller concreto:
 
 ```csharp
-configProvider.RegisterConfig("EaterAnimationController", yourEaterConfig);
-configProvider.RegisterConfig("PlayerAnimationController", yourPlayerConfig);
-```
-
-O controller carrega automaticamente via `GetType().Name`.
-
----
-
-## Boas Práticas (REGRAS OBRIGATÓRIAS)
-
-| Regra                                      | Como fazer                                            | Status       |
-|--------------------------------------------|-------------------------------------------------------|--------------|
-| AnimationResolver no prefab                | Sempre no mesmo GameObject do ActorMaster             | OBRIGATÓRIO  |
-| Injeção de AnimationResolver               | `DependencyManager.Provider.InjectDependencies(this)` (sem ActorId) | OBRIGATÓRIO  |
-| Fallback local                             | Sempre usar `GetComponent<AnimationResolver>()`       | OBRIGATÓRIO  |
-| Registro do serviço                       | Em Awake do Resolver, com ActorId                     | OBRIGATÓRIO  |
-| Config de animação                         | Registrar no AnimationBootstrapper                    | OBRIGATÓRIO  |
-| Troca de skin                              | Não fazer nada — o sistema já cuida                  | AUTOMÁTICO   |
-
-> **Regra de ouro**:  
-> Se o Animator não atualiza na troca de skin → verifique se o AnimationResolver está no prefab e ativo.
-
----
-
-**Sistema 100% funcional, performático, SOLID e compatível com seu DI + Provider.**
-
-Qualquer dúvida sobre animação ou skin, é só chamar!
-
-**Última atualização**: 18 de novembro de 2025 — v1.0 (baseado nos arquivos originais que funcionavam)
-
-Pronto para colar no seu projeto! 😊
+public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
+{
+    public void PlayIdle()  => PlayHash(IdleHash);
+    public void PlayHit()   => PlayHash(HitHash);
+    public void PlayDeath() => PlayHash(DeathHash);
+    public void PlayRevive() => PlayHash(ReviveHash);
+}

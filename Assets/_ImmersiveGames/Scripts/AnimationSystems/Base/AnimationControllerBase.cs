@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
             if (animationConfig == null)
             {
                 animationConfig = ScriptableObject.CreateInstance<AnimationConfig>();
-                DebugUtility.LogWarning<AnimationControllerBase>($"Config padrão para {name}");
+                DebugUtility.LogWarning<AnimationControllerBase>($"Config padrão criada para {name} (nenhuma AnimationConfig atribuída).");
             }
 
             animator = _animationResolver.GetAnimator();
@@ -65,7 +65,10 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 
         private void RegisterDependencies()
         {
-            if (string.IsNullOrEmpty(Actor.ActorId)) return;
+            if (Actor == null)
+            {
+                return;
+            }
 
             if (string.IsNullOrEmpty(Actor.ActorId))
             {
@@ -78,19 +81,25 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
                 $"Registrando controlador de animação para ID: {Actor.ActorId}.",
                 DebugUtility.Colors.CrucialInfo);
 
+            // Mantido o uso de DependencyManager.Instance para não alterar o padrão já existente.
             DependencyManager.Instance.RegisterForObject(Actor.ActorId, this);
             _dependencyRegistered = true;
         }
 
         protected virtual void OnDisable()
         {
-            if (_dependencyRegistered && !string.IsNullOrEmpty(Actor.ActorId))
+            // Garante que não há NRE se Actor não foi inicializado corretamente.
+            if (!_dependencyRegistered || Actor == null || string.IsNullOrEmpty(Actor.ActorId))
             {
-                DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
-                DebugUtility.LogVerbose<AnimationControllerBase>(
-                    $"Serviços removidos do objeto {Actor.ActorId}.",
-                    DebugUtility.Colors.Success);
+                return;
             }
+
+            DependencyManager.Instance.ClearObjectServices(Actor.ActorId);
+            DebugUtility.LogVerbose<AnimationControllerBase>(
+                $"Serviços removidos do objeto {Actor.ActorId}.",
+                DebugUtility.Colors.Success);
+
+            _dependencyRegistered = false;
         }
 
         public virtual void OnAnimatorChanged(Animator newAnimator)
