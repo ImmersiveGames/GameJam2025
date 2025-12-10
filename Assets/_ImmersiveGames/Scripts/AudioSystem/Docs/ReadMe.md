@@ -1,319 +1,412 @@
-﻿# 🎧 Immersive Games – Audio System (v2.0)
+﻿
+# ✅ **README.md – Versão Resumida**
 
-Sistema unificado, modular e extensível de áudio para Unity, com:
+# ImmersiveGames – Sistema de Áudio Integrado ao SkinSystem
+### Versão Atual – Arquitetura Skin-Driven + Estratégias de Tiro
 
-* **BGM** (música ambiente)
-* **SFX** (efeitos sonoros)
-* **Pooling global de SoundEmitter**
-* **Serviços globais via DependencyManager**
-* **Fade, crossfade, spatial, random pitch**
-* **AudioBuilder fluente**
-* **Auditoria em runtime + Painel de Preview**
+Este módulo implementa um sistema de áudio totalmente integrado ao SkinSystem.  
+O som de tiro (e outros sons específicos de gameplay) é definido **exclusivamente pela Skin**,  
+permitindo temas sonoros completos e independentes da lógica do Player.
 
----
+## Conceito Central
 
-# ⚙️ Arquitetura Geral (v2.0)
+SkinAudioConfigData (SoundRoot)
+→ SkinAudioConfigurable (no ator)
+→ IActorSkinAudioProvider
+→ Estratégia de Tiro (SkinAudioKey)
+→ PlayerShootController
+→ EntityAudioEmitter.Play()
 
-A arquitetura foi simplificada e centralizada para maior estabilidade, especialmente em trocas de cena.
+O Player não mantém mais referências diretas a `SoundData`.  
+A escolha do som depende apenas da combinação:
 
-| Componente                  | Função                                                               |
-| --------------------------- | -------------------------------------------------------------------- |
-| **AudioManager**            | Gerencia BGM, crossfades, mixer, pause/resume.                       |
-| **AudioSfxService**         | Sistema global de SFX, baseado em um **pool único** de SoundEmitter. |
-| **EntityAudioEmitter**      | Camada fina por entidade — direciona tudo ao `AudioSfxService`.      |
-| **SoundEmitter**            | Emissor real que toca o áudio (instanciado via pool).                |
-| **AudioVolumeService**      | Mistura volumes (Master, BGM, SFX, Contexto, Clip).                  |
-| **AudioMathUtility**        | Cálculo de volumes lineares/dB, pitch e curvas perceptivas.          |
-| **AudioSystemInitializer**  | Garante que tudo esteja inicializado antes de uso.                   |
-| **SoundData**               | Configuração individual de cada áudio.                               |
-| **AudioContext**            | Dados temporários por chamada (posição, spatial, volume override).   |
-| **SoundBuilder**            | API fluente para construir SFX (fade, spatial, random pitch...).     |
-| **AudioRuntimeDiagnostics** | Overlay de depuração (BGM + SFX + Emitters).                         |
-| **AudioPreviewPanel**       | Preview de SFX e BGM em runtime.                                     |
+- **Skin ativa**
+- **Estratégia ativa**
+- **Chave configurada na skin**
 
----
+## Componentes Principais
 
-# 🔊 Hierarquia de Volume
+- **SkinAudioConfigData**  
+  Define pares `(SkinAudioKey → SoundData)`.
 
-O volume final é calculado exclusivamente pelo **AudioVolumeService**, combinando:
+- **SkinAudioConfigurable**  
+  Recebe a skin atual e expõe um provider de áudio.
 
-```
-FinalVolume =
-    SoundData.volume
-  × AudioConfig.defaultVolume
-  × AudioServiceSettings.(sfxVolume ou bgmVolume)
-  × AudioServiceSettings.(sfxMultiplier ou bgmMultiplier)
-  × AudioServiceSettings.masterVolume
-  × AudioContext.volumeMultiplier
- (⊕ VolumeOverride, se definido)
-```
+- **ISpawnStrategy** (Single, MultipleLinear, Circular...)  
+  Cada estratégia define **sua própria SkinAudioKey**.
 
-Cada camada tem propósito claro e pode ser ajustada individualmente.
+- **PlayerShootController**  
+  Executa spawn e solicita o som à skin via provider.
+
+## Para Designers  
+Consulte **Manual do Designer – Áudio por Skin**.
+
+## Para Programadores  
+Consulte **Manual do Programador – Arquitetura e Extensões**.
 
 ---
 
-# 🧱 Estrutura Atualizada do Sistema
+# 🎨 **MANUAL DO DESIGNER – Áudio por Skin**
 
-### 1. SFX – Novo fluxo simplificado
+### (Documento oficial para Game Designers, Level Designers e Sound Designers)
 
-Toda reprodução de efeito sonoro passa por:
 
-```
-IAudioSfxService → (pool global) → SoundEmitter
-```
+# Manual do Designer – Sistema de Áudio Integrado ao SkinSystem
 
-Nenhum Entity cria fonte de áudio, nem instância pool local, nem precisa gerenciar corrotinas.
+Este manual explica **como configurar sons no Unity** usando o sistema de skins.  
+Não é necessário entender código ou detalhes técnicos.
 
 ---
 
-### 2. EntityAudioEmitter – Nova versão (v2.0)
+# 1. O Conceito Importante
 
-O `EntityAudioEmitter` agora é apenas:
+O Player e inimigos **não possuem sons configurados diretamente no prefab**.  
+Quem controla os sons agora é **a Skin**.
 
-* Um resolvedor de `IAudioSfxService`.
-* Uma camada de conveniência para entidades que desejam sons ligados à sua posição.
+Cada skin pode ter:
 
-Exemplo do fluxo atual:
+- **som de tiro diferente**
+- som para habilidades alternativas
+- som temático para personagens / naves
+
+Isso permite criar temas sonoros completos.
+
+---
+
+# 2. Onde configurar os sons
+
+## 2.1. SkinAudioConfigData
+
+No Project:
+
+```
+
+Right Click → Create → ImmersiveGames → Skin → Skin Audio Config
+
+```
+
+Neste asset, você verá uma lista:
+
+```
+
+| Key      | SoundData     |
+| -------- | ------------- |
+| Shoot    | Fire_Pistol   |
+| ShootAlt | Fire_Shotgun  |
+| Laser    | Laser_Player  |
+| Ultimate | Boom_Ultimate |
+
+```
+
+### Cada entrada significa:
+- **Key** → O nome da ação (ex.: Shoot, Shoot_Alt, Laser etc.).  
+- **SoundData** → O áudio que será reproduzido para aquela ação.
+
+Você pode criar quantas quiser.
+
+---
+
+# 3. Como aplicar este áudio no Player
+
+O prefab do Player (ou Inimigo) deve ter:
+
+- `SkinAudioConfigurable`
+- `EntityAudioEmitter`
+- `PlayerShootController`
+- `ActorSkinController`
+
+**Você NÃO precisa mexer neles.**
+
+Eles já usam automaticamente o som definido na skin.
+
+---
+
+# 4. Como escolher sons diferentes por tipo de tiro
+
+No PlayerShootController (Inspector), existe um bloco para cada estratégia:
+
+### Exemplo:
+
+```
+
+Single Strategy
+Shoot Audio Key: Shoot
+
+Multiple Linear Strategy
+Shoot Audio Key: ShootAlt
+
+Circular Strategy
+Shoot Audio Key: Ultimate
+
+```
+
+O Designer pode escolher QUAL chave a estratégia usa.
+
+O sistema então:
+
+1. Lê a chave da estratégia.
+2. Busca essa chave na SkinAudioConfigData.
+3. Toca o som correspondente.
+
+---
+
+# 5. Troca de Skin → Troca de Som
+
+Se você mudar a skin do Player:
+
+```
+
+Skin A: Shoot → PistolSound
+Skin B: Shoot → LaserSound
+
+```
+
+O Player automaticamente passa a usar o som da nova skin.
+
+**Nenhuma modificação no Player é necessária.**
+
+---
+
+# 6. Regras fundamentais
+
+- Cada som deve existir **na skin**, nunca no Player.
+- Cada estratégia de tiro deve ter **uma chave configurada**.
+- Se faltar uma entrada na skin, o console mostrará erro:
+  “Som não configurado para a chave X na skin Y.”
+
+---
+
+# 7. Checklist rápido para Designers
+
+| Tarefa | ✔️ |
+|-------|----|
+| Criar SkinAudioConfigData | ✔️ |
+| Inserir Keys e SoundData | ✔️ |
+| Adicionar SkinAudioConfigData na SkinCollectionData | ✔️ |
+| No PlayerShootController → Configurar ShootAudioKey por estratégia | ✔️ |
+| Testar em runtime | ✔️ |
+
+---
+
+# 8. Resumo
+
+O sistema é simples para o designer:
+
+1. **Configurar sons em SkinAudioConfigData**  
+2. **Configurar chave de tiro em cada estratégia**  
+3. **Dar Play**
+
+Todo o resto é automático.
+
+---
+
+# 💻 **MANUAL DO PROGRAMADOR – Arquitetura, Extensões e Regras**
+
+### (Documento oficial para devs do projeto)
+
+# Manual do Programador – Sistema de Áudio Integrado ao SkinSystem
+
+Este documento detalha a arquitetura, responsabilidades, pontos de extensão e padrões obrigatórios.
+
+
+# 1. Objetivo Arquitetural
+
+O sistema foi projetado para:
+
+- **desacoplar completamente áudio de lógica de Player**
+- mover todo conteúdo para **SkinAudioConfigData**
+- permitir que cada estratégia de tiro mude o som
+- tornar o sistema escalável e aderente ao SOLID
+
+---
+
+# 2. Fluxo Técnico Completo
+
+```
+
+SkinCollectionData
+↓ resolve ModelType.SoundRoot
+SkinAudioConfigData
+↓ aplicada via SkinAudioConfigurable
+IActorSkinAudioProvider
+↓
+PlayerShootController
+↓ busca SkinAudioKey via strategy
+ISpawnStrategy
+↓
+EntityAudioEmitter.Play(soundData)
+
+````
+
+---
+
+# 3. Componentes Detalhados
+
+---
+
+## 3.1. SkinAudioConfigData
 
 ```csharp
-var ctx = AudioContext.Default(transform.position, UsesSpatialBlend);
-_sfxService.PlayOneShot(soundData, ctx, fadeInSeconds);
-```
+Dictionary<SkinAudioKey, SoundData> AudioEntries;
+````
 
-> Ele **não mantém pools**, não cria fontes e não faz fade manual.
-> Tudo isso é responsabilidade do `AudioSfxService`.
+Regras:
 
----
-
-### 3. Pool Global de SoundEmitter
-
-* Configurado por **SoundEmitterPoolData** localizado em:
-
-  ```
-  Resources/Audio/SoundEmitters/PD_SoundEmitter.asset
-  ```
-* Registrado automaticamente via:
-
-  ```
-  PoolManager.Instance.RegisterPool(poolData)
-  ```
-* Reutilizado por todos os SFX do jogo.
+* Nunca deve conter lógica.
+* Apenas define dados.
+* Deve ser referenciada na SkinCollection.
 
 ---
 
-# 🧰 Configuração no Unity
+## 3.2. SkinAudioConfigurable
 
-### 1️⃣ Assets necessários
+Responsabilidades:
 
-```
-Assets/Audio/Configs/AudioServiceSettings.asset
-Assets/Audio/Configs/<Entity>AudioConfig.asset
-Assets/Audio/Configs/PD_SoundEmitter.asset  (Pool)
-Assets/Audio/Sounds/*.asset  (SoundData)
-```
+* Herdar de `SkinConfigurable`.
+* Registrar o `ISkinAudioConfig` corrente.
+* Expor `IActorSkinAudioProvider`.
 
-### 2️⃣ Ajustes importantes em PD_SoundEmitter.asset:
-
-* `InitialPoolSize`: 10–30
-* `CanExpand`: true
-* `ObjectConfigs` → 1 entrada de `SoundEmitterPoolableData`
-* Prefab do SoundEmitter:
-
-  ```
-  Resources/Audio/Prefabs/SoundEmitter.prefab
-  ```
-
----
-
-# 🚀 Exemplos Atualizados
-
-## 🎵 Tocar BGM (via AudioManager)
+Código chave:
 
 ```csharp
-[Inject] private IAudioService _audio;
-
-private void Start()
-{
-    AudioSystemInitializer.EnsureAudioSystemInitialized();
-    DependencyManager.Instance.InjectDependencies(this);
-
-    _audio.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 1f);
-}
+public bool TryGetSound(SkinAudioKey key, out SoundData sound)
 ```
+
+Não instancia nada.
+Não toca som.
+Não tem acoplamento com prefab.
 
 ---
 
-## 🔫 SFX via EntityAudioEmitter
+## 3.3. ISpawnStrategy
 
 ```csharp
-audioEmitter.Play(shootSound, 
-    AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend));
+SkinAudioKey ShootAudioKey { get; }
+List<SpawnData> GetSpawnData();
 ```
+
+Regras obrigatórias:
+
+* Estratégias **não** devem ter `SoundData`.
+* Estratégias definem *somente a key*.
 
 ---
 
-## ⚡ SFX Avançado via SoundBuilder
+## 3.4. PlayerShootController
+
+Responsabilidades:
+
+* Executar spawn.
+* Consultar `ShootAudioKey` da estratégia ativa.
+* Solicitar o áudio à skin via provider.
+* Tocar via `EntityAudioEmitter`.
+
+Não deve conter:
+
+* `SoundData` referenciado diretamente.
+* fallback de som.
+* seleção manual de áudio.
+
+---
+
+# 4. Regras de Arquitetura
+
+### 4.1. Som SEMPRE vem da Skin
+
+O código **não pode** carregar áudio diretamente no controller.
+
+### 4.2. Estratégias tratam SOMENTE de spawn
+
+Nada de conteúdo (SoundData, prefabs etc.).
+
+### 4.3. PlayerShootController depende apenas de:
+
+* `ISpawnStrategy`
+* `IActorSkinAudioProvider`
+* `EntityAudioEmitter`
+
+### 4.4. Provider é obrigatório
+
+Se faltar `SkinAudioConfigurable` → erro
+
+---
+
+# 5. Extensões
+
+### 5.1. Criar nova estratégia de tiro
+
+1. Criar classe:
 
 ```csharp
-audioEmitter.CreateBuilder()
-    ?.WithSoundData(explosion)
-    .AtPosition(transform.position)
-    .WithRandomPitch()
-    .WithFadeIn(0.15f)
-    .Play();
+class NovaEstrategia : ISpawnStrategy
 ```
 
----
-
-# 🎚️ Ajuste de Volumes em Runtime
+2. Implementar:
 
 ```csharp
-_audio.SetBGMVolume(0.5f);    // Música
-_audioServiceSettings.sfxVolume = 0.8f; // SFX global
-_audioServiceSettings.masterVolume = 1f; // Master
+SkinAudioKey ShootAudioKey;
+List<SpawnData> GetSpawnData();
 ```
 
----
-
-# 🧵 Debug – Nova Seção (v2.0)
-
-O novo sistema conta com duas ferramentas essenciais:
+3. Adicionar no PlayerShootController.
 
 ---
 
-## 1) **AudioRuntimeDiagnostics.cs** – Overlay Completo
+### 5.2. Criar novos sons
 
-Mostra em tempo real:
+Adicionar novas chaves em `SkinAudioKey` e configurá-las na skin.
+Não mexer no Player.
 
-### BGM
+---
 
-* Clip atual
-* Volume final
-* Playing / Paused / Stopped
+### 5.3. Criar novas ações sonoras
 
-### SFX
+Seguir mesmo pattern:
 
-* Emitters ativos (ex.: 5/18 tocando)
-* Lista dos emissores
-* Nome do clip
-* Posição
-* Ativo/Idle
-
-### Funções
-
-| Ação                   | Tecla  |
-| ---------------------- | ------ |
-| Ligar/desligar overlay | **F9** |
-
-### Como usar
-
-Adicionar o componente a um GameObject que exista em todas as cenas:
+1. Skin define key.
+2. Componente chama provider:
 
 ```csharp
-gameObject.AddComponent<AudioRuntimeDiagnostics>();
+TryGetSound(key, out var sound)
 ```
 
----
-
-## 2) **AudioPreviewPanel.cs** – Preview de SFX e BGM
-
-Permite testar qualquer `SoundData` em runtime.
-
-### Recursos:
-
-* Lista de SFX navegáveis (`<< Play >>`)
-* Lista de BGM navegáveis (`<< Play/Loop Stop >>`)
-* Fade configurável
-* Volume multiplier para preview
-* Modo Non-spatial automático para SFX de teste
-
-### Tecla
-
-| Função                 | Tecla   |
-| ---------------------- | ------- |
-| Mostrar/Ocultar painel | **F10** |
-
-### Como usar
-
-1. Adicione ao GameObject:
-
-   ```
-   AudioPreviewPanel
-   ```
-2. Preencha no Inspector:
-
-   * `sfxClips[]`
-   * `bgmClips[]`
-
-Agora você pode testar **qualquer áudio do jogo** sem precisar criar scripts temporários.
+3. Usa `EntityAudioEmitter` para tocar.
 
 ---
 
-# 🧪 Testes Automatizados – AudioSystemScenarioTester
+# 6. Debug / Logs
 
-Para validar a arquitetura completa, o projeto já conta com:
+Erros são claros:
 
-* Testes de SFX:
+* Skin não contém a key →
+  `"Som não configurado para a chave X na skin Y."`
 
-   * OneShot
-   * Spatial/Non-spatial
-   * Random Pitch (10x)
-   * Fade-in
-   * Stress test (30 sons)
-* Testes de BGM:
-
-   * Play/Stop
-   * Fade-in/out
-   * Pause/Resume
-   * Volumes (1.0 → 0.5 → 0.2 → 1.0)
-
-Basta rodar a cena com:
-
-```csharp
-AudioSystemScenarioTester
-```
+* Falta do provider →
+  `"IActorSkinAudioProvider não encontrado."`
 
 ---
 
-# 🛠️ Fluxo de Inicialização Atual (v2.0)
+# 7. Manutenção e Evolução
 
-1. **AudioSystemInitializer** é chamado (RuntimeInitializeOnLoad).
-2. Garante:
+* Sistema não precisa de refactor para novas skins.
+* Designers podem criar sons temáticos livres.
+* Possível expansão futura:
 
-   * AudioManager
-   * Pool de SoundEmitter
-   * Registro de:
-
-      * IAudioSfxService
-      * IAudioService
-      * IAudioVolumeService
-      * IAudioMathService
-3. Dependências disponíveis globalmente via `DependencyManager`.
+    * Volume por skin.
+    * Perfil de spatialization por skin.
+    * Ações sonoras adicionais por strategy.
 
 ---
 
-# ✔️ Boas Práticas (atualizadas)
+# 8. Resumo do Programador
 
-* Use sempre `SoundData` (nada de clipes “nus”).
-* Utilize `EntityAudioEmitter` ou `SoundBuilder` — **não toque SFX direto no AudioSource**.
-* Ajuste volumes no `AudioServiceSettings`, não no AudioSource.
-* Use mixers (`SFX`, `Music`, `UI`) para mixagem profissional.
-* Para debug de cena:
+O que você PRECISA saber e lembrar:
 
-   * **F9** → Diagnostics
-   * **F10** → Preview
+* Player **não deve ter SoundData direto**.
+* Strategies **só configuram SkinAudioKey**.
+* SkinAudioConfigData centraliza todo conteúdo.
+* SkinAudioConfigurable fornece lookup dinâmico.
+* PlayerShootController só combina:
 
----
-
-# 📘 Conclusão
-
-A nova versão (v2.0) oferece:
-
-* **Estabilidade total em troca de cena**
-* **Pooling único, sem leaks**
-* **API fluida para SFX complexos**
-* **Depuração profissional em tempo real**
-* **Preview runtime poderoso para level/audio design**
-* **Arquitetura limpa, sustentável, SOLID**
-
----
+    * estratégia ativa
+    * skin ativa

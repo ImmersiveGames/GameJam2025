@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a599fad2aa4459593a3f124d445ebbe, type: 3}
+  m_Name: PlayerSkinAudioConfig
+  m_EditorClassIdentifier: 
+  configName: SkinDefaultAudios
+  modelType: 3
+  prefabs: []
+  instantiationMode: 1
+  specificIndex: 0
+  position: {x: 0, y: 0, z: 0}
+  rotation: {x: 0, y: 0, z: 0}
+  scale: {x: 1, y: 1, z: 1}
+  activeState: 1
+  audioEntries:
+  - key: 0
+    sound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
+  - key: 1
+    sound: {fileID: 11400000, guid: 37cf9a1f0eb3e154f9980bbab4df7f39, type: 2}
+  - key: 3
+    sound: {fileID: 11400000, guid: 0ec6599d9cf3ec44f8e6afe5872f5c5c, type: 2}
+  - key: 4
+    sound: {fileID: 11400000, guid: 04968c6a60f4e4847aa8dc27bf49eaea, type: 2}

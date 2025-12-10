@@ -433,6 +433,8 @@ GameObject:
   - component: {fileID: 1432878158}
   - component: {fileID: 1432878159}
   - component: {fileID: 1432878161}
+  - component: {fileID: 1432878163}
+  - component: {fileID: 1432878162}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -575,21 +577,20 @@ MonoBehaviour:
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
+    shootAudioKey: 0
   multipleLinearStrategy:
     count: 3
     offset: 0.5
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound: {fileID: 0}
+    shootAudioKey: 0
   circularStrategy:
     count: 5
     radius: 1
     arcAngle: 360
     fuzzyPercent: 0
     fuzzyAngle: 0
-    shootSound: {fileID: 0}
-  defaultShootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
+    shootAudioKey: 0
 --- !u!114 &1432878143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -779,6 +780,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36ca4effaae58ac418801aa721634189, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1432878162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ae319551c324dbea7e92f97b08b3752, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetModelType: 3
+  autoRegister: 1
+  useGlobalEvents: 1
+--- !u!114 &1432878163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 544ba0e921d84dac9983eb0618c07053, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinController: {fileID: 1432878135}
+  registerAsGlobalService: 0
+  computeInitialStateFromActorRoot: 1
+  initialStateModelType: 0
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0

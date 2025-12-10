@@ -1,8 +1,4 @@
-﻿// Path: _ImmersiveGames/Scripts/PlayerControllerSystem/Shooting/Editor/PlayerShootControllerEditor.cs
-
-using _ImmersiveGames.Scripts.SpawnSystems;
-using UnityEditor;
-using UnityEngine;
+﻿using UnityEditor;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Editor
 {
@@ -32,19 +28,19 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Editor
         {
             serializedObject.Update();
 
-            EditorGUILayout.LabelField("⚙️ Pool Config", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Pool Config", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_poolData);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("🎮 Input Config", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Input Config", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_actionName);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("⏳ Cooldown Config", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Cooldown Config", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_cooldown);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("🎯 Spawn Strategy Config", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Spawn Strategy Config", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_strategyType);
 
             EditorGUI.indentLevel++;
@@ -68,7 +64,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Editor
         private void DrawStrategyBox(string title, SerializedProperty property)
         {
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField($"📦 {title}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
 
             var iterator = property.Copy();
             var end = iterator.GetEndProperty();
