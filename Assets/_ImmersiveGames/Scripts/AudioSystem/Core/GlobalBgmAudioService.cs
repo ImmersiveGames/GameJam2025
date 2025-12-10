@@ -2,19 +2,18 @@ using System.Collections;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Services;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.Audio;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Core
 {
     /// <summary>
-    /// AudioManager focado em BGM + mixer + one-shot fallback PlaySound (sem gerenciar pools).
+    /// GlobalBgmAudioService focado em BGM + mixer + one-shot fallback PlaySound (sem gerenciar pools).
     /// Pools e SFX frequentes devem ser responsabilidade dos Controllers (cada controller pode criar seu pool local).
     /// </summary>
     [DefaultExecutionOrder(-95)]
-    public class AudioManager : MonoBehaviour, IAudioService
+    public class GlobalBgmAudioService : MonoBehaviour, IBgmAudioService
     {
         [Header("Mixer")]
         [SerializeField] private AudioMixer audioMixer;
@@ -47,7 +46,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             if (IsInitialized) return;
 
-            // DI: obter math (AudioSystemInitializer garante registro)
+            // DI: obter math (AudioSystemBootstrap garante registro)
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _math);
@@ -55,11 +54,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DependencyManager.Provider.TryGetGlobal(out _resolvedSettings);
             }
 
-            _math ??= new AudioMathUtility();
+            _math ??= new AudioMathService();
             _volumeService ??= new AudioVolumeService(_math);
             _resolvedSettings ??= settings;
 
-            DependencyManager.Provider?.RegisterGlobal<IAudioService>(this, true);
+            DependencyManager.Provider?.RegisterGlobal<IBgmAudioService>(this, true);
 
             // torna settings disponível via DI se for configurado
             if (settings != null)
@@ -72,8 +71,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             DontDestroyOnLoad(gameObject);
 
             IsInitialized = true;
-            DebugUtility.Log<AudioManager>(
-                "AudioManager (BGM) inicializado",
+            DebugUtility.Log<GlobalBgmAudioService>(
+                "GlobalBgmAudioService (BGM) inicializado",
                 DebugUtility.Colors.CrucialInfo);
         }
 
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
 
             _currentBgm = bgmData;
-            DebugUtility.LogVerbose<AudioManager>(
+            DebugUtility.LogVerbose<GlobalBgmAudioService>(
                 $"BGM iniciado: {bgmData.clip?.name} (targetVolume={targetVolume:F3})",
                 DebugUtility.Colors.Success);
         }
@@ -123,7 +122,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 bgmAudioSource.Stop();
 
             _currentBgm = null;
-            DebugUtility.LogVerbose<AudioManager>(
+            DebugUtility.LogVerbose<GlobalBgmAudioService>(
                 "BGM parado",
                 DebugUtility.Colors.Success);
         }
@@ -132,7 +131,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             if (!IsSourceValid(bgmAudioSource)) return;
 
             bgmAudioSource.Stop();
-            DebugUtility.LogVerbose<AudioManager>(
+            DebugUtility.LogVerbose<GlobalBgmAudioService>(
                 "BGM parado",
                 DebugUtility.Colors.Success);
         }
@@ -222,7 +221,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         #region One-shot PlaySound (fallback, no pool)
 
         /// <summary>
-        /// Conveniência: PlaySound rápido usando AudioManager (sem pool). Controllers que possuem pool devem usar pool local.
+        /// Conveniência: PlaySound rápido usando GlobalBgmAudioService (sem pool). Controllers que possuem pool devem usar pool local.
         /// </summary>
         public void PlaySound(SoundData soundData, AudioContext context, AudioConfig config = null)
         {
@@ -235,7 +234,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
                 DependencyManager.Provider.TryGetGlobal(out _volumeService);
             }
 
-            _math ??= new AudioMathUtility();
+            _math ??= new AudioMathService();
             _volumeService ??= new AudioVolumeService(_math);
 
             float finalVol = _volumeService.CalculateSfxVolume(soundData, config, ResolveSettings(), context);

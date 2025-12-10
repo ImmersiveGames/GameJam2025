@@ -9,12 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 06b19fdd5543476fbe210cae0eeb86a1, type: 3}
-  m_Name: GameplaySceneSetup
+  m_Script: {fileID: 11500000, guid: 636867a7d8824e0083d5467af2cf4c55, type: 3}
+  m_Name: AudioSettings
   m_EditorClassIdentifier: 
-  id: GameplaySceneSetup
-  scenes:
-  - GameplayScene
-  - UIScene
-  activeScene: GameplayScene
-  useFade: 1
+  masterVolume: 1
+  bgmVolume: 1
+  sfxVolume: 1
+  bgmMultiplier: 0.1
+  sfxMultiplier: 1
+  debugEmitters: 1
+  defaultMaxEmitters: 30

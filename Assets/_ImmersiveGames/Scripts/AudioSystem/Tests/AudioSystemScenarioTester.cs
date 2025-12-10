@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         public float blockDelay = 1.5f;
 
         private IAudioSfxService _sfxService;
-        private IAudioService _audioService;
+        private IBgmAudioService _bgmAudioService;
 
         private Coroutine _runningSfxScenario;
         private Coroutine _runningBgmScenario;
@@ -66,22 +67,22 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         private void Awake()
         {
             // Garante que o sistema de áudio está inicializado e registrado no DI
-            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
-                DependencyManager.Provider.TryGetGlobal(out _audioService);
+                DependencyManager.Provider.TryGetGlobal(out _bgmAudioService);
             }
 
             if (_sfxService == null)
             {
-                Debug.LogWarning("[AudioTest] IAudioSfxService não encontrado. Verifique AudioSystemInitializer / registro de serviços.");
+                Debug.LogWarning("[AudioTest] IAudioSfxService não encontrado. Verifique AudioSystemBootstrap / registro de serviços.");
             }
 
-            if (_audioService == null)
+            if (_bgmAudioService == null)
             {
-                Debug.LogWarning("[AudioTest] IAudioService (BGM) não encontrado. Testes de BGM ficarão limitados.");
+                Debug.LogWarning("[AudioTest] IBgmAudioService (BGM) não encontrado. Testes de BGM ficarão limitados.");
             }
         }
 
@@ -266,9 +267,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private IEnumerator RunBgmScenario()
         {
-            if (_audioService == null)
+            if (_bgmAudioService == null)
             {
-                Debug.LogError("[AudioTest][BGM] IAudioService indisponível, abortando cenário de BGM.");
+                Debug.LogError("[AudioTest][BGM] IBgmAudioService indisponível, abortando cenário de BGM.");
                 yield break;
             }
 
@@ -280,11 +281,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (mainMenuBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.1 - Play mainMenuBgm com fade-in de 1.0s (loop ON).");
-                _audioService.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 1.0f);
+                _bgmAudioService.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 1.0f);
                 yield return new WaitForSeconds(3.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.1 - Stop mainMenuBgm com fade-out de 1.0s.");
-                _audioService.StopBGM(fadeOutDuration: 1.0f);
+                _bgmAudioService.StopBGM(fadeOutDuration: 1.0f);
                 yield return new WaitForSeconds(2.0f);
             }
             else
@@ -298,19 +299,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (gameplayBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.2 - Play gameplayBgm com fade-in de 1.0s (loop ON).");
-                _audioService.PlayBGM(gameplayBgm, loop: true, fadeInDuration: 1.0f);
+                _bgmAudioService.PlayBGM(gameplayBgm, loop: true, fadeInDuration: 1.0f);
                 yield return new WaitForSeconds(3.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.2 - Pause gameplayBgm por 2.0s.");
-                _audioService.PauseBGM();
+                _bgmAudioService.PauseBGM();
                 yield return new WaitForSeconds(2.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.2 - Resume gameplayBgm.");
-                _audioService.ResumeBGM();
+                _bgmAudioService.ResumeBGM();
                 yield return new WaitForSeconds(3.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.2 - Stop gameplayBgm com fade-out de 1.0s.");
-                _audioService.StopBGM(fadeOutDuration: 1.0f);
+                _bgmAudioService.StopBGM(fadeOutDuration: 1.0f);
                 yield return new WaitForSeconds(2.0f);
             }
             else
@@ -324,20 +325,20 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
             if (mainMenuBgm != null)
             {
                 Debug.Log("[AudioTest][BGM] 5.3 - Teste de volume BGM (1.0 -> 0.5 -> 0.2).");
-                _audioService.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 0.5f);
+                _bgmAudioService.PlayBGM(mainMenuBgm, loop: true, fadeInDuration: 0.5f);
                 yield return new WaitForSeconds(2.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.3 - BGM volume = 0.5 (deve soar ~metade).");
-                _audioService.SetBGMVolume(0.5f);
+                _bgmAudioService.SetBGMVolume(0.5f);
                 yield return new WaitForSeconds(2.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.3 - BGM volume = 0.2 (bem mais baixo).");
-                _audioService.SetBGMVolume(0.2f);
+                _bgmAudioService.SetBGMVolume(0.2f);
                 yield return new WaitForSeconds(2.0f);
 
                 Debug.Log("[AudioTest][BGM] 5.3 - BGM volume = 1.0 (volta ao normal) e Stop com fade 0.5s.");
-                _audioService.SetBGMVolume(1.0f);
-                _audioService.StopBGM(fadeOutDuration: 0.5f);
+                _bgmAudioService.SetBGMVolume(1.0f);
+                _bgmAudioService.StopBGM(fadeOutDuration: 0.5f);
                 yield return new WaitForSeconds(1.0f);
             }
             else

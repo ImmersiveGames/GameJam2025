@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
     /// Serviço puro (não-Mono) que centraliza todas as regras de cálculo de volume/pitch/decibéis.
     /// Pode ser instanciado e registrado no DI (DependencyManager).
     /// </summary>
-    public class AudioMathUtility : IAudioMathService
+    public class AudioMathService : IAudioMathService
     {
         public float CalculateFinalVolume(
             float clipVolume,

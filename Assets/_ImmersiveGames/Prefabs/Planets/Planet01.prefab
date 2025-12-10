@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4149329370838810178}
   - component: {fileID: 3945190765558734642}
   - component: {fileID: 6541701590752357594}
+  - component: {fileID: 6304390098628153193}
   - component: {fileID: 4612188242723959288}
   - component: {fileID: 2774738434980984958}
   - component: {fileID: 6005341794915908452}
@@ -88,7 +89,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
-  actorDefenseRole: 0
+  actorDefenseRole: 3
+  resourceState: {fileID: 0}
   defenseEntryConfigs:
   - {fileID: 11400000, guid: 710d71b31018ab64e8f124ae5babdca4, type: 2}
   defenseChoiceMode: 0
@@ -107,6 +109,20 @@ MonoBehaviour:
   defaultSkinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
   autoInitialize: 1
   enableGlobalEvents: 1
+--- !u!114 &6304390098628153193
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5df525bcada041528746cf12136310ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resourceDefinition: {fileID: 0}
+  isDiscovered: 0
 --- !u!114 &4612188242723959288
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -274,7 +290,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
-  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!114 &-2776814566296248560
 MonoBehaviour:
   m_ObjectHideFlags: 0

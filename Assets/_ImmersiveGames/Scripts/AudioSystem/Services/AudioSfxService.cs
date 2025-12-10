@@ -3,8 +3,7 @@ using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Pool;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Services
 {
     /// <summary>
     /// Serviço global de SFX baseado em pooling de <see cref="SoundEmitter"/>.

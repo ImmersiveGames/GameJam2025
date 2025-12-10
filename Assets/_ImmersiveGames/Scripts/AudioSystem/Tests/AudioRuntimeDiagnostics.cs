@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -48,8 +49,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         public Vector2 overlaySize = new Vector2(420, 260);
 
         private IAudioSfxService _sfxService;
-        private IAudioService _audioService;
-        private AudioManager _audioManager; // para acesso ao AudioSource de BGM
+        private IBgmAudioService _bgmAudioService;
+        private GlobalBgmAudioService _globalBgmAudioService; // para acesso ao AudioSource de BGM
 
         private float _updateTimer;
         private float _logTimer;
@@ -76,13 +77,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Awake()
         {
-            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
-                DependencyManager.Provider.TryGetGlobal(out _audioService);
-                DependencyManager.Provider.TryGetGlobal(out _audioManager);
+                DependencyManager.Provider.TryGetGlobal(out _bgmAudioService);
+                DependencyManager.Provider.TryGetGlobal(out _globalBgmAudioService);
             }
 
             if (_sfxService == null)
@@ -91,16 +92,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
                     "[AudioDiagnostics] IAudioSfxService não encontrado. Estatísticas de SFX ficarão limitadas.");
             }
 
-            if (_audioService == null)
+            if (_bgmAudioService == null)
             {
                 DebugUtility.LogWarning<AudioRuntimeDiagnostics>(
-                    "[AudioDiagnostics] IAudioService (BGM) não encontrado. Estado de BGM ficará limitado.");
+                    "[AudioDiagnostics] IBgmAudioService (BGM) não encontrado. Estado de BGM ficará limitado.");
             }
 
-            if (_audioManager == null)
+            if (_globalBgmAudioService == null)
             {
                 DebugUtility.LogVerbose<AudioRuntimeDiagnostics>(
-                    "[AudioDiagnostics] AudioManager concreto não encontrado via DI. " +
+                    "[AudioDiagnostics] GlobalBgmAudioService concreto não encontrado via DI. " +
                     "BGM será inspecionado apenas de forma superficial.",
                     DebugUtility.Colors.Info);
             }
@@ -173,9 +174,9 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private AudioSource GetPrimaryBgmSource()
         {
-            if (_audioManager != null && _audioManager.BgmAudioSource != null)
+            if (_globalBgmAudioService != null && _globalBgmAudioService.BgmAudioSource != null)
             {
-                return _audioManager.BgmAudioSource;
+                return _globalBgmAudioService.BgmAudioSource;
             }
 
             return null;

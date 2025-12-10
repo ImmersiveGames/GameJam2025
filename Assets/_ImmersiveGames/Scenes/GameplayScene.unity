@@ -1336,74 +1336,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: disableSkinOnDeath
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: returnToPoolOnDeath
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: triggerGameOverOnDeath
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: destroyGameObjectIfNoPool
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: strategyPipeline.Array.data[0].resistanceModifiers.entries.Array.size
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: strategyPipeline.Array.data[0].resistanceModifiers.entries.Array.data[0].type
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 81636598692984422, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: strategyPipeline.Array.data[0].resistanceModifiers.entries.Array.data[0].multiplier
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 3945190765558734642, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: actorDefenseRole
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3945190765558734642, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: defenseChoiceMode
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].slotStyle
-      value: 
-      objectReference: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].sortOrder
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[0].autoFlowConfig
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].customCanvasId
-      value: planetcanvas
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].thresholdConfig
-      value: 
-      objectReference: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].canvasTargetMode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4612188242723959288, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: resourceInstances.Array.data[1].resourceDefinition
-      value: 
-      objectReference: {fileID: 11400000, guid: ecc8574026cc4f547ac4938262109eff, type: 2}
     - target: {fileID: 5312295584184867285, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_Name
       value: Planet01
@@ -1450,10 +1382,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5834496324894513697, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8373132218115634742, guid: fcd6484895cfed04e85004cc759a16a1, type: 3}
-      propertyPath: targetLayers.m_Bits
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

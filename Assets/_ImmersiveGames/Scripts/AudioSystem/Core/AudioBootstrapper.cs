@@ -1,26 +1,25 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityUtils;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Core
 {
-    public class GameAudioManager : Singleton<GameAudioManager>
+    public class AudioBootstrapper : Singleton<AudioBootstrapper>
     {
         [SerializeField] private SoundData mainMenuBGM;
         [Header("Settings")]
         [SerializeField] private float bgmFadeDuration = 2f;
 
-        [Inject] private IAudioService _audioService;
+        [Inject] private IBgmAudioService _bgmAudioService;
 
         protected override void Awake()
         {
             base.Awake();
 
             // Garantir que o sistema global de áudio esteja pronto antes da injeção.
-            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null)
             {
@@ -28,30 +27,30 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             }
             else
             {
-                DebugUtility.LogWarning<GameAudioManager>("DependencyManager indisponível — áudio global não será injetado.");
+                DebugUtility.LogWarning<AudioBootstrapper>("DependencyManager indisponível — áudio global não será injetado.");
             }
         }
 
         private void Start()
         {
-            if (!IsServiceValid(_audioService))
+            if (!IsServiceValid(_bgmAudioService))
             {
                 TryResolveAudioService();
 
-                if (!IsServiceValid(_audioService))
+                if (!IsServiceValid(_bgmAudioService))
                 {
-                    DebugUtility.LogWarning<GameAudioManager>("IAudioService não injetado — verifique a inicialização do AudioManager.");
+                    DebugUtility.LogWarning<AudioBootstrapper>("IBgmAudioService não injetado — verifique a inicialização do GlobalBgmAudioService.");
                     return;
                 }
             }
 
             if (mainMenuBGM != null && mainMenuBGM.clip != null)
             {
-                _audioService.PlayBGM(mainMenuBGM, true, bgmFadeDuration);
+                _bgmAudioService.PlayBGM(mainMenuBGM, true, bgmFadeDuration);
             }
             else
             {
-                DebugUtility.LogWarning<GameAudioManager>("BGM não configurado — verifique SoundData.");
+                DebugUtility.LogWarning<AudioBootstrapper>("BGM não configurado — verifique SoundData.");
             }
         }
 
@@ -59,11 +58,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             if (DependencyManager.Provider != null)
             {
-                DependencyManager.Provider.TryGetGlobal(out _audioService);
+                DependencyManager.Provider.TryGetGlobal(out _bgmAudioService);
             }
         }
 
-        private static bool IsServiceValid(IAudioService service)
+        private static bool IsServiceValid(IBgmAudioService service)
         {
             if (service == null) return false;
 
@@ -81,7 +80,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
         {
             if (mainMenuBGM == null || mainMenuBGM.clip == null)
             {
-                DebugUtility.LogWarning<GameAudioManager>("Nenhum BGM configurado para preview.");
+                DebugUtility.LogWarning<AudioBootstrapper>("Nenhum BGM configurado para preview.");
                 return;
             }
 
@@ -91,7 +90,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
             float simulatedVol = Mathf.Clamp01(mainMenuBGM.volume * simulatedMultiplier * simulatedBgmVol);
             float dB = 20f * Mathf.Log10(simulatedVol + 0.0001f); // Evita log0
             AudioSource.PlayClipAtPoint(mainMenuBGM.clip, Vector3.zero, simulatedVol);
-            DebugUtility.LogVerbose<GameAudioManager>($"Preview BGM: {mainMenuBGM.clip.name} (Volume linear: {simulatedVol}, dB simulado: {dB}, Loop: {mainMenuBGM.loop}, Fade simulada: {bgmFadeDuration}s, Mixer: {mainMenuBGM.mixerGroup?.name ?? "None"})");
+            DebugUtility.LogVerbose<AudioBootstrapper>($"Preview BGM: {mainMenuBGM.clip.name} (Volume linear: {simulatedVol}, dB simulado: {dB}, Loop: {mainMenuBGM.loop}, Fade simulada: {bgmFadeDuration}s, Mixer: {mainMenuBGM.mixerGroup?.name ?? "None"})");
         }
 #endif
     }

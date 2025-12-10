@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.AudioSystem
+namespace _ImmersiveGames.Scripts.AudioSystem.Core
 {
     /// <summary>
     /// Fornece um transform raiz global para objetos de áudio criados em runtime.

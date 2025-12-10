@@ -9,6 +9,7 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils;
@@ -60,24 +61,38 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [Tooltip("Lista de recursos disponíveis para sortear ao instanciar planetas.")]
         [SerializeField] private List<PlanetResourcesSo> availableResources = new();
 
-        private IDetectable _targetToEater;
-        private readonly List<IDetectable> _activePlanets = new();
+        // Detectáveis de planetas atualmente ativos (para sistemas de detecção).
+        private readonly List<IDetectable> _activePlanetDetectables = new();
+
+        // Mapa de ator de planeta -> tipo de recurso atribuído.
         private readonly Dictionary<IPlanetActor, PlanetResources> _planetResourcesMap = new();
-        private readonly List<PlanetsMaster> _spawnedPlanets = new();
-        private readonly List<float> _orbitRadii = new();
+
+        // Lista de instâncias concretas de planetas gerenciados.
+        private readonly List<PlanetsMaster> _spawnedPlanetMasters = new();
+
+        // Raio de órbita calculado para cada planeta (mesmo índice de _spawnedPlanetMasters).
+        private readonly List<float> _calculatedOrbitRadii = new();
+
+        // Cache de planetas por ActorId para resolução rápida.
         private readonly Dictionary<string, PlanetsMaster> _planetsByActorId = new();
+
+        // Binding para remoção de planetas quando recebem evento de morte.
         private EventBinding<DeathEvent> _planetDeathBinding;
+
+        // Mapa de tipo de recurso -> definição ScriptableObject.
         private readonly Dictionary<PlanetResources, PlanetResourcesSo> _resourceDefinitions = new();
 
         protected override void Awake()
         {
             base.Awake();
+
             if (planetsRoot == null)
             {
                 planetsRoot = transform;
             }
 
             RebuildResourceDefinitions();
+
             _planetDeathBinding = new EventBinding<DeathEvent>(OnPlanetDeath);
             EventBus<DeathEvent>.Register(_planetDeathBinding);
         }
@@ -87,7 +102,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             RebuildResourceDefinitions();
         }
 
-        private void Start() => StartCoroutine(InitializePlanetsRoutine());
+        private void Start()
+        {
+            StartCoroutine(InitializePlanetsRoutine());
+        }
 
         private IEnumerator InitializePlanetsRoutine()
         {
@@ -99,10 +117,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             if (_planetResourcesMap.Count > 0)
             {
-                DebugUtility.LogVerbose<PlanetsManager>("Planetas já foram inicializados anteriormente, evitando duplicação.");
+                DebugUtility.LogVerbose<PlanetsManager>(
+                    "Planetas já foram inicializados anteriormente, evitando duplicação.");
                 yield break;
             }
 
+            // 1) Cria as instâncias de planeta.
             for (int i = 0; i < initialPlanetCount; i++)
             {
                 var planetInstance = Instantiate(planetPrefab, planetsRoot);
@@ -111,15 +131,25 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 RegisterPlanet(planetInstance);
             }
 
-            // Aguarda um frame para garantir que modificadores de escala/skin tenham aplicado suas transformações.
+            // 2) Aguarda um frame para garantir que modificadores de escala/skin tenham aplicado transformações.
             yield return null;
 
+            // 3) Calcula órbitas e posiciona.
             ArrangePlanetsInOrbits();
 
+            // 4) Notifica que a inicialização foi concluída.
             EventBus<PlanetsInitializationCompletedEvent>.Raise(
-                new PlanetsInitializationCompletedEvent(new ReadOnlyDictionary<IPlanetActor, PlanetResources>(_planetResourcesMap)));
+                new PlanetsInitializationCompletedEvent(
+                    new ReadOnlyDictionary<IPlanetActor, PlanetResources>(_planetResourcesMap)));
         }
 
+        /// <summary>
+        /// Registra um novo planeta instanciado no sistema:
+        /// - Armazena na lista local
+        /// - Sorteia e atribui um recurso
+        /// - Atualiza mapas de consulta
+        /// - Registra detectáveis para uso em sistemas de detecção
+        /// </summary>
         private void RegisterPlanet(PlanetsMaster planetInstance)
         {
             if (planetInstance == null)
@@ -127,12 +157,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            _spawnedPlanets.Add(planetInstance);
+            _spawnedPlanetMasters.Add(planetInstance);
 
             var resource = DrawPlanetResource();
             if (resource == null)
             {
-                DebugUtility.LogWarning<PlanetsManager>("Nenhum recurso disponível para atribuir ao planeta instanciado.");
+                DebugUtility.LogWarning<PlanetsManager>(
+                    "Nenhum recurso disponível para atribuir ao planeta instanciado.");
             }
 
             planetInstance.AssignResource(resource);
@@ -141,14 +172,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var resourceType = resource != null ? resource.ResourceType : default;
             _planetResourcesMap[planetInstance] = resourceType;
             _planetsByActorId[planetInstance.ActorId] = planetInstance;
+
             RegisterActiveDetectables(planetInstance);
         }
 
+        /// <summary>
+        /// Calcula as órbitas e posiciona cada planeta em torno do centro.
+        /// Também configura o módulo PlanetMotion quando presente.
+        /// </summary>
         private void ArrangePlanetsInOrbits()
         {
-            _orbitRadii.Clear();
+            _calculatedOrbitRadii.Clear();
 
-            if (_spawnedPlanets.Count == 0)
+            if (_spawnedPlanetMasters.Count == 0)
             {
                 return;
             }
@@ -157,9 +193,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             float previousOrbitRadius = 0f;
             float previousPlanetRadius = 0f;
 
-            for (int i = 0; i < _spawnedPlanets.Count; i++)
+            for (int i = 0; i < _spawnedPlanetMasters.Count; i++)
             {
-                var planet = _spawnedPlanets[i];
+                var planet = _spawnedPlanetMasters[i];
                 if (planet == null)
                 {
                     continue;
@@ -169,12 +205,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
                 float orbitRadius = i == 0
                     ? Mathf.Max(initialOrbitRadius, planetRadius)
-                    : Mathf.Max(initialOrbitRadius,
+                    : Mathf.Max(
+                        initialOrbitRadius,
                         previousOrbitRadius + minimumOrbitSpacing + previousPlanetRadius + planetRadius);
 
                 float angle = randomizeInitialAngle
                     ? Random.Range(0f, Mathf.PI * 2f)
-                    : Mathf.PI * 2f * (i / (float)_spawnedPlanets.Count);
+                    : Mathf.PI * 2f * (i / (float)_spawnedPlanetMasters.Count);
 
                 Vector3 offset = new(Mathf.Cos(angle) * orbitRadius, 0f, Mathf.Sin(angle) * orbitRadius);
                 var targetPosition = centerPosition + offset;
@@ -182,7 +219,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
                 ConfigurePlanetMotion(planet, orbitRadius, angle);
 
-                _orbitRadii.Add(orbitRadius);
+                _calculatedOrbitRadii.Add(orbitRadius);
 
                 previousOrbitRadius = orbitRadius;
                 previousPlanetRadius = planetRadius;
@@ -200,8 +237,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             float selfRotationSpeed = GetRandomSpeedFromRange(selfRotationSpeedRange);
             bool orbitClockwise = randomizeOrbitDirection ? Random.value > 0.5f : defaultOrbitClockwise;
 
-            motion.ConfigureOrbit(planetsRoot != null ? planetsRoot : transform, orbitRadius, startAngle, orbitSpeed,
-                selfRotationSpeed, orbitClockwise);
+            motion.ConfigureOrbit(
+                planetsRoot != null ? planetsRoot : transform,
+                orbitRadius,
+                startAngle,
+                orbitSpeed,
+                selfRotationSpeed,
+                orbitClockwise);
         }
 
         private static float CalculatePlanetRadius(GameObject planetObject)
@@ -253,9 +295,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            foreach (var t in availableResources)
+            foreach (var definition in availableResources)
             {
-                CacheResourceDefinition(t);
+                CacheResourceDefinition(definition);
             }
         }
 
@@ -268,14 +310,39 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             var resourceType = resource.ResourceType;
             if (!_resourceDefinitions.TryAdd(resourceType, resource))
-            { }
-
+            {
+                // Já existe uma definição para este tipo de recurso.
+                // Não é um erro, mas pode indicar configuração redundante.
+            }
         }
 
         public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
         public IReadOnlyCollection<IPlanetActor> GetPlanetActors() => _planetResourcesMap.Keys;
-        public List<IDetectable> GetActivePlanets() => _activePlanets;
-        public IDetectable GetPlanetMarked() => _targetToEater;
+        public List<IDetectable> GetActivePlanets() => _activePlanetDetectables;
+
+        /// <summary>
+        /// Retorna o detectável associado ao planeta atualmente marcado,
+        /// com base no PlanetMarkingManager. Caso não haja planeta
+        /// marcado, retorna null.
+        /// </summary>
+        public IDetectable GetPlanetMarked()
+        {
+            var markingManager = PlanetMarkingManager.Instance;
+            if (!markingManager.HasMarkedPlanet)
+            {
+                return null;
+            }
+
+            var markPlanet = markingManager.CurrentlyMarkedPlanet;
+            if (markPlanet == null)
+            {
+                return null;
+            }
+
+            // Procura um IDetectable na hierarquia do planeta marcado.
+            var detectable = markPlanet.GetComponentInChildren<IDetectable>(true);
+            return detectable;
+        }
 
         /// <summary>
         /// Resolve o <see cref="PlanetsMaster"/> associado a um ator de planeta ativo.
@@ -308,7 +375,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return true;
             }
 
-            foreach (var candidate in _spawnedPlanets.Where(candidate => candidate != null).Where(candidate => candidate.ActorId == actorId))
+            foreach (var candidate in _spawnedPlanetMasters.Where(candidate => candidate != null)
+                         .Where(candidate => candidate.ActorId == actorId))
             {
                 planet = candidate;
                 _planetsByActorId[actorId] = candidate;
@@ -328,7 +396,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             string actorId = planetActor.ActorId;
-            foreach (var candidate in _activePlanets.Where(candidate => candidate?.Owner != null).Where(candidate => candidate.Owner.ActorId == actorId))
+            foreach (var candidate in _activePlanetDetectables
+                         .Where(candidate => candidate?.Owner != null)
+                         .Where(candidate => candidate.Owner.ActorId == actorId))
             {
                 detectable = candidate;
                 return true;
@@ -337,7 +407,19 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             return false;
         }
 
-        public bool IsMarkedPlanet(IDetectable planet) => _targetToEater == planet;
+        /// <summary>
+        /// Verifica se o detectável informado é o planeta atualmente marcado.
+        /// </summary>
+        public bool IsMarkedPlanet(IDetectable planet)
+        {
+            if (planet == null)
+            {
+                return false;
+            }
+
+            var marked = GetPlanetMarked();
+            return marked == planet;
+        }
 
         public bool TryGetResourceDefinition(PlanetResources resourceType, out PlanetResourcesSo definition)
         {
@@ -376,10 +458,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             ForceUnmarkPlanet(planet);
             _planetsByActorId.Remove(planet.ActorId);
             _planetResourcesMap.Remove(planet);
-            _spawnedPlanets.Remove(planet);
+            _spawnedPlanetMasters.Remove(planet);
             UnregisterActiveDetectables(planet);
 
-            DebugUtility.LogVerbose<PlanetsManager>($"Planeta removido do gerenciamento: {planet.ActorName}.");
+            DebugUtility.LogVerbose<PlanetsManager>(
+                $"Planeta removido do gerenciamento: {planet.ActorName}.");
         }
 
         private static void ForceUnmarkPlanet(PlanetsMaster planet)
@@ -406,9 +489,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             IDetectable[] detectables = planet.GetComponentsInChildren<IDetectable>(true);
-            foreach (var t in detectables)
+            foreach (var detectable in detectables)
             {
-                RegisterActiveDetectable(t);
+                RegisterActiveDetectable(detectable);
             }
         }
 
@@ -420,20 +503,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             IDetectable[] detectables = planet.GetComponentsInChildren<IDetectable>(true);
-            foreach (var t in detectables)
+            foreach (var detectable in detectables)
             {
-                UnregisterActiveDetectable(t);
+                UnregisterActiveDetectable(detectable);
             }
         }
 
         private void RegisterActiveDetectable(IDetectable detectable)
         {
-            if (detectable == null || _activePlanets.Contains(detectable))
+            if (detectable == null || _activePlanetDetectables.Contains(detectable))
             {
                 return;
             }
 
-            _activePlanets.Add(detectable);
+            _activePlanetDetectables.Add(detectable);
         }
 
         private void UnregisterActiveDetectable(IDetectable detectable)
@@ -443,12 +526,16 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
                 return;
             }
 
-            _activePlanets.Remove(detectable);
+            _activePlanetDetectables.Remove(detectable);
         }
 
         private void OnDestroy()
         {
-            if (_planetDeathBinding == null) return;
+            if (_planetDeathBinding == null)
+            {
+                return;
+            }
+
             EventBus<DeathEvent>.Unregister(_planetDeathBinding);
             _planetDeathBinding = null;
         }
@@ -456,7 +543,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            if (!drawOrbitGizmos || _orbitRadii == null || _orbitRadii.Count == 0)
+            if (!drawOrbitGizmos || _calculatedOrbitRadii == null || _calculatedOrbitRadii.Count == 0)
             {
                 return;
             }
@@ -464,7 +551,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             var centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
             Gizmos.color = orbitGizmosColor;
 
-            foreach (float radius in _orbitRadii)
+            foreach (float radius in _calculatedOrbitRadii)
             {
                 DrawOrbitGizmo(centerPosition, radius);
             }

@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
     /// 
     /// - Use arrays de SoundData (SFX e BGM) configurados no Inspector.
     /// - Permite selecionar e tocar SFX via IAudioSfxService.
-    /// - Permite selecionar e tocar BGM via IAudioService.
+    /// - Permite selecionar e tocar BGM via IBgmAudioService.
     /// 
     /// Controles:
     /// - Tecla F10: liga/desliga o painel.
@@ -48,16 +49,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         private int _bgmIndex;
 
         private IAudioSfxService _sfxService;
-        private IAudioService _audioService;
+        private IBgmAudioService _bgmAudioService;
 
         private void Awake()
         {
-            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
-                DependencyManager.Provider.TryGetGlobal(out _audioService);
+                DependencyManager.Provider.TryGetGlobal(out _bgmAudioService);
             }
 
             if (_sfxService == null)
@@ -66,10 +67,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
                     "[AudioPreview] IAudioSfxService não encontrado. Preview de SFX indisponível.");
             }
 
-            if (_audioService == null)
+            if (_bgmAudioService == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
-                    "[AudioPreview] IAudioService (BGM) não encontrado. Preview de BGM indisponível.");
+                    "[AudioPreview] IBgmAudioService (BGM) não encontrado. Preview de BGM indisponível.");
             }
         }
 
@@ -194,7 +195,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
                 _bgmIndex = (_bgmIndex - 1 + bgmClips.Length) % bgmClips.Length;
             }
 
-            GUI.enabled = _audioService != null && current != null;
+            GUI.enabled = _bgmAudioService != null && current != null;
             if (GUILayout.Button("Play (Loop)", GUILayout.Width(100)))
             {
                 PlayBgm(current);
@@ -216,14 +217,14 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void PlayBgm(SoundData sd)
         {
-            if (_audioService == null || sd == null || sd.clip == null)
+            if (_bgmAudioService == null || sd == null || sd.clip == null)
             {
                 DebugUtility.LogWarning<AudioPreviewPanel>(
                     "[AudioPreview][BGM] Não é possível reproduzir BGM (serviço ou SoundData inválido).");
                 return;
             }
 
-            _audioService.PlayBGM(sd, loop: true, fadeInDuration: bgmFadeIn);
+            _bgmAudioService.PlayBGM(sd, loop: true, fadeInDuration: bgmFadeIn);
 
             DebugUtility.LogVerbose<AudioPreviewPanel>(
                 $"[AudioPreview][BGM] PlayBGM: {sd.name} (loop=ON, fadeIn={bgmFadeIn:0.00}s)",
@@ -232,10 +233,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void StopBgm()
         {
-            if (_audioService == null)
+            if (_bgmAudioService == null)
                 return;
 
-            _audioService.StopBGM(bgmFadeOut);
+            _bgmAudioService.StopBGM(bgmFadeOut);
 
             DebugUtility.LogVerbose<AudioPreviewPanel>(
                 $"[AudioPreview][BGM] StopBGM (fadeOut={bgmFadeOut:0.00}s)",

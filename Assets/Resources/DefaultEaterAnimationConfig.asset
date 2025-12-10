@@ -9,13 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 636867a7d8824e0083d5467af2cf4c55, type: 3}
-  m_Name: New Audio Service Settings
+  m_Script: {fileID: 11500000, guid: a0be4a09a42940a99b132d37f00ccdf8, type: 3}
+  m_Name: DefaultEaterAnimationConfig
   m_EditorClassIdentifier: 
-  masterVolume: 1
-  bgmVolume: 1
-  sfxVolume: 1
-  bgmMultiplier: 0.1
-  sfxMultiplier: 1
-  debugEmitters: 1
-  defaultMaxEmitters: 30
+  idleAnimation: Idle
+  hitAnimation: GetHit
+  deathAnimation: Dead
+  reviveAnimation: Revive
+  eatingAnimation: isEating
+  happyAnimation: Happy
+  madAnimation: Mad

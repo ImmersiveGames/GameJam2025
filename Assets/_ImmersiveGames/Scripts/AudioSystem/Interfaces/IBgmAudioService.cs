@@ -5,7 +5,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Interfaces
     /// Serviço global de áudio — apenas para BGM / mixer global.
     /// SFX devem ser tocados por um 'EntityAudioEmitter` (pools locais).
     /// </summary>
-    public interface IAudioService
+    public interface IBgmAudioService
     {
         // BGM
         void PlayBGM(SoundData bgmData, bool loop = true, float fadeInDuration = 0f);

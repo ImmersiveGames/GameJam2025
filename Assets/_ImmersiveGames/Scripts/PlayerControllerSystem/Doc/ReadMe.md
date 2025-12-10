@@ -354,8 +354,62 @@ Isso garante que o cálculo de mira (`ScreenPointToRay`) sempre use a câmera co
 * Expandir `ICameraResolver` para multi-player de fato (um `GameplayCameraBinder` por playerId).
 
 ---
+# ADR 0001 – Centralização da Seleção de Câmera via CameraResolver
 
-## 7. Histórico de Versões (Changelog)
+## Status
+Aceito – Implementado
+
+## Contexto
+O projeto utiliza múltiplas cenas ativas simultaneamente (Bootstrap, Gameplay, UI Global).  
+Câmeras podem existir em diferentes cenas e em momentos diferentes, causando comportamentos inconsistentes quando sistemas dependiam de `Camera.main`.
+
+Principais problemas observados:
+- Ordem de carregamento influenciava diretamente qual câmera o player utilizava para mirar.
+- Canvas em WorldSpace nem sempre utilizava a câmera correta.
+- BootstrapCamera podia interferir durante a execução.
+- Sistema não estava preparado para multiplayer local (várias câmeras, uma por jogador).
+
+## Decisão
+Criar um serviço global, `ICameraResolver`, responsável por:
+- Registrar câmeras por jogador (`playerId`)
+- Resolver a câmera correta em runtime
+- Notificar sistemas quando a câmera padrão mudar
+- Eliminar completamente o uso de `Camera.main` em sistemas críticos
+
+Implementação:
+- `CameraResolverService` foi adicionado ao `DependencyBootstrapper`
+- `GameplayCameraBinder` registra a câmera principal de gameplay
+- `PlayerMovementController` passa a obter a câmera via `ICameraResolver`
+- `CanvasCameraBinder` também utiliza o resolver, suportando troca dinâmica
+
+## Consequências
+### Positivas
+- Mira do player sempre consistente
+- UI em WorldSpace sempre vinculada corretamente
+- Suporte nativo a multi-câmera / multiplayer
+- Arquitetura modular e testável
+- Evita bugs relacionados à tag `MainCamera`
+- Permite hot-swap de câmera em runtime
+
+### Negativas / Trade-offs
+- Introduz dependência explícita (DI) em módulos que usam câmera
+- Exige que cameras de gameplay incluam o `GameplayCameraBinder`
+- Para objetos antigos que dependiam de `Camera.main`, é necessário refatorar
+
+## Alternativas Consideradas
+1. **Manter o uso de `Camera.main`**  
+   Rejeitado por inconsistência em multi-scene.
+2. **Resolver câmera via singleton estático**  
+   Simples, porém não compatível com multiplayer e DI.
+3. **Passar câmera manualmente ao Player**  
+   Funcional, porém não escalável e frágil.
+
+## Conclusão
+Centralizar a gestão de câmera no `ICameraResolver` oferece a solução mais robusta, escalável e aderente à arquitetura já existente.  
+É um passo essencial para preparar o projeto para multiplayer e para estruturas complexas de cena.
+
+---
+## 8. Histórico de Versões (Changelog)
 
 ### v0.1 – Organização inicial
 
@@ -375,3 +429,56 @@ Isso garante que o cálculo de mira (`ScreenPointToRay`) sempre use a câmera co
 * `CanvasCameraBinder` passou a usar `ICameraResolver`, com unsub de eventos e checagem de canvas destruído.
 
 ---
+# ADR 0001 – Centralização da Seleção de Câmera via CameraResolver
+
+## Status
+Aceito – Implementado
+
+## Contexto
+O projeto utiliza múltiplas cenas ativas simultaneamente (Bootstrap, Gameplay, UI Global).  
+Câmeras podem existir em diferentes cenas e em momentos diferentes, causando comportamentos inconsistentes quando sistemas dependiam de `Camera.main`.
+
+Principais problemas observados:
+- Ordem de carregamento influenciava diretamente qual câmera o player utilizava para mirar.
+- Canvas em WorldSpace nem sempre utilizava a câmera correta.
+- BootstrapCamera podia interferir durante a execução.
+- Sistema não estava preparado para multiplayer local (várias câmeras, uma por jogador).
+
+## Decisão
+Criar um serviço global, `ICameraResolver`, responsável por:
+- Registrar câmeras por jogador (`playerId`)
+- Resolver a câmera correta em runtime
+- Notificar sistemas quando a câmera padrão mudar
+- Eliminar completamente o uso de `Camera.main` em sistemas críticos
+
+Implementação:
+- `CameraResolverService` foi adicionado ao `DependencyBootstrapper`
+- `GameplayCameraBinder` registra a câmera principal de gameplay
+- `PlayerMovementController` passa a obter a câmera via `ICameraResolver`
+- `CanvasCameraBinder` também utiliza o resolver, suportando troca dinâmica
+
+## Consequências
+### Positivas
+- Mira do player sempre consistente
+- UI em WorldSpace sempre vinculada corretamente
+- Suporte nativo a multi-câmera / multiplayer
+- Arquitetura modular e testável
+- Evita bugs relacionados à tag `MainCamera`
+- Permite hot-swap de câmera em runtime
+
+### Negativas / Trade-offs
+- Introduz dependência explícita (DI) em módulos que usam câmera
+- Exige que cameras de gameplay incluam o `GameplayCameraBinder`
+- Para objetos antigos que dependiam de `Camera.main`, é necessário refatorar
+
+## Alternativas Consideradas
+1. **Manter o uso de `Camera.main`**  
+   Rejeitado por inconsistência em multi-scene.
+2. **Resolver câmera via singleton estático**  
+   Simples, porém não compatível com multiplayer e DI.
+3. **Passar câmera manualmente ao Player**  
+   Funcional, porém não escalável e frágil.
+
+## Conclusão
+Centralizar a gestão de câmera no `ICameraResolver` oferece a solução mais robusta, escalável e aderente à arquitetura já existente.  
+É um passo essencial para preparar o projeto para multiplayer e para estruturas complexas de cena.

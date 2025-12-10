@@ -11,6 +11,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
         Unknown = 0,
         Player = 1,
         Eater = 2,
+        Planets = 3,
+        Minion = 4
     }
 
     /// <summary>

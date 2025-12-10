@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -91,7 +92,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem
 
         private static IAudioSfxService ResolveSfxService()
         {
-            AudioSystemInitializer.EnsureAudioSystemInitialized();
+            AudioSystemBootstrap.EnsureAudioSystemInitialized();
 
             if (DependencyManager.Provider != null && DependencyManager.Provider.TryGetGlobal(out IAudioSfxService service))
             {
