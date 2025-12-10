@@ -15,9 +15,13 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Pool
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (maxSoundInstances >= initialPoolSize) return;
-            DebugUtility.LogWarning<SoundEmitterPoolData>($"MaxSoundInstances não pode ser menor que InitialPoolSize em {name}. Ajustando...", this);
-            maxSoundInstances = initialPoolSize;
+            if (maxSoundInstances < initialPoolSize)
+            {
+                DebugUtility.LogWarning<SoundEmitterPoolData>(
+                    $"MaxSoundInstances não pode ser menor que InitialPoolSize em {name}. Ajustando...",
+                    this);
+                maxSoundInstances = initialPoolSize;
+            }
         }
 #endif
     }

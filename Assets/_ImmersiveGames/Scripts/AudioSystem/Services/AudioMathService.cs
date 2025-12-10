@@ -9,6 +9,16 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
     /// </summary>
     public class AudioMathService : IAudioMathService
     {
+        /// <summary>
+        /// Calcula o volume final combinando todas as camadas:
+        /// - clipVolume: volume definido no SoundData.
+        /// - configVolume: volume padrão do AudioConfig.
+        /// - categoryVolume: volume da categoria (BGM/SFX) vindo de AudioServiceSettings.
+        /// - categoryMultiplier: multiplicador de balance da categoria.
+        /// - masterVolume: volume master global.
+        /// - contextMultiplier: multiplicador vindo do contexto (ex.: distância, efeitos).
+        /// - contextOverride: se >= 0, substitui completamente o cálculo e é usado como valor final.
+        /// </summary>
         public float CalculateFinalVolume(
             float clipVolume,
             float configVolume,
@@ -16,10 +26,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
             float categoryMultiplier,
             float masterVolume,
             float contextMultiplier,
-            float volumeOverride = -1f)
+            float contextOverride = -1f)
         {
-            if (volumeOverride >= 0f)
-                return Mathf.Clamp01(volumeOverride);
+            clipVolume = Mathf.Clamp01(clipVolume);
+            configVolume = Mathf.Clamp01(configVolume);
+            categoryVolume = Mathf.Clamp01(categoryVolume);
+            categoryMultiplier = Mathf.Clamp01(categoryMultiplier);
+            masterVolume = Mathf.Clamp01(masterVolume);
+            contextMultiplier = Mathf.Max(0f, contextMultiplier);
+
+            if (contextOverride >= 0f)
+            {
+                return Mathf.Clamp01(contextOverride);
+            }
 
             float val = clipVolume * configVolume * categoryVolume * categoryMultiplier * masterVolume * contextMultiplier;
             return Mathf.Clamp01(val);

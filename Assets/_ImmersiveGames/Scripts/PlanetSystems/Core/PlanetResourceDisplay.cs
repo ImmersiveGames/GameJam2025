@@ -4,8 +4,16 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
+    /// <summary>
+    /// Responsável por exibir o ícone do recurso de um planeta
+    /// na UI, reagindo à atribuição e à descoberta do recurso.
+    ///
+    /// Usa o PlanetsMaster como fonte de eventos, que por sua vez
+    /// delega o estado de recurso para o módulo PlanetResourceState.
+    /// </summary>
     [DisallowMultipleComponent]
-    public class PlanetResourceDisplay : MonoBehaviour
+    [AddComponentMenu("ImmersiveGames/Planet Systems/Planet Resource Display")]
+    public sealed class PlanetResourceDisplay : MonoBehaviour
     {
         [Header("Configurações Visuais")]
         [Tooltip("Imagem que exibirá o ícone do recurso atribuído ao planeta.")]
@@ -20,7 +28,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         private void Awake()
         {
             TryCachePlanetMaster();
-            TryAutoAssignImage();
+            EnsureResourceImage();
         }
 
         private void OnEnable()
@@ -28,38 +36,56 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             if (!TryCachePlanetMaster())
             {
                 DebugUtility.LogWarning<PlanetResourceDisplay>(
-                    "Nenhum PlanetsMaster encontrado na hierarquia para exibir o recurso.", this);
+                    "Nenhum PlanetsMaster encontrado na hierarquia para exibir o recurso.",
+                    this);
                 return;
             }
 
             _planetMaster.ResourceAssigned += HandlePlanetResourceAssigned;
             _planetMaster.ResourceDiscoveryChanged += HandleResourceDiscoveryChanged;
 
-            _currentResource = _planetMaster.AssignedResource;
-            HandleResourceDiscoveryChanged(_planetMaster.IsResourceDiscovered);
+            SyncWithPlanetState();
         }
 
         private void OnDisable()
         {
-            if (_planetMaster != null)
+            if (_planetMaster == null)
             {
-                _planetMaster.ResourceAssigned -= HandlePlanetResourceAssigned;
-                _planetMaster.ResourceDiscoveryChanged -= HandleResourceDiscoveryChanged;
+                return;
             }
+
+            _planetMaster.ResourceAssigned -= HandlePlanetResourceAssigned;
+            _planetMaster.ResourceDiscoveryChanged -= HandleResourceDiscoveryChanged;
         }
 
         private void Reset()
         {
-            TryAutoAssignImage();
+            EnsureResourceImage();
+        }
+
+        /// <summary>
+        /// Atualiza o estado interno e a UI com base no estado atual do planeta.
+        /// </summary>
+        private void SyncWithPlanetState()
+        {
+            if (_planetMaster == null)
+            {
+                return;
+            }
+
+            _currentResource = _planetMaster.AssignedResource;
+            HandleResourceDiscoveryChanged(_planetMaster.IsResourceDiscovered);
         }
 
         private void HandlePlanetResourceAssigned(PlanetResourcesSo resource)
         {
             _currentResource = resource;
-            if (resourceImage == null && !TryAutoAssignImage())
+
+            if (!EnsureResourceImage())
             {
                 DebugUtility.LogWarning<PlanetResourceDisplay>(
-                    "Nenhuma Image configurada para exibir o recurso do planeta.", this);
+                    "Nenhuma Image configurada para exibir o recurso do planeta.",
+                    this);
                 return;
             }
 
@@ -68,10 +94,11 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 
         private void HandleResourceDiscoveryChanged(bool isDiscovered)
         {
-            if (resourceImage == null && !TryAutoAssignImage())
+            if (!EnsureResourceImage())
             {
                 DebugUtility.LogWarning<PlanetResourceDisplay>(
-                    "Nenhuma Image configurada para exibir o recurso do planeta.", this);
+                    "Nenhuma Image configurada para exibir o recurso do planeta.",
+                    this);
                 return;
             }
 
@@ -90,10 +117,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             if (!isDiscovered)
             {
                 targetSprite = undiscoveredResourceIcon;
+
                 if (targetSprite == null)
                 {
                     DebugUtility.LogWarning<PlanetResourceDisplay>(
-                        "Sprite de recurso não descoberto não configurada.", this);
+                        "Sprite de recurso não descoberto não configurada.",
+                        this);
                 }
             }
             else
@@ -105,17 +134,24 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
             resourceImage.enabled = targetSprite != null;
         }
 
-        private bool TryAutoAssignImage()
+        /// <summary>
+        /// Garante que a Image de destino está atribuída, tentando
+        /// localizar automaticamente em filhos quando necessário.
+        /// </summary>
+        private bool EnsureResourceImage()
         {
             if (resourceImage != null)
             {
                 return true;
             }
 
-            resourceImage = GetComponentInChildren<Image>();
+            resourceImage = GetComponentInChildren<Image>(true);
             return resourceImage != null;
         }
 
+        /// <summary>
+        /// Tenta encontrar e cachear o PlanetsMaster na hierarquia.
+        /// </summary>
         private bool TryCachePlanetMaster()
         {
             if (_planetMaster != null)

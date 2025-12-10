@@ -25,13 +25,19 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
             float categoryVolume = settings != null ? settings.bgmVolume : 1f;
             float categoryMultiplier = settings != null ? settings.bgmMultiplier : 1f;
 
-            return _mathService?.CalculateFinalVolume(
-                soundData.volume,
-                1f,
-                categoryVolume,
-                categoryMultiplier,
-                master,
-                contextMultiplier) ?? Mathf.Clamp01(soundData.volume * categoryVolume * master * contextMultiplier);
+            if (_mathService != null)
+            {
+                return _mathService.CalculateFinalVolume(
+                    soundData.volume,
+                    1f,
+                    categoryVolume,
+                    categoryMultiplier,
+                    master,
+                    contextMultiplier);
+            }
+
+            float baseVolume = soundData.volume * categoryVolume * categoryMultiplier * master * contextMultiplier;
+            return Mathf.Clamp01(baseVolume);
         }
 
         public float CalculateSfxVolume(SoundData soundData, AudioConfig config, AudioServiceSettings settings, AudioContext context)
@@ -43,14 +49,23 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
             float categoryMultiplier = settings != null ? settings.sfxMultiplier : 1f;
             float configDefault = config != null ? config.defaultVolume : 1f;
 
-            return _mathService?.CalculateFinalVolume(
-                soundData.volume,
-                configDefault,
-                categoryVolume,
-                categoryMultiplier,
-                master,
-                context.volumeMultiplier,
-                context.volumeOverride) ?? Mathf.Clamp01(soundData.volume * configDefault * categoryVolume * master * context.volumeMultiplier);
+            if (_mathService != null)
+            {
+                return _mathService.CalculateFinalVolume(
+                    soundData.volume,
+                    configDefault,
+                    categoryVolume,
+                    categoryMultiplier,
+                    master,
+                    context.volumeMultiplier,
+                    context.volumeOverride);
+            }
+
+            float baseVolume = soundData.volume * configDefault * categoryVolume * categoryMultiplier * master * context.volumeMultiplier;
+            if (context.volumeOverride >= 0f)
+                baseVolume = context.volumeOverride;
+
+            return Mathf.Clamp01(baseVolume);
         }
     }
 }

@@ -7,9 +7,17 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
-    public class PlanetDetectableController : AbstractDetectable
+    /// <summary>
+    /// Detectável de planeta responsável por reagir à entrada em sensores
+    /// (Player, Eater, etc.), revelando o recurso do planeta quando
+    /// detectado pela primeira vez e disparando feedback de áudio.
+    /// </summary>
+    [DisallowMultipleComponent]
+    [AddComponentMenu("ImmersiveGames/Planet Systems/Planet Detectable Controller")]
+    public sealed class PlanetDetectableController : AbstractDetectable
     {
         private PlanetsMaster _planetMaster;
+
         [Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
         [SerializeField] private SoundData discoverySound;
@@ -17,31 +25,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
         protected override void Awake()
         {
             base.Awake();
-
-            // Busca o PlanetsMaster no mesmo GameObject ou hierarquia para reagir a detecções.
-            if (!TryGetComponent(out _planetMaster))
-            {
-                _planetMaster = GetComponentInParent<PlanetsMaster>();
-            }
-
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
-
-            if (_planetMaster == null)
-            {
-                DebugUtility.LogError<PlanetDetectableController>(
-                    $"PlanetsMaster não encontrado para o detectável {gameObject.name}.", this);
-            }
+            EnsureDependencies();
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (_planetMaster == null)
-            {
-                _planetMaster = GetComponentInParent<PlanetsMaster>();
-            }
-
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            EnsureDependencies();
         }
 #endif
 
@@ -88,6 +78,26 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 $"Planeta {gameObject.name} saiu do alcance de {GetName(detector)}.",
                 null,
                 this);
+        }
+
+        private void EnsureDependencies()
+        {
+            if (_planetMaster == null)
+            {
+                if (!TryGetComponent(out _planetMaster))
+                {
+                    _planetMaster = GetComponentInParent<PlanetsMaster>();
+                }
+            }
+
+            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+
+            if (_planetMaster == null)
+            {
+                DebugUtility.LogError<PlanetDetectableController>(
+                    $"PlanetsMaster não encontrado para o detectável {gameObject.name}.",
+                    this);
+            }
         }
 
         private void TryPlayDiscoveryAudio()

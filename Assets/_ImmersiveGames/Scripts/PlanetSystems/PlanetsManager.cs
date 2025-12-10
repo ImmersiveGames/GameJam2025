@@ -12,7 +12,6 @@ using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
@@ -82,6 +81,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         // Mapa de tipo de recurso -> definição ScriptableObject.
         private readonly Dictionary<PlanetResources, PlanetResourcesSo> _resourceDefinitions = new();
 
+        // Serviço responsável por organizar órbitas e configurar PlanetMotion.
+        private PlanetOrbitArranger _orbitArranger;
+
         protected override void Awake()
         {
             base.Awake();
@@ -90,6 +92,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             {
                 planetsRoot = transform;
             }
+
+            // Inicializa o arranjador de órbitas com a configuração atual.
+            _orbitArranger = new PlanetOrbitArranger(
+                planetsRoot != null ? planetsRoot : transform,
+                initialOrbitRadius,
+                minimumOrbitSpacing,
+                randomizeInitialAngle,
+                orbitSpeedRange,
+                selfRotationSpeedRange,
+                randomizeOrbitDirection,
+                defaultOrbitClockwise);
 
             RebuildResourceDefinitions();
 
@@ -177,101 +190,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         }
 
         /// <summary>
-        /// Calcula as órbitas e posiciona cada planeta em torno do centro.
-        /// Também configura o módulo PlanetMotion quando presente.
+        /// Calcula as órbitas e posiciona cada planeta em torno do centro,
+        /// delegando para o serviço PlanetOrbitArranger.
         /// </summary>
         private void ArrangePlanetsInOrbits()
         {
             _calculatedOrbitRadii.Clear();
 
-            if (_spawnedPlanetMasters.Count == 0)
+            if (_spawnedPlanetMasters.Count == 0 || _orbitArranger == null)
             {
                 return;
             }
 
-            var centerPosition = planetsRoot != null ? planetsRoot.position : transform.position;
-            float previousOrbitRadius = 0f;
-            float previousPlanetRadius = 0f;
-
-            for (int i = 0; i < _spawnedPlanetMasters.Count; i++)
-            {
-                var planet = _spawnedPlanetMasters[i];
-                if (planet == null)
-                {
-                    continue;
-                }
-
-                float planetRadius = CalculatePlanetRadius(planet.gameObject);
-
-                float orbitRadius = i == 0
-                    ? Mathf.Max(initialOrbitRadius, planetRadius)
-                    : Mathf.Max(
-                        initialOrbitRadius,
-                        previousOrbitRadius + minimumOrbitSpacing + previousPlanetRadius + planetRadius);
-
-                float angle = randomizeInitialAngle
-                    ? Random.Range(0f, Mathf.PI * 2f)
-                    : Mathf.PI * 2f * (i / (float)_spawnedPlanetMasters.Count);
-
-                Vector3 offset = new(Mathf.Cos(angle) * orbitRadius, 0f, Mathf.Sin(angle) * orbitRadius);
-                var targetPosition = centerPosition + offset;
-                planet.transform.position = targetPosition;
-
-                ConfigurePlanetMotion(planet, orbitRadius, angle);
-
-                _calculatedOrbitRadii.Add(orbitRadius);
-
-                previousOrbitRadius = orbitRadius;
-                previousPlanetRadius = planetRadius;
-            }
-        }
-
-        private void ConfigurePlanetMotion(PlanetsMaster planet, float orbitRadius, float startAngle)
-        {
-            if (!planet.TryGetComponent(out PlanetMotion motion))
-            {
-                return;
-            }
-
-            float orbitSpeed = GetRandomSpeedFromRange(orbitSpeedRange);
-            float selfRotationSpeed = GetRandomSpeedFromRange(selfRotationSpeedRange);
-            bool orbitClockwise = randomizeOrbitDirection ? Random.value > 0.5f : defaultOrbitClockwise;
-
-            motion.ConfigureOrbit(
-                planetsRoot != null ? planetsRoot : transform,
-                orbitRadius,
-                startAngle,
-                orbitSpeed,
-                selfRotationSpeed,
-                orbitClockwise);
-        }
-
-        private static float CalculatePlanetRadius(GameObject planetObject)
-        {
-            if (planetObject == null)
-            {
-                return 0f;
-            }
-
-            var bounds = CalculateRealLength.GetBounds(planetObject);
-            float radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
-
-            if (radius > 0f)
-            {
-                return radius;
-            }
-
-            // Fallback para casos onde ainda não há renderizadores válidos (ex.: placeholders).
-            var scale = planetObject.transform.lossyScale;
-            radius = Mathf.Max(scale.x, scale.z) * 0.5f;
-            return radius > 0f ? radius : 0.5f;
-        }
-
-        private static float GetRandomSpeedFromRange(Vector2 range)
-        {
-            float min = Mathf.Min(range.x, range.y);
-            float max = Mathf.Max(range.x, range.y);
-            return Mathf.Approximately(min, max) ? min : Random.Range(min, max);
+            var radii = _orbitArranger.ArrangePlanetsInOrbits(_spawnedPlanetMasters);
+            _calculatedOrbitRadii.AddRange(radii);
         }
 
         private PlanetResourcesSo DrawPlanetResource()

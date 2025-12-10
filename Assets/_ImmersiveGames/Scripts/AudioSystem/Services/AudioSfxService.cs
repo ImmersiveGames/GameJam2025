@@ -3,6 +3,7 @@ using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.Pool;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.AudioSystem.Services
 {
     /// <summary>
@@ -19,7 +20,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
 
         private static readonly NullAudioHandle NullHandle = new();
 
-        public AudioSfxService(IAudioVolumeService volumeService, AudioServiceSettings serviceSettings = null, AudioConfig defaultConfig = null)
+        public AudioSfxService(
+            IAudioVolumeService volumeService,
+            AudioServiceSettings serviceSettings = null,
+            AudioConfig defaultConfig = null)
         {
             _volumeService = volumeService;
             _serviceSettings = serviceSettings;
@@ -45,8 +49,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
             if (_sfxPool == null)
                 return NullHandle;
 
-            var poolable = _sfxPool.GetObject(context.position, null, null, false) as SoundEmitter;
-            if (poolable == null)
+            var emitter = _sfxPool.GetObject(context.position, null, null, false) as SoundEmitter;
+            if (emitter == null)
                 return NullHandle;
 
             bool originalLoop = sound.loop;
@@ -55,37 +59,62 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
                 sound.loop = true;
             }
 
-            poolable.Initialize(sound);
+            emitter.Initialize(sound);
 
             if (!originalLoop)
             {
                 sound.loop = false;
             }
 
-            poolable.SetSpatialBlend(context.useSpatial ? sound.spatialBlend : 0f);
+            emitter.SetSpatialBlend(context.useSpatial ? sound.spatialBlend : 0f);
 
-            float maxDistance = _defaultConfig != null ? _defaultConfig.maxDistance : sound.maxDistance;
-            poolable.SetMaxDistance(maxDistance);
+            float maxDistance = _defaultConfig != null
+                ? _defaultConfig.maxDistance
+                : sound.maxDistance;
+            emitter.SetMaxDistance(maxDistance);
 
-            var mixer = sound.mixerGroup ?? _defaultConfig?.defaultMixerGroup;
-            poolable.SetMixerGroup(mixer);
+            var mixerGroup = sound.mixerGroup ?? _defaultConfig?.defaultMixerGroup;
+            emitter.SetMixerGroup(mixerGroup);
 
-            float finalVolume = _volumeService?.CalculateSfxVolume(sound, _defaultConfig, _serviceSettings, context) ?? Mathf.Clamp01(sound.volume);
+            float finalVolume;
+            if (_volumeService != null)
+            {
+                finalVolume = _volumeService.CalculateSfxVolume(sound, _defaultConfig, _serviceSettings, context);
+            }
+            else
+            {
+                float baseVolume = sound.volume;
+                float configVol = _defaultConfig != null ? _defaultConfig.defaultVolume : 1f;
+                float master = _serviceSettings != null ? _serviceSettings.masterVolume : 1f;
+                float category = _serviceSettings != null ? _serviceSettings.sfxVolume : 1f;
+                finalVolume = Mathf.Clamp01(baseVolume * configVol * category * master * context.volumeMultiplier);
+                if (context.volumeOverride >= 0f)
+                    finalVolume = Mathf.Clamp01(context.volumeOverride);
+            }
 
-            float multiplier = sound.volume > 0f ? Mathf.Clamp01(finalVolume / sound.volume) : Mathf.Clamp01(finalVolume);
-            poolable.SetVolumeMultiplier(multiplier);
+            float multiplier = sound.volume > 0f
+                ? Mathf.Clamp01(finalVolume / sound.volume)
+                : Mathf.Clamp01(finalVolume);
+
+            emitter.SetVolumeMultiplier(multiplier);
 
             if (sound.randomPitch)
-                poolable.WithRandomPitch(-sound.pitchVariation, sound.pitchVariation);
+            {
+                emitter.WithRandomPitch(-sound.pitchVariation, sound.pitchVariation);
+            }
 
-            poolable.Activate(context.position);
+            emitter.Activate(context.position);
 
             if (fadeInSeconds > 0f)
-                poolable.PlayWithFade(multiplier, fadeInSeconds);
+            {
+                emitter.PlayWithFade(multiplier, fadeInSeconds);
+            }
             else
-                poolable.Play();
+            {
+                emitter.Play();
+            }
 
-            return new SoundEmitterHandle(poolable);
+            return new SoundEmitterHandle(emitter);
         }
 
         private void EnsurePoolInitialized()
@@ -123,11 +152,25 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
                 _emitter = emitter;
             }
 
-            public bool IsPlaying => _emitter != null && _emitter.gameObject != null && _emitter.gameObject.activeInHierarchy;
+            public bool IsPlaying
+            {
+                get
+                {
+                    if (_emitter == null)
+                        return false;
+
+                    var go = _emitter.gameObject;
+                    return go != null && go.activeInHierarchy;
+                }
+            }
 
             public void Stop(float fadeOutSeconds = 0f)
             {
-                if (_emitter == null || _emitter.gameObject == null)
+                if (_emitter == null)
+                    return;
+
+                var go = _emitter.gameObject;
+                if (go == null)
                     return;
 
                 _emitter.Stop();
@@ -137,7 +180,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Services
         private sealed class NullAudioHandle : IAudioHandle
         {
             public bool IsPlaying => false;
-            public void Stop(float fadeOutSeconds = 0f) { /* noop */ }
+            public void Stop(float fadeOutSeconds = 0f) { }
         }
     }
 }
