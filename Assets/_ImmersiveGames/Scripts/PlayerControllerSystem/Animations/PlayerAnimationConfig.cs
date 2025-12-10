@@ -1,6 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Configs
+
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Animation/Player Animation Config")]
     public class PlayerAnimationConfig : AnimationConfig
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Configs
         public string specialAnimation = "Special";
         public string jumpAnimation = "Jump";
         public string crouchAnimation = "Crouch";
-    
+
         public int AttackHash => Animator.StringToHash(attackAnimation);
         public int SpecialHash => Animator.StringToHash(specialAnimation);
         public int JumpHash => Animator.StringToHash(jumpAnimation);

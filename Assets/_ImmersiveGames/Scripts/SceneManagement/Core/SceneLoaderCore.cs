@@ -18,11 +18,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
 
             if (IsSceneLoaded(sceneName))
             {
-                DebugUtility.LogWarning<SceneLoaderCore>("Cena '{sceneName}' já está carregada.");
+                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' já está carregada.");
                 return;
             }
 
-            DebugUtility.LogVerbose<SceneLoaderCore>("Carregando cena '{sceneName}' (mode={mode}).");
+            DebugUtility.LogVerbose<SceneLoaderCore>($"Carregando cena '{sceneName}' (mode={mode}).");
 
             AsyncOperation op;
             try
@@ -31,13 +31,13 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
             }
             catch (System.Exception e)
             {
-                DebugUtility.LogError<SceneLoaderCore>("Erro ao iniciar load da cena '{sceneName}': {e}");
+                DebugUtility.LogError<SceneLoaderCore>($"Erro ao iniciar load da cena '{sceneName}': {e}");
                 return;
             }
 
             if (op == null)
             {
-                DebugUtility.LogError<SceneLoaderCore>("LoadSceneAsync retornou null para '{sceneName}'.");
+                DebugUtility.LogError<SceneLoaderCore>($"LoadSceneAsync retornou null para '{sceneName}'.");
                 return;
             }
 
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
             while (!op.isDone)
                 await Task.Yield();
 
-            DebugUtility.Log<SceneLoaderCore>("Cena '{sceneName}' carregada.");
+            DebugUtility.Log<SceneLoaderCore>($"Cena '{sceneName}' carregada.");
         }
 
         public async Task UnloadSceneAsync(string sceneName)
@@ -58,11 +58,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
 
             if (!IsSceneLoaded(sceneName))
             {
-                DebugUtility.LogWarning<SceneLoaderCore>("Cena '{sceneName}' não está carregada.");
+                DebugUtility.LogWarning<SceneLoaderCore>($"Cena '{sceneName}' não está carregada.");
                 return;
             }
 
-            DebugUtility.LogVerbose<SceneLoaderCore>("Descarregando cena '{sceneName}'.");
+            DebugUtility.LogVerbose<SceneLoaderCore>($"Descarregando cena '{sceneName}'.");
 
             AsyncOperation op;
             try
@@ -71,20 +71,20 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Core
             }
             catch (System.Exception e)
             {
-                DebugUtility.LogError<SceneLoaderCore>("Erro ao iniciar unload da cena '{sceneName}': {e}");
+                DebugUtility.LogError<SceneLoaderCore>($"Erro ao iniciar unload da cena '{sceneName}': {e}");
                 return;
             }
 
             if (op == null)
             {
-                DebugUtility.LogError<SceneLoaderCore>("UnloadSceneAsync retornou null para '{sceneName}'.");
+                DebugUtility.LogError<SceneLoaderCore>($"UnloadSceneAsync retornou null para '{sceneName}'.");
                 return;
             }
 
             while (!op.isDone)
                 await Task.Yield();
 
-            DebugUtility.Log<SceneLoaderCore>("Cena '{sceneName}' descarregada.");
+            DebugUtility.Log<SceneLoaderCore>($"Cena '{sceneName}' descarregada.");
         }
 
         public bool IsSceneLoaded(string sceneName)

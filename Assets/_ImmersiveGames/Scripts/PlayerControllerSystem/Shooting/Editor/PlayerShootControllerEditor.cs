@@ -1,9 +1,13 @@
-﻿using UnityEditor;
+﻿// Path: _ImmersiveGames/Scripts/PlayerControllerSystem/Shooting/Editor/PlayerShootControllerEditor.cs
 
-namespace _ImmersiveGames.Scripts.SpawnSystems.Editor
+using _ImmersiveGames.Scripts.SpawnSystems;
+using UnityEditor;
+using UnityEngine;
+
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Editor
 {
-    [CustomEditor(typeof(InputSpawnerComponent))]
-    public class InputSpawnerComponentEditor : UnityEditor.Editor
+    [CustomEditor(typeof(PlayerShootController))]
+    public class PlayerShootControllerEditor : UnityEditor.Editor
     {
         private SerializedProperty _poolData;
         private SerializedProperty _actionName;

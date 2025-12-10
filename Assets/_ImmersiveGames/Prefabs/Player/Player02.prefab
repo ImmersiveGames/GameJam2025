@@ -115,6 +115,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   customActorId: 
+  actorDefenseRole: 0
 --- !u!114 &1734721150042273165
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,12 +157,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e796535af4c24772882ae8c1aaca9fa1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   poolData: {fileID: 11400000, guid: 9d078602accb9c441951d4dff96fd684, type: 2}
   actionName: Fire
   cooldown: 0.5
   strategyType: 0
-  defaultShootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
   singleStrategy:
     fuzzyPercent: 0
     fuzzyAngle: 0
@@ -179,6 +179,7 @@ MonoBehaviour:
     fuzzyPercent: 0
     fuzzyAngle: 0
     shootSound: {fileID: 0}
+  defaultShootSound: {fileID: 11400000, guid: d46b1e74160228a45bb8c1ea131fa298, type: 2}
 --- !u!114 &1647238950887989297
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -202,9 +203,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f2cd5e493aa547bc888696c9d0e4a089, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   planetResourcesDetectionType: {fileID: 11400000, guid: 6a267baacedb4dff9a098996007f138d, type: 2}
+  planetDefenseDetectionType: {fileID: 11400000, guid: 4b94a21a2ff44707a884cda05b6cbcbe, type: 2}
 --- !u!114 &1220082444329315456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -251,7 +253,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e375bd0721940c68e468f8a2788a4da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  animationConfig: {fileID: 0}
+  animationConfig: {fileID: 11400000, guid: 03ab8678a8f183e469ba40b8b5bf84a6, type: 2}
 --- !u!114 &3223872635857914433
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -262,10 +264,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a3a8f5a62f6046a4830a703ef3c460e8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   defaults: {fileID: 11400000, guid: d5f4a862570b6544696eba08977a0d45, type: 2}
-  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
 --- !u!114 &4348853418725022088
 MonoBehaviour:
   m_ObjectHideFlags: 0

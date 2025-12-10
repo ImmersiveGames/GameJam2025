@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
@@ -39,6 +40,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         {
             try
             {
+                EnsureGlobal<ICameraResolver>(() => new CameraResolverService());
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
 
                 // Fade + pré-carregamento da FadeScene

@@ -1,27 +1,36 @@
-﻿// Path: _ImmersiveGames/Scripts/SpawnSystems/InputSpawnerComponent.cs
+﻿// Path: _ImmersiveGames/Scripts/PlayerControllerSystem/Shooting/PlayerShootController.cs
 
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.InputSystem;
-using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
+using _ImmersiveGames.Scripts.SpawnSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
-namespace _ImmersiveGames.Scripts.SpawnSystems
+namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 {
+    /// <summary>
+    /// Controlador responsável pelo disparo do jogador.
+    /// Utiliza estratégias de spawn para instanciar projéteis via Pool.
+    /// </summary>
     [RequireComponent(typeof(PlayerInput))]
-    
-    public class InputSpawnerComponent : MonoBehaviour
+    public class PlayerShootController : MonoBehaviour
     {
-        [Header("Pool Config")] [SerializeField] private PoolData poolData;
+        #region Serialized Fields
 
-        [Header("Input Config")] [SerializeField] private string actionName = "Spawn";
+        [Header("Pool Config")]
+        [SerializeField] private PoolData poolData;
 
-        [Header("Cooldown Config")] [SerializeField, Min(0f)] private float cooldown = 0.5f;
+        [Header("Input Config")]
+        [SerializeField] private string actionName = "Spawn";
+
+        [Header("Cooldown Config")]
+        [SerializeField, Min(0f)] private float cooldown = 0.5f;
 
         [Header("Spawn Strategy Config")]
         [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
@@ -29,18 +38,28 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         [SerializeField] private MultipleLinearSpawnStrategy multipleLinearStrategy = new();
         [SerializeField] private CircularSpawnStrategy circularStrategy = new();
 
+        [Header("Audio Config")]
+        [SerializeField] private SoundData defaultShootSound;
+
+        #endregion
+
+        #region Private Fields
+
         private ISpawnStrategy _activeStrategy;
         private ObjectPool _pool;
         private PlayerInput _playerInput;
         private InputAction _spawnAction;
         private float _lastShotTime = -Mathf.Infinity;
+
         private IActor _actor;
         private EntityAudioEmitter _audioEmitter;
         private bool _isInitialized;
-        [Header("Audio Config")]
-        [SerializeField] private SoundData defaultShootSound;
 
         [Inject] private IStateDependentService _stateService;
+
+        #endregion
+
+        #region Unity Lifecycle
 
         private void Awake()
         {
@@ -91,31 +110,37 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
 
             _isInitialized = true;
             SubscribeToSpawnAction();
-            DebugUtility.Log<InputSpawnerComponent>("InputSpawnerComponent inicializado", "blue", this);
+
+            DebugUtility.Log<PlayerShootController>("PlayerShootController inicializado", "blue", this);
         }
 
         private void OnDestroy()
         {
-            if (_spawnAction != null) _spawnAction.performed -= OnSpawnPerformed;
+            if (_spawnAction != null)
+                _spawnAction.performed -= OnSpawnPerformed;
         }
+
+        #endregion
+
+        #region Initialization Helpers
 
         private bool ValidateConfiguration()
         {
             if (_playerInput == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"PlayerInput não encontrado em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"PlayerInput não encontrado em '{name}'.", this);
                 return false;
             }
 
             if (_actor == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"IActor não encontrado em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"IActor não encontrado em '{name}'.", this);
                 return false;
             }
 
             if (poolData == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"PoolData não configurado em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"PoolData não configurado em '{name}'.", this);
                 return false;
             }
 
@@ -136,14 +161,14 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
             var manager = PoolManager.Instance;
             if (manager == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>("PoolManager não encontrado na cena.", this);
+                DebugUtility.LogError<PlayerShootController>("PoolManager não encontrado na cena.", this);
                 return false;
             }
 
             _pool = manager.RegisterPool(poolData);
             if (_pool == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"Pool não encontrado para '{poolData.ObjectName}' em '{name}'.", this);
                 return false;
             }
 
@@ -154,40 +179,49 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         {
             if (_playerInput.actions == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Mapa de ações não encontrado em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"Mapa de ações não encontrado em '{name}'.", this);
                 return false;
             }
 
             _spawnAction = _playerInput.actions.FindAction(actionName);
             if (_spawnAction == null)
             {
-                DebugUtility.LogError<InputSpawnerComponent>($"Ação '{actionName}' não encontrada em '{name}'.", this);
+                DebugUtility.LogError<PlayerShootController>($"Ação '{actionName}' não encontrada em '{name}'.", this);
                 return false;
             }
 
             _spawnAction.performed += OnSpawnPerformed;
-            DebugUtility.Log<InputSpawnerComponent>(
-                $"InputSpawnerComponent inicializado",
+
+            DebugUtility.Log<PlayerShootController>(
+                "PlayerShootController vinculado à ação de tiro.",
                 DebugUtility.Colors.CrucialInfo);
+
             return true;
         }
 
         private void SubscribeToSpawnAction()
         {
             if (_spawnAction == null)
-            {
                 return;
-            }
 
             _spawnAction.performed -= OnSpawnPerformed;
             _spawnAction.performed += OnSpawnPerformed;
         }
 
+        #endregion
+
+        #region Shooting Logic
+
         private void OnSpawnPerformed(InputAction.CallbackContext context)
         {
-            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Shoot)) return;
-            if (_pool == null) return;
-            if (Time.time < _lastShotTime + cooldown) return;
+            if (!_actor.IsActive || !_stateService.CanExecuteAction(ActionType.Shoot))
+                return;
+
+            if (_pool == null)
+                return;
+
+            if (Time.time < _lastShotTime + cooldown)
+                return;
 
             var basePosition = transform.position;
             var baseDirection = transform.forward;
@@ -215,6 +249,7 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
         public void SetStrategy(SpawnStrategyType type)
         {
             strategyType = type;
+
             _activeStrategy = type switch
             {
                 SpawnStrategyType.Single => singleStrategy,
@@ -223,29 +258,34 @@ namespace _ImmersiveGames.Scripts.SpawnSystems
                 _ => singleStrategy
             };
         }
+
         private void PlayShootAudio()
         {
             if (_audioEmitter == null)
             {
-                DebugUtility.LogWarning<InputSpawnerComponent>("EntityAudioEmitter não encontrado — som de tiro não tocado.");
+                DebugUtility.LogWarning<PlayerShootController>("EntityAudioEmitter não encontrado — som de tiro não tocado.");
                 return;
             }
 
             var strategySound = _activeStrategy.GetShootSound();
+
             if (strategySound == null || strategySound.clip == null)
             {
                 strategySound = defaultShootSound;
+
                 if (strategySound == null || strategySound.clip == null)
                 {
-                    DebugUtility.LogWarning<InputSpawnerComponent>("Nenhum som de tiro configurado para o spawner.");
+                    DebugUtility.LogWarning<PlayerShootController>("Nenhum som de tiro configurado.");
                     return;
                 }
-                DebugUtility.LogVerbose<InputSpawnerComponent>(
-                    "Usando som de tiro default do componente.");
+
+                DebugUtility.LogVerbose<PlayerShootController>("Usando som de tiro default.");
             }
 
             var context = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);
             _audioEmitter.Play(strategySound, context);
         }
+
+        #endregion
     }
 }
