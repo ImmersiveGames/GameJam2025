@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 

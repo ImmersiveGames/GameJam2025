@@ -20,7 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _requester = requester ?? throw new ArgumentNullException(nameof(requester));
         }
 
-        public bool TryFreeze(EaterBehavior behavior, Transform target)
+        public bool TryFreeze(Behavior.EaterBehavior behavior, Transform target)
         {
             if (target == null)
             {
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         }
 
-        private void LogMissingPlanetMotion(EaterBehavior behavior)
+        private void LogMissingPlanetMotion(Behavior.EaterBehavior behavior)
         {
             if (behavior == null || !behavior.ShouldLogStateTransitions || _loggedMissingMotion)
             {

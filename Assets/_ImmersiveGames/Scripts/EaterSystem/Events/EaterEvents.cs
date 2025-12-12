@@ -8,13 +8,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Events
     /// </summary>
     public readonly struct EaterDesireInfoChangedEvent : IEvent
     {
-        public EaterDesireInfoChangedEvent(EaterBehavior behavior, EaterDesireInfo info)
+        public EaterDesireInfoChangedEvent(Behavior.EaterBehavior behavior, EaterDesireInfo info)
         {
             Behavior = behavior;
             Info = info;
         }
 
-        public EaterBehavior Behavior { get; }
+        public Behavior.EaterBehavior Behavior { get; }
 
         public EaterDesireInfo Info { get; }
 

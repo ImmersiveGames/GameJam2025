@@ -269,6 +269,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             _shouldTrigger = true;
         }
+        
     }
 
 }

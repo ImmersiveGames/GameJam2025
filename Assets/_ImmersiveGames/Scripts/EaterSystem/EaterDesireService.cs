@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.Scripts.AudioSystem;
+using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using ImprovedTimers;

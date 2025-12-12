@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         [Header("Referências")]
         [SerializeField] private Image desireIcon;
-        [SerializeField] private EaterBehavior eaterBehavior;
+        [SerializeField] private Behavior.EaterBehavior eaterBehavior;
         [SerializeField, Tooltip("Sprite utilizada quando não houver desejo ativo ou quando o ícone do recurso estiver indisponível.")]
         private Sprite fallbackSprite;
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
@@ -501,13 +501,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 if (!eaterTransform.TryGetComponent(out eaterBehavior))
                 {
-                    eaterBehavior = eaterTransform.GetComponentInChildren<EaterBehavior>(true);
+                    eaterBehavior = eaterTransform.GetComponentInChildren<Behavior.EaterBehavior>(true);
                 }
             }
 
             if (eaterBehavior == null)
             {
-                eaterBehavior = FindFirstObjectByType<EaterBehavior>();
+                eaterBehavior = FindFirstObjectByType<Behavior.EaterBehavior>();
             }
 
             if (eaterBehavior != null)

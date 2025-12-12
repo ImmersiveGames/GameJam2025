@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
     {
         [Header("Referências")]
         [SerializeField]
-        private EaterBehavior behavior;
+        private Behavior.EaterBehavior behavior;
         [SerializeField]
         private EaterMaster master;
 
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
 
         private void Reset()
         {
-            behavior = GetComponent<EaterBehavior>();
+            behavior = GetComponent<Behavior.EaterBehavior>();
             master = GetComponent<EaterMaster>();
         }
 
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Debug
         {
             if (behavior == null)
             {
-                behavior = GetComponent<EaterBehavior>();
+                behavior = GetComponent<Behavior.EaterBehavior>();
             }
 
             if (master == null)

@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public string StateName { get; }
 
-        protected EaterBehavior Behavior { get; private set; }
+        protected Behavior.EaterBehavior Behavior { get; private set; }
 
         protected Transform Transform => Behavior != null ? Behavior.transform : null;
 
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected EaterConfigSo Config => Behavior != null ? Behavior.Config : null;
 
-        internal void Attach(EaterBehavior behavior)
+        internal void Attach(Behavior.EaterBehavior behavior)
         {
             Behavior = behavior;
         }
