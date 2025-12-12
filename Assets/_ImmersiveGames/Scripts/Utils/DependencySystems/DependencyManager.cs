@@ -1,5 +1,4 @@
-﻿// Arquivo: DependencyManager.cs (versão melhorada)
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
     {
         public static IDependencyProvider Provider => Instance;
 
-        [SerializeField] private int maxSceneServices = 2;
+        [SerializeField] private int maxSceneServices = 8;
 
         private DependencyInjector _injector;
         private ObjectServiceRegistry _objectRegistry;
@@ -27,10 +26,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             base.InitializeSingleton();
             if (instance != this) return;
 
-            _objectRegistry = new();
-            _sceneRegistry = new(maxSceneServices);
-            _globalRegistry = new();
-            _injector = new(_objectRegistry, _sceneRegistry, _globalRegistry);
+            _objectRegistry = new ObjectServiceRegistry();
+            _sceneRegistry = new SceneServiceRegistry(maxSceneServices);
+            _globalRegistry = new GlobalServiceRegistry();
+            _injector = new DependencyInjector(_objectRegistry, _sceneRegistry, _globalRegistry);
 
             DebugUtility.LogVerbose(
                 typeof(DependencyManager),

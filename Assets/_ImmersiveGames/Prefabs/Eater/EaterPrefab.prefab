@@ -23,8 +23,10 @@ GameObject:
   - component: {fileID: 452753156535112276}
   - component: {fileID: 7633387691389220541}
   - component: {fileID: 3502098637227668626}
-  - component: {fileID: 142333882723398855}
+  - component: {fileID: 562363418347101320}
   - component: {fileID: 7630224793493476333}
+  - component: {fileID: 3292539323980149071}
+  - component: {fileID: 2020734982640550000}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -249,6 +251,8 @@ MonoBehaviour:
   explosionOffset: {x: 0, y: 0, z: 0}
   disableSkinOnDeath: 1
   triggerGameOverOnDeath: 1
+  returnToPoolOnDeath: 0
+  destroyGameObjectIfNoPool: 0
   strategyPipeline:
   - type: 0
     criticalSettings:
@@ -291,8 +295,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaults: {fileID: 11400000, guid: 8cb742c8671a8f94c90b38a926ead18a, type: 2}
-  poolData: {fileID: 11400000, guid: 2f369605a27a6a04a8c2dfe32c5316c3, type: 2}
---- !u!114 &142333882723398855
+--- !u!114 &562363418347101320
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -301,7 +304,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1456968061734532042}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4d93bf1a54a34c908ae1af3a7bc8f0d4, type: 3}
+  m_Script: {fileID: 11500000, guid: 3528180a02ce497db2a2ceb35aaa73c7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   logStateTransitions: 1
@@ -318,3 +321,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetType: 2
+--- !u!114 &3292539323980149071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b32ebc90d9974da9b7976cbd98477d50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2020734982640550000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1eed07aff43d4c22b73c5324fd0490e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

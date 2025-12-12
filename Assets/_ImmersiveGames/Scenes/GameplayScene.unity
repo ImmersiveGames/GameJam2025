@@ -192,6 +192,51 @@ MonoBehaviour:
   logInterval: 10
   overlayPosition: {x: 10, y: 10}
   overlaySize: {x: 420, y: 260}
+--- !u!1 &678058686
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 678058688}
+  - component: {fileID: 678058687}
+  m_Layer: 0
+  m_Name: GameplayDomainBootstrapper
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &678058687
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678058686}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1877d2b9e1454aa58c1e4d288e5a29c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allowOverride: 0
+--- !u!4 &678058688
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 678058686}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &885771671
 GameObject:
   m_ObjectHideFlags: 0
@@ -435,6 +480,8 @@ GameObject:
   - component: {fileID: 1432878161}
   - component: {fileID: 1432878163}
   - component: {fileID: 1432878162}
+  - component: {fileID: 1432878165}
+  - component: {fileID: 1432878164}
   m_Layer: 7
   m_Name: Player01
   m_TagString: Player
@@ -811,6 +858,30 @@ MonoBehaviour:
   registerAsGlobalService: 0
   computeInitialStateFromActorRoot: 1
   initialStateModelType: 0
+--- !u!114 &1432878164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32c8c4ebfd454881ae42a91e5e3d7977, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1432878165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1432878126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b32ebc90d9974da9b7976cbd98477d50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1467168390
 GameObject:
   m_ObjectHideFlags: 0
@@ -1265,6 +1336,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldEater: {fileID: 6913646855031215727}
+  preferDomain: 1
 --- !u!1 &2013597641
 GameObject:
   m_ObjectHideFlags: 0
@@ -1429,13 +1501,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 452753156535112276, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
-      propertyPath: returnToPoolOnDeath
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1456968061734532042, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_Name
       value: EaterPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 1456968061734532042, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6256545176937765026, guid: 7a644ed0eda6c6846a36fd5144d7dd63, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1495,6 +1567,7 @@ SceneRoots:
   - {fileID: 2013597643}
   - {fileID: 1171078547}
   - {fileID: 1164878014}
+  - {fileID: 678058688}
   - {fileID: 2009245416}
   - {fileID: 1849846776}
   - {fileID: 885771673}

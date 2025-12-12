@@ -11,6 +11,7 @@ using UnityEngine.UI;
 
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
+    [DebugLevel(DebugLevel.Verbose)]
     [DefaultExecutionOrder(50)]
     [DisallowMultipleComponent]
     public sealed class EaterDesireUI : MonoBehaviour
@@ -29,6 +30,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _warnedMissingIcon;
         private bool _warnedMissingBehavior;
         private bool _warnedMissingManager;
+        private bool _warnedMissingGameplayManager;
         private bool _syncedInitialInfo;
         private PlanetsManager _planetsManager;
         private EaterDesireInfo _currentInfo = EaterDesireInfo.Inactive;
@@ -312,22 +314,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             var iconObject = desireIcon.gameObject;
             var canvasRenderer = desireIcon.canvasRenderer;
 
-            // Determina estado desejado de ativação do GameObject
             bool shouldBeActive = visible || !(hideWhenNoDesire && !SharesGameObjectWithIcon);
 
-            // Aplica ativação somente se necessário
             if (iconObject.activeSelf != shouldBeActive)
             {
                 iconObject.SetActive(shouldBeActive);
             }
 
-            // Se deve ficar inativo, não há mais nada a fazer
             if (!shouldBeActive)
             {
                 return;
             }
 
-            // Quando ativo, ajusta habilitação e alpha conforme visibilidade
             bool shouldBeEnabled = visible;
             float targetAlpha = visible ? 1f : 0f;
 
@@ -496,18 +494,37 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            Transform eaterTransform = (_gameplayManager ?? GameplayManager.Instance)?.WorldEater;
-            if (eaterTransform != null)
+            if (_gameplayManager == null)
             {
-                if (!eaterTransform.TryGetComponent(out eaterBehavior))
+                if (!_warnedMissingGameplayManager)
                 {
-                    eaterBehavior = eaterTransform.GetComponentInChildren<Behavior.EaterBehavior>(true);
+                    DebugUtility.LogWarning(
+                        "IGameplayManager não foi injetado. Não é possível resolver o Eater via domínio.",
+                        context: this,
+                        instance: this);
+                    _warnedMissingGameplayManager = true;
                 }
+                return false;
             }
 
-            if (eaterBehavior == null)
+            Transform eaterTransform = _gameplayManager.WorldEater;
+            if (eaterTransform == null)
             {
-                eaterBehavior = FindFirstObjectByType<Behavior.EaterBehavior>();
+                // Eater ainda não registrou no domínio (ou não existe neste momento).
+                if (!_warnedMissingBehavior)
+                {
+                    DebugUtility.LogVerbose(
+                        "Eater ainda não disponível via domínio. Aguardando para resolver EaterBehavior.",
+                        context: this,
+                        instance: this);
+                    _warnedMissingBehavior = true;
+                }
+                return false;
+            }
+
+            if (!eaterTransform.TryGetComponent(out eaterBehavior))
+            {
+                eaterBehavior = eaterTransform.GetComponentInChildren<Behavior.EaterBehavior>(true);
             }
 
             if (eaterBehavior != null)
@@ -517,13 +534,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     context: this,
                     instance: this);
                 _warnedMissingBehavior = false;
+                _warnedMissingGameplayManager = false;
                 return true;
             }
 
             if (!_warnedMissingBehavior)
             {
                 DebugUtility.LogWarning(
-                    "EaterBehavior não encontrado para atualizar o HUD de desejos.",
+                    "EaterBehavior não encontrado no Eater resolvido via domínio.",
                     context: this,
                     instance: this);
                 _warnedMissingBehavior = true;
@@ -533,4 +551,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 }
-

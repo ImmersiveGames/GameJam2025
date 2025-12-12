@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1063722848675155205}
   - component: {fileID: 4455036682253472871}
   - component: {fileID: 2117892348087926160}
+  - component: {fileID: 8743457709119059004}
   m_Layer: 0
   m_Name: BootstrapManager
   m_TagString: Untagged
@@ -97,3 +98,15 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4192944951038459873}
   m_Enabled: 1
+--- !u!114 &8743457709119059004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4192944951038459873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcbb6f5c40c04e43b6741fa1ded945d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
