@@ -4,6 +4,18 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
+    public interface IEaterDomain
+    {
+        event Action<IActor> EaterRegistered;
+        event Action<IActor> EaterUnregistered;
+
+        IActor Eater { get; }
+
+        bool RegisterEater(IActor actor);
+        bool UnregisterEater(IActor actor);
+        void Clear();
+    }
+    
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterDomain : IEaterDomain
     {

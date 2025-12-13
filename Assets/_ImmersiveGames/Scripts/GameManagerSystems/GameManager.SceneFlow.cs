@@ -12,13 +12,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
-    /// <summary>
-    /// Parte do GameManager responsável por orquestrar o fluxo de cenas
-    /// usando o pipeline moderno (SceneFlowMap + SceneGroupProfile + SceneTransitionService).
-    /// 
-    /// Esta partial substitui o fluxo antigo baseado em corrotinas e listas de cenas
-    /// e utiliza apenas Task/async-await.
-    /// </summary>
     public sealed partial class GameManager
     {
         [Header("Scene Flow (Modern)")]
@@ -27,21 +20,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private SceneFlowMap sceneFlowMap;
 
         private bool _resetInProgress;
+        private bool _qaFlowInProgress;
 
-        // Infra moderna de cenas
         private ISceneLoader _sceneLoader;
         private ISceneTransitionPlanner _sceneTransitionPlanner;
         private ISceneTransitionService _sceneTransitionService;
 
         #region Public Scene Flow API
 
-        /// <summary>
-        /// Solicita um reset completo de jogo.
-        /// Implementação padrão:
-        /// - Garante que estamos em estado de Menu;
-        /// - Reconstrói a GameStateMachine;
-        /// - Vai para o grupo de Gameplay configurado no SceneFlowMap.
-        /// </summary>
         public void ResetGame()
         {
             if (_resetInProgress)
@@ -57,9 +43,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _ = ResetGameAsync();
         }
 
-        /// <summary>
-        /// Solicita retorno ao Menu (grupo menuGroup do SceneFlowMap).
-        /// </summary>
         public void ReturnToMenu()
         {
             _ = ReturnToMenuAsync();
@@ -67,27 +50,17 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #endregion
 
-        #region Editor Shortcuts (Scene Flow)
+        #region QA Public API (Flow real)
 
-#if UNITY_EDITOR
-        [ContextMenu("Game Loop/Requests/Reset Game (Scene Flow)")]
-        private void Editor_ResetGame()
-        {
-            ResetGame();
-        }
+        public void QA_GoToMenuFromAnywhere() => _ = QA_GoToMenuFromAnywhereAsync();
+        public void QA_GoToGameplayFromAnywhere() => _ = QA_GoToGameplayFromAnywhereAsync();
+        public void QA_ForceGameOverFromAnywhere(string reason = null) => _ = QA_ForceGameOverFromAnywhereAsync(reason);
+        public void QA_ForceVictoryFromAnywhere(string reason = null) => _ = QA_ForceVictoryFromAnywhereAsync(reason);
 
-        [ContextMenu("Game Loop/Requests/Go To Gameplay (Direct Scene Flow)")]
-        private void Editor_GoToGameplay()
-        {
-            _ = StartGameplayFromCurrentSceneAsync();
-        }
-
-        [ContextMenu("Game Loop/Requests/Go To Menu (Direct Scene Flow)")]
-        private void Editor_GoToMenu()
-        {
-            _ = GoToMenuFromCurrentSceneAsync();
-        }
-#endif
+        public Task QA_GoToMenuFromAnywhereAsync() => QA_GoToMenuFromAnywhereImplAsync();
+        public Task QA_GoToGameplayFromAnywhereAsync() => QA_GoToGameplayFromAnywhereImplAsync();
+        public Task QA_ForceGameOverFromAnywhereAsync(string reason = null) => QA_ForceGameOverFromAnywhereImplAsync(reason);
+        public Task QA_ForceVictoryFromAnywhereAsync(string reason = null) => QA_ForceVictoryFromAnywhereImplAsync(reason);
 
         #endregion
 
@@ -97,44 +70,14 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             var provider = DependencyManager.Provider;
 
-            if (_sceneLoader == null)
-            {
-                if (provider.TryGetGlobal(out ISceneLoader loader))
-                {
-                    _sceneLoader = loader;
-                    DebugUtility.LogVerbose<GameManager>("[DI] ISceneLoader resolvido com sucesso.");
-                }
-                else
-                {
-                    DebugUtility.LogWarning<GameManager>("[DI] ISceneLoader não encontrado.");
-                }
-            }
+            if (_sceneLoader == null && provider.TryGetGlobal(out ISceneLoader loader))
+                _sceneLoader = loader;
 
-            if (_sceneTransitionPlanner == null)
-            {
-                if (provider.TryGetGlobal(out ISceneTransitionPlanner planner))
-                {
-                    _sceneTransitionPlanner = planner;
-                    DebugUtility.LogVerbose<GameManager>("[DI] ISceneTransitionPlanner resolvido com sucesso.");
-                }
-                else
-                {
-                    DebugUtility.LogWarning<GameManager>("[DI] ISceneTransitionPlanner não encontrado.");
-                }
-            }
+            if (_sceneTransitionPlanner == null && provider.TryGetGlobal(out ISceneTransitionPlanner planner))
+                _sceneTransitionPlanner = planner;
 
-            if (_sceneTransitionService == null)
-            {
-                if (provider.TryGetGlobal(out ISceneTransitionService transitionService))
-                {
-                    _sceneTransitionService = transitionService;
-                    DebugUtility.LogVerbose<GameManager>("[DI] ISceneTransitionService resolvido com sucesso.");
-                }
-                else
-                {
-                    DebugUtility.LogWarning<GameManager>("[DI] ISceneTransitionService não encontrado.");
-                }
-            }
+            if (_sceneTransitionService == null && provider.TryGetGlobal(out ISceneTransitionService service))
+                _sceneTransitionService = service;
         }
 
         private SceneGroupProfile GetGameplayGroup()
@@ -143,8 +86,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return sceneFlowMap.GameplayGroup;
 
             DebugUtility.LogWarning<GameManager>(
-                "[SceneFlow] SceneFlowMap ou GameplayGroup não configurados. " +
-                "Certifique-se de atribuir um SceneFlowMap ao GameManager no inspector.");
+                "[SceneFlow] SceneFlowMap ou GameplayGroup não configurados.");
             return null;
         }
 
@@ -154,86 +96,57 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return sceneFlowMap.MenuGroup;
 
             DebugUtility.LogWarning<GameManager>(
-                "[SceneFlow] SceneFlowMap ou MenuGroup não configurados. " +
-                "Certifique-se de atribuir um SceneFlowMap ao GameManager no inspector.");
+                "[SceneFlow] SceneFlowMap ou MenuGroup não configurados.");
             return null;
         }
 
-        /// <summary>
-        /// A partir da cena atual, transita para o grupo de Gameplay definido no SceneFlowMap.
-        /// </summary>
-        private async Task StartGameplayFromCurrentSceneAsync()
+        private bool IsGameplayReady()
         {
-            EnsureSceneTransitionServices();
-
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
-            {
-                DebugUtility.LogWarning<GameManager>(
-                    "StartGameplayFromCurrentSceneAsync chamado sem infraestrutura de transição configurada.");
-                return;
-            }
-
-            var targetGroup = GetGameplayGroup();
-            if (targetGroup == null)
-            {
-                DebugUtility.LogError<GameManager>(
-                    "[StartGameplayFromCurrentSceneAsync] GameplayGroup não configurado no SceneFlowMap.");
-                return;
-            }
-
-            SceneState state = SceneState.Capture();
-            DebugUtility.LogVerbose<GameManager>(
-                $"[StartGameplayFromCurrentSceneAsync] SceneState atual: {state}");
-
-            SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                state,
-                targetGroup);
-
-            DebugUtility.LogVerbose<GameManager>(
-                "[StartGameplayFromCurrentSceneAsync] Contexto montado: " + context);
-
-            await _sceneTransitionService.RunTransitionAsync(context);
+            var current = GameManagerStateMachine.Instance.CurrentState;
+            return current is PlayingState || current is PausedState;
         }
 
-        /// <summary>
-        /// A partir da cena atual, transita para o grupo de Menu definido no SceneFlowMap.
-        /// </summary>
-        private async Task GoToMenuFromCurrentSceneAsync()
+        private bool IsMenuReady()
         {
-            EnsureSceneTransitionServices();
+            // Critério mínimo e seguro:
+            // - já estamos em MenuState
+            // - e a cena ativa é Menu (ou o grupo já está carregado)
+            var current = GameManagerStateMachine.Instance.CurrentState;
+            if (current is not MenuState)
+                return false;
 
-            if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
-            {
-                DebugUtility.LogWarning<GameManager>(
-                    "GoToMenuFromCurrentSceneAsync chamado sem infraestrutura de transição configurada.");
-                return;
-            }
-
-            var targetGroup = GetMenuGroup();
-            if (targetGroup == null)
-            {
-                DebugUtility.LogError<GameManager>(
-                    "[GoToMenuFromCurrentSceneAsync] MenuGroup não configurado no SceneFlowMap.");
-                return;
-            }
+            var menuGroup = GetMenuGroup();
+            if (menuGroup == null)
+                return true; // se não há config, ao menos não reentra no MenuState.
 
             SceneState state = SceneState.Capture();
-            DebugUtility.LogVerbose<GameManager>(
-                $"[GoToMenuFromCurrentSceneAsync] SceneState atual: {state}");
 
-            SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                state,
-                targetGroup);
+            // Se todas as cenas do grupo já estão carregadas, consideramos "ready".
+            if (menuGroup.SceneNames != null)
+            {
+                foreach (var s in menuGroup.SceneNames)
+                {
+                    if (string.IsNullOrWhiteSpace(s))
+                        continue;
 
-            DebugUtility.LogVerbose<GameManager>(
-                "[GoToMenuFromCurrentSceneAsync] Contexto montado: " + context);
+                    if (!state.LoadedScenes.Contains(s))
+                        return false;
+                }
+            }
 
-            await _sceneTransitionService.RunTransitionAsync(context);
+            // Se houver ActiveSceneName, valida.
+            if (!string.IsNullOrWhiteSpace(menuGroup.ActiveSceneName))
+            {
+                if (state.ActiveSceneName != menuGroup.ActiveSceneName)
+                    return false;
+            }
+
+            return true;
         }
 
         #endregion
 
-        #region Reset / ReturnToMenu Routines (Task-based)
+        #region Reset / ReturnToMenu Routines
 
         private async Task ResetGameAsync()
         {
@@ -241,7 +154,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             {
                 EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());
 
-                // Garante que estamos em MenuState antes de reconstruir o jogo
                 await Task.Yield();
                 await WaitForMenuStateAsync();
 
@@ -267,10 +179,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                     else
                     {
                         SceneState state = SceneState.Capture();
-
-                        SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                            state,
-                            targetGroup);
+                        SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(state, targetGroup);
 
                         DebugUtility.LogVerbose<GameManager>(
                             "[ResetGameAsync] Contexto montado: " + context);
@@ -313,10 +222,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 }
 
                 SceneState state = SceneState.Capture();
-
-                SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(
-                    state,
-                    targetGroup);
+                SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(state, targetGroup);
 
                 DebugUtility.LogVerbose<GameManager>(
                     "[ReturnToMenuAsync] Contexto montado: " + context);
@@ -329,10 +235,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             }
         }
 
-        /// <summary>
-        /// Aguardar até que o estado atual do GameManager seja MenuState,
-        /// ou até um timeout de segurança.
-        /// </summary>
         private async Task WaitForMenuStateAsync()
         {
             const float timeoutSeconds = 1.5f;
@@ -343,6 +245,164 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 elapsed += Time.unscaledDeltaTime;
                 await Task.Yield();
             }
+        }
+
+        private async Task WaitForPlayingStateAsync()
+        {
+            const float timeoutSeconds = 1.5f;
+            float elapsed = 0f;
+
+            while (!(GameManagerStateMachine.Instance.CurrentState is PlayingState) && elapsed < timeoutSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                await Task.Yield();
+            }
+        }
+
+        #endregion
+
+        #region QA Flow Implementations
+
+        private async Task QA_GoToMenuFromAnywhereImplAsync()
+        {
+            if (_qaFlowInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>("[QA] Fluxo já em andamento; ignorando solicitação.");
+                return;
+            }
+
+            _qaFlowInProgress = true;
+
+            try
+            {
+                EnsureSceneTransitionServices();
+
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
+                {
+                    DebugUtility.LogWarning<GameManager>(
+                        "[QA] Infra de transição não configurada (Menu).");
+                    return;
+                }
+
+                Time.timeScale = 1f;
+
+                // Idempotência: se já está em menu e as cenas já estão corretas, não faz churn.
+                if (IsMenuReady())
+                {
+                    DebugUtility.LogVerbose<GameManager>(
+                        "[QA] Menu já está pronto (MenuState + cenas ok). Ignorando transição/rebuild.");
+                    return;
+                }
+
+                // Só rebuild se não for MenuState (reduz churn e token spam)
+                if (!(GameManagerStateMachine.Instance.CurrentState is MenuState))
+                    GameManagerStateMachine.Instance.Rebuild(this);
+
+                var targetGroup = GetMenuGroup();
+                if (targetGroup == null)
+                {
+                    DebugUtility.LogError<GameManager>(
+                        "[QA] MenuGroup não configurado no SceneFlowMap.");
+                    return;
+                }
+
+                SceneState state = SceneState.Capture();
+                SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(state, targetGroup);
+
+                DebugUtility.LogVerbose<GameManager>(
+                    "[QA] Indo para MENU (fluxo real). Contexto: " + context);
+
+                await _sceneTransitionService.RunTransitionAsync(context);
+                await Task.Yield();
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError<GameManager>($"[QA_GoToMenuFromAnywhereAsync] Exceção: {ex}");
+            }
+            finally
+            {
+                _qaFlowInProgress = false;
+            }
+        }
+
+        private async Task QA_GoToGameplayFromAnywhereImplAsync()
+        {
+            if (_qaFlowInProgress)
+            {
+                DebugUtility.LogWarning<GameManager>("[QA] Fluxo já em andamento; ignorando solicitação.");
+                return;
+            }
+
+            _qaFlowInProgress = true;
+
+            try
+            {
+                EnsureSceneTransitionServices();
+
+                if (_sceneTransitionPlanner == null || _sceneTransitionService == null)
+                {
+                    DebugUtility.LogWarning<GameManager>(
+                        "[QA] Infra de transição não configurada (Gameplay).");
+                    return;
+                }
+
+                if (IsGameplayReady())
+                {
+                    DebugUtility.LogVerbose<GameManager>(
+                        "[QA] Gameplay já está pronto (Playing/Paused). Ignorando transição.");
+                    return;
+                }
+
+                Time.timeScale = 1f;
+
+                // Só rebuild se não for MenuState (reduz churn e token spam)
+                if (!(GameManagerStateMachine.Instance.CurrentState is MenuState))
+                    GameManagerStateMachine.Instance.Rebuild(this);
+
+                var targetGroup = GetGameplayGroup();
+                if (targetGroup == null)
+                {
+                    DebugUtility.LogError<GameManager>(
+                        "[QA] GameplayGroup não configurado no SceneFlowMap.");
+                    return;
+                }
+
+                SceneState state = SceneState.Capture();
+                SceneTransitionContext context = _sceneTransitionPlanner.BuildContext(state, targetGroup);
+
+                DebugUtility.LogVerbose<GameManager>(
+                    "[QA] Indo para GAMEPLAY (fluxo real). Contexto: " + context);
+
+                await _sceneTransitionService.RunTransitionAsync(context);
+
+                EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
+
+                await Task.Yield();
+                await WaitForPlayingStateAsync();
+                await Task.Yield();
+            }
+            catch (System.Exception ex)
+            {
+                DebugUtility.LogError<GameManager>($"[QA_GoToGameplayFromAnywhereAsync] Exceção: {ex}");
+            }
+            finally
+            {
+                _qaFlowInProgress = false;
+            }
+        }
+
+        private async Task QA_ForceGameOverFromAnywhereImplAsync(string reason)
+        {
+            await QA_GoToGameplayFromAnywhereImplAsync();
+            TryTriggerGameOver(reason ?? "QA ForceGameOver");
+            await Task.Yield();
+        }
+
+        private async Task QA_ForceVictoryFromAnywhereImplAsync(string reason)
+        {
+            await QA_GoToGameplayFromAnywhereImplAsync();
+            TryTriggerVictory(reason ?? "QA ForceVictory");
+            await Task.Yield();
         }
 
         #endregion

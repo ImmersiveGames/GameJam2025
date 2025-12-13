@@ -2,6 +2,7 @@ using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
+using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -9,7 +10,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
     
-    public class EaterAnimationController : AnimationControllerBase, IActorAnimationController
+    public class EaterAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
     {
         private EaterAnimationConfig EaterAnimationConfig => animationConfig as EaterAnimationConfig;
         private EventBinding<DamageEvent> _damageBinding;

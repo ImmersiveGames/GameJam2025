@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<FadeController>("Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
+            DebugUtility.LogVerbose<FadeController>($"Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
 
             while (time < duration)
             {
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             canvasGroup.alpha = targetAlpha;
 
-            DebugUtility.LogVerbose<FadeController>("Fade concluído para alpha = {targetAlpha}");
+            DebugUtility.LogVerbose<FadeController>($"Fade concluído para alpha = {targetAlpha}");
         }
 
         /// <summary>

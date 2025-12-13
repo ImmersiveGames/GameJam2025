@@ -29,6 +29,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
 
+        // Debounce por frame (neutraliza double subscription / double raise no mesmo frame)
+        private int _lastStartRequestFrame = -1;
+        private int _lastPauseRequestFrame = -1;
+        private int _lastResumeRequestFrame = -1;
+
         #region Unity Lifecycle
 
         protected override void Awake()
@@ -66,8 +71,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnDestroy()
         {
-            // Rotinas de reset e fluxo de cena são gerenciadas na partial GameManager. SceneFlow.
-
             EventBus<GameStartEvent>.Unregister(_gameStartEvent);
             EventBus<GameStartRequestedEvent>.Unregister(_startRequestedBinding);
             EventBus<GamePauseRequestedEvent>.Unregister(_pauseRequestedBinding);
@@ -121,8 +124,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnStartRequested(GameStartRequestedEvent _)
         {
+            if (Time.frameCount == _lastStartRequestFrame)
+                return;
+
             if (!IsCurrentState<MenuState>())
                 return;
+
+            _lastStartRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de início de jogo recebida.");
             EventBus<GameStartEvent>.Raise(new GameStartEvent());
@@ -130,8 +138,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnPauseRequested(GamePauseRequestedEvent _)
         {
+            if (Time.frameCount == _lastPauseRequestFrame)
+                return;
+
             if (!IsCurrentState<PlayingState>())
                 return;
+
+            _lastPauseRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de pausa recebida.");
             EventBus<GamePauseEvent>.Raise(new GamePauseEvent(true));
@@ -139,8 +152,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void OnResumeRequested(GameResumeRequestedEvent _)
         {
+            if (Time.frameCount == _lastResumeRequestFrame)
+                return;
+
             if (!IsCurrentState<PausedState>())
                 return;
+
+            _lastResumeRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de retomada recebida.");
             EventBus<GamePauseEvent>.Raise(new GamePauseEvent(false));
@@ -151,42 +169,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
             ResetGame(); // Implementado na partial SceneFlow
         }
-
-        #endregion
-
-        #region Context Menu Shortcuts (Core)
-
-#if UNITY_EDITOR
-        [ContextMenu("Game Loop/Requests/Start Game (From Menu State)")]
-        private void Editor_StartGame()
-        {
-            EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
-        }
-
-        [ContextMenu("Game Loop/Requests/Pause Game")]
-        private void Editor_PauseGame()
-        {
-            EventBus<GamePauseRequestedEvent>.Raise(new GamePauseRequestedEvent());
-        }
-
-        [ContextMenu("Game Loop/Requests/Resume Game")]
-        private void Editor_ResumeGame()
-        {
-            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
-        }
-
-        [ContextMenu("Game Loop/Debug/Force GameOver")]
-        private void Editor_ForceGameOver()
-        {
-            TryTriggerGameOver("Editor Debug");
-        }
-
-        [ContextMenu("Game Loop/Debug/Force Victory")]
-        private void Editor_ForceVictory()
-        {
-            TryTriggerVictory("Editor Debug");
-        }
-#endif
 
         #endregion
 
@@ -223,8 +205,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
             }
 
-            // Resolve serviços de cena se já existirem (podem vir do DependencyBootstrapper
-            // ou de outro ponto de inicialização).
             EnsureSceneTransitionServices(); // Implementado na partial SceneFlow
         }
 

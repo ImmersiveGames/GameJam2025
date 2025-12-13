@@ -27,6 +27,7 @@ GameObject:
   - component: {fileID: 7630224793493476333}
   - component: {fileID: 3292539323980149071}
   - component: {fileID: 2020734982640550000}
+  - component: {fileID: 6385737213287679397}
   m_Layer: 11
   m_Name: EaterPrefab
   m_TagString: Untagged
@@ -345,3 +346,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eed07aff43d4c22b73c5324fd0490e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6385737213287679397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1456968061734532042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2434284d56c46358167365ec6574d65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startBlocked: 0
+  behavioursToToggle: []
+  gameObjectsToToggle: []
+  logChanges: 1

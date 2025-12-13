@@ -19,8 +19,10 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
         private const float DefaultFadeInDuration = 0.5f;
         private const float DefaultFadeOutDuration = 0.5f;
+
         private static readonly AnimationCurve DefaultFadeInCurve =
             AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
         private static readonly AnimationCurve DefaultFadeOutCurve =
             AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 

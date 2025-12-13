@@ -9,22 +9,21 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
     /// Implementação básica do planner:
     /// - ScenesToLoad  = targetScenes - currentState. LoadedScenes
     /// - ScenesToUnload = currentState.LoadedScenes - targetScenes,
-    ///   desconsiderando cenas persistentes (como a UIGlobalScene).
+    ///   desconsiderando cenas persistentes (como a UIGlobalScene e FadeScene).
     /// - TargetActiveScene:
     ///     - usa explicitTargetActiveScene se não for vazio;
     ///     - senão, usa a primeira cena do targetScenes;
     ///     - se targetScenes estiver vazio, mantém a ActiveScene atual.
-    /// 
-    /// Fase 1:
-    /// - Suporta tanto o modo legado (listas de strings) quanto o modo novo
-    ///   baseado em SceneGroupProfile / SceneTransitionProfile.
-    /// 
+    ///
     /// IMPORTANTE:
     /// - Esta classe NÃO herda de MonoBehaviour.
     /// - Pode ser instanciada normalmente com "new" no DependencyBootstrapper.
     /// </summary>
     public sealed class SimpleSceneTransitionPlanner : ISceneTransitionPlanner
     {
+        private const string DefaultUIGlobalSceneName = "UIGlobalScene";
+        private const string DefaultFadeSceneName = "FadeScene";
+
         // Cenas que nunca devem ser descarregadas automaticamente
         private readonly HashSet<string> _persistentScenes;
 
@@ -33,11 +32,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 
         /// <summary>
         /// Construtor default:
-        /// - Marca "UIGlobalScene" como cena persistente;
+        /// - Marca "UIGlobalScene" e "FadeScene" como cenas persistentes;
         /// - Não define perfil de transição default (null).
         /// </summary>
         public SimpleSceneTransitionPlanner()
-            : this(new[] { "UIGlobalScene" }, null)
+            : this(new[] { DefaultUIGlobalSceneName, DefaultFadeSceneName }, null)
         {
         }
 
@@ -199,17 +198,21 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             IReadOnlyList<string> targetScenes,
             IReadOnlyCollection<string> persistentScenes)
         {
-
             var targetSet = new HashSet<string>(targetScenes ?? new List<string>());
+
             HashSet<string> persistentSet = persistentScenes != null
                 ? new HashSet<string>(persistentScenes)
                 : new HashSet<string>();
 
             // Tudo que está no alvo e não está carregado → Load
-            var toLoad = targetSet.Where(scene => !currentState.LoadedScenes.Contains(scene)).ToList();
+            var toLoad = targetSet
+                .Where(scene => !currentState.LoadedScenes.Contains(scene))
+                .ToList();
 
             // Tudo que está carregado, não está no alvo e não é persistente → Unload
-            var toUnload = currentState.LoadedScenes.Where(loaded => !targetSet.Contains(loaded) && !persistentSet.Contains(loaded)).ToList();
+            var toUnload = currentState.LoadedScenes
+                .Where(loaded => !targetSet.Contains(loaded) && !persistentSet.Contains(loaded))
+                .ToList();
 
             return (toLoad, toUnload);
         }
@@ -219,19 +222,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             IReadOnlyList<string> targetScenes,
             string explicitTargetActiveScene)
         {
-            // 1) Se o chamador definiu explicitamente, usa isso
             if (!string.IsNullOrWhiteSpace(explicitTargetActiveScene))
                 return explicitTargetActiveScene;
 
-            // 2) Se há cenas alvo, usa a primeira
             if (targetScenes is { Count: > 0 })
                 return targetScenes[0];
 
-            // 3) Se não há alvo, mantém a atual (não é o caso típico, mas é seguro)
             if (!string.IsNullOrWhiteSpace(currentState.ActiveSceneName))
                 return currentState.ActiveSceneName;
 
-            // 4) Último fallback: vazio (sem cena ativa definida)
             return string.Empty;
         }
 

@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         [SerializeField] private SkinCollectionData defaultSkinCollection;
         [SerializeField] private bool autoInitialize = true;
         [SerializeField] private bool enableGlobalEvents = true;
-        
+
         private ISkinService _skinService;
         private IActor _ownerActor;
         private IHasSkin _skinOwner;
@@ -60,6 +60,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         private void Start()
         {
             RegisterWithDependencyManager();
+
+            // IMPORTANTe:
+            // Initialize() apenas configura o serviço. Para os "Configurable" receberem os dados
+            // (SkinAudioConfigurable, etc.), precisamos DISPARAR os eventos aplicando a coleção.
+            //
+            // Rodar no Start garante que todos os Awake() já executaram e os SkinConfigurable já assinaram
+            // os eventos do ActorSkinController.
+            if (autoInitialize && defaultSkinCollection != null)
+            {
+                ApplySkinCollection(defaultSkinCollection);
+            }
         }
 
         private void OnEnable()
@@ -85,27 +96,31 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner == null)
             {
-                DebugUtility.LogError<ActorSkinController>($"ActorSkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogError<ActorSkinController>(
+                    $"ActorSkinController: No IHasSkin implementation found in parent hierarchy of {gameObject.name}");
             }
         }
 
         #region Dependency Manager Registration
+
         private void RegisterWithDependencyManager()
         {
             if (_ownerActor == null || string.IsNullOrEmpty(_ownerActor.ActorId)) return;
 
             _objectId = _ownerActor.ActorId;
-            
+
             try
             {
                 DependencyManager.Provider.RegisterForObject(_objectId, this);
                 _isRegistered = true;
-                
-                DebugUtility.LogVerbose<ActorSkinController>($"ActorSkinController registered in DependencyManager with ID: {_objectId}");
+
+                DebugUtility.LogVerbose<ActorSkinController>(
+                    $"ActorSkinController registered in DependencyManager with ID: {_objectId}");
             }
             catch (Exception e)
             {
-                DebugUtility.LogWarning<ActorSkinController>($"Failed to register ActorSkinController in DependencyManager: {e.Message}");
+                DebugUtility.LogWarning<ActorSkinController>(
+                    $"Failed to register ActorSkinController in DependencyManager: {e.Message}");
             }
         }
 
@@ -117,9 +132,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                 _isRegistered = false;
             }
         }
+
         #endregion
 
         #region Global Event Bus Integration
+
         private void RegisterGlobalEventListeners()
         {
             if (!enableGlobalEvents || _globalEventsRegistered) return;
@@ -162,6 +179,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             // Reagir a eventos globais de collection update
         }
+
         #endregion
 
         private void Initialize()
@@ -170,7 +188,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             if (_skinOwner?.ModelTransform == null)
             {
-                DebugUtility.LogError<ActorSkinController>($"ActorSkinController: No valid ModelTransform found");
+                DebugUtility.LogError<ActorSkinController>("ActorSkinController: No valid ModelTransform found");
                 return;
             }
 
@@ -181,18 +199,19 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             }
 
             _skinService.Initialize(defaultSkinCollection, _skinOwner.ModelTransform, _ownerActor);
-
             IsInitialized = true;
         }
 
         #region Public API
+
         public void ApplySkin(ISkinConfig config)
         {
             if (!ValidateInitialization()) return;
 
             if (config == null)
             {
-                DebugUtility.LogWarning<ActorSkinController>("ActorSkinController: Config nula fornecida para ApplySkin.");
+                DebugUtility.LogWarning<ActorSkinController>(
+                    "ActorSkinController: Config nula fornecida para ApplySkin.");
                 return;
             }
 
@@ -206,7 +225,15 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!ValidateInitialization()) return;
 
-            IReadOnlyDictionary<ModelType, IReadOnlyList<GameObject>> createdByType = _skinService.ApplyCollection(newCollection, _ownerActor);
+            if (newCollection == null)
+            {
+                DebugUtility.LogWarning<ActorSkinController>(
+                    "ActorSkinController: Collection nula fornecida para ApplySkinCollection.");
+                return;
+            }
+
+            IReadOnlyDictionary<ModelType, IReadOnlyList<GameObject>> createdByType =
+                _skinService.ApplyCollection(newCollection, _ownerActor);
 
             NotifySkinCollectionApplied(newCollection);
 
@@ -227,13 +254,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             return ConvertInstances(instances);
         }
 
-        public Transform GetSkinContainer(ModelType type) 
-        { 
+        public Transform GetSkinContainer(ModelType type)
+        {
             return _skinService?.GetContainer(type);
         }
 
-        public bool HasSkinApplied(ModelType type) 
-        { 
+        public bool HasSkinApplied(ModelType type)
+        {
             return _skinService?.HasInstancesOfType(type) ?? false;
         }
 
@@ -246,9 +273,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems
             }
             SetSkinActive(true);
         }
+
         #endregion
 
         #region Utility Methods
+
         private void NotifySkinApplied(ISkinConfig config)
         {
             OnSkinApplied?.Invoke(config);
@@ -320,20 +349,18 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (!IsInitialized)
             {
-                DebugUtility.LogWarning<ActorSkinController>($"ActorSkinController not initialized. Call Initialize() first.");
+                DebugUtility.LogWarning<ActorSkinController>(
+                    "ActorSkinController not initialized. Call Initialize() first.");
                 return false;
             }
             return true;
         }
 
-        /// <summary>
-        /// Obtém componentes específicos das instâncias de skin (útil para AnimationResolver, AudioSystems, etc.)
-        /// </summary>
         public List<T> GetComponentsFromSkinInstances<T>(ModelType type) where T : Component
         {
             var components = new List<T>();
             List<GameObject> instances = GetSkinInstances(type);
-            
+
             foreach (var instance in instances)
             {
                 if (instance != null)
@@ -341,17 +368,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                     components.AddRange(instance.GetComponentsInChildren<T>());
                 }
             }
-            
+
             return components;
         }
 
-        /// <summary>
-        /// Obtém o primeiro componente específico das instâncias de skin
-        /// </summary>
         public T GetComponentFromSkinInstances<T>(ModelType type) where T : Component
         {
             List<GameObject> instances = GetSkinInstances(type);
-            
+
             foreach (var instance in instances)
             {
                 if (instance != null)
@@ -360,13 +384,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems
                     if (component != null) return component;
                 }
             }
-            
+
             return null;
         }
 
-        /// <summary>
-        /// Helper para acessar o SkinRuntimeState diretamente a partir do controller.
-        /// </summary>
         public bool TryGetRuntimeState(ModelType type, out SkinRuntimeState state)
         {
             var tracker = GetComponent<SkinRuntimeStateTracker>();
@@ -378,8 +399,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems
 
             return tracker.TryGetState(type, out state);
         }
+
         #endregion
-        
+
 #if UNITY_EDITOR
         [ContextMenu("Log Skin Runtime States")]
         private void Editor_LogSkinRuntimeStates()

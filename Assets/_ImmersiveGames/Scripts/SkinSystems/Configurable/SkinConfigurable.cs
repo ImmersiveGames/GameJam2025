@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.SkinSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -17,6 +18,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private ActorSkinController _actorSkinController;
         private IActor _ownerActor;
         private bool _isSinkinInitialized;
+        private bool _isRegistered;
 
         // Event bindings para eventos globais
         private EventBinding<SkinEvents> _skinUpdateBinding;
@@ -25,11 +27,20 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         protected virtual void Awake()
         {
             Initialize();
+
+            // Importante: registrar no Awake para não perder eventos de aplicação que ocorram cedo.
+            if (autoRegister)
+            {
+                RegisterWithSkinController();
+                RegisterGlobalEvents();
+            }
         }
 
         protected virtual void Start()
         {
-            if (autoRegister)
+            // Mantido por compatibilidade: se algo falhar no Awake, tenta garantir no Start.
+            // Mas evita double-subscribe.
+            if (autoRegister && !_isRegistered)
             {
                 RegisterWithSkinController();
                 RegisterGlobalEvents();
@@ -48,10 +59,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             _actorSkinController = GetComponentInParent<ActorSkinController>();
             _ownerActor = GetComponentInParent<IActor>();
-            
+
             if (_actorSkinController == null)
             {
-                DebugUtility.LogWarning<SkinConfigurable>($"SkinConfigurable: No ActorSkinController found in parent hierarchy of {gameObject.name}");
+                DebugUtility.LogWarning<SkinConfigurable>(
+                    $"SkinConfigurable: No ActorSkinController found in parent hierarchy of {gameObject.name}");
                 return;
             }
 
@@ -61,10 +73,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         protected virtual void RegisterWithSkinController()
         {
             if (!_isSinkinInitialized || _actorSkinController == null) return;
+            if (_isRegistered) return;
 
             _actorSkinController.OnSkinApplied += OnActorSkinAppliedHandler;
             _actorSkinController.OnSkinCollectionApplied += OnActorSkinCollectionAppliedHandler;
             _actorSkinController.OnSkinInstancesCreated += OnActorSkinInstancesCreatedHandler;
+
+            _isRegistered = true;
         }
 
         protected virtual void UnregisterFromSkinController()
@@ -75,15 +90,18 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 _actorSkinController.OnSkinCollectionApplied -= OnActorSkinCollectionAppliedHandler;
                 _actorSkinController.OnSkinInstancesCreated -= OnActorSkinInstancesCreatedHandler;
             }
+
+            _isRegistered = false;
         }
 
         protected virtual void RegisterGlobalEvents()
         {
             if (!useGlobalEvents || _ownerActor == null) return;
 
-            _skinUpdateBinding = new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
-            _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
-            
+            // Evita recriar bindings se já existirem
+            _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
+            _skinInstancesBinding ??= new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
+
             FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
             FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _ownerActor);
         }
@@ -107,7 +125,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         // Métodos para override pelas classes derivadas
         protected virtual void OnSkinApplied(ISkinConfig config)
         {
-            if (config.ModelType == targetModelType)
+            if (config != null && config.ModelType == targetModelType)
             {
                 ConfigureSkin(config);
             }

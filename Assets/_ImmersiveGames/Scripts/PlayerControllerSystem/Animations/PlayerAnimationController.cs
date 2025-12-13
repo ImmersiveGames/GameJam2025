@@ -1,12 +1,13 @@
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.DamageSystem;
+using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
     
-    public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController
+    public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
     {
         private EventBinding<DamageEvent> _damageBinding;
         private EventBinding<DeathEvent> _deathBinding;

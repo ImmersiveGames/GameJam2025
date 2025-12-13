@@ -4,27 +4,38 @@ using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
+using UnityEngine;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class GameManagerStateMachine : Singleton<GameManagerStateMachine>
+    public class GameManagerStateMachine : PersistentSingleton<GameManagerStateMachine>
     {
         private StateMachine _stateMachine;
         private GameManager _gameManager;
+
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
         private EventBinding<GameStartRequestedEvent> _startRequestedBinding;
         private EventBinding<GamePauseRequestedEvent> _pauseRequestedBinding;
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
+
         private EventTriggeredPredicate _gameOverPredicate;
         private EventTriggeredPredicate _victoryPredicate;
         private EventTriggeredPredicate _startRequestedPredicate;
         private EventTriggeredPredicate _pauseRequestedPredicate;
         private EventTriggeredPredicate _resumeRequestedPredicate;
         private EventTriggeredPredicate _resetRequestedPredicate;
+
+        // Debounce por frame: impede dupla transição no mesmo frame (Update/FixedUpdate/duplicação de eventos).
+        private int _lastStartRequestedFrame = -1;
+        private int _lastPauseRequestedFrame = -1;
+        private int _lastResumeRequestedFrame = -1;
+        private int _lastResetRequestedFrame = -1;
+        private int _lastGameOverFrame = -1;
+        private int _lastVictoryFrame = -1;
 
         public IState CurrentState => _stateMachine?.CurrentState;
 
@@ -34,8 +45,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             DontDestroyOnLoad(gameObject);
         }
 
+        /// <summary>
+        /// Importante:
+        /// Não dirigimos a FSM em FixedUpdate.
+        /// Se o StateMachine também avalia transições no FixedUpdate, isso causa reentrância e logs duplicados no mesmo frame.
+        /// </summary>
         private void Update() => _stateMachine?.Update();
-        private void FixedUpdate() => _stateMachine?.FixedUpdate();
 
         private void OnDestroy()
         {
@@ -64,27 +79,25 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             var builder = new StateMachineBuilder();
 
-            // Criar estados explicitamente registrados
             builder.AddState(new MenuState(_gameManager), out var menuState);
             builder.AddState(new PlayingState(_gameManager), out var playingState);
             builder.AddState(new PausedState(_gameManager), out var pausedState);
             builder.AddState(new GameOverState(_gameManager), out var gameOverState);
             builder.AddState(new VictoryState(_gameManager), out var victoryState);
 
-            // Transições baseadas em eventos do ciclo de jogo
             _startRequestedPredicate = new EventTriggeredPredicate(() => { });
             _pauseRequestedPredicate = new EventTriggeredPredicate(() => { });
             _resumeRequestedPredicate = new EventTriggeredPredicate(() => { });
             _resetRequestedPredicate = new EventTriggeredPredicate(() => { });
             _gameOverPredicate = new EventTriggeredPredicate(() => { });
             _victoryPredicate = new EventTriggeredPredicate(() => { });
+
             builder.At(menuState, playingState, _startRequestedPredicate);
             builder.At(playingState, pausedState, _pauseRequestedPredicate);
             builder.At(pausedState, playingState, _resumeRequestedPredicate);
             builder.At(playingState, gameOverState, _gameOverPredicate);
             builder.At(playingState, victoryState, _victoryPredicate);
 
-            // Transições para reset
             builder.At(playingState, menuState, _resetRequestedPredicate);
             builder.At(pausedState, menuState, _resetRequestedPredicate);
             builder.At(gameOverState, menuState, _resetRequestedPredicate);
@@ -100,7 +113,6 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         private void RegisterEventListeners()
         {
-            // Vincula eventos do ciclo de jogo garantindo descarte explícito no teardown
             _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(OnStartRequested);
             EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
 
@@ -172,37 +184,138 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             _stateMachine = null;
         }
 
-        private void OnStartRequested(GameStartRequestedEvent _) => _startRequestedPredicate?.Trigger();
+        private void OnStartRequested(GameStartRequestedEvent _)
+        {
+            if (_startRequestedPredicate == null)
+            {
+                return;
+            }
 
-        private void OnPauseRequested(GamePauseRequestedEvent _) => _pauseRequestedPredicate?.Trigger();
+            int frame = Time.frameCount;
+            if (_lastStartRequestedFrame == frame)
+            {
+                return;
+            }
 
-        private void OnResumeRequested(GameResumeRequestedEvent _) => _resumeRequestedPredicate?.Trigger();
+            // Start só faz sentido se estivermos no menu.
+            if (_stateMachine?.CurrentState is not MenuState)
+            {
+                return;
+            }
 
-        private void OnResetRequested(GameResetRequestedEvent _) => _resetRequestedPredicate?.Trigger();
+            _lastStartRequestedFrame = frame;
+            _startRequestedPredicate.Trigger();
+        }
+
+        private void OnPauseRequested(GamePauseRequestedEvent _)
+        {
+            if (_pauseRequestedPredicate == null)
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastPauseRequestedFrame == frame)
+            {
+                return;
+            }
+
+            // Evita re-entrar no pause
+            if (_stateMachine?.CurrentState is PausedState)
+            {
+                return;
+            }
+
+            _lastPauseRequestedFrame = frame;
+            _pauseRequestedPredicate.Trigger();
+        }
+
+        private void OnResumeRequested(GameResumeRequestedEvent _)
+        {
+            if (_resumeRequestedPredicate == null)
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastResumeRequestedFrame == frame)
+            {
+                return;
+            }
+
+            // Resume só faz sentido se estivermos pausados.
+            if (_stateMachine?.CurrentState is not PausedState)
+            {
+                return;
+            }
+
+            _lastResumeRequestedFrame = frame;
+            _resumeRequestedPredicate.Trigger();
+        }
+
+        private void OnResetRequested(GameResetRequestedEvent _)
+        {
+            if (_resetRequestedPredicate == null)
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastResetRequestedFrame == frame)
+            {
+                return;
+            }
+
+            _lastResetRequestedFrame = frame;
+            _resetRequestedPredicate.Trigger();
+        }
 
         private void OnGameOver(GameOverEvent _)
         {
+            if (_gameOverPredicate == null)
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastGameOverFrame == frame)
+            {
+                return;
+            }
+
             if (!IsPlaying())
             {
                 DebugUtility.LogWarning<GameManagerStateMachine>("GameOverEvent ignorado: estado atual não é Playing.");
                 return;
             }
 
-            _gameOverPredicate?.Trigger();
+            _lastGameOverFrame = frame;
+            _gameOverPredicate.Trigger();
         }
 
         private void OnVictory(GameVictoryEvent _)
         {
+            if (_victoryPredicate == null)
+            {
+                return;
+            }
+
+            int frame = Time.frameCount;
+            if (_lastVictoryFrame == frame)
+            {
+                return;
+            }
+
             if (!IsPlaying())
             {
                 DebugUtility.LogWarning<GameManagerStateMachine>("GameVictoryEvent ignorado: estado atual não é Playing.");
                 return;
             }
 
-            _victoryPredicate?.Trigger();
+            _lastVictoryFrame = frame;
+            _victoryPredicate.Trigger();
         }
 
         private bool IsPlaying() => _stateMachine?.CurrentState is PlayingState;
     }
-
 }

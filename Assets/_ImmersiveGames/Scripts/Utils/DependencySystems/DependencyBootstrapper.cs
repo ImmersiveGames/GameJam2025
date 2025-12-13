@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.ResourceSystems;
 using _ImmersiveGames.Scripts.ResourceSystems.Services;
@@ -16,6 +17,7 @@ using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 {
+    [DebugLevel(DebugLevel.Verbose)]
     public class DependencyBootstrapper : PersistentSingleton<DependencyBootstrapper>
     {
         private static bool _initialized;
@@ -42,6 +44,9 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             {
                 EnsureGlobal<ICameraResolver>(() => new CameraResolverService());
                 EnsureGlobal<IUniqueIdFactory>(() => new UniqueIdFactory());
+
+                // Gate global: bloqueio/liberação de simulação sem depender de timeScale.
+                EnsureGlobal<ISimulationGateService>(() => new SimulationGateService());
 
                 // Fade + pré-carregamento da FadeScene
                 EnsureGlobal<IFadeService>(() =>new FadeService());
@@ -91,7 +96,11 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 RegisterEventBuses();
 
-                EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
+                EnsureGlobal<IStateDependentService>(() =>
+                {
+                    var fsm = GameManagerStateMachine.Instance;
+                    return new StateDependentService(fsm);
+                });
 
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Hud;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -37,16 +38,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             IFadeService fadeService)
         {
             _sceneLoader = sceneLoader ?? throw new ArgumentNullException(nameof(sceneLoader));
-            _fadeService = fadeService;
+            _fadeService = fadeService; // pode ser null (transição sem fade)
         }
 
         private static float GetMinHudVisibleSeconds(SceneTransitionContext context)
         {
             var profile = context.transitionProfile;
             if (profile != null && profile.MinHudVisibleSeconds > 0f)
-            {
                 return profile.MinHudVisibleSeconds;
-            }
 
             return DefaultMinHudVisibleSeconds;
         }
@@ -68,9 +67,18 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             return false;
         }
 
+        private void ConfigureFadeFromContext(SceneTransitionContext context)
+        {
+            // Mantém IFadeService “limpo”, mas aproveita a capacidade do FadeService concreto.
+            // Se no futuro você quiser formalizar isso, aí sim criamos uma interface específica.
+            if (_fadeService is FadeService fadeServiceConcrete)
+            {
+                fadeServiceConcrete.ConfigureFromProfile(context.transitionProfile);
+            }
+        }
+
         public async Task RunTransitionAsync(SceneTransitionContext context)
         {
-
             EnsureHudService();
 
             DebugUtility.Log<SceneTransitionService>(
@@ -81,6 +89,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Transition
             {
                 EventBus<SceneTransitionStartedEvent>.Raise(
                     new SceneTransitionStartedEvent(context));
+
+                // Configura Fade com base no profile ANTES de qualquer FadeIn/Out.
+                ConfigureFadeFromContext(context);
 
                 // 1) FadeIn
                 if (context.useFade && _fadeService != null)

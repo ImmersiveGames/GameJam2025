@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.GameplaySystems;
@@ -7,6 +8,12 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.UI.DirectIndicator
 {
+    /// <summary>
+    /// LEGADO / OBSOLETO:
+    /// Sistema antigo de "localização por indicador". Não evoluir.
+    /// Mantido apenas para compatibilidade temporária com cenas existentes.
+    /// </summary>
+    [Obsolete("Sistema legado/obsoleto. Não evoluir. Planejar remoção após migração para o sistema atual de navegação/UX.")]
     [DebugLevel(DebugLevel.Verbose)]
     public class DirectionIndicatorManager : MonoBehaviour
     {
@@ -26,15 +33,17 @@ namespace _ImmersiveGames.Scripts.UI.DirectIndicator
 
         private void Start()
         {
-            TrySpawnEaterIndicatorIfReady();
+            // LEGADO: mantém a tentativa original, mas sem depender exclusivamente de Instance.
+            TrySpawnEaterIndicator();
             SpawnPlanetsIndicators();
         }
 
         private void Update()
         {
+            // LEGADO: tenta novamente se o eater ainda não existia no Start (spawn tardio).
             if (_hasSpawnedEaterIndicator == false)
             {
-                TrySpawnEaterIndicatorIfReady();
+                TrySpawnEaterIndicator();
             }
 
             if (_hasSpawnedPlanets == false)
@@ -43,36 +52,39 @@ namespace _ImmersiveGames.Scripts.UI.DirectIndicator
             }
         }
 
-        private void TrySpawnEaterIndicatorIfReady()
+        private void TrySpawnEaterIndicator()
         {
             if (_hasSpawnedEaterIndicator)
                 return;
 
             if (_gameplayManager == null)
             {
-                DebugUtility.LogWarning<DirectionIndicatorManager>(
-                    "IGameplayManager não foi injetado. Verifique se GameplayManager está ativo e registrado no DI.",
-                    this);
-                return;
-            }
+                // Mantém fallback para não quebrar cenas antigas, mas evita acoplamento como evolução.
+                var legacy = GameplayManager.Instance;
+                if (legacy == null)
+                    return;
 
-            _eaterTransform = _gameplayManager.WorldEater;
+                _eaterTransform = legacy.WorldEater;
+            }
+            else
+            {
+                _eaterTransform = _gameplayManager.WorldEater;
+            }
 
             if (_eaterTransform == null)
             {
-                // Eater ainda não existe / ainda não registrou no domínio.
                 return;
             }
 
-            SpawnIndicator(_eaterTransform, eaterIcon, isHidden: false);
+            SpawnIndicator(_eaterTransform, eaterIcon, false);
             _hasSpawnedEaterIndicator = true;
-
-            DebugUtility.LogVerbose<DirectionIndicatorManager>(
-                $"Indicador do Eater criado com sucesso. Target='{_eaterTransform.name}'.");
         }
 
         private void SpawnIndicator(Transform targetIndicator, Sprite targetIcon, bool isHidden)
         {
+            if (indicatorObject == null || targetIndicator == null)
+                return;
+
             var indicator = Instantiate(indicatorObject, transform.position, Quaternion.identity);
             indicator.SetParent(transform);
 
