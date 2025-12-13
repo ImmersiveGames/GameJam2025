@@ -28,11 +28,13 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private EventBinding<GamePauseRequestedEvent> _pauseRequestedBinding;
         private EventBinding<GameResumeRequestedEvent> _resumeRequestedBinding;
         private EventBinding<GameResetRequestedEvent> _resetRequestedBinding;
+        private EventBinding<GameReturnToMenuRequestedEvent> _returnToMenuRequestedBinding;
 
         // Debounce por frame (neutraliza double subscription / double raise no mesmo frame)
         private int _lastStartRequestFrame = -1;
         private int _lastPauseRequestFrame = -1;
         private int _lastResumeRequestFrame = -1;
+        private int _lastReturnToMenuRequestFrame = -1;
 
         #region Unity Lifecycle
 
@@ -64,6 +66,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _resetRequestedBinding = new EventBinding<GameResetRequestedEvent>(OnResetRequested);
             EventBus<GameResetRequestedEvent>.Register(_resetRequestedBinding);
 
+            _returnToMenuRequestedBinding = new EventBinding<GameReturnToMenuRequestedEvent>(OnReturnToMenuRequested);
+            EventBus<GameReturnToMenuRequestedEvent>.Register(_returnToMenuRequestedBinding);
+
             DebugUtility.Log<GameManager>(
                 "GameManager inicializado.",
                 DebugUtility.Colors.CrucialInfo);
@@ -76,6 +81,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             EventBus<GamePauseRequestedEvent>.Unregister(_pauseRequestedBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_resumeRequestedBinding);
             EventBus<GameResetRequestedEvent>.Unregister(_resetRequestedBinding);
+            EventBus<GameReturnToMenuRequestedEvent>.Unregister(_returnToMenuRequestedBinding);
         }
 
         #endregion
@@ -168,6 +174,17 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
             ResetGame(); // Implementado na partial SceneFlow
+        }
+
+        private void OnReturnToMenuRequested(GameReturnToMenuRequestedEvent _)
+        {
+            if (Time.frameCount == _lastReturnToMenuRequestFrame)
+                return;
+
+            _lastReturnToMenuRequestFrame = Time.frameCount;
+
+            DebugUtility.LogVerbose<GameManager>("Solicitação de retorno ao menu recebida.");
+            ReturnToMenu(); // Implementado na partial SceneFlow
         }
 
         #endregion

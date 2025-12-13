@@ -62,9 +62,18 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
             }
         }
 
+        /// <summary>
+        /// Perfil comum para telas que exibem UI e pausam o jogo, mas precisam aceitar navegação.
+        /// </summary>
         protected void AllowMenuNavigationWithExitShortcuts()
         {
-            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel, ActionType.RequestReset, ActionType.RequestQuit);
+            AllowActions(
+                ActionType.Navigate,
+                ActionType.UiSubmit,
+                ActionType.UiCancel,
+                ActionType.RequestReset,
+                ActionType.RequestQuit
+            );
         }
 
         public virtual void OnEnter() { }
@@ -181,11 +190,13 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnEnter()
         {
+            Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
             AcquireGate(SimulationGateTokens.GameOver);
 
-            Time.timeScale = 0f;
-            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
+            // IMPORTANTE: estado terminal NÃO deve congelar timeScale; overlay/animações precisam continuar.
+            Time.timeScale = 1f;
 
+            EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
             DebugUtility.LogVerbose<GameOverState>("game over!");
         }
 
@@ -193,7 +204,9 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             ReleaseGate(SimulationGateTokens.GameOver);
 
+            // Normaliza por segurança.
             Time.timeScale = 1f;
+
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
         }
     }
@@ -210,9 +223,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnEnter()
         {
+            Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
             AcquireGate(SimulationGateTokens.Victory);
 
-            Time.timeScale = 0f;
+            // IMPORTANTE: estado terminal NÃO deve congelar timeScale; overlay/animações precisam continuar.
+            Time.timeScale = 1f;
+
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
             DebugUtility.LogVerbose<VictoryState>("Terminou o jogo!");
         }
@@ -221,7 +237,9 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         {
             ReleaseGate(SimulationGateTokens.Victory);
 
+            // Normaliza por segurança.
             Time.timeScale = 1f;
+
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
         }
     }

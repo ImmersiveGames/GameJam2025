@@ -102,4 +102,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
             IsActive = isActive;
         }
     }
+    public class GameReturnToMenuRequestedEvent : IEvent
+    {
+    }
 }

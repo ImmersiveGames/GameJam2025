@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -9,10 +8,10 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
 {
     /// <summary>
     /// Controlador da HUD de loading.
-    /// - Faz a ponte entre SceneTransitionService e SceneLoadingHudView.
-    /// - Expõe API síncrona (ISceneLoadingHudService) e assíncrona (ISceneLoadingHudTaskService).
+    /// - Ponte entre SceneTransitionService e SceneLoadingHudView.
+    /// - API síncrona (ISceneLoadingHudService) e assíncrona (ISceneLoadingHudTaskService).
     ///
-    /// Não usa corrotinas diretamente; a coordenação é feita via Tasks.
+    /// Não usa corrotinas diretamente; coordenação via Tasks.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public sealed class SceneLoadingHudController :
@@ -26,12 +25,15 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         [Header("Registro em DI")]
         [SerializeField] private bool registerAsGlobalService = true;
 
-        // Canvas que contém a HUD, guardado para podermos reativar quando necessário.
+        [Header("Render Order (UIGlobalScene)")]
+        [Tooltip("SortingOrder do canvas do Loading HUD. Deve ser MAIOR do que Fade e Terminal Overlay.")]
+        [SerializeField] private int loadingSortingOrder = 12000;
+
+        // Canvas que contém a HUD.
         private Canvas _canvas;
 
         private void Awake()
         {
-            // Garante que o GameObject do controller está ativo
             if (!gameObject.activeSelf)
             {
                 DebugUtility.LogWarning<SceneLoadingHudController>(
@@ -41,7 +43,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
 
             if (view == null)
             {
-                // Busca a view mesmo em filhos inativos
                 view = GetComponentInChildren<SceneLoadingHudView>(true);
             }
 
@@ -53,14 +54,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
                 return;
             }
 
-            // Descobre e guarda o Canvas pai (mesmo que esteja inativo)
             _canvas = view.GetComponentInParent<Canvas>(true);
             if (_canvas != null)
             {
-                // Garante que a HUD fique acima de outros canvases (como o fade)
                 _canvas.overrideSorting = true;
-                if (_canvas.sortingOrder < 5000)
-                    _canvas.sortingOrder = 5000;
+                _canvas.sortingOrder = loadingSortingOrder;
 
                 DebugUtility.LogVerbose<SceneLoadingHudController>(
                     $"[HUD CTRL] Canvas configurado. overrideSorting={_canvas.overrideSorting}, sortingOrder={_canvas.sortingOrder}");
@@ -75,23 +73,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             {
                 var provider = DependencyManager.Provider;
 
-                provider.RegisterGlobal<ISceneLoadingHudService>(
-                    this,
-                    allowOverride: false);
-
-                provider.RegisterGlobal<ISceneLoadingHudTaskService>(
-                    this,
-                    allowOverride: false);
+                provider.RegisterGlobal<ISceneLoadingHudService>(this, allowOverride: false);
+                provider.RegisterGlobal<ISceneLoadingHudTaskService>(this, allowOverride: false);
 
                 DebugUtility.Log<SceneLoadingHudController>(
                     "[HUD CTRL] SceneLoadingHudController inicializado e registrado no DI.");
             }
         }
 
-        /// <summary>
-        /// Garante que o Canvas e a View estejam ativos/habilitados no momento da exibição.
-        /// Isso resolve o caso em que o UI Global ou o painel foram desativados em algum momento.
-        /// </summary>
         private void EnsureCanvasAndViewActive()
         {
             if (_canvas != null)
@@ -109,6 +98,16 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
                         "[HUD CTRL] Canvas da HUD estava desabilitado. Habilitando.");
                     _canvas.enabled = true;
                 }
+
+                // Reforça order em runtime (caso algum outro sistema altere)
+                if (!_canvas.overrideSorting || _canvas.sortingOrder != loadingSortingOrder)
+                {
+                    _canvas.overrideSorting = true;
+                    _canvas.sortingOrder = loadingSortingOrder;
+
+                    DebugUtility.LogVerbose<SceneLoadingHudController>(
+                        $"[HUD CTRL] Canvas reconfigurado em runtime. overrideSorting={_canvas.overrideSorting}, sortingOrder={_canvas.sortingOrder}");
+                }
             }
 
             if (view != null && !view.gameObject.activeSelf)
@@ -121,20 +120,9 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
 
         #region ISceneLoadingHudService (API síncrona/legada)
 
-        public void ShowLoading(SceneTransitionContext context)
-        {
-            _ = ShowLoadingAsync(context);
-        }
-
-        public void MarkScenesReady(SceneTransitionContext context)
-        {
-            _ = MarkScenesReadyAsync(context);
-        }
-
-        public void HideLoading(SceneTransitionContext context)
-        {
-            _ = HideLoadingAsync(context);
-        }
+        public void ShowLoading(SceneTransitionContext context) => _ = ShowLoadingAsync(context);
+        public void MarkScenesReady(SceneTransitionContext context) => _ = MarkScenesReadyAsync(context);
+        public void HideLoading(SceneTransitionContext context) => _ = HideLoadingAsync(context);
 
         #endregion
 
@@ -148,18 +136,12 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             EnsureCanvasAndViewActive();
 
             var profile = context.transitionProfile;
-            string title;
+
+            string title = (profile != null && !string.IsNullOrWhiteSpace(profile.LoadingTitle))
+                ? profile.LoadingTitle
+                : "Carregando";
+
             string description;
-
-            if (profile != null && !string.IsNullOrWhiteSpace(profile.LoadingTitle))
-            {
-                title = profile.LoadingTitle;
-            }
-            else
-            {
-                title = "Carregando";
-            }
-
             if (profile != null && !string.IsNullOrWhiteSpace(profile.LoadingDescriptionTemplate))
             {
                 string scenesText = (context.scenesToLoad != null && context.scenesToLoad.Count > 0)
@@ -176,21 +158,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             }
 
             if (profile != null)
-            {
                 view.ConfigureDurations(profile.HudFadeInDuration, profile.HudFadeOutDuration);
-            }
             else
-            {
-                // Usa defaults internos da view.
                 view.ConfigureDurations(0f, 0f);
-            }
 
-            // Inicializa sempre com 0%.
             view.SetProgress(0f);
-
-            DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] ShowLoadingAsync chamado. " +
-                $"view.activeInHierarchy={view.gameObject.activeInHierarchy}");
 
             return view.ShowLoadingPanelAsync(title, description, "0%");
         }
@@ -212,9 +184,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
                 ? profile.FinishingDescription
                 : "Finalizando carregamento...";
 
-            DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] MarkScenesReadyAsync chamado.");
-
             view.UpdateTexts(title, description, "100%");
             return Task.CompletedTask;
         }
@@ -225,10 +194,6 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
                 return Task.CompletedTask;
 
             EnsureCanvasAndViewActive();
-
-            DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] HideLoadingAsync chamado.");
-
             return view.HideLoadingPanelAsync();
         }
 
@@ -243,19 +208,11 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         #endregion
     }
 
-    /// <summary>
-    /// Serviço Task-based para coordenar o HUD de loading com o SceneTransitionService.
-    /// </summary>
     public interface ISceneLoadingHudTaskService
     {
         Task ShowLoadingAsync(SceneTransitionContext context);
         Task MarkScenesReadyAsync(SceneTransitionContext context);
         Task HideLoadingAsync(SceneTransitionContext context);
-
-        /// <summary>
-        /// Atualiza o progresso normalizado (0..1) da transição.
-        /// Implementações podem simplesmente ignorar se não suportarem barra de progresso.
-        /// </summary>
         void SetProgress(float value);
     }
 }

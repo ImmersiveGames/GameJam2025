@@ -9,11 +9,18 @@ namespace _ImmersiveGames.Scripts.FadeSystem
     /// - Não conhece SceneTransitionProfile.
     /// - Recebe duração/curvas em tempo de execução via Configure.
     /// - Usa AnimationCurve para interpolar alpha do CanvasGroup.
+    ///
+    /// Este componente também garante ordenação de canvas para o FadeScene.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class FadeController : MonoBehaviour
     {
+        [Header("Referências")]
         [SerializeField] private CanvasGroup canvasGroup;
+
+        [Header("Render Order (FadeScene)")]
+        [Tooltip("SortingOrder do canvas do Fade. Deve ficar abaixo do Loading HUD, mas acima de UI comum.")]
+        [SerializeField] private int sortingOrder = 11000;
 
         // Configuração de runtime (vem do FadeService).
         private float _fadeInDuration  = 0.5f;
@@ -29,17 +36,40 @@ namespace _ImmersiveGames.Scripts.FadeSystem
             if (canvasGroup == null)
                 canvasGroup = GetComponent<CanvasGroup>();
 
-            DebugUtility.LogVerbose<FadeController>("Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
+            DebugUtility.LogVerbose<FadeController>(
+                "Awake - CanvasGroup: " + (canvasGroup != null ? "OK" : "NULO"));
+
+            // Garantir ordenação do Canvas do Fade
+            TryConfigureCanvasSorting();
 
             if (canvasGroup != null)
             {
                 // Sempre começa transparente
                 canvasGroup.alpha = 0f;
+                canvasGroup.blocksRaycasts = false;
+                canvasGroup.interactable = false;
             }
 
             // Defaults internos (só usados se ninguém configurar nada).
             _fadeInCurve  = LinearCurve;
             _fadeOutCurve = LinearCurve;
+        }
+
+        private void TryConfigureCanvasSorting()
+        {
+            var canvas = GetComponentInParent<Canvas>(true);
+            if (canvas == null)
+            {
+                DebugUtility.LogWarning<FadeController>(
+                    "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenação não será configurada.");
+                return;
+            }
+
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = sortingOrder;
+
+            DebugUtility.LogVerbose<FadeController>(
+                $"[Fade] Canvas sorting configurado. overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}");
         }
 
         /// <summary>
@@ -84,7 +114,8 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<FadeController>($"Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
+            DebugUtility.LogVerbose<FadeController>(
+                $"Iniciando Fade para alpha = {targetAlpha} (dur={duration})");
 
             while (time < duration)
             {
@@ -99,7 +130,8 @@ namespace _ImmersiveGames.Scripts.FadeSystem
 
             canvasGroup.alpha = targetAlpha;
 
-            DebugUtility.LogVerbose<FadeController>($"Fade concluído para alpha = {targetAlpha}");
+            DebugUtility.LogVerbose<FadeController>(
+                $"Fade concluído para alpha = {targetAlpha}");
         }
 
         /// <summary>

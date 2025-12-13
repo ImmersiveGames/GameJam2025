@@ -1,200 +1,207 @@
-﻿Entendi. Você quer que o plano de **controle de cena (Gate + Reset)** seja construído **em cima** do que estávamos fazendo (Domínio por cena orientado a `ActorId` + auto-register), mesmo tendo pausado a implementação.
+﻿# Planejamento Gate / Reset / Scene Flow
 
-Isso é a decisão certa: o domínio por cena é o que transforma “controle difuso” em “controle determinístico”, porque ele cria um **ponto de verdade** para “quais atores existem agora” e permite aplicar **gate/reset por conjunto** sem `FindObjectsOfType` e sem listas manuais.
+## Versão CHECKED / UPDATED (baseline atual do projeto)
 
-Abaixo está o **algoritmo completo de refatoração**, já incorporando explicitamente as Entregas 1 e 2 (domínio) como etapas do projeto.
+> **Objetivo do sistema**
+> Separar de forma determinística e auditável:
 
----
+* Estado macro do jogo (FSM)
+* Execução da simulação (Gate)
+* Política de tempo (TimeScale)
+* Reset (in-place, sem reload forçado)
+* Fluxo de cena (SceneFlow moderno)
 
-## Visão geral do roadmap integrado
-
-### Eixos do sistema final
-
-1. **Flow State (FSM macro)**: Menu/Playing/Pause/Victory/GameOver/Loading/Cinematic
-2. **Simulation Gate (token-based)**: Running vs Blocked (com razões concorrentes)
-3. **Time Policy**: Scaled vs Frozen (só quando realmente precisa)
-4. **Reset Pipeline (in-place)**: reset por fases, sem recarregar cena e sem trocar ActorId
-
-### Infra de base indispensável
-
-5. **Gameplay Scene Domain (ActorId-centric)**: ActorRegistry + domínios (Players/Eater) + auto-register
+Tudo isso **ancorado em Domínio por Cena orientado a ActorId**.
 
 ---
 
-## Fase 0 — Reintroduzir e estabilizar o Domínio por Cena (suas Entregas 1 e 2)
+## Status geral (resumo executivo)
 
-### 0.1 Domínio mínimo obrigatório na GameplayScene
-
-* **GameplayDomainBootstrapper** na GameplayScene (garante que o domínio exista antes de qualquer ator registrar).
-* **IActorRegistry** (source of truth local da cena).
-* **IEaterDomain** e **IPlayerDomain** como “views” sobre o registry (Player identificado por `PlayerInput` quando existir).
-
-**Aceite**:
-Ao entrar na GameplayScene, Player e Eater (com `ActorMaster`) auto-registram no registry e os domínios refletem isso.
-
-### 0.2 Auto-register em todos os atores relevantes
-
-* Player e Eater: obrigatório.
-* Minions, planetas, etc.: progressivamente (priorize os que têm comportamento/IA e os que alimentam UI/binders).
-
-**Aceite**:
-Qualquer spawn/despawn entra/saí do registry automaticamente (sem “lista manual”).
-
-### 0.3 Migração dos consumidores críticos (Entrega 2)
-
-* Sistemas que “caçam referência” (UI e behaviors) passam a consultar domínios/registry e tolerar “ainda não existe”.
-
-**Aceite**:
-Nada mais depende de “estar na cena desde o começo” para funcionar.
+```
+Fase 0 – Domínio por Cena (ActorId) .......... ✅ CONCLUÍDA
+Fase 1 – FSM Macro + Execution Profile ....... ✅ CONCLUÍDA
+Fase 2 – Simulation Gate (token-based) ....... ✅ CONCLUÍDA
+Fase 3 – Coordinator aplicando Gate .......... ✅ CONCLUÍDA
+Fase 4 – Reset in-place por Domínio .......... ⚠️ PARCIAL
+Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
+```
 
 ---
 
-## Fase 1 — Formalizar “Execution Profile” no seu FSM macro (sem ainda pausar atores de fato)
+## Fase 0 — Domínio por Cena (ActorId-centric)
 
-O problema atual é o booleano `isGameActive` e a mistura com `timeScale`. A solução é o FSM declarar explicitamente um perfil.
+**Status: ✅ CONCLUÍDA**
 
-### 1.1 Definir um “Execution Profile” por estado do FSM
+### Entregas realizadas
 
-Cada estado do FSM macro passa a **declarar**:
+* `GameplayDomainBootstrapper` (scene-scoped)
+* `IActorRegistry` como source of truth local
+* Domínios especializados:
 
-* **Tokens do Gate** que ele segura (ex.: `Menu`, `Loading`, `Cinematic`, `Splash`, `Pause`)
-* **Time Policy** (`Scaled` ou `Frozen`)
-* **Action Policy** (quais ações de gameplay são permitidas; UI pode ser separada)
+    * `IPlayerDomain`
+    * `IEaterDomain`
+* Auto-register determinístico:
 
-**Aceite**:
-Você consegue olhar para um estado e saber, sem inferência, se o mundo deve rodar, se deve congelar tempo e se input de gameplay deve ser aceito.
+    * `ActorAutoRegistrar`
+    * `PlayerAutoRegistrar`
+    * `EaterAutoRegistrar`
+* Resolução por cena via `DependencyManager`
 
-### 1.2 Separar “Action Policy” de “Simulation”
+### Aceite (atingido)
 
-* `CanPerformAction` continua existindo (bom).
-* Mas “simulação pode rodar?” deixa de ser o mesmo booleano e vira gate.
-
-**Aceite**:
-Você consegue ter “cutscene: gameplay bloqueado, mas tempo rodando” de forma nativa.
-
----
-
-## Fase 2 — Implementar Simulation Gate (token-based) e conectá-lo ao FSM
-
-### 2.1 SimulationGateService (tokens)
-
-* Mantém um conjunto de tokens ativos.
-* `Blocked = tokens.Count > 0`.
-* Emite evento “GateChanged”.
-
-**Aceite**:
-Cutscene + Loading + Overlay funcionam ao mesmo tempo sem bug de “despausou indevidamente”.
-
-### 2.2 FSM como autoridade de alto nível do Gate
-
-* Ao entrar/sair de estados, o FSM adquire/libera tokens conforme o Execution Profile do estado.
-
-**Aceite**:
-“Trocar de estado” passa a ser o único ponto que controla o gate em alto nível.
+* Atores entram/saem do domínio automaticamente
+* Nenhum sistema crítico depende de `FindObject*`
+* Spawns tardios são suportados
 
 ---
 
-## Fase 3 — GameplayExecutionCoordinator na GameplayScene (aplicar Gate nos atores via ActorRegistry)
+## Fase 1 — FSM Macro com Execution Profile explícito
 
-Aqui é onde o domínio por cena vira “poder real”.
+**Status: ✅ CONCLUÍDA**
 
-### 3.1 Coordinator escuta Gate e Registry
+### Estados implementados
 
-* Escuta `GateChanged(blocked/unblocked)`.
-* Escuta `ActorRegistry.ActorRegistered` (para aplicar estado aos recém-chegados).
+* `MenuState`
+* `PlayingState`
+* `PausedState`
+* `GameOverState`
+* `VictoryState`
 
-### 3.2 Aplicar “Blocked/Running” em gameplay logic (sem mexer em timeScale)
+### Cada estado declara explicitamente:
 
-Você escolhe a política de aplicação (profissionalmente, eu recomendo a combinação):
+* Ações permitidas (`ActionType`)
+* Se o jogo está ativo (`IsGameActive`)
+* Tokens do Gate adquiridos/liberados
+* Política de tempo (`Time.timeScale` quando aplicável)
 
-* **Desabilitar input/IA/spawners** (lógica)
-* **Manter apresentação** (Animator, render, câmera, UI) se o estado pedir
+### Aceite (atingido)
 
-**Aceite**:
-Durante cutscene/splash/loading, qualquer ator que spawnar entra automaticamente “bloqueado” sem comportamento rodando.
-
----
-
-## Fase 4 — Reset in-place (mesmo objeto) usando Gate + pipeline em fases
-
-Agora o segundo problema (“REST”) entra corretamente, sem confundir com gate.
-
-### 4.1 ResetOrchestrator (scene-scoped) usando ActorRegistry
-
-* Seleciona escopo de reset:
-
-    * um ator (player), grupo (todos players), ou todos atores de gameplay.
-* Executa reset sempre com token:
-
-    * `Acquire("SoftReset")` → bloqueia simulação
-    * `Release("SoftReset")` → libera simulação
-
-### 4.2 Reset em 3 fases (algoritmo)
-
-1. **Phase 1: Cleanup/Unbind**
-
-    * cancelar coroutines/tasks
-    * desregistrar event bus/listeners
-    * limpar caches/pending actions
-2. **Phase 2: Restore Defaults**
-
-    * restaurar vida/posição/estado FSM local/cooldowns etc.
-3. **Phase 3: Rebind/Rearm**
-
-    * re-registrar o necessário no estado inicial
-    * publicar valores iniciais para UI/binders (porque o ActorId permaneceu)
-
-**Aceite**:
-Reset do player não cria double subscription e não deixa rotinas antigas interferirem.
-
-### 4.3 Integração com o Pool (sem mudar seu “mesmo objeto”)
-
-* Você já tem um conceito de `OnReset()` no ciclo de pooling.
-* O reset in-place pode reutilizar a mesma semântica interna (restore defaults), mas sem despawn.
-
-**Aceite**:
-Você não cria dois padrões diferentes de reset; só muda o “gatilho” (pool vs soft reset).
+* Não existe mais ambiguidade entre “jogo pausado”, “simulação bloqueada” e “tempo congelado”
+* Estados terminais não congelam tempo
+* O FSM é autoridade semântica do jogo
 
 ---
 
-## Fase 5 — Consolidar e reduzir acoplamento (limpeza final)
+## Fase 2 — Simulation Gate (token-based)
 
-### 5.1 Remover o “fallback” de singletons/Find
+**Status: ✅ CONCLUÍDA**
 
-* Depois que domínios/registry estiverem sólidos, você elimina:
+### Infra implementada
 
-    * `GameplayManager.Instance`, `PlayerManager.Instance`, `FindFirstObjectByType` nos fluxos de runtime
+* `ISimulationGateService`
+* `SimulationGateService`
+* Tokens centralizados (`SimulationGateTokens`)
+* Semântica:
 
-### 5.2 Auditoria de “participantes”
+    * 1+ tokens ativos → Gate fechado
+    * Nenhum token → Gate aberto
+* Evento `GateChanged(bool isOpen)`
 
-* Identificar os principais scripts com risco de persistência indevida:
+### Aceite (atingido)
 
-    * input handlers
-    * AI state machines
+* Múltiplas razões concorrentes coexistem (Menu + Pause + Cutscene etc.)
+* Não há dependência direta de `Time.timeScale`
+* Gate é idempotente e seguro
+
+---
+
+## Fase 3 — GameplayExecutionCoordinator (aplicação do Gate)
+
+**Status: ✅ CONCLUÍDA**
+
+### Componentes implementados
+
+* `GameplayExecutionCoordinator` (scene-scoped)
+* `IGameplayExecutionParticipant`
+* `GameplayExecutionParticipantBehaviour`
+
+    * Auto-discovery
+    * Auto-collect com filtros
+    * Exclusões explícitas
+    * Registro/desregistro automático
+
+### Funcionamento real
+
+* Coordinator escuta o Gate
+* Aplica `SetExecutionAllowed` em todos os participantes
+* Novos atores entram já no estado correto (blocked/running)
+
+### Aceite (atingido)
+
+* Simulação bloqueia sem matar apresentação
+* Spawns tardios respeitam o estado global
+* Nenhuma lógica de gameplay roda fora do Gate
+
+---
+
+## Fase 4 — Reset in-place por Domínio
+
+**Status: ⚠️ PARCIAL (INTERROMPIDA)**
+
+### O que JÁ existe
+
+* `GameManager.ResetGameAsync`
+* Uso defensivo de Gate durante reset
+* Rebuild do `GameManagerStateMachine`
+* Integração com SceneFlow moderno
+* Eventos:
+
+    * `GameResetStartedEvent`
+    * `GameResetCompletedEvent`
+
+### O que AINDA NÃO foi feito (planejado)
+
+* ❌ `ResetOrchestrator` scene-scoped
+* ❌ Reset dirigido por `ActorRegistry`
+* ❌ Reset por fases explícitas:
+
+    1. Cleanup / Unbind
+    2. Restore Defaults
+    3. Rebind / Rearm
+* ❌ Contrato formal de reset (`IResettable` por fase)
+* ❌ Integração clara entre:
+
+    * reset
+    * gameplay participants
+    * domínios
+
+### Observação importante
+
+Nesta fase houve **desvio de escopo**:
+
+* Parte do reset foi absorvida pelo `GameManager`
+* Parte misturada com SceneFlow e QA
+* A peça central (ResetOrchestrator) não chegou a ser criada
+
+👉 **Esta é a fase que devemos retomar.**
+
+---
+
+## Fase 5 — Limpeza e consolidação final
+
+**Status: ⏳ NÃO INICIADA**
+
+Planejada **somente após a Fase 4 estar sólida**.
+
+### Inclui
+
+* Remoção de fallbacks defensivos
+* Redução de acoplamento com `GameManager`
+* Auditoria final de participantes:
+
+    * input
+    * IA
     * spawners
-    * timers/cooldowns
-    * subscribers de EventBus
-* Tornar explícito quem obedece gate e quem participa do reset.
+    * subscribers
+* Documentação final do ciclo completo:
+  FSM → Gate → Coordinator → Reset → SceneFlow
 
 ---
 
-## Como as Entregas 1 e 2 se encaixam (resumo direto)
+## Decisão de retomada (baseline)
 
-* **Domínio por cena (Entregas 1 e 2)** é a **infraestrutura base** (Fase 0) que permite:
+📌 **A partir desta versão do planejamento:**
 
-    * aplicar Gate de forma determinística (Fase 3)
-    * resetar por conjunto sem `Find` (Fase 4)
-    * garantir que spawns tardios respeitem regras (Fase 3, via ActorRegistered)
-
-Sem o domínio, o controle de cena tende a voltar a ser difuso porque você perde a “fonte de verdade” dos atores.
-
----
-
-## Próximo passo recomendado (ainda sem código)
-
-Para você sentir coesão antes de implementar, eu sugiro que a gente produza um artefato simples (conceitual):
-
-1. Uma tabela “Estado do FSM → Execution Profile” para seus estados atuais (Menu/Playing/Pause/Victory/GameOver) + novos (Loading/Cinematic/Splash).
-2. A lista de “quais sistemas entram em Gate” e “quais entram em Reset”, priorizada por risco (os que hoje te causam persistência).
-
-Se você me disser quais estados extras você já usa (por exemplo: “Briefing”, “Shopping”, “Transition”), eu encaixo na tabela e já deixamos o blueprint fechado para quando você retomar a implementação.
+* **Nada das Fases 0–3 deve ser refeito**
+* O código atual é considerado **baseline estável**
+* O próximo trabalho começa **exclusivamente na Fase 4**
