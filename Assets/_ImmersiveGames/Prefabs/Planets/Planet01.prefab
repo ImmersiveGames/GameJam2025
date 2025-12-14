@@ -12,11 +12,13 @@ GameObject:
   - component: {fileID: 4149329370838810178}
   - component: {fileID: 3945190765558734642}
   - component: {fileID: 6541701590752357594}
+  - component: {fileID: 4007583575397660774}
   - component: {fileID: 6304390098628153193}
   - component: {fileID: 4612188242723959288}
   - component: {fileID: 2774738434980984958}
   - component: {fileID: 6005341794915908452}
   - component: {fileID: 5359047152701732458}
+  - component: {fileID: 1453742196354725209}
   - component: {fileID: 2819374650281937465}
   - component: {fileID: 299314230134813839}
   - component: {fileID: 8373132218115634742}
@@ -25,8 +27,6 @@ GameObject:
   - component: {fileID: 743985210123456788}
   - component: {fileID: -2776814566296248560}
   - component: {fileID: 1564139988472314523}
-  - component: {fileID: 1453742196354725209}
-  - component: {fileID: 4007583575397660774}
   m_Layer: 10
   m_Name: Planet01
   m_TagString: Untagged
@@ -109,6 +109,22 @@ MonoBehaviour:
   defaultSkinCollection: {fileID: 11400000, guid: 55453f4cd46dba04eb15ea00bd4a7053, type: 2}
   autoInitialize: 1
   enableGlobalEvents: 1
+--- !u!114 &4007583575397660774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 544ba0e921d84dac9983eb0618c07053, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  skinController: {fileID: 6541701590752357594}
+  registerAsGlobalService: 0
+  computeInitialStateFromActorRoot: 1
+  initialStateModelType: 0
 --- !u!114 &6304390098628153193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -184,6 +200,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   planetsMaster: {fileID: 3945190765558734642}
+--- !u!114 &1453742196354725209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5312295584184867285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4de913c92e0dc634881c4b8137f1e602, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &2819374650281937465
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -315,31 +343,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f5dcd36c3b34d50b84d90d8f8c6a0e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1453742196354725209
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312295584184867285}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4de913c92e0dc634881c4b8137f1e602, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &4007583575397660774
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5312295584184867285}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 544ba0e921d84dac9983eb0618c07053, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skinController: {fileID: 6541701590752357594}
-  registerAsGlobalService: 0
-  computeInitialStateFromActorRoot: 1
-  initialStateModelType: 0

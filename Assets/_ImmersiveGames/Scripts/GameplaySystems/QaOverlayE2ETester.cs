@@ -3,11 +3,13 @@ using System.Text;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.UISystems.TerminalOverlay;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -20,11 +22,13 @@ namespace _ImmersiveGames.Scripts.QA
     /// - QA_GoToGameplayFromAnywhere (fluxo real)
     /// - Force GameOver / Force Victory e visibilidade do TerminalOverlay
     /// - ReturnToMenu via EventBus (GameReturnToMenuRequestedEvent)
-    /// - Reset via EventBus (GameResetRequestedEvent)
     ///
-    /// Observação importante:
-    /// Este tester SEMPRE aguarda a FSM estabilizar em PlayingState antes de forçar GameOver/Victory,
-    /// evitando falsos negativos por corrida (_qaFlowInProgress / estado ainda em transição).
+    /// IMPORTANTE:
+    /// Existem DOIS tipos de reset no projeto:
+    /// 1) Reset MACRO (GameResetRequestedEvent) -> MenuContext/GameManager -> pode envolver fade/scene flow.
+    /// 2) Reset IN-PLACE (IResetOrchestrator) -> reset local dos atores (Cleanup/Restore/Rebind) sem recarregar cena.
+    ///
+    /// Para validar o sistema novo, use RESET IN-PLACE.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class QaOverlayE2ETester : MonoBehaviour
@@ -42,6 +46,10 @@ namespace _ImmersiveGames.Scripts.QA
         [SerializeField] private float defaultStepTimeoutSeconds = 6.0f;
         [SerializeField] private float overlayAppearTimeoutSeconds = 2.0f;
         [SerializeField] private float afterTransitionSettleSeconds = 0.15f;
+
+        [Header("Reset Settings")]
+        [Tooltip("Cena onde o IResetOrchestrator foi registrado no DI (scene-scoped).")]
+        [SerializeField] private string gameplaySceneNameForReset = "GameplayScene";
 
         [Header("References (optional; will auto-resolve if null)")]
         [SerializeField] private GameManager gameManager;
@@ -86,6 +94,23 @@ namespace _ImmersiveGames.Scripts.QA
                 _panelVisible = !_panelVisible;
         }
 
+        #region Context Menu (Editor)
+
+        [ContextMenu("QA/Reset IN-PLACE (IResetOrchestrator)")]
+        private void Context_ResetInPlace()
+        {
+            _ = ResetInPlaceAsync();
+        }
+
+        [ContextMenu("QA/Reset MACRO (GameResetRequestedEvent)")]
+        private void Context_ResetMacro()
+        {
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            DebugUtility.LogWarning<QaOverlayE2ETester>("[QA] Disparado Reset MACRO via GameResetRequestedEvent.");
+        }
+
+        #endregion
+
         #region Public buttons
 
         public void RunFullSuite()
@@ -102,7 +127,6 @@ namespace _ImmersiveGames.Scripts.QA
         {
             if (!_isRunning) return;
             AppendLine("[QA] Stop requested (soft). O runner atual irá finalizar no próximo await.");
-            // Sem CancellationToken por preferência do projeto; stop “soft” (flag) apenas.
             _isRunning = false;
         }
 
@@ -140,16 +164,15 @@ namespace _ImmersiveGames.Scripts.QA
             try
             {
                 await Step_CheckEventSystemSingleActiveAsync();
-                await Step_CheckEventSystemSingleActiveAsync(); // repetição intencional para flagrar instabilidade
+                await Step_CheckEventSystemSingleActiveAsync(); // repetição intencional
                 await Step_GoToGameplayAsync();
                 await Step_ForceGameOverAsync();
 
-                // Para testar Victory de forma realista, voltamos ao Gameplay antes.
                 await Step_GoToGameplayAsync();
                 await Step_ForceVictoryAsync();
 
-                await Step_ReturnToMenuAsync();
-                await Step_ResetAsync();
+                // IMPORTANTE: no FULL, não usamos reset macro (ele conflita com fluxo do MenuContext).
+                await Step_ResetInPlaceAsync();
 
                 await Step_CheckEventSystemSingleActiveAsync();
             }
@@ -220,9 +243,7 @@ namespace _ImmersiveGames.Scripts.QA
                 }
 
                 if (activeAndEnabled != 1)
-                {
                     throw new Exception($"EventSystem inválido: activeAndEnabled={activeAndEnabled}, totalEncontrados={systems.Length}");
-                }
 
                 await Task.CompletedTask;
             });
@@ -237,10 +258,8 @@ namespace _ImmersiveGames.Scripts.QA
                 if (gameManager == null)
                     throw new Exception("GameManager não encontrado.");
 
-                // Fluxo real
                 gameManager.QA_GoToGameplayFromAnywhere();
 
-                // Aguarda FSM estabilizar em PlayingState (isso é o contrato real)
                 await WaitUntilAsync(
                     predicate: () => GameManagerStateMachine.Instance != null &&
                                      GameManagerStateMachine.Instance.CurrentState is PlayingState,
@@ -248,7 +267,6 @@ namespace _ImmersiveGames.Scripts.QA
                     timeoutMessage: "FSM não entrou em PlayingState após QA_GoToGameplayFromAnywhere."
                 );
 
-                // “Settle” pequeno para deixar o frame do pós-transição estabilizar (evita asserts “no mesmo frame”).
                 await DelayUnscaled(afterTransitionSettleSeconds);
 
                 if (strictSceneAsserts && !string.IsNullOrWhiteSpace(expectedGameplaySceneName))
@@ -275,7 +293,6 @@ namespace _ImmersiveGames.Scripts.QA
                 if (terminalOverlay == null)
                     throw new Exception("TerminalOverlayController não encontrado.");
 
-                // Ponto crítico: garante PlayingState ANTES de forçar GameOver (evita corrida do FULL suite).
                 await WaitUntilAsync(
                     predicate: () => GameManagerStateMachine.Instance != null &&
                                      GameManagerStateMachine.Instance.CurrentState is PlayingState,
@@ -283,7 +300,6 @@ namespace _ImmersiveGames.Scripts.QA
                     timeoutMessage: "FSM não está em PlayingState antes do GameOver."
                 );
 
-                // Força GameOver usando o próprio fluxo já exposto no GameManager
                 gameManager.QA_ForceGameOverFromAnywhere("QA E2E");
 
                 await WaitUntilAsync(
@@ -292,7 +308,6 @@ namespace _ImmersiveGames.Scripts.QA
                     timeoutMessage: "TerminalOverlay não ficou visível após GameOver."
                 );
 
-                // Estado terminal não deve congelar o jogo (por requisito do overlay)
                 if (Mathf.Abs(Time.timeScale - 1f) > 0.001f)
                     throw new Exception($"TimeScale esperado=1 durante GameOver, atual={Time.timeScale:0.###}");
             });
@@ -334,10 +349,8 @@ namespace _ImmersiveGames.Scripts.QA
         {
             await RunStep("ReturnToMenu (EventBus) -> MenuScene loaded", async () =>
             {
-                // Dispara o evento que o seu TerminalOverlayController usa no botão Menu
                 EventBus<GameReturnToMenuRequestedEvent>.Raise(new GameReturnToMenuRequestedEvent());
 
-                // Aguarda FSM em MenuState (contrato mínimo)
                 await WaitUntilAsync(
                     predicate: () => GameManagerStateMachine.Instance != null &&
                                      GameManagerStateMachine.Instance.CurrentState is MenuState,
@@ -349,13 +362,11 @@ namespace _ImmersiveGames.Scripts.QA
 
                 if (strictSceneAsserts && !string.IsNullOrWhiteSpace(expectedMenuSceneName))
                 {
-                    // “Load assert” mais robusto que “active scene”
                     var menuScene = SceneManager.GetSceneByName(expectedMenuSceneName);
                     if (!menuScene.isLoaded)
                         throw new Exception($"MenuScene esperada não está carregada: '{expectedMenuSceneName}'.");
                 }
 
-                // Overlay deve estar oculto ao retornar ao menu (watcher deve esconder)
                 ResolveReferences();
                 if (terminalOverlay != null && terminalOverlay.IsVisible)
                 {
@@ -366,31 +377,56 @@ namespace _ImmersiveGames.Scripts.QA
             });
         }
 
-        private async Task Step_ResetAsync()
+        private async Task Step_ResetInPlaceAsync()
         {
-            await RunStep("Reset (EventBus) -> pipeline executes", async () =>
+            await RunStep("Reset IN-PLACE (IResetOrchestrator)", async () =>
             {
-                EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+                AppendLine("[QA] Reset IN-PLACE: garantindo Gameplay...");
+                await Step_GoToGameplayAsync();
 
-                // Como o seu ResetGameAsync usa pipeline + cenas, aqui validamos um sinal mínimo:
-                // - FSM em MenuState (o reset rebuild volta pro menu e dispara transição)
-                await WaitUntilAsync(
-                    predicate: () => GameManagerStateMachine.Instance != null,
-                    timeoutSeconds: defaultStepTimeoutSeconds,
-                    timeoutMessage: "GameManagerStateMachine.Instance não disponível durante Reset."
-                );
-
-                // Permite que o pipeline comece (um ou dois frames)
-                await DelayUnscaled(0.1f);
-
-                // Não fazemos assert rígido de estado final (depende do seu fluxo),
-                // mas garantimos que o jogo não ficou com timescale travado.
-                if (Mathf.Abs(Time.timeScale - 1f) > 0.001f)
-                {
-                    DebugUtility.LogWarning<QaOverlayE2ETester>(
-                        $"[QA] TimeScale não voltou para 1 imediatamente após Reset. Atual={Time.timeScale:0.###} (pode ser esperado dependendo do fluxo).");
-                }
+                bool ok = await ResetInPlaceAsync();
+                if (!ok)
+                    throw new Exception("Reset IN-PLACE falhou (ok=false).");
             });
+        }
+
+        #endregion
+
+        #region Reset helpers
+
+        private async Task<bool> ResetInPlaceAsync()
+        {
+            if (string.IsNullOrWhiteSpace(gameplaySceneNameForReset))
+            {
+                DebugUtility.LogError<QaOverlayE2ETester>("[QA] gameplaySceneNameForReset vazio. Configure no Inspector.");
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetForScene<IResetOrchestrator>(gameplaySceneNameForReset, out var orchestrator) ||
+                orchestrator == null)
+            {
+                DebugUtility.LogError<QaOverlayE2ETester>(
+                    $"[QA] IResetOrchestrator não encontrado no DI para a cena '{gameplaySceneNameForReset}'. " +
+                    "Confirme que ResetOrchestratorBehaviour está na GameplayScene e registrou no Awake.");
+                return false;
+            }
+
+            AppendLine("[QA] Chamando IResetOrchestrator.RequestResetAsync...");
+            DebugUtility.LogVerbose<QaOverlayE2ETester>("[QA] Reset IN-PLACE => RequestResetAsync");
+
+            bool ok = await orchestrator.RequestResetAsync(
+                new ResetRequest(ResetScope.AllActorsInScene, reason: "QA Reset IN-PLACE"));
+
+            // settle mínimo
+            await DelayUnscaled(0.1f);
+
+            if (Mathf.Abs(Time.timeScale - 1f) > 0.001f)
+            {
+                DebugUtility.LogWarning<QaOverlayE2ETester>(
+                    $"[QA] TimeScale != 1 após reset IN-PLACE. Atual={Time.timeScale:0.###}");
+            }
+
+            return ok;
         }
 
         #endregion
@@ -421,7 +457,6 @@ namespace _ImmersiveGames.Scripts.QA
                 DebugUtility.LogError<QaOverlayE2ETester>($"[QA] Step FAIL: {name} | {ex}");
                 AppendLine($"[QA] Step FAIL: {name} | {ex.Message}");
 
-                // Re-throw para abortar o run, mantendo stacktrace.
                 throw;
             }
             finally
@@ -499,7 +534,7 @@ namespace _ImmersiveGames.Scripts.QA
                 return;
 
             const int w = 520;
-            const int h = 520;
+            const int h = 560;
             const int pad = 10;
 
             Rect rect = new Rect(pad, pad, w, h);
@@ -528,6 +563,20 @@ namespace _ImmersiveGames.Scripts.QA
             if (GUILayout.Button("Stop", GUILayout.Height(28)))
                 Stop();
             GUI.enabled = true;
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            GUILayout.BeginHorizontal();
+
+            GUI.enabled = !_isRunning;
+            if (GUILayout.Button("Reset IN-PLACE", GUILayout.Height(26)))
+                _ = ResetInPlaceAsync();
+
+            if (GUILayout.Button("Reset MACRO", GUILayout.Height(26)))
+                EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            GUI.enabled = true;
+
             GUILayout.EndHorizontal();
 
             GUILayout.Space(6);

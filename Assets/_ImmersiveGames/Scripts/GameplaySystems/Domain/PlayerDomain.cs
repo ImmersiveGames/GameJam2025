@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -15,13 +16,20 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         bool RegisterPlayer(IActor actor);
         bool UnregisterPlayer(IActor actor);
         bool TryGetPlayerByIndex(int index, out IActor player);
+
+        // NEW: spawn pose registry
+        bool TryGetSpawnPose(string actorId, out Pose pose);
+        void SetSpawnPose(string actorId, Pose pose);
     }
-    
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PlayerDomain : IPlayerDomain
     {
         private readonly List<IActor> _players = new();
         private readonly HashSet<string> _playerIds = new();
+
+        // NEW: Spawn pose por ActorId (capturado no primeiro register, ou atualizado via SetSpawnPose)
+        private readonly Dictionary<string, Pose> _spawnPoses = new();
 
         public event Action<IActor> PlayerRegistered;
         public event Action<IActor> PlayerUnregistered;
@@ -33,8 +41,6 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             if (actor == null)
                 return false;
 
-            // Importante: ActorId vazio pode acontecer durante inicialização.
-            // Não é um erro em si; apenas "ainda não está pronto".
             if (string.IsNullOrWhiteSpace(actor.ActorId))
                 return false;
 
@@ -43,6 +49,16 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             _playerIds.Add(actor.ActorId);
             _players.Add(actor);
+
+            // Captura spawn pose inicial (somente se ainda não existe)
+            if (!_spawnPoses.ContainsKey(actor.ActorId) && actor.Transform != null)
+            {
+                var t = actor.Transform;
+                _spawnPoses[actor.ActorId] = new Pose(t.position, t.rotation);
+
+                DebugUtility.LogVerbose<PlayerDomain>(
+                    $"SpawnPose capturado para Player '{actor.ActorName}' ({actor.ActorId}) => pos={t.position}, rot={t.rotation.eulerAngles}.");
+            }
 
             PlayerRegistered?.Invoke(actor);
 
@@ -79,6 +95,27 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             player = _players[index];
             return player != null;
+        }
+
+        public bool TryGetSpawnPose(string actorId, out Pose pose)
+        {
+            pose = default;
+
+            if (string.IsNullOrWhiteSpace(actorId))
+                return false;
+
+            return _spawnPoses.TryGetValue(actorId, out pose);
+        }
+
+        public void SetSpawnPose(string actorId, Pose pose)
+        {
+            if (string.IsNullOrWhiteSpace(actorId))
+                return;
+
+            _spawnPoses[actorId] = pose;
+
+            DebugUtility.LogVerbose<PlayerDomain>(
+                $"SpawnPose atualizado para ActorId='{actorId}' => pos={pose.position}, rot={pose.rotation.eulerAngles}.");
         }
     }
 }

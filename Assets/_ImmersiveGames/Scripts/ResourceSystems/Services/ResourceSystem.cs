@@ -6,6 +6,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 {
     /// <summary>
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public string EntityId { get; }
         private readonly Dictionary<ResourceType, IResourceValue> _resources = new();
         private readonly Dictionary<ResourceType, ResourceInstanceConfig> _instanceConfigs = new();
-        
+
         private readonly IResourceLinkService _linkService;
 
         public event Action<ResourceUpdateEvent> ResourceUpdated;
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public ResourceSystem(string entityId, IEnumerable<ResourceInstanceConfig> configs)
         {
             EntityId = string.IsNullOrEmpty(entityId) ? Guid.NewGuid().ToString() : entityId;
-            
+
             if (!DependencyManager.Provider.TryGetGlobal(out _linkService))
             {
                 _linkService = new ResourceLinkService();
@@ -47,10 +48,17 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         public void Set(ResourceType type, float value, ResourceChangeSource source = ResourceChangeSource.Manual)
         {
             if (!_resources.TryGetValue(type, out var resource)) return;
+
             float previous = resource.GetCurrentValue();
             float clamped = Mathf.Clamp(value, 0, resource.GetMaxValue());
             float delta = clamped - previous;
-            if (Mathf.Approximately(delta, 0f)) return;
+
+            if (Mathf.Approximately(delta, 0f))
+            {
+                // Não muda valor, mas pode ser útil notificar em fluxos de rebind.
+                // Mantemos Set "silencioso" por padrão (comportamento existente).
+                return;
+            }
 
             ApplyDelta(type, resource, delta, source, false);
         }
@@ -86,7 +94,7 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
 
             float desiredReduction = -delta; // Converter para positivo
             float sourceAvailable = sourceResource.GetCurrentValue();
-            
+
             // Calcular quanto pode ser reduzido do recurso fonte
             float sourceReduction = Mathf.Min(desiredReduction, sourceAvailable);
             float remainingReduction = desiredReduction - sourceReduction;
@@ -117,18 +125,14 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         private bool ApplyDelta(ResourceType type, IResourceValue resource, float delta, ResourceChangeSource source, bool isLinkedChange)
         {
             if (resource == null)
-            {
                 return false;
-            }
 
             float previous = resource.GetCurrentValue();
             float target = Mathf.Clamp(previous + delta, 0f, resource.GetMaxValue());
             float appliedDelta = target - previous;
 
             if (Mathf.Approximately(appliedDelta, 0f))
-            {
                 return false;
-            }
 
             var context = new ResourceChangeContext(this, type, previous, target, appliedDelta, resource.GetMaxValue(), source, isLinkedChange);
             ResourceChanging?.Invoke(context);
@@ -140,17 +144,58 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
                 LastDamageTime = Time.time;
             }
 
+            NotifyResource(type, resource, source, isLinkedChange);
+            ResourceChanged?.Invoke(context);
+
+            return true;
+        }
+
+        private void NotifyResource(ResourceType type, IResourceValue resource, ResourceChangeSource source, bool isLinkedChange)
+        {
             var evt = new ResourceUpdateEvent(EntityId, type, resource);
             ResourceUpdated?.Invoke(evt);
             EventBus<ResourceUpdateEvent>.Raise(evt);
 
-            ResourceChanged?.Invoke(context);
-            return true;
+            // Observação: ResourceChanged é chamado por quem cria o ResourceChangeContext.
+            // Aqui só levantamos o “update” (que é o que os binds de UI normalmente consomem).
+        }
+
+        /// <summary>
+        /// Reset dos recursos para os valores iniciais dos ResourceInstanceConfig.
+        /// Importante: mantém a instância do ResourceSystem (não quebra binds).
+        /// Opcionalmente força notificação mesmo se o valor já estiver igual.
+        /// </summary>
+        public void ResetToInitialValues(ResourceChangeSource source = ResourceChangeSource.Manual, bool forceNotify = true)
+        {
+            foreach (var kv in _instanceConfigs)
+            {
+                var type = kv.Key;
+                var cfg = kv.Value;
+                if (cfg == null || cfg.resourceDefinition == null) continue;
+
+                if (!_resources.TryGetValue(type, out var resource) || resource == null)
+                    continue;
+
+                float previous = resource.GetCurrentValue();
+                float initial = Mathf.Clamp(cfg.resourceDefinition.initialValue, 0f, resource.GetMaxValue());
+
+                if (!Mathf.Approximately(previous, initial))
+                {
+                    // Reusa pipeline padrão (com eventos e contextos)
+                    float delta = initial - previous;
+                    ApplyDelta(type, resource, delta, source, false);
+                }
+                else if (forceNotify)
+                {
+                    // Força update para UI/HUD rebindarem (mesmo sem delta)
+                    NotifyResource(type, resource, source, false);
+                }
+            }
         }
 
         public IResourceValue Get(ResourceType type) => _resources.GetValueOrDefault(type);
         public IReadOnlyDictionary<ResourceType, IResourceValue> GetAll() => _resources;
-        // E modifique o GetInstanceConfig para debug:
+
         public ResourceInstanceConfig GetInstanceConfig(ResourceType resourceType)
         {
             _instanceConfigs.TryGetValue(resourceType, out var config);
@@ -162,26 +207,24 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
         {
             LastDamageTime = value;
         }
-        /// <summary>
-        /// Retorna todos os ResourceTypes registrados neste sistema
-        /// </summary>
+
         public IEnumerable<ResourceType> GetAllRegisteredTypes()
         {
             return _resources.Keys;
         }
 
-        /// <summary>
-        /// Tenta obter o valor de um recurso específico
-        /// </summary>
         public bool TryGetValue(ResourceType resourceType, out IResourceValue value)
         {
             return _resources.TryGetValue(resourceType, out value);
         }
+
         public void Dispose()
         {
             _resources.Clear();
             _instanceConfigs.Clear();
             ResourceUpdated = null;
+            ResourceChanging = null;
+            ResourceChanged = null;
         }
 
         [ContextMenu("🔍 Debug Instance Configs")]
@@ -190,9 +233,9 @@ namespace _ImmersiveGames.Scripts.ResourceSystems.Services
             DebugUtility.LogVerbose<ResourceSystem>($"🔍 Instance Configs for {EntityId}:");
             foreach (var (resourceType, resourceInstanceConfig) in _instanceConfigs)
             {
-                DebugUtility.LogVerbose<ResourceSystem>($"  - {resourceType}: Config={resourceInstanceConfig != null}, Style={resourceInstanceConfig?.slotStyle != null} ({resourceInstanceConfig?.slotStyle?.name})");
+                DebugUtility.LogVerbose<ResourceSystem>(
+                    $"  - {resourceType}: Config={resourceInstanceConfig != null}, Style={resourceInstanceConfig?.slotStyle != null} ({resourceInstanceConfig?.slotStyle?.name})");
             }
         }
-       
     }
 }

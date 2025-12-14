@@ -1,7 +1,10 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+﻿using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -22,6 +25,17 @@ namespace _ImmersiveGames.Scripts.QA
         [Header("QA Gate Token (independente da FSM)")]
         [Tooltip("Token de QA para fechar/abrir o SimulationGate sem envolver FSM e sem mexer no Time.timeScale.")]
         [SerializeField] private string qaPauseGateToken = "qa.pause";
+
+        [Header("Reset IN-PLACE (Orchestrator)")]
+        [Tooltip("Nome da cena onde o ResetOrchestratorBehaviour está registrado no DI (scene-scoped).")]
+        [SerializeField] private string gameplaySceneNameForOrchestrator = "GameplayScene";
+
+        [Tooltip("Loga detalhes extras quando roda Reset IN-PLACE.")]
+        [SerializeField] private bool logResetInPlaceVerbose = true;
+
+        [Header("Reset de Fase (Timer)")]
+        [Tooltip("Se ligado, quando rodar Reset IN-PLACE em AllActorsInScene, dispara GamePhaseResetEvent para reiniciar o timer.")]
+        [SerializeField] private bool raisePhaseResetEventOnAllActorsReset = true;
 
         private ISimulationGateService _gateService;
         private bool _qaGateTokenHeld;
@@ -93,7 +107,7 @@ namespace _ImmersiveGames.Scripts.QA
         [ContextMenu("QA/Resume (FSM Request)")]
         private void CM_RequestResume() => RequestResume();
 
-        [ContextMenu("QA/Soft Reset (FSM Request)")]
+        [ContextMenu("QA/Soft Reset (FSM Request) [MACRO]")]
         private void CM_SoftReset() => SoftReset();
 
         [ContextMenu("QA/Force GameOver (Default Reason)")]
@@ -110,6 +124,19 @@ namespace _ImmersiveGames.Scripts.QA
 
         [ContextMenu("QA Gate/Toggle Pause Token (NO FSM, NO timeScale)")]
         private void CM_QA_GateTogglePauseToken() => QA_GateTogglePauseToken();
+
+        // ---------
+        // Reset IN-PLACE (sem GameResetRequestedEvent / sem MenuState / sem SceneTransition)
+        // ---------
+
+        [ContextMenu("QA/Reset IN-PLACE (AllActorsInScene)")]
+        private void CM_ResetInPlace_AllActors() => _ = ResetInPlaceAsync(ResetScope.AllActorsInScene, "QA ContextMenu");
+
+        [ContextMenu("QA/Reset IN-PLACE (PlayersOnly)")]
+        private void CM_ResetInPlace_PlayersOnly() => _ = ResetInPlaceAsync(ResetScope.PlayersOnly, "QA ContextMenu");
+
+        [ContextMenu("QA/Reset IN-PLACE (EaterOnly)")]
+        private void CM_ResetInPlace_EaterOnly() => _ = ResetInPlaceAsync(ResetScope.EaterOnly, "QA ContextMenu");
 
         // =========================
         // Public API (UI/Buttons)
@@ -181,16 +208,87 @@ namespace _ImmersiveGames.Scripts.QA
 
         #endregion
 
-        #region Soft Reset (via FSM)
+        #region Soft Reset (MACRO via FSM/EventBus)
 
+        /// <summary>
+        /// Reset MACRO: dispara GameResetRequestedEvent.
+        /// Isso é esperado acionar MenuContext/GameManager/SceneTransition (fade/loading) dependendo do seu fluxo.
+        /// Use isso para testar transição e fluxo "full reset".
+        /// Para validar o sistema novo (ResetOrchestratorBehaviour), use Reset IN-PLACE.
+        /// </summary>
         public void SoftReset()
         {
             LogDiagnostics("[MenuContext] SoftReset (before)");
 
-            DebugUtility.LogVerbose<MenuContextController>("[MenuContext] SoftReset (GameResetRequestedEvent).");
+            DebugUtility.LogVerbose<MenuContextController>("[MenuContext] SoftReset (GameResetRequestedEvent) [MACRO].");
             EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
 
             LogDiagnostics("[MenuContext] SoftReset (after request)");
+        }
+
+        #endregion
+
+        #region Reset IN-PLACE (Orchestrator)
+
+        /// <summary>
+        /// Reset IN-PLACE: chama o IResetOrchestrator diretamente (scene-scoped).
+        /// NÃO dispara GameResetRequestedEvent e portanto NÃO deve entrar em MenuState/Fade/SceneTransition.
+        /// </summary>
+        public async Task<bool> ResetInPlaceAsync(ResetScope scope, string reason = "Manual")
+        {
+            LogDiagnostics($"[MenuContext] ResetInPlace (before) | Scope={scope}");
+
+            if (string.IsNullOrWhiteSpace(gameplaySceneNameForOrchestrator))
+            {
+                DebugUtility.LogError<MenuContextController>(
+                    "[MenuContext] gameplaySceneNameForOrchestrator vazio. Configure no Inspector.");
+                return false;
+            }
+
+            var provider = DependencyManager.Provider;
+            if (provider == null)
+            {
+                DebugUtility.LogError<MenuContextController>(
+                    "[MenuContext] DependencyManager.Provider null. Não é possível resolver IResetOrchestrator.");
+                return false;
+            }
+
+            if (!provider.TryGetForScene<IResetOrchestrator>(gameplaySceneNameForOrchestrator, out var orchestrator) ||
+                orchestrator == null)
+            {
+                DebugUtility.LogError<MenuContextController>(
+                    $"[MenuContext] IResetOrchestrator não encontrado para a cena '{gameplaySceneNameForOrchestrator}'. " +
+                    "Confirme que ResetOrchestratorBehaviour está na GameplayScene e registrou no Awake.");
+                return false;
+            }
+
+            if (logResetInPlaceVerbose)
+            {
+                DebugUtility.LogVerbose<MenuContextController>(
+                    $"[MenuContext] Reset IN-PLACE => RequestResetAsync | Scene='{gameplaySceneNameForOrchestrator}' | Scope={scope} | Reason='{reason}'");
+            }
+
+            bool ok = await orchestrator.RequestResetAsync(new ResetRequest(scope, $"MenuContext ResetInPlace: {reason}"));
+
+            // Regra nova: apenas reset ALL (reinício de fase) reinicia timer.
+            // PlayersOnly/EaterOnly NÃO mexem em timer.
+            if (ok && raisePhaseResetEventOnAllActorsReset && scope == ResetScope.AllActorsInScene)
+            {
+                DebugUtility.LogVerbose<MenuContextController>(
+                    $"[MenuContext] Reset ALL => disparando GamePhaseResetEvent (timer reinicia). Reason='{reason}'");
+
+                EventBus<GamePhaseResetEvent>.Raise(new GamePhaseResetEvent($"QA Reset ALL: {reason}"));
+            }
+
+            if (logResetInPlaceVerbose)
+            {
+                DebugUtility.LogVerbose<MenuContextController>(
+                    $"[MenuContext] Reset IN-PLACE завершён | ok={ok} | Scope={scope}");
+            }
+
+            LogDiagnostics("[MenuContext] ResetInPlace (after)");
+
+            return ok;
         }
 
         #endregion

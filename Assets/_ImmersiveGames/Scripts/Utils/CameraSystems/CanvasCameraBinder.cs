@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.CameraSystems;
+﻿using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.CameraSystems;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -10,12 +12,26 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
     /// ao Canvas em modo WorldSpace. Suporta troca de câmera em runtime.
     /// </summary>
     [RequireComponent(typeof(Canvas))]
-    public class CanvasCameraBinder : MonoBehaviour
+    public class CanvasCameraBinder : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
         #region Private Fields
 
         private Canvas _canvas;
         private ICameraResolver _resolver;
+        private bool _subscribed;
+
+        #endregion
+
+        #region Reset Ordering / Filtering
+
+        // UI binder pode rebindar depois do player/câmera.
+        public int ResetOrder => 50;
+
+        public bool ShouldParticipate(ResetScope scope)
+        {
+            // Em geral faz sentido em reset amplo; mas permitir PlayersOnly também é seguro.
+            return scope == ResetScope.AllActorsInScene || scope == ResetScope.PlayersOnly;
+        }
 
         #endregion
 
@@ -28,37 +44,27 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
             if (!DependencyManager.Provider.TryGetGlobal(out _resolver))
             {
                 DebugUtility.LogError<CanvasCameraBinder>(
-                    $"[{name}] CameraResolverService não encontrado. CanvasCameraBinder desativado.");
+                    $"[{name}] CameraResolverService não encontrado. CanvasCameraBinder desativado.",
+                    this);
                 enabled = false;
                 return;
             }
-
-            _resolver.OnDefaultCameraChanged += OnCameraChanged;
         }
 
         private void OnEnable()
         {
-            // Ao habilitar, já tenta vincular a câmera atual
+            Subscribe();
             BindCamera();
         }
 
         private void OnDisable()
         {
-            // Se o componente for desabilitado, não queremos mais receber eventos
-            if (_resolver != null)
-            {
-                _resolver.OnDefaultCameraChanged -= OnCameraChanged;
-            }
+            Unsubscribe();
         }
 
         private void OnDestroy()
         {
-            // Segurança extra para casos de destruição direta do GameObject
-            if (_resolver != null)
-            {
-                _resolver.OnDefaultCameraChanged -= OnCameraChanged;
-            }
-
+            Unsubscribe();
             _canvas = null;
         }
 
@@ -66,42 +72,83 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 
         #region Camera Binding Logic
 
+        private void Subscribe()
+        {
+            if (_resolver == null || _subscribed)
+                return;
+
+            _resolver.OnDefaultCameraChanged += OnCameraChanged;
+            _subscribed = true;
+        }
+
+        private void Unsubscribe()
+        {
+            if (_resolver == null || !_subscribed)
+                return;
+
+            _resolver.OnDefaultCameraChanged -= OnCameraChanged;
+            _subscribed = false;
+        }
+
         private void BindCamera()
         {
-            // Se o Canvas já foi destruído ou não existe, não faz nada
             if (_canvas == null)
                 return;
 
-            // Só faz sentido em WorldSpace
             if (_canvas.renderMode != RenderMode.WorldSpace)
                 return;
 
             if (_resolver == null)
                 return;
 
-            var canvasWorldCamera = _resolver.GetDefaultCamera();
-
-            if (canvasWorldCamera == null)
+            var cam = _resolver.GetDefaultCamera();
+            if (cam == null)
             {
                 DebugUtility.LogWarning<CanvasCameraBinder>(
-                    $"[{name}] Nenhuma câmera registrada no CameraResolverService.");
+                    $"[{name}] Nenhuma câmera registrada no CameraResolverService.",
+                    this);
                 return;
             }
 
-            _canvas.worldCamera = canvasWorldCamera;
+            _canvas.worldCamera = cam;
         }
 
         private void OnCameraChanged(Camera newCamera)
         {
-            // Este callback pode ser chamado depois que o Canvas for destruído,
-            // então precisamos garantir que ainda existe antes de acessar.
             if (_canvas == null)
                 return;
 
             if (_canvas.renderMode != RenderMode.WorldSpace)
                 return;
 
+            if (newCamera == null)
+                return;
+
             _canvas.worldCamera = newCamera;
+        }
+
+        #endregion
+
+        #region Reset Phases
+
+        public Task Reset_CleanupAsync(ResetContext ctx)
+        {
+            // Evita callbacks durante reset.
+            Unsubscribe();
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RestoreAsync(ResetContext ctx)
+        {
+            // Nada pesado aqui.
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RebindAsync(ResetContext ctx)
+        {
+            Subscribe();
+            BindCamera();
+            return Task.CompletedTask;
         }
 
         #endregion

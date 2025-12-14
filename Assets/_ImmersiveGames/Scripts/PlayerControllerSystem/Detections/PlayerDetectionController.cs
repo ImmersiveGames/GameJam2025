@@ -1,13 +1,15 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 {
-    public class PlayerDetectionController : AbstractDetector
+    public class PlayerDetectionController : AbstractDetector, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
         [Header("Detection Types")]
         [SerializeField] private DetectionType planetResourcesDetectionType;
@@ -17,12 +19,25 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         private SensorController _sensorController;
         private readonly HashSet<IDetectable> _activeDefenseDetections = new();
 
+        #region Reset Order / Scope
+
+        // Depois de Movement/Resource; antes de UI que dependa de detectables.
+        public int ResetOrder => 0;
+
+        public bool ShouldParticipate(ResetScope scope)
+        {
+            return scope == ResetScope.AllActorsInScene ||
+                   scope == ResetScope.PlayersOnly ||
+                   scope == ResetScope.ActorIdSet;
+        }
+
+        #endregion
+
         protected override void Awake()
         {
             base.Awake();
 
-            // Como o Player pode operar múltiplos sensores, guardamos a referência do SensorController
-            // para mapear os DetectionType configurados via coleção em tempo de execução.
+            // Player pode operar múltiplos sensores; guardamos referência.
             _sensorController = GetComponent<SensorController>() ??
                                 GetComponentInChildren<SensorController>(includeInactive: true);
         }
@@ -92,6 +107,12 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
         private void CacheDetectionTypesFromSensors()
         {
+            if (_sensorController == null)
+            {
+                _sensorController = GetComponent<SensorController>() ??
+                                    GetComponentInChildren<SensorController>(includeInactive: true);
+            }
+
             if (_sensorController == null)
             {
                 DebugUtility.LogWarning<PlayerDetectionController>(
@@ -199,7 +220,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
             if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
             {
-                // Mesmo sem o PlanetsMaster válido, garantimos que o cache foi limpo.
                 return;
             }
 
@@ -214,6 +234,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         protected override void OnCacheCleared()
         {
             _activeDefenseDetections.Clear();
+            _registeredDetectionTypes.Clear();
             base.OnCacheCleared();
         }
 
@@ -235,5 +256,31 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
             return planetMaster != null;
         }
+
+        #region Reset (IResetInterfaces)
+
+        public Task Reset_CleanupAsync(ResetContext ctx)
+        {
+            // Limpa caches locais para não carregar “estado velho” pós reset.
+            _activeDefenseDetections.Clear();
+            _registeredDetectionTypes.Clear();
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RestoreAsync(ResetContext ctx)
+        {
+            // Reconstroi mapeamentos dos sensores.
+            CacheDetectionTypesFromSensors();
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RebindAsync(ResetContext ctx)
+        {
+            // Segurança: se o SensorController/Collection foi reconfigurado em runtime.
+            CacheDetectionTypesFromSensors();
+            return Task.CompletedTask;
+        }
+
+        #endregion
     }
 }

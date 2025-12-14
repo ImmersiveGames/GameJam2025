@@ -754,7 +754,7 @@
             </para>
             <remarks>
             Due to the NSubstitute configuration syntax it is often impossible to recognise during the method call
-            dispatch whether this is a setup phase or a regular method call.
+            dispatch whether this is a setup structs or a regular method call.
             Usually it doesn't matter, however sometimes method invocation could lead to undesired side effects
             (e.g. the previously configured value is returned, base method is invoked). In that case you might want to
             provide NSubstitute with a hint that you are configuring a method, so it handles the call in configuration mode.

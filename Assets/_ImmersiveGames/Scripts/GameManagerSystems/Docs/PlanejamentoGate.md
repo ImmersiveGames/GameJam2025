@@ -1,4 +1,9 @@
-﻿# Planejamento Gate / Reset / Scene Flow
+﻿Perfeito. Abaixo está o **PlanejamentoGate.md – versão CHECKED / UPDATED**, já **reancorada no código real existente** e marcando claramente **o que está concluído, o que está parcial e o que falta**.
+Esta versão pode substituir o `.md` atual sem perda de histórico conceitual.
+
+---
+
+# Planejamento Gate / Reset / Scene Flow
 
 ## Versão CHECKED / UPDATED (baseline atual do projeto)
 
@@ -38,13 +43,13 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 * `IActorRegistry` como source of truth local
 * Domínios especializados:
 
-    * `IPlayerDomain`
-    * `IEaterDomain`
+  * `IPlayerDomain`
+  * `IEaterDomain`
 * Auto-register determinístico:
 
-    * `ActorAutoRegistrar`
-    * `PlayerAutoRegistrar`
-    * `EaterAutoRegistrar`
+  * `ActorAutoRegistrar`
+  * `PlayerAutoRegistrar`
+  * `EaterAutoRegistrar`
 * Resolução por cena via `DependencyManager`
 
 ### Aceite (atingido)
@@ -93,8 +98,8 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 * Tokens centralizados (`SimulationGateTokens`)
 * Semântica:
 
-    * 1+ tokens ativos → Gate fechado
-    * Nenhum token → Gate aberto
+  * 1+ tokens ativos → Gate fechado
+  * Nenhum token → Gate aberto
 * Evento `GateChanged(bool isOpen)`
 
 ### Aceite (atingido)
@@ -115,10 +120,10 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 * `IGameplayExecutionParticipant`
 * `GameplayExecutionParticipantBehaviour`
 
-    * Auto-discovery
-    * Auto-collect com filtros
-    * Exclusões explícitas
-    * Registro/desregistro automático
+  * Auto-discovery
+  * Auto-collect com filtros
+  * Exclusões explícitas
+  * Registro/desregistro automático
 
 ### Funcionamento real
 
@@ -146,8 +151,8 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 * Integração com SceneFlow moderno
 * Eventos:
 
-    * `GameResetStartedEvent`
-    * `GameResetCompletedEvent`
+  * `GameResetStartedEvent`
+  * `GameResetCompletedEvent`
 
 ### O que AINDA NÃO foi feito (planejado)
 
@@ -155,15 +160,15 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 * ❌ Reset dirigido por `ActorRegistry`
 * ❌ Reset por fases explícitas:
 
-    1. Cleanup / Unbind
-    2. Restore Defaults
-    3. Rebind / Rearm
+  1. Cleanup / Unbind
+  2. Restore Defaults
+  3. Rebind / Rearm
 * ❌ Contrato formal de reset (`IResettable` por fase)
 * ❌ Integração clara entre:
 
-    * reset
-    * gameplay participants
-    * domínios
+  * reset
+  * gameplay participants
+  * domínios
 
 ### Observação importante
 
@@ -189,10 +194,10 @@ Planejada **somente após a Fase 4 estar sólida**.
 * Redução de acoplamento com `GameManager`
 * Auditoria final de participantes:
 
-    * input
-    * IA
-    * spawners
-    * subscribers
+  * input
+  * IA
+  * spawners
+  * subscribers
 * Documentação final do ciclo completo:
   FSM → Gate → Coordinator → Reset → SceneFlow
 
@@ -205,3 +210,141 @@ Planejada **somente após a Fase 4 estar sólida**.
 * **Nada das Fases 0–3 deve ser refeito**
 * O código atual é considerado **baseline estável**
 * O próximo trabalho começa **exclusivamente na Fase 4**
+
+---
+
+## Próximo passo recomendado (concreto)
+
+Para retomar com segurança e sem novos galhos, a ordem correta é:
+
+1. **Desenhar o ResetOrchestrator (conceitual, sem código)**
+
+  * responsabilidades
+  * escopo
+  * relação com Gate e Registry
+2. Definir o **contrato de reset** (interfaces e fases)
+3. Só então implementar
+4. Integrar com QA e SceneFlow por último
+
+Se você quiser, no próximo passo eu posso:
+
+* **desenhar o ResetOrchestrator em detalhe (papel arquitetural)**, ou
+* **propor o contrato de reset (`IResettable`, fases, garantias)**, ou
+* **escrever a seção Fase 4 já pronta para virar código**
+
+Diga qual dessas três você quer atacar primeiro.
+
+
+Perfeito. Considerando a **versão CHECKED / UPDATED** que acabamos de consolidar, deixo registrado abaixo o **baseline oficial de retomada**, já organizado para você seguir sem risco de novos desvios.
+
+---
+
+## 📌 Planejamento Gate / Reset — BASELINE ATUAL
+
+Este planejamento passa a ser a **fonte única de verdade** a partir de agora.
+
+### O que está **fechado e não deve ser reaberto**
+
+* Fase 0 — Domínio por cena (ActorRegistry + Domains) ✅
+* Fase 1 — FSM macro com Execution Profile explícito ✅
+* Fase 2 — Simulation Gate token-based ✅
+* Fase 3 — GameplayExecutionCoordinator aplicado à GameplayScene ✅
+
+Essas fases **não entram mais em discussão nem refatoração estrutural**, apenas manutenção pontual se surgir bug.
+
+---
+
+## 🎯 Ponto exato de retomada
+
+### **Fase 4 — Reset in-place por Domínio**
+
+**Status atual:** parcialmente iniciado, mas **sem a peça central planejada**.
+
+👉 O planejamento foi interrompido **antes** da criação do:
+
+> **ResetOrchestrator (scene-scoped, domínio-aware)**
+
+Isso explica por que:
+
+* Reset ficou dividido entre `GameManager`, FSM e SceneFlow
+* QA flows começaram a “empurrar lógica”
+* O plano começou a parecer difuso
+
+Nada disso invalida o que foi feito — apenas indica **onde o trilho foi abandonado**.
+
+---
+
+## 🧭 Ordem correta para retomar (sem código ainda)
+
+A retomada deve seguir **exatamente esta sequência**, sem pular etapas:
+
+### 1️⃣ Definir o papel do **ResetOrchestrator**
+
+* Scene-scoped
+* Autoridade única do reset in-place
+* Usa `ActorRegistry` como fonte de verdade
+* Opera **sempre sob Gate (`SoftReset`)**
+
+➡️ *Saída esperada:* responsabilidade clara, sem implementação.
+
+---
+
+### 2️⃣ Definir o **contrato de reset**
+
+* Interface(s) explícita(s)
+* Reset por fases:
+
+  1. Cleanup / Unbind
+  2. Restore Defaults
+  3. Rebind / Rearm
+* Garantias:
+
+  * sem double subscription
+  * sem coroutine/task órfã
+  * sem dependência de ordem implícita
+
+➡️ *Saída esperada:* desenho do contrato, não código.
+
+---
+
+### 3️⃣ Integrar conceitualmente com o que já existe
+
+* FSM (quem pede reset)
+* Gate (quem bloqueia execução)
+* Coordinator (quem pausa gameplay)
+* SceneFlow (quem **não** faz reset, apenas transição)
+
+➡️ *Saída esperada:* fronteiras bem definidas, sem overlap.
+
+---
+
+### 4️⃣ Só então partir para implementação
+
+* Primeiro o Orchestrator
+* Depois os contratos
+* Por último, adaptação gradual dos sistemas críticos
+
+---
+
+## 🔒 Regra de ouro daqui em diante
+
+> **Nenhuma nova feature, QA flow ou ajuste de SceneFlow entra antes da Fase 4 estar concluída.**
+
+Isso garante:
+
+* retomada linear
+* zero regressão arquitetural
+* fim definitivo dos “galhos”
+
+---
+
+## Próximo passo — escolha objetiva
+
+Para avançarmos agora, escolha **um** dos itens abaixo (recomendado seguir a ordem):
+
+1. **Desenhar o ResetOrchestrator (papel arquitetural, responsabilidades, eventos)**
+2. **Definir o contrato de reset (interfaces e fases)**
+3. **Escrever a Fase 4 completa já no formato de documentação `.md` pronta para código**
+
+Diga apenas o número.
+A partir disso, seguimos sem voltar atrás.

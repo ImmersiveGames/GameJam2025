@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Skins;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -22,9 +24,15 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
     /// - A chave de áudio vem da estratégia ativa (ISpawnStrategy.ShootAudioKey).
     /// - Se a skin não fornecer um SoundData válido para essa chave, isso é tratado
     ///   como erro de configuração e o som não é tocado.
+    ///
+    /// Reset:
+    /// - Participa do ResetOrchestrator (Cleanup/Restore/Rebind) via IResetInterfaces.
+    /// - Cleanup: remove subscriptions de input.
+    /// - Restore: reseta estado volátil (cooldown).
+    /// - Rebind: re-encontra a action e re-subscreve (idempotente).
     /// </summary>
     [RequireComponent(typeof(PlayerInput))]
-    public class PlayerShootController : MonoBehaviour
+    public class PlayerShootController : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
         #region Serialized Fields
 
@@ -42,6 +50,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         [SerializeField] private SingleSpawnStrategy singleStrategy = new();
         [SerializeField] private MultipleLinearSpawnStrategy multipleLinearStrategy = new();
         [SerializeField] private CircularSpawnStrategy circularStrategy = new();
+
+        [Header("Reset Diagnostics")]
+        [SerializeField] private bool logResetVerbose = true;
 
         #endregion
 
@@ -64,6 +75,84 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         /// Obrigatório para tocar som de tiro.
         /// </summary>
         private IActorSkinAudioProvider _skinAudioProvider;
+
+        #endregion
+
+        #region Reset participation
+
+        // Menor primeiro. Ajuste conforme necessidade do projeto.
+        public int ResetOrder => 100;
+
+        public bool ShouldParticipate(ResetScope scope)
+        {
+            // Este componente só faz sentido em reset de player / all actors / set específico.
+            return scope != ResetScope.EaterOnly;
+        }
+
+        public Task Reset_CleanupAsync(ResetContext ctx)
+        {
+            // Idempotente: sempre remove antes de (re)adicionar no Rebind.
+            UnsubscribeFromSpawnAction();
+
+            if (logResetVerbose)
+            {
+                DebugUtility.LogVerbose<PlayerShootController>(
+                    $"[Reset][PlayerShootController] Cleanup | Actor='{_actor?.ActorName ?? name}' | {ctx}");
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RestoreAsync(ResetContext ctx)
+        {
+            // Restaura apenas estado volátil e previsível.
+            _lastShotTime = -Mathf.Infinity;
+
+            if (logResetVerbose)
+            {
+                DebugUtility.LogVerbose<PlayerShootController>(
+                    $"[Reset][PlayerShootController] Restore | lastShotTime reset | Actor='{_actor?.ActorName ?? name}' | {ctx}");
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RebindAsync(ResetContext ctx)
+        {
+            // Rebind precisa ser seguro mesmo se o componente estiver enabled/disabled.
+            // - Reencontra a action (caso o InputActions tenha sido reinstanciado)
+            // - Re-subscreve sem duplicar
+            if (!_isInitialized)
+            {
+                // Se por algum motivo ainda não inicializou (ordem de bootstrap),
+                // não tentamos forçar init aqui para não mascarar problemas.
+                if (logResetVerbose)
+                {
+                    DebugUtility.LogWarning<PlayerShootController>(
+                        $"[Reset][PlayerShootController] Rebind ignorado: componente não inicializado. Actor='{_actor?.ActorName ?? name}' | {ctx}",
+                        this);
+                }
+
+                return Task.CompletedTask;
+            }
+
+            // Re-resolve referências críticas (caso tenham mudado durante o reset in-place).
+            if (_playerInput == null) _playerInput = GetComponent<PlayerInput>();
+            if (_actor == null) _actor = GetComponent<IActor>();
+            if (_audioEmitter == null) _audioEmitter = GetComponent<EntityAudioEmitter>();
+            if (_skinAudioProvider == null) _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();
+
+            // Rebind input action
+            RebindInputAction();
+
+            if (logResetVerbose)
+            {
+                DebugUtility.LogVerbose<PlayerShootController>(
+                    $"[Reset][PlayerShootController] Rebind | Action='{actionName}' bound={( _spawnAction != null)} | Actor='{_actor?.ActorName ?? name}' | {ctx}");
+            }
+
+            return Task.CompletedTask;
+        }
 
         #endregion
 
@@ -90,10 +179,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 
         private void OnDisable()
         {
-            if (_spawnAction != null)
-            {
-                _spawnAction.performed -= OnSpawnPerformed;
-            }
+            UnsubscribeFromSpawnAction();
         }
 
         private void Start()
@@ -129,8 +215,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 
         private void OnDestroy()
         {
-            if (_spawnAction != null)
-                _spawnAction.performed -= OnSpawnPerformed;
+            UnsubscribeFromSpawnAction();
         }
 
         #endregion
@@ -224,6 +309,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                 return false;
             }
 
+            // Garante que não estamos duplicando subscription
+            UnsubscribeFromSpawnAction();
+
             _spawnAction = _playerInput.actions.FindAction(actionName);
             if (_spawnAction == null)
             {
@@ -242,13 +330,42 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             return true;
         }
 
+        private void RebindInputAction()
+        {
+            // Idempotente: remove e adiciona de volta.
+            if (_playerInput == null || _playerInput.actions == null)
+                return;
+
+            UnsubscribeFromSpawnAction();
+
+            _spawnAction = _playerInput.actions.FindAction(actionName);
+            if (_spawnAction == null)
+            {
+                DebugUtility.LogWarning<PlayerShootController>(
+                    $"[Reset][PlayerShootController] RebindInputAction falhou: action '{actionName}' não encontrada.",
+                    this);
+                return;
+            }
+
+            _spawnAction.performed += OnSpawnPerformed;
+        }
+
         private void SubscribeToSpawnAction()
         {
             if (_spawnAction == null)
                 return;
 
+            // defesa contra double-subscription
             _spawnAction.performed -= OnSpawnPerformed;
             _spawnAction.performed += OnSpawnPerformed;
+        }
+
+        private void UnsubscribeFromSpawnAction()
+        {
+            if (_spawnAction != null)
+            {
+                _spawnAction.performed -= OnSpawnPerformed;
+            }
         }
 
         #endregion
@@ -337,8 +454,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                 return;
             }
 
-            var context = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);
-            _audioEmitter.Play(soundToPlay, context);
+            var audioContext = AudioContext.Default(transform.position, _audioEmitter.UsesSpatialBlend);
+            _audioEmitter.Play(soundToPlay, audioContext);
 
             DebugUtility.LogVerbose<PlayerShootController>(
                 $"Som de tiro via skin (Key={key}, Strategy={strategyType}).");
