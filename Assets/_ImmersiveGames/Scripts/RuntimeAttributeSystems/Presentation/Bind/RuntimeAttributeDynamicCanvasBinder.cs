@@ -13,9 +13,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         {
             base.OnDependenciesInjected();
 
-            if (registerInPipeline && RuntimeAttributeCanvasPipelineManager.HasInstance)
+            if (registerInPipeline && RuntimeAttributeCanvasManager.HasInstance)
             {
-                RuntimeAttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
+                RuntimeAttributeCanvasManager.Instance.RegisterCanvas(this);
                 RuntimeAttributeEventHub.NotifyCanvasRegistered(CanvasId);
 
                 DebugUtility.LogVerbose<RuntimeAttributeDynamicCanvasBinder>(

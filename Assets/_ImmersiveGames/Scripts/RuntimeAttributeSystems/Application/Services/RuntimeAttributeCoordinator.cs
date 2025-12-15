@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         void ProcessPendingFirstUpdatesForCanvas(string canvasId);
     }
 
-    public class RuntimeAttributeOrchestratorService : IRuntimeAttributeOrchestrator, IInjectableComponent
+    public class RuntimeAttributeCoordinator : IRuntimeAttributeOrchestrator, IInjectableComponent
     {
         private readonly Dictionary<string, RuntimeAttributeContext> _actors = new();
         private readonly Dictionary<string, IAttributeCanvasBinder> _canvases = new();
@@ -36,24 +36,24 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         private readonly Dictionary<string, Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent>> _pendingFirstUpdates = new();
         private readonly HashSet<(string actorId, RuntimeAttributeType resourceType)> _processedFirstUpdates = new();
 
-        private readonly IRuntimeAttributeCanvasRoutingStrategy _routingStrategy;
+        private readonly IAttributeCanvasStrategy _strategy;
         private const string MainUICanvasId = "MainUI";
 
-        [Inject] private RuntimeAttributeCanvasPipelineManager _pipelineManager;
+        [Inject] private RuntimeAttributeCanvasManager _manager;
 
         public DependencyInjectionState InjectionState { get; set; }
 
-        public RuntimeAttributeOrchestratorService(IRuntimeAttributeCanvasRoutingStrategy routingStrategy = null)
+        public RuntimeAttributeCoordinator(IAttributeCanvasStrategy strategy = null)
         {
-            _routingStrategy = routingStrategy ?? new DefaultAttributeCanvasRoutingStrategy();
+            _strategy = strategy ?? new DefaultAttributeCanvasStrategy();
         }
 
-        public string GetObjectId() => "RuntimeAttributeOrchestratorService";
+        public string GetObjectId() => "RuntimeAttributeCoordinator";
 
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Ready;
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>(
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>(
                 "✅ Orchestrator Service fully initialized with dependencies",
                 DebugUtility.Colors.CrucialInfo);
 
@@ -67,11 +67,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 try
                 {
                     RegisterCanvas(binder);
-                    DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"🖼️ Auto-registered attributeCanvas '{binder.CanvasId}' on orchestrator initialization");
+                    DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"🖼️ Auto-registered attributeCanvas '{binder.CanvasId}' on orchestrator initialization");
                 }
                 catch (Exception ex)
                 {
-                    DebugUtility.LogWarning<RuntimeAttributeOrchestratorService>($"Failed auto-registering attributeCanvas {binder.CanvasId}: {ex}");
+                    DebugUtility.LogWarning<RuntimeAttributeCoordinator>($"Failed auto-registering attributeCanvas {binder.CanvasId}: {ex}");
                 }
             }
         }
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             if (!_actors.TryAdd(service.EntityId, service))
             {
-                DebugUtility.LogWarning<RuntimeAttributeOrchestratorService>($"Actor '{service.EntityId}' already registered");
+                DebugUtility.LogWarning<RuntimeAttributeCoordinator>($"Actor '{service.EntityId}' already registered");
                 return;
             }
 
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             CreateInitialSlotsForActor(service);
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"Registered actor '{service.EntityId}'");
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"Registered actor '{service.EntityId}'");
 
             ProcessPendingFirstUpdatesForActor(service.EntityId);
 
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                     if (IsCanvasReady(targetCanvasId))
                     {
                         ScheduleBindForActor(actorSvc.EntityId, resourceType, resourceValue, targetCanvasId);
-                        DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"✅ Immediate initial slot for {actorSvc.EntityId}.{resourceType}");
+                        DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"✅ Immediate initial slot for {actorSvc.EntityId}.{resourceType}");
                     }
                     else
                     {
@@ -143,14 +143,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             {
                 var bindRequest = new RuntimeAttributeEventHub.CanvasBindRequest(actorId, runtimeAttributeType, data, targetCanvasId);
                 RuntimeAttributeEventHub.RegisterPendingBind(bindRequest);
-                DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"📦 (Hub) Registered pending bind for {actorId}.{runtimeAttributeType} -> {targetCanvasId}");
+                DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"📦 (Hub) Registered pending bind for {actorId}.{runtimeAttributeType} -> {targetCanvasId}");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<RuntimeAttributeOrchestratorService>($"Failed registering pending bind in hub for {actorId}.{runtimeAttributeType}: {ex}");
+                DebugUtility.LogWarning<RuntimeAttributeCoordinator>($"Failed registering pending bind in hub for {actorId}.{runtimeAttributeType}: {ex}");
             }
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"📦 Cached initial slot for {actorId}.{runtimeAttributeType} -> {targetCanvasId}");
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"📦 Cached initial slot for {actorId}.{runtimeAttributeType} -> {targetCanvasId}");
         }
 
         public void RegisterCanvas(IAttributeCanvasBinder attributeCanvas)
@@ -159,11 +159,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             if (!_canvases.TryAdd(attributeCanvas.CanvasId, attributeCanvas))
             {
-                DebugUtility.LogWarning<RuntimeAttributeOrchestratorService>($"Canvas '{attributeCanvas.CanvasId}' already registered");
+                DebugUtility.LogWarning<RuntimeAttributeCoordinator>($"Canvas '{attributeCanvas.CanvasId}' already registered");
                 return;
             }
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>(
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>(
                 $"✅ Canvas '{attributeCanvas.CanvasId}' registered",
                 DebugUtility.Colors.Success);
 
@@ -206,10 +206,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning<RuntimeAttributeOrchestratorService>($"Failed registering pending first update in hub for {evt.ActorId}.{evt.RuntimeAttributeType}: {ex}");
+                DebugUtility.LogWarning<RuntimeAttributeCoordinator>($"Failed registering pending first update in hub for {evt.ActorId}.{evt.RuntimeAttributeType}: {ex}");
             }
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"📦 Cached first update for {evt.ActorId}.{evt.RuntimeAttributeType} -> {targetCanvasId}");
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"📦 Cached first update for {evt.ActorId}.{evt.RuntimeAttributeType} -> {targetCanvasId}");
         }
 
         private void ScheduleBindForActor(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data, string targetCanvasId)
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             if (!_pendingFirstUpdates.TryGetValue(canvasId, out var actorEvents))
                 return;
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"🔄 Processing {actorEvents.Count} pending updates for attributeCanvas '{canvasId}'");
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"🔄 Processing {actorEvents.Count} pending updates for attributeCanvas '{canvasId}'");
 
             foreach (var (key, evt) in actorEvents.ToList())
             {
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 {
                     ScheduleBindForActor(evt.ActorId, evt.RuntimeAttributeType, evt.NewValue, canvasId);
                     actorEvents.Remove(key);
-                    DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"✅ Processed cached update: {evt.ActorId}.{evt.RuntimeAttributeType}");
+                    DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"✅ Processed cached update: {evt.ActorId}.{evt.RuntimeAttributeType}");
                 }
             }
 
@@ -265,7 +265,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             string resolved = config == null ?
                 MainUICanvasId :
-                _routingStrategy.ResolveCanvasId(config, actorId);
+                _strategy.ResolveCanvasId(config, actorId);
 
             _canvasIdCache[cacheKey] = resolved;
             return resolved;
@@ -302,7 +302,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 _processedFirstUpdates.Remove(key);
             }
 
-            DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"Unregistered actor '{actorId}'");
+            DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"Unregistered actor '{actorId}'");
         }
 
         public RuntimeAttributeContext GetActorResourceSystem(string actorId) => _actors.GetValueOrDefault(actorId);
@@ -321,7 +321,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             if (_canvases.Remove(canvasId))
             {
                 _pendingFirstUpdates.Remove(canvasId);
-                DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"Unregistered attributeCanvas '{canvasId}'");
+                DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"Unregistered attributeCanvas '{canvasId}'");
             }
         }
 

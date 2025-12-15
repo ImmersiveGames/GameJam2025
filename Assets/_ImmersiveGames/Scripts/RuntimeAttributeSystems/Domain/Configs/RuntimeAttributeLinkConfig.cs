@@ -2,7 +2,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Link Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/RuntimeAttribute/Link Config")]
     public class RuntimeAttributeLinkConfig : ScriptableObject
     {
         [Header("Link Settings")]

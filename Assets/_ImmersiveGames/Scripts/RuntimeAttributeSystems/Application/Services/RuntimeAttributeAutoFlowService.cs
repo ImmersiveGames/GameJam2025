@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
@@ -8,14 +8,14 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
-    public class RuntimeAttributeAutoFlowEffectEvent : IEvent
+    public class RuntimeAttributeAutoFlowEvent : IEvent
     {
         public string ActorId { get; }
         public RuntimeAttributeType RuntimeAttributeType { get; }
         public float Delta { get; }
         public Vector3 Position { get; }
 
-        public RuntimeAttributeAutoFlowEffectEvent(string actorId, RuntimeAttributeType runtimeAttributeType, float delta, Vector3 position)
+        public RuntimeAttributeAutoFlowEvent(string actorId, RuntimeAttributeType runtimeAttributeType, float delta, Vector3 position)
         {
             ActorId = actorId;
             RuntimeAttributeType = runtimeAttributeType;
@@ -95,8 +95,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
                 _runtimeAttributeContext.Modify(type, perTick, RuntimeAttributeChangeSource.AutoFlow);
 
-                EventBus<RuntimeAttributeAutoFlowEffectEvent>.Raise(
-                    new RuntimeAttributeAutoFlowEffectEvent(_runtimeAttributeContext.EntityId, type, perTick, Vector3.zero)
+                EventBus<RuntimeAttributeAutoFlowEvent>.Raise(
+                    new RuntimeAttributeAutoFlowEvent(_runtimeAttributeContext.EntityId, type, perTick, Vector3.zero)
                 );
             }
         }

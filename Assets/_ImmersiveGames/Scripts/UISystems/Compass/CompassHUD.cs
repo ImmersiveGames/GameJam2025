@@ -76,9 +76,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
             InjectionState = DependencyInjectionState.Injecting;
             State = AttributeCanvasInitializationState.Injecting;
 
-            if (registerInPipeline && RuntimeAttributeCanvasPipelineManager.HasInstance)
+            if (registerInPipeline && RuntimeAttributeCanvasManager.HasInstance)
             {
-                RuntimeAttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
+                RuntimeAttributeCanvasManager.Instance.RegisterCanvas(this);
             }
 
             State = AttributeCanvasInitializationState.Ready;
@@ -91,9 +91,9 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         private void OnDestroy()
         {
-            if (!string.IsNullOrEmpty(CanvasId) && RuntimeAttributeCanvasPipelineManager.HasInstance)
+            if (!string.IsNullOrEmpty(CanvasId) && RuntimeAttributeCanvasManager.HasInstance)
             {
-                RuntimeAttributeCanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
+                RuntimeAttributeCanvasManager.Instance.UnregisterCanvas(CanvasId);
             }
         }
 

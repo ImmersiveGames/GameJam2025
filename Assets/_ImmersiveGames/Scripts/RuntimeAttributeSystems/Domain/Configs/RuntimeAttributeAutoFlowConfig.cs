@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Auto Flow Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/RuntimeAttribute/Auto Flow Config")]
     public class RuntimeAttributeAutoFlowConfig : ScriptableObject
     {
         [Tooltip("Se verdadeiro, regenera automaticamente")]

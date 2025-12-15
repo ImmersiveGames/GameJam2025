@@ -2,7 +2,7 @@
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Threshold Config")]
+    [CreateAssetMenu(menuName = "ImmersiveGames/RuntimeAttribute/Threshold Config")]
     public class RuntimeAttributeThresholdConfig : ScriptableObject
     {
         [Tooltip("Porcentagens (0.0 a 1.0). 0 e 1 serão incluídos automaticamente.")]

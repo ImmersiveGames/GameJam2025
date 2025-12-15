@@ -84,10 +84,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                 var initManager = RuntimeAttributeBootstrapper.Instance;
                 EnsureGlobal(() => initManager);
 
-                var pipelineManager = RuntimeAttributeCanvasPipelineManager.Instance;
+                var pipelineManager = RuntimeAttributeCanvasManager.Instance;
                 EnsureGlobal(() => pipelineManager);
 
-                EnsureGlobal<IRuntimeAttributeOrchestrator>(() => new RuntimeAttributeOrchestratorService());
+                EnsureGlobal<IRuntimeAttributeOrchestrator>(() => new RuntimeAttributeCoordinator());
 
                 initManager.RegisterForInjection(pipelineManager);
                 if (DependencyManager.Provider.TryGetGlobal<IRuntimeAttributeOrchestrator>(out var orchestrator))

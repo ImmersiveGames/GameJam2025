@@ -12,9 +12,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         {
             base.OnDependenciesInjected();
 
-            if (registerInPipeline && RuntimeAttributeCanvasPipelineManager.HasInstance)
+            if (registerInPipeline && RuntimeAttributeCanvasManager.HasInstance)
             {
-                RuntimeAttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
+                RuntimeAttributeCanvasManager.Instance.RegisterCanvas(this);
                 DebugUtility.LogVerbose<RuntimeAttributeSceneCanvasBinder>(
                     $"✅ Scene Canvas '{CanvasId}' registered in pipeline",
                     DebugUtility.Colors.Success);

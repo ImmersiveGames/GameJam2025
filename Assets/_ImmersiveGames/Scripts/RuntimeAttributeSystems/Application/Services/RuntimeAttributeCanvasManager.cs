@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
     /// Gerencia o registro e a comunicação entre canvases e o sistema de recursos.
     /// Funciona em modo event-driven via EventBus, sem polling e sem delays.
     /// </summary>
-    public class RuntimeAttributeCanvasPipelineManager : PersistentSingleton<RuntimeAttributeCanvasPipelineManager>, IInjectableComponent
+    public class RuntimeAttributeCanvasManager : PersistentSingleton<RuntimeAttributeCanvasManager>, IInjectableComponent
     {
         private readonly Dictionary<string, IAttributeCanvasBinder> _canvasRegistry = new();
 
@@ -21,13 +21,13 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         private EventBinding<RuntimeAttributeEventHub.CanvasRegisteredEvent> _canvasRegisteredBinding;
 
         public DependencyInjectionState InjectionState { get; set; }
-        public string GetObjectId() => "RuntimeAttributeCanvasPipelineManager";
+        public string GetObjectId() => "RuntimeAttributeCanvasManager";
 
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
             RuntimeAttributeBootstrapper.Instance.RegisterForInjection(this);
-            DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>(
+            DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>(
                 "✅ Canvas Pipeline Manager initialized",
                 DebugUtility.Colors.CrucialInfo);
         }
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             _canvasRegisteredBinding = new EventBinding<RuntimeAttributeEventHub.CanvasRegisteredEvent>(OnCanvasRegisteredHandler);
             EventBus<RuntimeAttributeEventHub.CanvasRegisteredEvent>.Register(_canvasRegisteredBinding);
 
-            DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>(
+            DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>(
                 "✅ Dependencies injected and event bindings registered",
                 DebugUtility.Colors.Success);
         }
@@ -68,14 +68,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             if (!_canvasRegistry.TryAdd(attributeCanvas.CanvasId, attributeCanvas))
             {
-                DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>($"⚠️ Canvas '{attributeCanvas.CanvasId}' já está registrado — ignorado");
+                DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"⚠️ Canvas '{attributeCanvas.CanvasId}' já está registrado — ignorado");
                 return;
             }
 
             // Notificar o hub para reemitir binds pendentes
             RuntimeAttributeEventHub.NotifyCanvasRegistered(attributeCanvas.CanvasId);
 
-            DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>(
+            DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>(
                 $"✅ Canvas '{attributeCanvas.CanvasId}' registrado no pipeline",
                 DebugUtility.Colors.Success);
         }
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             if (_canvasRegistry.Remove(canvasId))
             {
                 RuntimeAttributeEventHub.NotifyCanvasUnregistered(canvasId);
-                DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>(
+                DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>(
                     $"Canvas '{canvasId}' removido do pipeline",
                     DebugUtility.Colors.Success);
             }
@@ -107,13 +107,13 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 
             if (TryExecuteBind(request))
             {
-                DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>($"✅ Bind imediato: {actorId}.{runtimeAttributeType} → {targetCanvasId}");
+                DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"✅ Bind imediato: {actorId}.{runtimeAttributeType} → {targetCanvasId}");
                 return;
             }
 
             // Se o attributeCanvas não estiver pronto, delega via hub/eventbus
             RuntimeAttributeEventHub.PublishBindRequest(request);
-            DebugUtility.LogVerbose<RuntimeAttributeCanvasPipelineManager>($"📦 Bind delegado: {actorId}.{runtimeAttributeType} → {targetCanvasId}");
+            DebugUtility.LogVerbose<RuntimeAttributeCanvasManager>($"📦 Bind delegado: {actorId}.{runtimeAttributeType} → {targetCanvasId}");
         }
 
         /// <summary>

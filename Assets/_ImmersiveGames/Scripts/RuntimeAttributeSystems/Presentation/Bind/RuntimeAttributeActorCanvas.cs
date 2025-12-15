@@ -178,8 +178,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             try
             {
                 orchestrator?.UnregisterCanvas(CanvasId);
-                if (RuntimeAttributeCanvasPipelineManager.HasInstance)
-                    RuntimeAttributeCanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
+                if (RuntimeAttributeCanvasManager.HasInstance)
+                    RuntimeAttributeCanvasManager.Instance.UnregisterCanvas(CanvasId);
             }
             catch (Exception ex)
             {

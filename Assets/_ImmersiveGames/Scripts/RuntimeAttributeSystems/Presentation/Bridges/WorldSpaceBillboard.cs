@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
     /// Mantém o attributeCanvas sempre virado para a câmera (billboard effect)
     /// Para canvases em world space, com suporte a offset de posição/rotação
     /// </summary>
-    public class RuntimeAttributeWorldSpaceCanvasBillboard : MonoBehaviour
+    public class WorldSpaceBillboard : MonoBehaviour
     {
         [Header("Billboard Settings")]
         [SerializeField] private bool useMainCamera = true;
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             }
             else
             {
-                DebugUtility.LogWarning<RuntimeAttributeWorldSpaceCanvasBillboard>("RuntimeAttributeWorldSpaceCanvasBillboard: No target camera found.");
+                DebugUtility.LogWarning<WorldSpaceBillboard>("WorldSpaceBillboard: No target camera found.");
             }
         }
 
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             FindCamera();
             if (_cameraTransform != null)
             {
-                DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>($"RuntimeAttributeWorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
+                DebugUtility.LogVerbose<WorldSpaceBillboard>($"WorldSpaceBillboard: Found camera {_cameraTransform.name}");
             }
         }
 
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         {
             _originalPosition = transform.position;
             _originalRotation = transform.rotation;
-            DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>("Saved current position and rotation as original");
+            DebugUtility.LogVerbose<WorldSpaceBillboard>("Saved current position and rotation as original");
         }
 
         [ContextMenu("Reset to Original")]
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         {
             transform.position = _originalPosition;
             transform.rotation = _originalRotation;
-            DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>("Reset to original position and rotation");
+            DebugUtility.LogVerbose<WorldSpaceBillboard>("Reset to original position and rotation");
         }
 
         public void SetPositionOffset(Vector3 newOffset)
