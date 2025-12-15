@@ -24,8 +24,8 @@ RuntimeAttribute*        RuntimeAttribute*Service              RuntimeAttribute*
 
 ## ✅ Componentes Estáveis
 - `RuntimeAttributeContext` (Domain/Application boundary) — núcleo de dados por entidade.
-- Serviços: `RuntimeAttributeOrchestratorService`, `RuntimeAttributeCanvasPipelineManager`, `RuntimeAttributeLinkService`, `RuntimeAttributeAutoFlowService`, `RuntimeAttributeThresholdService`.
-- Bridges: `RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `RuntimeAttributeWorldSpaceCanvasBillboard`.
+- Serviços: `RuntimeAttributeCoordinator`, `RuntimeAttributeCanvasManager`, `RuntimeAttributeLinkService`, `RuntimeAttributeAutoFlowService`, `RuntimeAttributeThresholdService`.
+- Bridges: `RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `WorldSpaceBillboard`.
 - Binders: `RuntimeAttributeSceneCanvasBinder`, `RuntimeAttributeDynamicCanvasBinder`, `RuntimeAttributeActorCanvas`.
 - UI: `RuntimeAttributeUISlot`, estratégias de animação (`InstantFill`, `BasicReactiveFill`, `SmoothReactiveFill`), `FillAnimationStrategyFactory`.
 
@@ -36,8 +36,8 @@ RuntimeAttribute*        RuntimeAttribute*Service              RuntimeAttribute*
 
 ## 🔄 Fluxo de Execução Atual
 1. **Bootstrap**: `RuntimeAttributeBootstrapper` resolve dependências globais e injeta em bridges/binders.
-2. **Registro de Canvas**: `RuntimeAttributeActorCanvas` gera `CanvasId` e registra no `RuntimeAttributeOrchestratorService` e `RuntimeAttributeCanvasPipelineManager`.
-3. **Bind**: orquestrador publica `CanvasBindRequest` → pipeline executa `ScheduleBind` → `RuntimeAttributeUISlot` é criado e animado.
+2. **Registro de Canvas**: `RuntimeAttributeActorCanvas` gera `CanvasId` e registra no `RuntimeAttributeCoordinator` e `RuntimeAttributeCanvasManager`.
+3. **Bind**: coordenador publica `CanvasBindRequest` → pipeline executa `ScheduleBind` → `RuntimeAttributeUISlot` é criado e animado.
 4. **Execução Reativa**: `RuntimeAttributeContext` emite `RuntimeAttributeUpdateEvent`; serviços de AutoFlow/Link/Threshold emitem eventos dedicados; UI reage via `RuntimeAttributeEventHub`.
 5. **Cleanup**: canvases e bridges se desregistram, liberando slots (pool) e links.
 
@@ -61,8 +61,8 @@ Canvas
 | Nome antigo | Nome novo | Pasta nova |
 | ----------- | --------- | ---------- |
 | `ResourceSystem` | `RuntimeAttributeContext` | `Application/Services` |
-| `ActorResourceOrchestratorService` | `RuntimeAttributeOrchestratorService` | `Application/Services` |
-| `CanvasPipelineManager` | `RuntimeAttributeCanvasPipelineManager` | `Application/Services` |
+| `ActorResourceOrchestratorService` | `RuntimeAttributeCoordinator` | `Application/Services` |
+| `CanvasPipelineManager` | `RuntimeAttributeCanvasManager` | `Application/Services` |
 | `ResourceLinkService` | `RuntimeAttributeLinkService` | `Application/Services` |
 | `ResourceAutoFlowService` | `RuntimeAttributeAutoFlowService` | `Application/Services` |
 | `ResourceThresholdService` | `RuntimeAttributeThresholdService` | `Application/Services` |
@@ -76,7 +76,7 @@ Canvas
 
 ## 🎯 Próximas Etapas
 1. Consolidar logging estruturado por camada (Domain/Application/Presentation/UI) usando `DebugUtility` com níveis configuráveis.
-2. Adicionar testes de integração para `RuntimeAttributeCanvasPipelineManager` (binds atrasados e rebind após reset).
+2. Adicionar testes de integração para `RuntimeAttributeCanvasManager` (binds atrasados e rebind após reset).
 3. Otimizar `RuntimeAttributeLinkService` para reduzir alocações no multiplayer local.
 4. Documentar exemplos de uso por camada (Domain configs → Application services → Presentation bridges → UI slots) mantendo nomes padronizados.
 
@@ -90,6 +90,6 @@ Canvas
 - Eventos de link e threshold sem duplicidade por frame.
 
 ## 🔍 Troubleshooting Rápido
-- **Bind não ocorre**: verificar `RuntimeAttributeEventHub` (pendências) e `RuntimeAttributeCanvasPipelineManager.ScheduleBind`.
+- **Bind não ocorre**: verificar `RuntimeAttributeEventHub` (pendências) e `RuntimeAttributeCanvasManager.ScheduleBind`.
 - **UI não atualiza**: conferir se o ator tem `RuntimeAttributeContext` registrado e se o slot usa a animação correta.
 - **Links não respeitados**: revisar `RuntimeAttributeLinkConfig` do ator e logs do `RuntimeAttributeLinkService`.

@@ -59,14 +59,14 @@ Configs    Serviços      Bridges       Slots/Animações
 
 ### ⚙️ Aplicação
 - **`RuntimeAttributeContext`**: núcleo de dados por entidade (equivale ao antigo *ResourceSystem*).
-- **`RuntimeAttributeOrchestratorService`**: coordena binds pendentes e registra canvases.
-- **`RuntimeAttributeCanvasPipelineManager`**: executa `ScheduleBind` quando a UI está pronta.
+- **`RuntimeAttributeCoordinator`**: coordena binds pendentes e registra canvases.
+- **`RuntimeAttributeCanvasManager`**: executa `ScheduleBind` quando a UI está pronta.
 - **`RuntimeAttributeLinkService`**, **`RuntimeAttributeAutoFlowService`**, **`RuntimeAttributeThresholdService`**: serviços reativos especializados.
 - **`RuntimeAttributeBootstrapper`**: injeta dependências em bridges/binders no ciclo de cena.
 
 ### 🎭 Apresentação
 - **Binders** (`RuntimeAttributeSceneCanvasBinder`, `RuntimeAttributeDynamicCanvasBinder`, `RuntimeAttributeActorCanvas`): criam `CanvasId`, registram no orquestrador e notificam o pipeline.
-- **Bridges** (`RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `RuntimeAttributeWorldSpaceCanvasBillboard`): conectam atores aos serviços e ao HUD.
+- **Bridges** (`RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `WorldSpaceBillboard`): conectam atores aos serviços e ao HUD.
 - **Contratos** (`RuntimeAttributeBindingContracts`): interfaces para padronizar binds e canvas routing.
 
 ### 🎨 UI
@@ -92,7 +92,7 @@ Configs    Serviços      Bridges       Slots/Animações
 ## 🎛️ Serviços e Bridges
 
 - **Bootstrap**: `RuntimeAttributeBootstrapper` prepara o contexto do ator e registra serviços globais.
-- **Orquestração**: `RuntimeAttributeOrchestratorService` + `RuntimeAttributeCanvasPipelineManager` publicam/consomem `CanvasBindRequest` via `RuntimeAttributeEventHub`.
+- **Orquestração**: `RuntimeAttributeCoordinator` + `RuntimeAttributeCanvasManager` publicam/consomem `CanvasBindRequest` via `RuntimeAttributeEventHub`.
 - **AutoFlow**: `RuntimeAttributeAutoFlowService` aplica regen/dreno reativo; `RuntimeAttributeAutoFlowBridge` conecta configs por ator.
 - **Links**: `RuntimeAttributeLinkService` + `RuntimeAttributeLinkBridge` garantem drenagens combinadas/overflow.
 - **Thresholds**: `RuntimeAttributeThresholdService` + `RuntimeAttributeThresholdBridge` disparam `RuntimeAttributeVisualFeedbackEvent`.
@@ -104,7 +104,7 @@ Configs    Serviços      Bridges       Slots/Animações
 | Evento                                 | Origem                                         | Função |
 | -------------------------------------- | ---------------------------------------------- | ------ |
 | `RuntimeAttributeUpdateEvent`          | `RuntimeAttributeContext`                      | Notifica qualquer alteração de atributo |
-| `CanvasBindRequest`                    | `RuntimeAttributeOrchestratorService`          | Solicita bind de ator ↔ canvas |
+| `CanvasBindRequest`                    | `RuntimeAttributeCoordinator`                  | Solicita bind de ator ↔ canvas |
 | `CanvasRegisteredEvent`                | `RuntimeAttributeActorCanvas`                  | Informa pipeline de que o canvas está pronto |
 | `RuntimeAttributeThresholdEvent`       | `RuntimeAttributeThresholdService`             | Threshold cruzado (percentual) |
 | `RuntimeAttributeVisualFeedbackEvent`  | `RuntimeAttributeThresholdBridge`              | Efeito visual disparado pela ponte |
@@ -125,7 +125,7 @@ Configs    Serviços      Bridges       Slots/Animações
 
 1. **Bootstrap**: `RuntimeAttributeBootstrapper` injeta dependências (contexto, serviços globais e binders).
 2. **Registro**: `RuntimeAttributeActorCanvas` registra `CanvasId`; bridges resolvem `RuntimeAttributeContext` via `DependencyManager`.
-3. **Bind**: `RuntimeAttributeOrchestratorService` emite `CanvasBindRequest`; `RuntimeAttributeCanvasPipelineManager` executa `ScheduleBind` criando slots na UI.
+3. **Bind**: `RuntimeAttributeCoordinator` emite `CanvasBindRequest`; `RuntimeAttributeCanvasManager` executa `ScheduleBind` criando slots na UI.
 4. **Execução**: Serviços de AutoFlow/Link/Thresholds publicam eventos; UI reage via `RuntimeAttributeEventHub` e animações.
 
 ---
@@ -135,8 +135,8 @@ Configs    Serviços      Bridges       Slots/Animações
 | Nome antigo | Nome novo | Nova pasta |
 | ----------- | --------- | ---------- |
 | `ResourceSystem` | `RuntimeAttributeContext` | `Application/Services` |
-| `ActorResourceOrchestratorService` | `RuntimeAttributeOrchestratorService` | `Application/Services` |
-| `CanvasPipelineManager` | `RuntimeAttributeCanvasPipelineManager` | `Application/Services` |
+| `ActorResourceOrchestratorService` | `RuntimeAttributeCoordinator` | `Application/Services` |
+| `CanvasPipelineManager` | `RuntimeAttributeCanvasManager` | `Application/Services` |
 | `ResourceLinkService` | `RuntimeAttributeLinkService` | `Application/Services` |
 | `ResourceAutoFlowService` | `RuntimeAttributeAutoFlowService` | `Application/Services` |
 | `ResourceThresholdService` | `RuntimeAttributeThresholdService` | `Application/Services` |
