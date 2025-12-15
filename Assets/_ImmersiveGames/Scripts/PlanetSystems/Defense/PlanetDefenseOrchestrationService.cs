@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Runtime;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;

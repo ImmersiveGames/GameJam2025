@@ -1,12 +1,17 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
+    /// <summary>
+    /// Base comum para bridges que ligam RuntimeAttributeContext a serviços ou UI.
+    /// Cuida da resolução do ator, obtenção de orchestrator/contexto e ciclo de vida seguro.
+    /// </summary>
     [DefaultExecutionOrder(25)]
-    public abstract class RuntimeAttributeBridgeBase : MonoBehaviour
+    public abstract class RuntimeAttributeBridgeBase : MonoBehaviour, IRuntimeAttributeBridge
     {
         protected IRuntimeAttributeOrchestrator orchestrator;
         protected RuntimeAttributeContext runtimeAttributeContext;
@@ -16,7 +21,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         private bool _destroyed;
         
         public IActor Actor => actor;
-        public bool isInitialized => _initialized;
+        public bool IsInitialized => _initialized;
 
         protected virtual void Awake()
         {
@@ -71,7 +76,6 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             orchestrator = null;
         }
 
-        public bool IsInitialized => _initialized;
         public bool IsDestroyed => _destroyed;
         public RuntimeAttributeContext GetResourceSystem() => runtimeAttributeContext;
     }

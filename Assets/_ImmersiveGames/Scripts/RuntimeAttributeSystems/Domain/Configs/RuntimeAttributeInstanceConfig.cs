@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {

@@ -11,7 +11,11 @@ using UnityEngine;
 using UnityEngine.Pool;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 {
-    public abstract class RuntimeAttributeActorCanvas : MonoBehaviour, IRuntimeAttributeCanvasBinder
+    /// <summary>
+    /// Base para binders de canvas de atributos. Responsável por gerar ids, gerenciar ciclo de injeção
+    /// e instanciar slots de UI sob demanda conforme o pipeline entrega binds vindos do serviço.
+    /// </summary>
+    public abstract class RuntimeAttributeActorCanvas : MonoBehaviour, IAttributeCanvasBinder
     {
         [Header("Identification")]
         [SerializeField] private string canvasId;

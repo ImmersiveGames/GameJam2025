@@ -12,7 +12,6 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
@@ -814,7 +813,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
             foreach (var bridge in bridges)
             {
                 var resourceSystem = bridge.GetResourceSystem();
-                if (resourceSystem != null && bridge.isInitialized)
+                if (resourceSystem != null)
                 {
                     DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
                     DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
@@ -848,7 +847,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
             foreach (var bridge in bridges)
             {
                 var resourceSystem = bridge.GetResourceSystem();
-                if (resourceSystem != null && bridge.isInitialized)
+                if (resourceSystem != null)
                 {
                     DebugUtility.LogWarning<EntityDebugUtility>(
                         $"🔄 AutoFlow Component '{bridge.name}': Service={(bridge.HasAutoFlowService ? "✅" : "❌")}, " +
