@@ -1,11 +1,17 @@
 using System.Collections;
+using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
-    
-    public class RuntimeAttributeAutoFlowBridge : RuntimeAttributeBridgeBase
+    /// <summary>
+    /// Bridge que liga o RuntimeAttributeContext ao serviço de AutoFlow.
+    /// Agora participa do pipeline de reset para pausar, restaurar e rebindar sem duplicação de listeners.
+    /// </summary>
+    public class RuntimeAttributeAutoFlowBridge : RuntimeAttributeBridgeBase, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
         [SerializeField] private bool startPaused = true;
 
@@ -19,6 +25,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         public bool IsAutoFlowActive => _autoFlow is { IsPaused: false };
         public bool AutoResumeAllowed => _autoResumeAllowed;
         public bool StartPaused => startPaused;
+
+        // Executa depois do RuntimeAttributeController (-80) e antes de behaviours dependentes (ex.: EaterBehavior em 20).
+        public int ResetOrder => -70;
 
         protected override void OnServiceInitialized()
         {
@@ -46,8 +55,100 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             if (!startPaused)
             {
                 _autoFlow.Resume();
-                DebugUtility.LogVerbose<RuntimeAttributeAutoFlowBridge>($"▶️ AutoFlow iniciado imediatamente para {actor.ActorId}", null, this);
+                DebugUtility.LogVerbose<RuntimeAttributeAutoFlowBridge>($"▶️ AutoFlow iniciado imediatamente para {actor.ActorId}.", null, this);
             }
+        }
+
+        public bool ShouldParticipate(ResetScope scope)
+        {
+            return scope == ResetScope.AllActorsInScene ||
+                   scope == ResetScope.PlayersOnly ||
+                   scope == ResetScope.EaterOnly ||
+                   scope == ResetScope.ActorIdSet;
+        }
+
+        public Task Reset_CleanupAsync(ResetContext ctx)
+        {
+            // Cleanup: pausa AutoFlow, cancela rotinas e remove listeners para permitir rebind idempotente.
+            if (!IsInitialized)
+            {
+                return Task.CompletedTask;
+            }
+
+            CancelPendingResume();
+
+            if (_autoFlow != null)
+            {
+                _autoFlow.Pause();
+            }
+
+            runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
+            runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
+
+            _manualPauseCount = 0;
+            _automaticPauseCount = 0;
+            _autoResumeAllowed = !startPaused;
+
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RestoreAsync(ResetContext ctx)
+        {
+            // Restore: volta ao estado inicial sem refazer binds; mantém serviço pausado para evitar drift.
+            if (!IsInitialized)
+            {
+                return Task.CompletedTask;
+            }
+
+            CancelPendingResume();
+
+            _manualPauseCount = 0;
+            _automaticPauseCount = 0;
+            _autoResumeAllowed = !startPaused;
+
+            if (_autoFlow != null)
+            {
+                _autoFlow.Pause();
+
+                if (!startPaused)
+                {
+                    _autoFlow.Resume();
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task Reset_RebindAsync(ResetContext ctx)
+        {
+            // Rebind: garante dependências e reanexa listeners após os recursos terem sido restaurados.
+            TryInitialize();
+
+            if (!IsInitialized)
+            {
+                return Task.CompletedTask;
+            }
+
+            runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
+            runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
+            runtimeAttributeContext.ResourceChanging += HandleResourceChanging;
+            runtimeAttributeContext.ResourceChanged += HandleResourceChanged;
+
+            if (_autoFlow == null)
+            {
+                _autoFlow = new RuntimeAttributeAutoFlowService(runtimeAttributeContext, startPaused);
+            }
+
+            if (startPaused)
+            {
+                _autoFlow.Pause();
+            }
+            else
+            {
+                _autoFlow.Resume();
+            }
+
+            return Task.CompletedTask;
         }
 
         private void Update()
