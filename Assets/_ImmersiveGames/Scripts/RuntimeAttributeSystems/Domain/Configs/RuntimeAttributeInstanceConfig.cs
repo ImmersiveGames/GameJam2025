@@ -1,5 +1,4 @@
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {

@@ -1,16 +1,15 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.Pool;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 {
     public abstract class RuntimeAttributeActorCanvas : MonoBehaviour, IRuntimeAttributeCanvasBinder

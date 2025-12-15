@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     public class RuntimeAttributeUpdateEvent : IEvent
