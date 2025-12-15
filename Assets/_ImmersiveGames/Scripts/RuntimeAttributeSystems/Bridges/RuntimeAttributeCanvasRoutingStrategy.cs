@@ -1,5 +1,5 @@
-﻿using ImmersiveGames.RuntimeAttributes.Configs;
-namespace ImmersiveGames.RuntimeAttributes
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     public interface IRuntimeAttributeCanvasRoutingStrategy
     {

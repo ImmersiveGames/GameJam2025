@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     /// <summary>
     /// Mantém o attributeCanvas sempre virado para a câmera (billboard effect)

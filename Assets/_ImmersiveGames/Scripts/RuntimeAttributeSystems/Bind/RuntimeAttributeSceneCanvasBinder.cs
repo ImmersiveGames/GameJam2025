@@ -1,7 +1,7 @@
-﻿using ImmersiveGames.RuntimeAttributes.Services;
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Bind
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 {
     public class RuntimeAttributeSceneCanvasBinder : RuntimeAttributeActorCanvas
     {

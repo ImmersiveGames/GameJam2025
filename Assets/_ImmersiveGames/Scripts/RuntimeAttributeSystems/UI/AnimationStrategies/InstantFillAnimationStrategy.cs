@@ -1,8 +1,8 @@
-﻿using ImmersiveGames.RuntimeAttributes.Animation;
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
-namespace ImmersiveGames.RuntimeAttributes.AnimationStrategies
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies
 {
     /// <summary>
     /// Estratégia instantânea: aplica os valores diretamente sem animações.

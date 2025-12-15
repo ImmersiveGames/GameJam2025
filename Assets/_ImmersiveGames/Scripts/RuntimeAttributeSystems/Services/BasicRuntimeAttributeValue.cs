@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
 {
     public interface IRuntimeAttributeValue
     {

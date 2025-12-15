@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using ImmersiveGames.RuntimeAttributes;
-using ImmersiveGames.RuntimeAttributes.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;

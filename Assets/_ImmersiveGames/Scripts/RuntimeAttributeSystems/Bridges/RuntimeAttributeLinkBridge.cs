@@ -1,10 +1,10 @@
 ﻿using System;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     
     public class RuntimeAttributeLinkBridge : RuntimeAttributeBridgeBase

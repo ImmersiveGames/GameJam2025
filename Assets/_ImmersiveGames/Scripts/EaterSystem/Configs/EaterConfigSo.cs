@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
-using ImmersiveGames.RuntimeAttributes.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using UnityEngine;
 using UnityEngine.Serialization;
 

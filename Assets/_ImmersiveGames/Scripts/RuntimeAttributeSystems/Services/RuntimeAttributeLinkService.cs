@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using ImmersiveGames.RuntimeAttributes.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
 {
     public interface IRuntimeAttributeLinkService
     {

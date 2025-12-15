@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Configs
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Threshold Config")]
     public class RuntimeAttributeThresholdConfig : ScriptableObject

@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.Pool;
-namespace ImmersiveGames.RuntimeAttributes.Bind
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 {
     public abstract class RuntimeAttributeActorCanvas : MonoBehaviour, IRuntimeAttributeCanvasBinder
     {
@@ -85,7 +86,7 @@ namespace ImmersiveGames.RuntimeAttributes.Bind
         {
             if (autoGenerateCanvasId)
             {
-                var actor = GetComponentInParent<ActorSystems.IActor>();
+                var actor = GetComponentInParent<IActor>();
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
                     _canvasIdResolved = $"{actor.ActorId}_Canvas";
                 else

@@ -1,4 +1,4 @@
-using ImmersiveGames.RuntimeAttributes.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 

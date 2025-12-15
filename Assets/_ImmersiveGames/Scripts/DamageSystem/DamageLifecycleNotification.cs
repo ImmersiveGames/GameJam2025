@@ -1,4 +1,4 @@
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {

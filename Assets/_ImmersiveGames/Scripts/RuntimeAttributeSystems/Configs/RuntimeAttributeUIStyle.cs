@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Configs
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/UI/Resource UI Style")]
     public class RuntimeAttributeUIStyle : ScriptableObject

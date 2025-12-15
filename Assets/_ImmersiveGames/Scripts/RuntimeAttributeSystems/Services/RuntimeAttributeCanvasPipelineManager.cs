@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Utils;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityUtils;
-namespace ImmersiveGames.RuntimeAttributes.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
 {
     /// <summary>
     /// Gerencia o registro e a comunicação entre canvases e o sistema de recursos.

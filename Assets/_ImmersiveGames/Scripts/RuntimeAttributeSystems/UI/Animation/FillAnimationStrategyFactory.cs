@@ -1,5 +1,5 @@
-﻿using ImmersiveGames.RuntimeAttributes.AnimationStrategies;
-namespace ImmersiveGames.RuntimeAttributes.Animation
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
 {
     /// <summary>
     /// Fábrica central para criação de estratégias de animação.

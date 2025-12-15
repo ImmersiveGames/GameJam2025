@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Configs
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Link Config")]
     public class RuntimeAttributeLinkConfig : ScriptableObject

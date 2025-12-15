@@ -1,7 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.DamageSystem;
-using ImmersiveGames.RuntimeAttributes;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;

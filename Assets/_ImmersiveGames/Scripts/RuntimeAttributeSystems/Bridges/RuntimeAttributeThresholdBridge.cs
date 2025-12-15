@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     
     public class RuntimeAttributeThresholdBridge : RuntimeAttributeBridgeBase

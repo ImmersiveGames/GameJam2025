@@ -1,9 +1,9 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     [DefaultExecutionOrder(25)]
     public abstract class RuntimeAttributeBridgeBase : MonoBehaviour

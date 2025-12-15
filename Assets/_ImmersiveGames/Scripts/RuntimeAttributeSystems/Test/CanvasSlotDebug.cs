@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
-using ImmersiveGames.RuntimeAttributes.Bind;
-using ImmersiveGames.RuntimeAttributes.Configs;
-using ImmersiveGames.RuntimeAttributes.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace ImmersiveGames.RuntimeAttributes.Test
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
 {
     
     public class CanvasDebugUtility : MonoBehaviour

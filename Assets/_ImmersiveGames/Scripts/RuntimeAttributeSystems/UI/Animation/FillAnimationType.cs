@@ -1,4 +1,4 @@
-﻿namespace ImmersiveGames.RuntimeAttributes.Animation
+﻿namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
 {
     /// <summary>
     /// Tipos de animação disponíveis para slots de recurso.
