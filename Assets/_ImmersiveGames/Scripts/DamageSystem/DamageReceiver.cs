@@ -5,9 +5,9 @@ using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem.Commands;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
 using _ImmersiveGames.Scripts.GameManagerSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Bind;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     public class DamageReceiver : MonoBehaviour, IDamageReceiver
     {
         [Header("Recurso alvo (ex: Health)")]
-        [SerializeField] private ResourceType targetResource = ResourceType.Health;
+        [SerializeField] private RuntimeAttributeType targetRuntimeAttribute = RuntimeAttributeType.Health;
         [SerializeField] private float damageCooldown = 0.25f;
 
         [Header("Explosão ao morrer")]
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         };
 
         private IActor _actor;
-        private ActorResourceComponent _component;
+        private RuntimeAttributeController _component;
         private DamageCooldownModule _cooldowns;
         private DamageLifecycleModule _lifecycle;
         private DamageExplosionModule _explosion;
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _receiverId = _actor != null
                 ? _actor.ActorId
                 : $"DamageReceiver_{gameObject.GetInstanceID()}";
-            _component = GetComponent<ActorResourceComponent>();
+            _component = GetComponent<RuntimeAttributeController>();
             _poolable = GetComponent<IPoolable>();
             _cooldowns = new DamageCooldownModule(damageCooldown);
             _lifecycle = new DamageLifecycleModule(_receiverId)
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             var context = new DamageCommandContext(
                 ctx,
-                targetResource,
+                targetRuntimeAttribute,
                 _component,
                 _strategy,
                 _cooldowns);
@@ -227,7 +227,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
 
         /// <summary>
-        /// Garante que o observador de ciclo de vida esteja conectado ao ResourceSystem da entidade.
+        /// Garante que o observador de ciclo de vida esteja conectado ao RuntimeAttributeContext da entidade.
         /// </summary>
         private void EnsureLifecycleHandler()
         {
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             SyncLifecycleOptions();
 
             _lifecycleHandler ??= new DamageReceiverLifecycleHandler(
-                targetResource,
+                targetRuntimeAttribute,
                 _lifecycle,
                 spawnExplosionOnDeath ? _explosion : null,
                 CreateLifecycleDamageContext,
@@ -276,7 +276,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _waitingForLifecycleBinding = false;
         }
 
-        private DamageContext CreateLifecycleDamageContext(ResourceChangeContext change)
+        private DamageContext CreateLifecycleDamageContext(RuntimeAttributeChangeContext change)
         {
             if (_actor == null)
             {
@@ -290,16 +290,16 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             float damageValue = Mathf.Abs(change.Delta);
             string attackerId = ResolveLifecycleAttackerId(change.Source);
-            return new DamageContext(attackerId, _actor.ActorId, damageValue, targetResource, DamageType.Pure);
+            return new DamageContext(attackerId, _actor.ActorId, damageValue, targetRuntimeAttribute, DamageType.Pure);
         }
 
-        private string ResolveLifecycleAttackerId(ResourceChangeSource source)
+        private string ResolveLifecycleAttackerId(RuntimeAttributeChangeSource source)
         {
             return source switch
             {
-                ResourceChangeSource.AutoFlow => $"{_actor?.ActorId ?? string.Empty}_AutoFlow",
-                ResourceChangeSource.Link => $"{_actor?.ActorId ?? string.Empty}_Link",
-                ResourceChangeSource.External => $"{_actor?.ActorId ?? string.Empty}_External",
+                RuntimeAttributeChangeSource.AutoFlow => $"{_actor?.ActorId ?? string.Empty}_AutoFlow",
+                RuntimeAttributeChangeSource.Link => $"{_actor?.ActorId ?? string.Empty}_Link",
+                RuntimeAttributeChangeSource.External => $"{_actor?.ActorId ?? string.Empty}_External",
                 _ => string.Empty
             };
         }

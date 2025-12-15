@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.ActorSystems
 
         private void OnDeath(DeathEvent e)
         {
-            DebugUtility.LogVerbose<ActorMaster>($"💀 {ActorId} morreu por {e.resourceType}!");
+            DebugUtility.LogVerbose<ActorMaster>($"💀 {ActorId} morreu por {e.runtimeAttributeType}!");
             if (e.disableSkin)
             {
                 SetSkinActive(false);

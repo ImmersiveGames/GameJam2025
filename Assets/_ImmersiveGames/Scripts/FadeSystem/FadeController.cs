@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
     /// - Recebe duração/curvas em tempo de execução via Configure.
     /// - Usa AnimationCurve para interpolar alpha do CanvasGroup.
     ///
-    /// Este componente também garante ordenação de canvas para o FadeScene.
+    /// Este componente também garante ordenação de attributeCanvas para o FadeScene.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public class FadeController : MonoBehaviour
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.FadeSystem
         [SerializeField] private CanvasGroup canvasGroup;
 
         [Header("Render Order (FadeScene)")]
-        [Tooltip("SortingOrder do canvas do Fade. Deve ficar abaixo do Loading HUD, mas acima de UI comum.")]
+        [Tooltip("SortingOrder do attributeCanvas do Fade. Deve ficar abaixo do Loading HUD, mas acima de UI comum.")]
         [SerializeField] private int sortingOrder = 11000;
 
         // Configuração de runtime (vem do FadeService).

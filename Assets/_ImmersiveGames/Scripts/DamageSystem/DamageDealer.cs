@@ -1,5 +1,5 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     {
         [Header("Configuração de Dano")]
         [SerializeField] private float baseDamage = 10f;
-        [SerializeField] private ResourceType targetResource = ResourceType.Health;
+        [SerializeField] private RuntimeAttributeType targetRuntimeAttribute = RuntimeAttributeType.Health;
         [SerializeField] private DamageType damageType = DamageType.Physical;
 
         [Header("Camadas válidas para causar dano")]
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 sourceActor?.ActorId,
                 receiver.GetReceiverId(),
                 baseDamage,
-                targetResource,
+                targetRuntimeAttribute,
                 damageType,
                 hitPoint,
                 hitNormal

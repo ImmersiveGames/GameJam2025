@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 request.attackerId,
                 request.targetId,
                 context.CalculatedDamage,
-                context.TargetResource,
+                context.TargetRuntimeAttribute,
                 request.damageType,
                 request.hitPosition
             );
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 damageEvent.attackerId,
                 damageEvent.targetId,
                 damageEvent.finalDamage,
-                damageEvent.resourceType,
+                damageEvent.runtimeAttributeType,
                 damageEvent.damageType,
                 damageEvent.hitPosition
             );

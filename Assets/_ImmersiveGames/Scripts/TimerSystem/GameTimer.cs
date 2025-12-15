@@ -30,13 +30,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private EventBinding<GamePauseEvent> _pauseBinding;
         private EventBinding<GameOverEvent> _gameOverBinding;
         private EventBinding<GameVictoryEvent> _victoryBinding;
-
-        // Macro reset (fluxo "full")
         private EventBinding<GameResetRequestedEvent> _resetBinding;
-
-        // Reset de fase (ex.: QA Reset ALL / restart de fase sem troca de cena)
-        private EventBinding<GamePhaseResetEvent> _phaseResetBinding;
-
         private EventBinding<StateChangedEvent> _stateChangedBinding;
 
         private float _configuredDuration;
@@ -48,10 +42,13 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         /// <summary>Duração configurada (segundos).</summary>
         public float ConfiguredDuration => Mathf.Max(_configuredDuration, 0f);
+
         /// <summary>Tempo restante atual (segundos).</summary>
         public float RemainingTime => Mathf.Max(_remainingTime, 0f);
+
         /// <summary>Indica se há uma sessão de contagem ativa.</summary>
         public bool HasActiveSession => _sessionActive;
+
         /// <summary>Indica se o cronômetro está contando no momento.</summary>
         public bool IsRunning => _sessionActive && !_isPaused;
 
@@ -93,13 +90,9 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             });
             EventBus<GameVictoryEvent>.Register(_victoryBinding);
 
-            // Macro reset (fluxo completo)
-            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true, reason: "GameResetRequestedEvent (macro reset)"));
+            // MACRO: reset de jogo (fase inteira)
+            _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => StopSession(true, reason: "Reset solicitado (GameResetRequestedEvent)"));
             EventBus<GameResetRequestedEvent>.Register(_resetBinding);
-
-            // Reset de fase (ex.: QA Reset ALL) -> reinicia tempo configurado
-            _phaseResetBinding = new EventBinding<GamePhaseResetEvent>(HandlePhaseReset);
-            EventBus<GamePhaseResetEvent>.Register(_phaseResetBinding);
 
             _stateChangedBinding = new EventBinding<StateChangedEvent>(HandleStateChanged);
             EventBus<StateChangedEvent>.Register(_stateChangedBinding);
@@ -107,15 +100,41 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void OnDisable()
         {
-            if (_startBinding != null) { EventBus<GameStartEvent>.Unregister(_startBinding); _startBinding = null; }
-            if (_pauseBinding != null) { EventBus<GamePauseEvent>.Unregister(_pauseBinding); _pauseBinding = null; }
-            if (_gameOverBinding != null) { EventBus<GameOverEvent>.Unregister(_gameOverBinding); _gameOverBinding = null; }
-            if (_victoryBinding != null) { EventBus<GameVictoryEvent>.Unregister(_victoryBinding); _victoryBinding = null; }
+            if (_startBinding != null)
+            {
+                EventBus<GameStartEvent>.Unregister(_startBinding);
+                _startBinding = null;
+            }
 
-            if (_resetBinding != null) { EventBus<GameResetRequestedEvent>.Unregister(_resetBinding); _resetBinding = null; }
-            if (_phaseResetBinding != null) { EventBus<GamePhaseResetEvent>.Unregister(_phaseResetBinding); _phaseResetBinding = null; }
+            if (_pauseBinding != null)
+            {
+                EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+                _pauseBinding = null;
+            }
 
-            if (_stateChangedBinding != null) { EventBus<StateChangedEvent>.Unregister(_stateChangedBinding); _stateChangedBinding = null; }
+            if (_gameOverBinding != null)
+            {
+                EventBus<GameOverEvent>.Unregister(_gameOverBinding);
+                _gameOverBinding = null;
+            }
+
+            if (_victoryBinding != null)
+            {
+                EventBus<GameVictoryEvent>.Unregister(_victoryBinding);
+                _victoryBinding = null;
+            }
+
+            if (_resetBinding != null)
+            {
+                EventBus<GameResetRequestedEvent>.Unregister(_resetBinding);
+                _resetBinding = null;
+            }
+
+            if (_stateChangedBinding != null)
+            {
+                EventBus<StateChangedEvent>.Unregister(_stateChangedBinding);
+                _stateChangedBinding = null;
+            }
         }
 
         private void Update()
@@ -126,6 +145,15 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
 
             AdvanceCountdown(Time.deltaTime);
+        }
+
+        /// <summary>
+        /// API explícita: “full reset” do timer para o valor configurado.
+        /// Use SOMENTE quando a fase inteira é reiniciada (ex.: Reset IN-PLACE AllActorsInScene).
+        /// </summary>
+        public void ResetToConfiguredDuration(string reason = "Manual Full Reset")
+        {
+            StopSession(true, reason: reason);
         }
 
         /// <summary>Inicia uma nova sessão utilizando o valor configurado.</summary>
@@ -172,30 +200,12 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             _autoStartLocked = true;
         }
 
-        private void HandlePhaseReset(GamePhaseResetEvent evt)
-        {
-            // Reset de fase: reinicia tempo configurado e libera autostart.
-            string label = string.IsNullOrEmpty(evt.reason) ? "sem motivo" : evt.reason;
-            DebugUtility.LogVerbose<GameTimer>($"GamePhaseResetEvent recebido ({label}). Reiniciando cronômetro.", context: this);
-
-            StopSession(true, reason: $"PhaseReset: {label}");
-
-            // Opcionalmente, se já estiver em Playing, podemos iniciar imediatamente.
-            // Isso evita depender do Update para recomeçar.
-            var stateMachine = GameManagerStateMachine.Instance;
-            if (stateMachine != null && stateMachine.CurrentState is PlayingState)
-            {
-                StartSession();
-            }
-        }
-
         private void PauseSession()
         {
             if (!_sessionActive || _isPaused)
                 return;
 
             _remainingTime = ReadTimerTime();
-
             if (_timer != null)
             {
                 _timer.Stop();
@@ -212,7 +222,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                 return;
 
             EnsureTimerInstance();
-
             if (_timer != null)
             {
                 _timer.Reset(_remainingTime);

@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return false;
             }
 
-            context.ResourceSystem = system;
+            context.RuntimeAttributeContext = system;
             return true;
         }
 
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return;
             }
 
-            context.ResourceSystem = null;
+            context.RuntimeAttributeContext = null;
         }
     }
 }

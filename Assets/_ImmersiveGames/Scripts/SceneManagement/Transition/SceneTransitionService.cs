@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.FadeSystem;
-using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Hud;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;

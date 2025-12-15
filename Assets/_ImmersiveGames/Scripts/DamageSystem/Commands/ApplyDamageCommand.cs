@@ -10,7 +10,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             }
 
             context.CaptureResourceSnapshot();
-            context.ResourceSystem.Modify(context.TargetResource, -context.CalculatedDamage);
+            context.RuntimeAttributeContext.Modify(context.TargetRuntimeAttribute, -context.CalculatedDamage);
             context.DamageApplied = true;
             return true;
         }

@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Core
+﻿namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
     /// <summary>
     /// Contrato para qualquer objeto que forneça acesso ao estado

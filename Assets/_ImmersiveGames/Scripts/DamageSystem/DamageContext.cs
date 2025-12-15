@@ -1,5 +1,5 @@
 ﻿using System;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -10,21 +10,21 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public readonly string attackerId;
         public readonly string targetId;
         public readonly float damageValue;
-        public readonly ResourceType targetResource;
+        public readonly RuntimeAttributeType targetRuntimeAttribute;
         public readonly DamageType damageType;
         public readonly Vector3 hitPosition;
         public readonly Vector3 hitNormal;
         public readonly bool hasHitPosition;
         public readonly float timestamp;
 
-        public DamageContext(string attackerId, string targetId, float damageValue, ResourceType targetResource,
+        public DamageContext(string attackerId, string targetId, float damageValue, RuntimeAttributeType targetRuntimeAttribute,
             DamageType damageType = DamageType.Physical,
             Vector3? hitPosition = null, Vector3? hitNormal = null)
         {
             this.attackerId = attackerId ?? string.Empty;
             this.targetId = targetId ?? string.Empty;
             this.damageValue = damageValue;
-            this.targetResource = targetResource;
+            this.targetRuntimeAttribute = targetRuntimeAttribute;
             this.damageType = damageType;
             if (hitPosition.HasValue)
             {

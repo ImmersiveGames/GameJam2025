@@ -5,8 +5,8 @@ using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -80,16 +80,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     return new SceneTransitionService(sceneLoader, fadeService);
                 });
 
-                var initManager = ResourceInitializationManager.Instance;
+                var initManager = RuntimeAttributeInitializationManager.Instance;
                 EnsureGlobal(() => initManager);
 
-                var pipelineManager = CanvasPipelineManager.Instance;
+                var pipelineManager = AttributeCanvasPipelineManager.Instance;
                 EnsureGlobal(() => pipelineManager);
 
-                EnsureGlobal<IActorResourceOrchestrator>(() => new ActorResourceOrchestratorService());
+                EnsureGlobal<IActorRuntimeAttributeOrchestrator>(() => new ActorRuntimeAttributeOrchestratorService());
 
                 initManager.RegisterForInjection(pipelineManager);
-                if (DependencyManager.Provider.TryGetGlobal<IActorResourceOrchestrator>(out var orchestrator))
+                if (DependencyManager.Provider.TryGetGlobal<IActorRuntimeAttributeOrchestrator>(out var orchestrator))
                 {
                     initManager.RegisterForInjection((IInjectableComponent)orchestrator);
                 }

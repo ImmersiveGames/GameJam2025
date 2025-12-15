@@ -94,7 +94,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             var payload = new DamagePipelineStarted(
                 request.attackerId,
                 request.targetId,
-                context.TargetResource,
+                context.TargetRuntimeAttribute,
                 request.damageType,
                 request.damageValue);
 
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             var payload = new DamagePipelineCompleted(
                 request.attackerId,
                 request.targetId,
-                context.TargetResource,
+                context.TargetRuntimeAttribute,
                 request.damageType,
                 request.damageValue,
                 context.CalculatedDamage);
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             var payload = new DamagePipelineFailed(
                 request.attackerId,
                 request.targetId,
-                context.TargetResource,
+                context.TargetRuntimeAttribute,
                 request.damageType,
                 request.damageValue,
                 failedCommand?.GetType().Name ?? "UnknownCommand");
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             var payload = new DamagePipelineUndone(
                 request.attackerId,
                 request.targetId,
-                context.TargetResource,
+                context.TargetRuntimeAttribute,
                 request.damageType,
                 restoredDamage);
 

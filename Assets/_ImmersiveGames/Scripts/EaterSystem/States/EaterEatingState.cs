@@ -2,7 +2,7 @@ using DG.Tweening;
 using _ImmersiveGames.Scripts.AudioSystem;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private const float DefaultDamageInterval = 1f;
         private const float DefaultRecoveryAmount = 5f;
         private const float DefaultRecoveryInterval = 1f;
-        private const ResourceType DefaultRecoveryResource = ResourceType.Health;
+        private const RuntimeAttributeType DefaultRecoveryResource = RuntimeAttributeType.Health;
         private const float IncompatibleRecoveryMultiplier = 0.5f;
         private const float DefaultDevourHealAmount = 25f;
 
@@ -523,7 +523,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             string attackerId = Master != null ? Master.ActorId : string.Empty;
             string targetId = receiver.GetReceiverId();
-            var resource = Config != null ? Config.EatingDamageResource : ResourceType.Health;
+            var resource = Config != null ? Config.EatingDamageRuntimeAttribute : RuntimeAttributeType.Health;
             var damageType = Config != null ? Config.EatingDamageType : DamageType.Physical;
             var hitPosition = _currentTarget.position;
 
@@ -540,19 +540,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             return true;
         }
 
-        private bool TryApplyRecovery(ResourceType resourceType, float amount)
+        private bool TryApplyRecovery(RuntimeAttributeType runtimeAttributeType, float amount)
         {
             if (Behavior == null)
             {
                 return false;
             }
 
-            return Behavior.TryRestoreResource(resourceType, amount);
+            return Behavior.TryRestoreResource(runtimeAttributeType, amount);
         }
 
-        private bool TryGetRecoveryConfig(out ResourceType resourceType, out float amount, out float interval)
+        private bool TryGetRecoveryConfig(out RuntimeAttributeType runtimeAttributeType, out float amount, out float interval)
         {
-            resourceType = Config != null ? Config.EatingRecoveryResource : DefaultRecoveryResource;
+            runtimeAttributeType = Config != null ? Config.EatingRecoveryRuntimeAttribute : DefaultRecoveryResource;
             amount = Config != null ? Config.EatingRecoveryAmount : DefaultRecoveryAmount;
             interval = Config != null ? Config.EatingRecoveryInterval : DefaultRecoveryInterval;
 
@@ -996,7 +996,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            bool restored = Behavior.TryApplySelfHealing(ResourceType.Health, healAmount);
+            bool restored = Behavior.TryApplySelfHealing(RuntimeAttributeType.Health, healAmount);
 
             if (!Behavior.ShouldLogStateTransitions)
             {
@@ -1006,7 +1006,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (restored)
             {
                 DebugUtility.LogVerbose(
-                    $"Recuperação aplicada ao eater ao devorar planeta compatível: +{healAmount:0.##} {ResourceType.Health}.",
+                    $"Recuperação aplicada ao eater ao devorar planeta compatível: +{healAmount:0.##} {RuntimeAttributeType.Health}.",
                     DebugUtility.Colors.Success,
                     Behavior,
                     this);
@@ -1014,7 +1014,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             else
             {
                 DebugUtility.LogWarning(
-                    $"Falha ao recuperar {ResourceType.Health} ao devorar planeta compatível. Valor esperado: {healAmount:0.##}.",
+                    $"Falha ao recuperar {RuntimeAttributeType.Health} ao devorar planeta compatível. Valor esperado: {healAmount:0.##}.",
                     Behavior,
                     this);
             }

@@ -165,16 +165,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceInstances:
-  - resourceDefinition: {fileID: 11400000, guid: 50644bcc4e6b2f74b8c912b2d9cec364, type: 2}
-    canvasTargetMode: 2
+  - runtimeAttributeDefinition: {fileID: 11400000, guid: 50644bcc4e6b2f74b8c912b2d9cec364, type: 2}
+    attributeCanvasTargetMode: 2
     customCanvasId: MainUI2
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     thresholdConfig: {fileID: 0}
     hasAutoFlow: 0
     autoFlowConfig: {fileID: 0}
     sortOrder: 0
-  - resourceDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
-    canvasTargetMode: 2
+  - runtimeAttributeDefinition: {fileID: 11400000, guid: d56d69eb78fab03468740875874e55b8, type: 2}
+    attributeCanvasTargetMode: 2
     customCanvasId: MainUI2
     slotStyle: {fileID: 11400000, guid: 473ed2f8373b93843b19bbdfa5ab3f6e, type: 2}
     thresholdConfig: {fileID: 0}
@@ -245,7 +245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15eb4ca9f6ea40ecbe9fc496ca7b3c60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetResource: 0
+  targetRuntimeAttribute: 0
   damageCooldown: 0.25
   spawnExplosionOnDeath: 1
   explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}
@@ -278,7 +278,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseDamage: 10
-  targetResource: 0
+  targetRuntimeAttribute: 0
   damageType: 0
   targetLayers:
     serializedVersion: 2
@@ -361,4 +361,19 @@ MonoBehaviour:
   startBlocked: 0
   behavioursToToggle: []
   gameObjectsToToggle: []
+  autoCollectBehavioursToToggle: 1
+  includeChildren: 0
+  mergeWithManualLists: 0
+  sanitizeListsOnEnable: 1
+  includeDisabledBehaviours: 1
+  excludedTypeNames:
+  - GameplayExecutionParticipantBehaviour
+  - ActorAutoRegistrar
+  - PlayerAutoRegistrar
+  - EaterAutoRegistrar
+  - PlanetsAutoRegistrar
+  - PlanetAutoRegistrar
+  - GameplayDomainBootstrapper
+  - GameplayManager
+  excludeUiRelatedBehaviours: 1
   logChanges: 1

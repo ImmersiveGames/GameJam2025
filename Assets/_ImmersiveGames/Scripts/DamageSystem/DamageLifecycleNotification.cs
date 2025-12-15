@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
     /// </summary>
     internal readonly struct DamageLifecycleNotification
     {
-        public ResourceChangeContext Change { get; }
+        public RuntimeAttributeChangeContext Change { get; }
         public DamageContext Request { get; }
         public bool DeathStateChanged { get; }
         public bool IsDead { get; }
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         public bool IsDamage => Change.IsDecrease;
 
         public DamageLifecycleNotification(
-            ResourceChangeContext change,
+            RuntimeAttributeChangeContext change,
             DamageContext request,
             bool deathStateChanged,
             bool isDead)

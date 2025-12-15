@@ -152,8 +152,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resourceInstances:
-  - resourceDefinition: {fileID: 11400000, guid: ecc8574026cc4f547ac4938262109eff, type: 2}
-    canvasTargetMode: 1
+  - runtimeAttributeDefinition: {fileID: 11400000, guid: ecc8574026cc4f547ac4938262109eff, type: 2}
+    attributeCanvasTargetMode: 1
     customCanvasId: planetcanvas
     slotStyle: {fileID: 11400000, guid: 908eee982687bf749894518304e9d3c9, type: 2}
     thresholdConfig: {fileID: 11400000, guid: 2f31bcd37636b8549b0150d08c5eef80, type: 2}
@@ -251,7 +251,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseDamage: 10
-  targetResource: 0
+  targetRuntimeAttribute: 0
   damageType: 0
   targetLayers:
     serializedVersion: 2
@@ -268,7 +268,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15eb4ca9f6ea40ecbe9fc496ca7b3c60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetResource: 0
+  targetRuntimeAttribute: 0
   damageCooldown: 0.25
   spawnExplosionOnDeath: 1
   explosionPoolData: {fileID: 11400000, guid: 022f9d9b74225514fb07da436c355af2, type: 2}

@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
         [SerializeField] private bool registerAsGlobalService = true;
 
         [Header("Render Order (UIGlobalScene)")]
-        [Tooltip("SortingOrder do canvas do Loading HUD. Deve ser MAIOR do que Fade e Terminal Overlay.")]
+        [Tooltip("SortingOrder do attributeCanvas do Loading HUD. Deve ser MAIOR do que Fade e Terminal Overlay.")]
         [SerializeField] private int loadingSortingOrder = 12000;
 
         // Canvas que contém a HUD.

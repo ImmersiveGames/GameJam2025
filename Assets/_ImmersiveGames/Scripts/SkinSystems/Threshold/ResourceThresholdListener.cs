@@ -1,6 +1,6 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using UnityEngine;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
     public class ThresholdConfig
     {
         [Header("Configuration")]
-        public ResourceType resourceType = ResourceType.Health;
+        public RuntimeAttributeType runtimeAttributeType = RuntimeAttributeType.Health;
         [Range(0f, 1f)] public float threshold = 0.5f;
         public TriggerDirection direction = TriggerDirection.Descending;
 
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs;
 
-        private EventBinding<ResourceThresholdEvent> _thresholdBinding;
+        private EventBinding<RuntimeAttributeThresholdEvent> _thresholdBinding;
 
         #region Unity Lifecycle
         private void OnEnable()
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 var config = thresholdConfigs[i];
                 int eventCount = config.onThresholdCrossed.GetPersistentEventCount();
                 if (showDebugLogs)
-                    DebugUtility.LogVerbose<ResourceThresholdListener>($"Config {i} on {gameObject.name}: Type={config.resourceType}, Threshold={config.threshold}, Direction={config.direction}, Persistent Events={eventCount}");
+                    DebugUtility.LogVerbose<ResourceThresholdListener>($"Config {i} on {gameObject.name}: Type={config.runtimeAttributeType}, Threshold={config.threshold}, Direction={config.direction}, Persistent Events={eventCount}");
 
                 for (int j = 0; j < eventCount; j++)
                 {
@@ -69,18 +69,18 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         #region Event Handling
         private void RegisterThresholdListener()
         {
-            _thresholdBinding = new EventBinding<ResourceThresholdEvent>(OnResourceThreshold);
+            _thresholdBinding = new EventBinding<RuntimeAttributeThresholdEvent>(OnResourceThreshold);
 
             if (string.IsNullOrEmpty(_expectedActorId))
             {
-                EventBus<ResourceThresholdEvent>.Register(_thresholdBinding);
+                EventBus<RuntimeAttributeThresholdEvent>.Register(_thresholdBinding);
                 if (showDebugLogs)
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered globally on EventBus (sem ActorId) em {gameObject.name}");
                 return;
             }
 
             _registrationScope = _expectedActorId;
-            FilteredEventBus<ResourceThresholdEvent>.Register(_thresholdBinding, _registrationScope);
+            FilteredEventBus<RuntimeAttributeThresholdEvent>.Register(_thresholdBinding, _registrationScope);
             if (showDebugLogs)
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Registered on FilteredEventBus para ActorId {_expectedActorId} em {gameObject.name}");
         }
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 
             if (_registrationScope != null)
             {
-                FilteredEventBus<ResourceThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
+                FilteredEventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding, _registrationScope);
                 _registrationScope = null;
                 if (showDebugLogs)
                     DebugUtility.LogVerbose<ResourceThresholdListener>($"Unregistered from FilteredEventBus em {gameObject.name}");
@@ -100,13 +100,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 return;
             }
 
-            EventBus<ResourceThresholdEvent>.Unregister(_thresholdBinding);
+            EventBus<RuntimeAttributeThresholdEvent>.Unregister(_thresholdBinding);
             if (showDebugLogs)
                 DebugUtility.LogVerbose<ResourceThresholdListener>($"Unregistered from EventBus on {gameObject.name}");
             _thresholdBinding = null;
         }
 
-        private void OnResourceThreshold(ResourceThresholdEvent evt)
+        private void OnResourceThreshold(RuntimeAttributeThresholdEvent evt)
         {
             if (!string.IsNullOrEmpty(_expectedActorId) && evt.ActorId != _expectedActorId)
             {
@@ -116,15 +116,15 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             }
             
             if (showDebugLogs) 
-                DebugUtility.LogVerbose<ResourceThresholdListener>($"Received event on {gameObject.name}: Actor={evt.ActorId}, Type={evt.ResourceType}, Threshold={evt.Threshold}, Percentage={evt.CurrentPercentage:P0}, Ascending={evt.IsAscending}");
+                DebugUtility.LogVerbose<ResourceThresholdListener>($"Received event on {gameObject.name}: Actor={evt.ActorId}, Type={evt.RuntimeAttributeType}, Threshold={evt.Threshold}, Percentage={evt.CurrentPercentage:P0}, Ascending={evt.IsAscending}");
 
             bool anyMatch = false;
             foreach (var config in thresholdConfigs)
             {
                 if (showDebugLogs)
-                    DebugUtility.LogVerbose<ResourceThresholdListener>($"Checking config on {gameObject.name}: Type={config.resourceType}, Threshold={config.threshold}, Direction={config.direction}");
+                    DebugUtility.LogVerbose<ResourceThresholdListener>($"Checking config on {gameObject.name}: Type={config.runtimeAttributeType}, Threshold={config.threshold}, Direction={config.direction}");
 
-                if (evt.ResourceType == config.resourceType &&
+                if (evt.RuntimeAttributeType == config.runtimeAttributeType &&
                     Mathf.Approximately(evt.Threshold, config.threshold) &&
                     ShouldInvoke(config.direction, evt.IsAscending))
                 {

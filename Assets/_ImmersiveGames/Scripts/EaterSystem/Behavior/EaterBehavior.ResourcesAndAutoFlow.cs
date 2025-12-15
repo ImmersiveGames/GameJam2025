@@ -1,7 +1,7 @@
 ﻿using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -15,14 +15,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
-        private ResourceAutoFlowBridge _autoFlowBridge;
+        private RuntimeAttributeAutoFlowBridge _autoFlowBridge;
         private bool _missingAutoFlowBridgeLogged;
         private bool _autoFlowUnavailableLogged;
         private bool _missingResourceSystemLogged;
         private IDamageReceiver _selfDamageReceiver;
         private bool _missingSelfDamageReceiverLogged;
         
-        internal bool TryApplySelfHealing(ResourceType resourceType, float amount,
+        internal bool TryApplySelfHealing(RuntimeAttributeType runtimeAttributeType, float amount,
             DamageType healDamageType = DamageType.Pure)
         {
             if (amount <= Mathf.Epsilon)
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             string targetId = damageReceiver.GetReceiverId();
             Vector3 hitPosition = transform.position;
 
-            var context = new DamageContext(attackerId, targetId, -clampedAmount, resourceType, healDamageType, hitPosition);
+            var context = new DamageContext(attackerId, targetId, -clampedAmount, runtimeAttributeType, healDamageType, hitPosition);
             damageReceiver.ReceiveDamage(context);
             return true;
         }
@@ -89,13 +89,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         {
             if (!TryEnsureAutoFlowBridge())
             {
-                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para controlar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                LogAutoFlowIssue("RuntimeAttributeAutoFlowBridge não encontrado para controlar AutoFlow.", ref _missingAutoFlowBridgeLogged);
                 return false;
             }
 
             if (!_autoFlowBridge.HasAutoFlowService)
             {
-                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                LogAutoFlowIssue("RuntimeAttributeAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
                 return false;
             }
 
@@ -111,13 +111,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         {
             if (!TryEnsureAutoFlowBridge())
             {
-                LogAutoFlowIssue("ResourceAutoFlowBridge não encontrado para pausar AutoFlow.", ref _missingAutoFlowBridgeLogged);
+                LogAutoFlowIssue("RuntimeAttributeAutoFlowBridge não encontrado para pausar AutoFlow.", ref _missingAutoFlowBridgeLogged);
                 return false;
             }
 
             if (!_autoFlowBridge.HasAutoFlowService)
             {
-                LogAutoFlowIssue("ResourceAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
+                LogAutoFlowIssue("RuntimeAttributeAutoFlowBridge ainda não possui serviço inicializado.", ref _autoFlowUnavailableLogged);
                 return false;
             }
 
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return true;
             }
 
-            if (TryGetComponent(out ResourceAutoFlowBridge bridge))
+            if (TryGetComponent(out RuntimeAttributeAutoFlowBridge bridge))
             {
                 _autoFlowBridge = bridge;
                 _missingAutoFlowBridgeLogged = false;
@@ -176,7 +176,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             }
         }
 
-        internal bool TryRestoreResource(ResourceType resourceType, float amount)
+        internal bool TryRestoreResource(RuntimeAttributeType runtimeAttributeType, float amount)
         {
             if (amount <= Mathf.Epsilon)
             {
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             if (!TryEnsureAutoFlowBridge())
             {
                 LogAutoFlowIssue(
-                    "ResourceAutoFlowBridge não encontrado para recuperar recursos manualmente.",
+                    "RuntimeAttributeAutoFlowBridge não encontrado para recuperar recursos manualmente.",
                     ref _missingAutoFlowBridgeLogged);
            
 
@@ -196,22 +196,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             if (!_autoFlowBridge.HasAutoFlowService)
             {
                 LogAutoFlowIssue(
-                    "ResourceAutoFlowBridge ainda não possui serviço inicializado para recuperar recursos manualmente.",
+                    "RuntimeAttributeAutoFlowBridge ainda não possui serviço inicializado para recuperar recursos manualmente.",
                     ref _autoFlowUnavailableLogged);
                 return false;
             }
 
-            ResourceSystem resourceSystem = _autoFlowBridge.GetResourceSystem();
-            if (resourceSystem == null)
+            RuntimeAttributeContext runtimeAttributeContext = _autoFlowBridge.GetResourceSystem();
+            if (runtimeAttributeContext == null)
             {
                 LogAutoFlowIssue(
-                    "ResourceSystem indisponível ao tentar recuperar recursos manualmente.",
+                    "RuntimeAttributeContext indisponível ao tentar recuperar recursos manualmente.",
                     ref _missingResourceSystemLogged);
                 return false;
             }
 
             _missingResourceSystemLogged = false;
-            resourceSystem.Modify(resourceType, Mathf.Max(0f, amount));
+            runtimeAttributeContext.Modify(runtimeAttributeType, Mathf.Max(0f, amount));
             return true;
         }
     }

@@ -1,5 +1,5 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (instance == null) return;
 
-            DynamicCanvasBinder[] dynamicBinders = instance.GetComponentsInChildren<DynamicCanvasBinder>(true);
+            DynamicAttributeCanvasBinder[] dynamicBinders = instance.GetComponentsInChildren<DynamicAttributeCanvasBinder>(true);
             foreach (var binder in dynamicBinders)
             {
                 binder.gameObject.SetActive(true);

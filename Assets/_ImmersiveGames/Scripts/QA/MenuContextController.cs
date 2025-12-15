@@ -1,13 +1,13 @@
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
+using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.Scripts.TimerSystem;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.QA
@@ -33,9 +33,9 @@ namespace _ImmersiveGames.Scripts.QA
         [Tooltip("Loga detalhes extras quando roda Reset IN-PLACE.")]
         [SerializeField] private bool logResetInPlaceVerbose = true;
 
-        [Header("Reset de Fase (Timer)")]
-        [Tooltip("Se ligado, quando rodar Reset IN-PLACE em AllActorsInScene, dispara GamePhaseResetEvent para reiniciar o timer.")]
-        [SerializeField] private bool raisePhaseResetEventOnAllActorsReset = true;
+        [Header("Full Reset (IN-PLACE) Behavior")]
+        [Tooltip("Se true, quando ResetInPlace(AllActorsInScene) concluir com sucesso, também reseta o GameTimer para a duração configurada.")]
+        [SerializeField] private bool resetTimerOnInPlaceAllActors = true;
 
         private ISimulationGateService _gateService;
         private bool _qaGateTokenHeld;
@@ -270,24 +270,30 @@ namespace _ImmersiveGames.Scripts.QA
 
             bool ok = await orchestrator.RequestResetAsync(new ResetRequest(scope, $"MenuContext ResetInPlace: {reason}"));
 
-            // Regra nova: apenas reset ALL (reinício de fase) reinicia timer.
-            // PlayersOnly/EaterOnly NÃO mexem em timer.
-            if (ok && raisePhaseResetEventOnAllActorsReset && scope == ResetScope.AllActorsInScene)
-            {
-                DebugUtility.LogVerbose<MenuContextController>(
-                    $"[MenuContext] Reset ALL => disparando GamePhaseResetEvent (timer reinicia). Reason='{reason}'");
-
-                EventBus<GamePhaseResetEvent>.Raise(new GamePhaseResetEvent($"QA Reset ALL: {reason}"));
-            }
-
             if (logResetInPlaceVerbose)
             {
                 DebugUtility.LogVerbose<MenuContextController>(
                     $"[MenuContext] Reset IN-PLACE завершён | ok={ok} | Scope={scope}");
             }
 
-            LogDiagnostics("[MenuContext] ResetInPlace (after)");
+            // Requisito: timer só reinicia quando reinicia a fase inteira (AllActorsInScene).
+            if (ok && resetTimerOnInPlaceAllActors && scope == ResetScope.AllActorsInScene)
+            {
+                var timer = GameTimer.Instance;
+                if (timer != null)
+                {
+                    timer.ResetToConfiguredDuration("MenuContext ResetInPlace: Full reset (AllActorsInScene)");
+                    DebugUtility.LogVerbose<MenuContextController>(
+                        "[MenuContext] Full Reset IN-PLACE: GameTimer resetado para duração configurada.");
+                }
+                else
+                {
+                    DebugUtility.LogWarning<MenuContextController>(
+                        "[MenuContext] Full Reset IN-PLACE: GameTimer.Instance null; não foi possível resetar timer.");
+                }
+            }
 
+            LogDiagnostics("[MenuContext] ResetInPlace (after)");
             return ok;
         }
 

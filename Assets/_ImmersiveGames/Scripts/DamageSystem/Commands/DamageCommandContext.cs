@@ -1,18 +1,18 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.ResourceSystems.Bind;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 {
     public class DamageCommandContext
     {
         public DamageContext Request { get; }
-        public ResourceType TargetResource { get; }
-        public ActorResourceComponent Component { get; }
+        public RuntimeAttributeType TargetRuntimeAttribute { get; }
+        public RuntimeAttributeController Component { get; }
         public IDamageStrategy Strategy { get; }
         public DamageCooldownModule CooldownModule { get; }
-        public ResourceSystem ResourceSystem { get; set; }
+        public RuntimeAttributeContext RuntimeAttributeContext { get; set; }
         public float CalculatedDamage { get; set; }
         public float PreviousCalculatedDamage { get; set; }
         private float PreviousLastDamageTime { get; set; }
@@ -23,17 +23,17 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
         public DamageEvent? RaisedDamageEvent { get; set; }
         public bool? PreviousDeathState { get; set; }
         public bool DeathStateChanged { get; set; }
-        private Dictionary<ResourceType, float> ResourceSnapshot { get; } = new();
+        private Dictionary<RuntimeAttributeType, float> ResourceSnapshot { get; } = new();
 
         public DamageCommandContext(
             DamageContext request,
-            ResourceType targetResource,
-            ActorResourceComponent component,
+            RuntimeAttributeType targetRuntimeAttribute,
+            RuntimeAttributeController component,
             IDamageStrategy strategy,
             DamageCooldownModule cooldownModule)
         {
             Request = request;
-            TargetResource = targetResource;
+            TargetRuntimeAttribute = targetRuntimeAttribute;
             Component = component;
             Strategy = strategy;
             CooldownModule = cooldownModule;
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             PreviousCalculatedDamage = CalculatedDamage;
         }
 
-        public bool HasValidResourceSystem() => ResourceSystem != null;
+        public bool HasValidResourceSystem() => RuntimeAttributeContext != null;
 
         public void CaptureResourceSnapshot()
         {
@@ -52,16 +52,16 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return;
             }
 
-            foreach (var resourceType in ResourceSystem.GetAllRegisteredTypes())
+            foreach (var resourceType in RuntimeAttributeContext.GetAllRegisteredTypes())
             {
-                var value = ResourceSystem.Get(resourceType);
+                var value = RuntimeAttributeContext.Get(resourceType);
                 if (value != null)
                 {
                     ResourceSnapshot[resourceType] = value.GetCurrentValue();
                 }
             }
 
-            PreviousLastDamageTime = ResourceSystem.LastDamageTime;
+            PreviousLastDamageTime = RuntimeAttributeContext.LastDamageTime;
         }
 
         public void RestoreResourceSnapshot()
@@ -71,12 +71,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
                 return;
             }
 
-            foreach (KeyValuePair<ResourceType, float> snapshot in ResourceSnapshot)
+            foreach (KeyValuePair<RuntimeAttributeType, float> snapshot in ResourceSnapshot)
             {
-                ResourceSystem.Set(snapshot.Key, snapshot.Value);
+                RuntimeAttributeContext.Set(snapshot.Key, snapshot.Value);
             }
 
-            ResourceSystem.RestoreLastDamageTime(PreviousLastDamageTime);
+            RuntimeAttributeContext.RestoreLastDamageTime(PreviousLastDamageTime);
             ResourceSnapshot.Clear();
         }
     }

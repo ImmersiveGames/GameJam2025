@@ -1,5 +1,5 @@
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
@@ -23,9 +23,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         public bool TriggerGameOverOnDeath { get; set; }
 
-        public void CheckDeath(ResourceSystem system, ResourceType resourceType)
+        public void CheckDeath(RuntimeAttributeContext system, RuntimeAttributeType runtimeAttributeType)
         {
-            var value = system.Get(resourceType);
+            var value = system.Get(runtimeAttributeType);
             if (value == null) return;
 
             if (value.GetCurrentValue() > 0)
@@ -39,11 +39,11 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (IsDead) return;
             IsDead = true;
             FilteredEventBus<DeathEvent>.RaiseFiltered(
-                new DeathEvent(_entityId, resourceType, DisableSkinOnDeath, TriggerGameOverOnDeath),
+                new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),
                 _entityId);
         }
 
-        public void RevertDeathState(bool previousState, ResourceType resourceType)
+        public void RevertDeathState(bool previousState, RuntimeAttributeType runtimeAttributeType)
         {
             if (IsDead == previousState)
             {
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (IsDead)
             {
                 FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, resourceType, DisableSkinOnDeath, TriggerGameOverOnDeath),
+                    new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),
                     _entityId);
             }
             else

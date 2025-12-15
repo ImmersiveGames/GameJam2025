@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.CompassSystems;
-using _ImmersiveGames.Scripts.ResourceSystems;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
-using _ImmersiveGames.Scripts.ResourceSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -16,10 +16,10 @@ namespace _ImmersiveGames.Scripts.UI.Compass
     /// Funciona perfeitamente com cenas aditivas e multiplayer local.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class CompassHUD : MonoBehaviour, ICanvasBinder
+    public class CompassHUD : MonoBehaviour, IAttributeCanvasBinder
     {
-        private static readonly IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> EmptyActorSlots =
-            new Dictionary<string, Dictionary<ResourceType, ResourceUISlot>>();
+        private static readonly IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> EmptyActorSlots =
+            new Dictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>>();
 
         private readonly Dictionary<ICompassTrackable, CompassIcon> _iconsByTarget = new();
         private readonly HashSet<ICompassTrackable> _activeTrackablesCache = new();
@@ -50,14 +50,14 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         [Header("Canvas Pipeline")]
         [SerializeField] private string canvasId = "CompassHUD";
         [SerializeField] private bool autoGenerateCanvasId = true;
-        [SerializeField] private CanvasType canvasType = CanvasType.Scene;
+        [SerializeField] private AttributeCanvasType attributeCanvasType = AttributeCanvasType.Scene;
         [SerializeField] private bool registerInPipeline = true;
 
         [Inject] private IUniqueIdFactory _idFactory;
 
         public string CanvasId { get; private set; }
-        public CanvasType Type => canvasType;
-        public CanvasInitializationState State { get; private set; }
+        public AttributeCanvasType Type => attributeCanvasType;
+        public AttributeCanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
 
         private float _updateTimer;
@@ -65,22 +65,22 @@ namespace _ImmersiveGames.Scripts.UI.Compass
         private void Awake()
         {
             InjectionState = DependencyInjectionState.Pending;
-            State = CanvasInitializationState.Pending;
+            State = AttributeCanvasInitializationState.Pending;
             SetupCanvasId();
-            ResourceInitializationManager.Instance.RegisterForInjection(this);
+            RuntimeAttributeInitializationManager.Instance.RegisterForInjection(this);
         }
 
         public void OnDependenciesInjected()
         {
             InjectionState = DependencyInjectionState.Injecting;
-            State = CanvasInitializationState.Injecting;
+            State = AttributeCanvasInitializationState.Injecting;
 
-            if (registerInPipeline && CanvasPipelineManager.HasInstance)
+            if (registerInPipeline && AttributeCanvasPipelineManager.HasInstance)
             {
-                CanvasPipelineManager.Instance.RegisterCanvas(this);
+                AttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
             }
 
-            State = CanvasInitializationState.Ready;
+            State = AttributeCanvasInitializationState.Ready;
             InjectionState = DependencyInjectionState.Ready;
 
             DebugUtility.Log<CompassHUD>($"CompassHUD registrado com sucesso (Update: {1f/updateInterval:F1} FPS)");
@@ -90,9 +90,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
 
         private void OnDestroy()
         {
-            if (!string.IsNullOrEmpty(CanvasId) && CanvasPipelineManager.HasInstance)
+            if (!string.IsNullOrEmpty(CanvasId) && AttributeCanvasPipelineManager.HasInstance)
             {
-                CanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
+                AttributeCanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
             }
         }
 
@@ -275,9 +275,9 @@ namespace _ImmersiveGames.Scripts.UI.Compass
             }
         }
 
-        // ICanvasBinder
-        public void ScheduleBind(string actorId, ResourceType resourceType, IResourceValue data) { }
-        public bool CanAcceptBinds() => State == CanvasInitializationState.Ready;
-        public IReadOnlyDictionary<string, Dictionary<ResourceType, ResourceUISlot>> GetActorSlots() => EmptyActorSlots;
+        // IAttributeCanvasBinder
+        public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data) { }
+        public bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
+        public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots() => EmptyActorSlots;
     }
 }

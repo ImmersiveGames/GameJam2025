@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
                 {
                     throw new InvalidOperationException(
                         "[PlanetResourceState] Nenhum PlanetResourcesSo foi atribuído a este planeta. " +
-                        "Use HasAssignedResource antes de acessar ResourceType."
+                        "Use HasAssignedResource antes de acessar RuntimeAttributeType."
                     );
                 }
 

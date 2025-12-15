@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.ResourceSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
         private float eatingDamageInterval = 1f;
 
         [SerializeField, Tooltip("Recurso alvo do dano de alimentação (ex.: Health).")]
-        private ResourceType eatingDamageResource = ResourceType.Health;
+        private RuntimeAttributeType eatingDamageRuntimeAttribute = RuntimeAttributeType.Health;
 
         [SerializeField, Tooltip("Tipo de dano aplicado durante alimentação.")]
         private DamageType eatingDamageType = DamageType.Physical;
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 
         [Header("Recuperação do Eater Durante Alimentação")]
         [SerializeField, Tooltip("Recurso que o eater recupera enquanto se alimenta.")]
-        private ResourceType eatingRecoveryResource = ResourceType.Health;
+        private RuntimeAttributeType eatingRecoveryRuntimeAttribute = RuntimeAttributeType.Health;
 
         [SerializeField, Tooltip("Quantidade recuperada por ciclo de recuperação.")]
         private float eatingRecoveryAmount = 5f;
@@ -181,13 +181,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 
         public float EatingDamageInterval => Mathf.Max(0.05f, eatingDamageInterval);
 
-        public ResourceType EatingDamageResource => eatingDamageResource;
+        public RuntimeAttributeType EatingDamageRuntimeAttribute => eatingDamageRuntimeAttribute;
 
         public DamageType EatingDamageType => eatingDamageType;
 
         public SoundData EatingBiteSound => eatingBiteSound;
 
-        public ResourceType EatingRecoveryResource => eatingRecoveryResource;
+        public RuntimeAttributeType EatingRecoveryRuntimeAttribute => eatingRecoveryRuntimeAttribute;
 
         public float EatingRecoveryAmount => Mathf.Max(0f, eatingRecoveryAmount);
 

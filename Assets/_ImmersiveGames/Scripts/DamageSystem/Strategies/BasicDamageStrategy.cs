@@ -83,7 +83,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
                     ctx.attackerId,
                     ctx.targetId,
                     current,
-                    ctx.targetResource,
+                    ctx.targetRuntimeAttribute,
                     ctx.damageType,
                     ctx.hitPosition,
                     ctx.hitNormal
