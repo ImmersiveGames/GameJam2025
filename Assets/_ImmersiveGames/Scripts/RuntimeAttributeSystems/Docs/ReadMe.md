@@ -1,321 +1,148 @@
-﻿Perfeito 👌 — vou atualizar **toda a documentação** para refletir a nova arquitetura **event-driven e orientada a injeção** (com `DependencyBootstrapper`, `ResourceInitializationManager`, `EventBus`, e as versões finais das bridges e serviços que você aprovou).
+# 💠 Sistema de Atributos em Tempo de Execução (v3.1)
 
-A versão abaixo substitui completamente a anterior — mantendo a estrutura profissional e didática, mas com foco na filosofia **reativa e modular** que o sistema agora segue.
-
----
-
-# 💠 Sistema de Recursos — Documentação Atualizada (v3.0)
+Documentação alinhada com a nova nomenclatura **Domain / Application / Presentation / UI** e com a árvore real de pastas do repositório. Todo o fluxo continua orientado a eventos e a injeção de dependências para manter o jogo multiplayer local desacoplado e fácil de debugar.
 
 ## 📋 Índice
-
 1. [Visão Geral](#visão-geral)
-2. [Arquitetura Event-Driven](#arquitetura-event-driven)
+2. [Arquitetura em Camadas](#arquitetura-em-camadas)
 3. [Componentes Principais](#componentes-principais)
 4. [Configurações (ScriptableObjects)](#configurações-scriptableobjects)
 5. [Serviços e Bridges](#serviços-e-bridges)
-6. [Sistema de UI e Animação](#sistema-de-ui-e-animação)
-7. [Eventos e Fluxo Reativo](#eventos-e-fluxo-reativo)
-8. [Debug e Diagnóstico](#debug-e-diagnóstico)
-9. [Fluxo de Inicialização e Execução](#fluxo-de-inicialização-e-execução)
-10. [Exemplos Práticos](#exemplos-práticos)
-11. [Boas Práticas e Troubleshooting](#boas-práticas-e-troubleshooting)
+6. [Eventos e Fluxo Reativo](#eventos-e-fluxo-reativo)
+7. [UI e Animação](#ui-e-animação)
+8. [Fluxo de Inicialização](#fluxo-de-inicialização)
+9. [Tabela de Migração](#tabela-de-migração)
 
 ---
 
 ## 🎯 Visão Geral
 
-O **Sistema de Recursos (Resource System)** fornece uma infraestrutura modular e orientada a eventos para gerenciar recursos de entidades (vida, mana, energia, etc.) com UI dinâmica, animações configuráveis, links, thresholds e auto-fluxos reativos.
-
-### ✨ Características-Chave
-
-* **Event-Driven Total** — Tudo comunica via `EventBus` e `FilteredEventBus`
-* **Dependency Injection** — Serviços globais e objetos injetáveis via `DependencyManager`
-* **UI Dinâmica** — Slots criados automaticamente via `CanvasPipelineManager`
-* **Serviços Reativos** — Nenhum update manual; tudo é dirigido por eventos
-* **AutoFlow & Links** — Recursos com regeneração e overflow automáticos
-* **Thresholds Inteligentes** — Eventos disparados com base em percentuais
-* **Bridges Leves** — Inicializam automaticamente quando o `ResourceSystem` está pronto
+O **Runtime Attribute System** controla atributos como vida, energia e escudos com UI dinâmica e bridges leves. Tudo é dirigido por eventos (`EventBus`/`FilteredEventBus`) e serviços injetados (`DependencyManager`), garantindo separação clara entre regras de domínio, orquestração e interface.
 
 ---
 
-## 🧩 Arquitetura Event-Driven
+## 🏛️ Arquitetura em Camadas
 
+```text
+Domain (regras e dados puros)
+├─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Domain/Configs
+└─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Domain/Values
+
+Application (serviços orquestradores)
+├─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Application/Services
+└─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/RuntimeAttributeUpdateEvent.cs
+
+Presentation (bridges e binders)
+├─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Presentation/Bridges
+└─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Presentation/Bind
+
+UI (renderização e animações)
+├─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/UI
+└─ Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/UI/AnimationStrategies
 ```
-IActor (Entidade)
-├── EntityResourceBridge           → Cria e registra o ResourceSystem
-├── ResourceAutoFlowBridge         → Serviço de auto-flow (regen/drain)
-├── ResourceLinkBridge             → Links entre recursos
-├── ResourceThresholdBridge        → Thresholds e eventos visuais
-└── CanvasBinder (ICanvasBinder)   → UI dos recursos
 
-Serviços Globais:
-├── ActorResourceOrchestratorService   (coordena actors ↔ canvases)
-├── CanvasPipelineManager              (pipeline de bind event-driven)
-├── ResourceLinkService                (links e overflow)
-└── ResourceThresholdService           (eventos de thresholds)
+Fluxo simples:
 ```
-
----
-
-## ⚙️ Componentes Principais
-
-### 🧠 `EntityResourceBridge`
-
-Cria o `ResourceSystem` do ator, registra no `DependencyManager` e no `ActorResourceOrchestrator`.
-
-```csharp
-public class EntityResourceBridge : MonoBehaviour
-{
-    [SerializeField] private ResourceInstanceConfig[] resourceInstances;
-    void Awake()
-    {
-        var system = new ResourceSystem(actor.ActorId, resourceInstances);
-        DependencyManager.Instance.RegisterForObject(actor.ActorId, system);
-        DependencyManager.Instance.TryGetGlobal(out IActorResourceOrchestrator orchestrator);
-        orchestrator.RegisterActor(system);
-    }
-}
+Domain → Application → Presentation → UI
+Configs    Serviços      Bridges       Slots/Animações
 ```
 
 ---
 
-### 🔁 `ResourceSystem`
+## 🧩 Componentes Principais
 
-Gerencia o estado dos recursos e dispara eventos via `EventBus`.
+### 🧠 Domínio
+- **`RuntimeAttributeDefinition`**: define tipo, valor inicial e máximo.
+- **`RuntimeAttributeInstanceConfig`**: instancia configurações por ator.
+- **`RuntimeAttributeLinkConfig` / `RuntimeAttributeAutoFlowConfig` / `RuntimeAttributeThresholdConfig`**: governam links, regen/dreno e thresholds.
+- **`BasicRuntimeAttributeValue`**: implementação básica de valor com limites.
 
-```csharp
-public class ResourceSystem
-{
-    public string EntityId { get; }
-    public event Action<ResourceUpdateEvent> ResourceUpdated;
+### ⚙️ Aplicação
+- **`RuntimeAttributeContext`**: núcleo de dados por entidade (equivale ao antigo *ResourceSystem*).
+- **`RuntimeAttributeOrchestratorService`**: coordena binds pendentes e registra canvases.
+- **`RuntimeAttributeCanvasPipelineManager`**: executa `ScheduleBind` quando a UI está pronta.
+- **`RuntimeAttributeLinkService`**, **`RuntimeAttributeAutoFlowService`**, **`RuntimeAttributeThresholdService`**: serviços reativos especializados.
+- **`RuntimeAttributeBootstrapper`**: injeta dependências em bridges/binders no ciclo de cena.
 
-    public void Modify(ResourceType type, float delta);
-    public void Set(ResourceType type, float value);
-    public IResourceValue Get(ResourceType type);
-}
-```
+### 🎭 Apresentação
+- **Binders** (`RuntimeAttributeSceneCanvasBinder`, `RuntimeAttributeDynamicCanvasBinder`, `RuntimeAttributeActorCanvas`): criam `CanvasId`, registram no orquestrador e notificam o pipeline.
+- **Bridges** (`RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `RuntimeAttributeWorldSpaceCanvasBillboard`): conectam atores aos serviços e ao HUD.
+- **Contratos** (`RuntimeAttributeBindingContracts`): interfaces para padronizar binds e canvas routing.
 
----
-
-## 🎛️ Serviços e Bridges
-
-### 🌐 `ActorResourceOrchestratorService`
-
-Orquestra a comunicação entre atores e canvases, encaminhando bind requests via `EventBus`.
-
-* Registra e gerencia atores (`ResourceSystem`)
-* Registra canvases (`ICanvasBinder`)
-* Processa binds e pendências via `ResourceEventHub`
-* Integra com o `CanvasPipelineManager` para renderização automática
-
----
-
-### ⚙️ `ResourceBridgeBase`
-
-Base comum de todas as bridges.
-Inicializa automaticamente via `DependencyManager` e desativa-se se não puder ser inicializada.
-
-**Fluxo:**
-
-1. Obtém `IActor` local
-2. Solicita `IActorResourceOrchestrator` e `ResourceSystem` via `DependencyManager`
-3. Chama `OnServiceInitialized()` se tudo estiver pronto
-4. Caso contrário, se auto-desativa
-
----
-
-### 💧 `ResourceAutoFlowBridge`
-
-Gerencia regeneração e drenagem automática com base em `ResourceAutoFlowConfig`.
-
-* Usa `ResourceAutoFlowService`
-* Processa recursos automaticamente via `EventBus`
-* Sincroniza com a UI quando o canvas está pronto
-
----
-
-### 🔗 `ResourceLinkBridge`
-
-Gerencia links entre recursos (overflow, drenagem conjunta etc.)
-
-* Usa o serviço global `ResourceLinkService`
-* Registra links no evento de inicialização
-* Remove todos os links ao ser destruído
-* Totalmente reativo via `ResourceUpdateEvent`
-
----
-
-### ⚡ `ResourceThresholdBridge`
-
-Monitora percentuais de recursos e dispara eventos quando thresholds são cruzados.
-
-* Usa `ResourceThresholdService`
-* Registra no `FilteredEventBus`
-* Dispara `ResourceVisualFeedbackEvent` para efeitos visuais
+### 🎨 UI
+- **`RuntimeAttributeUISlot`**: slot visual que recebe updates e animações.
+- **Animações**: `IFillAnimationStrategy` + fábrica (`FillAnimationStrategyFactory`) com estratégias `InstantFill`, `BasicReactiveFill`, `SmoothReactiveFill` (todas em `UI/AnimationStrategies`).
 
 ---
 
 ## 🧩 Configurações (ScriptableObjects)
 
-| Config                      | Função                                    |
-| --------------------------- | ----------------------------------------- |
-| **ResourceDefinition**      | Define o tipo e visual base de um recurso |
-| **ResourceInstanceConfig**  | Configura cada recurso por entidade       |
-| **ResourceAutoFlowConfig**  | Controla regeneração/drenagem automática  |
-| **ResourceLinkConfig**      | Define como recursos se influenciam       |
-| **ResourceThresholdConfig** | Percentuais para disparo de eventos       |
-| **ResourceUIStyle**         | Estilo visual e parâmetros de animação    |
-
-*(Os exemplos de código mantêm o mesmo formato da documentação anterior.)*
+| Config                        | Pasta | Função |
+| ----------------------------- | ----- | ------ |
+| `RuntimeAttributeDefinition`  | `Domain/Configs` | Define o tipo e limites base do atributo |
+| `RuntimeAttributeInstanceConfig` | `Domain/Configs` | Liga uma definição a um ator específico |
+| `RuntimeAttributeAutoFlowConfig` | `Domain/Configs` | Parâmetros de regen/dreno automática |
+| `RuntimeAttributeLinkConfig`  | `Domain/Configs` | Links de transferência/overflow entre atributos |
+| `RuntimeAttributeThresholdConfig` | `Domain/Configs` | Thresholds percentuais para eventos e VFX |
+| `RuntimeAttributeUIStyle`     | `Domain/Configs` | Estilo visual usado pelos slots |
+| `FillAnimationProfile`        | `UI/Animation` | Perfil de animação para slots |
 
 ---
 
-## 🎨 Sistema de UI e Animação
+## 🎛️ Serviços e Bridges
 
-O sistema de UI é controlado por **CanvasPipelineManager** e **CanvasBinders**.
-
-* Slots são criados dinamicamente via `ResourceEventHub.CanvasBindRequest`
-* `ResourceUISlot` gerencia visual e animações com estratégia plugável (`IResourceSlotStrategy`)
-* Estratégias são criadas pela `ResourceSlotStrategyFactory`
-
-### Estratégias disponíveis
-
-| Tipo               | Descrição                 |
-| ------------------ | ------------------------- |
-| `Instant`          | Atualização imediata      |
-| `BasicAnimated`    | Animação rápida com delay |
-| `AdvancedAnimated` | Efeitos visuais dinâmicos |
-| `SmoothAnimated`   | Transições contínuas      |
-| `PulseAnimated`    | Pulsações periódicas      |
+- **Bootstrap**: `RuntimeAttributeBootstrapper` prepara o contexto do ator e registra serviços globais.
+- **Orquestração**: `RuntimeAttributeOrchestratorService` + `RuntimeAttributeCanvasPipelineManager` publicam/consomem `CanvasBindRequest` via `RuntimeAttributeEventHub`.
+- **AutoFlow**: `RuntimeAttributeAutoFlowService` aplica regen/dreno reativo; `RuntimeAttributeAutoFlowBridge` conecta configs por ator.
+- **Links**: `RuntimeAttributeLinkService` + `RuntimeAttributeLinkBridge` garantem drenagens combinadas/overflow.
+- **Thresholds**: `RuntimeAttributeThresholdService` + `RuntimeAttributeThresholdBridge` disparam `RuntimeAttributeVisualFeedbackEvent`.
 
 ---
 
 ## 📡 Eventos e Fluxo Reativo
 
-| Evento                        | Origem                             | Função                        |
-| ----------------------------- | ---------------------------------- | ----------------------------- |
-| `ResourceUpdateEvent`         | `ResourceSystem`                   | Alteração de qualquer recurso |
-| `CanvasBindRequest`           | `ActorResourceOrchestratorService` | Pedido de bind na UI          |
-| `ResourceThresholdEvent`      | `ResourceThresholdService`         | Threshold cruzado             |
-| `AutoFlowEffectEvent`         | `ResourceAutoFlowService`          | Efeito visual de regen/dreno  |
-| `ResourceVisualFeedbackEvent` | `ResourceThresholdBridge`          | Feedback visual para UI       |
-
-### Exemplo de consumo
-
-```csharp
-private EventBinding<ResourceThresholdEvent> _bind;
-
-void Awake()
-{
-    _bind = new EventBinding<ResourceThresholdEvent>(OnThreshold);
-    FilteredEventBus<ResourceThresholdEvent>.Register(_bind, "Player01");
-}
-
-void OnThreshold(ResourceThresholdEvent evt)
-{
-    Debug.Log($"[{evt.ActorId}] cruzou {evt.ResourceType} → {evt.Threshold:P}");
-}
-
-void OnDestroy() => FilteredEventBus<ResourceThresholdEvent>.Unregister("Player01");
-```
+| Evento                                 | Origem                                         | Função |
+| -------------------------------------- | ---------------------------------------------- | ------ |
+| `RuntimeAttributeUpdateEvent`          | `RuntimeAttributeContext`                      | Notifica qualquer alteração de atributo |
+| `CanvasBindRequest`                    | `RuntimeAttributeOrchestratorService`          | Solicita bind de ator ↔ canvas |
+| `CanvasRegisteredEvent`                | `RuntimeAttributeActorCanvas`                  | Informa pipeline de que o canvas está pronto |
+| `RuntimeAttributeThresholdEvent`       | `RuntimeAttributeThresholdService`             | Threshold cruzado (percentual) |
+| `RuntimeAttributeVisualFeedbackEvent`  | `RuntimeAttributeThresholdBridge`              | Efeito visual disparado pela ponte |
+| `RuntimeAttributeLinkChangeEvent`      | `RuntimeAttributeLinkService`                  | Propaga efeitos de links entre atributos |
+| `RuntimeAttributeAutoFlowEvent`        | `RuntimeAttributeAutoFlowService`              | Atualiza regen/dreno automática |
 
 ---
 
-## 🧪 Debug e Diagnóstico
+## 🎨 UI e Animação
 
-### 🔍 `DebugUtility`
-
-Todos os logs são padronizados e filtráveis por tipo (`Verbose`, `Warning`, `Error`).
-
-### 🧭 `ResourceSystemDebugManager`
-
-Ferramenta completa de inspeção e simulação:
-
-* Visualiza estados e thresholds
-* Aplica dano/cura
-* Testa links e auto-flow
-* Exibe métricas globais
+- **Binds**: `RuntimeAttributeSceneCanvasBinder` e `RuntimeAttributeDynamicCanvasBinder` criam slots via pipeline e pooling.
+- **Slots**: `RuntimeAttributeUISlot` aplica animação recebida da fábrica (`FillAnimationStrategyFactory`).
+- **Estratégias**: `InstantFill` (sem animação), `BasicReactiveFill` (lerp rápido), `SmoothReactiveFill` (transição contínua). Todas vivem em `UI/AnimationStrategies`.
 
 ---
 
-## 🔄 Fluxo de Inicialização e Execução
+## 🚀 Fluxo de Inicialização
 
-1. `DependencyBootstrapper` é carregado e inicializa todos os sistemas globais
-2. `ResourceInitializationManager` injeta dependências (`ActorResourceOrchestrator`, `CanvasPipelineManager`)
-3. `EntityResourceBridge` cria e registra o `ResourceSystem` do ator
-4. Bridges (`AutoFlow`, `Link`, `Threshold`) inicializam automaticamente
-5. `ActorResourceOrchestrator` publica binds no `EventBus`
-6. `CanvasPipelineManager` recebe e instancia os `ResourceUISlot` correspondentes
-7. UI e lógica reagem automaticamente via eventos
+1. **Bootstrap**: `RuntimeAttributeBootstrapper` injeta dependências (contexto, serviços globais e binders).
+2. **Registro**: `RuntimeAttributeActorCanvas` registra `CanvasId`; bridges resolvem `RuntimeAttributeContext` via `DependencyManager`.
+3. **Bind**: `RuntimeAttributeOrchestratorService` emite `CanvasBindRequest`; `RuntimeAttributeCanvasPipelineManager` executa `ScheduleBind` criando slots na UI.
+4. **Execução**: Serviços de AutoFlow/Link/Thresholds publicam eventos; UI reage via `RuntimeAttributeEventHub` e animações.
 
 ---
 
-## 🎮 Exemplos Práticos
+## 🔄 Tabela de Migração
 
-### 💓 Vida com Auto-Regeneração
+| Nome antigo | Nome novo | Nova pasta |
+| ----------- | --------- | ---------- |
+| `ResourceSystem` | `RuntimeAttributeContext` | `Application/Services` |
+| `ActorResourceOrchestratorService` | `RuntimeAttributeOrchestratorService` | `Application/Services` |
+| `CanvasPipelineManager` | `RuntimeAttributeCanvasPipelineManager` | `Application/Services` |
+| `ResourceLinkService` | `RuntimeAttributeLinkService` | `Application/Services` |
+| `ResourceAutoFlowService` | `RuntimeAttributeAutoFlowService` | `Application/Services` |
+| `ResourceThresholdService` | `RuntimeAttributeThresholdService` | `Application/Services` |
+| `ResourceEventHub` | `RuntimeAttributeEventHub` | `Utils` |
+| `InjectableCanvasResourceBinder` / `DynamicCanvasBinder` | `RuntimeAttributeSceneCanvasBinder` / `RuntimeAttributeDynamicCanvasBinder` | `Presentation/Bind` |
+| `ResourceUISlot` | `RuntimeAttributeUISlot` | `UI` |
+| `ResourceBridgeBase` / `ResourceAutoFlowBridge` / `ResourceLinkBridge` / `ResourceThresholdBridge` | `RuntimeAttributeBridgeBase` / `RuntimeAttributeAutoFlowBridge` / `RuntimeAttributeLinkBridge` / `RuntimeAttributeThresholdBridge` | `Presentation/Bridges` |
 
-```csharp
-// Configuração do recurso:
-hasAutoFlow = true;
-autoFlowConfig.autoFill = true;
-autoFlowConfig.tickInterval = 2;
-autoFlowConfig.amountPerTick = 5;
-```
-
-O `ResourceAutoFlowBridge` cuidará automaticamente da regeneração.
-
----
-
-### 🔗 Link de Mana → Energia
-
-```csharp
-// ResourceLinkConfig:
-sourceResource = Mana;
-targetResource = Energy;
-transferCondition = WhenSourceEmpty;
-```
-
-A bridge de link sincronizará os valores automaticamente.
-
----
-
-### ⚠️ Alertas de Threshold
-
-```csharp
-void OnThresholdCrossed(ResourceThresholdEvent evt)
-{
-    if (evt.ResourceType == ResourceType.Health && evt.Threshold <= 0.25f && !evt.IsAscending)
-        ShowCriticalHealthWarning();
-}
-```
-
----
-
-## 🧭 Boas Práticas e Troubleshooting
-
-### ✅ Boas Práticas
-
-* Use **ScriptableObjects** para configuração de recursos
-* Sempre remova registros de eventos em `OnDestroy()`
-* Prefira **EventBus** a chamadas diretas
-* Use **bridges leves** — sem update loops manuais
-* Utilize o **DebugUtility** com `DebugLevel.Verbose` em dev
-
-### ⚠️ Problemas Comuns
-
-| Sintoma                 | Solução                                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| Slots não aparecem      | Verifique se o `CanvasPipelineManager` e o `ActorResourceOrchestratorService` estão injetados      |
-| AutoFlow não ativa      | Certifique-se de que `hasAutoFlow = true` e o bridge está ativo                                    |
-| Thresholds não disparam | Confirme se `ResourceThresholdBridge` está presente e thresholds estão definidos                   |
-| Links inoperantes       | Verifique se `ResourceLinkBridge` está configurado e os recursos existem no mesmo `ResourceSystem` |
-
----
-
-## 🚀 Conclusão
-
-O novo **Resource System v3.0** é **100% event-driven**, altamente **modular** e **extensível**.
-Os serviços não dependem de ciclos de update nem de polling manual — tudo ocorre por **injeção e eventos**.
-
-Ele agora está pronto para produção em **arquiteturas baseadas em ECS, Dependency Injection ou Scene-based orchestration**.
-Com `DebugUtility`, `EventBus` e `DependencyManager`, o sistema garante estabilidade, performance e rastreabilidade completas.
+Use esta tabela para localizar classes legadas durante a migração para a estrutura atual.

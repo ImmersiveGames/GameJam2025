@@ -1,234 +1,95 @@
-﻿Excelente plano! Vou consolidar isso em um documento Markdown técnico que você pode manter no repositório. Este será nosso **ponto de referência oficial** para continuar a refatoração.
+# 🎯 Plano de Refatoração - Runtime Attribute System (Domain/Application/Presentation/UI)
 
-```markdown
-# 🎯 Plano de Refatoração - Sistema de Recursos e UI
+Documento alinhado com a nomenclatura padronizada e a árvore atual de pastas. Foco em manter SOLID, arquitetura limpa e fluxo totalmente event-driven para o multiplayer local.
 
-## 📋 Status Atual (Snapshot: DD/MM/AAAA)
+## 📋 Status Atual
+- **Última Atualização:** 2025-02-22
+- **Próxima Etapa:** Validar binds dinâmicos no pipeline novo e revisar feedbacks visuais por camada.
 
-**Última Atualização:** [Data da última modificação]
-**Próxima Etapa:** Consolidar CanvasPipelineManager e testar integração end-to-end
-````
 ## 🏗️ Arquitetura do Sistema
 
-### Diagrama de Fluxo
-
+### Diagrama de Camadas
 ```
-Actor → ResourceBridge → Orchestrator → ReactiveBinder → Canvas → Slot
-↓                    ↓              ↓               ↓        ↓
-ActorMaster      ResourceSystem   EventHub        Pooling   Visual Update
+Domain                → Application                         → Presentation                            → UI
+Configs / Values         Serviços + Eventos                    Bridges / Binders                          Slots / Animações
+RuntimeAttribute*        RuntimeAttribute*Service              RuntimeAttribute*Bridge/CanvasBinder        RuntimeAttributeUISlot
 ```
 
-### Camadas Principais
-
-#### 1. 🆔 Camada de Identidade
-- **ActorMaster**: Geração de IDs únicos e identidade do ator
-- **IActor/IHasSkin**: Contratos para componentes de ator
-
-#### 2. 💾 Camada de Recursos
-- **ResourceSystem**: Gerenciamento de dados de recursos
-- **ResourceBridgeBase**: Conexão entre Actor e ResourceSystem
-- **InjectableEntityResourceBridge**: Registro e inicialização
-
-#### 3. 🎨 Camada de Interface
-- **InjectableCanvasResourceBinder**: Binding principal UI-recursos
-- **ResourceUISlot**: Componente visual individual
-- **DynamicCanvasBinder**: Canvases runtime com delay controlado
+### Caminhos Reais
+- **Domain**: `Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Domain` (Configs, Values)
+- **Application**: `Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Application/Services` + `RuntimeAttributeUpdateEvent.cs`
+- **Presentation**: `Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Presentation/Bridges` e `Presentation/Bind`
+- **UI**: `Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/UI` e `UI/AnimationStrategies`
+- **Suporte**: `Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Utils/RuntimeAttributeEventHub.cs`
 
 ## ✅ Componentes Estáveis
-
-### 🆔 Identidade
-- [x] `ActorMaster` - Geração de IDs e identidade
-- [x] `IActor/IHasSkin` - Contratos implementados
-
-### 💾 Recursos
-- [x] `ResourceSystem` - Núcleo de dados
-- [x] `ResourceBridgeBase` - Conexão com retry
-- [x] `InjectableEntityResourceBridge` - Registro automático
-- [x] `IResourceValue/BasicResourceValue` - Modelo de dados
-
-### 🎨 Interface
-- [x] `InjectableCanvasResourceBinder` - Sistema completo
-- [x] `ResourceUISlot` - Visual com pooling
-- [x] `DynamicCanvasBinder` - Canvases dinâmicos
-- [x] `IResourceSlotStrategyFactory` - Estratégias de animação
-- [x] `ICanvasRoutingStrategy` - Roteamento de canvas
+- `RuntimeAttributeContext` (Domain/Application boundary) — núcleo de dados por entidade.
+- Serviços: `RuntimeAttributeOrchestratorService`, `RuntimeAttributeCanvasPipelineManager`, `RuntimeAttributeLinkService`, `RuntimeAttributeAutoFlowService`, `RuntimeAttributeThresholdService`.
+- Bridges: `RuntimeAttributeBridgeBase`, `RuntimeAttributeAutoFlowBridge`, `RuntimeAttributeLinkBridge`, `RuntimeAttributeThresholdBridge`, `RuntimeAttributeWorldSpaceCanvasBillboard`.
+- Binders: `RuntimeAttributeSceneCanvasBinder`, `RuntimeAttributeDynamicCanvasBinder`, `RuntimeAttributeActorCanvas`.
+- UI: `RuntimeAttributeUISlot`, estratégias de animação (`InstantFill`, `BasicReactiveFill`, `SmoothReactiveFill`), `FillAnimationStrategyFactory`.
 
 ## 🚧 Componentes em Revisão
-
-### ⚠️ Pendências Críticas
-- [ ] `CanvasPipelineManager` - Necessita integração com novo fluxo
-- [ ] `ResourceSystem` - Verificar sincronização com InstanceConfig
-- [ ] Logs centrais - Consolidar em DebugUtility com níveis
+- **`RuntimeAttributeBootstrapper`**: garantir ordem determinística de injeção entre bridges e binders.
+- **`RuntimeAttributeEventHub`**: avaliar política de retenção de pendências para canvases tardios.
+- **Perfis de Animação**: revisar `FillAnimationProfile` para suportar novos temas de HUD.
 
 ## 🔄 Fluxo de Execução Atual
+1. **Bootstrap**: `RuntimeAttributeBootstrapper` resolve dependências globais e injeta em bridges/binders.
+2. **Registro de Canvas**: `RuntimeAttributeActorCanvas` gera `CanvasId` e registra no `RuntimeAttributeOrchestratorService` e `RuntimeAttributeCanvasPipelineManager`.
+3. **Bind**: orquestrador publica `CanvasBindRequest` → pipeline executa `ScheduleBind` → `RuntimeAttributeUISlot` é criado e animado.
+4. **Execução Reativa**: `RuntimeAttributeContext` emite `RuntimeAttributeUpdateEvent`; serviços de AutoFlow/Link/Threshold emitem eventos dedicados; UI reage via `RuntimeAttributeEventHub`.
+5. **Cleanup**: canvases e bridges se desregistram, liberando slots (pool) e links.
 
-### 1. Inicialização
-```mermaid
-graph TD
-    A[ActorMaster Awake] --> B[Gera ActorId]
-    B --> C[ResourceBridgeBase Awake]
-    C --> D[Aguarda Dependencies]
-    D --> E[InjectableEntityResourceBridge]
-    E --> F[Cria/Registra ResourceSystem]
-    F --> G[Orchestrator Registration]
+## 🎨 Diagrama Simplificado
+```
+Actor
+ ├─ RuntimeAttributeBridgeBase (Presentation)
+ │    ├─ AutoFlow / Link / Threshold Bridges
+ │    └─ WorldSpaceCanvasBillboard
+ └─ RuntimeAttributeContext (Application)
+       ├─ Link / AutoFlow / Threshold Services
+       └─ RuntimeAttributeEventHub
+
+Canvas
+ ├─ RuntimeAttributeActorCanvas (Presentation)
+ └─ RuntimeAttributeUISlot + AnimationStrategies (UI)
 ```
 
-### 2. Binding UI
-```mermaid
-graph TD
-    A[Resource Update] --> B[Orchestrator]
-    B --> C[EventHub Publish]
-    C --> D[ReactiveBinder]
-    D --> E[Canvas ScheduleBind]
-    E --> F[Pool Get Slot]
-    F --> G[Slot Configure]
-```
+## 🧭 Tabela de Migração (Legado → Novo)
 
-### 3. Cleanup
-```mermaid
-graph TD
-    A[Actor Destroy] --> B[Orchestrator Unregister]
-    B --> C[Canvas RemoveSlots]
-    C --> D[Pool Release]
-    D --> E[Dependency Cleanup]
-```
+| Nome antigo | Nome novo | Pasta nova |
+| ----------- | --------- | ---------- |
+| `ResourceSystem` | `RuntimeAttributeContext` | `Application/Services` |
+| `ActorResourceOrchestratorService` | `RuntimeAttributeOrchestratorService` | `Application/Services` |
+| `CanvasPipelineManager` | `RuntimeAttributeCanvasPipelineManager` | `Application/Services` |
+| `ResourceLinkService` | `RuntimeAttributeLinkService` | `Application/Services` |
+| `ResourceAutoFlowService` | `RuntimeAttributeAutoFlowService` | `Application/Services` |
+| `ResourceThresholdService` | `RuntimeAttributeThresholdService` | `Application/Services` |
+| `ResourceEventHub` | `RuntimeAttributeEventHub` | `Utils` |
+| `InjectableEntityResourceBridge` / `ResourceBridgeBase` | `RuntimeAttributeBridgeBase` | `Presentation/Bridges` |
+| `ResourceAutoFlowBridge` | `RuntimeAttributeAutoFlowBridge` | `Presentation/Bridges` |
+| `ResourceLinkBridge` | `RuntimeAttributeLinkBridge` | `Presentation/Bridges` |
+| `ResourceThresholdBridge` | `RuntimeAttributeThresholdBridge` | `Presentation/Bridges` |
+| `InjectableCanvasResourceBinder` / `DynamicCanvasBinder` | `RuntimeAttributeSceneCanvasBinder` / `RuntimeAttributeDynamicCanvasBinder` | `Presentation/Bind` |
+| `ResourceUISlot` | `RuntimeAttributeUISlot` | `UI` |
 
-## 🛠️ Comandos de Debug Disponíveis
-
-### Actor & Resources
-```csharp
-// No Inspector: Context Menu
-DebugBridgeStatus()      // Status do ResourceBridge
-TestResourceAccess()     // Teste acesso a recursos
-DebugActorRegistration() // Verifica registro no orchestrator
-```
-
-### Canvas & UI
-```csharp
-// No Inspector: Context Menu  
-DebugCanvas()           // Status completo do canvas
-DebugSlotDetails()      // Detalhes dos slots ativos
-DebugStyleFlow()        // Fluxo de estilos e configurações
-ForceCanvasReady()      // Força inicialização imediata
-```
-
-### Sistema
-```csharp
-// Via código ou componentes auxiliares
-DebugBindFlow()         // Testa fluxo completo de binding
-DebugReactiveBinder()   // Status do reactive binder
-```
-
-## 🎯 Próximas Etapas Imediatas
-
-### Fase 1: Consolidação (Prioridade Alta)
-1. **Integrar CanvasPipelineManager** com novo fluxo reativo
-2. **Testar destruição** de atores e cleanup completo
-3. **Validar sincronização** ResourceSystem → InstanceConfig → UI
-
-### Fase 2: Estabilização (Prioridade Média)
-4. **Padronizar logs** com níveis (Info, Verbose, Warning, Error)
-5. **Otimizar pooling** e corrotinas
-6. **Documentar casos de uso** com exemplos
-
-### Fase 3: Melhorias (Prioridade Baixa)
-7. **Adicionar métricas** de performance
-8. **Criar testes** automatizados para fluxos críticos
-9. **Diagramas de arquitetura** detalhados
+## 🎯 Próximas Etapas
+1. Consolidar logging estruturado por camada (Domain/Application/Presentation/UI) usando `DebugUtility` com níveis configuráveis.
+2. Adicionar testes de integração para `RuntimeAttributeCanvasPipelineManager` (binds atrasados e rebind após reset).
+3. Otimizar `RuntimeAttributeLinkService` para reduzir alocações no multiplayer local.
+4. Documentar exemplos de uso por camada (Domain configs → Application services → Presentation bridges → UI slots) mantendo nomes padronizados.
 
 ## 🐛 Problemas Conhecidos
-
-### Críticos
-- Nenhum identificado atualmente
-
-### Menores
-- Dupla inicialização ocasional de canvases (em investigação)
-- Logs verbosos em produção (otimização pendente)
+- Canvas dinâmico pode perder o primeiro bind se o `CanvasRegisteredEvent` chegar antes do bootstrap (mitigado pelo EventHub, mas precisa de teste dedicado).
+- Perfis de animação não têm fallback para HUD com bar invertido; depende de atualização no `FillAnimationStrategyFactory`.
 
 ## 📊 Métricas de Sucesso
+- Bind deve ocorrer em < 3 frames após `CanvasRegisteredEvent` (multiplayer local).
+- Zero vazamento de slots no pool após destruição de ator/canvas.
+- Eventos de link e threshold sem duplicidade por frame.
 
-### Funcionais
-- [ ] Binding ocorre em < 3 frames após registro
-- [ ] Memory leaks zero no cleanup
-- [ ] Pooling eficiente (reutilização > 80%)
-- [ ] Logs claros para debugging
-
-### Técnicas
-- [ ] Inicialização determinística independente de ordem
-- [ ] Fallbacks funcionais para todos os cenários
-- [ ] Debug fácil via Inspector e logs
-
-## 🔍 Troubleshooting Guide
-
-### Sintoma: Bind não ocorre
-1. Verificar `DebugBridgeStatus()` no Actor
-2. Executar `DebugBindFlow()` no Orchestrator
-3. Checar `DebugReactiveBinder()` status
-4. Verificar logs de inicialização do canvas
-
-### Sintoma: UI não atualiza
-1. Usar `DebugSlotDetails()` no canvas
-2. Verificar `TestResourceAccess()` no bridge
-3. Checar estratégia de animação no slot
-
-### Sintoma: Memory Leak
-1. Executar cena de destruição de atores
-2. Verificar `DebugCanvas()` para slots órfãos
-3. Checar logs de cleanup no orchestrator
-
-## 📁 Estrutura de Arquivos
-
-```
-Scripts/
-├── ActorSystems/
-│   └── ActorMaster.cs
-├── ResourceSystems/
-│   ├── ResourceValue.cs
-│   ├── ResourceUISlot.cs
-│   ├── ResourceBridgeBase.cs
-│   ├── InjectableEntityResourceBridge.cs
-│   ├── ResourceSlotStrategyFactory.cs
-│   ├── CanvasRoutingStrategy.cs
-│   └── Bind/
-│       ├── InjectableCanvasResourceBinder.cs
-│       ├── DynamicCanvasBinder.cs
-│       ├── CanvasReactiveBinder.cs
-│       ├── ResourceEventHub.cs
-│       └── ActorResourceOrchestratorService.cs
-├── ResourceSystems/AnimationStrategies/
-│   └── [Estratégias de Animação]
-└── Utils/
-    ├── DebugSystems/
-    └── DependencySystems/
-```
-
-## 👥 Responsabilidades
-
-### Camada de Identidade
-- **Owner:** [Nome do Responsável]
-- **Status:** ✅ Estável
-
-### Camada de Recursos
-- **Owner:** [Nome do Responsável]
-- **Status:** ✅ Consolidada
-
-### Camada de UI
-- **Owner:** [Nome do Responsável]
-- **Status:** ✅ Refatorada
-
-### Integração
-- **Owner:** [Nome do Responsável]
-- **Status:** 🚧 Em Andamento
-
----
-
-**📌 Nota:** Este documento deve ser atualizado a cada etapa significativa da refatoração. Use como referência principal para garantir continuidade do trabalho.
-```
-
-Este documento agora serve como nossa **fonte única da verdade** para a refatoração. Você pode:
-
-1. **Salvar como `REFACTORING_PLAN.md`** no repositório
-2. **Me reenviar** quando quiser continuar de onde paramos
-3. **Atualizar** as seções de status conforme progredimos
-
-Quer que eu comece implementando a **Fase 1** (consolidação do CanvasPipelineManager) ou prefere abordar algum outro aspecto específico do plano?
+## 🔍 Troubleshooting Rápido
+- **Bind não ocorre**: verificar `RuntimeAttributeEventHub` (pendências) e `RuntimeAttributeCanvasPipelineManager.ScheduleBind`.
+- **UI não atualiza**: conferir se o ator tem `RuntimeAttributeContext` registrado e se o slot usa a animação correta.
+- **Links não respeitados**: revisar `RuntimeAttributeLinkConfig` do ator e logs do `RuntimeAttributeLinkService`.
