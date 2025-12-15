@@ -1,5 +1,6 @@
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
+using _ImmersiveGames.Scripts.UISystems.Compass;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 

@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     public interface IRuntimeAttributeCanvasRoutingStrategy

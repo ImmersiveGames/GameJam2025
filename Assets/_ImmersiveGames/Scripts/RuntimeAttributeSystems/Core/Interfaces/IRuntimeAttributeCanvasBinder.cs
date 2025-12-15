@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces
 {

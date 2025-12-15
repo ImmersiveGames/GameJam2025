@@ -6,6 +6,8 @@ using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.StateMachineSystems;

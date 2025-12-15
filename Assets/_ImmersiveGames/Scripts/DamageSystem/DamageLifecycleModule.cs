@@ -1,4 +1,5 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 

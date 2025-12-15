@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using _ImmersiveGames.Scripts.CompassSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.UI.Compass;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// HUD da bússola otimizada, responsiva e totalmente configurável.

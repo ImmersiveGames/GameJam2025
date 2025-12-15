@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.DamageSystem.Strategies;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binders;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;

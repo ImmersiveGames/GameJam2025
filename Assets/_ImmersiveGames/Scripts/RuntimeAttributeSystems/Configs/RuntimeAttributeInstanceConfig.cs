@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Configs;
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
 {

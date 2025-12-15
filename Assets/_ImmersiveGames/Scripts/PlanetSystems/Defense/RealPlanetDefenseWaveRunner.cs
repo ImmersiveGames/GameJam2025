@@ -4,6 +4,7 @@ using ImprovedTimers;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;

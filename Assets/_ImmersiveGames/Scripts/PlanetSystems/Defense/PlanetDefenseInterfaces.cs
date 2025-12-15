@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense

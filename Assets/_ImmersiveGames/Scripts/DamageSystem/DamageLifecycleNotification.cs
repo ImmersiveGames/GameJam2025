@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem
