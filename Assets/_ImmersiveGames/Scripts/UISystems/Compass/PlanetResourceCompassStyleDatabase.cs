@@ -2,8 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Define a cor aplicada a cada tipo de recurso de planeta exibido na bússola.

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Define o modo de resolução de ícone para um alvo rastreável na bússola.

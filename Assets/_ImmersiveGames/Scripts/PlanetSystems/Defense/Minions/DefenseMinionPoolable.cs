@@ -2,8 +2,7 @@
 using _ImmersiveGames.Scripts.ProjectilesSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Versão especializada do BulletPoolable para minions de defesa.

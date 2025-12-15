@@ -1,3 +1,4 @@
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using UnityEngine;
 using UnityEngine.Serialization;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;

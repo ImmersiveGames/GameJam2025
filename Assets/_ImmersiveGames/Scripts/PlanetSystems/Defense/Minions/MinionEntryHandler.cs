@@ -1,10 +1,9 @@
 using System;
-using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
-using DG.Tweening;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Isola a responsabilidade de animação de entrada do minion, do centro do planeta até a órbita.

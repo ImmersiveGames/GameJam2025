@@ -8,7 +8,7 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     public class RuntimeAttributeUISlot : MonoBehaviour
     {

@@ -2,8 +2,7 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Controla o destaque do planeta atualmente marcado, ampliando o ícone na bússola.

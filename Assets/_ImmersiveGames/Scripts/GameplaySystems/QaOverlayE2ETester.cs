@@ -13,8 +13,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.Scripts.QA
+namespace _ImmersiveGames.Scripts.GameplaySystems
 {
     /// <summary>
     /// QA E2E tester para validar:

@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Configurações gerais de comportamento da bússola, desacopladas da cena.

@@ -1,4 +1,4 @@
-using _ImmersiveGames.Scripts.UI.Compass;
+using _ImmersiveGames.Scripts.UISystems.Compass;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems

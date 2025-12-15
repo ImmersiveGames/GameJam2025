@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Representa os tipos básicos de alvos rastreáveis pela bússola.

@@ -3,8 +3,7 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Controla o ícone individual exibido na HUD da bússola para um alvo rastreável.

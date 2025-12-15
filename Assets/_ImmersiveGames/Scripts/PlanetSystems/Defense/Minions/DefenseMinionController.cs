@@ -1,10 +1,9 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     [RequireComponent(typeof(MinionEntryHandler))]
     [RequireComponent(typeof(MinionOrbitWaitHandler))]

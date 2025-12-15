@@ -1,8 +1,7 @@
 using System;
 using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Responsável apenas por aguardar o tempo de idle em órbita antes de liberar a perseguição.

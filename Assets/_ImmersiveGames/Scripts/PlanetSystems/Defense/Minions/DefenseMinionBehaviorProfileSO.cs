@@ -1,7 +1,6 @@
-using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Pacote completo de comportamento para um minion de defesa.

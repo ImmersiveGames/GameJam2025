@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.UI.Compass
+namespace _ImmersiveGames.Scripts.UISystems.Compass
 {
     /// <summary>
     /// Banco de dados simples para buscar configurações visuais por tipo de alvo.

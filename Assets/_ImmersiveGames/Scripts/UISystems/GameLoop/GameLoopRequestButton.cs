@@ -5,8 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.UI;
-
-namespace _ImmersiveGames.Scripts.UI.GameLoop
+namespace _ImmersiveGames.Scripts.UISystems.GameLoop
 {
     public enum GameLoopRequestType
     {

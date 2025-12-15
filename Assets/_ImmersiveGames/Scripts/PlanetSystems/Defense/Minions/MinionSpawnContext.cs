@@ -1,7 +1,6 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Contexto mínimo enviado pelo planeta ao spawnar um minion.

@@ -3,7 +3,7 @@ using DG.Tweening;
 using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {
     /// <summary>
     /// Estratégia de perseguição em zigzag usando DOTween.

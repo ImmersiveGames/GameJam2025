@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ImprovedTimers;
 using UnityEngine;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;

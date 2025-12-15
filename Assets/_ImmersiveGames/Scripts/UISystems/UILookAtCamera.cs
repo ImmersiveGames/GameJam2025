@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.UI
+namespace _ImmersiveGames.Scripts.UISystems
 {
     public class UILookAtCamera : MonoBehaviour
     {

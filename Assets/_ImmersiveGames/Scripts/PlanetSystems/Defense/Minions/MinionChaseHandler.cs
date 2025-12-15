@@ -1,11 +1,10 @@
 using System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-using _ImmersiveGames.Scripts.PlanetSystems.Defense.Strategy;
-using DG.Tweening;
+using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using DG.Tweening;
 using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Responsável apenas pela perseguição do alvo após a fase de órbita.

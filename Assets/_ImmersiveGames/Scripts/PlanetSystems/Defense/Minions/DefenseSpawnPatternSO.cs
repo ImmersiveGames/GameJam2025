@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
-
-namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
+namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {
     /// <summary>
     /// Base para padrões de spawn em órbita (Spawn Patterns).

@@ -6,7 +6,7 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.UI.DirectIndicator
+namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
 {
     /// <summary>
     /// LEGADO / OBSOLETO:

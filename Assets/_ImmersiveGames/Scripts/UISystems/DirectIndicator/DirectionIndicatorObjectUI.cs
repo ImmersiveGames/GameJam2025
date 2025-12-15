@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.UI.DirectIndicator
+namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
 {
     /// <summary>
     /// Esses arquivos foram subistituidos pelo Compass, mas para não perder essa fórmula de localização toraremos isso obsoleto;
