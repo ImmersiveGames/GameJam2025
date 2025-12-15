@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils;
@@ -9,14 +10,14 @@ using UnityEngine;
 using UnityEngine.Pool;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 {
-    public abstract class ActorResourceAttributeCanvas : MonoBehaviour, IAttributeCanvasBinder
+    public abstract class RuntimeAttributeActorCanvas : MonoBehaviour, IRuntimeAttributeCanvasBinder
     {
         [Header("Identification")]
         [SerializeField] private string canvasId;
         [SerializeField] private bool autoGenerateCanvasId = true;
 
         [Header("Dependencies")]
-        [Inject] protected IActorRuntimeAttributeOrchestrator orchestrator;
+        [Inject] protected IRuntimeAttributeOrchestrator orchestrator;
         [Inject] protected IUniqueIdFactory idFactory;
 
         [Header("Pool & Prefab")]
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
             State = AttributeCanvasInitializationState.Pending;
             SetupCanvasId();
 
-            RuntimeAttributeInitializationManager.Instance.RegisterForInjection(this);
+            RuntimeAttributeBootstrapper.Instance.RegisterForInjection(this);
         }
 
         public virtual void OnDependenciesInjected()
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 
             if (slotPrefab == null)
             {
-                DebugUtility.LogError<ActorResourceAttributeCanvas>($"❌ Slot prefab not assigned for Canvas '{CanvasId}'.");
+                DebugUtility.LogError<RuntimeAttributeActorCanvas>($"❌ Slot prefab not assigned for Canvas '{CanvasId}'.");
                 State = AttributeCanvasInitializationState.Failed;
                 InjectionState = DependencyInjectionState.Failed;
                 return;
@@ -69,13 +70,13 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
                 State = AttributeCanvasInitializationState.Ready;
                 InjectionState = DependencyInjectionState.Ready;
 
-                DebugUtility.LogVerbose<ActorResourceAttributeCanvas>(
+                DebugUtility.LogVerbose<RuntimeAttributeActorCanvas>(
                     $"✅ Canvas '{CanvasId}' Ready ({Type})",
                     DebugUtility.Colors.CrucialInfo);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ActorResourceAttributeCanvas>($"❌ Error initializing attributeCanvas '{CanvasId}': {ex}");
+                DebugUtility.LogError<RuntimeAttributeActorCanvas>($"❌ Error initializing attributeCanvas '{CanvasId}': {ex}");
                 State = AttributeCanvasInitializationState.Failed;
                 InjectionState = DependencyInjectionState.Failed;
             }
@@ -85,7 +86,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
         {
             if (autoGenerateCanvasId)
             {
-                var actor = GetComponentInParent<ActorSystems.IActor>();
+                var actor = GetComponentInParent<IActor>();
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
                     _canvasIdResolved = $"{actor.ActorId}_Canvas";
                 else
@@ -128,11 +129,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
                 newSlot.Configure(data);
                 actorDict[runtimeAttributeType] = newSlot;
 
-                DebugUtility.LogVerbose<ActorResourceAttributeCanvas>($"🎨 Bound {actorId}.{runtimeAttributeType} on '{CanvasId}'");
+                DebugUtility.LogVerbose<RuntimeAttributeActorCanvas>($"🎨 Bound {actorId}.{runtimeAttributeType} on '{CanvasId}'");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ActorResourceAttributeCanvas>($"❌ Error creating slot for {actorId}.{runtimeAttributeType}: {ex}");
+                DebugUtility.LogError<RuntimeAttributeActorCanvas>($"❌ Error creating slot for {actorId}.{runtimeAttributeType}: {ex}");
                 _pool.Release(newSlot);
             }
         }
@@ -172,12 +173,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
             try
             {
                 orchestrator?.UnregisterCanvas(CanvasId);
-                if (AttributeCanvasPipelineManager.HasInstance)
-                    AttributeCanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
+                if (RuntimeAttributeCanvasPipelineManager.HasInstance)
+                    RuntimeAttributeCanvasPipelineManager.Instance.UnregisterCanvas(CanvasId);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<ActorResourceAttributeCanvas>($"Error during destroy: {ex}");
+                DebugUtility.LogError<RuntimeAttributeActorCanvas>($"Error during destroy: {ex}");
             }
         }
 

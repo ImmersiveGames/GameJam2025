@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
     /// Mantém o attributeCanvas sempre virado para a câmera (billboard effect)
     /// Para canvases em world space, com suporte a offset de posição/rotação
     /// </summary>
-    public class WorldSpaceCanvasBillboard : MonoBehaviour
+    public class RuntimeAttributeWorldSpaceCanvasBillboard : MonoBehaviour
     {
         [Header("Billboard Settings")]
         [SerializeField] private bool useMainCamera = true;
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
             }
             else
             {
-                DebugUtility.LogWarning<WorldSpaceCanvasBillboard>("WorldSpaceCanvasBillboard: No target camera found.");
+                DebugUtility.LogWarning<RuntimeAttributeWorldSpaceCanvasBillboard>("RuntimeAttributeWorldSpaceCanvasBillboard: No target camera found.");
             }
         }
 
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
             FindCamera();
             if (_cameraTransform != null)
             {
-                DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>($"WorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
+                DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>($"RuntimeAttributeWorldSpaceCanvasBillboard: Found camera {_cameraTransform.name}");
             }
         }
 
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         {
             _originalPosition = transform.position;
             _originalRotation = transform.rotation;
-            DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>("Saved current position and rotation as original");
+            DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>("Saved current position and rotation as original");
         }
 
         [ContextMenu("Reset to Original")]
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         {
             transform.position = _originalPosition;
             transform.rotation = _originalRotation;
-            DebugUtility.LogVerbose<WorldSpaceCanvasBillboard>("Reset to original position and rotation");
+            DebugUtility.LogVerbose<RuntimeAttributeWorldSpaceCanvasBillboard>("Reset to original position and rotation");
         }
 
         public void SetPositionOffset(Vector3 newOffset)

@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 {
-    public class SceneAttributeCanvasBinder : ActorResourceAttributeCanvas
+    public class RuntimeAttributeSceneCanvasBinder : RuntimeAttributeActorCanvas
     {
         [SerializeField] private bool registerInPipeline = true;
         public override AttributeCanvasType Type => AttributeCanvasType.Scene;
@@ -12,10 +12,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
         {
             base.OnDependenciesInjected();
 
-            if (registerInPipeline && AttributeCanvasPipelineManager.HasInstance)
+            if (registerInPipeline && RuntimeAttributeCanvasPipelineManager.HasInstance)
             {
-                AttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
-                DebugUtility.LogVerbose<SceneAttributeCanvasBinder>(
+                RuntimeAttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
+                DebugUtility.LogVerbose<RuntimeAttributeSceneCanvasBinder>(
                     $"✅ Scene Canvas '{CanvasId}' registered in pipeline",
                     DebugUtility.Colors.Success);
             }

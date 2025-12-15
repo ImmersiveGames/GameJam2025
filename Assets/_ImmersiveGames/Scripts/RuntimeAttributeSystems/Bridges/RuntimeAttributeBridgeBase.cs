@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
     [DefaultExecutionOrder(25)]
     public abstract class RuntimeAttributeBridgeBase : MonoBehaviour
     {
-        protected IActorRuntimeAttributeOrchestrator orchestrator;
+        protected IRuntimeAttributeOrchestrator orchestrator;
         protected RuntimeAttributeContext runtimeAttributeContext;
         protected IActor actor;
 

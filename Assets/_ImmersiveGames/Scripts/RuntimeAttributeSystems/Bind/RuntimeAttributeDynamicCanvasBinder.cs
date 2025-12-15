@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
 {
-    public class DynamicAttributeCanvasBinder : ActorResourceAttributeCanvas
+    public class RuntimeAttributeDynamicCanvasBinder : RuntimeAttributeActorCanvas
     {
         [SerializeField] private bool registerInPipeline = true;
         public override AttributeCanvasType Type => AttributeCanvasType.Dynamic;
@@ -13,12 +13,12 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
         {
             base.OnDependenciesInjected();
 
-            if (registerInPipeline && AttributeCanvasPipelineManager.HasInstance)
+            if (registerInPipeline && RuntimeAttributeCanvasPipelineManager.HasInstance)
             {
-                AttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
+                RuntimeAttributeCanvasPipelineManager.Instance.RegisterCanvas(this);
                 RuntimeAttributeEventHub.NotifyCanvasRegistered(CanvasId);
 
-                DebugUtility.LogVerbose<DynamicAttributeCanvasBinder>(
+                DebugUtility.LogVerbose<RuntimeAttributeDynamicCanvasBinder>(
                     $"✅ Dynamic Canvas '{CanvasId}' registered & notified",
                     DebugUtility.Colors.Success);
             }

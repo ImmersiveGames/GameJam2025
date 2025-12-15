@@ -3,7 +3,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
-    public interface IAttributeCanvasBinder : IInjectableComponent
+    public interface IRuntimeAttributeCanvasBinder : IInjectableComponent
     {
         string CanvasId { get; }
         AttributeCanvasType Type { get; }

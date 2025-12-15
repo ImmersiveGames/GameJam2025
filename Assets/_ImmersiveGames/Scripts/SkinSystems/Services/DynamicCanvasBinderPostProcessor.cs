@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems
         {
             if (instance == null) return;
 
-            DynamicAttributeCanvasBinder[] dynamicBinders = instance.GetComponentsInChildren<DynamicAttributeCanvasBinder>(true);
+            RuntimeAttributeDynamicCanvasBinder[] dynamicBinders = instance.GetComponentsInChildren<RuntimeAttributeDynamicCanvasBinder>(true);
             foreach (var binder in dynamicBinders)
             {
                 binder.gameObject.SetActive(true);

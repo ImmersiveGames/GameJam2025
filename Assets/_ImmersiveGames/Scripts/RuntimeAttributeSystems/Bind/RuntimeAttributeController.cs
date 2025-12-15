@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
     {
         [SerializeField] private RuntimeAttributeInstanceConfig[] resourceInstances = Array.Empty<RuntimeAttributeInstanceConfig>();
 
-        [Inject] private IActorRuntimeAttributeOrchestrator _orchestrator;
+        [Inject] private IRuntimeAttributeOrchestrator _orchestrator;
 
         private IActor _actor;
         private RuntimeAttributeContext _service;
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
             }
 
             InjectionState = DependencyInjectionState.Pending;
-            RuntimeAttributeInitializationManager.Instance.RegisterForInjection(this);
+            RuntimeAttributeBootstrapper.Instance.RegisterForInjection(this);
         }
 
         public void OnDependenciesInjected()

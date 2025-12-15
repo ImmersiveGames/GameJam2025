@@ -80,16 +80,16 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
                     return new SceneTransitionService(sceneLoader, fadeService);
                 });
 
-                var initManager = RuntimeAttributeInitializationManager.Instance;
+                var initManager = RuntimeAttributeBootstrapper.Instance;
                 EnsureGlobal(() => initManager);
 
-                var pipelineManager = AttributeCanvasPipelineManager.Instance;
+                var pipelineManager = RuntimeAttributeCanvasPipelineManager.Instance;
                 EnsureGlobal(() => pipelineManager);
 
-                EnsureGlobal<IActorRuntimeAttributeOrchestrator>(() => new ActorRuntimeAttributeOrchestratorService());
+                EnsureGlobal<IRuntimeAttributeOrchestrator>(() => new RuntimeAttributeOrchestratorService());
 
                 initManager.RegisterForInjection(pipelineManager);
-                if (DependencyManager.Provider.TryGetGlobal<IActorRuntimeAttributeOrchestrator>(out var orchestrator))
+                if (DependencyManager.Provider.TryGetGlobal<IRuntimeAttributeOrchestrator>(out var orchestrator))
                 {
                     initManager.RegisterForInjection((IInjectableComponent)orchestrator);
                 }
