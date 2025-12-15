@@ -2,7 +2,7 @@
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binding;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
     /// </summary>
     public class RuntimeAttributeCanvasPipelineManager : PersistentSingleton<RuntimeAttributeCanvasPipelineManager>, IInjectableComponent
     {
-        private readonly Dictionary<string, IRuntimeAttributeCanvasBinder> _canvasRegistry = new();
+        private readonly Dictionary<string, IAttributeCanvasBinder> _canvasRegistry = new();
 
         private EventBinding<RuntimeAttributeEventHub.CanvasBindRequest> _bindRequestBinding;
         private EventBinding<RuntimeAttributeEventHub.CanvasRegisteredEvent> _canvasRegisteredBinding;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         /// <summary>
         /// Registra um attributeCanvas no pipeline (idempotente).
         /// </summary>
-        public void RegisterCanvas(IRuntimeAttributeCanvasBinder attributeCanvas)
+        public void RegisterCanvas(IAttributeCanvasBinder attributeCanvas)
         {
             if (attributeCanvas == null || string.IsNullOrEmpty(attributeCanvas.CanvasId)) return;
 

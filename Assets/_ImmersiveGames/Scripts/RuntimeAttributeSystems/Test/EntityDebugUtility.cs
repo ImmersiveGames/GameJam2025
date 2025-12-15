@@ -12,7 +12,7 @@ using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binding;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test

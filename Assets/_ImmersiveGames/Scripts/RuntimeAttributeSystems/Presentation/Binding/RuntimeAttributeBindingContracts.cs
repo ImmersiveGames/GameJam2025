@@ -1,10 +1,16 @@
 using System.Collections.Generic;
+using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binding
 {
-    public interface IRuntimeAttributeCanvasBinder : IInjectableComponent
+    /// <summary>
+    /// Contrato único para binders de canvas de atributos (UI ↔ RuntimeAttribute).
+    /// Centraliza a identificação, ciclo de injeção e operações de bind.
+    /// </summary>
+    public interface IAttributeCanvasBinder : IInjectableComponent
     {
         string CanvasId { get; }
         AttributeCanvasType Type { get; }
@@ -15,11 +21,26 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation
         IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots();
     }
 
+    /// <summary>
+    /// Contrato base para qualquer componente que precise participar do ciclo de injeção
+    /// controlado pelo <see cref="RuntimeAttributeBootstrapper"/>.
+    /// </summary>
     public interface IInjectableComponent
     {
         string GetObjectId();
         void OnDependenciesInjected();
         DependencyInjectionState InjectionState { get; set; }
+    }
+
+    /// <summary>
+    /// Contrato para bridges que fazem a ponte entre services e componentes de apresentação.
+    /// </summary>
+    public interface IRuntimeAttributeBridge
+    {
+        IActor Actor { get; }
+        bool IsInitialized { get; }
+        bool IsDestroyed { get; }
+        RuntimeAttributeContext GetResourceSystem();
     }
 
     public enum DependencyInjectionState

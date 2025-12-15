@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binding;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
     /// Funciona perfeitamente com cenas aditivas e multiplayer local.
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class CompassHUD : MonoBehaviour, IRuntimeAttributeCanvasBinder
+    public class CompassHUD : MonoBehaviour, IAttributeCanvasBinder
     {
         private static readonly IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> EmptyActorSlots =
             new Dictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>>();
@@ -276,7 +276,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
             }
         }
 
-        // IRuntimeAttributeCanvasBinder
+        // IAttributeCanvasBinder
         public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data) { }
         public bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
         public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots() => EmptyActorSlots;

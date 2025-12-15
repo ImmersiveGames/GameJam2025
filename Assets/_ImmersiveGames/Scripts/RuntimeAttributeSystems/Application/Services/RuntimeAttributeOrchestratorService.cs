@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binding;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         IReadOnlyCollection<string> GetRegisteredActorIds();
         bool TryGetActorResource(string actorId, out RuntimeAttributeContext runtimeAttributeContext);
 
-        void RegisterCanvas(IRuntimeAttributeCanvasBinder attributeCanvas);
+        void RegisterCanvas(IAttributeCanvasBinder attributeCanvas);
         void UnregisterCanvas(string canvasId);
 
         bool IsCanvasRegisteredForActor(string actorId);
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
     public class RuntimeAttributeOrchestratorService : IRuntimeAttributeOrchestrator, IInjectableComponent
     {
         private readonly Dictionary<string, RuntimeAttributeContext> _actors = new();
-        private readonly Dictionary<string, IRuntimeAttributeCanvasBinder> _canvases = new();
+        private readonly Dictionary<string, IAttributeCanvasBinder> _canvases = new();
 
         private readonly Dictionary<(string actorId, RuntimeAttributeType resourceType), string> _canvasIdCache = new();
         private readonly Dictionary<string, Dictionary<(string actorId, RuntimeAttributeType resourceType), RuntimeAttributeUpdateEvent>> _pendingFirstUpdates = new();
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             DebugUtility.LogVerbose<RuntimeAttributeOrchestratorService>($"📦 Cached initial slot for {actorId}.{runtimeAttributeType} -> {targetCanvasId}");
         }
 
-        public void RegisterCanvas(IRuntimeAttributeCanvasBinder attributeCanvas)
+        public void RegisterCanvas(IAttributeCanvasBinder attributeCanvas)
         {
             if (attributeCanvas == null) return;
 
