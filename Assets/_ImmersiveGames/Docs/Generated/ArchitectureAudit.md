@@ -34,7 +34,7 @@ Arquivos com achados: **84**
 - Assets/Plugins/Trinary Software/Timing.cs
 - Assets/_ImmersiveGames/Scripts/AudioSystem/Core/AudioRuntimeRoot.cs
 - Assets/_ImmersiveGames/Scripts/EaterSystem/EaterDesireUI.cs
-- Assets/_ImmersiveGames/Scripts/ResourceSystems/Bridges/RuntimeAttributeWorldSpaceCanvasBillboard.cs
+- Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Presentation/Bridges/WorldSpaceBillboard.cs
 
 ### Singleton/Instance usage
 - Assets/_ImmersiveGames/Scripts/AnimationSystems/Base/AnimationControllerBase.cs
@@ -489,9 +489,9 @@ Arquivos com achados: **84**
 - **EventBinding**: linhas 14, 34
 - **FilteredEventBus**: linhas 35, 56
 
-### Assets/_ImmersiveGames/Scripts/ResourceSystems/Bridges/RuntimeAttributeWorldSpaceCanvasBillboard.cs
-- Namespace: `_ImmersiveGames.Scripts.ResourceSystems`
-- Classes: `RuntimeAttributeWorldSpaceCanvasBillboard`
+### Assets/_ImmersiveGames/Scripts/RuntimeAttributeSystems/Presentation/Bridges/WorldSpaceBillboard.cs
+- Namespace: `_ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges`
+- Classes: `WorldSpaceBillboard`
 
 - **FindFirstObjectByType**: linhas 54
 

@@ -3,13 +3,13 @@
 Este resumo deixa claro quem cria, quem notifica e quem consome eventos no binding UI ↔ atributo.
 
 ## Criação e registro de Canvas
-- **`RuntimeAttributeActorCanvas`**: gera `CanvasId`, inicializa pool de slots e registra-se no `RuntimeAttributeOrchestratorService`.
-- **`RuntimeAttributeSceneCanvasBinder` / `RuntimeAttributeDynamicCanvasBinder`**: estendem a base e, opcionalmente, registram-se no `RuntimeAttributeCanvasPipelineManager` (Dynamic também notifica o `RuntimeAttributeEventHub`).
+- **`RuntimeAttributeActorCanvas`**: gera `CanvasId`, inicializa pool de slots e registra-se no `RuntimeAttributeCoordinator`.
+- **`RuntimeAttributeSceneCanvasBinder` / `RuntimeAttributeDynamicCanvasBinder`**: estendem a base e, opcionalmente, registram-se no `RuntimeAttributeCanvasManager` (Dynamic também notifica o `RuntimeAttributeEventHub`).
 - **`CompassHUD`**: segue o mesmo contrato (`IAttributeCanvasBinder`) quando a HUD da bússola precisa de binds.
 
 ## Orquestração e notificações
-- **`RuntimeAttributeOrchestratorService`**: cria binds iniciais para cada ator, cacheia pendências e publica `CanvasBindRequest` via `RuntimeAttributeEventHub`.
-- **`RuntimeAttributeCanvasPipelineManager`**: registra canvases, consome `CanvasBindRequest` e executa `ScheduleBind` imediato quando o canvas está pronto.
+- **`RuntimeAttributeCoordinator`**: cria binds iniciais para cada ator, cacheia pendências e publica `CanvasBindRequest` via `RuntimeAttributeEventHub`.
+- **`RuntimeAttributeCanvasManager`**: registra canvases, consome `CanvasBindRequest` e executa `ScheduleBind` imediato quando o canvas está pronto.
 - **`RuntimeAttributeEventHub`**: mantém pendências para canvases ainda não registrados e reenvia quando recebe `CanvasRegisteredEvent`.
 
 ## Bridges e assinatura de eventos
