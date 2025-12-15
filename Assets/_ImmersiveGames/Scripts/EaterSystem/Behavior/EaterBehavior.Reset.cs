@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         {
             // Rebind: re-resolve dependências externas e reconstrói state machine/binds.
             Master ??= GetComponent<EaterMaster>();
-            Config ??= Master != null ? Master.Config : null;
+            Config = Master != null ? Master.Config : null;
 
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
@@ -52,6 +52,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             TryGetAudioEmitter(out _);
             TryEnsureAutoFlowBridge();
 
+            // A state machine só é construída quando inexistente; o método é idempotente e evita duplicar transições/bindings internos.
             EnsureStatesInitialized();
 
             if (_autoFlowBridge != null)
@@ -85,6 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         private void DisposePredicates()
         {
+            // Predicados descartáveis possuem bindings em EventBus e precisam ser liberados para evitar leaks.
             _deathPredicate?.Dispose();
             _revivePredicate?.Dispose();
             _planetUnmarkedPredicate?.Dispose();
