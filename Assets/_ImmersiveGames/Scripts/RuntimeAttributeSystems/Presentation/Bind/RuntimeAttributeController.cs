@@ -59,7 +59,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
             try
             {
-                if (!DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _service))
+                if (!DependencyManager.Provider.TryGetForObject<RuntimeAttributeContext>(_actor.ActorId, out _service))
                 {
                     _service = new RuntimeAttributeContext(_actor.ActorId, resourceInstances);
                     DependencyManager.Provider.RegisterForObject(_actor.ActorId, _service);
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             // Garante que o serviço existe (caso algum fluxo tenha atrasado injeção)
             if (_service == null && _actor != null)
             {
-                if (!DependencyManager.Provider.TryGetForObject(_actor.ActorId, out _service))
+                if (!DependencyManager.Provider.TryGetForObject<RuntimeAttributeContext>(_actor.ActorId, out _service))
                 {
                     _service = new RuntimeAttributeContext(_actor.ActorId, resourceInstances);
                     DependencyManager.Provider.RegisterForObject(_actor.ActorId, _service);
