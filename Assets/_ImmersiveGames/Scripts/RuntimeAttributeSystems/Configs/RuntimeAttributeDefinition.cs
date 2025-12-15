@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Definition")]
     public class RuntimeAttributeDefinition : ScriptableObject

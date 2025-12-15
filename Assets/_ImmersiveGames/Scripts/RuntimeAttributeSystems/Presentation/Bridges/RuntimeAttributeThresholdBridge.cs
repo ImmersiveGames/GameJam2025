@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     

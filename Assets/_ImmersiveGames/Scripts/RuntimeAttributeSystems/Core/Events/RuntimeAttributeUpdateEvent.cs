@@ -1,9 +1,7 @@
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
 {
     public class RuntimeAttributeUpdateEvent : IEvent
     {

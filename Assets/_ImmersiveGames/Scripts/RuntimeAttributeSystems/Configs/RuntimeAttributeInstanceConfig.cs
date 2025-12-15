@@ -1,7 +1,7 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Configs;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
     [System.Serializable]
     public class RuntimeAttributeInstanceConfig

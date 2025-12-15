@@ -1,16 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binders;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     public interface IRuntimeAttributeOrchestrator
     {
@@ -46,7 +45,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core
 
         public RuntimeAttributeOrchestratorService(IRuntimeAttributeCanvasRoutingStrategy routingStrategy = null)
         {
-            _routingStrategy = routingStrategy ?? new RuntimeAttributeCanvasRoutingStrategy();
+            _routingStrategy = routingStrategy ?? new DefaultAttributeCanvasRoutingStrategy();
         }
 
         public string GetObjectId() => "RuntimeAttributeOrchestratorService";
