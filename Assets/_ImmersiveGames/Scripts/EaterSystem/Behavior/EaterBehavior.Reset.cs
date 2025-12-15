@@ -2,7 +2,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
@@ -13,17 +12,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour, IResetInterfaces, IResetOrder
     {
-        // Mantém o Eater próximo do player no pipeline, similar aos controladores de player.
-        public int ResetOrder => 10;
+        // Executa depois dos recursos (ex.: RuntimeAttributeController = -80) e da movimentação do player,
+        // garantindo que dados de recursos/AutoFlow já estejam rebindados antes do comportamento.
+        public int ResetOrder => 20;
 
         public Task Reset_CleanupAsync(ResetContext ctx)
         {
-            // Garante saída do estado atual para liberar timers e handlers antes de descartar caches.
-            if (_stateMachine?.CurrentState is IState currentState)
-            {
-                currentState.OnExit();
-            }
-
+            // Cleanup: remove bindings e caches para permitir Restore/Rebind idempotentes.
             CleanupDesireBindings();
             PauseAutoFlow("Reset_Cleanup");
             DisposePredicates();
@@ -36,15 +31,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         public Task Reset_RestoreAsync(ResetContext ctx)
         {
-            Master ??= GetComponent<EaterMaster>();
-            Config = Master != null ? Master.Config : null;
-
-            _planetMarkingManager = PlanetMarkingManager.Instance;
-            _playerManager = PlayerManager.Instance;
-
-            // Recria state machine e estados no ponto inicial (Wandering).
-            EnsureStatesInitialized();
-
+            // Restore: apenas dados internos, sem reconstruir dependências ou binds.
             _currentDesireInfo = EaterDesireInfo.Inactive;
             ClearOrbitAnchor();
 
@@ -53,11 +40,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         public Task Reset_RebindAsync(ResetContext ctx)
         {
-            // Re-resolve dependências locais.
+            // Rebind: re-resolve dependências externas e reconstrói state machine/binds.
+            Master ??= GetComponent<EaterMaster>();
+            Config ??= Master != null ? Master.Config : null;
+
+            _planetMarkingManager = PlanetMarkingManager.Instance;
+            _playerManager = PlayerManager.Instance;
+
             TryGetDetectionController(out _);
             TryGetAnimationController(out _);
             TryGetAudioEmitter(out _);
             TryEnsureAutoFlowBridge();
+
+            EnsureStatesInitialized();
 
             if (_autoFlowBridge != null)
             {
