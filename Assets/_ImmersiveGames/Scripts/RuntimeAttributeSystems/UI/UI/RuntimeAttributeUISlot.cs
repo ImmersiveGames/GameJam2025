@@ -1,5 +1,5 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies;
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;

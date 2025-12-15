@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation
 {
     public interface IFillAnimationStrategy
     {
