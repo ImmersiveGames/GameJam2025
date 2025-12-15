@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
@@ -18,6 +19,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         private IActor _actor;
         private RuntimeAttributeContext _service;
         private bool _isDestroyed;
+        private bool _hasInitialSnapshot;
+        private readonly Dictionary<RuntimeAttributeType, float> _initialSnapshot = new();
 
         public DependencyInjectionState InjectionState { get; set; }
         public string GetObjectId() => _actor?.ActorId ?? gameObject.name;
@@ -61,6 +64,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
                     _service = new RuntimeAttributeContext(_actor.ActorId, resourceInstances);
                     DependencyManager.Provider.RegisterForObject(_actor.ActorId, _service);
                 }
+
+                CaptureInitialSnapshotIfNeeded();
 
                 // Registro idempotente: se já estiver registrado, não deve quebrar.
                 if (_orchestrator != null && !_orchestrator.IsActorRegistered(_actor.ActorId))
@@ -125,10 +130,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
                     _service = new RuntimeAttributeContext(_actor.ActorId, resourceInstances);
                     DependencyManager.Provider.RegisterForObject(_actor.ActorId, _service);
                 }
+
+                CaptureInitialSnapshotIfNeeded();
             }
 
-            // Reset de valores mantendo a instância => UI não perde referência.
-            _service?.ResetToInitialValues(RuntimeAttributeChangeSource.Manual);
+            RestoreSnapshot();
 
             return Task.CompletedTask;
         }
@@ -147,5 +153,40 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         }
 
         #endregion
+
+        private void CaptureInitialSnapshotIfNeeded()
+        {
+            if (_hasInitialSnapshot || _service == null)
+            {
+                return;
+            }
+
+            foreach (var (runtimeAttributeType, value) in _service.GetAll())
+            {
+                if (value == null)
+                {
+                    continue;
+                }
+
+                _initialSnapshot[runtimeAttributeType] = value.GetCurrentValue();
+            }
+
+            _hasInitialSnapshot = true;
+            DebugUtility.LogVerbose<RuntimeAttributeController>(
+                $"📸 Snapshot captured for '{_actor?.ActorId ?? name}' with {_initialSnapshot.Count} attributes.");
+        }
+
+        private void RestoreSnapshot()
+        {
+            if (!_hasInitialSnapshot || _service == null)
+            {
+                return;
+            }
+
+            foreach (var (runtimeAttributeType, snapshotValue) in _initialSnapshot)
+            {
+                _service.Set(runtimeAttributeType, snapshotValue, RuntimeAttributeChangeSource.Manual);
+            }
+        }
     }
 }
