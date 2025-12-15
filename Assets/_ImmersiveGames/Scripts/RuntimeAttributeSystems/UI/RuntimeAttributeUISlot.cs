@@ -1,14 +1,14 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.AnimationStrategies;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+﻿using ImmersiveGames.RuntimeAttributes.Animation;
+using ImmersiveGames.RuntimeAttributes.AnimationStrategies;
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace ImmersiveGames.RuntimeAttributes
 {
     public class RuntimeAttributeUISlot : MonoBehaviour
     {

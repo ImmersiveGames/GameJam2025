@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
+namespace ImmersiveGames.RuntimeAttributes
 {
-    public interface IAttributeCanvasBinder : IInjectableComponent
+    public interface IRuntimeAttributeCanvasBinder : IInjectableComponent
     {
         string CanvasId { get; }
         AttributeCanvasType Type { get; }

@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using ImmersiveGames.RuntimeAttributes.Bind;
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
+namespace ImmersiveGames.RuntimeAttributes.Test
 {
     
     public class CanvasDebugUtility : MonoBehaviour
     {
-        [Inject] private IActorRuntimeAttributeOrchestrator _orchestrator;
+        [Inject] private IRuntimeAttributeOrchestrator _orchestrator;
 
         [ContextMenu("🔍 Find and Debug All Slots")]
         public void FindAndDebugAllSlots()
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
         [ContextMenu("📊 Check Canvas Components")]
         public void CheckCanvasComponents()
         {
-            var canvasBinders = FindObjectsByType<ActorResourceAttributeCanvas>(FindObjectsSortMode.None);
+            var canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 Found {canvasBinders.Length} Canvas Binders");
 
             foreach (var binder in canvasBinders)
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
         [ContextMenu("🔍 Debug Style Flow")]
         public void DebugStyleFlow()
         {
-            if (!DependencyManager.Provider.TryGetGlobal(out IActorRuntimeAttributeOrchestrator orchestrator))
+            if (!DependencyManager.Provider.TryGetGlobal(out IRuntimeAttributeOrchestrator orchestrator))
             {
                 DebugUtility.LogWarning<CanvasDebugUtility>("Orchestrator not found for style flow debug");
                 return;
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
 
                     if (config == null) continue;
 
-                    var canvasBinders = FindObjectsByType<ActorResourceAttributeCanvas>(FindObjectsSortMode.None);
+                    var canvasBinders = FindObjectsByType<RuntimeAttributeActorCanvas>(FindObjectsSortMode.None);
                     foreach (var binder in canvasBinders)
                     {
                         if (binder.TryGetSlot(actorId, resourceType, out var slot) && slot != null)
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
             }
         }
 
-        private void DebugCanvas(ActorResourceAttributeCanvas binder)
+        private void DebugCanvas(RuntimeAttributeActorCanvas binder)
         {
             DebugUtility.LogVerbose<CanvasDebugUtility>($"🎨 CANVAS DEBUG: '{binder.CanvasId}'");
             DebugUtility.LogVerbose<CanvasDebugUtility>($"- State: {binder.State}, Injection: {binder.InjectionState}");

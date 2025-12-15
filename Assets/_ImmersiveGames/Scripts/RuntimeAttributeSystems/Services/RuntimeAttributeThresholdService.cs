@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using ImmersiveGames.RuntimeAttributes.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace ImmersiveGames.RuntimeAttributes.Services
 {
     
     public class RuntimeAttributeThresholdService : IDisposable

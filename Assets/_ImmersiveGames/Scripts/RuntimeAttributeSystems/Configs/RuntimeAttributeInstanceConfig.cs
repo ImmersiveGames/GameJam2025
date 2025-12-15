@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
+namespace ImmersiveGames.RuntimeAttributes.Configs
 {
     [System.Serializable]
     public class RuntimeAttributeInstanceConfig

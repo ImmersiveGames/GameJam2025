@@ -1,6 +1,6 @@
 ﻿using DG.Tweening;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Animation
+namespace ImmersiveGames.RuntimeAttributes.Animation
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/UI/Fill Animation Profile")]
     public class FillAnimationProfile : ScriptableObject

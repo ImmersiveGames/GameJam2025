@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
+namespace ImmersiveGames.RuntimeAttributes.Configs
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Resources/Resource Auto Flow Config")]
     public class RuntimeAttributeAutoFlowConfig : ScriptableObject

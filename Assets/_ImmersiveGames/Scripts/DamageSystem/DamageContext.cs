@@ -1,5 +1,5 @@
 ﻿using System;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using ImmersiveGames.RuntimeAttributes.Configs;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem

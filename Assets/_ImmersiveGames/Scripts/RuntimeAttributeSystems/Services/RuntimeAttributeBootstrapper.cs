@@ -5,9 +5,9 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityUtils;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace ImmersiveGames.RuntimeAttributes.Services
 {
-    public class RuntimeAttributeInitializationManager : PersistentSingleton<RuntimeAttributeInitializationManager>
+    public class RuntimeAttributeBootstrapper : PersistentSingleton<RuntimeAttributeBootstrapper>
     {
         // Pendentes: objectId -> componente
         private readonly Dictionary<string, IInjectableComponent> _pendingComponents = new();
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
-            DebugUtility.LogVerbose<RuntimeAttributeInitializationManager>(
+            DebugUtility.LogVerbose<RuntimeAttributeBootstrapper>(
                 "✅ Initialization Manager Ready",
                 DebugUtility.Colors.CrucialInfo);
         }
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
             string objectId = component.GetObjectId();
             if (string.IsNullOrEmpty(objectId))
             {
-                DebugUtility.LogWarning<RuntimeAttributeInitializationManager>($"RegisterForInjection called with empty object id for {component.GetType().Name}");
+                DebugUtility.LogWarning<RuntimeAttributeBootstrapper>($"RegisterForInjection called with empty object id for {component.GetType().Name}");
                 return;
             }
 
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.LogVerbose<RuntimeAttributeInitializationManager>(
+                DebugUtility.LogVerbose<RuntimeAttributeBootstrapper>(
                     $"✅ Dependências injetadas para {component.GetType().Name} ({objectId})",
                     DebugUtility.Colors.Success);
             }
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
                 }
                 else
                 {
-                    DebugUtility.LogError<RuntimeAttributeInitializationManager>($"❌ Failed to inject dependencies for {component.GetType().Name} ({objectId}) after {MaxAttemptsPerComponent} attempts");
+                    DebugUtility.LogError<RuntimeAttributeBootstrapper>($"❌ Failed to inject dependencies for {component.GetType().Name} ({objectId}) after {MaxAttemptsPerComponent} attempts");
                     component.InjectionState = DependencyInjectionState.Failed;
                     _pendingComponents.Remove(objectId);
                     _attemptCounts.Remove(objectId);
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
                 _pendingComponents.Remove(objectId);
                 _attemptCounts.Remove(objectId);
 
-                DebugUtility.LogVerbose<RuntimeAttributeInitializationManager>(
+                DebugUtility.LogVerbose<RuntimeAttributeBootstrapper>(
                     $"✅ (Retry) Dependências injetadas para {component.GetType().Name} ({objectId}) on attempt {attemptIndex}",
                     DebugUtility.Colors.Success);
             }
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
                 }
                 else
                 {
-                    DebugUtility.LogError<RuntimeAttributeInitializationManager>($"❌ Failed to inject dependencies for {component.GetType().Name} ({objectId}): {ex.Message}");
+                    DebugUtility.LogError<RuntimeAttributeBootstrapper>($"❌ Failed to inject dependencies for {component.GetType().Name} ({objectId}): {ex.Message}");
                     component.InjectionState = DependencyInjectionState.Failed;
                     _pendingComponents.Remove(objectId);
                     _attemptCounts.Remove(objectId);

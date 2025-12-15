@@ -1,14 +1,14 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using ImmersiveGames.RuntimeAttributes.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace ImmersiveGames.RuntimeAttributes
 {
     [DefaultExecutionOrder(25)]
     public abstract class RuntimeAttributeBridgeBase : MonoBehaviour
     {
-        protected IActorRuntimeAttributeOrchestrator orchestrator;
+        protected IRuntimeAttributeOrchestrator orchestrator;
         protected RuntimeAttributeContext runtimeAttributeContext;
         protected IActor actor;
 

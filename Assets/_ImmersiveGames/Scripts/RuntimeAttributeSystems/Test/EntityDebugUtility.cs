@@ -4,15 +4,15 @@ using System.Reflection;
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
+using ImmersiveGames.RuntimeAttributes.Bind;
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
+using ImmersiveGames.RuntimeAttributes.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
+namespace ImmersiveGames.RuntimeAttributes.Test
 {
     
     public class EntityDebugUtility : MonoBehaviour, IInjectableComponent
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
         [SerializeField] private float overallTimeout = 5f;
         [SerializeField] private bool verboseEvents = true;
 
-        [Inject] private IActorRuntimeAttributeOrchestrator _orchestrator;
+        [Inject] private IRuntimeAttributeOrchestrator _orchestrator;
         private IActor _actor;
         private RuntimeAttributeContext _runtimeAttributeContext;
         private bool _resourceSystemResolved;
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
             }
 
             InjectionState = DependencyInjectionState.Pending;
-            RuntimeAttributeInitializationManager.Instance.RegisterForInjection(this);
+            RuntimeAttributeBootstrapper.Instance.RegisterForInjection(this);
         }
 
         public void OnDependenciesInjected()
@@ -585,7 +585,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
                 DebugUtility.LogVerbose<EntityDebugUtility>($"- Health: {health?.GetCurrentValue():F1}/{health?.GetMaxValue():F1}");
             }
 
-            if (DependencyManager.Provider.TryGetGlobal(out IActorRuntimeAttributeOrchestrator orchestrator))
+            if (DependencyManager.Provider.TryGetGlobal(out IRuntimeAttributeOrchestrator orchestrator))
             {
                 bool isRegistered = orchestrator.IsActorRegistered(actorId);
                 DebugUtility.LogVerbose<EntityDebugUtility>($"- Registered in Orchestrator: {isRegistered}");
@@ -665,7 +665,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
         private void LogResourceBridgeStatus(RuntimeAttributeBridgeBase bridge)
         {
             string actorId = bridge.Actor?.ActorId ?? "null";
-            bool orchestratorFound = DependencyManager.Provider.TryGetGlobal(out IActorRuntimeAttributeOrchestrator orchestrator);
+            bool orchestratorFound = DependencyManager.Provider.TryGetGlobal(out IRuntimeAttributeOrchestrator orchestrator);
             bool actorRegistered = orchestratorFound && orchestrator.IsActorRegistered(actorId);
 
             DebugUtility.LogWarning<EntityDebugUtility>(

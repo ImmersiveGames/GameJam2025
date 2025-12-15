@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using ImmersiveGames.RuntimeAttributes.Bind;
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
 
 namespace _ImmersiveGames.Scripts.DamageSystem.Commands
 {

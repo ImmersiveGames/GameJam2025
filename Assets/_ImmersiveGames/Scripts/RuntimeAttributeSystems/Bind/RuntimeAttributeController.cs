@@ -2,18 +2,18 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using ImmersiveGames.RuntimeAttributes.Configs;
+using ImmersiveGames.RuntimeAttributes.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
+namespace ImmersiveGames.RuntimeAttributes.Bind
 {
     public class RuntimeAttributeController : MonoBehaviour, IInjectableComponent, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
         [SerializeField] private RuntimeAttributeInstanceConfig[] resourceInstances = Array.Empty<RuntimeAttributeInstanceConfig>();
 
-        [Inject] private IActorRuntimeAttributeOrchestrator _orchestrator;
+        [Inject] private IRuntimeAttributeOrchestrator _orchestrator;
 
         private IActor _actor;
         private RuntimeAttributeContext _service;
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
             }
 
             InjectionState = DependencyInjectionState.Pending;
-            RuntimeAttributeInitializationManager.Instance.RegisterForInjection(this);
+            RuntimeAttributeBootstrapper.Instance.RegisterForInjection(this);
         }
 
         public void OnDependenciesInjected()
