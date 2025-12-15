@@ -5,7 +5,8 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
+
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
     
     public class CanvasDebugUtility : MonoBehaviour

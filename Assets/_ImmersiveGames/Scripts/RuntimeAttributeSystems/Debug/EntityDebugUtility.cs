@@ -14,7 +14,8 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
+
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
     
     public class EntityDebugUtility : MonoBehaviour, IInjectableComponent
