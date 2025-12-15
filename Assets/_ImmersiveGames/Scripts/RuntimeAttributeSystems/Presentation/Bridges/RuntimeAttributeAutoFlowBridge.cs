@@ -82,8 +82,11 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 _autoFlow.Pause();
             }
 
-            runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
-            runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
+            if (runtimeAttributeContext != null)
+            {
+                runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
+                runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
+            }
 
             _manualPauseCount = 0;
             _automaticPauseCount = 0;
@@ -109,11 +112,6 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             if (_autoFlow != null)
             {
                 _autoFlow.Pause();
-
-                if (!startPaused)
-                {
-                    _autoFlow.Resume();
-                }
             }
 
             return Task.CompletedTask;
@@ -129,10 +127,13 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return Task.CompletedTask;
             }
 
-            runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
-            runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
-            runtimeAttributeContext.ResourceChanging += HandleResourceChanging;
-            runtimeAttributeContext.ResourceChanged += HandleResourceChanged;
+            if (runtimeAttributeContext != null)
+            {
+                runtimeAttributeContext.ResourceChanging -= HandleResourceChanging;
+                runtimeAttributeContext.ResourceChanged -= HandleResourceChanged;
+                runtimeAttributeContext.ResourceChanging += HandleResourceChanging;
+                runtimeAttributeContext.ResourceChanged += HandleResourceChanged;
+            }
 
             if (_autoFlow == null)
             {
