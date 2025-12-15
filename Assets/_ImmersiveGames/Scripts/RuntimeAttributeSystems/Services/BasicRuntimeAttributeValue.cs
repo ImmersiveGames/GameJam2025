@@ -1,5 +1,6 @@
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values
 {
     public interface IRuntimeAttributeValue
     {

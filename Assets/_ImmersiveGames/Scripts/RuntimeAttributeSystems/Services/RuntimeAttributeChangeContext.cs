@@ -1,6 +1,6 @@
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     /// <summary>
     /// Contexto enviado sempre que um recurso está prestes a ser modificado ou já foi alterado.

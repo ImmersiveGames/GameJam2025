@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     /// <summary>
     /// Serviço puro para gerenciar recursos de uma entidade.

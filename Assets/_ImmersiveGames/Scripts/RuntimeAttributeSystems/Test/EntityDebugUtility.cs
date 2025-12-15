@@ -4,14 +4,15 @@ using System.Reflection;
 using System.Text;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Test
 {
     

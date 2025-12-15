@@ -5,7 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityUtils;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     public class RuntimeAttributeBootstrapper : PersistentSingleton<RuntimeAttributeBootstrapper>
     {

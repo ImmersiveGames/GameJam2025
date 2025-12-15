@@ -1,12 +1,12 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation
 {
     public interface IRuntimeAttributeCanvasRoutingStrategy
     {
         string ResolveCanvasId(RuntimeAttributeInstanceConfig config, string actorId);
     }
 
-    public class RuntimeAttributeCanvasRoutingStrategy : IRuntimeAttributeCanvasRoutingStrategy
+    public class DefaultAttributeCanvasRoutingStrategy : IRuntimeAttributeCanvasRoutingStrategy
     {
         private const string MainUICanvasId = "MainUI";
     
