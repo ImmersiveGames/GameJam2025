@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core
 {
     /// <summary>
     /// Adaptador entre o EventBus e o gerenciamento de binds pendentes.

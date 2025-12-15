@@ -3,11 +3,12 @@ using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binders
 {
     public class RuntimeAttributeController : MonoBehaviour, IInjectableComponent, IResetInterfaces, IResetScopeFilter, IResetOrder
     {

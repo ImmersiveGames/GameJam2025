@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Configs;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs
 {
     [System.Serializable]

@@ -4,7 +4,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     
     public class RuntimeAttributeLinkBridge : RuntimeAttributeBridgeBase

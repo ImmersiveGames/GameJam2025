@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binders;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core
 {
     public interface IRuntimeAttributeOrchestrator
     {

@@ -1,7 +1,8 @@
-﻿using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events
 {
     public class RuntimeAttributeUpdateEvent : IEvent
     {
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
             NewValue = newValue;
         }
     }
+
     // Evento disparado quando um threshold é cruzado
     public class RuntimeAttributeThresholdEvent : IEvent
     {
@@ -34,20 +36,20 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
             CurrentPercentage = currentPercentage;
         }
     }
+
     public class RuntimeAttributeVisualFeedbackEvent : IEvent
     {
         public string ActorId { get; }
         public RuntimeAttributeType RuntimeAttributeType { get; }
         public float Threshold { get; }
         public bool IsAscending { get; }
+
         public RuntimeAttributeVisualFeedbackEvent(string actorId, RuntimeAttributeType runtimeAttributeType, float threshold, bool isAscending)
         {
             ActorId = actorId;
             RuntimeAttributeType = runtimeAttributeType;
             Threshold = threshold;
             IsAscending = isAscending;
-
         }
     }
-    
 }

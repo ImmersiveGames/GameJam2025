@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services
