@@ -1,5 +1,5 @@
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Bind;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Binders;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 

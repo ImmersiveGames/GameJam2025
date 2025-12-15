@@ -2,7 +2,7 @@ using System.Collections;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
     
     public class RuntimeAttributeAutoFlowBridge : RuntimeAttributeBridgeBase

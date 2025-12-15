@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityUtils;

@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Configs;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Services;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core;
+
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Core.Interfaces
 {
     public interface IRuntimeAttributeCanvasBinder : IInjectableComponent
     {
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         bool CanAcceptBinds();
         IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots();
     }
+
     public interface IInjectableComponent
     {
         string GetObjectId();
@@ -27,6 +29,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         Ready,
         Failed
     }
+
     public enum AttributeCanvasTargetMode
     {
         Default, // "MainUI"
