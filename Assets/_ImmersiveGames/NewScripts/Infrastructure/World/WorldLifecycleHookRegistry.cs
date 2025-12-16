@@ -23,6 +23,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             _hooks.Add(hook);
         }
 
+        public bool Unregister(IWorldLifecycleHook hook)
+        {
+            if (hook == null)
+            {
+                return false;
+            }
+
+            return _hooks.Remove(hook);
+        }
+
         public void Clear()
         {
             _hooks.Clear();

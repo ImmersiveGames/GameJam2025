@@ -62,7 +62,7 @@
 
 ### Passo 2 — Refatorar Interfaces e Abstrações (D/I do SOLID)
 - **Interfaces segmentadas de listener**: `IDefenseEngagedListener`, `IDefenseDisengagedListener` e `IDefenseDisabledListener` permanecem separadas; o listener agregado foi removido para reforçar Interface Segregation e evitar dependência em contratos genéricos.
-- **Contratos de configuração por planeta**: `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner` expõem métodos para configurar minions, recursos e estratégias por planeta (`ConfigureForPlanet`, `TryGetConfiguration`, `WarmUp(PlanetDefenseSetupContext)`, `ConfigureStrategy`, `TryGetStrategy`, `StartWaves` com estratégia). As interfaces vivem em `PlanetDefenseInterfaces.cs`, e as implementações concretas (`RealPlanetDefensePoolRunner`, `RealPlanetDefenseWaveRunner`) executam de fato o aquecimento de pool e o loop de waves usando `WavePresetSo` + `CountdownTimer`. 
+- **Contratos de configuração por planeta**: `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner` expõem métodos para configurar minions, recursos e estratégias por planeta (`ConfigureForPlanet`, `TryGetConfiguration`, `WarmUp(PlanetDefenseSetupContext)`, `ConfigureStrategy`, `TryGetStrategy`, `StartWaves` com estratégia). As interfaces vivem em `PlanetDefenseInterfaces.cs`, e as implementações concretas (`RealPlanetDefensePoolRunner`, `RealPlanetDefenseWaveRunner`) executam de fato o aquecimento de pool e o loop de waves usando `WavePresetSo` + `CountdownTimer`.
 - **Strategy Pattern preparado**: a interface `IDefenseStrategy` em `PlanetDefenseInterfaces.cs` trabalha com `PlanetDefenseSetupContext`, permitindo injeção de comportamentos diferentes (agressivo/defensivo) por planeta ou recurso, reforçando Dependency Inversion ao isolar decisões de spawn de implementações concretas. O contrato é neutro para multiplayer local e pode ser usado pelos runners ou orchestrators futuros.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseInterfaces.cs†L33-L62】
 
 ### Passo 3 — Sistema de Roles Explícitos
@@ -102,8 +102,10 @@
 ### Decision
 - Introdução de hooks opt-in em múltiplos níveis, permitindo que serviços de spawn, serviços de cena e componentes de atores participem do ciclo.
 - Separação clara entre responsabilidades de world, scene e actor, cada uma com registro explícito e resolução sem reflection.
+- Registry é criado no bootstrapper (escopo de cena) e consumido por DI; proibido criar/registrar fora do bootstrapper.
 
 ### Consequences
 - Mais flexibilidade para instrumentar resets com telemetria, debug e limpeza direcionada.
 - Custo mínimo de complexidade ao manter contratos simples e determinísticos.
 - Arquitetura extensível para multiplayer local, replay e testes automatizados.
+- Previne duplo-registro, evita divergência de instância e garante previsibilidade em testes/QA.
