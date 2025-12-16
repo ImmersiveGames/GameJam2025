@@ -15,10 +15,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
+        [Inject] private WorldLifecycleHookRegistry _hookRegistry;
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
-        private WorldLifecycleHookRegistry _hookRegistry;
         private bool _dependenciesInjected;
         private string _sceneName = string.Empty;
 
@@ -106,6 +106,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             DependencyManager.Provider.InjectDependencies(this);
             _dependenciesInjected = true;
 
+            if (_hookRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"WorldLifecycleHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
+            }
+
             if (_gateService == null)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleController),
@@ -162,30 +168,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
         }
 
-        private void EnsureHookRegistry()
-        {
-            if (_hookRegistry != null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existing) && existing != null)
-            {
-                _hookRegistry = existing;
-                return;
-            }
-
-            _hookRegistry = new WorldLifecycleHookRegistry();
-            DependencyManager.Provider.RegisterForScene(_sceneName, _hookRegistry, allowOverride: false);
-
-            DebugUtility.LogVerbose(typeof(WorldLifecycleController),
-                $"WorldLifecycleHookRegistry criado e registrado para a cena '{_sceneName}'.");
-        }
-
         private WorldLifecycleOrchestrator CreateOrchestrator()
         {
             EnsureDependenciesInjected();
-            EnsureHookRegistry();
 
             return new WorldLifecycleOrchestrator(
                 _gateService,

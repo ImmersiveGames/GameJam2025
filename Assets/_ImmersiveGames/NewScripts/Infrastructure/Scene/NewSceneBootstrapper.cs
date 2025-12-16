@@ -61,6 +61,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 _sceneName,
                 spawnRegistry,
                 allowOverride: false);
+            var hookRegistry = new WorldLifecycleHookRegistry();
+            provider.RegisterForScene<WorldLifecycleHookRegistry>(
+                _sceneName,
+                hookRegistry,
+                allowOverride: false);
+            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
 
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
