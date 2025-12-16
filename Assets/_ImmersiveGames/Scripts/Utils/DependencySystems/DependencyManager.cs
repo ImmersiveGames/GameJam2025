@@ -56,6 +56,21 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
         public bool TryGetForScene<T>(string sceneName, out T service) where T : class => _sceneRegistry.TryGet(sceneName, out service);
 
+        public void GetAllForScene<T>(string sceneName, List<T> services) where T : class
+        {
+            if (string.IsNullOrWhiteSpace(sceneName) || services == null)
+            {
+                return;
+            }
+
+            services.Clear();
+
+            foreach (T service in _sceneRegistry.GetAll<T>(sceneName))
+            {
+                services.Add(service);
+            }
+        }
+
         public bool TryGet<T>(out T service, string objectId = null) where T : class
         {
             service = null;

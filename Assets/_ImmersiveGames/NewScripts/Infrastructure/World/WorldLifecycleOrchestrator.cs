@@ -4,28 +4,39 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
     /// <summary>
     /// Orquestra o ciclo de reset do mundo de forma determinística.
-    /// Responsável por garantir a ordem: Acquire Gate → Despawn → Spawn → Release Gate.
+    /// Responsável por garantir a ordem: Acquire Gate → (Hooks) → Despawn → (Hooks) → Spawn → (Hooks) → Release Gate.
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
+        private readonly IDependencyProvider _provider;
+        private readonly string _sceneName;
+        private readonly WorldLifecycleHookRegistry _hookRegistry;
 
         public WorldLifecycleOrchestrator(
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
-            IActorRegistry actorRegistry)
+            IActorRegistry actorRegistry,
+            IDependencyProvider provider = null,
+            string sceneName = null,
+            WorldLifecycleHookRegistry hookRegistry = null)
         {
             _gateService = gateService;
             _spawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             _actorRegistry = actorRegistry;
+            _provider = provider;
+            _sceneName = sceneName;
+            _hookRegistry = hookRegistry;
         }
 
         public async Task ResetWorldAsync()
@@ -53,11 +64,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         "ISimulationGateService ausente: reset seguirá sem gate.");
                 }
 
+                await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+                await RunActorHooksBeforeDespawnAsync();
+
                 await RunPhaseAsync("Despawn", service => service.DespawnAsync());
                 LogActorRegistryCount("After Despawn");
 
+                await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+                await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
+
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
                 LogActorRegistryCount("After Spawn");
+
+                await RunActorHooksAfterSpawnAsync();
+                await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
 
                 completed = true;
             }
@@ -136,6 +156,308 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             phaseWatch.Stop();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                 $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
+        }
+
+        private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
+        {
+            var spawnServiceHooksCount = 0;
+            if (_spawnServices != null)
+            {
+                for (int i = 0; i < _spawnServices.Count; i++)
+                {
+                    if (_spawnServices[i] is IWorldLifecycleHook)
+                    {
+                        spawnServiceHooksCount++;
+                    }
+                }
+            }
+
+            var sceneHooks = ResolveSceneHooks();
+            var sceneHooksCount = sceneHooks.Count;
+
+            var registryHooks = ResolveRegistryHooks();
+            var registryHooksCount = registryHooks.Count;
+
+            if (spawnServiceHooksCount == 0 && sceneHooksCount == 0 && registryHooksCount == 0)
+            {
+                return;
+            }
+
+            var totalHooks = spawnServiceHooksCount + sceneHooksCount + registryHooksCount;
+
+            var phaseWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} phase started (hooks={totalHooks})");
+
+            try
+            {
+                foreach (var service in _spawnServices)
+                {
+                    if (service == null)
+                    {
+                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                            $"{hookName} hook service é nulo e será ignorado.");
+                        continue;
+                    }
+
+                    if (service is not IWorldLifecycleHook hook)
+                    {
+                        continue;
+                    }
+
+                    await RunHookAsync(hookName, service.Name, hook, hookAction);
+                }
+
+                if (sceneHooksCount > 0)
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Scene hooks detected: {sceneHooksCount}");
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Executing scene lifecycle hooks for {hookName}");
+
+                    foreach (var hook in sceneHooks)
+                    {
+                        if (hook == null)
+                        {
+                            DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                                $"{hookName} scene hook é nulo e será ignorado.");
+                            continue;
+                        }
+
+                        await RunHookAsync(hookName, hook.GetType().Name, hook, hookAction);
+                    }
+                }
+
+                if (registryHooksCount > 0)
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Registry hooks detected: {registryHooksCount}");
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Executing registry lifecycle hooks for {hookName}");
+
+                    foreach (var hook in registryHooks)
+                    {
+                        if (hook == null)
+                        {
+                            DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                                $"{hookName} registry hook é nulo e será ignorado.");
+                            continue;
+                        }
+
+                        await RunHookAsync(hookName, hook.GetType().Name, hook, hookAction);
+                    }
+                }
+            }
+            finally
+            {
+                phaseWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} phase completed");
+            }
+        }
+
+        private async Task RunActorHooksBeforeDespawnAsync()
+        {
+            var actors = SnapshotActors();
+            if (actors.Count == 0)
+            {
+                return;
+            }
+
+            await RunActorHooksAsync("OnBeforeActorDespawn", actors, hook => hook.OnBeforeActorDespawnAsync());
+        }
+
+        private async Task RunActorHooksAfterSpawnAsync()
+        {
+            var actors = SnapshotActors();
+            if (actors.Count == 0)
+            {
+                return;
+            }
+
+            await RunActorHooksAsync("OnAfterActorSpawn", actors, hook => hook.OnAfterActorSpawnAsync());
+        }
+
+        private async Task RunActorHooksAsync(
+            string hookName,
+            List<IActor> actors,
+            Func<IActorLifecycleHook, Task> hookAction)
+        {
+            var phaseWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} actor hooks phase started (actors={actors.Count})");
+
+            foreach (var actor in actors)
+            {
+                if (actor == null)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor é nulo e será ignorado.");
+                    continue;
+                }
+
+                var actorLabel = GetActorLabel(actor);
+                var actorWatch = Stopwatch.StartNew();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} actor started: {actorLabel}");
+
+                try
+                {
+                    var transform = actor.Transform;
+                    if (transform == null)
+                    {
+                        DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                            $"{hookName} ignorado para {actorLabel}: Transform ausente.");
+                        continue;
+                    }
+
+                    var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
+                    if (components == null || components.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (var component in components)
+                    {
+                        if (component is not IActorLifecycleHook hook)
+                        {
+                            continue;
+                        }
+
+                        await RunActorHookAsync(hookName, actorLabel, component.GetType().Name, hook, hookAction);
+                    }
+                }
+                finally
+                {
+                    actorWatch.Stop();
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor duration: {actorLabel} => {actorWatch.ElapsedMilliseconds}ms");
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor completed: {actorLabel}");
+                }
+            }
+
+            phaseWatch.Stop();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} actor hooks phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+        }
+
+        private static async Task RunActorHookAsync(
+            string hookName,
+            string actorLabel,
+            string hookLabel,
+            IActorLifecycleHook hook,
+            Func<IActorLifecycleHook, Task> hookAction)
+        {
+            var hookWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} started: {hookLabel} (actor={actorLabel})");
+
+            try
+            {
+                await hookAction(hook);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} falhou para {hookLabel} (actor={actorLabel}): {ex}");
+                throw;
+            }
+            finally
+            {
+                hookWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} duration: {hookLabel} (actor={actorLabel}) => {hookWatch.ElapsedMilliseconds}ms");
+            }
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} completed: {hookLabel} (actor={actorLabel})");
+        }
+
+        private List<IActor> SnapshotActors()
+        {
+            var actors = new List<IActor>();
+
+            if (_actorRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator será executado.");
+                return actors;
+            }
+
+            _actorRegistry.GetActors(actors);
+            return actors;
+        }
+
+        private static string GetActorLabel(IActor actor)
+        {
+            if (!string.IsNullOrWhiteSpace(actor.ActorId))
+            {
+                return actor.ActorId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(actor.DisplayName))
+            {
+                return actor.DisplayName;
+            }
+
+            return actor.GetType().Name;
+        }
+
+        private static async Task RunHookAsync(
+            string hookName,
+            string serviceName,
+            IWorldLifecycleHook hook,
+            Func<IWorldLifecycleHook, Task> hookAction)
+        {
+            var hookWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} started: {serviceName}");
+
+            try
+            {
+                await hookAction(hook);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} falhou para {serviceName}: {ex}");
+                throw;
+            }
+            finally
+            {
+                hookWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} duration: {serviceName} => {hookWatch.ElapsedMilliseconds}ms");
+            }
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} completed: {serviceName}");
+        }
+
+        private IReadOnlyList<IWorldLifecycleHook> ResolveSceneHooks()
+        {
+            if (_provider == null || string.IsNullOrWhiteSpace(_sceneName))
+            {
+                return Array.Empty<IWorldLifecycleHook>();
+            }
+
+            var sceneHooks = new List<IWorldLifecycleHook>();
+            _provider.GetAllForScene(_sceneName, sceneHooks);
+
+            return sceneHooks.Count == 0 ? Array.Empty<IWorldLifecycleHook>() : sceneHooks;
+        }
+
+        private IReadOnlyList<IWorldLifecycleHook> ResolveRegistryHooks()
+        {
+            if (_hookRegistry == null || _hookRegistry.Hooks.Count == 0)
+            {
+                return Array.Empty<IWorldLifecycleHook>();
+            }
+
+            return _hookRegistry.Hooks;
         }
 
         private void LogActorRegistryCount(string label)
