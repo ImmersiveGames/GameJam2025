@@ -33,7 +33,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             InitializeEventBusInfrastructure();
             RegisterEssentialServices();
 
-            DebugUtility.Log<GlobalBootstrap>(
+            DebugUtility.Log(
+                typeof(GlobalBootstrap),
                 "✅ Global infrastructure initialized (no gameplay started).",
                 DebugUtility.Colors.Success);
         }
@@ -41,7 +42,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static void InitializeLogging()
         {
             DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
-            DebugUtility.LogVerbose<GlobalBootstrap>("Logging configured for new project bootstrap.");
+            DebugUtility.LogVerbose(
+                typeof(GlobalBootstrap),
+                "Logging configured for new project bootstrap.");
         }
 
         private static void EnsureDependencyProvider()
@@ -49,7 +52,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.HasInstance)
             {
                 _ = DependencyManager.Provider;
-                DebugUtility.LogVerbose<GlobalBootstrap>("DependencyManager created for global scope.");
+                DebugUtility.LogVerbose(
+                    typeof(GlobalBootstrap),
+                    "DependencyManager created for global scope.");
             }
         }
 
@@ -58,7 +63,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             IReadOnlyList<Type> eventTypes = EventBusUtil.EventTypes;
             if (eventTypes == null || eventTypes.Count == 0)
             {
-                DebugUtility.LogWarning<GlobalBootstrap>("EventBusUtil returned no event types.");
+                DebugUtility.LogWarning(
+                    typeof(GlobalBootstrap),
+                    "EventBusUtil returned no event types.");
                 return;
             }
 
@@ -74,7 +81,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
                 object busInstance = Activator.CreateInstance(busImplType);
                 RegisterGlobal(busInterfaceType, busInstance);
-                DebugUtility.LogVerbose<GlobalBootstrap>($"Registered injectable EventBus for {eventType.Name}.");
+                DebugUtility.LogVerbose(
+                    typeof(GlobalBootstrap),
+                    $"Registered injectable EventBus for {eventType.Name}.");
             }
         }
 
@@ -93,7 +102,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             var instance = factory();
             DependencyManager.Provider.RegisterGlobal(instance);
-            DebugUtility.LogVerbose<GlobalBootstrap>($"Registered global service: {typeof(T).Name}.");
+            DebugUtility.LogVerbose(
+                typeof(GlobalBootstrap),
+                $"Registered global service: {typeof(T).Name}.");
         }
 
         private static bool TryGetRegistered(Type type, out object instance)
