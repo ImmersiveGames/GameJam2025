@@ -85,6 +85,21 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 4. Não deve haver logs dizendo que o registry foi criado pelo controller; ele apenas consome via DI.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L24-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L42-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
 
+## Troubleshooting: QA/Testers e Boot Order
+- **Sintomas (console):**
+  - QA/tester não encontra `WorldLifecycleHookRegistry` / `IActorRegistry`.
+  - Reset não dispara ou aborta cedo.
+  - Logs iniciais “de erro” na criação do QA/Tester ao entrar em Play Mode.
+  - Mensagens de “registries inexistentes” logo no `Awake` do tester.
+- **Causa provável:**
+  - `NewSceneBootstrapper` ausente na cena ou executando depois do QA/tester.
+  - QA rodando no `Awake()` sem lazy injection/retry, antes do bootstrap.
+- **Checklist de ação (3 passos):**
+  1. Garantir `NewSceneBootstrapper` presente na cena e ativo.
+  2. Garantir que QA/testers usem lazy injection + retry curto + timeout (padrão já descrito).
+  3. Se ainda falhar, abortar com mensagem acionável apontando ausência/ordem errada do bootstrapper.
+- **Nota sobre `NEWSCRIPTS_MODE`:** quando ativo, inicializadores/bootstraps podem ser ignorados por design (modo de desenvolvimento); isso pode parecer falha de QA, mas não é bug de runtime.
+
 ## Boot order & Dependency Injection timing (Scene scope)
 - Os serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) são registrados pelo `NewSceneBootstrapper` durante o bootstrap da cena. Outros componentes não devem criar registries próprios nem assumir que eles existem antes do bootstrapper executar.
 - Componentes que consomem esses serviços devem evitar injeção no `Awake()` quando a ordem de execução ainda não garantiu o bootstrapper; prefira `Start()` ou injeção lazy com retry curto.
