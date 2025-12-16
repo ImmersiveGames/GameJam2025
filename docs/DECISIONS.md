@@ -9,3 +9,4 @@
 - Não utiliza heurísticas por nome para identificar atores/jogadores.
 - WorldLifecycleHookRegistry ownership: Bootstrapper-only.
 - Controller/Orchestrator são consumidores; guardrails e logs para flagrar duplo-registro ou resolução fora de ordem.
+- QA/Testers não garantem execução em `Awake`; devem tolerar boot order com lazy injection + retry/timeout e falhar com mensagem acionável se o bootstrapper não rodou.
