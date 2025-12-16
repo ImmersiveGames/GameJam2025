@@ -93,7 +93,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 $"WorldDefinition loaded: {worldDefinition.name}");
 
             int registeredCount = 0;
+            int enabledCount = 0;
+            int createdCount = 0;
+            int skippedDisabledCount = 0;
+            int failedCreateCount = 0;
             var entries = worldDefinition.Entries;
+            var totalEntries = entries?.Count ?? 0;
+
+            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                $"WorldDefinition entries count: {totalEntries}");
 
             if (entries != null)
             {
@@ -101,15 +109,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 {
                     if (!entry.Enabled)
                     {
+                        skippedDisabledCount++;
                         continue;
                     }
 
+                    enabledCount++;
                     var service = _spawnServiceFactory.Create(entry, provider, actorRegistry);
                     if (service == null)
                     {
+                        failedCreateCount++;
                         continue;
                     }
 
+                    createdCount++;
                     registry.Register(service);
                     registeredCount++;
                 }
@@ -117,6 +129,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.Log(typeof(NewSceneBootstrapper),
                 $"Spawn services registered from definition: {registeredCount}");
+
+            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, Created={createdCount}, FailedCreate={failedCreateCount}");
         }
     }
 }

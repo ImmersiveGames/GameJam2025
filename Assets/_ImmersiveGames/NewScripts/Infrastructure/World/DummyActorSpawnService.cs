@@ -60,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return Task.CompletedTask;
             }
 
+            actorGo.name = _prefab.name;
+
             _spawnedActor = actorGo.GetComponent<DummyActor>();
 
             if (_spawnedActor == null)
@@ -73,10 +75,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             string actorId = _uniqueIdFactory.GenerateId(actorGo);
             _spawnedActor.Initialize(actorId);
 
-            _actorRegistry.Register(_spawnedActor);
+            var registered = _actorRegistry.Register(_spawnedActor);
+
+            if (!registered)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    $"Falha ao registrar ator no registry. Destruindo instância. ActorId={actorId}");
+                Object.Destroy(actorGo);
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
 
             var prefabName = _prefab != null ? _prefab.name : "<null>";
-            DebugUtility.Log(typeof(DummyActorSpawnService), $"Actor spawned: {actorId} (prefab={prefabName})");
+            var instanceName = actorGo != null ? actorGo.name : "<null>";
+            DebugUtility.Log(typeof(DummyActorSpawnService),
+                $"Actor spawned: {actorId} (prefab={prefabName}, instance={instanceName})");
             DebugUtility.Log(typeof(DummyActorSpawnService), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;
