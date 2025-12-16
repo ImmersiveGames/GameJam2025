@@ -146,3 +146,51 @@
 - Hooks passam a ter um mecanismo explícito de prioridade sem acoplamento.
 - Alterações de hierarquia ou ordem de componentes não afetam a execução.
 - Desenvolvedores devem definir `Order` apenas quando necessário; a maioria dos hooks pode permanecer com o valor padrão.
+
+### Lazy Injection and Boot Order Tolerance for Scene Consumers
+
+#### Context
+- Serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) são criados exclusivamente pelo `NewSceneBootstrapper`.
+- Componentes de cena (QA, debug, ferramentas, controladores auxiliares) podem executar antes do bootstrap dependendo da ordem de execução do Unity.
+- Injeção direta no `Awake()` pode falhar legitimamente em cenas novas ou em cenários de desenvolvimento (`NEWSCRIPTS_MODE`).
+- Falhas precoces geram falsos negativos, confundindo erros de ordem de boot com falhas reais de runtime.
+
+#### Decision
+- Componentes consumidores de serviços de scene-scope:
+  - não devem assumir disponibilidade no `Awake()`;
+  - devem usar lazy injection com retry curto e timeout controlado.
+- Padrão recomendado:
+  - tentar injeção em `Start()` ou via rotina assíncrona curta;
+  - abortar com mensagem acionável se o bootstrapper não rodou.
+- O `WorldLifecycleOrchestrator` não corrige nem compensa ordem de boot; ele assume dependências resolvidas corretamente pelo fluxo de bootstrap.
+- Aplica-se especialmente a QA/Testers, ferramentas de debug e instaladores auxiliares de hooks.
+
+#### Consequences
+- Redução de falsos negativos em QA e testes locais.
+- Separação clara entre erro de boot/ordem de execução e erro real de lógica de reset.
+- Fluxo de inicialização mais resiliente sem introduzir acoplamento temporal no core do sistema.
+- Boot order torna-se um contrato explícito, não uma suposição implícita.
+
+### Explicit Separation of World, Scene, and Actor Lifecycle Responsibilities
+
+#### Context
+- O ciclo de reset envolve múltiplos níveis:
+  - mundo (spawn/despawn e serviços)
+  - cena (serviços e ferramentas registradas por escopo)
+  - ator (componentes `MonoBehaviour`)
+- Misturar responsabilidades (ex.: ator criando registry, controller criando hooks de cena) gera acoplamento indevido, duplicação de instâncias e comportamento imprevisível em resets.
+- Projetos Unity tendem a colapsar essas camadas sem um contrato explícito.
+
+#### Decision
+- Responsabilidades são explicitamente separadas:
+  - **World**: orquestra o reset e executa hooks; não cria serviços de cena.
+  - **Scene**: cria e registra serviços/registries no bootstrap (`NewSceneBootstrapper`).
+  - **Actor**: reage ao reset via componentes (`IActorLifecycleHook`); não registra hooks globais.
+- `WorldLifecycleHookRegistry` nasce apenas no bootstrapper da cena e é consumido via DI por QA, debug e ferramentas.
+- Hooks são opt-in e não implícitos; nenhum nível cria hooks para outro automaticamente.
+
+#### Consequences
+- Arquitetura previsível e escalável.
+- Evita efeitos colaterais entre cenas, atores e serviços globais.
+- Facilita testes, QA e evolução do sistema (ex.: multiplayer local, replay).
+- Permite extensão controlada sem violar princípios SOLID ou DI.
