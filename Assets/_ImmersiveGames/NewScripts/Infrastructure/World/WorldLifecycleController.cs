@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
+        private WorldLifecycleHookRegistry _hookRegistry;
         private bool _dependenciesInjected;
         private string _sceneName = string.Empty;
 
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
 
                 BuildSpawnServices();
-                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices, _actorRegistry);
+                _orchestrator = CreateOrchestrator();
 
                 await _orchestrator.ResetWorldAsync();
 
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
                 BuildSpawnServices();
 
-                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices, _actorRegistry);
+                _orchestrator = CreateOrchestrator();
                 await _orchestrator.ResetWorldAsync();
             }
             catch (Exception ex)
@@ -159,6 +160,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 DebugUtility.Log(typeof(WorldLifecycleController),
                     $"ActorRegistry count antes de orquestrar: {_actorRegistry.Count}");
             }
+        }
+
+        private void EnsureHookRegistry()
+        {
+            if (_hookRegistry != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetForScene<WorldLifecycleHookRegistry>(_sceneName, out var existing) && existing != null)
+            {
+                _hookRegistry = existing;
+                return;
+            }
+
+            _hookRegistry = new WorldLifecycleHookRegistry();
+            DependencyManager.Provider.RegisterForScene(_sceneName, _hookRegistry, allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                $"WorldLifecycleHookRegistry criado e registrado para a cena '{_sceneName}'.");
+        }
+
+        private WorldLifecycleOrchestrator CreateOrchestrator()
+        {
+            EnsureDependenciesInjected();
+            EnsureHookRegistry();
+
+            return new WorldLifecycleOrchestrator(
+                _gateService,
+                _spawnServices,
+                _actorRegistry,
+                provider: DependencyManager.Provider,
+                sceneName: _sceneName,
+                hookRegistry: _hookRegistry);
         }
 
         private bool HasCriticalDependencies()
