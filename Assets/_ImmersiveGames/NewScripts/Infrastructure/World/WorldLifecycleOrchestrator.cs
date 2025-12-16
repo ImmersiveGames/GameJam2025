@@ -76,6 +76,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         {
             DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"{phaseName} started");
 
+            if (_spawnServices == null || _spawnServices.Count == 0)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    $"{phaseName} skipped (no spawn services registered).");
+                return;
+            }
+
             foreach (var service in _spawnServices)
             {
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),

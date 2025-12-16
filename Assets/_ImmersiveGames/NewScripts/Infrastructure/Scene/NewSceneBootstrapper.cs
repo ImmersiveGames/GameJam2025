@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                         continue;
                     }
 
-                    var service = _spawnServiceFactory.Create(entry.Kind, provider, actorRegistry);
+                    var service = _spawnServiceFactory.Create(entry, provider, actorRegistry);
                     if (service == null)
                     {
                         continue;

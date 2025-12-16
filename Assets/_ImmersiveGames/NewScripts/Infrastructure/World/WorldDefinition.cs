@@ -28,12 +28,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             private bool enabled = true;
 
             [SerializeField]
+            private GameObject prefab;
+
+            [SerializeField]
             [Tooltip("Notas apenas para depuração/inspector. Não utilizado em runtime.")]
             private string notes;
 
             public WorldSpawnServiceKind Kind => kind;
 
             public bool Enabled => enabled;
+
+            public GameObject Prefab => prefab;
 
             public string Notes => notes;
         }

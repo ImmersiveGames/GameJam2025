@@ -15,4 +15,5 @@ MonoBehaviour:
   spawnEntries:
   - kind: 0
     enabled: 1
+    prefab: {fileID: 100000, guid: 66e4bc70dd0d41faa93748854ac2548a, type: 3}
     notes: Dummy actor spawn for bootstrap

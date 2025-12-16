@@ -13,13 +13,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     {
         private readonly IUniqueIdFactory _uniqueIdFactory;
         private readonly IActorRegistry _actorRegistry;
+        private readonly GameObject _prefab;
 
         private DummyActor _spawnedActor;
 
-        public DummyActorSpawnService(IUniqueIdFactory uniqueIdFactory, IActorRegistry actorRegistry)
+        public DummyActorSpawnService(
+            IUniqueIdFactory uniqueIdFactory,
+            IActorRegistry actorRegistry,
+            GameObject prefab)
         {
             _uniqueIdFactory = uniqueIdFactory;
             _actorRegistry = actorRegistry;
+            _prefab = prefab;
         }
 
         public string Name => nameof(DummyActorSpawnService);
@@ -33,21 +38,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return Task.CompletedTask;
             }
 
+            if (_prefab == null)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    "Prefab não configurado para DummyActorSpawnService.");
+                return Task.CompletedTask;
+            }
+
             if (_spawnedActor != null)
             {
                 DebugUtility.LogWarning(typeof(DummyActorSpawnService), "Spawn chamado mais de uma vez; ignorando.");
                 return Task.CompletedTask;
             }
 
-            var actorGo = new GameObject("DummyActor");
-            _spawnedActor = actorGo.AddComponent<DummyActor>();
+            var actorGo = Object.Instantiate(_prefab);
+
+            if (actorGo == null)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    "Falha ao instanciar prefab para DummyActor.");
+                return Task.CompletedTask;
+            }
+
+            _spawnedActor = actorGo.GetComponent<DummyActor>();
+
+            if (_spawnedActor == null)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    "Prefab de DummyActor não contém componente DummyActor. Objetos destruídos.");
+                Object.Destroy(actorGo);
+                return Task.CompletedTask;
+            }
 
             string actorId = _uniqueIdFactory.GenerateId(actorGo);
             _spawnedActor.Initialize(actorId);
 
             _actorRegistry.Register(_spawnedActor);
 
-            DebugUtility.Log(typeof(DummyActorSpawnService), $"Actor spawned: {actorId}");
+            var prefabName = _prefab != null ? _prefab.name : "<null>";
+            DebugUtility.Log(typeof(DummyActorSpawnService), $"Actor spawned: {actorId} (prefab={prefabName})");
             DebugUtility.Log(typeof(DummyActorSpawnService), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;

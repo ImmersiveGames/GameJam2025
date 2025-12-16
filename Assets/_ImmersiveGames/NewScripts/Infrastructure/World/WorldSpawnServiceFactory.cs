@@ -11,10 +11,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     public sealed class WorldSpawnServiceFactory
     {
         public IWorldSpawnService Create(
-            WorldSpawnServiceKind kind,
+            WorldDefinition.SpawnEntry entry,
             IDependencyProvider provider,
             IActorRegistry actorRegistry)
         {
+            if (entry == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "SpawnEntry nula ao criar serviço de spawn.");
+                return null;
+            }
+
             if (provider == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
@@ -22,19 +29,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return null;
             }
 
-            switch (kind)
+            switch (entry.Kind)
             {
                 case WorldSpawnServiceKind.DummyActor:
-                    return CreateDummyActorService(provider, actorRegistry);
+                    return CreateDummyActorService(entry, provider, actorRegistry);
 
                 default:
                     DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
-                        $"WorldSpawnServiceKind não suportado: {kind}.");
+                        $"WorldSpawnServiceKind não suportado: {entry.Kind}.");
                     return null;
             }
         }
 
         private IWorldSpawnService CreateDummyActorService(
+            WorldDefinition.SpawnEntry entry,
             IDependencyProvider provider,
             IActorRegistry actorRegistry)
         {
@@ -53,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return null;
             }
 
-            return new DummyActorSpawnService(uniqueIdFactory, actorRegistry);
+            return new DummyActorSpawnService(uniqueIdFactory, actorRegistry, entry.Prefab);
         }
     }
 }
