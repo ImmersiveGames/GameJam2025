@@ -114,3 +114,35 @@
 - Serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) nascem no `NewSceneBootstrapper`; nenhum outro componente deve criá-los ou registrá-los novamente.
 - Consumidores de cena evitam injetar no `Awake()` sem garantir ordem. Preferir `Start()` ou injeção lazy com retry curto/timeout para não rodar antes do bootstrap.
 - Testes/QA adotam o padrão lazy + retry: aguardam alguns frames por registro do bootstrapper e abortam com mensagem acionável se a cena ainda não registrou os serviços. Isso reduz falsos negativos em cenas novas sem alterar o `WorldLifecycleOrchestrator`.
+
+### Deterministic Ordering for World and Actor Lifecycle Hooks
+
+#### Context
+- O sistema de reset do mundo executa múltiplos tipos de hooks:
+  - hooks de serviços e de cena (`IWorldLifecycleHook`)
+  - hooks de componentes de ator (`IActorLifecycleHook`)
+- A ordem de enumeração dessas coleções não é garantida por:
+  - DI (`GetAllForScene`)
+  - `GetComponentsInChildren`
+  - ordem de registro acidental
+- Falta de determinismo gera bugs difíceis de reproduzir durante reset, QA e multiplayer local.
+
+#### Decision
+- Todos os hooks de lifecycle, independentemente da origem, são executados em ordem determinística.
+- A ordenação segue o critério:
+  - `Order` (quando o hook implementa `IOrderedLifecycleHook`, default = 0)
+  - `Type.FullName` (ordem ordinal) como desempate estável
+- A regra aplica-se igualmente a:
+  - hooks de mundo (`IWorldLifecycleHook`)
+  - hooks de ator (`IActorLifecycleHook`)
+- A ordenação é responsabilidade do `WorldLifecycleOrchestrator`.
+- Não é usado reflection nem heurísticas por nome de GameObject.
+
+#### Consequences
+- A execução do reset torna-se estável entre:
+  - múltiplos resets
+  - diferentes cenas
+  - Editor vs Build
+- Hooks passam a ter um mecanismo explícito de prioridade sem acoplamento.
+- Alterações de hierarquia ou ordem de componentes não afetam a execução.
+- Desenvolvedores devem definir `Order` apenas quando necessário; a maioria dos hooks pode permanecer com o valor padrão.
