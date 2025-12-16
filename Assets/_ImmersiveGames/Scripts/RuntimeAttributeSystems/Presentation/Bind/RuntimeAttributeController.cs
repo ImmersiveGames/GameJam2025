@@ -185,6 +185,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
             foreach (var (runtimeAttributeType, snapshotValue) in _initialSnapshot)
             {
+                // Não há um RuntimeAttributeChangeSource específico para reset/restauração.
+                // Mantemos Manual para sinalizar mudança direta sem fluxo automático.
                 _service.Set(runtimeAttributeType, snapshotValue, RuntimeAttributeChangeSource.Manual);
             }
         }
