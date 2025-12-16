@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -64,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
 
                 await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+                await RunActorHooksBeforeDespawnAsync();
 
                 await RunPhaseAsync("Despawn", service => service.DespawnAsync());
                 LogActorRegistryCount("After Despawn");
@@ -74,6 +76,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
                 LogActorRegistryCount("After Spawn");
 
+                await RunActorHooksAfterSpawnAsync();
                 await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
 
                 completed = true;
@@ -253,6 +256,154 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                     $"{hookName} phase completed");
             }
+        }
+
+        private async Task RunActorHooksBeforeDespawnAsync()
+        {
+            var actors = SnapshotActors();
+            if (actors.Count == 0)
+            {
+                return;
+            }
+
+            await RunActorHooksAsync("OnBeforeActorDespawn", actors, hook => hook.OnBeforeActorDespawnAsync());
+        }
+
+        private async Task RunActorHooksAfterSpawnAsync()
+        {
+            var actors = SnapshotActors();
+            if (actors.Count == 0)
+            {
+                return;
+            }
+
+            await RunActorHooksAsync("OnAfterActorSpawn", actors, hook => hook.OnAfterActorSpawnAsync());
+        }
+
+        private async Task RunActorHooksAsync(
+            string hookName,
+            List<IActor> actors,
+            Func<IActorLifecycleHook, Task> hookAction)
+        {
+            var phaseWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} actor hooks phase started (actors={actors.Count})");
+
+            foreach (var actor in actors)
+            {
+                if (actor == null)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor é nulo e será ignorado.");
+                    continue;
+                }
+
+                var actorLabel = GetActorLabel(actor);
+                var actorWatch = Stopwatch.StartNew();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} actor started: {actorLabel}");
+
+                try
+                {
+                    var transform = actor.Transform;
+                    if (transform == null)
+                    {
+                        DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                            $"{hookName} ignorado para {actorLabel}: Transform ausente.");
+                        continue;
+                    }
+
+                    var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
+                    if (components == null || components.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (var component in components)
+                    {
+                        if (component is not IActorLifecycleHook hook)
+                        {
+                            continue;
+                        }
+
+                        await RunActorHookAsync(hookName, actorLabel, component.GetType().Name, hook, hookAction);
+                    }
+                }
+                finally
+                {
+                    actorWatch.Stop();
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor duration: {actorLabel} => {actorWatch.ElapsedMilliseconds}ms");
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} actor completed: {actorLabel}");
+                }
+            }
+
+            phaseWatch.Stop();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} actor hooks phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+        }
+
+        private static async Task RunActorHookAsync(
+            string hookName,
+            string actorLabel,
+            string hookLabel,
+            IActorLifecycleHook hook,
+            Func<IActorLifecycleHook, Task> hookAction)
+        {
+            var hookWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} started: {hookLabel} (actor={actorLabel})");
+
+            try
+            {
+                await hookAction(hook);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} falhou para {hookLabel} (actor={actorLabel}): {ex}");
+                throw;
+            }
+            finally
+            {
+                hookWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} duration: {hookLabel} (actor={actorLabel}) => {hookWatch.ElapsedMilliseconds}ms");
+            }
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} completed: {hookLabel} (actor={actorLabel})");
+        }
+
+        private List<IActor> SnapshotActors()
+        {
+            var actors = new List<IActor>();
+
+            if (_actorRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    "ActorRegistry ausente ao criar snapshot de atores. Nenhum hook de ator será executado.");
+                return actors;
+            }
+
+            _actorRegistry.GetActors(actors);
+            return actors;
+        }
+
+        private static string GetActorLabel(IActor actor)
+        {
+            if (!string.IsNullOrWhiteSpace(actor.ActorId))
+            {
+                return actor.ActorId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(actor.DisplayName))
+            {
+                return actor.DisplayName;
+            }
+
+            return actor.GetType().Name;
         }
 
         private static async Task RunHookAsync(

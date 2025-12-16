@@ -21,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
         bool Unregister(string actorId);
 
         void Clear();
+
+        void GetActors(List<IActor> target);
     }
 
     public sealed class ActorRegistry : IActorRegistry
@@ -93,6 +95,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
             int removedCount = _actors.Count;
             _actors.Clear();
             DebugUtility.LogVerbose(typeof(ActorRegistry), $"Registry limpo. Removidos: {removedCount}.");
+        }
+
+        public void GetActors(List<IActor> target)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            target.Clear();
+
+            if (_actors.Count == 0)
+            {
+                return;
+            }
+
+            var orderedActors = new List<IActor>(_actors.Count);
+            foreach (var actor in _actors.Values)
+            {
+                if (actor != null)
+                {
+                    orderedActors.Add(actor);
+                }
+            }
+
+            orderedActors.Sort((left, right) =>
+                string.CompareOrdinal(left?.ActorId, right?.ActorId));
+
+            target.AddRange(orderedActors);
         }
     }
 }
