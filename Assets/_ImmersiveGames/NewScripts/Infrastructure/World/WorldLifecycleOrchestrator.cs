@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
         private readonly Dictionary<Transform, ActorHookCacheEntry> _actorHookCache = new();
+        private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private const long SlowHookWarningMs = 50;
 
@@ -573,7 +574,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
             if (components == null || components.Length == 0)
             {
-                return new List<(string Label, IActorLifecycleHook Hook)>();
+                return EmptyActorHookList;
             }
 
             List<(string Label, IActorLifecycleHook Hook)> actorHooks = null;
@@ -591,7 +592,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (actorHooks == null)
             {
-                return new List<(string Label, IActorLifecycleHook Hook)>();
+                return EmptyActorHookList;
             }
 
             actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
