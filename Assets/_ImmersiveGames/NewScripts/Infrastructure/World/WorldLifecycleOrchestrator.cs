@@ -185,6 +185,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             var collectedHooks = CollectHooks();
             if (collectedHooks.Count == 0)
             {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} phase skipped (hooks=0)");
                 return;
             }
 
@@ -281,6 +283,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         continue;
                     }
 
+                    var actorHooks = new List<(string Label, IActorLifecycleHook Hook)>();
+
                     foreach (var component in components)
                     {
                         if (component is not IActorLifecycleHook hook)
@@ -288,7 +292,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                             continue;
                         }
 
-                        await RunActorHookAsync(hookName, actorLabel, component.GetType().Name, hook, hookAction);
+                        actorHooks.Add((component.GetType().Name, hook));
+                    }
+
+                    if (actorHooks.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
+                    LogHookOrder($"{hookName} ({actorLabel})", actorHooks);
+
+                    foreach (var actorHook in actorHooks)
+                    {
+                        await RunActorHookAsync(hookName, actorLabel, actorHook.Label, actorHook.Hook, hookAction);
                     }
                 }
                 finally
@@ -466,14 +483,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 hooks.Add((hook?.GetType().Name ?? "<null registry hook>", hook));
             }
 
-            hooks.Sort(CompareHooks);
+            hooks.Sort(CompareHooks<IWorldLifecycleHook>);
 
             return hooks;
         }
 
-        private static int CompareHooks(
-            (string Label, IWorldLifecycleHook Hook) left,
-            (string Label, IWorldLifecycleHook Hook) right)
+        private static int CompareHooks<THook>(
+            (string Label, THook Hook) left,
+            (string Label, THook Hook) right)
+            where THook : class
         {
             var leftOrder = GetHookOrder(left.Hook);
             var rightOrder = GetHookOrder(right.Hook);
@@ -490,7 +508,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             return string.Compare(leftTypeName, rightTypeName, StringComparison.Ordinal);
         }
 
-        private static int GetHookOrder(IWorldLifecycleHook hook)
+        private static int GetHookOrder(object hook)
         {
             if (hook is IOrderedLifecycleHook orderedHook)
             {
@@ -500,7 +518,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             return 0;
         }
 
-        private static void LogHookOrder(string hookName, List<(string Label, IWorldLifecycleHook Hook)> collectedHooks)
+        private static void LogHookOrder<THook>(string hookName, List<(string Label, THook Hook)> collectedHooks)
+            where THook : class
         {
             if (collectedHooks == null || collectedHooks.Count == 0)
             {

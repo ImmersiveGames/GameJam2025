@@ -5,7 +5,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.
-    /// Mantém ordem determinística de execução.
     /// </summary>
     public sealed class WorldLifecycleHookRegistry
     {
