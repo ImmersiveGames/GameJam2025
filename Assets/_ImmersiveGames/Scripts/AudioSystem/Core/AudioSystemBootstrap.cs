@@ -24,6 +24,10 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         public static void EnsureAudioSystemInitialized()
         {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(AudioSystemBootstrap), "NEWSCRIPTS_MODE ativo: AudioSystemBootstrap ignorado.");
+            return;
+#endif
             // Garantir serviços base no DI
             RegisterMathServiceIfNeeded();
             RegisterVolumeServiceIfNeeded();

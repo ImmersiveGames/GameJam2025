@@ -9,6 +9,10 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Services
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
         {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(AnimationBootstrapper), "NEWSCRIPTS_MODE ativo: AnimationBootstrapper ignorado.");
+            return;
+#endif
             var configProvider = new AnimationConfigProvider();
 
             // Registra configs padrão por tipo de controller (nome da classe)

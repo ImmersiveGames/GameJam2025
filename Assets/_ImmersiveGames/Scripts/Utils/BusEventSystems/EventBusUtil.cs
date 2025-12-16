@@ -24,6 +24,10 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         /// </summary>    
         [InitializeOnLoadMethod]
         public static void InitializeEditor() {
+#if NEWSCRIPTS_MODE
+            Debug.Log("NEWSCRIPTS_MODE ativo: EventBusUtil.InitializeEditor ignorado.");
+            return;
+#endif
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
@@ -44,6 +48,10 @@ namespace _ImmersiveGames.Scripts.Utils.BusEventSystems {
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         public static void Initialize() {
+#if NEWSCRIPTS_MODE
+            Debug.Log("NEWSCRIPTS_MODE ativo: EventBusUtil.Initialize ignorado.");
+            return;
+#endif
             EventTypes = PredefinedAssemblyUtil.GetTypes(typeof(IEvent));
             EventBusTypes = InitializeAllBuses();
         }

@@ -26,6 +26,10 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(DependencyBootstrapper), "NEWSCRIPTS_MODE ativo: DependencyBootstrapper ignorado.");
+            return;
+#endif
             if (_initialized) return;
             _initialized = true;
 
@@ -181,7 +185,14 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => _initialized = false;
+        private static void ResetStatics()
+        {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(DependencyBootstrapper), "NEWSCRIPTS_MODE ativo: ResetStatics ignorado.");
+            return;
+#endif
+            _initialized = false;
+        }
 #endif
     }
 }

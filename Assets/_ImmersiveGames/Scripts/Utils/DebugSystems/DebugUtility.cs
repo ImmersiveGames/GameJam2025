@@ -43,6 +43,10 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
         {
+#if NEWSCRIPTS_MODE
+            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.");
+            return;
+#endif
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
             _logFallbacks = Application.isEditor;

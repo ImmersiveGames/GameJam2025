@@ -27,6 +27,10 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
+#if NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(CompassRuntimeService), "NEWSCRIPTS_MODE ativo: CompassRuntimeService ignorado.");
+            return;
+#endif
             // Garante que exista uma instância viva antes das cenas serem carregadas.
             if (_instance != null)
             {
