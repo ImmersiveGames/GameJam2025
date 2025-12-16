@@ -20,6 +20,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 throw new ArgumentNullException(nameof(hook));
             }
 
+            if (_hooks.Contains(hook))
+            {
+                throw new InvalidOperationException("Hook already registered.");
+            }
+
             _hooks.Add(hook);
         }
 

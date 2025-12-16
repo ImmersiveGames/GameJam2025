@@ -19,6 +19,7 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 
 ## Hooks disponíveis
 - **`IWorldLifecycleHook`**: permite observar o ciclo de reset de mundo. Pode vir de três fontes na execução: (1) serviços que também implementam `IWorldLifecycleHook`, (2) hooks de cena registrados via `IDependencyProvider.GetAllForScene`, (3) hooks registrados explicitamente no `WorldLifecycleHookRegistry`. A ordem de execução segue exatamente o pipeline determinístico (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais) e é logada por fase.
+- Hooks podem implementar `IOrderedLifecycleHook` para controlar prioridade; ordenação é determinística por (`Order`, `Type.FullName`).
 - **`IActorLifecycleHook`**: componentes `MonoBehaviour` anexados a atores. São descobertos pelo orquestrador ao percorrer `Transform` dos atores registrados e executados nas fases de ator (`OnBeforeActorDespawnAsync` e `OnAfterActorSpawnAsync`) preservando a ordem fixa do reset.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/IWorldLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Actors/IActorLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L345】
 

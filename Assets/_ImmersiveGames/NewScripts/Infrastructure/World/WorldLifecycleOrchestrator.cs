@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
@@ -181,30 +182,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
         {
-            var spawnServiceHooksCount = 0;
-            if (_spawnServices != null)
-            {
-                for (int i = 0; i < _spawnServices.Count; i++)
-                {
-                    if (_spawnServices[i] is IWorldLifecycleHook)
-                    {
-                        spawnServiceHooksCount++;
-                    }
-                }
-            }
-
-            var sceneHooks = ResolveSceneHooks();
-            var sceneHooksCount = sceneHooks.Count;
-
-            var registryHooks = ResolveRegistryHooks();
-            var registryHooksCount = registryHooks.Count;
-
-            if (spawnServiceHooksCount == 0 && sceneHooksCount == 0 && registryHooksCount == 0)
+            var collectedHooks = CollectHooks();
+            if (collectedHooks.Count == 0)
             {
                 return;
             }
 
-            var totalHooks = spawnServiceHooksCount + sceneHooksCount + registryHooksCount;
+            var totalHooks = collectedHooks.Count;
 
             var phaseWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -212,61 +196,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             try
             {
-                foreach (var service in _spawnServices)
+                LogHookOrder(hookName, collectedHooks);
+
+                foreach (var hookEntry in collectedHooks)
                 {
-                    if (service == null)
+                    if (hookEntry.Hook == null)
                     {
                         DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                            $"{hookName} hook service é nulo e será ignorado.");
+                            $"{hookName} hook '{hookEntry.Label}' é nulo e será ignorado.");
                         continue;
                     }
 
-                    if (service is not IWorldLifecycleHook hook)
-                    {
-                        continue;
-                    }
-
-                    await RunHookAsync(hookName, service.Name, hook, hookAction);
-                }
-
-                if (sceneHooksCount > 0)
-                {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"Scene hooks detected: {sceneHooksCount}");
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"Executing scene lifecycle hooks for {hookName}");
-
-                    foreach (var hook in sceneHooks)
-                    {
-                        if (hook == null)
-                        {
-                            DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                                $"{hookName} scene hook é nulo e será ignorado.");
-                            continue;
-                        }
-
-                        await RunHookAsync(hookName, hook.GetType().Name, hook, hookAction);
-                    }
-                }
-
-                if (registryHooksCount > 0)
-                {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"Registry hooks detected: {registryHooksCount}");
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                        $"Executing registry lifecycle hooks for {hookName}");
-
-                    foreach (var hook in registryHooks)
-                    {
-                        if (hook == null)
-                        {
-                            DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                                $"{hookName} registry hook é nulo e será ignorado.");
-                            continue;
-                        }
-
-                        await RunHookAsync(hookName, hook.GetType().Name, hook, hookAction);
-                    }
+                    await RunHookAsync(hookName, hookEntry.Label, hookEntry.Hook, hookAction);
                 }
             }
             finally
@@ -489,6 +430,94 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
 
             return _hookRegistry.Hooks;
+        }
+
+        private List<(string Label, IWorldLifecycleHook Hook)> CollectHooks()
+        {
+            var hooks = new List<(string Label, IWorldLifecycleHook Hook)>();
+
+            if (_spawnServices != null)
+            {
+                foreach (var service in _spawnServices)
+                {
+                    if (service == null)
+                    {
+                        continue;
+                    }
+
+                    if (service is not IWorldLifecycleHook lifecycleHook)
+                    {
+                        continue;
+                    }
+
+                    hooks.Add((service.Name, lifecycleHook));
+                }
+            }
+
+            var sceneHooks = ResolveSceneHooks();
+            foreach (var hook in sceneHooks)
+            {
+                hooks.Add((hook?.GetType().Name ?? "<null scene hook>", hook));
+            }
+
+            var registryHooks = ResolveRegistryHooks();
+            foreach (var hook in registryHooks)
+            {
+                hooks.Add((hook?.GetType().Name ?? "<null registry hook>", hook));
+            }
+
+            hooks.Sort(CompareHooks);
+
+            return hooks;
+        }
+
+        private static int CompareHooks(
+            (string Label, IWorldLifecycleHook Hook) left,
+            (string Label, IWorldLifecycleHook Hook) right)
+        {
+            var leftOrder = GetHookOrder(left.Hook);
+            var rightOrder = GetHookOrder(right.Hook);
+
+            var orderComparison = leftOrder.CompareTo(rightOrder);
+            if (orderComparison != 0)
+            {
+                return orderComparison;
+            }
+
+            var leftTypeName = left.Hook?.GetType().FullName ?? string.Empty;
+            var rightTypeName = right.Hook?.GetType().FullName ?? string.Empty;
+
+            return string.Compare(leftTypeName, rightTypeName, StringComparison.Ordinal);
+        }
+
+        private static int GetHookOrder(IWorldLifecycleHook hook)
+        {
+            if (hook is IOrderedLifecycleHook orderedHook)
+            {
+                return orderedHook.Order;
+            }
+
+            return 0;
+        }
+
+        private static void LogHookOrder(string hookName, List<(string Label, IWorldLifecycleHook Hook)> collectedHooks)
+        {
+            if (collectedHooks == null || collectedHooks.Count == 0)
+            {
+                return;
+            }
+
+            var orderedLabels = collectedHooks
+                .Select(entry =>
+                {
+                    var order = GetHookOrder(entry.Hook);
+                    var typeName = entry.Hook?.GetType().Name ?? entry.Label;
+                    return $"{typeName}(order={order})";
+                })
+                .ToArray();
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} execution order: {string.Join(", ", orderedLabels)}");
         }
 
         private void LogActorRegistryCount(string label)
