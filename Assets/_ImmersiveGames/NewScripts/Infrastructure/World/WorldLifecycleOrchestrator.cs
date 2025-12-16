@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -17,15 +19,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
+        private readonly IDependencyProvider _provider;
 
         public WorldLifecycleOrchestrator(
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
-            IActorRegistry actorRegistry)
+            IActorRegistry actorRegistry,
+            IDependencyProvider provider = null)
         {
             _gateService = gateService;
             _spawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             _actorRegistry = actorRegistry;
+            _provider = provider;
         }
 
         public async Task ResetWorldAsync()
@@ -147,28 +152,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
         {
-            if (_spawnServices == null || _spawnServices.Count == 0)
+            var spawnServiceHooksCount = 0;
+            if (_spawnServices != null)
             {
-                return;
-            }
-
-            var hooksCount = 0;
-            for (int i = 0; i < _spawnServices.Count; i++)
-            {
-                if (_spawnServices[i] is IWorldLifecycleHook)
+                for (int i = 0; i < _spawnServices.Count; i++)
                 {
-                    hooksCount++;
+                    if (_spawnServices[i] is IWorldLifecycleHook)
+                    {
+                        spawnServiceHooksCount++;
+                    }
                 }
             }
 
-            if (hooksCount == 0)
+            var sceneHooks = ResolveSceneHooks();
+            var sceneHooksCount = sceneHooks.Count;
+
+            if (spawnServiceHooksCount == 0 && sceneHooksCount == 0)
             {
                 return;
             }
 
+            var totalHooks = spawnServiceHooksCount + sceneHooksCount;
+
             var phaseWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} phase started (hooks={hooksCount})");
+                $"{hookName} phase started (hooks={totalHooks})");
 
             try
             {
@@ -187,6 +195,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     }
 
                     await RunHookAsync(hookName, service.Name, hook, hookAction);
+                }
+
+                if (sceneHooksCount > 0)
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Scene hooks detected: {sceneHooksCount}");
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Executing scene lifecycle hooks for {hookName}");
+
+                    foreach (var hook in sceneHooks)
+                    {
+                        if (hook == null)
+                        {
+                            DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                                $"{hookName} scene hook é nulo e será ignorado.");
+                            continue;
+                        }
+
+                        await RunHookAsync(hookName, hook.GetType().Name, hook, hookAction);
+                    }
                 }
             }
             finally
@@ -228,6 +256,58 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                 $"{hookName} completed: {serviceName}");
+        }
+
+        private IReadOnlyList<IWorldLifecycleHook> ResolveSceneHooks()
+        {
+            if (_provider == null)
+            {
+                return Array.Empty<IWorldLifecycleHook>();
+            }
+
+            var sceneName = SceneManager.GetActiveScene().name;
+            var sceneServiceTypes = _provider.ListServicesForScene(sceneName);
+
+            if (sceneServiceTypes == null || sceneServiceTypes.Count == 0)
+            {
+                return Array.Empty<IWorldLifecycleHook>();
+            }
+
+            var allServices = new List<IWorldLifecycleHook>();
+            _provider.GetAll(allServices);
+
+            if (allServices.Count == 0)
+            {
+                return Array.Empty<IWorldLifecycleHook>();
+            }
+
+            var sceneHooks = new List<IWorldLifecycleHook>();
+
+            foreach (var hook in allServices)
+            {
+                if (hook == null)
+                {
+                    continue;
+                }
+
+                var hookType = hook.GetType();
+
+                for (int i = 0; i < sceneServiceTypes.Count; i++)
+                {
+                    if (sceneServiceTypes[i] == null)
+                    {
+                        continue;
+                    }
+
+                    if (sceneServiceTypes[i].IsAssignableFrom(hookType))
+                    {
+                        sceneHooks.Add(hook);
+                        break;
+                    }
+                }
+            }
+
+            return sceneHooks;
         }
 
         private void LogActorRegistryCount(string label)
