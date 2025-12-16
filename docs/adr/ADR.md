@@ -102,8 +102,10 @@
 ### Decision
 - Introdução de hooks opt-in em múltiplos níveis, permitindo que serviços de spawn, serviços de cena e componentes de atores participem do ciclo.
 - Separação clara entre responsabilidades de world, scene e actor, cada uma com registro explícito e resolução sem reflection.
+- Registry é criado no bootstrapper (escopo de cena) e consumido por DI; proibido criar/registrar fora do bootstrapper.
 
 ### Consequences
 - Mais flexibilidade para instrumentar resets com telemetria, debug e limpeza direcionada.
 - Custo mínimo de complexidade ao manter contratos simples e determinísticos.
 - Arquitetura extensível para multiplayer local, replay e testes automatizados.
+- Previne duplo-registro, evita divergência de instância e garante previsibilidade em testes/QA.
