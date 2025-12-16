@@ -1,7 +1,9 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
@@ -15,6 +17,7 @@ using _ImmersiveGames.Scripts.UISystems.TerminalOverlay;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -63,6 +66,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         [Header("UI (OnGUI)")]
         [SerializeField] private bool showOnGuiPanel = true;
         [SerializeField] private KeyCode togglePanelKey = KeyCode.F8;
+
+        private const float EaterPositionTolerance = 0.05f;
+        private const float EaterRotationTolerance = 1f;
 
         private bool _isRunning;
         private bool _panelVisible = true;
@@ -495,19 +501,302 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
 
         private Task LogPoseSnapshotAsync(string stage, IActor actor)
         {
+            var snapshot = CapturePoseSnapshot(stage, actor);
+            AppendLine(snapshot.ToLogString());
+            return Task.CompletedTask;
+        }
+
+        private PoseSnapshot CapturePoseSnapshot(string stage, IActor actor)
+        {
             if (actor?.Transform == null)
             {
-                AppendLine($"{stage}: actor/transform indisponível.");
-                return Task.CompletedTask;
+                return PoseSnapshot.Missing(stage);
             }
 
             Transform t = actor.Transform;
+            var snapshot = new PoseSnapshot(
+                stage,
+                t.position,
+                t.rotation,
+                Time.frameCount,
+                Time.time,
+                Time.inFixedTimeStep,
+                t.gameObject.scene.name,
+                t.name);
+
+            if (t.TryGetComponent(out Rigidbody rigidbody))
+            {
+                snapshot = snapshot.WithRigidbody(
+                    rigidbody.isKinematic,
+                    rigidbody.linearVelocity,
+                    rigidbody.angularVelocity);
+            }
+
+            if (t.TryGetComponent(out EaterBehavior behavior))
+            {
+                snapshot = snapshot.WithBehavior(behavior.IsExecutionAllowed, behavior.CurrentStateName);
+            }
+
+            snapshot = snapshot.WithTweenInfo(GetActiveTweenCount(t));
+
+            return snapshot;
+        }
+
+        private void TracePoseDrift(PoseSnapshot snapshot, Vector3 baselinePosition, Quaternion baselineRotation)
+        {
+            if (!snapshot.IsValid)
+            {
+                AppendLine($"[QA][PoseDrift] {snapshot.Stage}: snapshot inválido (actor/transform indisponível).");
+                return;
+            }
+
+            float positionDelta = Vector3.Distance(baselinePosition, snapshot.Position);
+            float rotationDelta = Quaternion.Angle(baselineRotation, snapshot.Rotation);
+
+            if (positionDelta <= EaterPositionTolerance && rotationDelta <= EaterRotationTolerance)
+            {
+                return;
+            }
 
             AppendLine(
-                $"{stage}: name={t.name} id={t.GetInstanceID()} scene={t.gameObject.scene.name} " +
-                $"pos={t.position} rot={t.rotation.eulerAngles} frame={Time.frameCount}");
+                $"[QA][PoseDrift] {snapshot.Stage}: Δpos={positionDelta:0.###} Δrot={rotationDelta:0.###} {snapshot.FormatContext()}");
+        }
 
-            return Task.CompletedTask;
+        private static bool IsPoseWithinTolerance(PoseSnapshot snapshot, Vector3 targetPosition, Quaternion targetRotation)
+        {
+            if (!snapshot.IsValid)
+            {
+                return false;
+            }
+
+            return Vector3.Distance(targetPosition, snapshot.Position) <= EaterPositionTolerance &&
+                   Quaternion.Angle(targetRotation, snapshot.Rotation) <= EaterRotationTolerance;
+        }
+
+        private static int GetActiveTweenCount(Transform target)
+        {
+            if (target == null)
+            {
+                return 0;
+            }
+
+            List<Tween> tweens = DOTween.TweensByTarget(target, true);
+            return tweens != null ? tweens.Count : 0;
+        }
+
+        private readonly struct PoseSnapshot
+        {
+            public bool IsValid { get; }
+            public string Stage { get; }
+            public Vector3 Position { get; }
+            public Quaternion Rotation { get; }
+            public int Frame { get; }
+            public float Time { get; }
+            public bool InFixedStep { get; }
+            public string SceneName { get; }
+            public string TransformName { get; }
+            public bool HasRigidbody { get; }
+            public bool IsKinematic { get; }
+            public Vector3 Velocity { get; }
+            public Vector3 AngularVelocity { get; }
+            public bool HasBehavior { get; }
+            public bool? ExecutionAllowed { get; }
+            public string StateName { get; }
+            public int TweenCount { get; }
+
+            private PoseSnapshot(
+                string stage,
+                Vector3 position,
+                Quaternion rotation,
+                int frame,
+                float time,
+                bool inFixedStep,
+                string sceneName,
+                string transformName,
+                bool isValid,
+                bool hasRigidbody,
+                bool isKinematic,
+                Vector3 velocity,
+                Vector3 angularVelocity,
+                bool hasBehavior,
+                bool? executionAllowed,
+                string stateName,
+                int tweenCount)
+            {
+                Stage = stage;
+                Position = position;
+                Rotation = rotation;
+                Frame = frame;
+                Time = time;
+                InFixedStep = inFixedStep;
+                SceneName = sceneName;
+                TransformName = transformName;
+                IsValid = isValid;
+                HasRigidbody = hasRigidbody;
+                IsKinematic = isKinematic;
+                Velocity = velocity;
+                AngularVelocity = angularVelocity;
+                HasBehavior = hasBehavior;
+                ExecutionAllowed = executionAllowed;
+                StateName = stateName;
+                TweenCount = tweenCount;
+            }
+
+            public PoseSnapshot(
+                string stage,
+                Vector3 position,
+                Quaternion rotation,
+                int frame,
+                float time,
+                bool inFixedStep,
+                string sceneName,
+                string transformName)
+                : this(
+                    stage,
+                    position,
+                    rotation,
+                    frame,
+                    time,
+                    inFixedStep,
+                    sceneName,
+                    transformName,
+                    isValid: true,
+                    hasRigidbody: false,
+                    isKinematic: false,
+                    velocity: Vector3.zero,
+                    angularVelocity: Vector3.zero,
+                    hasBehavior: false,
+                    executionAllowed: null,
+                    stateName: "-",
+                    tweenCount: 0)
+            {
+            }
+
+            public static PoseSnapshot Missing(string stage)
+            {
+                return new PoseSnapshot(
+                    stage,
+                    Vector3.zero,
+                    Quaternion.identity,
+                    frame: Time.frameCount,
+                    time: Time.time,
+                    inFixedStep: Time.inFixedTimeStep,
+                    sceneName: "-",
+                    transformName: "-",
+                    isValid: false,
+                    hasRigidbody: false,
+                    isKinematic: false,
+                    velocity: Vector3.zero,
+                    angularVelocity: Vector3.zero,
+                    hasBehavior: false,
+                    executionAllowed: null,
+                    stateName: "-",
+                    tweenCount: 0);
+            }
+
+            public PoseSnapshot WithRigidbody(bool isKinematic, Vector3 velocity, Vector3 angularVelocity)
+            {
+                return new PoseSnapshot(
+                    Stage,
+                    Position,
+                    Rotation,
+                    Frame,
+                    Time,
+                    InFixedStep,
+                    SceneName,
+                    TransformName,
+                    IsValid,
+                    hasRigidbody: true,
+                    isKinematic: isKinematic,
+                    velocity: velocity,
+                    angularVelocity: angularVelocity,
+                    HasBehavior,
+                    ExecutionAllowed,
+                    StateName,
+                    TweenCount);
+            }
+
+            public PoseSnapshot WithBehavior(bool executionAllowed, string stateName)
+            {
+                return new PoseSnapshot(
+                    Stage,
+                    Position,
+                    Rotation,
+                    Frame,
+                    Time,
+                    InFixedStep,
+                    SceneName,
+                    TransformName,
+                    IsValid,
+                    HasRigidbody,
+                    IsKinematic,
+                    Velocity,
+                    AngularVelocity,
+                    hasBehavior: true,
+                    executionAllowed: executionAllowed,
+                    stateName: stateName,
+                    TweenCount);
+            }
+
+            public PoseSnapshot WithTweenInfo(int tweenCount)
+            {
+                return new PoseSnapshot(
+                    Stage,
+                    Position,
+                    Rotation,
+                    Frame,
+                    Time,
+                    InFixedStep,
+                    SceneName,
+                    TransformName,
+                    IsValid,
+                    HasRigidbody,
+                    IsKinematic,
+                    Velocity,
+                    AngularVelocity,
+                    HasBehavior,
+                    ExecutionAllowed,
+                    StateName,
+                    tweenCount);
+            }
+
+            public string ToLogString()
+            {
+                if (!IsValid)
+                {
+                    return $"{Stage}: actor/transform indisponível.";
+                }
+
+                return
+                    $"{Stage}: pos={Position} rot={Rotation.eulerAngles} frame={Frame} time={Time:0.###} fixed={InFixedStep} " +
+                    $"scene={SceneName} state={StateName} gate={DescribeGate()} rb={DescribeRigidbody()} tweens={TweenCount}";
+            }
+
+            public string FormatContext()
+            {
+                return $"frame={Frame} time={Time:0.###} fixed={InFixedStep} scene={SceneName} state={StateName} " +
+                       $"gate={DescribeGate()} rb={DescribeRigidbody()} tweens={TweenCount}";
+            }
+
+            private string DescribeGate()
+            {
+                if (!HasBehavior || ExecutionAllowed == null)
+                {
+                    return "unknown";
+                }
+
+                return ExecutionAllowed.Value ? "open" : "closed";
+            }
+
+            private string DescribeRigidbody()
+            {
+                if (!HasRigidbody)
+                {
+                    return "none";
+                }
+
+                return $"kinematic={IsKinematic} vel={Velocity} angVel={AngularVelocity}";
+            }
         }
 
         private async Task ExecuteEaterResetSmokeAsync()
@@ -617,38 +906,46 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             Quaternion initialRotation,
             float initialAttributeValue)
         {
-            await LogPoseSnapshotAsync(
-                stage: $"[QA] Pose antes do RequestResetAsync #{label}",
-                actor: eaterActor);
+            var snapshotBeforeReset = CapturePoseSnapshot($"[QA] Pose antes do RequestResetAsync #{label}", eaterActor);
+            AppendLine(snapshotBeforeReset.ToLogString());
 
             bool ok = await RequestResetForScopeAsync(ResetScope.EaterOnly, $"QA Eater Reset Smoke #{label}");
             if (!ok)
                 throw new Exception($"[QA] Reset scope EaterOnly falhou no passo {label}.");
 
-            await LogPoseSnapshotAsync(
-                stage: $"[QA] Pose imediatamente após RequestResetAsync #{label}",
-                actor: eaterActor);
+            var snapshotAfterReset = CapturePoseSnapshot(
+                $"[QA] Pose imediatamente após RequestResetAsync #{label}",
+                eaterActor);
+            AppendLine(snapshotAfterReset.ToLogString());
+            TracePoseDrift(snapshotAfterReset, initialPosition, initialRotation);
 
             if (!eaterContext.TryGetValue(trackedAttribute, out var value) || value == null)
                 throw new Exception($"[QA] RuntimeAttributeValue inexistente após reset #{label} para {trackedAttribute}.");
 
             float restoredValue = value.GetCurrentValue();
-            Vector3 poseAfterReset = eaterActor.Transform.position;
-            Quaternion rotationAfterReset = eaterActor.Transform.rotation;
 
             bool attributeRestored = Mathf.Approximately(restoredValue, initialAttributeValue);
-            bool poseRestored = Vector3.Distance(initialPosition, poseAfterReset) <= 0.05f &&
-                                Quaternion.Angle(initialRotation, rotationAfterReset) <= 1f;
+            bool poseRestored = IsPoseWithinTolerance(snapshotAfterReset, initialPosition, initialRotation);
 
             AppendLine(
                 $"[QA] Reset #{label}: atributo {trackedAttribute}={restoredValue:0.###} (esperado {initialAttributeValue:0.###}), " +
-                $"poseRestaurada={poseRestored} pos={poseAfterReset} rot={rotationAfterReset.eulerAngles}");
+                $"poseRestaurada={poseRestored} pos={snapshotAfterReset.Position} rot={snapshotAfterReset.Rotation.eulerAngles}");
 
             await Task.Yield();
 
-            await LogPoseSnapshotAsync(
-                stage: $"[QA] Pose no frame seguinte ao reset #{label}",
-                actor: eaterActor);
+            var snapshotNextFrame = CapturePoseSnapshot(
+                $"[QA] Pose no frame seguinte ao reset #{label}",
+                eaterActor);
+            AppendLine(snapshotNextFrame.ToLogString());
+            TracePoseDrift(snapshotNextFrame, initialPosition, initialRotation);
+
+            await DelayUnscaled(Time.fixedDeltaTime);
+
+            var snapshotAfterFixed = CapturePoseSnapshot(
+                $"[QA] Pose após próximo FixedUpdate (aprox.) #{label}",
+                eaterActor);
+            AppendLine(snapshotAfterFixed.ToLogString());
+            TracePoseDrift(snapshotAfterFixed, initialPosition, initialRotation);
 
             if (!attributeRestored)
                 throw new Exception($"[QA] Reset #{label} não restaurou {trackedAttribute}. Valor={restoredValue:0.###}.");

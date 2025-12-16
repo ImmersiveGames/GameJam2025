@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using DG.Tweening;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
@@ -19,6 +20,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private bool _initialTransformCaptured;
         private Rigidbody _rigidbody;
         private IEaterDomain _eaterDomain;
+        private bool _rigidbodyWasKinematic;
 
         // Executa depois dos recursos (ex.: RuntimeAttributeController = -80) e da movimentação do player,
         // garantindo que dados de recursos/AutoFlow já estejam rebindados antes do comportamento.
@@ -28,6 +30,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         {
             // Cleanup: remove bindings e caches para permitir Restore/Rebind idempotentes.
             NeutralizeMotion();
+            ForceStopTweens();
+            ForceKinematicDuringReset();
             CleanupDesireBindings();
             PauseAutoFlow("Reset_Cleanup");
             DisposePredicates();
@@ -106,6 +110,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 UpdateDesireInfo(EaterDesireInfo.Inactive);
             }
 
+            RestoreKinematicState();
             _executionAllowed = true;
 
             return Task.CompletedTask;
@@ -161,6 +166,45 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
+        }
+
+        private void ForceKinematicDuringReset()
+        {
+            if (_rigidbody == null)
+            {
+                TryGetComponent(out _rigidbody);
+            }
+
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
+            _rigidbodyWasKinematic = _rigidbody.isKinematic;
+            _rigidbody.isKinematic = true;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+        }
+
+        private void RestoreKinematicState()
+        {
+            if (_rigidbody == null)
+            {
+                return;
+            }
+
+            _rigidbody.isKinematic = _rigidbodyWasKinematic;
+        }
+
+        private void ForceStopTweens()
+        {
+            // Garante que nenhum tween pendente continue movendo o Eater durante o reset.
+            DOTween.Kill(transform);
+
+            if (_rigidbody != null)
+            {
+                DOTween.Kill(_rigidbody);
+            }
         }
 
         private void DisposePredicates()

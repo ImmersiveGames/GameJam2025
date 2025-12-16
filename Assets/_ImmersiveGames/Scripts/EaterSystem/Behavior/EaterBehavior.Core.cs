@@ -35,6 +35,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         private bool _executionAllowed = true;
 
+        internal bool IsExecutionAllowed => _executionAllowed;
+
+        internal string CurrentStateName
+        {
+            get
+            {
+                var current = _stateMachine?.CurrentState;
+                if (current is EaterBehaviorState eaterState)
+                {
+                    return eaterState.StateName;
+                }
+
+                return current?.GetType().Name ?? "None";
+            }
+        }
+
         private void Awake()
         {
             Master = GetComponent<EaterMaster>();
