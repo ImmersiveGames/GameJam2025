@@ -9,6 +9,7 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - Hooks (pós-despawn/pré-spawn): executa `OnAfterDespawnAsync()` e `OnBeforeSpawnAsync()` seguindo a mesma ordem determinística de coleções.
 - Spawn: chama `SpawnAsync()` dos serviços e, em seguida, hooks de atores e de mundo para `OnAfterSpawnAsync()`.
 - Release: devolve o gate adquirido e finaliza com logs de duração.
+ - Nota: se não houver hooks registrados para uma fase, o sistema emite log verbose `"<PhaseName> phase skipped (hooks=0)"` para diagnóstico e para confirmar que a fase foi considerada.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L13-L345】
 
 ## Onde o registry é criado e como injetar
@@ -20,6 +21,11 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 ## Hooks disponíveis
 - **`IWorldLifecycleHook`**: permite observar o ciclo de reset de mundo. Pode vir de três fontes na execução: (1) serviços que também implementam `IWorldLifecycleHook`, (2) hooks de cena registrados via `IDependencyProvider.GetAllForScene`, (3) hooks registrados explicitamente no `WorldLifecycleHookRegistry`. A ordem de execução segue exatamente o pipeline determinístico (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais) e é logada por fase.
 - **`IActorLifecycleHook`**: componentes `MonoBehaviour` anexados a atores. São descobertos pelo orquestrador ao percorrer `Transform` dos atores registrados e executados nas fases de ator (`OnBeforeActorDespawnAsync` e `OnAfterActorSpawnAsync`) preservando a ordem fixa do reset.
+
+### Ordenação determinística
+- **Hooks de mundo (`IWorldLifecycleHook`)**: ordenados por `Order` quando o hook implementa `IOrderedLifecycleHook` (default = 0) e, como desempate, por `Type.FullName` com comparação ordinal.
+- **Hooks de ator (`IActorLifecycleHook`)**: coletados via `GetComponentsInChildren(...)` em cada ator, mas a execução não depende da ordem retornada; antes de executar, a lista é ordenada por (`Order`, `Type.FullName`) com o mesmo comparador usado nos hooks de mundo.
+- **Observação**: o critério (`Order`, `Type.FullName`) garante que a ordem de execução permaneça estável entre resets e ambientes.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/IWorldLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Actors/IActorLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L345】
 
 ## Do / Don't
@@ -54,6 +60,10 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
    ```
 Hooks registrados aqui serão executados em todas as fases, após os hooks de spawn services e hooks de cena.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleHookRegistry.cs†L8-L27】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L67-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
+
+## IOrderedLifecycleHook
+- Interface opcional que adiciona a propriedade `Order` para controlar prioridade.
+- Aplica-se a **hooks de mundo** e a **hooks de ator**; quem não implementa recebe o valor padrão 0 e ainda participa da ordenação determinística por (`Order`, `Type.FullName`).
 
 ## Como criar um hook em ator
 Use `ActorLifecycleHookBase` para componentes por ator:

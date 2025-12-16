@@ -5,7 +5,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.
-    /// Mantém ordem determinística de execução.
     /// </summary>
     public sealed class WorldLifecycleHookRegistry
     {
@@ -18,6 +17,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             if (hook == null)
             {
                 throw new ArgumentNullException(nameof(hook));
+            }
+
+            if (_hooks.Contains(hook))
+            {
+                throw new InvalidOperationException("Hook already registered.");
             }
 
             _hooks.Add(hook);
