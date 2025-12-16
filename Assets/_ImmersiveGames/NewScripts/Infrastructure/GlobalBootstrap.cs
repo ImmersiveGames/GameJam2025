@@ -3,20 +3,18 @@ using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
     /// <summary>
     /// Entry point for the NewScripts project area.
     /// Commit 1: minimal global infrastructure (no gameplay, no spawn, no scene transitions).
-    /// Commit 2: ensures Scene scope bootstrapper exists to validate scene-scope lifecycle.
     /// </summary>
     public static class GlobalBootstrap
     {
         private static bool _initialized;
-        private static GameObject _sceneBootstrapperGo;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -30,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
-                "✅ NewScripts global infrastructure initialized (Commit 1 minimal + Commit 2 hook).",
+                "✅ NewScripts global infrastructure initialized (Commit 1 minimal).",
                 DebugUtility.Colors.Success);
         }
 
@@ -51,7 +49,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterEssentialServicesOnly()
         {
-            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
+            // NewScripts generic ID factory (no gameplay semantics).
+            RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
+
+            // Simulation Gate is still sourced from the legacy infra contracts.
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
         }
 

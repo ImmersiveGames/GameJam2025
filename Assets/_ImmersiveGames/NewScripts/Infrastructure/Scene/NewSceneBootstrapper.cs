@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -24,10 +25,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            DependencyManager.Provider.RegisterForScene<INewSceneScopeMarker>(
+            var provider = DependencyManager.Provider;
+
+            provider.RegisterForScene<INewSceneScopeMarker>(
                 _sceneName,
                 new NewSceneScopeMarker(),
                 allowOverride: false);
+
+            var spawnRegistry = new WorldSpawnServiceRegistry();
+            provider.RegisterForScene<IWorldSpawnServiceRegistry>(
+                _sceneName,
+                spawnRegistry,
+                allowOverride: false);
+
+            RegisterDummySpawnService(spawnRegistry);
 
             _registered = true;
             DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope created: {_sceneName}");
@@ -50,6 +61,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope cleared: {_sceneName}");
 
             _registered = false;
+        }
+
+        private void RegisterDummySpawnService(IWorldSpawnServiceRegistry registry)
+        {
+            var dummySpawnService = new DummySpawnService();
+            registry.Register(dummySpawnService);
+
+            DebugUtility.Log(typeof(NewSceneBootstrapper),
+                $"Dummy spawn service registrado no escopo da cena '{_sceneName}'.");
         }
     }
 }
