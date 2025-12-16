@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -30,7 +27,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             InitializeLogging();
             EnsureDependencyProvider();
-            InitializeEventBusInfrastructure();
             RegisterEssentialServices();
 
             DebugUtility.Log(
@@ -58,39 +54,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
         }
 
-        private static void InitializeEventBusInfrastructure()
-        {
-            IReadOnlyList<Type> eventTypes = EventBusUtil.EventTypes;
-            if (eventTypes == null || eventTypes.Count == 0)
-            {
-                DebugUtility.LogWarning(
-                    typeof(GlobalBootstrap),
-                    "EventBusUtil returned no event types.");
-                return;
-            }
-
-            foreach (var eventType in eventTypes)
-            {
-                var busInterfaceType = typeof(IEventBus<>).MakeGenericType(eventType);
-                var busImplType = typeof(InjectableEventBus<>).MakeGenericType(eventType);
-
-                if (TryGetRegistered(busInterfaceType, out _))
-                {
-                    continue;
-                }
-
-                object busInstance = Activator.CreateInstance(busImplType);
-                RegisterGlobal(busInterfaceType, busInstance);
-                DebugUtility.LogVerbose(
-                    typeof(GlobalBootstrap),
-                    $"Registered injectable EventBus for {eventType.Name}.");
-            }
-        }
-
         private static void RegisterEssentialServices()
         {
-            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
-            RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
+            RegisterIfMissing(() => new UniqueIdFactory());
+            RegisterIfMissing(() => new SimulationGateService());
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class
@@ -105,26 +72,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.LogVerbose(
                 typeof(GlobalBootstrap),
                 $"Registered global service: {typeof(T).Name}.");
-        }
-
-        private static bool TryGetRegistered(Type type, out object instance)
-        {
-            var tryGetMethod = typeof(DependencyManager)
-                .GetMethod("TryGetGlobal", BindingFlags.Instance | BindingFlags.Public);
-            var genericTryGet = tryGetMethod?.MakeGenericMethod(type);
-            var parameters = new object[] { null };
-            bool exists = genericTryGet != null &&
-                          (bool)genericTryGet.Invoke(DependencyManager.Provider, parameters);
-            instance = parameters[0];
-            return exists && instance != null;
-        }
-
-        private static void RegisterGlobal(Type type, object instance)
-        {
-            var registerMethod = typeof(DependencyManager)
-                .GetMethod("RegisterGlobal", BindingFlags.Instance | BindingFlags.Public);
-            var genericRegister = registerMethod?.MakeGenericMethod(type);
-            genericRegister?.Invoke(DependencyManager.Provider, new[] { instance, (object)false });
         }
     }
 }
