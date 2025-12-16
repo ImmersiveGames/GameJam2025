@@ -12,7 +12,7 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L13-L345】
 
 ## Onde o registry é criado e como injetar
-- Criação (guardrail): o `NewSceneBootstrapper` instancia e registra `WorldLifecycleHookRegistry` no escopo da cena durante o `Awake`, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`). `WorldLifecycleController` e `WorldLifecycleOrchestrator` nunca criam ou registram o registry; eles apenas o consomem via DI.
+- Criação (guardrail): o `NewSceneBootstrapper` instancia e registra `WorldLifecycleHookRegistry` no escopo da cena durante o `Awake`, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`). `WorldLifecycleController` e `WorldLifecycleOrchestrator` nunca criam ou registram o registry; eles apenas o consomem via DI. Qualquer tentativa de recriar ou registrar fora do bootstrapper deve ser tratada como erro.
 - Injeção: qualquer componente de cena pode declarar `[Inject] private WorldLifecycleHookRegistry _hookRegistry;` e chamar `DependencyManager.Provider.InjectDependencies(this);` para obter a instância da cena atual.
 - Diagnóstico: há log verbose confirmando o registro do registry na cena.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L13-L73】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】

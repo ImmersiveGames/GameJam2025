@@ -1,103 +1,35 @@
 # Arquitetura Base
 
-## Princípios Fundamentais
-- **World-Driven**: a simulação parte do estado do mundo; cenas representam mundos autocontidos que dirigem o ciclo de jogo.
-- **Actor-Centric**: atores são a unidade principal de comportamento e interação. Cada ator possui identidade, papel e contratos claros para serviços e eventos.
-- **Reset por Despawn/Respawn**: a limpeza de estado ocorre descartando instâncias de atores e recriando-as a partir de perfis/configurações, evitando mutação global persistente.
-- **Multiplayer local**: todo fluxo deve suportar múltiplos jogadores no mesmo dispositivo, mantendo fontes únicas de identidade e evitando heurísticas por nome.
-- **SOLID e baixo acoplamento**: contratos em inglês, comentários e guias em português; implementação posterior deve respeitar responsabilidade única e inversão de dependência.
+## Implemented (As-Is)
+### Princípios Fundamentais
+- **World-Driven**: cenas representam mundos autocontidos que dirigem o ciclo de jogo.
+- **Actor-Centric**: atores são a unidade principal de comportamento e interação, com contratos claros para serviços e eventos.
+- **Reset por Despawn/Respawn**: a limpeza de estado descarta instâncias de atores e recria a partir de perfis/configurações, evitando mutação global persistente.
+- **Multiplayer local**: fluxos devem suportar múltiplos jogadores no mesmo dispositivo, com fontes únicas de identidade.
+- **SOLID e baixo acoplamento**: contratos em inglês, comentários/explicações em português; responsabilidade única e inversão de dependência.
 
-## Escopos
+### Escopos
 - **Global**: serviços de infraestrutura (logging, configuração, pooling) vivem apenas quando necessários e não carregam estado de gameplay.
-- **Scene**: cada cena monta seu próprio grafo de serviços e registries; nada presume persistência entre cenas além de contratos explícitos.
-- **Actor**: componentes e serviços específicos do ator; resetado via despawn/respawn.
+- **Scene**: cada cena monta seu próprio grafo de serviços e registries (ex.: `WorldLifecycleHookRegistry`), sem pressupor persistência entre cenas.
+- **Actor**: componentes e serviços específicos do ator; resetados via despawn/respawn.
 
-## Fluxo de Vida
-1. **Bootstrap futuro** (não implementado neste commit) prepara infraestrutura mínima global.
-2. **Cena inicia** e cria serviços de cena/registries; atores são instanciados ou respawnados conforme configuração.
-3. **Gameplay** ocorre por eventos e contratos entre atores/serviços.
-4. **Reset** é realizado despawnando atores e recriando-os; serviços de cena são descartados no unload.
+### Fluxo de Vida Atual
+1. **Bootstrap de Cena**: `NewSceneBootstrapper.Awake` registra serviços de cena e registries (incluindo `WorldLifecycleHookRegistry`, `IActorRegistry`, `IWorldSpawnServiceRegistry`) sem `allowOverride` e com logs de diagnóstico.
+2. **World Lifecycle**: `WorldLifecycleController` aciona `WorldLifecycleOrchestrator`, que coordena reset determinístico (Acquire Gate → hooks pré-despawn → actor hooks pré-despawn → despawn → hooks pós-despawn/pré-spawn → spawn → actor hooks pós-spawn → hooks finais → release), interrompendo em falhas (fail-fast) e registrando a ordem.
+3. **Gameplay**: ocorre por eventos/contratos entre atores/serviços configurados na cena.
+4. **Unload da Cena**: serviços e registries de cena são descartados; próxima cena cria um novo grafo.
 
-## Contratos Esperados
-- **Identidade**: atores devem expor identificadores estáveis adequados a multiplayer local.
-- **Eventos**: preferir EventBus ou mensageria de escopo conhecido para desacoplar emissores e ouvintes.
-- **DI/Serviços**: dependências explicitamente declaradas; nada é resolvido implicitamente por singletons globais.
+### World Lifecycle Reset & Hooks (As-Is)
+- **Guardrail do Registry**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem via DI. Qualquer tentativa de segundo registro é erro.
+- **Tipos de hooks**:
+  1. **Spawn Service Hooks (`IWorldLifecycleHook`)**: implementados por serviços de spawn; usados para limpar caches/preparar pools.
+  2. **Scene Hooks via DI**: serviços registrados no escopo de cena e resolvidos via `IDependencyProvider.GetAllForScene`.
+  3. **Scene Hooks via Registry**: instância criada no bootstrapper e injetada; usada para QA, debug, ferramentas, testes.
+  4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
+- **Garantias**: hooks são opt-in; falha interrompe o reset (fail-fast); ordem é determinística e sem reflection.
 
-## Relação com Ferramentas (Uteis)
-O guia `docs/UTILS-SYSTEMS-GUIDE.md` é a fonte de verdade para sistemas de utilitários (event bus, DI, debug, pooling etc.) e descreve ciclo de vida e boas práticas obrigatórias.
-
-## Futuras Extensões
-Este commit não inclui código, cenas nem bootstraps. Implementações futuras devem seguir este documento como contrato arquitetural base.
-
-## World Lifecycle Reset & Hooks
-
-### Visão Geral
-O reset do mundo é determinístico e segue ordem fixa:
-
-```
-Acquire Gate
-  ├─ World Hooks (Before Despawn)
-  ├─ Actor Hooks (Before Despawn)
-  ├─ Despawn (Spawn Services)
-  ├─ World Hooks (After Despawn)
-  ├─ World Hooks (Before Spawn)
-  ├─ Spawn (Spawn Services)
-  ├─ Actor Hooks (After Spawn)
-  └─ World Hooks (After Spawn)
-Release Gate
-```
-
-### Tipos de Hooks
-Documentar claramente os quatro tipos:
-
-1. **Spawn Service Hooks (IWorldLifecycleHook)**
-   - Implementados diretamente por `IWorldSpawnService`.
-   - Uso típico: limpar caches, preparar pools, métricas.
-
-2. **Scene Hooks via DI**
-   - Serviços registrados no escopo de cena.
-   - Resolvidos via `IDependencyProvider.GetAllForScene`.
-   - Uso típico: UI, áudio, analytics, glue code.
-
-3. **Scene Hooks via Registry**
-   - `WorldLifecycleHookRegistry` instanciado e registrado pelo `NewSceneBootstrapper` no `Awake` e injetado via DI para quem precisar.
-   - Ordem explícita.
-   - Uso típico: QA, debug, ferramentas, testes.
-
-4. **Actor Component Hooks**
-   - `IActorLifecycleHook` em `MonoBehaviour`.
-   - Executados via `ActorRegistry`.
-   - Uso típico: reset visual, efeitos, limpeza local.
-
-### Garantias
-- Nenhum hook é obrigatório (opt-in).
-- Falha em hook interrompe o reset (fail-fast) para manter previsibilidade.
-- Ordem determinística garantida em todas as fases (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais → release).
-- Nenhum uso de reflection; resolução é explícita por DI e registry de cena.
-
-### Exemplos de Uso
-
-**Exemplo 1 — Hook por Actor Component**
-```csharp
-public sealed class MyActorResetHook : ActorLifecycleHookBase
-{
-    public override Task OnAfterActorSpawnAsync()
-    {
-        // Reset visual state
-        return Task.CompletedTask;
-    }
-}
-```
-
-**Exemplo 2 — Hook de Cena via Registry**
-```csharp
-registry.Register(new MyDebugWorldHook());
-```
-
-**Exemplo 3 — Hook em Spawn Service**
-```csharp
-public sealed class EnemySpawnService : IWorldSpawnService, IWorldLifecycleHook
-{
-    public Task OnBeforeDespawnAsync() => Task.CompletedTask;
-}
-```
+## Planned (To-Be / Roadmap)
+- Bootstrap global adicional para serviços compartilhados entre cenas, mantendo separação clara de estado.
+- Ampliação de contratos de eventos/telemetria para multiplayer local com rastreamento explícito de identidade.
+- Testes automatizados e utilitários extras documentados em `docs/UTILS-SYSTEMS-GUIDE.md`.
+- Evolução dos guias de DI/EventBus para cenários mais complexos sem abrir mão de registro explícito.

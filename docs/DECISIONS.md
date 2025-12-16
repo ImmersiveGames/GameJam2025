@@ -1,11 +1,11 @@
-# DECISIONS — O que este projeto NÃO faz
+# DECISIONS — Limites atuais
 
-- Não inclui código de gameplay neste commit inicial.
-- Não mantém singletons globais de gameplay; qualquer persistência deverá ser explícita por cena ou ator.
-- Não cria cenas, prefabs ou GameObjects padrão; cada equipe deve montar cenas conforme necessidade seguindo a arquitetura base.
-- Não inicia bootstraps automáticos; inicialização será configurada em commits futuros.
-- Não resolve dependências de forma implícita; uso de DI/EventBus seguirá contratos documentados.
+- Não inclui gameplay neste estágio; foco em infraestrutura mínima e ciclo de vida do mundo.
+- Não mantém singletons globais de gameplay; persistência é explícita por cena ou ator.
+- Não presume cenas/prefabs padrão; cada equipe monta a cena seguindo a arquitetura base e o bootstrapper de cena.
+- Inicialização ocorre via `NewSceneBootstrapper`; nada cria registries ou serviços de ciclo de vida fora dele.
+- Dependências são resolvidas explicitamente (DI/EventBus); nada é obtido por reflection ou heurística.
 - Não assume rede online; foco exclusivo em multiplayer local.
-- Não utiliza configurações ocultas ou heurísticas por nome para identificar atores ou jogadores.
+- Não utiliza heurísticas por nome para identificar atores/jogadores.
 - WorldLifecycleHookRegistry ownership: Bootstrapper-only.
-- Controller/Orchestrator são consumidores; guardrails e logs.
+- Controller/Orchestrator são consumidores; guardrails e logs para flagrar duplo-registro ou resolução fora de ordem.
