@@ -194,3 +194,15 @@
 - Evita efeitos colaterais entre cenas, atores e serviços globais.
 - Facilita testes, QA e evolução do sistema (ex.: multiplayer local, replay).
 - Permite extensão controlada sem violar princípios SOLID ou DI.
+
+### Optimization: Actor hook caching per reset cycle
+
+#### Context
+- Resets com muitos atores executam `GetComponentsInChildren` repetidamente no pré-despawn e pós-spawn para coletar `IActorLifecycleHook`, elevando custo e GC dentro do mesmo ciclo.
+
+#### Decision
+- Manter um cache por ator apenas durante o `ResetWorldAsync`, indexado pelo `Transform` e validado pelo `root`, reutilizando a lista já ordenada de hooks dentro do ciclo e limpando o cache no `finally` do reset.
+
+#### Consequences
+- Reduz custo e alocações ao evitar varreduras duplicadas na mesma hierarquia durante o ciclo.
+- Preserva determinismo e ordem (prioridade + `Type.FullName`), sem manter cache entre resets para evitar inconsistências entre ciclos.
