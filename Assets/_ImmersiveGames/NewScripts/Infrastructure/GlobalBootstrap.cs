@@ -8,8 +8,8 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
     /// <summary>
-    /// Entry point for the new isolated project. It wires global infrastructure
-    /// without altering or refactoring the legacy systems.
+    /// Entry point for the NewScripts project area.
+    /// Commit 1 scope: minimal global infrastructure only (no gameplay, no spawn, no scene transitions).
     /// </summary>
     public static class GlobalBootstrap
     {
@@ -18,29 +18,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
-            if (_initialized)
-            {
-                return;
-            }
-
+            if (_initialized) return;
             _initialized = true;
 
             InitializeLogging();
             EnsureDependencyProvider();
-            RegisterEssentialServices();
+            RegisterEssentialServicesOnly();
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
-                "✅ Global infrastructure initialized (no gameplay started).",
+                "✅ NewScripts global infrastructure initialized (Commit 1: minimal).",
                 DebugUtility.Colors.Success);
         }
 
         private static void InitializeLogging()
         {
+            // Keep consistent and quiet by default for Commit 1.
             DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
+
             DebugUtility.LogVerbose(
                 typeof(GlobalBootstrap),
-                "Logging configured for new project bootstrap.");
+                "NewScripts logging configured.");
         }
 
         private static void EnsureDependencyProvider()
@@ -48,27 +46,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.HasInstance)
             {
                 _ = DependencyManager.Provider;
+
                 DebugUtility.LogVerbose(
                     typeof(GlobalBootstrap),
                     "DependencyManager created for global scope.");
             }
         }
 
-        private static void RegisterEssentialServices()
+        private static void RegisterEssentialServicesOnly()
         {
-            RegisterIfMissing(() => new UniqueIdFactory());
-            RegisterIfMissing(() => new SimulationGateService());
+            RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
+            RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class
         {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var service) && service != null)
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
             {
+                DebugUtility.LogVerbose(
+                    typeof(GlobalBootstrap),
+                    $"Global service already present: {typeof(T).Name}.");
                 return;
             }
 
             var instance = factory();
             DependencyManager.Provider.RegisterGlobal(instance);
+
             DebugUtility.LogVerbose(
                 typeof(GlobalBootstrap),
                 $"Registered global service: {typeof(T).Name}.");
