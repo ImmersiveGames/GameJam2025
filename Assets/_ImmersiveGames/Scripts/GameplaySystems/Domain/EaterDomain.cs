@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
         IActor Eater { get; }
 
-        bool TryGetSpawnPose(out Pose pose);
+        bool TryGetSpawnTransform(out Vector3 position, out Quaternion rotation);
 
         bool RegisterEater(IActor actor);
         bool UnregisterEater(IActor actor);
@@ -27,8 +27,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
         public IActor Eater { get; private set; }
 
-        private Pose _eaterSpawnPose;
-        private bool _spawnPoseCaptured;
+        private Vector3 _spawnPosition;
+        private Quaternion _spawnRotation;
+        private bool _hasSpawnTransform;
 
         public bool RegisterEater(IActor actor)
         {
@@ -53,7 +54,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             if (Eater == null)
             {
-                CaptureSpawnPose(actor);
+                CaptureSpawnTransform(actor);
                 Eater = actor;
                 EaterRegistered?.Invoke(actor);
 
@@ -81,7 +82,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             var old = Eater;
             Eater = null;
 
-            _spawnPoseCaptured = false;
+            _hasSpawnTransform = false;
 
             EaterUnregistered?.Invoke(old);
 
@@ -100,29 +101,31 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             var old = Eater;
             Eater = null;
-            _spawnPoseCaptured = false;
+            _hasSpawnTransform = false;
             EaterUnregistered?.Invoke(old);
 
             DebugUtility.LogVerbose<EaterDomain>("EaterDomain limpo.");
         }
 
-        public bool TryGetSpawnPose(out Pose pose)
+        public bool TryGetSpawnTransform(out Vector3 position, out Quaternion rotation)
         {
-            pose = _eaterSpawnPose;
-            return _spawnPoseCaptured;
+            position = _spawnPosition;
+            rotation = _spawnRotation;
+            return _hasSpawnTransform;
         }
 
-        private void CaptureSpawnPose(IActor actor)
+        private void CaptureSpawnTransform(IActor actor)
         {
             if (actor?.Transform == null)
             {
                 DebugUtility.LogWarning<EaterDomain>(
-                    "Tentativa de capturar SpawnPose do Eater sem Transform disponível.");
+                    "Tentativa de capturar SpawnTransform do Eater sem Transform disponível.");
                 return;
             }
 
-            _eaterSpawnPose = new Pose(actor.Transform.position, actor.Transform.rotation);
-            _spawnPoseCaptured = true;
+            _spawnPosition = actor.Transform.position;
+            _spawnRotation = actor.Transform.rotation;
+            _hasSpawnTransform = true;
         }
     }
 }

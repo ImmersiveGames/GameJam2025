@@ -14,8 +14,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour, IResetInterfaces, IResetOrder
     {
-        private Pose _initialPose;
-        private bool _initialPoseCaptured;
+        private Vector3 _initialPosition;
+        private Quaternion _initialRotation;
+        private bool _initialTransformCaptured;
         private Rigidbody _rigidbody;
         private IEaterDomain _eaterDomain;
 
@@ -43,29 +44,31 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _currentDesireInfo = EaterDesireInfo.Inactive;
             ClearOrbitAnchor();
 
-            Pose targetPose;
-            bool hasSpawnPose = TryGetDomainSpawnPose(out targetPose);
+            Vector3 targetPosition;
+            Quaternion targetRotation;
+            bool hasSpawnTransform = TryGetDomainSpawnTransform(out targetPosition, out targetRotation);
 
-            // Teleporta para pose inicial capturada (fallback) ou SpawnPose do domínio, zerando movimento para evitar drift.
-            if (hasSpawnPose || _initialPoseCaptured)
+            // Teleporta para transform inicial capturado (fallback) ou SpawnTransform do domínio, zerando movimento para evitar drift.
+            if (hasSpawnTransform || _initialTransformCaptured)
             {
                 NeutralizeMotion();
 
-                if (!hasSpawnPose)
+                if (!hasSpawnTransform)
                 {
-                    targetPose = _initialPose;
+                    targetPosition = _initialPosition;
+                    targetRotation = _initialRotation;
                 }
 
                 if (_rigidbody != null)
                 {
-                    _rigidbody.position = targetPose.position;
-                    _rigidbody.rotation = targetPose.rotation;
+                    _rigidbody.position = targetPosition;
+                    _rigidbody.rotation = targetRotation;
                     _rigidbody.linearVelocity = Vector3.zero;
                     _rigidbody.angularVelocity = Vector3.zero;
                 }
                 else
                 {
-                    transform.SetPositionAndRotation(targetPose.position, targetPose.rotation);
+                    transform.SetPositionAndRotation(targetPosition, targetRotation);
                 }
             }
 
@@ -118,25 +121,27 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _currentDesireInfo = EaterDesireInfo.Inactive;
         }
 
-        private void CaptureInitialPoseIfNeeded()
+        private void CaptureInitialTransformIfNeeded()
         {
-            if (_initialPoseCaptured)
+            if (_initialTransformCaptured)
             {
                 return;
             }
 
             _rigidbody = _rigidbody == null ? GetComponent<Rigidbody>() : _rigidbody;
 
-            // Pose inicial é capturada uma única vez no Awake para servir de referência no Restore.
-            _initialPose = new Pose(transform.position, transform.rotation);
-            _initialPoseCaptured = true;
+            // Transform inicial é capturado uma única vez no Awake para servir de referência no Restore.
+            _initialPosition = transform.position;
+            _initialRotation = transform.rotation;
+            _initialTransformCaptured = true;
         }
 
-        internal bool TryGetInitialPose(out Pose pose)
+        internal bool TryGetInitialTransform(out Vector3 position, out Quaternion rotation)
         {
-            CaptureInitialPoseIfNeeded();
-            pose = _initialPose;
-            return _initialPoseCaptured;
+            CaptureInitialTransformIfNeeded();
+            position = _initialPosition;
+            rotation = _initialRotation;
+            return _initialTransformCaptured;
         }
 
         private void NeutralizeMotion()
@@ -200,9 +205,10 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _animationController = null;
         }
 
-        private bool TryGetDomainSpawnPose(out Pose pose)
+        private bool TryGetDomainSpawnTransform(out Vector3 position, out Quaternion rotation)
         {
-            pose = default;
+            position = default;
+            rotation = default;
 
             if (_eaterDomain == null)
             {
@@ -213,7 +219,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 }
             }
 
-            return _eaterDomain != null && _eaterDomain.TryGetSpawnPose(out pose);
+            return _eaterDomain != null && _eaterDomain.TryGetSpawnTransform(out position, out rotation);
         }
     }
 }

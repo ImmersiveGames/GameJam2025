@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _animationController = GetComponent<EaterAnimationController>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
             _playerManager = PlayerManager.Instance;
-            CaptureInitialPoseIfNeeded();
+            CaptureInitialTransformIfNeeded();
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
             EnsureStatesInitialized();

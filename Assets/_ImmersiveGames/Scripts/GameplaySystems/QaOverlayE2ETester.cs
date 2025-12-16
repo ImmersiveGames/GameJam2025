@@ -2,7 +2,6 @@
 using System.Text;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
@@ -509,25 +508,24 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             if (!eaterContext.TryGetValue(trackedAttribute, out var attributeValue) || attributeValue == null)
                 throw new Exception($"[QA] RuntimeAttributeValue ausente para {trackedAttribute}.");
 
-            Pose initialPose;
-            bool hasSpawnPose = eaterDomain != null && eaterDomain.TryGetSpawnPose(out initialPose);
+            bool hasSpawnTransform = eaterDomain != null &&
+                                     eaterDomain.TryGetSpawnTransform(out var initialPosition, out var initialRotation);
 
-            if (!hasSpawnPose)
+            if (!hasSpawnTransform)
             {
-                if (eaterActor.Transform != null &&
-                    eaterActor.Transform.TryGetComponent(out EaterBehavior eaterBehavior) &&
-                    eaterBehavior.TryGetInitialPose(out var behaviorPose))
+                if (eaterActor.Transform != null)
                 {
-                    initialPose = behaviorPose;
-                    hasSpawnPose = true;
+                    initialPosition = eaterActor.Transform.position;
+                    initialRotation = eaterActor.Transform.rotation;
+                    hasSpawnTransform = true;
+                    AppendLine(
+                        "[QA] SpawnTransform do domínio ausente; usando Transform atual do Eater como fallback para validação.");
                 }
             }
 
-            if (!hasSpawnPose)
-                throw new Exception("[QA] SpawnPose do Eater indisponível para validação de reset.");
+            if (!hasSpawnTransform)
+                throw new Exception("[QA] SpawnTransform do Eater indisponível para validação de reset.");
 
-            Vector3 initialPosition = initialPose.position;
-            Quaternion initialRotation = initialPose.rotation;
             float initialAttributeValue = attributeValue.GetCurrentValue();
             int callbacks = 0;
 
