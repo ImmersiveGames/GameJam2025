@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             {
                 resetWatch.Stop();
 
-                ClearActorHookCache();
+                ClearActorHookCacheForCycle();
 
                 if (gateHandle != null)
                 {
@@ -573,10 +573,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
             if (components == null || components.Length == 0)
             {
-                return new List<(string Label, IActorLifecycleHook Hook)>();
+                return EmptyActorHookList;
             }
 
-            var actorHooks = new List<(string Label, IActorLifecycleHook Hook)>();
+            List<(string Label, IActorLifecycleHook Hook)> actorHooks = null;
 
             foreach (var component in components)
             {
@@ -585,7 +585,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     continue;
                 }
 
+                actorHooks ??= new List<(string Label, IActorLifecycleHook Hook)>();
                 actorHooks.Add((component.GetType().Name, hook));
+            }
+
+            if (actorHooks == null)
+            {
+                return EmptyActorHookList;
             }
 
             actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
@@ -605,10 +611,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             _actorHookCache[transform] = new ActorHookCacheEntry(root, hooks);
         }
 
-        public void ClearActorHookCache()
+        /// <summary>
+        /// Limpa o cache de hooks por ator ao final de cada ciclo de reset.
+        /// Mantém a semântica de cache por ciclo, mesmo em caso de falhas.
+        /// </summary>
+        public void ClearActorHookCacheForCycle()
         {
             _actorHookCache.Clear();
         }
+
+        private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private sealed class ActorHookCacheEntry
         {
