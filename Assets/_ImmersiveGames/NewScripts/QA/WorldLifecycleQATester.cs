@@ -27,6 +27,13 @@ namespace _ImmersiveGames.NewScripts.QA
         [Tooltip("Frames consecutivos com Count estável necessários para considerar 'estável'.")]
         [SerializeField] private int stableFramesRequired = 2;
 
+        [Header("Dependency Injection")]
+        [Tooltip("Frames a aguardar antes de re-tentar injeção quando a cena ainda não registrou serviços.")]
+        [SerializeField] private int injectionRetryFrames = 15;
+
+        [Tooltip("Timeout máximo (ms) para aguardar serviços de cena serem registrados pelo bootstrapper.")]
+        [SerializeField] private int injectionTimeoutMs = 1000;
+
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
@@ -35,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.QA
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private bool _dependenciesInjected;
         private string _sceneName = string.Empty;
+        private bool _gateWarningLogged;
 
         private void Awake()
         {
@@ -49,18 +57,36 @@ namespace _ImmersiveGames.NewScripts.QA
                 return;
             }
 
+            var injected = await EnsureInjectedAsync();
+            if (!injected)
+            {
+                return;
+            }
+
             await RunGateRecoveryScenarioAsync();
         }
 
         [ContextMenu("QA/Run Gate Recovery Test")]
         public async void RunGateRecoveryTest()
         {
+            var injected = await EnsureInjectedAsync();
+            if (!injected)
+            {
+                return;
+            }
+
             await RunGateRecoveryScenarioAsync();
         }
 
         public async Task RunAllAsync()
         {
             // No NewScripts, mantemos este QA focado no cenário de gate recovery.
+            var injected = await EnsureInjectedAsync();
+            if (!injected)
+            {
+                return;
+            }
+
             await RunGateRecoveryScenarioAsync();
         }
 
@@ -69,27 +95,50 @@ namespace _ImmersiveGames.NewScripts.QA
             DebugUtility.Log(typeof(WorldLifecycleQATester),
                 $"[QA] {label}: starting gate recovery scenario in scene '{_sceneName}'.");
 
-            EnsureInjected();
-
-            if (!HasCriticalDependencies())
+            var injected = await EnsureInjectedAsync();
+            if (!injected)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: missing dependencies; aborting.");
                 return;
             }
 
             await Test_GateRecovery_WhenSceneHookThrowsAsync();
         }
 
-        private void EnsureInjected()
+        private async Task<bool> EnsureInjectedAsync()
         {
-            if (_dependenciesInjected)
+            if (_dependenciesInjected && HasCriticalDependencies())
             {
-                return;
+                LogOptionalGateWarningOnce();
+                return true;
             }
 
-            DependencyManager.Provider.InjectDependencies(this);
-            _dependenciesInjected = true;
+            var timeoutSeconds = Mathf.Max(0.5f, injectionTimeoutMs / 1000f);
+            var deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
+            while (Time.realtimeSinceStartup <= deadline)
+            {
+                DependencyManager.Provider.InjectDependencies(this);
+                _dependenciesInjected = true;
+
+                if (HasCriticalDependencies())
+                {
+                    LogOptionalGateWarningOnce();
+                    return true;
+                }
+
+                var framesToWait = Mathf.Clamp(injectionRetryFrames, 1, 60);
+                for (var i = 0; i < framesToWait && Time.realtimeSinceStartup <= deadline; i++)
+                {
+                    await Task.Yield();
+                }
+            }
+
+            DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                $"[QA] {label}: dependency injection failed; scene services not found. " +
+                "Provavelmente executou antes do NewSceneBootstrapper registrar IActorRegistry, IWorldSpawnServiceRegistry e WorldLifecycleHookRegistry. " +
+                "Ajuste Script Execution Order para rodar o bootstrapper antes ou dispare o QA manualmente após Start.");
+
+            return false;
         }
 
         private bool HasCriticalDependencies()
@@ -97,6 +146,18 @@ namespace _ImmersiveGames.NewScripts.QA
             // Gate NÃO é crítico para existir (orchestrator suporta null),
             // mas para o teste de "gate recovery" ele será validado separadamente.
             return _spawnRegistry != null && _actorRegistry != null && _hookRegistry != null;
+        }
+
+        private void LogOptionalGateWarningOnce()
+        {
+            if (_gateService != null || _gateWarningLogged)
+            {
+                return;
+            }
+
+            _gateWarningLogged = true;
+            DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                $"[QA] {label}: ISimulationGateService not injected. Test will still validate recovery reset, but cannot assert token release.");
         }
 
         private WorldLifecycleOrchestrator CreateOrchestrator()

@@ -109,3 +109,8 @@
 - Custo mínimo de complexidade ao manter contratos simples e determinísticos.
 - Arquitetura extensível para multiplayer local, replay e testes automatizados.
 - Previne duplo-registro, evita divergência de instância e garante previsibilidade em testes/QA.
+
+### Boot order & Dependency Injection timing (Scene scope)
+- Serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) nascem no `NewSceneBootstrapper`; nenhum outro componente deve criá-los ou registrá-los novamente.
+- Consumidores de cena evitam injetar no `Awake()` sem garantir ordem. Preferir `Start()` ou injeção lazy com retry curto/timeout para não rodar antes do bootstrap.
+- Testes/QA adotam o padrão lazy + retry: aguardam alguns frames por registro do bootstrapper e abortam com mensagem acionável se a cena ainda não registrou os serviços. Isso reduz falsos negativos em cenas novas sem alterar o `WorldLifecycleOrchestrator`.
