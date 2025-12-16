@@ -161,8 +161,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 385c45de56804d3d8e6b205b1a710c6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
+  worldDefinition: {fileID: 11400000, guid: 0a6f176e0afc4d82874a0cb6c1f2b8f5, type: 2}
 --- !u!1 &1024945677
 GameObject:
   m_ObjectHideFlags: 0

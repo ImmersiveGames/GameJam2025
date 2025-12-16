@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -14,8 +13,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     /// </summary>
     public sealed class NewSceneBootstrapper : MonoBehaviour
     {
+        [SerializeField]
+        private WorldDefinition worldDefinition;
+
         private string _sceneName = string.Empty;
         private bool _registered;
+        private readonly WorldSpawnServiceFactory _spawnServiceFactory = new();
 
         private void Awake()
         {
@@ -47,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 spawnRegistry,
                 allowOverride: false);
 
-            RegisterDummySpawnService(provider, spawnRegistry, actorRegistry);
+            RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry);
 
             _registered = true;
             DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope created: {_sceneName}");
@@ -72,23 +75,48 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             _registered = false;
         }
 
-        private void RegisterDummySpawnService(
+        private void RegisterSpawnServicesFromDefinition(
             IDependencyProvider provider,
             IWorldSpawnServiceRegistry registry,
             IActorRegistry actorRegistry)
         {
-            provider.TryGetGlobal<IUniqueIdFactory>(out var uniqueIdFactory);
-            if (uniqueIdFactory == null)
+            if (worldDefinition == null)
             {
                 DebugUtility.LogError(typeof(NewSceneBootstrapper),
-                    "IUniqueIdFactory global ausente. Verifique o bootstrap global.");
+                    "WorldDefinition não atribuída. Serviços de spawn não serão registrados.");
+                DebugUtility.Log(typeof(NewSceneBootstrapper),
+                    "Spawn services registered from definition: 0");
                 return;
             }
-            var dummySpawnService = new DummyActorSpawnService(uniqueIdFactory, actorRegistry);
-            registry.Register(dummySpawnService);
 
             DebugUtility.Log(typeof(NewSceneBootstrapper),
-                $"Dummy spawn service registrado no escopo da cena '{_sceneName}'.");
+                $"WorldDefinition loaded: {worldDefinition.name}");
+
+            int registeredCount = 0;
+            var entries = worldDefinition.Entries;
+
+            if (entries != null)
+            {
+                foreach (var entry in entries)
+                {
+                    if (!entry.Enabled)
+                    {
+                        continue;
+                    }
+
+                    var service = _spawnServiceFactory.Create(entry.Kind, provider, actorRegistry);
+                    if (service == null)
+                    {
+                        continue;
+                    }
+
+                    registry.Register(service);
+                    registeredCount++;
+                }
+            }
+
+            DebugUtility.Log(typeof(NewSceneBootstrapper),
+                $"Spawn services registered from definition: {registeredCount}");
         }
     }
 }
