@@ -92,3 +92,18 @@
 
 ### 26/11/2025 — Estado do DefenseRoleConfig
 - O `DefenseRoleConfig` permanece no projeto apenas para compatibilidade com cenas antigas, mas o `PlanetDefenseController` não consulta mais esse asset; use providers (`IDefenseRoleProvider`) nos prefabs para definir o papel de defesa de forma explícita.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L17-L180】
+
+## ADR: World Lifecycle Hooks Architecture
+
+### Context
+- Necessidade de reset determinístico para manter consistência de mundo, atores e serviços de spawn.
+- Evitar acoplamento entre sistemas de UI, áudio, analytics e componentes de atores durante o ciclo de reset.
+
+### Decision
+- Introdução de hooks opt-in em múltiplos níveis, permitindo que serviços de spawn, serviços de cena e componentes de atores participem do ciclo.
+- Separação clara entre responsabilidades de world, scene e actor, cada uma com registro explícito e resolução sem reflection.
+
+### Consequences
+- Mais flexibilidade para instrumentar resets com telemetria, debug e limpeza direcionada.
+- Custo mínimo de complexidade ao manter contratos simples e determinísticos.
+- Arquitetura extensível para multiplayer local, replay e testes automatizados.
