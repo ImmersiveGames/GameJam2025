@@ -7,6 +7,11 @@
 - **Multiplayer local**: todo fluxo deve suportar múltiplos jogadores no mesmo dispositivo, mantendo fontes únicas de identidade e evitando heurísticas por nome.
 - **SOLID e baixo acoplamento**: contratos em inglês, comentários e guias em português; implementação posterior deve respeitar responsabilidade única e inversão de dependência.
 
+### Implementation Constraints
+- **Ordem explícita**: qualquer pipeline (ex.: carregamento de cena, spawn de atores, validação de serviços) deve declarar sequência explícita e determinística. Fluxos que dependam de ordem implícita ou efeitos colaterais não são aceitos em revisão.
+- **Reflection evitada**: chamadas de reflection são proibidas por padrão. Uso excepcional deve ser aprovado pelo revisor técnico e documentado no PR com tipo, membro e justificativa verificável.
+- **Coroutines evitadas**: coroutines (`Coroutine`, `StartCoroutine`, `IEnumerator`) são proibidas por padrão. Uso excepcional exige aprovação do revisor técnico, descrição do ciclo de vida e impacto no pipeline registrada no PR.
+
 ## Escopos
 - **Global**: serviços de infraestrutura (logging, configuração, pooling) vivem apenas quando necessários e não carregam estado de gameplay.
 - **Scene**: cada cena monta seu próprio grafo de serviços e registries; nada presume persistência entre cenas além de contratos explícitos.
