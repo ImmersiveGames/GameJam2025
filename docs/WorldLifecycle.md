@@ -84,3 +84,9 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
    - Logs de início/fim do reset e de cada fase (gate acquired/released, hooks, spawn/despawn) emitidos pelo `WorldLifecycleOrchestrator`.
 4. Não deve haver logs dizendo que o registry foi criado pelo controller; ele apenas consome via DI.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L24-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L42-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
+
+## Boot order & Dependency Injection timing (Scene scope)
+- Os serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) são registrados pelo `NewSceneBootstrapper` durante o bootstrap da cena. Outros componentes não devem criar registries próprios nem assumir que eles existem antes do bootstrapper executar.
+- Componentes que consomem esses serviços devem evitar injeção no `Awake()` quando a ordem de execução ainda não garantiu o bootstrapper; prefira `Start()` ou injeção lazy com retry curto.
+- QA testers (ex.: `WorldLifecycleQATester`) adotam injeção lazy com retry e timeout: aguardam alguns frames/tempo curto se o registry ainda não existe, abortando com mensagem clara se o bootstrapper não rodou. Isso evita falsos negativos em cenas novas.
+- O `WorldLifecycleOrchestrator` assume que dependências já foram resolvidas pelo fluxo de bootstrap; ele não corrige ordem de inicialização e não registra serviços de cena.
