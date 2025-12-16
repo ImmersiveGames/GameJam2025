@@ -493,6 +493,23 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             return ok;
         }
 
+        private Task LogPoseSnapshotAsync(string stage, IActor actor)
+        {
+            if (actor?.Transform == null)
+            {
+                AppendLine($"{stage}: actor/transform indisponível.");
+                return Task.CompletedTask;
+            }
+
+            Transform t = actor.Transform;
+
+            AppendLine(
+                $"{stage}: name={t.name} id={t.GetInstanceID()} scene={t.gameObject.scene.name} " +
+                $"pos={t.position} rot={t.rotation.eulerAngles} frame={Time.frameCount}");
+
+            return Task.CompletedTask;
+        }
+
         private async Task ExecuteEaterResetSmokeAsync()
         {
             AppendLine("[QA] Eater Reset Smoke: garantindo Gameplay e serviços...");
@@ -600,9 +617,17 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             Quaternion initialRotation,
             float initialAttributeValue)
         {
+            await LogPoseSnapshotAsync(
+                stage: $"[QA] Pose antes do RequestResetAsync #{label}",
+                actor: eaterActor);
+
             bool ok = await RequestResetForScopeAsync(ResetScope.EaterOnly, $"QA Eater Reset Smoke #{label}");
             if (!ok)
                 throw new Exception($"[QA] Reset scope EaterOnly falhou no passo {label}.");
+
+            await LogPoseSnapshotAsync(
+                stage: $"[QA] Pose imediatamente após RequestResetAsync #{label}",
+                actor: eaterActor);
 
             if (!eaterContext.TryGetValue(trackedAttribute, out var value) || value == null)
                 throw new Exception($"[QA] RuntimeAttributeValue inexistente após reset #{label} para {trackedAttribute}.");
@@ -618,6 +643,12 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             AppendLine(
                 $"[QA] Reset #{label}: atributo {trackedAttribute}={restoredValue:0.###} (esperado {initialAttributeValue:0.###}), " +
                 $"poseRestaurada={poseRestored} pos={poseAfterReset} rot={rotationAfterReset.eulerAngles}");
+
+            await Task.Yield();
+
+            await LogPoseSnapshotAsync(
+                stage: $"[QA] Pose no frame seguinte ao reset #{label}",
+                actor: eaterActor);
 
             if (!attributeRestored)
                 throw new Exception($"[QA] Reset #{label} não restaurou {trackedAttribute}. Valor={restoredValue:0.###}.");

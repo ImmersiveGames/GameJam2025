@@ -33,6 +33,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             ? _planetMarkingManager.CurrentlyMarkedPlanet.transform
             : null;
 
+        private bool _executionAllowed = true;
+
         private void Awake()
         {
             Master = GetComponent<EaterMaster>();
@@ -66,6 +68,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         private void Update()
         {
+            if (!_executionAllowed)
+            {
+                return;
+            }
+
             _desireService?.Update();
             _stateMachine?.Update();
         }

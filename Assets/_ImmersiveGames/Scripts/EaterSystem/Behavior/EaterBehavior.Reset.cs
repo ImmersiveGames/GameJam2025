@@ -34,6 +34,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             ResetStateMachineCache();
             ResetDependencyCaches();
             ClearOrbitAnchor();
+            _executionAllowed = false;
 
             return Task.CompletedTask;
         }
@@ -104,6 +105,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 _desireService.Stop();
                 UpdateDesireInfo(EaterDesireInfo.Inactive);
             }
+
+            _executionAllowed = true;
 
             return Task.CompletedTask;
         }
