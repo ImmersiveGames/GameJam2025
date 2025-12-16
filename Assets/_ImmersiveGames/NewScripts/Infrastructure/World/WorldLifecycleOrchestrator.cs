@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
     /// <summary>
     /// Orquestra o ciclo de reset do mundo de forma determinística.
-    /// Responsável por garantir a ordem: Acquire Gate → Despawn → Spawn → Release Gate.
+    /// Responsável por garantir a ordem: Acquire Gate → (Hooks) → Despawn → (Hooks) → Spawn → (Hooks) → Release Gate.
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
@@ -54,11 +54,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
 
                 await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+
                 await RunPhaseAsync("Despawn", service => service.DespawnAsync());
                 LogActorRegistryCount("After Despawn");
 
                 await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
                 await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
+
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
                 LogActorRegistryCount("After Spawn");
 
@@ -150,32 +152,62 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return;
             }
 
-            foreach (var service in _spawnServices)
+            var hooksCount = 0;
+            for (int i = 0; i < _spawnServices.Count; i++)
             {
-                if (service == null)
+                if (_spawnServices[i] is IWorldLifecycleHook)
                 {
-                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        $"{hookName} hook service é nulo e será ignorado.");
-                    continue;
+                    hooksCount++;
                 }
-
-                await RunHookAsync(service, hookName, hookAction);
             }
-        }
 
-        private async Task RunHookAsync(
-            IWorldSpawnService service,
-            string hookName,
-            Func<IWorldLifecycleHook, Task> hookAction)
-        {
-            if (service is not IWorldLifecycleHook hook)
+            if (hooksCount == 0)
             {
                 return;
             }
 
+            var phaseWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} phase started (hooks={hooksCount})");
+
+            try
+            {
+                foreach (var service in _spawnServices)
+                {
+                    if (service == null)
+                    {
+                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                            $"{hookName} hook service é nulo e será ignorado.");
+                        continue;
+                    }
+
+                    if (service is not IWorldLifecycleHook hook)
+                    {
+                        continue;
+                    }
+
+                    await RunHookAsync(hookName, service.Name, hook, hookAction);
+                }
+            }
+            finally
+            {
+                phaseWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} phase duration: {phaseWatch.ElapsedMilliseconds}ms");
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} phase completed");
+            }
+        }
+
+        private static async Task RunHookAsync(
+            string hookName,
+            string serviceName,
+            IWorldLifecycleHook hook,
+            Func<IWorldLifecycleHook, Task> hookAction)
+        {
             var hookWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} started: {service.Name}");
+                $"{hookName} started: {serviceName}");
 
             try
             {
@@ -184,18 +216,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                    $"{hookName} falhou para {service.Name}: {ex}");
+                    $"{hookName} falhou para {serviceName}: {ex}");
                 throw;
             }
             finally
             {
                 hookWatch.Stop();
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"{hookName} duration: {service.Name} => {hookWatch.ElapsedMilliseconds}ms");
+                    $"{hookName} duration: {serviceName} => {hookWatch.ElapsedMilliseconds}ms");
             }
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                $"{hookName} completed: {service.Name}");
+                $"{hookName} completed: {serviceName}");
         }
 
         private void LogActorRegistryCount(string label)

@@ -2,6 +2,9 @@ using System.Threading.Tasks;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
+    /// <summary>
+    /// Implementação base com no-op para facilitar adoção incremental.
+    /// </summary>
     public abstract class WorldLifecycleHookBase : IWorldLifecycleHook
     {
         public virtual Task OnBeforeDespawnAsync()
