@@ -573,7 +573,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
             if (components == null || components.Length == 0)
             {
-                return EmptyActorHookList;
+                return new List<(string Label, IActorLifecycleHook Hook)>();
             }
 
             List<(string Label, IActorLifecycleHook Hook)> actorHooks = null;
@@ -591,7 +591,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (actorHooks == null)
             {
-                return EmptyActorHookList;
+                return new List<(string Label, IActorLifecycleHook Hook)>();
             }
 
             actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
@@ -602,7 +602,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             Transform transform,
             List<(string Label, IActorLifecycleHook Hook)> hooks)
         {
-            if (transform == null)
+            if (transform == null || hooks == null || hooks.Count == 0)
             {
                 return;
             }
@@ -615,12 +615,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         /// Limpa o cache de hooks por ator ao final de cada ciclo de reset.
         /// Mantém a semântica de cache por ciclo, mesmo em caso de falhas.
         /// </summary>
-        public void ClearActorHookCacheForCycle()
+        private void ClearActorHookCacheForCycle()
         {
             _actorHookCache.Clear();
         }
-
-        private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private sealed class ActorHookCacheEntry
         {
