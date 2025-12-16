@@ -28,3 +28,76 @@ O guia `docs/UTILS-SYSTEMS-GUIDE.md` é a fonte de verdade para sistemas de util
 
 ## Futuras Extensões
 Este commit não inclui código, cenas nem bootstraps. Implementações futuras devem seguir este documento como contrato arquitetural base.
+
+## World Lifecycle Reset & Hooks
+
+### Visão Geral
+O reset do mundo é determinístico e segue ordem fixa:
+
+```
+Acquire Gate
+  ├─ World Hooks (Before Despawn)
+  ├─ Actor Hooks (Before Despawn)
+  ├─ Despawn (Spawn Services)
+  ├─ World Hooks (After Despawn)
+  ├─ World Hooks (Before Spawn)
+  ├─ Spawn (Spawn Services)
+  ├─ Actor Hooks (After Spawn)
+  └─ World Hooks (After Spawn)
+Release Gate
+```
+
+### Tipos de Hooks
+Documentar claramente os quatro tipos:
+
+1. **Spawn Service Hooks (IWorldLifecycleHook)**
+   - Implementados diretamente por `IWorldSpawnService`.
+   - Uso típico: limpar caches, preparar pools, métricas.
+
+2. **Scene Hooks via DI**
+   - Serviços registrados no escopo de cena.
+   - Resolvidos via `IDependencyProvider.GetAllForScene`.
+   - Uso típico: UI, áudio, analytics, glue code.
+
+3. **Scene Hooks via Registry**
+   - `WorldLifecycleHookRegistry`.
+   - Ordem explícita.
+   - Uso típico: QA, debug, ferramentas, testes.
+
+4. **Actor Component Hooks**
+   - `IActorLifecycleHook` em `MonoBehaviour`.
+   - Executados via `ActorRegistry`.
+   - Uso típico: reset visual, efeitos, limpeza local.
+
+### Garantias
+- Nenhum hook é obrigatório (opt-in).
+- Falha em hook interrompe o reset (fail-fast).
+- Ordem determinística garantida.
+- Nenhum uso de reflection.
+
+### Exemplos de Uso
+
+**Exemplo 1 — Hook por Actor Component**
+```csharp
+public sealed class MyActorResetHook : ActorLifecycleHookBase
+{
+    public override Task OnAfterActorSpawnAsync()
+    {
+        // Reset visual state
+        return Task.CompletedTask;
+    }
+}
+```
+
+**Exemplo 2 — Hook de Cena via Registry**
+```csharp
+registry.Register(new MyDebugWorldHook());
+```
+
+**Exemplo 3 — Hook em Spawn Service**
+```csharp
+public sealed class EnemySpawnService : IWorldSpawnService, IWorldLifecycleHook
+{
+    public Task OnBeforeDespawnAsync() => Task.CompletedTask;
+}
+```
