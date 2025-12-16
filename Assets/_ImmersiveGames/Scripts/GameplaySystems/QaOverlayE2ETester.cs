@@ -508,8 +508,12 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             if (!eaterContext.TryGetValue(trackedAttribute, out var attributeValue) || attributeValue == null)
                 throw new Exception($"[QA] RuntimeAttributeValue ausente para {trackedAttribute}.");
 
-            bool hasSpawnTransform = eaterDomain != null &&
-                                     eaterDomain.TryGetSpawnTransform(out var initialPosition, out var initialRotation);
+            Vector3 initialPosition = default;
+            Quaternion initialRotation = default;
+            bool hasSpawnTransform = false;
+
+            if (eaterDomain != null)
+                hasSpawnTransform = eaterDomain.TryGetSpawnTransform(out initialPosition, out initialRotation);
 
             if (!hasSpawnTransform)
             {
