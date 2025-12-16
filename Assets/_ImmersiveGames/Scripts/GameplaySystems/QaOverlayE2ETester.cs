@@ -80,7 +80,6 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
 
         private void Awake()
         {
-            BuildGuiStyles();
             AppendLine("[QA] QaOverlayE2ETester pronto.");
         }
 
@@ -785,6 +784,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         {
             if (!showOnGuiPanel || !_panelVisible)
                 return;
+
+            if (_titleStyle == null || _boxStyle == null)
+                BuildGuiStyles();
 
             const int w = 520;
             const int h = 560;
