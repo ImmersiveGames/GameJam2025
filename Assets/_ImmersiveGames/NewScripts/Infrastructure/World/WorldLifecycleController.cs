@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
+
         // Guardrail: este controller apenas consome o WorldLifecycleHookRegistry criado no bootstrapper.
         [Inject] private WorldLifecycleHookRegistry _hookRegistry;
 
@@ -115,8 +117,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (_gateService == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleController),
-                    $"ISimulationGateService não injetado para a cena '{_sceneName}'.");
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"ISimulationGateService não injetado para a cena '{_sceneName}'. Reset seguirá sem gate.");
             }
 
             if (_spawnRegistry == null)
