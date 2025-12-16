@@ -80,9 +80,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             provider.TryGetGlobal<IUniqueIdFactory>(out var uniqueIdFactory);
             if (uniqueIdFactory == null)
             {
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    "IUniqueIdFactory global ausente. Criando instância local.");
-                uniqueIdFactory = new NewUniqueIdFactory();
+                DebugUtility.LogError(typeof(NewSceneBootstrapper),
+                    "IUniqueIdFactory global ausente. Verifique o bootstrap global.");
+                return;
             }
             var dummySpawnService = new DummyActorSpawnService(uniqueIdFactory, actorRegistry);
             registry.Register(dummySpawnService);

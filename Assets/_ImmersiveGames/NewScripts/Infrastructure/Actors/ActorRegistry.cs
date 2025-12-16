@@ -73,26 +73,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
                 return false;
             }
 
-            if (!_actors.TryGetValue(actorId, out var actor) || actor == null)
+            if (!_actors.TryGetValue(actorId, out var actor))
             {
-                _actors.Remove(actorId);
                 return false;
             }
 
             _actors.Remove(actorId);
-            DebugUtility.LogVerbose(typeof(ActorRegistry), $"Ator removido: {actorId}.");
+
+            if (actor != null)
+            {
+                DebugUtility.LogVerbose(typeof(ActorRegistry), $"Ator removido: {actorId}.");
+            }
+
             return true;
         }
 
         public void Clear()
         {
-            if (_actors.Count == 0)
-            {
-                return;
-            }
-
+            int removedCount = _actors.Count;
             _actors.Clear();
-            DebugUtility.LogVerbose(typeof(ActorRegistry), "Registry limpo.");
+            DebugUtility.LogVerbose(typeof(ActorRegistry), $"Registry limpo. Removidos: {removedCount}.");
         }
     }
 }

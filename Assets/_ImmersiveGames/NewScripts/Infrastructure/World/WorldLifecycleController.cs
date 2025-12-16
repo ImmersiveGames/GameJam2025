@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
+        private bool _dependenciesInjected;
         private string _sceneName = string.Empty;
 
         private void Awake()
@@ -26,14 +27,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private void Start()
         {
-            DependencyManager.Provider.InjectDependencies(this);
+            EnsureDependenciesInjected();
             _ = InitializeWorldAsync();
+        }
+
+        [ContextMenu("QA/Reset World Now")]
+        public async void ResetWorldNow()
+        {
+            DebugUtility.Log(
+                typeof(WorldLifecycleController),
+                $"Reset manual iniciado na cena '{_sceneName}'.",
+                this);
+
+            try
+            {
+                EnsureDependenciesInjected();
+                BuildSpawnServices();
+                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices);
+
+                await _orchestrator.ResetWorldAsync();
+
+                DebugUtility.Log(
+                    typeof(WorldLifecycleController),
+                    $"Reset manual finalizado na cena '{_sceneName}'.",
+                    this);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(
+                    typeof(WorldLifecycleController),
+                    $"Exception during manual world reset in scene '{_sceneName}': {ex}",
+                    this);
+            }
         }
 
         private async Task InitializeWorldAsync()
         {
             try
             {
+                EnsureDependenciesInjected();
                 BuildSpawnServices();
 
                 _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices);
@@ -46,6 +78,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     $"Exception during world initialization in scene '{_sceneName}': {ex}",
                     this);
             }
+        }
+
+        private void EnsureDependenciesInjected()
+        {
+            if (_dependenciesInjected)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.InjectDependencies(this);
+            _dependenciesInjected = true;
         }
 
         private void BuildSpawnServices()

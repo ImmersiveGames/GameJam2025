@@ -64,6 +64,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (_spawnedActor == null)
             {
+                DebugUtility.LogVerbose(typeof(DummyActorSpawnService),
+                    "Despawn ignorado (no actor).", _actorRegistry as Object);
                 return Task.CompletedTask;
             }
 
