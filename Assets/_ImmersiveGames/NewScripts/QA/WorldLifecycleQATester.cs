@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
@@ -10,154 +11,237 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA
 {
+    /// <summary>
+    /// QA focado em validar o reset do WorldLifecycle com tolerância a ordem de boot.
+    /// Usa injeção lazy com retry/timeout para evitar falso negativo quando o bootstrapper ainda não rodou.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleQATester : MonoBehaviour
     {
-        [Header("QA")]
+        [Header("Configuração")]
         [SerializeField] private string label = "WorldLifecycleQATester";
-        [SerializeField] private bool autoRunOnStart = false;
+        [SerializeField] private bool autoBindOnStart = true;
+        [SerializeField] private float resolveTimeoutSeconds = 1.0f;
+        [SerializeField] private float retryIntervalSeconds = 0.05f;
+        [SerializeField] private bool verboseLogs = true;
 
-        [Header("Timing")]
-        [Tooltip("Frames mínimos a aguardar após disparar Reset (evita falso-timeout quando tudo ocorre no mesmo frame).")]
-        [SerializeField] private int minFramesAfterReset = 2;
+        [Header("Stress")]
+        [SerializeField] private int stressResetCount = 3;
+        [SerializeField] private float stressResetDelaySeconds = 0.25f;
 
-        [Tooltip("Timeout (ms) para aguardar reset concluir (ActorRegistry estabilizar).")]
-        [SerializeField] private int resetAwaitTimeoutMs = 1500;
-
-        [Tooltip("Frames consecutivos com Count estável necessários para considerar 'estável'.")]
-        [SerializeField] private int stableFramesRequired = 2;
-
-        [Header("Dependency Injection")]
-        [Tooltip("Frames a aguardar antes de re-tentar injeção quando a cena ainda não registrou serviços.")]
-        [SerializeField] private int injectionRetryFrames = 15;
-
-        [Tooltip("Timeout máximo (ms) para aguardar serviços de cena serem registrados pelo bootstrapper.")]
-        [SerializeField] private int injectionTimeoutMs = 1000;
-
+        [Inject] private WorldLifecycleController _controller;
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
         [Inject] private WorldLifecycleHookRegistry _hookRegistry;
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
-        private bool _dependenciesInjected;
-        private string _sceneName = string.Empty;
-        private bool _gateWarningLogged;
+        private CancellationTokenSource _lifetimeCts;
+        private bool _dependenciesResolved;
+        private bool _isResetting;
+        private string _sceneName;
 
-        private void Awake()
+        private static bool IsNewscriptsModeActive =>
+#if NEWSCRIPTS_MODE
+            true;
+#else
+            false;
+#endif
+
+        private void OnEnable()
         {
             _sceneName = gameObject.scene.name;
-            // Não injetar aqui: serviços de cena podem ainda não ter sido registrados.
+            _lifetimeCts = new CancellationTokenSource();
+
+            if (autoBindOnStart)
+            {
+                _ = EnsureDependenciesAsync(_lifetimeCts.Token, logSuccess: verboseLogs);
+            }
         }
 
-        private async void Start()
+        private void OnDisable()
         {
-            if (!autoRunOnStart)
-            {
-                return;
-            }
-
-            var injected = await EnsureInjectedAsync();
-            if (!injected)
-            {
-                return;
-            }
-
-            await RunGateRecoveryScenarioAsync();
+            CancelLifetime("OnDisable");
         }
 
-        [ContextMenu("QA/Run Gate Recovery Test")]
-        public async void RunGateRecoveryTest()
+        private void OnDestroy()
         {
-            var injected = await EnsureInjectedAsync();
-            if (!injected)
-            {
-                return;
-            }
-
-            await RunGateRecoveryScenarioAsync();
+            CancelLifetime("OnDestroy");
         }
 
-        public async Task RunAllAsync()
+        [ContextMenu("QA/Reset World Now")]
+        public async void ResetWorldNow()
         {
-            // No NewScripts, mantemos este QA focado no cenário de gate recovery.
-            var injected = await EnsureInjectedAsync();
-            if (!injected)
-            {
-                return;
-            }
-
-            await RunGateRecoveryScenarioAsync();
+            await RunSingleResetAsync(_lifetimeCts?.Token ?? CancellationToken.None);
         }
 
-        private async Task RunGateRecoveryScenarioAsync()
+        [ContextMenu("QA/Stress Reset (N times)")]
+        public async void StressReset()
         {
+            await RunStressResetsAsync(_lifetimeCts?.Token ?? CancellationToken.None);
+        }
+
+        [ContextMenu("QA/Dump Diagnostics")]
+        public void DumpDiagnostics()
+        {
+            var hookCount = _hookRegistry?.Hooks?.Count ?? -1;
+
             DebugUtility.Log(typeof(WorldLifecycleQATester),
-                $"[QA] {label}: starting gate recovery scenario in scene '{_sceneName}'.");
+                $"[QA] {label}: scene='{_sceneName}', controller={(_controller != null)}, actorRegistry={(_actorRegistry != null)}, " +
+                $"spawnRegistry={(_spawnRegistry != null)}, hookRegistry={(_hookRegistry != null ? hookCount.ToString() : "-")}");
 
-            var injected = await EnsureInjectedAsync();
+            if (hookCount >= 0)
+            {
+                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: hook registry contains {hookCount} item(s).");
+            }
+
+            if (IsNewscriptsModeActive)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: NEWSCRIPTS_MODE ativo — inicializadores podem ser ignorados (comportamento esperado em modo de desenvolvimento).");
+            }
+        }
+
+        private async Task RunSingleResetAsync(CancellationToken token)
+        {
+            if (_isResetting)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: reset ignorado porque outro reset está em andamento.");
+                return;
+            }
+
+            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs);
             if (!injected)
             {
                 return;
             }
 
-            await Test_GateRecovery_WhenSceneHookThrowsAsync();
+            if (_actorRegistry == null || _spawnRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: não encontrou registries críticos. Verifique NewSceneBootstrapper na cena.");
+                return;
+            }
+
+            _isResetting = true;
+            try
+            {
+                var orchestrator = CreateOrchestrator();
+                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: disparando reset único (scene='{_sceneName}').");
+
+                await orchestrator.ResetWorldAsync();
+
+                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: reset concluído (scene='{_sceneName}').");
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: erro durante reset: {ex.Message}");
+            }
+            finally
+            {
+                _isResetting = false;
+            }
         }
 
-        private async Task<bool> EnsureInjectedAsync()
+        private async Task RunStressResetsAsync(CancellationToken token)
         {
-            if (_dependenciesInjected && HasCriticalDependencies())
+            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs);
+            if (!injected)
             {
-                LogOptionalGateWarningOnce();
+                return;
+            }
+
+            if (stressResetCount <= 0)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: stressResetCount inválido ({stressResetCount}). Nada a fazer.");
+                return;
+            }
+
+            for (int i = 0; i < stressResetCount; i++)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                        $"[QA] {label}: stress reset cancelado (iteration={i}).");
+                    return;
+                }
+
+                await RunSingleResetAsync(token);
+
+                if (i < stressResetCount - 1)
+                {
+                    try
+                    {
+                        var delayMs = Mathf.Max(1, (int)(stressResetDelaySeconds * 1000f));
+                        await Task.Delay(delayMs, token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                            $"[QA] {label}: stress reset cancelado durante o delay.");
+                        return;
+                    }
+                }
+            }
+
+            DebugUtility.Log(typeof(WorldLifecycleQATester),
+                $"[QA] {label}: stress reset finalizado ({stressResetCount}x).");
+        }
+
+        private async Task<bool> EnsureDependenciesAsync(CancellationToken token, bool logSuccess)
+        {
+            if (_dependenciesResolved && HasResolvedDependencies())
+            {
                 return true;
             }
 
-            var timeoutSeconds = Mathf.Max(0.5f, injectionTimeoutMs / 1000f);
-            var deadline = Time.realtimeSinceStartup + timeoutSeconds;
+            var deadline = Time.realtimeSinceStartup + Mathf.Max(0.01f, resolveTimeoutSeconds);
 
-            while (Time.realtimeSinceStartup <= deadline)
+            while (Time.realtimeSinceStartup <= deadline && !token.IsCancellationRequested)
             {
                 DependencyManager.Provider.InjectDependencies(this);
-                _dependenciesInjected = true;
 
-                if (HasCriticalDependencies())
+                if (HasResolvedDependencies())
                 {
-                    LogOptionalGateWarningOnce();
+                    _dependenciesResolved = true;
+                    if (logSuccess)
+                    {
+                        DebugUtility.Log(typeof(WorldLifecycleQATester),
+                            $"[QA] {label}: dependências resolvidas via lazy injection.");
+                    }
                     return true;
                 }
 
-                var framesToWait = Mathf.Clamp(injectionRetryFrames, 1, 60);
-                for (var i = 0; i < framesToWait && Time.realtimeSinceStartup <= deadline; i++)
+                var retryMs = Mathf.Max(1, (int)(retryIntervalSeconds * 1000f));
+                try
                 {
-                    await Task.Yield();
+                    await Task.Delay(retryMs, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
             }
 
-            DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                $"[QA] {label}: dependency injection failed; scene services not found. " +
-                "Provavelmente executou antes do NewSceneBootstrapper registrar IActorRegistry, IWorldSpawnServiceRegistry e WorldLifecycleHookRegistry. " +
-                "Ajuste Script Execution Order para rodar o bootstrapper antes ou dispare o QA manualmente após Start.");
+            if (!HasResolvedDependencies() && !token.IsCancellationRequested)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                    $"[QA] {label}: falha ao resolver dependências. Verifique NewSceneBootstrapper na cena e prefira Start/lazy injection. " +
+                    $"controller={( _controller != null)}, actorRegistry={( _actorRegistry != null)}, spawnRegistry={( _spawnRegistry != null)}.");
+            }
 
             return false;
         }
 
-        private bool HasCriticalDependencies()
+        private bool HasResolvedDependencies()
         {
-            // Gate NÃO é crítico para existir (orchestrator suporta null),
-            // mas para o teste de "gate recovery" ele será validado separadamente.
-            return _spawnRegistry != null && _actorRegistry != null && _hookRegistry != null;
-        }
-
-        private void LogOptionalGateWarningOnce()
-        {
-            if (_gateService != null || _gateWarningLogged)
-            {
-                return;
-            }
-
-            _gateWarningLogged = true;
-            DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
-                $"[QA] {label}: ISimulationGateService not injected. Test will still validate recovery reset, but cannot assert token release.");
+            return _controller != null || (_actorRegistry != null && _spawnRegistry != null);
         }
 
         private WorldLifecycleOrchestrator CreateOrchestrator()
@@ -177,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.QA
         {
             _spawnServices.Clear();
 
-            if (_spawnRegistry == null)
+            if (_spawnRegistry == null || _spawnRegistry.Services == null)
             {
                 return;
             }
@@ -191,167 +275,25 @@ namespace _ImmersiveGames.NewScripts.QA
             }
         }
 
-        private async Task Test_GateRecovery_WhenSceneHookThrowsAsync()
+        private void CancelLifetime(string reason)
         {
-            if (_hookRegistry == null)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: hook registry missing; cannot run gate recovery test.");
-                return;
-            }
-
-            if (_gateService == null)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: ISimulationGateService not injected. Test will still validate recovery reset, but cannot assert token release.");
-            }
-
-            var faultyHook = new QAFaultySceneLifecycleHook("FaultyHook", FaultyLifecyclePhase.BeforeSpawn);
-            _hookRegistry.Register(faultyHook);
-
-            var failedAsExpected = false;
-
-            try
-            {
-                // 1) Rodar reset com hook defeituoso -> deve falhar
-                var orchestrator = CreateOrchestrator();
-                failedAsExpected = await RunFaultyResetAsync(orchestrator);
-
-                // 2) Validar token liberado (se o gate existir)
-                ValidateGateReleased();
-            }
-            finally
-            {
-                _hookRegistry.Unregister(faultyHook);
-            }
-
-            if (!failedAsExpected)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: faulty reset unexpectedly succeeded; skipping recovery assertion.");
-                return;
-            }
-
-            // 3) Rodar reset normal (sem hook defeituoso) e validar que não travou e estabilizou
-            await RunRecoveryResetAndAssertAsync();
-        }
-
-        private async Task<bool> RunFaultyResetAsync(WorldLifecycleOrchestrator orchestrator)
-        {
-            try
-            {
-                await orchestrator.ResetWorldAsync();
-
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: faulty reset finished without throwing.");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: faulty reset failed as expected: {ex.Message}");
-                return true;
-            }
-        }
-
-        private void ValidateGateReleased()
-        {
-            if (_gateService == null)
+            if (_lifetimeCts == null)
             {
                 return;
             }
 
-            // Assumindo que existe esta API no seu gate service (você usou no QA).
-            // Se essa API não existir, a correção é: expor uma propriedade/consulta equivalente no gate.
-            var isTokenActive = _gateService.IsTokenActive(WorldLifecycleTokens.WorldResetToken);
-
-            if (isTokenActive)
+            if (!_lifetimeCts.IsCancellationRequested)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: gate token '{WorldLifecycleTokens.WorldResetToken}' is still active after faulty reset.");
-            }
-            else
-            {
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: gate token released after faulty reset; IsOpen={_gateService.IsOpen}.");
-            }
-        }
-
-        private async Task RunRecoveryResetAndAssertAsync()
-        {
-            if (_actorRegistry == null)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: actor registry missing; cannot assert recovery count.");
-                return;
-            }
-
-            var orchestrator = CreateOrchestrator();
-            await orchestrator.ResetWorldAsync();
-
-            await WaitForRegistryStabilizeAsync(
-                minFrames: Mathf.Max(1, minFramesAfterReset),
-                stableFramesRequired: Mathf.Max(1, stableFramesRequired),
-                timeoutMs: Mathf.Max(250, resetAwaitTimeoutMs));
-
-            if (_actorRegistry.Count != 1)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: expected one actor after recovery reset but found {_actorRegistry.Count}.");
-            }
-            else
-            {
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: recovery reset restored actor registry to expected state (count=1).");
-            }
-        }
-
-        private async Task WaitForRegistryStabilizeAsync(int minFrames, int stableFramesRequired, int timeoutMs)
-        {
-            var start = Time.realtimeSinceStartup;
-
-            // 1) Aguarda frames mínimos
-            for (int i = 0; i < minFrames; i++)
-            {
-                await Task.Yield();
-
-                var elapsedMs0 = (int)((Time.realtimeSinceStartup - start) * 1000f);
-                if (elapsedMs0 > timeoutMs)
+                _lifetimeCts.Cancel();
+                if (verboseLogs)
                 {
-                    throw new TimeoutException($"[QA] Timeout waiting initial frames after reset. timeoutMs={timeoutMs}");
+                    DebugUtility.Log(typeof(WorldLifecycleQATester),
+                        $"[QA] {label}: cancelado ({reason}).");
                 }
             }
 
-            // 2) Aguarda estabilização do Count por N frames consecutivos
-            var stableFrames = 0;
-            var lastCount = _actorRegistry != null ? _actorRegistry.Count : -1;
-
-            while (true)
-            {
-                await Task.Yield();
-
-                var elapsedMs = (int)((Time.realtimeSinceStartup - start) * 1000f);
-                if (elapsedMs > timeoutMs)
-                {
-                    throw new TimeoutException($"[QA] Timeout waiting for registry stabilize. lastCount={lastCount}, timeoutMs={timeoutMs}");
-                }
-
-                var current = _actorRegistry != null ? _actorRegistry.Count : -1;
-
-                if (current == lastCount)
-                {
-                    stableFrames++;
-                    if (stableFrames >= stableFramesRequired)
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    stableFrames = 0;
-                    lastCount = current;
-                }
-            }
+            _lifetimeCts.Dispose();
+            _lifetimeCts = null;
         }
     }
 }

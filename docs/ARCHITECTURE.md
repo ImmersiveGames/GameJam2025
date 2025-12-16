@@ -18,6 +18,10 @@
 2. **World Lifecycle**: `WorldLifecycleController` aciona `WorldLifecycleOrchestrator`, que coordena reset determinístico (Acquire Gate → hooks pré-despawn → actor hooks pré-despawn → despawn → hooks pós-despawn/pré-spawn → spawn → actor hooks pós-spawn → hooks finais → release), interrompendo em falhas (fail-fast) e registrando a ordem.
 3. **Gameplay**: ocorre por eventos/contratos entre atores/serviços configurados na cena.
 4. **Unload da Cena**: serviços e registries de cena são descartados; próxima cena cria um novo grafo.
+5. **Notas para QA/Testers**:
+   - São consumidores de scene-scope; podem falhar no `Awake` se o boot ainda não ocorreu.
+   - Padrão recomendado: `Start()` ou lazy injection + retry/timeout para evitar falso negativo.
+   - Erros no início do Play Mode normalmente indicam ordem de inicialização/ausência do bootstrapper, não falha do reset.
 
 ### World Lifecycle Reset & Hooks (As-Is)
 - **Guardrail do Registry**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem via DI. Qualquer tentativa de segundo registro é erro.
