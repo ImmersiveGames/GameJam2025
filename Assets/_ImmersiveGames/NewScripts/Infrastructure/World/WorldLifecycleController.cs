@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     {
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
+        [Inject] private IActorRegistry _actorRegistry;
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
@@ -28,6 +30,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private void Start()
         {
             EnsureDependenciesInjected();
+            if (!HasCriticalDependencies())
+            {
+                return;
+            }
+
             _ = InitializeWorldAsync();
         }
 
@@ -41,8 +48,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             try
             {
                 EnsureDependenciesInjected();
+                if (!HasCriticalDependencies())
+                {
+                    return;
+                }
+
                 BuildSpawnServices();
-                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices);
+                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices, _actorRegistry);
 
                 await _orchestrator.ResetWorldAsync();
 
@@ -64,9 +76,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             try
             {
                 EnsureDependenciesInjected();
+                if (!HasCriticalDependencies())
+                {
+                    return;
+                }
+
                 BuildSpawnServices();
 
-                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices);
+                _orchestrator = new WorldLifecycleOrchestrator(_gateService, _spawnServices, _actorRegistry);
                 await _orchestrator.ResetWorldAsync();
             }
             catch (Exception ex)
@@ -87,6 +104,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             DependencyManager.Provider.InjectDependencies(this);
             _dependenciesInjected = true;
+
+            if (_gateService == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"ISimulationGateService não injetado para a cena '{_sceneName}'.");
+            }
+
+            if (_spawnRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"IWorldSpawnServiceRegistry não encontrado para a cena '{_sceneName}'.");
+            }
+
+            if (_actorRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"IActorRegistry não encontrado para a cena '{_sceneName}'.");
+            }
         }
 
         private void BuildSpawnServices()
@@ -95,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (_spawnRegistry == null)
             {
-                DebugUtility.LogWarning(
+                DebugUtility.LogError(
                     typeof(WorldLifecycleController),
                     $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficará vazia.",
                     this);
@@ -108,11 +143,43 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 {
                     _spawnServices.Add(service);
                 }
+                else
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                        $"Serviço de spawn nulo detectado na cena '{_sceneName}'. Ignorado.");
+                }
             }
 
             DebugUtility.Log(
                 typeof(WorldLifecycleController),
-                $"Spawn services coletados para a cena '{_sceneName}': {_spawnServices.Count}.");
+                $"Spawn services coletados para a cena '{_sceneName}': {_spawnServices.Count} (registry total: {_spawnRegistry.Services.Count}).");
+
+            if (_actorRegistry != null)
+            {
+                DebugUtility.Log(typeof(WorldLifecycleController),
+                    $"ActorRegistry count antes de orquestrar: {_actorRegistry.Count}");
+            }
+        }
+
+        private bool HasCriticalDependencies()
+        {
+            var valid = true;
+
+            if (_spawnRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                valid = false;
+            }
+
+            if (_actorRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                valid = false;
+            }
+
+            return valid;
         }
     }
 }

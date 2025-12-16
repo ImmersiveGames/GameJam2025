@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     {
         private readonly IUniqueIdFactory _uniqueIdFactory;
         private readonly IActorRegistry _actorRegistry;
+        private readonly IWorldSpawnContext _context;
         private readonly GameObject _prefab;
 
         private DummyActor _spawnedActor;
@@ -20,10 +21,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         public DummyActorSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
+            IWorldSpawnContext context,
             GameObject prefab)
         {
             _uniqueIdFactory = uniqueIdFactory;
             _actorRegistry = actorRegistry;
+            _context = context;
             _prefab = prefab;
         }
 
@@ -31,10 +34,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public Task SpawnAsync()
         {
+            DebugUtility.LogVerbose(typeof(DummyActorSpawnService),
+                $"SpawnAsync iniciado (scene={_context?.SceneName ?? "<unknown>"}).");
+
             if (_uniqueIdFactory == null || _actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(DummyActorSpawnService),
                     "Dependências ausentes para executar SpawnAsync.");
+                return Task.CompletedTask;
+            }
+
+            if (_context == null || _context.WorldRoot == null)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    "WorldSpawnContext inválido para executar SpawnAsync.");
                 return Task.CompletedTask;
             }
 
@@ -51,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return Task.CompletedTask;
             }
 
-            var actorGo = Object.Instantiate(_prefab);
+            var actorGo = Object.Instantiate(_prefab, _context.WorldRoot);
 
             if (actorGo == null)
             {
@@ -59,6 +72,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     "Falha ao instanciar prefab para DummyActor.");
                 return Task.CompletedTask;
             }
+
+            actorGo.name = _prefab.name;
 
             _spawnedActor = actorGo.GetComponent<DummyActor>();
 
@@ -73,10 +88,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             string actorId = _uniqueIdFactory.GenerateId(actorGo);
             _spawnedActor.Initialize(actorId);
 
-            _actorRegistry.Register(_spawnedActor);
+            var registered = _actorRegistry.Register(_spawnedActor);
+
+            if (!registered)
+            {
+                DebugUtility.LogError(typeof(DummyActorSpawnService),
+                    $"Falha ao registrar ator no registry. Destruindo instância. ActorId={actorId}");
+                Object.Destroy(actorGo);
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
 
             var prefabName = _prefab != null ? _prefab.name : "<null>";
-            DebugUtility.Log(typeof(DummyActorSpawnService), $"Actor spawned: {actorId} (prefab={prefabName})");
+            var instanceName = actorGo != null ? actorGo.name : "<null>";
+            DebugUtility.Log(typeof(DummyActorSpawnService),
+                $"Actor spawned: {actorId} (prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
             DebugUtility.Log(typeof(DummyActorSpawnService), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;
@@ -84,6 +110,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public Task DespawnAsync()
         {
+            DebugUtility.LogVerbose(typeof(DummyActorSpawnService),
+                $"DespawnAsync iniciado (scene={_context?.SceneName ?? "<unknown>"}).");
+
             if (_actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(DummyActorSpawnService),
@@ -104,7 +133,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             Object.Destroy(_spawnedActor.gameObject);
             _spawnedActor = null;
 
-            DebugUtility.Log(typeof(DummyActorSpawnService), $"Actor despawned: {actorId}");
+            DebugUtility.Log(typeof(DummyActorSpawnService),
+                $"Actor despawned: {actorId} (root={_context?.WorldRoot?.name}, scene={_context?.SceneName})");
             DebugUtility.Log(typeof(DummyActorSpawnService), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;

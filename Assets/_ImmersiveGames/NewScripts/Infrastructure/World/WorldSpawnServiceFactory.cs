@@ -13,7 +13,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         public IWorldSpawnService Create(
             WorldDefinition.SpawnEntry entry,
             IDependencyProvider provider,
-            IActorRegistry actorRegistry)
+            IActorRegistry actorRegistry,
+            IWorldSpawnContext context)
         {
             if (entry == null)
             {
@@ -29,10 +30,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return null;
             }
 
+            if (context == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "IWorldSpawnContext ausente ao criar serviço de spawn.");
+                return null;
+            }
+
             switch (entry.Kind)
             {
                 case WorldSpawnServiceKind.DummyActor:
-                    return CreateDummyActorService(entry, provider, actorRegistry);
+                    return CreateDummyActorService(entry, provider, actorRegistry, context);
 
                 default:
                     DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
@@ -44,12 +52,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private IWorldSpawnService CreateDummyActorService(
             WorldDefinition.SpawnEntry entry,
             IDependencyProvider provider,
-            IActorRegistry actorRegistry)
+            IActorRegistry actorRegistry,
+            IWorldSpawnContext context)
         {
             if (actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
                     "IActorRegistry ausente. Não foi possível criar DummyActorSpawnService.");
+                return null;
+            }
+
+            if (context == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "IWorldSpawnContext ausente. DummyActorSpawnService não será criado.");
                 return null;
             }
 
@@ -61,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return null;
             }
 
-            return new DummyActorSpawnService(uniqueIdFactory, actorRegistry, entry.Prefab);
+            return new DummyActorSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab);
         }
     }
 }
