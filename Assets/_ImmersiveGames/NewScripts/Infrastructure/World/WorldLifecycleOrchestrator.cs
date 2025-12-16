@@ -14,11 +14,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     {
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
+        private readonly IActorRegistry _actorRegistry;
 
-        public WorldLifecycleOrchestrator(ISimulationGateService gateService, IReadOnlyList<IWorldSpawnService> spawnServices)
+        public WorldLifecycleOrchestrator(
+            ISimulationGateService gateService,
+            IReadOnlyList<IWorldSpawnService> spawnServices,
+            IActorRegistry actorRegistry)
         {
             _gateService = gateService;
             _spawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
+            _actorRegistry = actorRegistry;
         }
 
         public async Task ResetWorldAsync()
@@ -31,6 +36,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             try
             {
+                LogActorRegistryCount("Reset start");
+
                 if (_gateService != null)
                 {
                     gateHandle = _gateService.Acquire(WorldLifecycleTokens.WorldResetToken);
@@ -44,7 +51,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
 
                 await RunPhaseAsync("Despawn", service => service.DespawnAsync());
+                LogActorRegistryCount("After Despawn");
+
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
+                LogActorRegistryCount("After Spawn");
 
                 completed = true;
             }
@@ -85,6 +95,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             foreach (var service in _spawnServices)
             {
+                if (service == null)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"{phaseName} service é nulo e será ignorado.");
+                    continue;
+                }
+
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
                     $"{phaseName} service started: {service.Name}");
 
@@ -93,6 +110,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
                     $"{phaseName} service completed: {service.Name}");
             }
+        }
+
+        private void LogActorRegistryCount(string label)
+        {
+            if (_actorRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    $"ActorRegistry ausente ao logar '{label}'.");
+                return;
+            }
+
+            DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
+                $"ActorRegistry count at '{label}': {_actorRegistry.Count}");
         }
     }
 

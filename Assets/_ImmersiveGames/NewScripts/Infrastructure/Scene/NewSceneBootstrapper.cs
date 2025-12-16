@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private string _sceneName = string.Empty;
         private bool _registered;
         private readonly WorldSpawnServiceFactory _spawnServiceFactory = new();
+        private IWorldSpawnContext _worldSpawnContext;
 
         private void Awake()
         {
@@ -38,6 +39,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 new NewSceneScopeMarker(),
                 allowOverride: false);
 
+            var worldRoot = EnsureWorldRoot();
+            _worldSpawnContext = new WorldSpawnContext(_sceneName, worldRoot);
+
+            provider.RegisterForScene<IWorldSpawnContext>(
+                _sceneName,
+                _worldSpawnContext,
+                allowOverride: false);
+
+            DebugUtility.Log(typeof(NewSceneBootstrapper),
+                $"WorldRoot ready: {BuildTransformPath(worldRoot)}");
+
             var actorRegistry = new ActorRegistry();
             provider.RegisterForScene<IActorRegistry>(
                 _sceneName,
@@ -50,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 spawnRegistry,
                 allowOverride: false);
 
-            RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry);
+            RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
             _registered = true;
             DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope created: {_sceneName}");
@@ -78,7 +90,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private void RegisterSpawnServicesFromDefinition(
             IDependencyProvider provider,
             IWorldSpawnServiceRegistry registry,
-            IActorRegistry actorRegistry)
+            IActorRegistry actorRegistry,
+            IWorldSpawnContext context)
         {
             if (worldDefinition == null)
             {
@@ -114,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     }
 
                     enabledCount++;
-                    var service = _spawnServiceFactory.Create(entry, provider, actorRegistry);
+                    var service = _spawnServiceFactory.Create(entry, provider, actorRegistry, context);
                     if (service == null)
                     {
                         failedCreateCount++;
@@ -132,6 +145,38 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                 $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, Created={createdCount}, FailedCreate={failedCreateCount}");
+        }
+
+        private Transform EnsureWorldRoot()
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            var rootObjects = activeScene.GetRootGameObjects();
+            foreach (var root in rootObjects)
+            {
+                if (root != null && root.name == "WorldRoot")
+                {
+                    if (root.scene != activeScene)
+                    {
+                        SceneManager.MoveGameObjectToScene(root, activeScene);
+                    }
+
+                    return root.transform;
+                }
+            }
+
+            var worldRootGo = new GameObject("WorldRoot");
+            SceneManager.MoveGameObjectToScene(worldRootGo, activeScene);
+            return worldRootGo.transform;
+        }
+
+        private static string BuildTransformPath(Transform transform)
+        {
+            if (transform == null)
+            {
+                return "<null>";
+            }
+
+            return $"{transform.gameObject.scene.name}/{transform.name}";
         }
     }
 }
