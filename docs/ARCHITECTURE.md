@@ -60,7 +60,7 @@ Documentar claramente os quatro tipos:
    - Uso típico: UI, áudio, analytics, glue code.
 
 3. **Scene Hooks via Registry**
-   - `WorldLifecycleHookRegistry`.
+   - `WorldLifecycleHookRegistry` instanciado e registrado pelo `NewSceneBootstrapper` no `Awake` e injetado via DI para quem precisar.
    - Ordem explícita.
    - Uso típico: QA, debug, ferramentas, testes.
 
@@ -71,9 +71,9 @@ Documentar claramente os quatro tipos:
 
 ### Garantias
 - Nenhum hook é obrigatório (opt-in).
-- Falha em hook interrompe o reset (fail-fast).
-- Ordem determinística garantida.
-- Nenhum uso de reflection.
+- Falha em hook interrompe o reset (fail-fast) para manter previsibilidade.
+- Ordem determinística garantida em todas as fases (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais → release).
+- Nenhum uso de reflection; resolução é explícita por DI e registry de cena.
 
 ### Exemplos de Uso
 

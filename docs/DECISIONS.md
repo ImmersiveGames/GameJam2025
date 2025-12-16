@@ -7,3 +7,5 @@
 - Não resolve dependências de forma implícita; uso de DI/EventBus seguirá contratos documentados.
 - Não assume rede online; foco exclusivo em multiplayer local.
 - Não utiliza configurações ocultas ou heurísticas por nome para identificar atores ou jogadores.
+- WorldLifecycleHookRegistry ownership: Bootstrapper-only.
+- Controller/Orchestrator são consumidores; guardrails e logs.
