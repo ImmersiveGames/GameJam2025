@@ -15,6 +15,8 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
         void RegisterForScene<T>(string sceneName, T service, bool allowOverride = false) where T : class;
         bool TryGetForScene<T>(string sceneName, out T service) where T : class;
 
+        void GetAllForScene<T>(string sceneName, List<T> services) where T : class;
+
         bool TryGet<T>(out T service, string objectId = null) where T : class;
         void GetAll<T>(List<T> services) where T : class;
 

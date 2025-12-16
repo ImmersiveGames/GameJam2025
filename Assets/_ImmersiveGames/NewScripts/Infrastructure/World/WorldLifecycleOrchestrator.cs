@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -20,17 +19,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
         private readonly IDependencyProvider _provider;
+        private readonly string _sceneName;
 
         public WorldLifecycleOrchestrator(
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
-            IDependencyProvider provider = null)
+            IDependencyProvider provider = null,
+            string sceneName = null)
         {
             _gateService = gateService;
             _spawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             _actorRegistry = actorRegistry;
             _provider = provider;
+            _sceneName = sceneName;
         }
 
         public async Task ResetWorldAsync()
@@ -260,54 +262,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private IReadOnlyList<IWorldLifecycleHook> ResolveSceneHooks()
         {
-            if (_provider == null)
-            {
-                return Array.Empty<IWorldLifecycleHook>();
-            }
-
-            var sceneName = SceneManager.GetActiveScene().name;
-            var sceneServiceTypes = _provider.ListServicesForScene(sceneName);
-
-            if (sceneServiceTypes == null || sceneServiceTypes.Count == 0)
-            {
-                return Array.Empty<IWorldLifecycleHook>();
-            }
-
-            var allServices = new List<IWorldLifecycleHook>();
-            _provider.GetAll(allServices);
-
-            if (allServices.Count == 0)
+            if (_provider == null || string.IsNullOrWhiteSpace(_sceneName))
             {
                 return Array.Empty<IWorldLifecycleHook>();
             }
 
             var sceneHooks = new List<IWorldLifecycleHook>();
+            _provider.GetAllForScene(_sceneName, sceneHooks);
 
-            foreach (var hook in allServices)
-            {
-                if (hook == null)
-                {
-                    continue;
-                }
-
-                var hookType = hook.GetType();
-
-                for (int i = 0; i < sceneServiceTypes.Count; i++)
-                {
-                    if (sceneServiceTypes[i] == null)
-                    {
-                        continue;
-                    }
-
-                    if (sceneServiceTypes[i].IsAssignableFrom(hookType))
-                    {
-                        sceneHooks.Add(hook);
-                        break;
-                    }
-                }
-            }
-
-            return sceneHooks;
+            return sceneHooks.Count == 0 ? Array.Empty<IWorldLifecycleHook>() : sceneHooks;
         }
 
         private void LogActorRegistryCount(string label)
