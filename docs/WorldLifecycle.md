@@ -22,6 +22,11 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - **`IWorldLifecycleHook`**: permite observar o ciclo de reset de mundo. Pode vir de três fontes na execução: (1) serviços que também implementam `IWorldLifecycleHook`, (2) hooks de cena registrados via `IDependencyProvider.GetAllForScene`, (3) hooks registrados explicitamente no `WorldLifecycleHookRegistry`. A ordem de execução segue exatamente o pipeline determinístico (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais) e é logada por fase.
 - **`IActorLifecycleHook`**: componentes `MonoBehaviour` anexados a atores. São descobertos pelo orquestrador ao percorrer `Transform` dos atores registrados e executados nas fases de ator (`OnBeforeActorDespawnAsync` e `OnAfterActorSpawnAsync`) preservando a ordem fixa do reset.
 
+### Otimização: cache de Actor hooks por ciclo
+- Durante `ResetWorldAsync`, os `IActorLifecycleHook` de cada ator são coletados e ordenados, e agora podem ser reutilizados no mesmo ciclo via cache privado por `Transform`.
+- O cache é limpo no `finally` do reset, inclusive em caso de falha, mantendo o escopo estritamente por ciclo.
+- A ordenação determinística continua a mesma: (`Order`, `Type.FullName`), assegurando execução estável mesmo com o cache.
+
 ### Ordenação determinística
 - **Hooks de mundo (`IWorldLifecycleHook`)**: ordenados por `Order` quando o hook implementa `IOrderedLifecycleHook` (default = 0) e, como desempate, por `Type.FullName` com comparação ordinal.
 - **Hooks de ator (`IActorLifecycleHook`)**: coletados via `GetComponentsInChildren(...)` em cada ator, mas a execução não depende da ordem retornada; antes de executar, a lista é ordenada por (`Order`, `Type.FullName`) com o mesmo comparador usado nos hooks de mundo.
