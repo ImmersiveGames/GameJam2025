@@ -53,11 +53,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         "ISimulationGateService ausente: reset seguirá sem gate.");
                 }
 
+                await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
                 await RunPhaseAsync("Despawn", service => service.DespawnAsync());
                 LogActorRegistryCount("After Despawn");
 
+                await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+                await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
                 LogActorRegistryCount("After Spawn");
+
+                await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
 
                 completed = true;
             }
@@ -136,6 +141,61 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             phaseWatch.Stop();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                 $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
+        }
+
+        private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
+        {
+            if (_spawnServices == null || _spawnServices.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var service in _spawnServices)
+            {
+                if (service == null)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} hook service é nulo e será ignorado.");
+                    continue;
+                }
+
+                await RunHookAsync(service, hookName, hookAction);
+            }
+        }
+
+        private async Task RunHookAsync(
+            IWorldSpawnService service,
+            string hookName,
+            Func<IWorldLifecycleHook, Task> hookAction)
+        {
+            if (service is not IWorldLifecycleHook hook)
+            {
+                return;
+            }
+
+            var hookWatch = Stopwatch.StartNew();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} started: {service.Name}");
+
+            try
+            {
+                await hookAction(hook);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} falhou para {service.Name}: {ex}");
+                throw;
+            }
+            finally
+            {
+                hookWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{hookName} duration: {service.Name} => {hookWatch.ElapsedMilliseconds}ms");
+            }
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{hookName} completed: {service.Name}");
         }
 
         private void LogActorRegistryCount(string label)
