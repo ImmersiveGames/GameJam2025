@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameManagerSystems;
+using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
@@ -15,6 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private Pose _initialPose;
         private bool _initialPoseCaptured;
         private Rigidbody _rigidbody;
+        private IEaterDomain _eaterDomain;
 
         // Executa depois dos recursos (ex.: RuntimeAttributeController = -80) e da movimentação do player,
         // garantindo que dados de recursos/AutoFlow já estejam rebindados antes do comportamento.
@@ -40,21 +43,29 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _currentDesireInfo = EaterDesireInfo.Inactive;
             ClearOrbitAnchor();
 
-            // Teleporta para pose inicial capturada, zerando movimento para evitar drift (padrão Player).
-            if (_initialPoseCaptured)
+            Pose targetPose;
+            bool hasSpawnPose = TryGetDomainSpawnPose(out targetPose);
+
+            // Teleporta para pose inicial capturada (fallback) ou SpawnPose do domínio, zerando movimento para evitar drift.
+            if (hasSpawnPose || _initialPoseCaptured)
             {
                 NeutralizeMotion();
 
+                if (!hasSpawnPose)
+                {
+                    targetPose = _initialPose;
+                }
+
                 if (_rigidbody != null)
                 {
-                    _rigidbody.position = _initialPose.position;
-                    _rigidbody.rotation = _initialPose.rotation;
+                    _rigidbody.position = targetPose.position;
+                    _rigidbody.rotation = targetPose.rotation;
                     _rigidbody.linearVelocity = Vector3.zero;
                     _rigidbody.angularVelocity = Vector3.zero;
                 }
                 else
                 {
-                    transform.SetPositionAndRotation(_initialPose.position, _initialPose.rotation);
+                    transform.SetPositionAndRotation(targetPose.position, targetPose.rotation);
                 }
             }
 
@@ -121,6 +132,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _initialPoseCaptured = true;
         }
 
+        internal bool TryGetInitialPose(out Pose pose)
+        {
+            CaptureInitialPoseIfNeeded();
+            pose = _initialPose;
+            return _initialPoseCaptured;
+        }
+
         private void NeutralizeMotion()
         {
             if (_rigidbody == null)
@@ -172,12 +190,30 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _autoFlowUnavailableLogged = false;
             _missingResourceSystemLogged = false;
 
+            _eaterDomain = null;
+
             _selfDamageReceiver = null;
             _missingSelfDamageReceiverLogged = false;
 
             _audioEmitter = null;
             _detectionController = null;
             _animationController = null;
+        }
+
+        private bool TryGetDomainSpawnPose(out Pose pose)
+        {
+            pose = default;
+
+            if (_eaterDomain == null)
+            {
+                var sceneName = gameObject.scene.name;
+                if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(sceneName, out _eaterDomain))
+                {
+                    _eaterDomain = null;
+                }
+            }
+
+            return _eaterDomain != null && _eaterDomain.TryGetSpawnPose(out pose);
         }
     }
 }

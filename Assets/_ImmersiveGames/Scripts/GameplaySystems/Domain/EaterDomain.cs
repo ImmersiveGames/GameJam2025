@@ -1,6 +1,7 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -10,6 +11,8 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         event Action<IActor> EaterUnregistered;
 
         IActor Eater { get; }
+
+        bool TryGetSpawnPose(out Pose pose);
 
         bool RegisterEater(IActor actor);
         bool UnregisterEater(IActor actor);
@@ -23,6 +26,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         public event Action<IActor> EaterUnregistered;
 
         public IActor Eater { get; private set; }
+
+        private Pose _eaterSpawnPose;
+        private bool _spawnPoseCaptured;
 
         public bool RegisterEater(IActor actor)
         {
@@ -47,6 +53,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             if (Eater == null)
             {
+                CaptureSpawnPose(actor);
                 Eater = actor;
                 EaterRegistered?.Invoke(actor);
 
@@ -74,6 +81,8 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             var old = Eater;
             Eater = null;
 
+            _spawnPoseCaptured = false;
+
             EaterUnregistered?.Invoke(old);
 
             DebugUtility.LogVerbose<EaterDomain>(
@@ -91,9 +100,29 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
             var old = Eater;
             Eater = null;
+            _spawnPoseCaptured = false;
             EaterUnregistered?.Invoke(old);
 
             DebugUtility.LogVerbose<EaterDomain>("EaterDomain limpo.");
+        }
+
+        public bool TryGetSpawnPose(out Pose pose)
+        {
+            pose = _eaterSpawnPose;
+            return _spawnPoseCaptured;
+        }
+
+        private void CaptureSpawnPose(IActor actor)
+        {
+            if (actor?.Transform == null)
+            {
+                DebugUtility.LogWarning<EaterDomain>(
+                    "Tentativa de capturar SpawnPose do Eater sem Transform disponível.");
+                return;
+            }
+
+            _eaterSpawnPose = new Pose(actor.Transform.position, actor.Transform.rotation);
+            _spawnPoseCaptured = true;
         }
     }
 }

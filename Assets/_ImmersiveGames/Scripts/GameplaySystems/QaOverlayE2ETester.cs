@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
@@ -498,7 +499,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             AppendLine("[QA] Eater Reset Smoke: garantindo Gameplay e serviços...");
             await EnsureGameplayReadyAsync();
 
-            if (!TryResolveEaterServices(out var eaterActor, out var eaterContext))
+            if (!TryResolveEaterServices(out var eaterDomain, out var eaterActor, out var eaterContext))
                 throw new Exception("[QA] Não foi possível resolver Eater ou RuntimeAttributeContext.");
 
             RuntimeAttributeType trackedAttribute = PickTrackedAttribute(eaterContext);
@@ -508,8 +509,25 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             if (!eaterContext.TryGetValue(trackedAttribute, out var attributeValue) || attributeValue == null)
                 throw new Exception($"[QA] RuntimeAttributeValue ausente para {trackedAttribute}.");
 
-            Vector3 initialPosition = eaterActor.Transform.position;
-            Quaternion initialRotation = eaterActor.Transform.rotation;
+            Pose initialPose;
+            bool hasSpawnPose = eaterDomain != null && eaterDomain.TryGetSpawnPose(out initialPose);
+
+            if (!hasSpawnPose)
+            {
+                if (eaterActor.Transform != null &&
+                    eaterActor.Transform.TryGetComponent(out EaterBehavior eaterBehavior) &&
+                    eaterBehavior.TryGetInitialPose(out var behaviorPose))
+                {
+                    initialPose = behaviorPose;
+                    hasSpawnPose = true;
+                }
+            }
+
+            if (!hasSpawnPose)
+                throw new Exception("[QA] SpawnPose do Eater indisponível para validação de reset.");
+
+            Vector3 initialPosition = initialPose.position;
+            Quaternion initialRotation = initialPose.rotation;
             float initialAttributeValue = attributeValue.GetCurrentValue();
             int callbacks = 0;
 
@@ -624,8 +642,12 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             await DelayUnscaled(afterTransitionSettleSeconds);
         }
 
-        private bool TryResolveEaterServices(out IActor eaterActor, out RuntimeAttributeContext eaterContext)
+        private bool TryResolveEaterServices(
+            out IEaterDomain eaterDomain,
+            out IActor eaterActor,
+            out RuntimeAttributeContext eaterContext)
         {
+            eaterDomain = null;
             eaterActor = null;
             eaterContext = null;
 
@@ -635,7 +657,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(gameplaySceneNameForReset, out var eaterDomain) ||
+            if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(gameplaySceneNameForReset, out eaterDomain) ||
                 eaterDomain == null ||
                 eaterDomain.Eater == null)
             {
