@@ -21,6 +21,12 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - **`IActorLifecycleHook`**: componentes `MonoBehaviour` anexados a atores. São descobertos pelo orquestrador ao percorrer `Transform` dos atores registrados e executados nas fases de ator (`OnBeforeActorDespawnAsync` e `OnAfterActorSpawnAsync`).
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/IWorldLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Actors/IActorLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L261-L345】
 
+## Do / Don't
+- **Do:** criar o `WorldLifecycleHookRegistry` apenas no `NewSceneBootstrapper` e reutilizá-lo via injeção na cena.
+- **Do:** manter a ordem do reset exatamente como: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn/pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release Gate.
+- **Don't:** instanciar ou registrar manualmente o registry no controller ou no orquestrator; eles apenas consomem a instância de cena.
+- **Don't:** alterar a sequência das fases do reset ou mover responsabilidades entre bootstrapper, controller e orquestrator.
+
 ## Como registrar um hook no registry
 1. Garanta que o componente tenha recebido injeção de dependências na cena:
    ```csharp

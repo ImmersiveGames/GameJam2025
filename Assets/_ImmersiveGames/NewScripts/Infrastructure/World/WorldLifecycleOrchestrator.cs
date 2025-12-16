@@ -16,12 +16,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
+        // Guardrail de QA: manter a ordem das fases exatamente como descrita aqui.
+        // Não reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
         private readonly IActorRegistry _actorRegistry;
         private readonly IDependencyProvider _provider;
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
+
+        private const long SlowHookWarningMs = 50;
 
         public WorldLifecycleOrchestrator(
             ISimulationGateService gateService,
@@ -36,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             _actorRegistry = actorRegistry;
             _provider = provider;
             _sceneName = sceneName;
+            // Guardrail: o registry deve vir do bootstrapper (escopo de cena), nunca ser criado aqui.
             _hookRegistry = hookRegistry;
         }
 
@@ -52,6 +57,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             {
                 LogActorRegistryCount("Reset start");
 
+                if (_spawnServices == null || _spawnServices.Count == 0)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                        $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
+                }
+
                 if (_gateService != null)
                 {
                     gateHandle = _gateService.Acquire(WorldLifecycleTokens.WorldResetToken);
@@ -64,6 +75,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         "ISimulationGateService ausente: reset seguirá sem gate.");
                 }
 
+                // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
+                // hooks pós-despawn/pré-spawn → spawn → hooks de atores → hooks finais.
                 await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
                 await RunActorHooksBeforeDespawnAsync();
 
@@ -368,6 +381,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             finally
             {
                 hookWatch.Stop();
+                if (hookWatch.ElapsedMilliseconds > SlowHookWarningMs)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} lento: {hookLabel} (actor={actorLabel}) levou {hookWatch.ElapsedMilliseconds}ms.");
+                }
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                     $"{hookName} duration: {hookLabel} (actor={actorLabel}) => {hookWatch.ElapsedMilliseconds}ms");
             }
@@ -429,6 +447,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             finally
             {
                 hookWatch.Stop();
+                if (hookWatch.ElapsedMilliseconds > SlowHookWarningMs)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                        $"{hookName} lento: {serviceName} levou {hookWatch.ElapsedMilliseconds}ms.");
+                }
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                     $"{hookName} duration: {serviceName} => {hookWatch.ElapsedMilliseconds}ms");
             }
