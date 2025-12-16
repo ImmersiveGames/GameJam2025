@@ -31,6 +31,7 @@
   3. **Scene Hooks via Registry**: instância criada no bootstrapper e injetada; usada para QA, debug, ferramentas, testes.
   4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
 - **Garantias**: hooks são opt-in; falha interrompe o reset (fail-fast); ordem é determinística e sem reflection.
+  - Execução de hooks é determinística por (`Order`, `Type.FullName`); aplica-se tanto a hooks de cena/serviço quanto a hooks em atores.
 
 ## Planned (To-Be / Roadmap)
 - Bootstrap global adicional para serviços compartilhados entre cenas, mantendo separação clara de estado.
