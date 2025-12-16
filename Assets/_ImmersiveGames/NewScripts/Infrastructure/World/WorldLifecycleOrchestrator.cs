@@ -105,7 +105,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
                 if (gateHandle != null)
                 {
-                    gateHandle.Dispose();
+                    try
+                    {
+                        gateHandle.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                            $"Failed to release gate handle: {ex}");
+                    }
                 }
 
                 if (gateAcquired)
