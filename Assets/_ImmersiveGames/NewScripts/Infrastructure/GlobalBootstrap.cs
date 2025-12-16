@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static void InitializeLogging()
         {
             // Keep consistent and quiet by default for Commit 1.
-            DebugUtility.SetDefaultDebugLevel(DebugLevel.Warning);
+            DebugUtility.SetDefaultDebugLevel(DebugLevel.Verbose);
 
             DebugUtility.LogVerbose(
                 typeof(GlobalBootstrap),
