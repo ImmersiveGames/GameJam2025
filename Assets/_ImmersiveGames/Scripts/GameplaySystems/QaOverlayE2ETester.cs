@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
+using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.UISystems.TerminalOverlay;
@@ -53,6 +58,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         [Header("References (optional; will auto-resolve if null)")]
         [SerializeField] private GameManager gameManager;
         [SerializeField] private TerminalOverlayController terminalOverlay;
+        [SerializeField] private KeyCode eaterResetSmokeKey = KeyCode.F9;
 
         [Header("UI (OnGUI)")]
         [SerializeField] private bool showOnGuiPanel = true;
@@ -91,6 +97,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         {
             if (Input.GetKeyDown(togglePanelKey))
                 _panelVisible = !_panelVisible;
+
+            if (Input.GetKeyDown(eaterResetSmokeKey))
+                RunEaterResetSmoke();
         }
 
         #region Context Menu (Editor)
@@ -120,6 +129,11 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         public void RunSmoke()
         {
             _ = RunSmokeAsync();
+        }
+
+        public void RunEaterResetSmoke()
+        {
+            _ = RunEaterResetSmokeAsync();
         }
 
         public void Stop()
@@ -152,6 +166,25 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             finally
             {
                 EndRun("SMOKE");
+            }
+        }
+
+        private async Task RunEaterResetSmokeAsync()
+        {
+            if (!BeginRun("EATER_RESET_SMOKE"))
+                return;
+
+            try
+            {
+                await RunStep("Eater Reset Smoke", ExecuteEaterResetSmokeAsync);
+            }
+            catch (Exception ex)
+            {
+                FailRun("EATER_RESET_SMOKE", ex);
+            }
+            finally
+            {
+                EndRun("EATER_RESET_SMOKE");
             }
         }
 
@@ -428,6 +461,227 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             return ok;
         }
 
+        private async Task<bool> RequestResetForScopeAsync(ResetScope scope, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(gameplaySceneNameForReset))
+            {
+                DebugUtility.LogError<QaOverlayE2ETester>("[QA] gameplaySceneNameForReset vazio. Configure no Inspector.");
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetForScene<IResetOrchestrator>(gameplaySceneNameForReset, out var orchestrator) ||
+                orchestrator == null)
+            {
+                DebugUtility.LogError<QaOverlayE2ETester>(
+                    $"[QA] IResetOrchestrator não encontrado no DI para a cena '{gameplaySceneNameForReset}'. " +
+                    "Confirme que ResetOrchestratorBehaviour está na GameplayScene e registrou no Awake.");
+                return false;
+            }
+
+            AppendLine($"[QA] Chamando IResetOrchestrator.RequestResetAsync (Scope={scope}, Reason='{reason}')...");
+            DebugUtility.LogVerbose<QaOverlayE2ETester>($"[QA] Reset Scope={scope} => RequestResetAsync");
+
+            bool ok = await orchestrator.RequestResetAsync(new ResetRequest(scope, reason));
+
+            await DelayUnscaled(0.1f);
+
+            if (Mathf.Abs(Time.timeScale - 1f) > 0.001f)
+            {
+                DebugUtility.LogWarning<QaOverlayE2ETester>(
+                    $"[QA] TimeScale != 1 após reset (scope={scope}). Atual={Time.timeScale:0.###}");
+            }
+
+            return ok;
+        }
+
+        private async Task ExecuteEaterResetSmokeAsync()
+        {
+            AppendLine("[QA] Eater Reset Smoke: garantindo Gameplay e serviços...");
+            await EnsureGameplayReadyAsync();
+
+            if (!TryResolveEaterServices(out var eaterActor, out var eaterContext))
+                throw new Exception("[QA] Não foi possível resolver Eater ou RuntimeAttributeContext.");
+
+            RuntimeAttributeType trackedAttribute = PickTrackedAttribute(eaterContext);
+            if (trackedAttribute == RuntimeAttributeType.None)
+                throw new Exception("[QA] Nenhum atributo rastreável encontrado para o Eater.");
+
+            if (!eaterContext.TryGetValue(trackedAttribute, out var attributeValue) || attributeValue == null)
+                throw new Exception($"[QA] RuntimeAttributeValue ausente para {trackedAttribute}.");
+
+            Vector3 initialPosition = eaterActor.Transform.position;
+            Quaternion initialRotation = eaterActor.Transform.rotation;
+            float initialAttributeValue = attributeValue.GetCurrentValue();
+            int callbacks = 0;
+
+            void OnResourceChanged(RuntimeAttributeChangeContext change)
+            {
+                if (change.RuntimeAttributeType != trackedAttribute)
+                    return;
+
+                callbacks++;
+                AppendLine(
+                    $"[QA] ResourceChanged {trackedAttribute}: {change.PreviousValue:0.###} -> {change.NewValue:0.###} " +
+                    $"(Δ={change.Delta:0.###}, Source={change.Source}, Linked={change.IsLinkedChange})");
+            }
+
+            eaterContext.ResourceChanged += OnResourceChanged;
+
+            try
+            {
+                float firstDelta = ComputeDamageDelta(initialAttributeValue, attributeValue.GetMaxValue());
+                AppendLine($"[QA] Mutando {trackedAttribute}: delta=-{firstDelta:0.###}");
+                eaterContext.Modify(trackedAttribute, -firstDelta, RuntimeAttributeChangeSource.Manual);
+
+                Vector3 offset = new Vector3(0.5f, 0f, 0f);
+                eaterActor.Transform.position += offset;
+                AppendLine($"[QA] Pose deslocada por {offset} (novo={eaterActor.Transform.position})");
+
+                await ResetAndValidateAsync(
+                    label: "1",
+                    eaterActor,
+                    eaterContext,
+                    trackedAttribute,
+                    initialPosition,
+                    initialRotation,
+                    initialAttributeValue);
+
+                int callbacksBeforeSecondMutation = callbacks;
+                float secondDelta = ComputeDamageDelta(initialAttributeValue, attributeValue.GetMaxValue());
+                AppendLine($"[QA] Mutação pós-reset #2: delta=-{secondDelta:0.###}");
+                eaterContext.Modify(trackedAttribute, -secondDelta, RuntimeAttributeChangeSource.Manual);
+
+                int callbacksFromSecondMutation = callbacks - callbacksBeforeSecondMutation;
+                AppendLine($"[QA] Callbacks recebidos após mutação #2: {callbacksFromSecondMutation} (total={callbacks})");
+                if (callbacksFromSecondMutation != 1)
+                    throw new Exception(
+                        $"Esperado 1 callback ResourceChanged para a mutação #2, recebido {callbacksFromSecondMutation}.");
+
+                await ResetAndValidateAsync(
+                    label: "2",
+                    eaterActor,
+                    eaterContext,
+                    trackedAttribute,
+                    initialPosition,
+                    initialRotation,
+                    initialAttributeValue);
+            }
+            finally
+            {
+                eaterContext.ResourceChanged -= OnResourceChanged;
+            }
+        }
+
+        private async Task ResetAndValidateAsync(
+            string label,
+            IActor eaterActor,
+            RuntimeAttributeContext eaterContext,
+            RuntimeAttributeType trackedAttribute,
+            Vector3 initialPosition,
+            Quaternion initialRotation,
+            float initialAttributeValue)
+        {
+            bool ok = await RequestResetForScopeAsync(ResetScope.EaterOnly, $"QA Eater Reset Smoke #{label}");
+            if (!ok)
+                throw new Exception($"[QA] Reset scope EaterOnly falhou no passo {label}.");
+
+            if (!eaterContext.TryGetValue(trackedAttribute, out var value) || value == null)
+                throw new Exception($"[QA] RuntimeAttributeValue inexistente após reset #{label} para {trackedAttribute}.");
+
+            float restoredValue = value.GetCurrentValue();
+            Vector3 poseAfterReset = eaterActor.Transform.position;
+            Quaternion rotationAfterReset = eaterActor.Transform.rotation;
+
+            bool attributeRestored = Mathf.Approximately(restoredValue, initialAttributeValue);
+            bool poseRestored = Vector3.Distance(initialPosition, poseAfterReset) <= 0.05f &&
+                                Quaternion.Angle(initialRotation, rotationAfterReset) <= 1f;
+
+            AppendLine(
+                $"[QA] Reset #{label}: atributo {trackedAttribute}={restoredValue:0.###} (esperado {initialAttributeValue:0.###}), " +
+                $"poseRestaurada={poseRestored} pos={poseAfterReset} rot={rotationAfterReset.eulerAngles}");
+
+            if (!attributeRestored)
+                throw new Exception($"[QA] Reset #{label} não restaurou {trackedAttribute}. Valor={restoredValue:0.###}.");
+
+            if (!poseRestored)
+                throw new Exception($"[QA] Reset #{label} não restaurou pose do Eater.");
+        }
+
+        private async Task EnsureGameplayReadyAsync()
+        {
+            ResolveReferences();
+
+            if (gameManager == null)
+                throw new Exception("[QA] GameManager não encontrado para iniciar gameplay.");
+
+            gameManager.QA_GoToGameplayFromAnywhere();
+
+            await WaitUntilAsync(
+                predicate: () => GameManagerStateMachine.Instance != null &&
+                                 GameManagerStateMachine.Instance.CurrentState is PlayingState,
+                timeoutSeconds: defaultStepTimeoutSeconds,
+                timeoutMessage: "FSM não entrou em PlayingState durante Eater Reset Smoke.");
+
+            await DelayUnscaled(afterTransitionSettleSeconds);
+        }
+
+        private bool TryResolveEaterServices(out IActor eaterActor, out RuntimeAttributeContext eaterContext)
+        {
+            eaterActor = null;
+            eaterContext = null;
+
+            if (string.IsNullOrWhiteSpace(gameplaySceneNameForReset))
+            {
+                AppendLine("[QA] gameplaySceneNameForReset vazio; não é possível resolver IEaterDomain.");
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetForScene<IEaterDomain>(gameplaySceneNameForReset, out var eaterDomain) ||
+                eaterDomain == null ||
+                eaterDomain.Eater == null)
+            {
+                AppendLine($"[QA] IEaterDomain ou Eater ausente para a cena '{gameplaySceneNameForReset}'.");
+                return false;
+            }
+
+            eaterActor = eaterDomain.Eater;
+
+            if (!DependencyManager.Provider.TryGetForObject<RuntimeAttributeContext>(eaterActor.ActorId, out eaterContext) ||
+                eaterContext == null)
+            {
+                AppendLine($"[QA] RuntimeAttributeContext não encontrado para Eater '{eaterActor.ActorId}'.");
+                eaterActor = null;
+                return false;
+            }
+
+            AppendLine($"[QA] Eater resolvido: {eaterActor.ActorName} ({eaterActor.ActorId}).");
+            return true;
+        }
+
+        private static RuntimeAttributeType PickTrackedAttribute(RuntimeAttributeContext eaterContext)
+        {
+            if (eaterContext == null)
+                return RuntimeAttributeType.None;
+
+            if (eaterContext.TryGetValue(RuntimeAttributeType.Health, out var health) && health != null)
+                return RuntimeAttributeType.Health;
+
+            foreach (var type in eaterContext.GetAllRegisteredTypes())
+            {
+                if (type != RuntimeAttributeType.None)
+                    return type;
+            }
+
+            return RuntimeAttributeType.None;
+        }
+
+        private static float ComputeDamageDelta(float current, float max)
+        {
+            float safeMax = Mathf.Max(1f, max);
+            float targetDelta = Mathf.Max(1f, safeMax * 0.1f);
+            return Mathf.Clamp(targetDelta, 1f, Mathf.Max(1f, current));
+        }
+
         #endregion
 
         #region Step helpers
@@ -556,6 +810,9 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
 
             if (GUILayout.Button("Run SMOKE", GUILayout.Height(28)))
                 RunSmoke();
+
+            if (GUILayout.Button("Eater Reset Smoke", GUILayout.Height(28)))
+                RunEaterResetSmoke();
             GUI.enabled = true;
 
             GUI.enabled = _isRunning;
@@ -584,7 +841,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
             if (GUILayout.Button("Clear Log", GUILayout.Height(22)))
                 _logBuffer.Length = 0;
 
-            GUILayout.Label($"Toggle: {togglePanelKey}");
+            GUILayout.Label($"Toggle: {togglePanelKey} | EaterSmokeKey: {eaterResetSmokeKey}");
             GUILayout.EndHorizontal();
 
             GUILayout.Space(6);
