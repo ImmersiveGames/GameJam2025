@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
+        // Guardrail: este controller apenas consome o WorldLifecycleHookRegistry criado no bootstrapper.
         [Inject] private WorldLifecycleHookRegistry _hookRegistry;
 
         private readonly List<IWorldSpawnService> _spawnServices = new();
