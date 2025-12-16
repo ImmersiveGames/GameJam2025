@@ -1,4 +1,7 @@
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -32,13 +35,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 new NewSceneScopeMarker(),
                 allowOverride: false);
 
+            var actorRegistry = new ActorRegistry();
+            provider.RegisterForScene<IActorRegistry>(
+                _sceneName,
+                actorRegistry,
+                allowOverride: false);
+
             var spawnRegistry = new WorldSpawnServiceRegistry();
             provider.RegisterForScene<IWorldSpawnServiceRegistry>(
                 _sceneName,
                 spawnRegistry,
                 allowOverride: false);
 
-            RegisterDummySpawnService(spawnRegistry);
+            RegisterDummySpawnService(provider, spawnRegistry, actorRegistry);
 
             _registered = true;
             DebugUtility.Log(typeof(NewSceneBootstrapper), $"Scene scope created: {_sceneName}");
@@ -63,9 +72,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             _registered = false;
         }
 
-        private void RegisterDummySpawnService(IWorldSpawnServiceRegistry registry)
+        private void RegisterDummySpawnService(
+            IDependencyProvider provider,
+            IWorldSpawnServiceRegistry registry,
+            IActorRegistry actorRegistry)
         {
-            var dummySpawnService = new DummySpawnService();
+            provider.TryGetGlobal<IUniqueIdFactory>(out var uniqueIdFactory);
+            if (uniqueIdFactory == null)
+            {
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    "IUniqueIdFactory global ausente. Criando instância local.");
+                uniqueIdFactory = new NewUniqueIdFactory();
+            }
+            var dummySpawnService = new DummyActorSpawnService(uniqueIdFactory, actorRegistry);
             registry.Register(dummySpawnService);
 
             DebugUtility.Log(typeof(NewSceneBootstrapper),
