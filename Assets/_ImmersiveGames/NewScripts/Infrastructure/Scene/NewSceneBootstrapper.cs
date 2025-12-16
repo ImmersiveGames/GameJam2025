@@ -118,11 +118,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             if (entries != null)
             {
-                foreach (var entry in entries)
+                for (var index = 0; index < entries.Count; index++)
                 {
+                    var entry = entries[index];
+                    var entryKind = entry.Kind.ToString();
+                    var entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
+
+                    DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                        $"Spawn entry #{index}: Enabled={entry.Enabled}, Kind={entryKind}, Prefab={entryPrefabName}");
+
                     if (!entry.Enabled)
                     {
                         skippedDisabledCount++;
+                        DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                            $"Spawn entry #{index} SKIPPED_DISABLED: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
                     }
 
@@ -131,12 +140,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     if (service == null)
                     {
                         failedCreateCount++;
+                        DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                            $"Spawn entry #{index} FAILED_CREATE: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
                     }
 
                     createdCount++;
                     registry.Register(service);
                     registeredCount++;
+                    DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                        $"Spawn entry #{index} REGISTERED: {service.Name} (Kind={entryKind}, Prefab={entryPrefabName})");
                 }
             }
 
@@ -151,22 +164,54 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             var activeScene = SceneManager.GetActiveScene();
             var rootObjects = activeScene.GetRootGameObjects();
+            GameObject selectedRoot = null;
+            var foundCount = 0;
+
             foreach (var root in rootObjects)
             {
-                if (root != null && root.name == "WorldRoot")
+                if (root == null || root.name != "WorldRoot")
                 {
-                    if (root.scene != activeScene)
-                    {
-                        SceneManager.MoveGameObjectToScene(root, activeScene);
-                    }
+                    continue;
+                }
 
-                    return root.transform;
+                foundCount++;
+                if (selectedRoot == null)
+                {
+                    selectedRoot = root;
                 }
             }
 
-            var worldRootGo = new GameObject("WorldRoot");
-            SceneManager.MoveGameObjectToScene(worldRootGo, activeScene);
-            return worldRootGo.transform;
+            if (foundCount == 0)
+            {
+                var worldRootGo = new GameObject("WorldRoot");
+                SceneManager.MoveGameObjectToScene(worldRootGo, activeScene);
+                return worldRootGo.transform;
+            }
+
+            if (foundCount > 1)
+            {
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    $"Multiple WorldRoot objects found: {foundCount}");
+
+                foreach (var root in rootObjects)
+                {
+                    if (root != null && root.name == "WorldRoot")
+                    {
+                        DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                            $"WorldRoot candidate: {BuildTransformPath(root.transform)}");
+                    }
+                }
+
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    $"WorldRoot selected: {BuildTransformPath(selectedRoot.transform)}");
+            }
+
+            if (selectedRoot.scene != activeScene)
+            {
+                SceneManager.MoveGameObjectToScene(selectedRoot, activeScene);
+            }
+
+            return selectedRoot.transform;
         }
 
         private static string BuildTransformPath(Transform transform)

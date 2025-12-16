@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public async Task ResetWorldAsync()
         {
+            var resetWatch = Stopwatch.StartNew();
             DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "World Reset Started");
 
             IDisposable gateHandle = null;
@@ -65,6 +67,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
             finally
             {
+                resetWatch.Stop();
+
                 if (gateHandle != null)
                 {
                     gateHandle.Dispose();
@@ -79,17 +83,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 {
                     DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "World Reset Completed");
                 }
+
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"Reset duration: {resetWatch.ElapsedMilliseconds}ms");
             }
         }
 
         private async Task RunPhaseAsync(string phaseName, Func<IWorldSpawnService, Task> phaseAction)
         {
+            var phaseWatch = Stopwatch.StartNew();
             DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"{phaseName} started");
 
             if (_spawnServices == null || _spawnServices.Count == 0)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
                     $"{phaseName} skipped (no spawn services registered).");
+                phaseWatch.Stop();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
                 return;
             }
 
@@ -105,11 +116,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
                     $"{phaseName} service started: {service.Name}");
 
-                await phaseAction(service);
+                var serviceWatch = Stopwatch.StartNew();
+                try
+                {
+                    await phaseAction(service);
+                }
+                finally
+                {
+                    serviceWatch.Stop();
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{phaseName} service duration: {service.Name} => {serviceWatch.ElapsedMilliseconds}ms");
+                }
 
                 DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
                     $"{phaseName} service completed: {service.Name}");
             }
+
+            phaseWatch.Stop();
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"{phaseName} duration: {phaseWatch.ElapsedMilliseconds}ms");
         }
 
         private void LogActorRegistryCount(string label)
