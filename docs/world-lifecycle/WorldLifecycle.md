@@ -17,6 +17,26 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 ## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
 Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bind e reset.
 
+## Escopos de Reset
+Define como o jogo reinicia e quais partes são recriadas em cada modo de reset.
+
+- **Soft Reset (ex.: PlayerDeath)**:
+  - Recria apenas atores ou grupos específicos mantendo mundo, serviços e cena ativos.
+  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI.
+  - O gate de simulação permanece adquirido durante o reset e é liberado apenas ao sinal de `GameplayReady` para evitar ações antecipadas.
+
+- **Hard Reset (ex.: GameOver/Victory)**:
+  - Recria o mundo inteiro: desbind de UI/canvas, teardown de registries de cena e reexecução completa do WorldLifecycle.
+  - Obriga a refazer o ciclo de Scene Flow (acquire gate, readiness, spawn, bind) antes de permitir gameplay novamente.
+  - Ideal para troca de mapa, reinício de rodada ou rollback completo de estado.
+
+- **Exemplos de grupos futuros** a serem endereçados pelos resets (escopos explícitos e rastreáveis):
+  - Player
+  - Boss
+  - Inimigos
+  - Spawners
+  - Sistemas de fase
+
 ### Linha do tempo oficial
 ```
 SceneTransitionStarted
@@ -38,6 +58,23 @@ GameplayReady (gate liberado; gameplay habilitado)
 [Soft Reset → WorldLifecycle reset scoped]
 [Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
 ```
+
+## Fases de Readiness
+Fases formais que controlam quem pode agir e quando, garantindo que spawn/bind e gameplay sigam uma ordem previsível.
+
+- **SceneScopeReady**: a cena concluiu a configuração básica e adquiriu o gate. Providers e registries de cena estão disponíveis, porém nenhum ator ou sistema de gameplay deve executar lógica ainda. Somente serviços de bootstrap e validações estruturais podem agir.
+- **WorldLoaded**: o WorldLifecycle está configurado, registries de atores/spawn estão ativos e serviços de mundo podem preparar dados. Spawners determinísticos podem registrar intenções, mas o gameplay continua bloqueado.
+- **GameplayReady**: gate liberado após `SceneScopeBound`/`SceneTransitionCompleted`. Atores e sistemas de gameplay podem iniciar comportamento; nenhuma lógica de gameplay deve rodar antes deste ponto, inclusive em soft reset.
+
+Regra explícita: gameplay, atores e sistemas de fase só iniciam após `GameplayReady`. Soft resets mantêm essa garantia porque o gate permanece adquirido até a fase ser sinalizada novamente.
+
+## Spawn determinístico e Late Bind
+Define como o spawn acontece em passes ordenados e como binds tardios evitam inconsistências de UI/canvas cross-scene.
+
+- **Por que spawn ocorre em passes**: o WorldLifecycle executa passos previsíveis (pré-warm, serviços de mundo, atores, late bindables) para manter determinismo em multiplayer local e permitir reset por escopo sem efeitos colaterais.
+- **Problema clássico de Canvas/UI criados após atores**: se UI/canvas cruzados de cena nascem após atores, binds diretos falham ou geram referências nulas. Por isso, a criação de UI pode ocorrer antes, mas o bind real só acontece em uma fase de readiness específica.
+- **Regra de binds tardios**: qualquer late bind (HUD, overlays, trackers) só é permitido após o sinal configurado de readiness (`SceneScopeBound`/`SceneTransitionCompleted`), garantindo que todos os atores e providers já existam e que o gate esteja controlando as ações.
+- **Integração com readiness**: spawn em passes acontece antes do sinal de `GameplayReady`; apenas depois do bind tardio liberado e do gate ser liberado o gameplay inicia. Soft resets repetem os passes necessários e só liberam gameplay após o mesmo checkpoint de readiness.
 
 ### Quando spawn e bind acontecem
 - **SpawnPrewarm (Passo 0)**: registra e aquece pools críticos (VFX, projectiles, render textures). Não faz bind de UI.
