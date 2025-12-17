@@ -206,3 +206,15 @@
 #### Consequences
 - Reduz custo e alocações ao evitar varreduras duplicadas na mesma hierarquia durante o ciclo.
 - Preserva determinismo e ordem (prioridade + `Type.FullName`), sem manter cache entre resets para evitar inconsistências entre ciclos.
+
+## NewScripts — ADRs do World Lifecycle (2025-12)
+
+### ADR-NS-001 — Propriedade do WorldLifecycleHookRegistry
+- **Context**: o registry deve existir uma única vez por cena para evitar divergência entre hooks de world/scene. Tentativas de recriação em runtime geram inconsistência ou shadowing da instância usada pelo orquestrador.
+- **Decision**: apenas o `NewSceneBootstrapper` cria e registra o `WorldLifecycleHookRegistry` no provider de cena. Uma segunda tentativa de registro gera log de erro e **reutiliza** a instância já registrada (ownership permanece com o bootstrapper).
+- **Consequences**: previne duplo-registro e mantém determinismo/telemetria estáveis. Consumidores obtêm sempre a mesma instância da cena atual via DI, e o orquestrador não precisa validar múltiplas origens.
+
+### ADR-NS-002 — Execução determinística e cache por ciclo (WorldLifecycleOrchestrator)
+- **Context**: resets com muitos atores e múltiplas fontes de hooks exigem ordenação estável e evitam custo duplicado de varrer hierarquias durante o mesmo ciclo (pré-despawn e pós-spawn).
+- **Decision**: o `WorldLifecycleOrchestrator` ordena **todos** os hooks por (`Order`, `Type.FullName`) com comparador ordinal e registra logs de início/fim/ordem. Introduz cache por ciclo para hooks de ator (validado por `transform.root`), limpando-o no `finally` do `ResetWorldAsync` e ignorando a sentinela `EmptyActorHookList` para não poluir o cache com coleções vazias.
+- **Consequences**: execução permanece determinística e instrumentada; custo/GC diminui em resets com muitos atores; nenhum cache persiste entre resets, evitando inconsistências entre ciclos ou cenas.
