@@ -6,6 +6,14 @@ A pasta **Uteis** concentra utilidades arquiteturais transversais (Event Bus, In
 - **UI**: utiliza bindings reativos e utilitários (ex.: `IBindableUI`, extensões) mantendo a UI desacoplada de domínios.
 - **Infra**: centraliza bootstraps e singletons persistentes; mantém ordem de inicialização e limpeza de escopos.
 
+### Política de Uso do Legado
+- Regras completas em `docs/DECISIONS.md` (seção “Política de Uso do Legado”); NewScripts é a fonte de verdade e o legado só serve como referência comportamental.
+- Checklist rápido para PR/Commit:
+  - Existe alguma referência ao legado?
+  - Foi explicitamente autorizado?
+  - Foi documentado o motivo e a alternativa considerada?
+  - A migração mantém NewScripts como source of truth?
+
 ## 2. Mapa de Sistemas
 - **Event Bus**
   - Arquivos: `BusEventSystems/*` (incluindo `EventBus.cs`, `FilteredEventBus.cs`, `InjectableEventBus.cs`, `EventBusUtil.cs`, bindings e interfaces).

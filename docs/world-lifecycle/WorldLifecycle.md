@@ -1,5 +1,7 @@
 # World Lifecycle (NewScripts)
 
+> Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
+
 ## Visão geral do reset determinístico
 O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn/pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release. O fluxo realiza:
 - Acquire: tenta adquirir o `ISimulationGateService` usando o token `WorldLifecycle.WorldReset` para serializar resets.
@@ -11,6 +13,43 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - Release: devolve o gate adquirido e finaliza com logs de duração.
  - Nota: se não houver hooks registrados para uma fase, o sistema emite log verbose `"<PhaseName> phase skipped (hooks=0)"` para diagnóstico e para confirmar que a fase foi considerada.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L13-L345】
+
+## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
+Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bind e reset.
+
+### Linha do tempo oficial
+```
+SceneTransitionStarted
+↓
+SceneScopeReady (gate adquirido, registries de cena prontos)
+↓
+SceneTransitionScenesReady
+↓
+WorldLoaded (WorldLifecycle configurado; registries de actor/spawn ativos)
+↓
+SpawnPrewarm (Passo 0 — aquecimento de pools)
+↓
+SceneScopeBound (late bind liberado; HUD/overlays conectados)
+↓
+SceneTransitionCompleted
+↓
+GameplayReady (gate liberado; gameplay habilitado)
+↓
+[Soft Reset → WorldLifecycle reset scoped]
+[Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
+```
+
+### Quando spawn e bind acontecem
+- **SpawnPrewarm (Passo 0)**: registra e aquece pools críticos (VFX, projectiles, render textures). Não faz bind de UI.
+- **World Services Spawn (Passo 1)**: instancia serviços dependentes de mundo (spawners determinísticos, orchestrators de rodada) antes de atores jogáveis.
+- **Actors Spawn (Passo 2)**: cria atores jogáveis e NPCs com ordenação determinística de hooks (`Order`, `Type.FullName`).
+- **Late Bindables (Passo 3)**: componentes que precisam existir para UI, mas ainda sem bind (trackers, providers). O bind real ocorre apenas em `SceneScopeBound`.
+- **Binds de UI**: HUD/overlays só conectam a providers após o sinal `SceneScopeBound`, evitando referências nulas e respeitando multiplayer local.
+
+### Resets por escopo
+- **Soft Reset**: reexecuta o reset do `WorldLifecycle` (despawn/respawn de atores e serviços voláteis) mantendo binds de UI e registries de cena. O gate permanece adquirido durante o reset e é liberado em `GameplayReady`.
+- **Hard Reset**: realiza desbind de UI, despawn completo e rebuild de registries, reacquire do gate e reinstala Scene Flow antes de liberar `GameplayReady`. Usado para troca de mapa ou rollback de partida.
+- **Escopo explícito**: todos os resets devem registrar `ResetScope` (Soft/Hard) em logs/telemetria para evitar heurísticas.
 
 ## Onde o registry é criado e como injetar
 - Guardrail de criação/ownership: o `WorldLifecycleHookRegistry` é criado e registrado **apenas** pelo `NewSceneBootstrapper` no escopo da cena, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`).

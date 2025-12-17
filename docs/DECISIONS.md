@@ -10,3 +10,17 @@
 - WorldLifecycleHookRegistry ownership: Bootstrapper-only.
 - Controller/Orchestrator são consumidores; guardrails e logs para flagrar duplo-registro ou resolução fora de ordem.
 - QA/Testers não garantem execução em `Awake`; devem tolerar boot order com lazy injection + retry/timeout e falhar com mensagem acionável se o bootstrapper não rodou.
+
+## Política de Uso do Legado
+- NewScripts define a arquitetura e os contratos ideais como fonte de verdade; o legado não é baseline.
+- Não assumir integração com legado (código, interfaces, serviços, adaptadores/bridges) por padrão.
+- Qualquer proposta de reaproveitamento do legado deve vir como sugestão explícita, com: (a) motivo, (b) benefício, (c) riscos, (d) alternativas.
+- Implementação só acontece após autorização explícita do usuário para cada caso.
+- Enquanto não autorizado, evitar dependências e referências diretas ao namespace/infra do legado.
+- O legado pode ser usado apenas como linhas gerais e comportamento histórico, nunca como padrão arquitetural.
+
+### Checklist para PR/Commit
+- Existe alguma referência ao legado?
+- Foi explicitamente autorizado?
+- Foi documentado o motivo e a alternativa considerada?
+- A migração mantém NewScripts como source of truth?
