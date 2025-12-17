@@ -5,6 +5,7 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
     public static class GlobalBootstrap
     {
         private static bool _initialized;
+        private static GameReadinessService _gameReadinessService;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -25,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             InitializeLogging();
             EnsureDependencyProvider();
             RegisterEssentialServicesOnly();
+            InitializeReadinessGate();
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
@@ -67,6 +70,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             var instance = factory();
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
+        }
+
+        private static void InitializeReadinessGate()
+        {
+            if (_gameReadinessService != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap), "GameReadinessService já inicializado.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
+            {
+                DebugUtility.LogError(typeof(GlobalBootstrap),
+                    "[Readiness] ISimulationGateService indisponível. Scene Flow readiness ficará sem proteção de gate.");
+                return;
+            }
+
+            _gameReadinessService = new GameReadinessService(gate);
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap), "[Readiness] GameReadinessService inicializado (Scene Flow → SimulationGate).",
+                DebugUtility.Colors.Info);
         }
     }
 }
