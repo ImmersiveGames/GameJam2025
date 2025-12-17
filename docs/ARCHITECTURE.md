@@ -31,6 +31,7 @@
   3. **Scene Hooks via Registry**: instância criada no bootstrapper e injetada; usada para QA, debug, ferramentas, testes.
   4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
   5. **Otimização (cache por ciclo)**: o orquestrador reusa por ciclo a lista ordenada de hooks de ator para reduzir chamadas a `GetComponentsInChildren` em resets com muitos atores, mantendo invalidação segura por root e determinismo.
+  6. **Scene Hook Registry (ordenação)**: o bootstrapper registra hooks de cena (ex.: `SceneLifecycleHookLoggerA/B`) no `WorldLifecycleHookRegistry`; o orquestrador executa todos em ordem determinística por (`Order`, `Type.FullName`) em cada fase, com logs de início/fim e contagem de hooks.
 - **Garantias**: hooks são opt-in; falha interrompe o reset (fail-fast); ordem é determinística e sem reflection.
   - Execução de hooks é determinística por (`Order`, `Type.FullName`); aplica-se tanto a hooks de cena/serviço quanto a hooks em atores.
 

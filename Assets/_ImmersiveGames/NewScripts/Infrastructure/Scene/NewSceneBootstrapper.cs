@@ -81,6 +81,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
+            RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
+
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
             _registered = true;
@@ -230,6 +232,66 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             return selectedRoot.transform;
+        }
+
+        private void RegisterSceneLifecycleHooks(
+            WorldLifecycleHookRegistry hookRegistry,
+            Transform worldRoot)
+        {
+            if (hookRegistry == null)
+            {
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    "WorldLifecycleHookRegistry ausente; hooks de cena não serão registrados.");
+                return;
+            }
+
+            if (worldRoot == null)
+            {
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    "WorldRoot ausente; hooks de cena não serão adicionados.");
+                return;
+            }
+
+            var hookA = EnsureHookComponent<SceneLifecycleHookLoggerA>(worldRoot);
+            var hookB = EnsureHookComponent<SceneLifecycleHookLoggerB>(worldRoot);
+
+            RegisterHookIfMissing(hookRegistry, hookA);
+            RegisterHookIfMissing(hookRegistry, hookB);
+        }
+
+        private static T EnsureHookComponent<T>(Transform worldRoot)
+            where T : Component
+        {
+            var existing = worldRoot.GetComponent<T>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            return worldRoot.gameObject.AddComponent<T>();
+        }
+
+        private static void RegisterHookIfMissing(
+            WorldLifecycleHookRegistry registry,
+            IWorldLifecycleHook hook)
+        {
+            if (hook == null)
+            {
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    "Hook de cena nulo; registro ignorado.");
+                return;
+            }
+
+            if (registry.Hooks.Contains(hook))
+            {
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    $"Hook de cena já registrado: {hook.GetType().Name}");
+                return;
+            }
+
+            registry.Register(hook);
+            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                $"Hook de cena registrado: {hook.GetType().Name}");
         }
 
         private static string BuildTransformPath(Transform transform)

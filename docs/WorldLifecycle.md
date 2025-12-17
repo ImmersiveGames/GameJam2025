@@ -27,6 +27,13 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - O cache é limpo no `finally` do reset, inclusive em caso de falha, mantendo o escopo estritamente por ciclo.
 - A ordenação determinística continua a mesma: (`Order`, `Type.FullName`), assegurando execução estável mesmo com o cache.
 
+### Scene Hooks (WorldLifecycleHookRegistry)
+- Hooks de cena (`IWorldLifecycleHook`) podem ser registrados no `WorldLifecycleHookRegistry` criado pelo `NewSceneBootstrapper` e serão executados em todas as fases do reset.
+- A ordenação continua determinística: primeiro por `IOrderedLifecycleHook.Order`, depois por `Type.FullName`.
+- Exemplo (cena **NewBootstrap**): `SceneLifecycleHookLoggerA` (`Order=0`) e `SceneLifecycleHookLoggerB` (`Order=10`) são adicionados ao `WorldRoot` e registrados no registry, produzindo logs como:
+  - `OnBeforeDespawn phase started (hooks=2)` seguido de `OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` e as mensagens `[QA] ... -> OnBeforeDespawnAsync` de cada hook.
+  - `OnAfterSpawn phase started (hooks=2)` com a mesma ordem e logs `[QA] ... -> OnAfterSpawnAsync`, validando que ambos os hooks executam e preservam a ordem.
+
 ### Ordenação determinística
 - **Hooks de mundo (`IWorldLifecycleHook`)**: ordenados por `Order` quando o hook implementa `IOrderedLifecycleHook` (default = 0) e, como desempate, por `Type.FullName` com comparação ordinal.
 - **Hooks de ator (`IActorLifecycleHook`)**: coletados via `GetComponentsInChildren(...)` em cada ator, mas a execução não depende da ordem retornada; antes de executar, a lista é ordenada por (`Order`, `Type.FullName`) com o mesmo comparador usado nos hooks de mundo.
