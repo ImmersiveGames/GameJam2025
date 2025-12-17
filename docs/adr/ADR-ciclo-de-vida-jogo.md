@@ -71,6 +71,7 @@ GameplayReady (Gate liberado; gameplay habilitado)
 - **Observabilidade**: cada fase/pass dispara logs e telemetria, facilitando QA.
 - **Resiliência de UI**: binds tardios evitam referências nulas em HUDs compartilhados.
 - **Escopos explícitos**: operações de reset documentadas; controladores não precisam heurísticas.
+- **Detalhes operacionais**: o pipeline de reset determinístico e os hooks correspondentes estão descritos em `docs/world-lifecycle/WorldLifecycle.md`.
 
 ## Não-objetivos
 - Alterar APIs públicas atuais de WorldLifecycle ou Scene Flow.

@@ -2,6 +2,8 @@
 
 Repositório base para jogo Unity 6 com multiplayer local. Este README atua apenas como índice dos materiais técnicos.
 
+Toda a documentação técnica, arquitetural e ADRs do projeto vivem exclusivamente na pasta `/docs`. A raiz contém apenas este README como índice.
+
 ## Documentação principal
 - [Arquitetura Base](docs/ARCHITECTURE.md)
 - [Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)](docs/world-lifecycle/WorldLifecycle.md)

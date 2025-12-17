@@ -1,5 +1,7 @@
 # World Lifecycle (NewScripts)
 
+> Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
+
 ## Visão geral do reset determinístico
 O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn/pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release. O fluxo realiza:
 - Acquire: tenta adquirir o `ISimulationGateService` usando o token `WorldLifecycle.WorldReset` para serializar resets.
