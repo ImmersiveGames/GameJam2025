@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
         private readonly Dictionary<Transform, ActorHookCacheEntry> _actorHookCache = new();
+        // Sentinel compartilhado para "nenhum hook encontrado" — nunca deve ser mutado.
         private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private const long SlowHookWarningMs = 50;
@@ -595,6 +596,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return EmptyActorHookList;
             }
 
+            if (ReferenceEquals(actorHooks, EmptyActorHookList))
+            {
+                return actorHooks;
+            }
+
             actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
             return actorHooks;
         }
@@ -604,6 +610,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             List<(string Label, IActorLifecycleHook Hook)> hooks)
         {
             if (transform == null || hooks == null || hooks.Count == 0)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(hooks, EmptyActorHookList))
             {
                 return;
             }
