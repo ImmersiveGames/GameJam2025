@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.QA
         private bool _dependenciesResolved;
         private bool _isResetting;
         private string _sceneName;
+        private bool _waitingForBootstrapLogEmitted;
 
         private static bool IsNewscriptsModeActive =>
 #if NEWSCRIPTS_MODE
@@ -52,10 +53,13 @@ namespace _ImmersiveGames.NewScripts.QA
         {
             _sceneName = gameObject.scene.name;
             _lifetimeCts = new CancellationTokenSource();
+        }
 
+        private void Start()
+        {
             if (autoBindOnStart)
             {
-                _ = EnsureDependenciesAsync(_lifetimeCts.Token, logSuccess: verboseLogs);
+                _ = EnsureDependenciesAsync(_lifetimeCts.Token, logSuccess: verboseLogs, logWaiting: verboseLogs);
             }
         }
 
@@ -112,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 return;
             }
 
-            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs);
+            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
             if (!injected)
             {
                 return;
@@ -150,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
         private async Task RunStressResetsAsync(CancellationToken token)
         {
-            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs);
+            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
             if (!injected)
             {
                 return;
@@ -194,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 $"[QA] {label}: stress reset finalizado ({stressResetCount}x).");
         }
 
-        private async Task<bool> EnsureDependenciesAsync(CancellationToken token, bool logSuccess)
+        private async Task<bool> EnsureDependenciesAsync(CancellationToken token, bool logSuccess, bool logWaiting = false)
         {
             if (_dependenciesResolved && HasResolvedDependencies())
             {
@@ -202,6 +206,7 @@ namespace _ImmersiveGames.NewScripts.QA
             }
 
             var deadline = Time.realtimeSinceStartup + Mathf.Max(0.01f, resolveTimeoutSeconds);
+            _waitingForBootstrapLogEmitted = false;
 
             while (Time.realtimeSinceStartup <= deadline && !token.IsCancellationRequested)
             {
@@ -210,12 +215,20 @@ namespace _ImmersiveGames.NewScripts.QA
                 if (HasResolvedDependencies())
                 {
                     _dependenciesResolved = true;
+                    _waitingForBootstrapLogEmitted = false;
                     if (logSuccess)
                     {
                         DebugUtility.Log(typeof(WorldLifecycleQATester),
                             $"[QA] {label}: dependências resolvidas via lazy injection.");
                     }
                     return true;
+                }
+
+                if (logWaiting && !_waitingForBootstrapLogEmitted)
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleQATester),
+                        $"[QA] {label}: aguardando NewSceneBootstrapper registrar serviços de cena (scene='{_sceneName}').");
+                    _waitingForBootstrapLogEmitted = true;
                 }
 
                 var retryMs = Mathf.Max(1, (int)(retryIntervalSeconds * 1000f));
@@ -232,8 +245,10 @@ namespace _ImmersiveGames.NewScripts.QA
             if (!HasResolvedDependencies() && !token.IsCancellationRequested)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleQATester),
-                    $"[QA] {label}: falha ao resolver dependências. Verifique NewSceneBootstrapper na cena e prefira Start/lazy injection. " +
-                    $"controller={( _controller != null)}, actorRegistry={( _actorRegistry != null)}, spawnRegistry={( _spawnRegistry != null)}.");
+                    $"[QA] {label}: falha ao resolver dependências em {resolveTimeoutSeconds:F2}s (scene='{_sceneName}'). " +
+                    "Confirme que o NewSceneBootstrapper está ativo na cena e executa antes deste tester (ordem de execução). " +
+                    $"controller={(_controller != null)}, gateService={(_gateService != null)}, actorRegistry={(_actorRegistry != null)}, " +
+                    $"spawnRegistry={(_spawnRegistry != null)}, hookRegistry={(_hookRegistry != null)}.");
             }
 
             return false;
@@ -241,7 +256,10 @@ namespace _ImmersiveGames.NewScripts.QA
 
         private bool HasResolvedDependencies()
         {
-            return _controller != null || (_actorRegistry != null && _spawnRegistry != null);
+            return _gateService != null
+                   && _actorRegistry != null
+                   && _spawnRegistry != null
+                   && _hookRegistry != null;
         }
 
         private WorldLifecycleOrchestrator CreateOrchestrator()
