@@ -2,6 +2,11 @@
 
 ## Atualizações 02/2026 — Defesa Planetária v2.2
 
+### ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
+- Documenta fases formais (`SceneScopeReady → GameplayReady`), reset por escopo (soft/hard), passes de spawn e late bind de UI cross-scene.
+- Integra Scene Flow, WorldLifecycle e `SimulationGateService` sem alterar APIs atuais, priorizando determinismo e telemetria.
+- Inclui linha do tempo oficial e plano de implementação por fases para adoção incremental.
+
 ### Consolidação final
 - Interfaces de defesa centralizadas em `PlanetDefenseInterfaces.cs`, incluindo `IPlanetDefenseSetupOrchestrator`, `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner`, para manter contratos únicos e alinhados ao DI do projeto.
 - Implementações concretas ativas: `PlanetDefenseOrchestrationService`, `RealPlanetDefensePoolRunner` e `RealPlanetDefenseWaveRunner` substituem stubs antigos, usando `WavePresetSo` + `DefenseEntryConfigSO` para preparar contexto, aquecer pools e disparar waves com `CountdownTimer`.

@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 826837236}
-  - component: {fileID: 826837237}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -151,27 +150,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &826837237
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 826837234}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d08701629df04542b1f669f6cb7fa08d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  runOnStart: 1
-  verboseLogs: 1
-  warmupFrames: 1
-  registerControllerAsSceneService: 1
-  resolveTimeoutSeconds: 1
-  retryIntervalSeconds: 0.05
-  runStress: 1
-  stressResetCount: 3
-  stressResetDelaySeconds: 0.25
 --- !u!1 &988919174
 GameObject:
   m_ObjectHideFlags: 0
@@ -294,6 +272,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0c953711b2951049b48a179e552fd34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoInitializeOnStart: 1
+  verboseLogs: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
