@@ -1,24 +1,11 @@
-# Commit 0 — Projeto Base (Unity 6, Multiplayer Local)
+# GameJam2025 — Índice de Documentação
 
-Repositório inicial sem código de gameplay, preparado para um projeto Unity 6 focado em multiplayer local. Este commit estabelece apenas contratos arquiteturais e documentação de apoio.
+Repositório base para jogo Unity 6 com multiplayer local. Este README atua apenas como índice dos materiais técnicos.
 
-## Propósito
-- Servir como base limpa para evoluir sistemas de infraestrutura, gameplay e UI seguindo princípios SOLID.
-- Definir arquitetura **World-Driven** e **Actor-Centric**, com reset por **despawn/respawn**.
-- Garantir referências únicas para ferramentas utilitárias e decisões arquiteturais.
-
-## Documentação
+## Documentação principal
 - [Arquitetura Base](docs/ARCHITECTURE.md)
+- [Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)](docs/world-lifecycle/WorldLifecycle.md)
 - [ADRs Consolidados](docs/adr/ADR.md)
 - [ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas](docs/adr/ADR-ciclo-de-vida-jogo.md)
-- [Guia de Sistemas Uteis](docs/UTILS-SYSTEMS-GUIDE.md)
 - [Decisões — O que este projeto NÃO faz](docs/DECISIONS.md)
-
-## Escopo deste commit
-- Nenhum código C# criado ou modificado.
-- Nenhuma cena ou GameObject adicionados.
-- Apenas documentação e configuração inicial (.editorconfig).
-
-## Requisitos
-- Unity 6
-- Suporte a multiplayer local desde a concepção.
+- [Guia de Sistemas Úteis](docs/UTILS-SYSTEMS-GUIDE.md)
