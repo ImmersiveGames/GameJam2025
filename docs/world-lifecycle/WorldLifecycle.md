@@ -19,15 +19,19 @@ Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bi
 
 ### Linha do tempo oficial
 ```
-Load Scene
+SceneTransitionStarted
 ↓
 SceneScopeReady (gate adquirido, registries de cena prontos)
 ↓
-WorldServicesReady (WorldLifecycle configurado; registries de actor/spawn ativos)
+SceneTransitionScenesReady
+↓
+WorldLoaded (WorldLifecycle configurado; registries de actor/spawn ativos)
 ↓
 SpawnPrewarm (Passo 0 — aquecimento de pools)
 ↓
 SceneScopeBound (late bind liberado; HUD/overlays conectados)
+↓
+SceneTransitionCompleted
 ↓
 GameplayReady (gate liberado; gameplay habilitado)
 ↓

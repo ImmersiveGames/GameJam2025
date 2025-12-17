@@ -50,15 +50,19 @@
 
 ## Linha do tempo oficial
 ```
-Load Scene
+SceneTransitionStarted
 ↓
-SceneScopeReady (Gate Acquired, Registries prontos)
+SceneScopeReady (Gate Acquired, registries prontos)
 ↓
-WorldServicesReady (WorldLifecycle configurado, registries de actors/spawn ativos)
+SceneTransitionScenesReady
+↓
+WorldLoaded (registries e serviços de mundo configurados)
 ↓
 SpawnPrewarm (Passo 0)
 ↓
 SceneScopeBound (Late Bind liberado; HUD/overlays conectados)
+↓
+SceneTransitionCompleted
 ↓
 GameplayReady (Gate liberado; gameplay habilitado)
 ↓
@@ -84,3 +88,17 @@ GameplayReady (Gate liberado; gameplay habilitado)
 3. **Fase 3 — WorldLifecycle**: adaptar reset para aceitar `ResetScope` (soft/hard) sem quebrar contratos; manter ordenação determinística e cache por ciclo.
 4. **Fase 4 — UI Late Bind**: alinhar HUD/overlays para escutar `SceneScopeBound`, mover binds críticos para esse ponto, remover binds antecipados.
 5. **Fase 5 — Telemetria e QA manual**: instrumentar logs por fase/pass, criar checklist manual para validar ordem e binds; sem testes automatizados neste estágio.
+
+## Fase 1 — Ready Gate e Sinais de Scene Flow
+- **Fonte oficial dos sinais**: o **Scene Flow** é a fonte de verdade para readiness de cena. Ele publica os eventos de transição que determinam a entrada/saída do estado “ready” do jogo e dirigem as fases iniciais do ciclo de vida.
+
+- **Mapeamento de eventos → fases**:
+  - `SceneTransitionStarted`: jogo entra em **Not Ready**; o `SimulationGate` é adquirido enquanto a transição/carregamento ocorre.
+  - `SceneTransitionScenesReady`: fase **WorldLoaded**; cenas carregadas, `ActiveScene` definida e ponto seguro para resets de mundo (Fase 2).
+  - `SceneTransitionCompleted`: fase **GameplayReady**; gate liberado, input e simulação podem iniciar.
+
+- **Responsabilidades explícitas**:
+  - `GameManager`/FSM não definem readiness; apenas navegam entre cenas/partidas.
+  - `WorldLifecycle` não decide **quando** rodar; ele reage aos sinais de Scene Flow e executa reset determinístico conforme o escopo.
+  - `Scene Flow` publica os sinais e é o único autor das transições de readiness.
+  - Drivers de runtime e fases futuras (UI, input, simulação) consomem esses sinais para acionar gates, spawn/bind e resets conforme o contrato.
