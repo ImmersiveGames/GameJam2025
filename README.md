@@ -10,6 +10,7 @@ Repositório inicial sem código de gameplay, preparado para um projeto Unity 6 
 ## Documentação
 - [Arquitetura Base](docs/ARCHITECTURE.md)
 - [ADRs Consolidados](docs/adr/ADR.md)
+- [ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas](docs/adr/ADR-ciclo-de-vida-jogo.md)
 - [Guia de Sistemas Uteis](docs/UTILS-SYSTEMS-GUIDE.md)
 - [Decisões — O que este projeto NÃO faz](docs/DECISIONS.md)
 
