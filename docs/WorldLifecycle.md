@@ -13,14 +13,33 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L13-L345】
 
 ## Onde o registry é criado e como injetar
-- Criação (guardrail): o `NewSceneBootstrapper` instancia e registra `WorldLifecycleHookRegistry` no escopo da cena durante o `Awake`, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`). `WorldLifecycleController` e `WorldLifecycleOrchestrator` nunca criam ou registram o registry; eles apenas o consomem via DI. Qualquer tentativa de recriar ou registrar fora do bootstrapper deve ser tratada como erro.
+- Guardrail de criação/ownership: o `WorldLifecycleHookRegistry` é criado e registrado **apenas** pelo `NewSceneBootstrapper` no escopo da cena, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`).
+- Reuso em segunda chamada: se o provider já tiver o registry para a mesma cena, o bootstrapper loga erro e **não sobrescreve**; apenas reutiliza a instância existente.
+- Hooks de cena QA/dev: o bootstrapper garante que os hooks `SceneLifecycleHookLoggerA/B` estejam presentes no `WorldRoot` e os registra no registry sem duplicar.
 - Injeção: qualquer componente de cena pode declarar `[Inject] private WorldLifecycleHookRegistry _hookRegistry;` e chamar `DependencyManager.Provider.InjectDependencies(this);` para obter a instância da cena atual.
-- Diagnóstico: há log verbose confirmando o registro do registry na cena.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L13-L73】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】
+- Diagnóstico: há log verbose confirmando o registro (ou reuso) do registry na cena.
+【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L13-L87】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】
 
 ## Hooks disponíveis
 - **`IWorldLifecycleHook`**: permite observar o ciclo de reset de mundo. Pode vir de três fontes na execução: (1) serviços que também implementam `IWorldLifecycleHook`, (2) hooks de cena registrados via `IDependencyProvider.GetAllForScene`, (3) hooks registrados explicitamente no `WorldLifecycleHookRegistry`. A ordem de execução segue exatamente o pipeline determinístico (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais) e é logada por fase.
 - **`IActorLifecycleHook`**: componentes `MonoBehaviour` anexados a atores. São descobertos pelo orquestrador ao percorrer `Transform` dos atores registrados e executados nas fases de ator (`OnBeforeActorDespawnAsync` e `OnAfterActorSpawnAsync`) preservando a ordem fixa do reset.
+
+### Otimização: cache de Actor hooks por ciclo
+- Durante `ResetWorldAsync`, os `IActorLifecycleHook` de cada ator são coletados e ordenados, e agora podem ser reutilizados no mesmo ciclo via cache privado por `Transform`.
+- O cache é limpo no `finally` do reset, inclusive em caso de falha, mantendo o escopo estritamente por ciclo.
+- A ordenação determinística continua a mesma: (`Order`, `Type.FullName`), assegurando execução estável mesmo com o cache.
+
+### Scene Hooks (WorldLifecycleHookRegistry)
+- Hooks de cena (`IWorldLifecycleHook`) podem ser registrados no `WorldLifecycleHookRegistry` criado pelo `NewSceneBootstrapper` e serão executados em todas as fases do reset.
+- A ordenação continua determinística: primeiro por `IOrderedLifecycleHook.Order`, depois por `Type.FullName`.
+- Exemplo (cena **NewBootstrap**): `SceneLifecycleHookLoggerA` (`Order=0`) e `SceneLifecycleHookLoggerB` (`Order=10`) são adicionados ao `WorldRoot` e registrados no registry, produzindo logs como:
+  - `OnBeforeDespawn phase started (hooks=2)` seguido de `OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` e as mensagens `[QA] ... -> OnBeforeDespawnAsync` de cada hook.
+  - `OnAfterSpawn phase started (hooks=2)` com a mesma ordem e logs `[QA] ... -> OnAfterSpawnAsync`, validando que ambos os hooks executam e preservam a ordem.
+
+### QA / Validação de Ordenação (hooks de cena)
+- Hooks de validação: `SceneLifecycleHookLoggerA` (`Order=0`) e `SceneLifecycleHookLoggerB` (`Order=10`).
+- Expectativa de log em cada fase com hooks: `execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` seguido das mensagens `[QA] ... -> OnBeforeDespawnAsync` ou `[QA] ... -> OnAfterSpawnAsync` confirmando execução na ordem.
+- O fluxo padrão (DummyActor + actor hooks) permanece intacto; os hooks de cena apenas instrumentam a ordem determinística.
 
 ### Ordenação determinística
 - **Hooks de mundo (`IWorldLifecycleHook`)**: ordenados por `Order` quando o hook implementa `IOrderedLifecycleHook` (default = 0) e, como desempate, por `Type.FullName` com comparação ordinal.

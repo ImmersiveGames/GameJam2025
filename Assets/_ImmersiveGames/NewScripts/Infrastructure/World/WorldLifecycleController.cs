@@ -13,6 +13,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleController : MonoBehaviour
     {
+        [Header("Lifecycle")]
+        [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
+                 "Para testes automatizados (Opção B), o AutoTestRunner deve desligar isto antes do Start().")]
+        [SerializeField] private bool autoInitializeOnStart = true;
+
+        [Header("Debug")]
+        [SerializeField] private bool verboseLogs = true;
+
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
@@ -23,7 +31,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
+        private bool _isResetting;
         private string _sceneName = string.Empty;
+
+        public bool AutoInitializeOnStart
+        {
+            get => autoInitializeOnStart;
+            set => autoInitializeOnStart = value;
+        }
 
         private void Awake()
         {
@@ -39,64 +54,78 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return;
             }
 
+            if (!autoInitializeOnStart)
+            {
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"AutoInitializeOnStart desabilitado — aguardando acionamento externo (scene='{_sceneName}').");
+                }
+                return;
+            }
+
             _ = InitializeWorldAsync();
+        }
+
+        /// <summary>
+        /// API para automação/QA. Garante não concorrência e executa um reset completo.
+        /// </summary>
+        public async Task ResetWorldAsync(string reason)
+        {
+            if (_isResetting)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Reset ignorado (já em andamento). reason='{reason}', scene='{_sceneName}'.");
+                return;
+            }
+
+            _isResetting = true;
+            try
+            {
+                EnsureDependenciesInjected();
+                if (!HasCriticalDependencies())
+                {
+                    return;
+                }
+
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.");
+                }
+
+                BuildSpawnServices();
+                _orchestrator = CreateOrchestrator();
+
+                await _orchestrator.ResetWorldAsync();
+
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Reset concluído. reason='{reason}', scene='{_sceneName}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
+                    this);
+            }
+            finally
+            {
+                _isResetting = false;
+            }
         }
 
         [ContextMenu("QA/Reset World Now")]
         public async void ResetWorldNow()
         {
-            DebugUtility.Log(
-                typeof(WorldLifecycleController),
-                $"Reset manual iniciado na cena '{_sceneName}'.");
-
-            try
-            {
-                EnsureDependenciesInjected();
-                if (!HasCriticalDependencies())
-                {
-                    return;
-                }
-
-                BuildSpawnServices();
-                _orchestrator = CreateOrchestrator();
-
-                await _orchestrator.ResetWorldAsync();
-
-                DebugUtility.Log(
-                    typeof(WorldLifecycleController),
-                    $"Reset manual finalizado na cena '{_sceneName}'.");
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(
-                    typeof(WorldLifecycleController),
-                    $"Exception during manual world reset in scene '{_sceneName}': {ex}",
-                    this);
-            }
+            await ResetWorldAsync("ContextMenu/ResetWorldNow");
         }
 
         private async Task InitializeWorldAsync()
         {
-            try
-            {
-                EnsureDependenciesInjected();
-                if (!HasCriticalDependencies())
-                {
-                    return;
-                }
-
-                BuildSpawnServices();
-
-                _orchestrator = CreateOrchestrator();
-                await _orchestrator.ResetWorldAsync();
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(
-                    typeof(WorldLifecycleController),
-                    $"Exception during world initialization in scene '{_sceneName}': {ex}",
-                    this);
-            }
+            await ResetWorldAsync("AutoInitialize/Start");
         }
 
         private void EnsureDependenciesInjected()
@@ -140,8 +169,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (_spawnRegistry == null)
             {
-                DebugUtility.LogError(
-                    typeof(WorldLifecycleController),
+                DebugUtility.LogError(typeof(WorldLifecycleController),
                     $"Nenhum IWorldSpawnServiceRegistry encontrado para a cena '{_sceneName}'. Lista ficará vazia.",
                     this);
                 return;
@@ -160,8 +188,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
-            DebugUtility.Log(
-                typeof(WorldLifecycleController),
+            DebugUtility.Log(typeof(WorldLifecycleController),
                 $"Spawn services coletados para a cena '{_sceneName}': {_spawnServices.Count} (registry total: {_spawnRegistry.Services.Count}).");
 
             if (_actorRegistry != null)

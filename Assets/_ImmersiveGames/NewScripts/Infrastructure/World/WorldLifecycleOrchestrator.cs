@@ -25,6 +25,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly IDependencyProvider _provider;
         private readonly string _sceneName;
         private readonly WorldLifecycleHookRegistry _hookRegistry;
+        private readonly Dictionary<Transform, ActorHookCacheEntry> _actorHookCache = new();
+        // Sentinel compartilhado para "nenhum hook encontrado" — nunca deve ser mutado.
+        private static readonly List<(string Label, IActorLifecycleHook Hook)> EmptyActorHookList = new();
 
         private const long SlowHookWarningMs = 50;
 
@@ -103,6 +106,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             finally
             {
                 resetWatch.Stop();
+
+                ClearActorHookCacheForCycle();
 
                 if (gateHandle != null)
                 {
@@ -277,22 +282,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         continue;
                     }
 
-                    var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
-                    if (components == null || components.Length == 0)
+                    if (!TryGetCachedActorHooks(transform, out var actorHooks))
                     {
-                        continue;
-                    }
-
-                    var actorHooks = new List<(string Label, IActorLifecycleHook Hook)>();
-
-                    foreach (var component in components)
-                    {
-                        if (component is not IActorLifecycleHook hook)
-                        {
-                            continue;
-                        }
-
-                        actorHooks.Add((component.GetType().Name, hook));
+                        actorHooks = CollectActorHooks(transform);
+                        CacheActorHooks(transform, actorHooks);
                     }
 
                     if (actorHooks.Count == 0)
@@ -300,7 +293,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         continue;
                     }
 
-                    actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
                     LogHookOrder($"{hookName} ({actorLabel})", actorHooks);
 
                     foreach (var actorHook in actorHooks)
@@ -550,6 +542,102 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             DebugUtility.Log(typeof(WorldLifecycleOrchestrator),
                 $"ActorRegistry count at '{label}': {_actorRegistry.Count}");
+        }
+
+        private bool TryGetCachedActorHooks(
+            Transform transform,
+            out List<(string Label, IActorLifecycleHook Hook)> hooks)
+        {
+            hooks = null;
+
+            if (transform == null)
+            {
+                return false;
+            }
+
+            if (!_actorHookCache.TryGetValue(transform, out var entry))
+            {
+                return false;
+            }
+
+            if (entry.Root == null || entry.Root != transform.root)
+            {
+                _actorHookCache.Remove(transform);
+                return false;
+            }
+
+            hooks = entry.Hooks;
+            return hooks != null;
+        }
+
+        private List<(string Label, IActorLifecycleHook Hook)> CollectActorHooks(Transform transform)
+        {
+            var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
+            if (components == null || components.Length == 0)
+            {
+                return EmptyActorHookList;
+            }
+
+            List<(string Label, IActorLifecycleHook Hook)> actorHooks = null;
+
+            foreach (var component in components)
+            {
+                if (component is not IActorLifecycleHook hook)
+                {
+                    continue;
+                }
+
+                actorHooks ??= new List<(string Label, IActorLifecycleHook Hook)>();
+                actorHooks.Add((component.GetType().Name, hook));
+            }
+
+            if (actorHooks == null)
+            {
+                return EmptyActorHookList;
+            }
+
+            actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
+            return actorHooks;
+        }
+
+        private void CacheActorHooks(
+            Transform transform,
+            List<(string Label, IActorLifecycleHook Hook)> hooks)
+        {
+            if (transform == null || hooks == null || hooks.Count == 0)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(hooks, EmptyActorHookList))
+            {
+                return;
+            }
+
+            var root = transform.root;
+            _actorHookCache[transform] = new ActorHookCacheEntry(root, hooks);
+        }
+
+        /// <summary>
+        /// Limpa o cache de hooks por ator ao final de cada ciclo de reset.
+        /// Mantém a semântica de cache por ciclo, mesmo em caso de falhas.
+        /// </summary>
+        private void ClearActorHookCacheForCycle()
+        {
+            _actorHookCache.Clear();
+        }
+
+        private sealed class ActorHookCacheEntry
+        {
+            public ActorHookCacheEntry(Transform root, List<(string Label, IActorLifecycleHook Hook)> hooks)
+            {
+                Root = root;
+                Hooks = hooks;
+            }
+
+            public Transform Root { get; }
+
+            public List<(string Label, IActorLifecycleHook Hook)> Hooks { get; }
         }
     }
 
