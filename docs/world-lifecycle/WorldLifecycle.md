@@ -214,3 +214,14 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 - Componentes que consomem esses serviços devem evitar injeção no `Awake()` quando a ordem de execução ainda não garantiu o bootstrapper; prefira `Start()` ou injeção lazy com retry curto.
 - QA testers (ex.: `WorldLifecycleQATester`) adotam injeção lazy com retry e timeout: aguardam alguns frames/tempo curto se o registry ainda não existe, abortando com mensagem clara se o bootstrapper não rodou. Isso evita falsos negativos em cenas novas.
 - O `WorldLifecycleOrchestrator` assume que dependências já foram resolvidas pelo fluxo de bootstrap; ele não corrige ordem de inicialização e não registra serviços de cena.
+
+## Migration Strategy (Legacy → NewScripts)
+- Consulte a ADR [ADR-0001 — Migração incremental do Legado para o NewScripts](../../Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md) para a estratégia detalhada.
+- Abordagem oficial: Portas e Adaptadores, escolhendo entre Refazer/Integrar/Adaptar cada componente legado (Player primeiro).
+- Guardrails fixos: NewScripts não referencia concreto do legado fora de adaptadores; pipeline determinístico com gate sempre ativo.
+- WorldLifecycleHookRegistry nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem.
+- Soft reset é opt-in por escopo (`IResetScopeParticipant` + `ResetContext.Scopes`); não há participantes implícitos globais.
+- `ISimulationGateService` continua sendo o gate de simulação para resets e transições.
+- Plano incremental: congelar baseline de logs, definir fronteira do Player, criar adaptador mínimo, migrar capacidades uma a uma.
+- Validação: hard reset mantém ordem e idempotência; soft reset `Players` roda só participantes de escopo na ordem determinística.
+- Consequência esperada: isolamento do legado com rollback simples, ao custo de adaptadores temporários e disciplina de fronteiras.
