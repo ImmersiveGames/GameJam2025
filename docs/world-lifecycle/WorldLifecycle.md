@@ -90,6 +90,12 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Hard Reset**: realiza desbind de UI, despawn completo e rebuild de registries, reacquire do gate e reinstala Scene Flow antes de liberar `GameplayReady`. Usado para troca de mapa ou rollback de partida.
 - **Escopo explícito**: todos os resets devem registrar `ResetScope` (Soft/Hard) em logs/telemetria para evitar heurísticas.
 
+### Soft Reset por Escopo (semântica funcional)
+- **Escopos são domínios de gameplay**: `Players`, `Boss`, etc. representam o resultado de gameplay a ser restaurado, não apenas um subconjunto de GameObjects. O pipeline continua determinístico, apenas filtra participantes pelo escopo solicitado.
+- **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, serviços de gameplay, caches temporários, timers e dados persistidos que influenciam o player, mesmo fora do prefab.
+- **Restaurar baseline completo**: o critério é “o player volta ao estado inicial consistente”. Se isso exigir limpar cooldowns globais, estado de câmera, buffers de input ou progressão temporária em serviços compartilhados, o participante do escopo deve fazê-lo.
+- **Exemplo textual**: um soft reset de `Players` pode limpar HUD e notificações, reinicializar roteadores de input locais, zerar caches de atributos e redefinir o foco da câmera — tudo via participantes declarados de `Scope=Players`, mesmo que morem fora do objeto Player.
+
 ### ResetScope as Gameplay Outcome (Not Object Hierarchy)
 - **Conceito**: `ResetScope` representa o resultado esperado de gameplay (ex.: “resetar players corretamente”), e não “quais componentes do prefab/player serão tocados”.
 - **Soft reset composicional**: múltiplos `IResetScopeParticipant` em sistemas/managers/serviços diferentes podem declarar `Scope=Players` (ou `Boss/Stage`), e todos devem rodar para restaurar o baseline daquele escopo. Exemplos para `Players`: UI manager que limpa HUD, roteador de input que reconfigura bindings locais, cache de stats que zera buffers temporários.

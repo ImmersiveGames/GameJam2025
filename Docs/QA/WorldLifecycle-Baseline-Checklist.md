@@ -16,7 +16,7 @@
 
 ## Soft Reset (Players)
 - **Como disparar**: `WorldLifecycleController` → ContextMenu `QA/Soft Reset Players Now`.
-- **Definição de escopo**: `Players` significa restaurar o baseline do player (experiência/estado), podendo envolver participantes externos ao prefab que declararem `Scope=Players` (ex.: UI manager, roteador de input, caches).
+- **Definição de escopo**: `Players` significa restaurar o baseline do player (experiência/estado), podendo envolver participantes externos ao prefab que declararem `Scope=Players` (ex.: UI manager, roteador de input, caches). O `ActorRegistry` permanece o mesmo; o foco é garantir que o player volte ao estado inicial consistente.
 - **Ordem esperada**:
   1. `[Gate] Acquire token='SimulationGateTokens.SoftReset'`.
   2. `ResetContext.Scopes` inclui apenas `Players`; somente `IResetScopeParticipant` com esse escopo executa.
@@ -25,4 +25,6 @@
 - **Pass/Fail signals**:
   - Pass: log de start/end do `PlayersResetParticipant` com `ResetContext.Scopes=[Players]` antes do respawn.
   - Pass: ordem de fases espelhando o hard reset, sem recriar bindings de UI/canvas.
+  - Pass: o estado final do player equivale a um player recém-inicializado, mesmo tocando múltiplos sistemas externos declarados como `IResetScopeParticipant`.
+  - ✅ Pass: sistemas externos necessários ao player podem ser resetados desde que declarados como participantes de `Scope=Players`.
   - Fail: participantes fora do escopo (ex.: `World` ou inimigos) executando ou ausência do log de filtro de escopo.
