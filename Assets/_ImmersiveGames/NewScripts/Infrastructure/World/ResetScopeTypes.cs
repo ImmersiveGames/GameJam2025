@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         {
             if (!HasScopes)
             {
-                return true;
+                return false;
             }
 
             for (var i = 0; i < Scopes.Count; i++)

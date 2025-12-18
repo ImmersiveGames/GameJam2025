@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
@@ -725,11 +726,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
 
             var context = _currentResetContext.Value;
-            if (context.ContainsScope(ResetScope.World))
-            {
-                return true;
-            }
-
             if (candidate is IResetScopeParticipant scopedParticipant)
             {
                 return context.ContainsScope(scopedParticipant.Scope);
@@ -772,6 +768,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunScopedParticipantsResetAsync(ResetContext context)
         {
+            // Soft reset executa apenas participantes que declaram escopo via IResetScopeParticipant.
+            // Caso seja necessário um hook global no futuro, isso deve acontecer por meio de um escopo/interface explícitos.
             var participants = CollectScopedParticipants();
             if (participants.Count == 0)
             {
@@ -848,6 +846,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private List<IResetScopeParticipant> CollectScopedParticipants()
         {
             var participants = new List<IResetScopeParticipant>();
+            var uniques = new HashSet<IResetScopeParticipant>(ResetScopeParticipantReferenceComparer.Instance);
 
             if (_spawnServices != null)
             {
@@ -855,7 +854,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 {
                     if (service is IResetScopeParticipant participant)
                     {
-                        participants.Add(participant);
+                        if (uniques.Add(participant))
+                        {
+                            participants.Add(participant);
+                        }
                     }
                 }
             }
@@ -865,7 +867,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             {
                 if (sceneHooks[i] is IResetScopeParticipant participant)
                 {
-                    participants.Add(participant);
+                    if (uniques.Add(participant))
+                    {
+                        participants.Add(participant);
+                    }
                 }
             }
 
@@ -874,7 +879,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             {
                 if (registryHooks[i] is IResetScopeParticipant participant)
                 {
-                    participants.Add(participant);
+                    if (uniques.Add(participant))
+                    {
+                        participants.Add(participant);
+                    }
                 }
             }
 
@@ -928,6 +936,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                 $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
+        }
+
+        private sealed class ResetScopeParticipantReferenceComparer : IEqualityComparer<IResetScopeParticipant>
+        {
+            public static readonly ResetScopeParticipantReferenceComparer Instance = new();
+
+            public bool Equals(IResetScopeParticipant x, IResetScopeParticipant y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(IResetScopeParticipant obj)
+            {
+                return RuntimeHelpers.GetHashCode(obj);
+            }
         }
     }
 
