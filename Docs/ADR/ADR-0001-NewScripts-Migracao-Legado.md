@@ -14,6 +14,7 @@
   - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
   - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
   - Avaliar responsabilidades funcionais, não só componentes: um reset de `Players` pode atravessar fronteiras de sistemas legados (managers, caches, serviços compartilhados) para garantir o baseline do player, desde que cada participação seja explícita.
+  - Guardrail conceitual: `ResetScope.Players` é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate.
 
 ## Guardrails (não negociáveis)
 - Código em `_ImmersiveGames.NewScripts.*` não referencia diretamente classes concretas do legado, exceto dentro de adaptadores dedicados.
