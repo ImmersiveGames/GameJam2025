@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
@@ -17,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleRuntimeDriver
     {
-        private readonly IDependencyProvider _provider;
         private readonly ISimulationGateService _gateService;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private readonly object _resetLock = new();
@@ -27,9 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public WorldLifecycleRuntimeDriver()
         {
-            _provider = DependencyManager.Provider;
-
-            if (_provider.TryGetGlobal<ISimulationGateService>(out var gateService))
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService))
             {
                 _gateService = gateService;
                 DebugUtility.LogVerbose<WorldLifecycleRuntimeDriver>("[WorldLifecycle] ISimulationGateService encontrado no escopo global.");
@@ -188,16 +186,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return true;
             }
 
-            lock (_resetLock)
+            if (string.Equals(_lastResetContextSignature, contextSignature, StringComparison.Ordinal))
             {
-                if (string.Equals(_lastResetContextSignature, contextSignature, StringComparison.Ordinal))
-                {
-                    return false;
-                }
-
-                _lastResetContextSignature = contextSignature;
-                return true;
+                return false;
             }
+
+            _lastResetContextSignature = contextSignature;
+            return true;
         }
 
         private static string BuildContextSignature(SceneTransitionContext context)
@@ -218,7 +213,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return "<null>";
             }
 
-            return list.Count == 0 ? "<empty>" : string.Join("|", list);
+            var filteredEntries = list.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray();
+
+            return filteredEntries.Length == 0 ? "<empty>" : string.Join("|", filteredEntries);
         }
     }
 }
