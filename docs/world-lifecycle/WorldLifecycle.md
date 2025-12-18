@@ -245,3 +245,8 @@ Observação: ao migrar legado, qualquer integração deve preservar este contra
 - Plano incremental: congelar baseline de logs, definir fronteira do Player, criar adaptador mínimo, migrar capacidades uma a uma.
 - Validação: hard reset mantém ordem e idempotência; soft reset `Players` roda só participantes de escopo na ordem determinística.
 - Consequência esperada: isolamento do legado com rollback simples, ao custo de adaptadores temporários e disciplina de fronteiras.
+
+## Baseline Validation Contract
+- Checklist detalhado: [Docs/QA/WorldLifecycle-Baseline-Checklist](../../Docs/QA/WorldLifecycle-Baseline-Checklist.md).
+- Soft reset (`Players`) executa apenas `IResetScopeParticipant` filtrado por `ResetContext.Scopes` e mantém binds/registries da cena intactos.
+- Hard reset roda o ciclo completo do WorldLifecycle (gate acquire → hooks pré/pós-despawn → participantes de escopo → hooks pré/pós-spawn → gate release).
