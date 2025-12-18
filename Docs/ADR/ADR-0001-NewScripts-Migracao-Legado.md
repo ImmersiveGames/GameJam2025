@@ -11,12 +11,17 @@
   - **Refazer (New)**: reimplementar no NewScripts quando custo de adaptação for alto ou quando o legado conflitar com as novas regras.
   - **Integrar (Direct)**: consumir diretamente um serviço legado somente se ele já respeitar as regras de determinismo e não exigir dependências cruzadas.
   - **Adaptar (Adapter/Bridge)**: encapsular o legado em adaptadores isolados para controlar side effects e alinhar com o pipeline.
+  - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
+  - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
+  - Avaliar responsabilidades funcionais, não só componentes: um reset de `Players` pode atravessar fronteiras de sistemas legados (managers, caches, serviços compartilhados) para garantir o baseline do player, desde que cada participação seja explícita.
+  - Guardrail conceitual: `ResetScope.Players` é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate.
 
 ## Guardrails (não negociáveis)
 - Código em `_ImmersiveGames.NewScripts.*` não referencia diretamente classes concretas do legado, exceto dentro de adaptadores dedicados.
 - Reset e transições seguem sempre o pipeline determinístico: `Gate Acquire → Hooks/ActorHooks → Despawn → Hooks → (Scoped Participants no soft reset) → Spawn → Hooks → Gate Release`.
 - `WorldLifecycleHookRegistry` é criado somente no `NewSceneBootstrapper`; controller/orchestrator apenas consomem via DI.
 - Soft reset executa apenas `IResetScopeParticipant` para escopos solicitados; não existe execução implícita global.
+- Escopos de reset são contratos funcionais (resultado de gameplay), não contratos estruturais de prefab/objeto; participação de legado deve ser declarada via adaptadores ou participantes de escopo, mantendo o pipeline intacto.
 - `ISimulationGateService` é o gate oficial para bloquear a simulação durante resets/transições.
 
 ## Arquitetura atual (resumo)

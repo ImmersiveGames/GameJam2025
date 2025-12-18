@@ -90,6 +90,20 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Hard Reset**: realiza desbind de UI, despawn completo e rebuild de registries, reacquire do gate e reinstala Scene Flow antes de liberar `GameplayReady`. Usado para troca de mapa ou rollback de partida.
 - **Escopo explícito**: todos os resets devem registrar `ResetScope` (Soft/Hard) em logs/telemetria para evitar heurísticas.
 
+### Soft Reset por Escopo (semântica funcional)
+- **Escopos são domínios de gameplay**: `Players`, `Boss`, etc. representam o resultado funcional a ser restaurado, não a localização física do código. `ResetScope.Players` é um contrato de baseline de gameplay (“player volta ao estado inicial”), não de hierarquia de GameObjects.
+- **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, roteadores de input, serviços de gameplay, caches temporários, timers ou UI/HUD que influenciem o player, mesmo que morem fora do prefab.
+- **Restaurar baseline completo**: o critério é “o player volta ao estado inicial consistente”. Se isso exigir limpar cooldowns globais, estado de câmera, buffers de input, progressão temporária ou caches de encontro compartilhados, os participantes declarados no escopo devem fazê-lo.
+- **Exemplo textual**: um soft reset de `Players` pode limpar HUD e notificações, reinicializar roteadores de input locais, zerar caches de atributos ou de gameplay state, redefinir o foco da câmera e invalidar timers globais — tudo via participantes declarados de `Scope=Players`, mesmo que morem fora do objeto Player.
+- **Determinismo preservado**: o pipeline continua o mesmo (Gate → Hooks → Scoped Participants → Hooks → Gate), apenas filtrando quem participa pelo escopo solicitado; o impacto pode atravessar fronteiras de sistemas para garantir o baseline do jogador.
+
+### ResetScope as Gameplay Outcome (Not Object Hierarchy)
+- **Conceito**: `ResetScope` representa o resultado esperado de gameplay (ex.: “resetar players corretamente”), e não “quais componentes do prefab/player serão tocados”.
+- **Soft reset composicional**: múltiplos `IResetScopeParticipant` em sistemas/managers/serviços diferentes podem declarar `Scope=Players` (ou `Boss/Stage`), e todos devem rodar para restaurar o baseline daquele escopo. Exemplos para `Players`: UI manager que limpa HUD, roteador de input que reconfigura bindings locais, cache de stats que zera buffers temporários.
+- **Pipeline intacto**: a interpretação do escopo como resultado não muda a ordem do `WorldLifecycle`; o soft reset segue o mesmo pipeline, apenas com participantes filtrados pelo escopo solicitado.
+- **Anti-pattern**: tratar `ResetScope.Players` como “apenas componentes dentro do GameObject Player”.
+- **Padrão correto**: tratar `ResetScope.Players` como “tudo que afeta o estado necessário para o player reiniciar corretamente”, mesmo quando o estado vive fora do prefab.
+
 ## Onde o registry é criado e como injetar
 - Guardrail de criação/ownership: o `WorldLifecycleHookRegistry` é criado e registrado **apenas** pelo `NewSceneBootstrapper` no escopo da cena, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`).
 - Reuso em segunda chamada: se o provider já tiver o registry para a mesma cena, o bootstrapper loga erro e **não sobrescreve**; apenas reutiliza a instância existente.
