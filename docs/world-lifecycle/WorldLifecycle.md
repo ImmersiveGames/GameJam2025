@@ -25,7 +25,7 @@ Define como o jogo reinicia e quais partes são recriadas em cada modo de reset.
 - **Soft Reset (ex.: PlayerDeath)**:
   - Opt-in por escopo: apenas participantes que implementam `IResetScopeParticipant` e cujo `ResetScope` esteja em `ResetContext.Scopes` executam; `ResetScopesAsync` ignora listas vazias e rejeita `ResetScope.World` (para hard reset usar `ResetWorldAsync`).
   - `ResetContext.ContainsScope` retorna `false` quando `Scopes` está vazio/nulo, então um soft reset sem escopos não dispara participantes, mantendo mundo, serviços e cena ativos.
-  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI, e o gate de simulação permanece adquirido até `GameplayReady` para evitar ações antecipadas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/ResetScopeTypes.cs†L37-L68】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L63-L88】
+  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI, e o gate de simulação permanece adquirido até `GameplayReady` para evitar ações antecipadas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/ResetScopeTypes.cs†L37-L68】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L63-L88】 Soft reset por escopo é um contrato funcional: o objetivo é restaurar o baseline de gameplay daquele domínio (ex.: Players), mesmo que envolva sistemas fora do prefab.
 
 - **Hard Reset (ex.: GameOver/Victory)**:
   - Recria o mundo inteiro: desbind de UI/canvas, teardown de registries de cena e reexecução completa do WorldLifecycle.
@@ -92,9 +92,10 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 
 ### Soft Reset por Escopo (semântica funcional)
 - **Escopos são domínios de gameplay**: `Players`, `Boss`, etc. representam o resultado funcional a ser restaurado, não a localização física do código. `ResetScope.Players` é um contrato de baseline de gameplay (“player volta ao estado inicial”), não de hierarquia de GameObjects.
+- **Soft reset por escopo foca no baseline, não em componentes específicos**: não é “quais componentes do prefab eu toco”, e sim “qual baseline de gameplay eu restauro”. A participação é opt-in e explícita: somente `IResetScopeParticipant` declarando `Scope=Players` (ou `Boss/Stage`) e presente em `ResetContext.Scopes` executa.
 - **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, roteadores de input, serviços de gameplay, caches temporários, timers ou UI/HUD que influenciem o player, mesmo que morem fora do prefab.
 - **Restaurar baseline completo**: o critério é “o player volta ao estado inicial consistente”. Se isso exigir limpar cooldowns globais, estado de câmera, buffers de input, progressão temporária ou caches de encontro compartilhados, os participantes declarados no escopo devem fazê-lo.
-- **Exemplo textual**: um soft reset de `Players` pode limpar HUD e notificações, reinicializar roteadores de input locais, zerar caches de atributos ou de gameplay state, redefinir o foco da câmera e invalidar timers globais — tudo via participantes declarados de `Scope=Players`, mesmo que morem fora do objeto Player.
+- **Exemplos práticos**: `Players` pode englobar limpar buffers de input, reconfigurar HUD/overlays, resetar caches de atributos/estado de gameplay, reenquadrar câmera e invalidar timers globais dependentes do player — tudo via participantes de `Scope=Players`, mesmo fora do prefab.
 - **Determinismo preservado**: o pipeline continua o mesmo (Gate → Hooks → Scoped Participants → Hooks → Gate), apenas filtrando quem participa pelo escopo solicitado; o impacto pode atravessar fronteiras de sistemas para garantir o baseline do jogador.
 
 ### ResetScope as Gameplay Outcome (Not Object Hierarchy)
@@ -219,7 +220,7 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 ### Soft Reset (`Players`)
 - Token esperado: `SimulationGateTokens.SoftReset` adquirido antes do reset e liberado ao final.
 - Apenas `IResetScopeParticipant` executa nesta fase, seguindo ordenação determinística por `(scope, order, typename)`.
-- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo.
+- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo e restauração do baseline funcional do player, mesmo quando múltiplos participantes externos são chamados.
 
 ### WorldLifecycleRuntimeDriver (`ScenesReady`)
 - Recebe `SceneTransitionScenesReadyEvent` e calcula `contextSignature`.

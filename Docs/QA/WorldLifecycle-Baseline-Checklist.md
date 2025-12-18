@@ -16,6 +16,7 @@
 
 ## Soft Reset (Players)
 - **Como disparar**: `WorldLifecycleController` → ContextMenu `QA/Soft Reset Players Now`.
+- **Nota de escopo funcional**: Soft reset `Players` pode tocar dependências externas do player (managers/caches/UI, input router, câmera, timers, serviços) se isso for necessário para restaurar o baseline; isso é esperado e deve ser feito via `IResetScopeParticipant` com `Scope=Players`.
 - **Definição de escopo**: `Players` é um contrato funcional de baseline (experiência/estado) e não “apenas componentes do prefab”. Qualquer participante externo (UI/HUD, roteadores de input, managers, caches, serviços) pode resetar o que for necessário declarando `Scope=Players`. O `ActorRegistry` permanece o mesmo; o foco é garantir que o player volte ao estado inicial consistente.
 - **Ordem esperada**:
   1. `[Gate] Acquire token='SimulationGateTokens.SoftReset'`.

@@ -14,7 +14,7 @@
   - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
   - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
   - Avaliar responsabilidades funcionais, não só componentes: um reset de `Players` pode atravessar fronteiras de sistemas legados (managers, caches, serviços compartilhados) para garantir o baseline do player, desde que cada participação seja explícita.
-  - Guardrail conceitual: `ResetScope.Players` é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate.
+  - Guardrail conceitual: `ResetScope.Players` é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate. Escopos de reset (Players/Boss/Stage) são resultados de gameplay, não hierarquias de GameObject.
 
 ## Guardrails (não negociáveis)
 - Código em `_ImmersiveGames.NewScripts.*` não referencia diretamente classes concretas do legado, exceto dentro de adaptadores dedicados.
@@ -39,10 +39,11 @@ SceneBootstrapper -> registries/context -> Controller -> Orchestrator -> SpawnSe
 - **Definir fronteira do Player**: publicar contratos/interfaces no NewScripts que o Player deve implementar ou expor via adaptador.
 - **Implementar Adapter mínimo do Player**: criar adaptador apenas após fronteira definida, mantendo o Player legado sob controle do gate e do pipeline.
 - **Migrar capacidades**: mover módulos de input, movimento, vida, etc., para o NewScripts uma capacidade por vez, removendo dependências diretas do legado.
+- **Mapear baseline funcional**: identificar tudo o que precisa ser resetado para restaurar o baseline do player (incluindo managers, caches, serviços e UI fora do prefab) e decidir quem participa via `Scope=Players`.
 
 ## Critérios de validação
 - Hard reset: logs de `Gate Acquire/Release` e fases em ordem, sem concorrência ou duplicação por `contextSignature`.
-- Soft reset `Players`: executa somente participantes do escopo `Players`, ordem determinística por `(scope, order, typename)`, sem hooks globais indevidos.
+- Soft reset `Players`: executa somente participantes do escopo `Players`, ordem determinística por `(scope, order, typename)`, sem hooks globais indevidos e restaurando baseline consistente do player mesmo quando envolve participantes externos via adaptadores.
 - Nenhum arquivo do NewScripts referencia namespaces do legado diretamente (exceto adaptadores em pasta dedicada).
 
 ## Consequências
