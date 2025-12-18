@@ -1,8 +1,8 @@
 using System;
-using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 {
@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     /// e emite logs verbosos para QA manual.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameReadinessService : IDisposable
+    public sealed class GameReadinessService
     {
         private readonly ISimulationGateService _gateService;
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
@@ -37,14 +37,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
         }
 
-        public void Dispose()
-        {
-            EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
-            EventBus<SceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
-            EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
-
-            ReleaseGateHandle();
-        }
+        public bool IsGameplayReady => _gameplayReady;
 
         private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
         {

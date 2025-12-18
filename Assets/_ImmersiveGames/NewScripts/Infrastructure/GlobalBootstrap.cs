@@ -1,11 +1,11 @@
 using System;
-using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // NewScripts generic ID factory (no gameplay semantics).
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
 
-            // Simulation Gate is still sourced from the legacy infra contracts.
+            // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
         }
 
@@ -74,12 +74,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void InitializeReadinessGate()
         {
-            if (_gameReadinessService != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap), "GameReadinessService já inicializado.");
-                return;
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
             {
                 DebugUtility.LogError(typeof(GlobalBootstrap),
@@ -87,8 +81,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
+            if (DependencyManager.Provider.TryGetGlobal<GameReadinessService>(out var registered) && registered != null)
+            {
+                _gameReadinessService = registered;
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap), "[Readiness] GameReadinessService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             _gameReadinessService = new GameReadinessService(gate);
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap), "[Readiness] GameReadinessService inicializado (Scene Flow → SimulationGate).",
+            DependencyManager.Provider.RegisterGlobal(_gameReadinessService);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate).",
                 DebugUtility.Colors.Info);
         }
     }
