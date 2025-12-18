@@ -183,7 +183,8 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 
 ## QA: como reproduzir e o que esperar
 1. Abra a cena **NewBootstrap** no Editor.
-2. No `WorldLifecycleController`, use o menu de contexto `QA/Reset World Now` para disparar um reset determinístico manual.
+2. No `WorldLifecycleController`, use o menu de contexto `QA/Reset World Now` para disparar um reset determinístico manual ou
+   o menu `QA/Soft Reset Players Now` para disparar apenas o escopo `Players` (equivalente a chamar `ResetPlayersAsync("QA/PlayersSoftReset")`).
 3. Espere ver no Console:
    - Log verbose confirmando `WorldLifecycleHookRegistry registrado para a cena '<scene>'` vindo do `NewSceneBootstrapper`.
    - Logs de início/fim do reset e de cada fase (gate acquired/released, hooks, spawn/despawn) emitidos pelo `WorldLifecycleOrchestrator`.
