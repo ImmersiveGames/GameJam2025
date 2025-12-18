@@ -92,15 +92,16 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 
 ### Soft Reset por Escopo (semântica funcional)
 - **Escopos são domínios de gameplay**: `Players`, `Boss`, etc. representam o resultado funcional a ser restaurado, não a localização física do código. `ResetScope.Players` é um contrato de baseline de gameplay (“player volta ao estado inicial”), não de hierarquia de GameObjects.
-- **Soft reset por escopo foca no baseline, não em componentes específicos**: não é “quais componentes do prefab eu toco”, e sim “qual baseline de gameplay eu restauro”. A participação é opt-in e explícita: somente `IResetScopeParticipant` declarando `Scope=Players` (ou `Boss/Stage`) e presente em `ResetContext.Scopes` executa.
-- **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, roteadores de input, serviços de gameplay, caches temporários, timers ou UI/HUD que influenciem o player, mesmo que morem fora do prefab.
+- **Soft reset por escopo foca no baseline, não em componentes específicos**: não é “quais componentes do prefab eu toco”, e sim “qual baseline de gameplay eu restauro”. A participação é opt-in e explícita: somente `IResetScopeParticipant` declarando `Scope=Players` (ou `Boss/Stage`) e presente em `ResetContext.Scopes` executa; qualquer ausência de escopo significa não rodar.
+- **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, roteadores de input, serviços de gameplay, caches temporários, timers ou UI/HUD que influenciem o player, mesmo que morem fora do prefab. Escopo é resultado esperado, não endereço físico.
 - **Restaurar baseline completo**: o critério é “o player volta ao estado inicial consistente”. Se isso exigir limpar cooldowns globais, estado de câmera, buffers de input, progressão temporária ou caches de encontro compartilhados, os participantes declarados no escopo devem fazê-lo.
-- **Exemplos práticos**: `Players` pode englobar limpar buffers de input, reconfigurar HUD/overlays, resetar caches de atributos/estado de gameplay, reenquadrar câmera e invalidar timers globais dependentes do player — tudo via participantes de `Scope=Players`, mesmo fora do prefab.
+- **Exemplos práticos**: `Players` pode englobar limpar buffers de input, reconfigurar HUD/overlays, resetar caches de atributos/estado de gameplay, reenquadrar câmera, invalidar timers globais dependentes do player ou sincronizar roteadores de câmera/input — tudo via participantes de `Scope=Players`, mesmo fora do prefab.
+- **Anti-pattern explícito**: interpretar `ResetScope.Players` como “reset apenas dos componentes dentro do GameObject Player” é incorreto; o contrato é restaurar baseline funcional do domínio.
 - **Determinismo preservado**: o pipeline continua o mesmo (Gate → Hooks → Scoped Participants → Hooks → Gate), apenas filtrando quem participa pelo escopo solicitado; o impacto pode atravessar fronteiras de sistemas para garantir o baseline do jogador.
 
 ### ResetScope as Gameplay Outcome (Not Object Hierarchy)
 - **Conceito**: `ResetScope` representa o resultado esperado de gameplay (ex.: “resetar players corretamente”), e não “quais componentes do prefab/player serão tocados”.
-- **Soft reset composicional**: múltiplos `IResetScopeParticipant` em sistemas/managers/serviços diferentes podem declarar `Scope=Players` (ou `Boss/Stage`), e todos devem rodar para restaurar o baseline daquele escopo. Exemplos para `Players`: UI manager que limpa HUD, roteador de input que reconfigura bindings locais, cache de stats que zera buffers temporários.
+- **Soft reset composicional**: múltiplos `IResetScopeParticipant` em sistemas/managers/serviços diferentes podem declarar `Scope=Players` (ou `Boss/Stage`), e todos devem rodar para restaurar o baseline daquele escopo. Exemplos para `Players`: UI manager que limpa HUD, roteador de input que reconfigura bindings locais, cache de stats que zera buffers temporários, gerenciador de câmera que recentraliza vista, timers/serviços de encontro que sincronizam estado do jogador.
 - **Pipeline intacto**: a interpretação do escopo como resultado não muda a ordem do `WorldLifecycle`; o soft reset segue o mesmo pipeline, apenas com participantes filtrados pelo escopo solicitado.
 - **Anti-pattern**: tratar `ResetScope.Players` como “apenas componentes dentro do GameObject Player”.
 - **Padrão correto**: tratar `ResetScope.Players` como “tudo que afeta o estado necessário para o player reiniciar corretamente”, mesmo quando o estado vive fora do prefab.
@@ -220,7 +221,7 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 ### Soft Reset (`Players`)
 - Token esperado: `SimulationGateTokens.SoftReset` adquirido antes do reset e liberado ao final.
 - Apenas `IResetScopeParticipant` executa nesta fase, seguindo ordenação determinística por `(scope, order, typename)`.
-- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo e restauração do baseline funcional do player, mesmo quando múltiplos participantes externos são chamados.
+- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo e restauração do baseline funcional do player, mesmo quando múltiplos participantes externos são chamados (HUD, input router, câmera, caches, serviços).
 
 ### WorldLifecycleRuntimeDriver (`ScenesReady`)
 - Recebe `SceneTransitionScenesReadyEvent` e calcula `contextSignature`.

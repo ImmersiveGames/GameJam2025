@@ -27,5 +27,5 @@
   - Pass: log de start/end do `PlayersResetParticipant` com `ResetContext.Scopes=[Players]` antes do respawn.
   - Pass: ordem de fases espelhando o hard reset, sem recriar bindings de UI/canvas.
   - Pass: o estado final do player equivale a um player recém-inicializado, mesmo tocando múltiplos sistemas externos declarados como `IResetScopeParticipant`.
-  - ✅ Pass: sistemas externos necessários ao player podem ser resetados desde que declarados como participantes de `Scope=Players` (isso é esperado, não falha).
+  - ✅ Pass: sistemas externos necessários ao player podem ser resetados desde que declarados como participantes de `Scope=Players` (isso é esperado, não falha; escopo é baseline funcional, não hierarquia de prefab).
   - Fail: participantes fora do escopo (ex.: `World` ou inimigos) executando ou ausência do log de filtro de escopo.
