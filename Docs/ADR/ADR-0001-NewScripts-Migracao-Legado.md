@@ -11,6 +11,8 @@
   - **Refazer (New)**: reimplementar no NewScripts quando custo de adaptação for alto ou quando o legado conflitar com as novas regras.
   - **Integrar (Direct)**: consumir diretamente um serviço legado somente se ele já respeitar as regras de determinismo e não exigir dependências cruzadas.
   - **Adaptar (Adapter/Bridge)**: encapsular o legado em adaptadores isolados para controlar side effects e alinhar com o pipeline.
+  - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
+  - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
 
 ## Guardrails (não negociáveis)
 - Código em `_ImmersiveGames.NewScripts.*` não referencia diretamente classes concretas do legado, exceto dentro de adaptadores dedicados.
