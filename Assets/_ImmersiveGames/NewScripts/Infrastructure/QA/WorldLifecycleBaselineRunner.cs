@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
@@ -69,11 +70,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            LogInfo(runId, $"START Hard Reset (trigger='{trigger}')");
+            LogInfo(runId, $"START Hard Reset (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
                 await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
-                LogInfo(runId, "END Hard Reset");
+                LogInfo(runId, $"END Hard Reset ({BuildSceneTimeScaleInfo()})");
             }
             catch (Exception ex)
             {
@@ -100,11 +101,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}')");
+            LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
                 await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
-                LogInfo(runId, "END Soft Reset Players");
+                LogInfo(runId, $"END Soft Reset Players ({BuildSceneTimeScaleInfo()})");
             }
             catch (Exception ex)
             {
@@ -131,7 +132,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            LogInfo(runId, $"START Full Baseline (trigger='{trigger}')");
+            LogInfo(runId, $"START Full Baseline (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
                 LogInfo(runId, "Hard Reset - BEGIN");
@@ -142,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
                 LogInfo(runId, "Soft Reset Players - END");
 
-                LogInfo(runId, "END Full Baseline");
+                LogInfo(runId, $"END Full Baseline ({BuildSceneTimeScaleInfo()})");
             }
             catch (Exception ex)
             {
@@ -176,7 +177,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             DebugUtility.LogError(typeof(WorldLifecycleBaselineRunner),
-                $"{LogPrefix} não encontrou WorldLifecycleController na cena. Abortando baseline.");
+                $"{LogPrefix} não encontrou WorldLifecycleController na cena. Abortando baseline. " +
+                $"Detalhes de cena: activeScene='{SceneManager.GetActiveScene().name}', runnerScene='{gameObject.scene.name}'.");
             return null;
         }
 
@@ -196,6 +198,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             DebugUtility.LogError(typeof(WorldLifecycleBaselineRunner),
                 $"{LogPrefix} [{runId}] {message}");
+        }
+
+        private static string BuildSceneTimeScaleInfo()
+        {
+            return $"scene='{SceneManager.GetActiveScene().name}', timeScale={Time.timeScale}";
         }
     }
 }
