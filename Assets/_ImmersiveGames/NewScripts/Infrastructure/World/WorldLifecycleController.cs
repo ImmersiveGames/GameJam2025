@@ -117,10 +117,68 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
         }
 
+        /// <summary>
+        /// Soft reset focado apenas no escopo de jogadores (Players).
+        /// </summary>
+        public async Task ResetPlayersAsync(string reason = "QA/PlayersSoftReset")
+        {
+            if (_isResetting)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Soft reset ignorado (já em andamento). reason='{reason}', scene='{_sceneName}'.");
+                return;
+            }
+
+            _isResetting = true;
+            try
+            {
+                EnsureDependenciesInjected();
+                if (!HasCriticalDependencies())
+                {
+                    return;
+                }
+
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.");
+                }
+
+                BuildSpawnServices();
+                _orchestrator = CreateOrchestrator();
+
+                await _orchestrator.ResetScopesAsync(
+                    new List<ResetScope> { ResetScope.Players },
+                    reason);
+
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"Soft reset (Players) concluído. reason='{reason}', scene='{_sceneName}'.");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleController),
+                    $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
+                    this);
+            }
+            finally
+            {
+                _isResetting = false;
+            }
+        }
+
         [ContextMenu("QA/Reset World Now")]
         public async void ResetWorldNow()
         {
             await ResetWorldAsync("ContextMenu/ResetWorldNow");
+        }
+
+        [ContextMenu("QA/Soft Reset Players Now")]
+        public async void ResetPlayersNow()
+        {
+            await ResetPlayersAsync("ContextMenu/SoftResetPlayers");
         }
 
         private async Task InitializeWorldAsync()

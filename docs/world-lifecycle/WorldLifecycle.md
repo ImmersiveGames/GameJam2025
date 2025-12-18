@@ -3,16 +3,18 @@
 > Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
 
 ## Visão geral do reset determinístico
-O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn/pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release. O fluxo realiza:
+O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn → (se houver `ResetContext`) Scoped Reset Participants → Hooks pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release. O fluxo realiza:
 - Acquire: tenta adquirir o `ISimulationGateService` usando o token `WorldLifecycle.WorldReset` para serializar resets.
 - Hooks (pré-despawn): executa hooks registrados por serviços de spawn, hooks de cena (registrados no provider da cena) e hooks explícitos no `WorldLifecycleHookRegistry`.
 - Actor hooks (pré-despawn): percorre atores registrados e executa `OnBeforeActorDespawnAsync()` de cada `IActorLifecycleHook` encontrado.
 - Despawn: chama `DespawnAsync()` de cada `IWorldSpawnService` registrado, mantendo logs de início/fim.
-- Hooks (pós-despawn/pré-spawn): executa `OnAfterDespawnAsync()` e `OnBeforeSpawnAsync()` seguindo a mesma ordem determinística de coleções.
+- Hooks (pós-despawn): executa `OnAfterDespawnAsync()` na mesma ordem determinística de coleções.
+- (Opt-in) Scoped reset participants: quando há `ResetContext`, executa `IResetScopeParticipant.ResetAsync()` apenas para os escopos solicitados antes de seguir para spawn.
+- Hooks (pré-spawn): executa `OnBeforeSpawnAsync()` após os participantes de escopo.
 - Spawn: chama `SpawnAsync()` dos serviços e, em seguida, hooks de atores e de mundo para `OnAfterSpawnAsync()`.
 - Release: devolve o gate adquirido e finaliza com logs de duração.
  - Nota: se não houver hooks registrados para uma fase, o sistema emite log verbose `"<PhaseName> phase skipped (hooks=0)"` para diagnóstico e para confirmar que a fase foi considerada.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L13-L345】
+【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L631-L672】
 
 ## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
 Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bind e reset.
@@ -21,9 +23,9 @@ Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bi
 Define como o jogo reinicia e quais partes são recriadas em cada modo de reset.
 
 - **Soft Reset (ex.: PlayerDeath)**:
-  - Recria apenas atores ou grupos específicos mantendo mundo, serviços e cena ativos.
-  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI.
-  - O gate de simulação permanece adquirido durante o reset e é liberado apenas ao sinal de `GameplayReady` para evitar ações antecipadas.
+  - Opt-in por escopo: apenas participantes que implementam `IResetScopeParticipant` e cujo `ResetScope` esteja em `ResetContext.Scopes` executam; `ResetScopesAsync` ignora listas vazias e rejeita `ResetScope.World` (para hard reset usar `ResetWorldAsync`).
+  - `ResetContext.ContainsScope` retorna `false` quando `Scopes` está vazio/nulo, então um soft reset sem escopos não dispara participantes, mantendo mundo, serviços e cena ativos.
+  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI, e o gate de simulação permanece adquirido até `GameplayReady` para evitar ações antecipadas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/ResetScopeTypes.cs†L37-L68】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L63-L88】
 
 - **Hard Reset (ex.: GameOver/Victory)**:
   - Recria o mundo inteiro: desbind de UI/canvas, teardown de registries de cena e reexecução completa do WorldLifecycle.
@@ -128,6 +130,7 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Do:** manter a ordem do reset exatamente como: Acquire Gate → Hooks pré-despawn → Actor hooks pré-despawn → Despawn → Hooks pós-despawn/pré-spawn → Spawn → Actor hooks pós-spawn → Hooks finais → Release Gate.
 - **Don't:** instanciar ou registrar manualmente o registry no controller ou no orquestrator; eles apenas consomem a instância de cena.
 - **Don't:** alterar a sequência das fases do reset ou mover responsabilidades entre bootstrapper, controller e orquestrator.
+- **Do:** se um soft reset não faz nada, verifique se os scopes foram passados e se existem participantes registrados (`IResetScopeParticipant`) para aquele escopo.
 
 ## Como registrar um hook no registry
 1. Garanta que o componente tenha recebido injeção de dependências na cena e registre no `Awake` (o registry já existe porque nasceu no bootstrapper):
@@ -183,12 +186,33 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 
 ## QA: como reproduzir e o que esperar
 1. Abra a cena **NewBootstrap** no Editor.
-2. No `WorldLifecycleController`, use o menu de contexto `QA/Reset World Now` para disparar um reset determinístico manual.
+2. No `WorldLifecycleController`, use o menu de contexto `QA/Reset World Now` para disparar um reset determinístico manual ou
+   o menu `QA/Soft Reset Players Now` para disparar apenas o escopo `Players` (equivalente a chamar `ResetPlayersAsync("QA/PlayersSoftReset")`).
 3. Espere ver no Console:
    - Log verbose confirmando `WorldLifecycleHookRegistry registrado para a cena '<scene>'` vindo do `NewSceneBootstrapper`.
    - Logs de início/fim do reset e de cada fase (gate acquired/released, hooks, spawn/despawn) emitidos pelo `WorldLifecycleOrchestrator`.
 4. Não deve haver logs dizendo que o registry foi criado pelo controller; ele apenas consome via DI.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L24-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L42-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
+
+## Validation Contract (Baseline)
+
+### Hard Reset (`ResetWorldAsync`)
+- `[Gate] Acquire token='WorldLifecycle.WorldReset'` (ou o token efetivamente usado para hard reset) antes de iniciar qualquer fase.
+- Fases em ordem, com logs de início e fim: `OnBeforeDespawn`, `OnBeforeActorDespawn`, `Despawn`, `OnAfterDespawn`, `OnBeforeSpawn`, `Spawn`, `OnAfterActorSpawn`, `OnAfterSpawn`.
+- `[Gate] Released` ao final do ciclo.
+- `World Reset Completed` confirmando fechamento do pipeline.
+
+### Soft Reset (`Players`)
+- Token esperado: `SimulationGateTokens.SoftReset` adquirido antes do reset e liberado ao final.
+- Apenas `IResetScopeParticipant` executa nesta fase, seguindo ordenação determinística por `(scope, order, typename)`.
+- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo.
+
+### WorldLifecycleRuntimeDriver (`ScenesReady`)
+- Recebe `SceneTransitionScenesReadyEvent` e calcula `contextSignature`.
+- Garante idempotência ignorando resets com a mesma assinatura já processada.
+- Adquire o gate `SimulationGateTokens.Loading` durante o reset e libera ao final.
+
+Observação: ao migrar legado, qualquer integração deve preservar este contrato; se quebrar, rollback/ajuste do adaptador.
 
 ## Troubleshooting: QA/Testers e Boot Order
 - **Sintomas (console):**
@@ -210,3 +234,14 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 - Componentes que consomem esses serviços devem evitar injeção no `Awake()` quando a ordem de execução ainda não garantiu o bootstrapper; prefira `Start()` ou injeção lazy com retry curto.
 - QA testers (ex.: `WorldLifecycleQATester`) adotam injeção lazy com retry e timeout: aguardam alguns frames/tempo curto se o registry ainda não existe, abortando com mensagem clara se o bootstrapper não rodou. Isso evita falsos negativos em cenas novas.
 - O `WorldLifecycleOrchestrator` assume que dependências já foram resolvidas pelo fluxo de bootstrap; ele não corrige ordem de inicialização e não registra serviços de cena.
+
+## Migration Strategy (Legacy → NewScripts)
+- Consulte a ADR [ADR-0001 — Migração incremental do Legado para o NewScripts](../../Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md) para a estratégia detalhada.
+- Abordagem oficial: Portas e Adaptadores, escolhendo entre Refazer/Integrar/Adaptar cada componente legado (Player primeiro).
+- Guardrails fixos: NewScripts não referencia concreto do legado fora de adaptadores; pipeline determinístico com gate sempre ativo.
+- WorldLifecycleHookRegistry nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem.
+- Soft reset é opt-in por escopo (`IResetScopeParticipant` + `ResetContext.Scopes`); não há participantes implícitos globais.
+- `ISimulationGateService` continua sendo o gate de simulação para resets e transições.
+- Plano incremental: congelar baseline de logs, definir fronteira do Player, criar adaptador mínimo, migrar capacidades uma a uma.
+- Validação: hard reset mantém ordem e idempotência; soft reset `Players` roda só participantes de escopo na ordem determinística.
+- Consequência esperada: isolamento do legado com rollback simples, ao custo de adaptadores temporários e disciplina de fronteiras.

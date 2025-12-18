@@ -862,6 +862,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
+            if (_provider != null && !string.IsNullOrWhiteSpace(_sceneName))
+            {
+                var sceneParticipants = new List<IResetScopeParticipant>();
+                _provider.GetAllForScene(_sceneName, sceneParticipants);
+
+                for (var i = 0; i < sceneParticipants.Count; i++)
+                {
+                    var participant = sceneParticipants[i];
+                    if (participant == null)
+                    {
+                        continue;
+                    }
+
+                    if (uniques.Add(participant))
+                    {
+                        participants.Add(participant);
+                    }
+                }
+            }
+
             var sceneHooks = ResolveSceneHooks();
             for (var i = 0; i < sceneHooks.Count; i++)
             {

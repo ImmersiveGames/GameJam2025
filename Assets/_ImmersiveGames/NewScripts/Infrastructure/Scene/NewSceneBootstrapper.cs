@@ -82,6 +82,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
+            var playersResetParticipant = new PlayersResetParticipant();
+            provider.RegisterForScene<IResetScopeParticipant>(
+                _sceneName,
+                playersResetParticipant,
+                allowOverride: false);
+            DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                $"PlayersResetParticipant registrado para a cena '{_sceneName}'.");
+
             RegisterSceneLifecycleHooks(hookRegistry, worldRoot);
 
             RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
