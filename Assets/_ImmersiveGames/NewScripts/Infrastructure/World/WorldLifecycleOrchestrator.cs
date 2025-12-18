@@ -61,6 +61,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public async Task ResetScopesAsync(IReadOnlyList<ResetScope> scopes, string reason)
         {
+            if (scopes == null || scopes.Count == 0)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                    "Scoped reset ignored: scopes vazios ou nulos.");
+                return;
+            }
+
+            for (var i = 0; i < scopes.Count; i++)
+            {
+                if (scopes[i] == ResetScope.World)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        "ResetScope.World não é suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
+                    return;
+                }
+            }
+
             var context = new ResetContext(reason, scopes, ResetFlags.SoftReset);
             await ResetInternalAsync(
                 context,
@@ -639,6 +656,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 LogActorRegistryCount("After Despawn");
 
                 await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+                
+                if (context != null)
+                {
+                    await RunScopedParticipantsResetAsync(context.Value);
+                }
                 await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
 
                 await RunPhaseAsync("Spawn", service => service.SpawnAsync());
@@ -746,6 +768,166 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
 
             return CompareHooks(left, right);
+        }
+
+        private async Task RunScopedParticipantsResetAsync(ResetContext context)
+        {
+            var participants = CollectScopedParticipants();
+            if (participants.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    "Scoped reset participants phase skipped (participants=0)");
+                return;
+            }
+
+            var filtered = new List<IResetScopeParticipant>();
+            foreach (var participant in participants)
+            {
+                if (participant == null)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        "Scoped reset participant é nulo e será ignorado.");
+                    continue;
+                }
+
+                if (!context.ContainsScope(participant.Scope))
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Scoped reset participant skipped by scope: {participant.GetType().Name}");
+                    continue;
+                }
+
+                filtered.Add(participant);
+            }
+
+            if (filtered.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    "Scoped reset participants phase skipped (filtered=0)");
+                return;
+            }
+
+            filtered.Sort(CompareResetScopeParticipants);
+            LogScopedParticipantOrder(filtered);
+
+            foreach (var participant in filtered)
+            {
+                var participantType = participant.GetType().FullName ?? participant.GetType().Name;
+                var watch = Stopwatch.StartNew();
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"Scoped reset started: {participantType}");
+
+                try
+                {
+                    await participant.ResetAsync(context);
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                        $"Scoped reset falhou para {participantType}: {ex}");
+                    throw;
+                }
+                finally
+                {
+                    watch.Stop();
+                    if (watch.ElapsedMilliseconds > SlowHookWarningMs)
+                    {
+                        DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                            $"Scoped reset lento: {participantType} levou {watch.ElapsedMilliseconds}ms.");
+                    }
+
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"Scoped reset duration: {participantType} => {watch.ElapsedMilliseconds}ms");
+                }
+
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"Scoped reset completed: {participantType}");
+            }
+        }
+
+        private List<IResetScopeParticipant> CollectScopedParticipants()
+        {
+            var participants = new List<IResetScopeParticipant>();
+
+            if (_spawnServices != null)
+            {
+                foreach (var service in _spawnServices)
+                {
+                    if (service is IResetScopeParticipant participant)
+                    {
+                        participants.Add(participant);
+                    }
+                }
+            }
+
+            var sceneHooks = ResolveSceneHooks();
+            for (var i = 0; i < sceneHooks.Count; i++)
+            {
+                if (sceneHooks[i] is IResetScopeParticipant participant)
+                {
+                    participants.Add(participant);
+                }
+            }
+
+            var registryHooks = ResolveRegistryHooks();
+            for (var i = 0; i < registryHooks.Count; i++)
+            {
+                if (registryHooks[i] is IResetScopeParticipant participant)
+                {
+                    participants.Add(participant);
+                }
+            }
+
+            return participants;
+        }
+
+        private int CompareResetScopeParticipants(IResetScopeParticipant left, IResetScopeParticipant right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return 0;
+            }
+
+            if (left == null)
+            {
+                return 1;
+            }
+
+            if (right == null)
+            {
+                return -1;
+            }
+
+            var scopeComparison = left.Scope.CompareTo(right.Scope);
+            if (scopeComparison != 0)
+            {
+                return scopeComparison;
+            }
+
+            var orderComparison = left.Order.CompareTo(right.Order);
+            if (orderComparison != 0)
+            {
+                return orderComparison;
+            }
+
+            var leftType = left.GetType().FullName ?? left.GetType().Name;
+            var rightType = right.GetType().FullName ?? right.GetType().Name;
+
+            return string.Compare(leftType, rightType, StringComparison.Ordinal);
+        }
+
+        private void LogScopedParticipantOrder(List<IResetScopeParticipant> participants)
+        {
+            var orderedLabels = participants
+                .Select(participant =>
+                {
+                    var typeName = participant?.GetType().Name ?? "<null participant>";
+                    return $"{typeName}(scope={participant?.Scope}, order={participant?.Order})";
+                })
+                .ToArray();
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                $"Scoped reset execution order: {string.Join(", ", orderedLabels)}");
         }
     }
 
