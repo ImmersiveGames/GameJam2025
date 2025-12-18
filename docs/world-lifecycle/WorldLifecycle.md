@@ -194,6 +194,26 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 4. Não deve haver logs dizendo que o registry foi criado pelo controller; ele apenas consome via DI.
 【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L24-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L42-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
 
+## Validation Contract (Baseline)
+
+### Hard Reset (`ResetWorldAsync`)
+- `[Gate] Acquire token='WorldLifecycle.WorldReset'` (ou o token efetivamente usado para hard reset) antes de iniciar qualquer fase.
+- Fases em ordem, com logs de início e fim: `OnBeforeDespawn`, `OnBeforeActorDespawn`, `Despawn`, `OnAfterDespawn`, `OnBeforeSpawn`, `Spawn`, `OnAfterActorSpawn`, `OnAfterSpawn`.
+- `[Gate] Released` ao final do ciclo.
+- `World Reset Completed` confirmando fechamento do pipeline.
+
+### Soft Reset (`Players`)
+- Token esperado: `SimulationGateTokens.SoftReset` adquirido antes do reset e liberado ao final.
+- Apenas `IResetScopeParticipant` executa nesta fase, seguindo ordenação determinística por `(scope, order, typename)`.
+- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo.
+
+### WorldLifecycleRuntimeDriver (`ScenesReady`)
+- Recebe `SceneTransitionScenesReadyEvent` e calcula `contextSignature`.
+- Garante idempotência ignorando resets com a mesma assinatura já processada.
+- Adquire o gate `SimulationGateTokens.Loading` durante o reset e libera ao final.
+
+Observação: ao migrar legado, qualquer integração deve preservar este contrato; se quebrar, rollback/ajuste do adaptador.
+
 ## Troubleshooting: QA/Testers e Boot Order
 - **Sintomas (console):**
   - QA/tester não encontra `WorldLifecycleHookRegistry` / `IActorRegistry`.

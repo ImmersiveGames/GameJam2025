@@ -43,3 +43,7 @@ SceneBootstrapper -> registries/context -> Controller -> Orchestrator -> SpawnSe
 ## Consequências
 - **Positivas**: isolamento entre legado e NewScripts, previsibilidade do ciclo, rollback simples caso adaptação falhe.
 - **Custos**: necessidade de adaptadores temporários e disciplina rígida de boundaries até a substituição completa.
+
+## Validation / Exit Criteria
+- O contrato de validação do ciclo está descrito em `docs/world-lifecycle/WorldLifecycle.md` (seção **Validation Contract (Baseline)**).
+- Cada passo incremental de migração do legado deve passar por **Hard Reset** e **Soft Reset (Players)** sem regressão de ordem ou logs.
