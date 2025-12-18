@@ -14,7 +14,6 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
 - Spawn: chama `SpawnAsync()` dos serviços e, em seguida, hooks de atores e de mundo para `OnAfterSpawnAsync()`.
 - Release: devolve o gate adquirido e finaliza com logs de duração.
  - Nota: se não houver hooks registrados para uma fase, o sistema emite log verbose `"<PhaseName> phase skipped (hooks=0)"` para diagnóstico e para confirmar que a fase foi considerada.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L631-L672】
 
 ## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
 Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bind e reset.
@@ -25,15 +24,14 @@ Define como o jogo reinicia e quais partes são recriadas em cada modo de reset.
 - **Soft Reset (ex.: PlayerDeath)**:
   - Opt-in por escopo: apenas participantes que implementam `IResetScopeParticipant` e cujo `ResetScope` esteja em `ResetContext.Scopes` executam; `ResetScopesAsync` ignora listas vazias e rejeita `ResetScope.World` (para hard reset usar `ResetWorldAsync`).
   - `ResetContext.ContainsScope` retorna `false` quando `Scopes` está vazio/nulo, então um soft reset sem escopos não dispara participantes, mantendo mundo, serviços e cena ativos.
-  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: Player ou um conjunto de inimigos) sem desregistrar bindings de UI, e o gate de simulação permanece adquirido até `GameplayReady` para evitar ações antecipadas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/ResetScopeTypes.cs†L37-L68】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L63-L88】
-
+  - O ciclo passa pelo reset determinístico do WorldLifecycle apenas para os grupos marcados (ex.: `ResetScope.Players` ou um conjunto de inimigos) sem desregistrar bindings de UI, e o gate de simulação permanece adquirido até `GameplayReady` para evitar ações antecipadas.
 - **Hard Reset (ex.: GameOver/Victory)**:
   - Recria o mundo inteiro: desbind de UI/canvas, teardown de registries de cena e reexecução completa do WorldLifecycle.
   - Obriga a refazer o ciclo de Scene Flow (acquire gate, readiness, spawn, bind) antes de permitir gameplay novamente.
   - Ideal para troca de mapa, reinício de rodada ou rollback completo de estado.
 
 - **Exemplos de grupos futuros** a serem endereçados pelos resets (escopos explícitos e rastreáveis):
-  - Player
+  - Players
   - Boss
   - Inimigos
   - Spawners
@@ -90,13 +88,28 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Hard Reset**: realiza desbind de UI, despawn completo e rebuild de registries, reacquire do gate e reinstala Scene Flow antes de liberar `GameplayReady`. Usado para troca de mapa ou rollback de partida.
 - **Escopo explícito**: todos os resets devem registrar `ResetScope` (Soft/Hard) em logs/telemetria para evitar heurísticas.
 
+### Soft Reset por Escopo (semântica funcional)
+- **Escopos são domínios de gameplay**: `Players`, `Boss`, etc. representam o resultado funcional a ser restaurado, não a localização física do código. `ResetScope.Players` é um contrato de baseline de gameplay (“player volta ao estado inicial”), não de hierarquia de GameObjects.
+- **Soft reset por escopo foca no baseline, não em componentes específicos**: não é “quais componentes do prefab eu toco”, e sim “qual baseline de gameplay eu restauro”. A participação é opt-in e explícita: somente `IResetScopeParticipant` declarando `Scope=Players` (ou `Boss/Stage`) e presente em `ResetContext.Scopes` executa; qualquer ausência de escopo significa não rodar.
+- **Participantes podem tocar sistemas externos**: um `IResetScopeParticipant` de `Scope=Players` pode (e deve) resetar managers, roteadores de input, serviços de gameplay, caches temporários, timers ou UI/HUD que influenciem o player, mesmo que morem fora do prefab. Escopo é resultado esperado, não endereço físico.
+- **Restaurar baseline completo**: o critério é “o player volta ao estado inicial consistente”. Se isso exigir limpar cooldowns globais, estado de câmera, buffers de input, progressão temporária ou caches de encontro compartilhados, os participantes declarados no escopo devem fazê-lo.
+- **Exemplos práticos**: `Players` pode englobar limpar buffers de input, reconfigurar HUD/overlays, resetar caches de atributos/estado de gameplay, reenquadrar câmera, invalidar timers globais dependentes do player ou sincronizar roteadores de câmera/input — tudo via participantes de `Scope=Players`, mesmo fora do prefab.
+- **Anti-pattern explícito**: interpretar `ResetScope.Players` como “reset apenas dos componentes dentro do GameObject Player” é incorreto; o contrato é restaurar baseline funcional do domínio.
+- **Determinismo preservado**: o pipeline continua o mesmo (Gate → Hooks → Scoped Participants → Hooks → Gate), apenas filtrando quem participa pelo escopo solicitado; o impacto pode atravessar fronteiras de sistemas para garantir o baseline do jogador.
+
+### ResetScope as Gameplay Outcome (Not Object Hierarchy)
+- **Conceito**: `ResetScope` representa o resultado esperado de gameplay (ex.: “resetar players corretamente”), e não “quais componentes do prefab/player serão tocados”.
+- **Soft reset composicional**: múltiplos `IResetScopeParticipant` em sistemas/managers/serviços diferentes podem declarar `Scope=Players` (ou `Boss/Stage`), e todos devem rodar para restaurar o baseline daquele escopo. Exemplos para `Players`: UI manager que limpa HUD, roteador de input que reconfigura bindings locais, cache de stats que zera buffers temporários, gerenciador de câmera que recentraliza vista, timers/serviços de encontro que sincronizam estado do jogador.
+- **Pipeline intacto**: a interpretação do escopo como resultado não muda a ordem do `WorldLifecycle`; o soft reset segue o mesmo pipeline, apenas com participantes filtrados pelo escopo solicitado.
+- **Anti-pattern**: tratar `ResetScope.Players` como “apenas componentes dentro do GameObject Player”.
+- **Padrão correto**: tratar `ResetScope.Players` como “tudo que afeta o estado necessário para o player reiniciar corretamente”, mesmo quando o estado vive fora do prefab.
+
 ## Onde o registry é criado e como injetar
 - Guardrail de criação/ownership: o `WorldLifecycleHookRegistry` é criado e registrado **apenas** pelo `NewSceneBootstrapper` no escopo da cena, junto com `IActorRegistry` e `IWorldSpawnServiceRegistry` (sem `allowOverride`).
 - Reuso em segunda chamada: se o provider já tiver o registry para a mesma cena, o bootstrapper loga erro e **não sobrescreve**; apenas reutiliza a instância existente.
 - Hooks de cena QA/dev: o bootstrapper garante que os hooks `SceneLifecycleHookLoggerA/B` estejam presentes no `WorldRoot` e os registra no registry sem duplicar.
 - Injeção: qualquer componente de cena pode declarar `[Inject] private WorldLifecycleHookRegistry _hookRegistry;` e chamar `DependencyManager.Provider.InjectDependencies(this);` para obter a instância da cena atual.
 - Diagnóstico: há log verbose confirmando o registro (ou reuso) do registry na cena.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L13-L87】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】
 
 ## Hooks disponíveis
 - **`IWorldLifecycleHook`**: permite observar o ciclo de reset de mundo. Pode vir de três fontes na execução: (1) serviços que também implementam `IWorldLifecycleHook`, (2) hooks de cena registrados via `IDependencyProvider.GetAllForScene`, (3) hooks registrados explicitamente no `WorldLifecycleHookRegistry`. A ordem de execução segue exatamente o pipeline determinístico (pré-despawn → actor pré-despawn → despawn → pós-despawn/pré-spawn → spawn → actor pós-spawn → finais) e é logada por fase.
@@ -111,19 +124,18 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - Hooks de cena (`IWorldLifecycleHook`) podem ser registrados no `WorldLifecycleHookRegistry` criado pelo `NewSceneBootstrapper` e serão executados em todas as fases do reset.
 - A ordenação continua determinística: primeiro por `IOrderedLifecycleHook.Order`, depois por `Type.FullName`.
 - Exemplo (cena **NewBootstrap**): `SceneLifecycleHookLoggerA` (`Order=0`) e `SceneLifecycleHookLoggerB` (`Order=10`) são adicionados ao `WorldRoot` e registrados no registry, produzindo logs como:
-  - `OnBeforeDespawn phase started (hooks=2)` seguido de `OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` e as mensagens `[QA] ... -> OnBeforeDespawnAsync` de cada hook.
-  - `OnAfterSpawn phase started (hooks=2)` com a mesma ordem e logs `[QA] ... -> OnAfterSpawnAsync`, validando que ambos os hooks executam e preservam a ordem.
+  - `OnBeforeDespawn phase started (hooks=2)` seguido de `OnBeforeDespawn execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` e as mensagens `[QA]  -> OnBeforeDespawnAsync` de cada hook.
+  - `OnAfterSpawn phase started (hooks=2)` com a mesma ordem e logs `[QA]  -> OnAfterSpawnAsync`, validando que ambos os hooks executam e preservam a ordem.
 
 ### QA / Validação de Ordenação (hooks de cena)
 - Hooks de validação: `SceneLifecycleHookLoggerA` (`Order=0`) e `SceneLifecycleHookLoggerB` (`Order=10`).
-- Expectativa de log em cada fase com hooks: `execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` seguido das mensagens `[QA] ... -> OnBeforeDespawnAsync` ou `[QA] ... -> OnAfterSpawnAsync` confirmando execução na ordem.
+- Expectativa de log em cada fase com hooks: `execution order: SceneLifecycleHookLoggerA(order=0), SceneLifecycleHookLoggerB(order=10)` seguido das mensagens `[QA]  -> OnBeforeDespawnAsync` ou `[QA]  -> OnAfterSpawnAsync` confirmando execução na ordem.
 - O fluxo padrão (DummyActor + actor hooks) permanece intacto; os hooks de cena apenas instrumentam a ordem determinística.
 
 ### Ordenação determinística
 - **Hooks de mundo (`IWorldLifecycleHook`)**: ordenados por `Order` quando o hook implementa `IOrderedLifecycleHook` (default = 0) e, como desempate, por `Type.FullName` com comparação ordinal.
-- **Hooks de ator (`IActorLifecycleHook`)**: coletados via `GetComponentsInChildren(...)` em cada ator, mas a execução não depende da ordem retornada; antes de executar, a lista é ordenada por (`Order`, `Type.FullName`) com o mesmo comparador usado nos hooks de mundo.
+- **Hooks de ator (`IActorLifecycleHook`)**: coletados via `GetComponentsInChildren()` em cada ator, mas a execução não depende da ordem retornada; antes de executar, a lista é ordenada por (`Order`, `Type.FullName`) com o mesmo comparador usado nos hooks de mundo.
 - **Observação**: o critério (`Order`, `Type.FullName`) garante que a ordem de execução permaneça estável entre resets e ambientes.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/IWorldLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Actors/IActorLifecycleHook.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L345】
 
 ## Do / Don't
 - **Do:** criar o `WorldLifecycleHookRegistry` apenas no `NewSceneBootstrapper` e reutilizá-lo via injeção na cena.
@@ -157,7 +169,6 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
    }
    ```
 Hooks registrados aqui serão executados em todas as fases, após os hooks de spawn services e hooks de cena.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleHookRegistry.cs†L8-L27】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L67-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
 
 ## IOrderedLifecycleHook
 - Interface opcional que adiciona a propriedade `Order` para controlar prioridade.
@@ -182,7 +193,6 @@ public sealed class NotifyHUDHook : ActorLifecycleHookBase
 }
 ```
 Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automaticamente nas fases de ator durante o reset.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Actors/ActorLifecycleHookBase.cs†L5-L17】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L261-L345】
 
 ## QA: como reproduzir e o que esperar
 1. Abra a cena **NewBootstrap** no Editor.
@@ -192,7 +202,6 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
    - Log verbose confirmando `WorldLifecycleHookRegistry registrado para a cena '<scene>'` vindo do `NewSceneBootstrapper`.
    - Logs de início/fim do reset e de cada fase (gate acquired/released, hooks, spawn/despawn) emitidos pelo `WorldLifecycleOrchestrator`.
 4. Não deve haver logs dizendo que o registry foi criado pelo controller; ele apenas consome via DI.
-【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs†L31-L88】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L24-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L42-L111】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleOrchestrator.cs†L161-L258】
 
 ## Validation Contract (Baseline)
 
@@ -205,7 +214,8 @@ Anexe o componente ao GameObject do ator. O orquestrador irá chamá-lo automati
 ### Soft Reset (`Players`)
 - Token esperado: `SimulationGateTokens.SoftReset` adquirido antes do reset e liberado ao final.
 - Apenas `IResetScopeParticipant` executa nesta fase, seguindo ordenação determinística por `(scope, order, typename)`.
-- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo.
+- Logs do `PlayersResetParticipant` indicando start/end com o `ResetContext` completo e restauração do baseline funcional do player, mesmo quando múltiplos participantes externos são chamados (HUD, input router, câmera, caches, serviços).
+- Fases e serviços podem aparecer como pulados por filtro de escopo (`phase skipped (hooks=0)`, `service skipped by scope filter`); isso é esperado quando não há participantes para o escopo solicitado.
 
 ### WorldLifecycleRuntimeDriver (`ScenesReady`)
 - Recebe `SceneTransitionScenesReadyEvent` e calcula `contextSignature`.
