@@ -6,6 +6,7 @@ using UnityEngine;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -57,6 +58,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
+
+            // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
+            RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class
