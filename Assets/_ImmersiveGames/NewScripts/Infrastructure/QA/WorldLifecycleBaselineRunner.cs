@@ -19,6 +19,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private bool _isRunning;
 
+        [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
+
         [ContextMenu("QA/Baseline/Run Hard Reset")]
         public async void RunHardResetContextMenu()
         {
@@ -70,6 +72,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
+            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+
             LogInfo(runId, $"START Hard Reset (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
@@ -101,6 +105,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
+            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+
             LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
@@ -131,6 +137,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 _isRunning = false;
                 return;
             }
+
+            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
 
             LogInfo(runId, $"START Full Baseline (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
@@ -203,6 +211,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static string BuildSceneTimeScaleInfo()
         {
             return $"scene='{SceneManager.GetActiveScene().name}', timeScale={Time.timeScale}";
+        }
+
+        private void DisableControllerAutoInitializeOnStartIfNeeded(string runId, WorldLifecycleController controller)
+        {
+            if (!disableControllerAutoInitializeOnStart)
+            {
+                return;
+            }
+
+            controller.AutoInitializeOnStart = false;
+            LogInfo(runId, $"AutoInitializeOnStart desabilitado pelo baseline runner ({BuildSceneTimeScaleInfo()})");
         }
     }
 }
