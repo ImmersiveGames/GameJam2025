@@ -10,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// <summary>
     /// Runner minimalista para acionar o baseline do WorldLifecycle sem depender do fluxo de produção.
     /// </summary>
+    [DefaultExecutionOrder(-500)]
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleBaselineRunner : MonoBehaviour
     {
@@ -18,8 +19,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static int _runCounter;
 
         private bool _isRunning;
+        private bool _autoInitDisabled;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
+
+        private void Awake()
+        {
+            if (!disableControllerAutoInitializeOnStart)
+            {
+                return;
+            }
+
+            var controller = FindFirstObjectByType<WorldLifecycleController>();
+            if (controller == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleBaselineRunner),
+                    $"{LogPrefix} AutoInitializeOnStart não pôde ser desabilitado no Awake — WorldLifecycleController não encontrado. ({BuildSceneTimeScaleInfo()})");
+                return;
+            }
+
+            controller.AutoInitializeOnStart = false;
+            _autoInitDisabled = true;
+            DebugUtility.Log(typeof(WorldLifecycleBaselineRunner),
+                $"{LogPrefix} AutoInitializeOnStart desabilitado no Awake (pre-Start) ({BuildSceneTimeScaleInfo()})");
+        }
 
         [ContextMenu("QA/Baseline/Run Hard Reset")]
         public async void RunHardResetContextMenu()
@@ -221,6 +244,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             controller.AutoInitializeOnStart = false;
+
+            if (_autoInitDisabled)
+            {
+                return;
+            }
+
+            _autoInitDisabled = true;
             LogInfo(runId, $"AutoInitializeOnStart desabilitado pelo baseline runner ({BuildSceneTimeScaleInfo()})");
         }
     }
