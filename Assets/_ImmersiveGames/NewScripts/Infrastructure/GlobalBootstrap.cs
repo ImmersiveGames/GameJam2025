@@ -1,11 +1,11 @@
 using System;
-using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // NewScripts generic ID factory (no gameplay semantics).
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
 
-            // Simulation Gate is still sourced from the legacy infra contracts.
+            // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
         }
 

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.Scripts.GameplaySystems.Execution;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
