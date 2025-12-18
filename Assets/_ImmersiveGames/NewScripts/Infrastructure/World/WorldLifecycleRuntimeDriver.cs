@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         /// </summary>
         public void RequestInitialReset(string reason = null)
         {
-            TriggerResetAsync(reason ?? "WorldLifecycleRuntimeDriver/InitialReset", null);
+            TriggerResetAsync(reason ?? "WorldLifecycleRuntimeDriver/InitialReset", null, "RequestInitialReset");
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         /// </summary>
         public void RequestHardRestart(string reason = null)
         {
-            TriggerResetAsync(reason ?? "WorldLifecycleRuntimeDriver/HardRestart", null);
+            TriggerResetAsync(reason ?? "WorldLifecycleRuntimeDriver/HardRestart", null, "RequestHardRestart");
         }
 
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
@@ -68,20 +68,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={evt.Context}");
 
-            if (!TryMarkContext(contextSignature))
-            {
-                DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
-                    $"[WorldLifecycle] Reset ignorado (já executado para este contexto). Context={evt.Context}");
-                return;
-            }
-
             DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
                 $"[WorldLifecycle] Disparando hard reset após ScenesReady. Context={evt.Context}");
 
-            TriggerResetAsync($"ScenesReady/{evt.Context.targetActiveScene}", contextSignature);
+            TriggerResetAsync($"ScenesReady/{evt.Context.targetActiveScene}", contextSignature, evt.Context);
         }
 
-        private void TriggerResetAsync(string reason, string contextSignature)
+        private void TriggerResetAsync(string reason, string contextSignature, object contextForLog)
         {
             lock (_resetLock)
             {
@@ -92,9 +85,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     return;
                 }
 
-                if (!string.IsNullOrEmpty(contextSignature))
+                if (!TryMarkAndStoreContext(contextSignature))
                 {
-                    _lastResetContextSignature = contextSignature;
+                    DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
+                        $"[WorldLifecycle] Reset ignorado (já executado para este contexto). Context={contextForLog}");
+                    return;
                 }
 
                 _ongoingResetTask = RunResetAsync(reason ?? "WorldLifecycleRuntimeDriver/Reset");
@@ -174,42 +169,56 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private WorldLifecycleController ResolveController()
         {
-            // Preferir serviços registrados no escopo da cena alvo.
-            var activeScene = SceneManager.GetActiveScene().name;
-            if (_provider != null && _provider.TryGetForScene<WorldLifecycleController>(activeScene, out var injectedController) && injectedController != null)
-            {
-                return injectedController;
-            }
-
             // Fallback seguro: procurar na cena ativa.
+            var activeScene = SceneManager.GetActiveScene().name;
             var foundController = Object.FindFirstObjectByType<WorldLifecycleController>();
             if (foundController == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeDriver),
-                    $"[WorldLifecycle] WorldLifecycleController não encontrado via DI nem na cena ativa '{activeScene}'.");
+                    $"[WorldLifecycle] WorldLifecycleController não encontrado na cena ativa '{activeScene}'.");
             }
 
             return foundController;
         }
 
-        private bool TryMarkContext(string contextSignature)
+        private bool TryMarkAndStoreContext(string contextSignature)
         {
             if (string.IsNullOrEmpty(contextSignature))
             {
                 return true;
             }
 
-            if (string.Equals(_lastResetContextSignature, contextSignature, StringComparison.Ordinal))
+            lock (_resetLock)
             {
-                return false;
+                if (string.Equals(_lastResetContextSignature, contextSignature, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+
+                _lastResetContextSignature = contextSignature;
+                return true;
             }
-            return true;
         }
 
         private static string BuildContextSignature(SceneTransitionContext context)
         {
-            // Usa ToString() imutável do context para identificar transições de forma determinística.
-            return context.ToString();
+            var targetScene = string.IsNullOrEmpty(context.targetActiveScene) ? "<null>" : context.targetActiveScene;
+            var useFade = context.useFade ? "1" : "0";
+            var loadPart = BuildListPart(context.scenesToLoad);
+            var unloadPart = BuildListPart(context.scenesToUnload);
+            var profileId = context.transitionProfile == null ? "<null>" : context.transitionProfile.name;
+
+            return $"Target={targetScene};Fade={useFade};Load=[{loadPart}];Unload=[{unloadPart}];Profile={profileId}";
+        }
+
+        private static string BuildListPart(System.Collections.Generic.IReadOnlyList<string> list)
+        {
+            if (list == null)
+            {
+                return "<null>";
+            }
+
+            return list.Count == 0 ? "<empty>" : string.Join("|", list);
         }
     }
 }
