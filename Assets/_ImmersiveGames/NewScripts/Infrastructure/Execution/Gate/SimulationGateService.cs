@@ -42,16 +42,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
                 return new ReleaseHandle(this, string.Empty, shouldRelease: false);
             }
 
-            bool changed;
+            bool gateClosedByAcquire;
             lock (_lock)
             {
-                bool wasOpen = _tokens.Count == 0;
+                var wasOpen = _tokens.Count == 0;
                 _tokens.Add(token);
-                bool isOpenNow = _tokens.Count == 0;
-                changed = (wasOpen != isOpenNow);
+                var isOpenNow = _tokens.Count == 0;
+                gateClosedByAcquire = wasOpen && !isOpenNow;
             }
 
-            if (changed)
+            if (gateClosedByAcquire)
             {
                 RaiseGateChanged();
             }
