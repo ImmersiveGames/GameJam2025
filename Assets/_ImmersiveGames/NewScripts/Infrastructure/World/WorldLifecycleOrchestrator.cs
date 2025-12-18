@@ -31,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private const long SlowHookWarningMs = 50;
 
+        private ResetContext? _currentResetContext;
+
         public WorldLifecycleOrchestrator(
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
@@ -50,91 +52,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public async Task ResetWorldAsync()
         {
-            var resetWatch = Stopwatch.StartNew();
-            DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "World Reset Started");
+            await ResetInternalAsync(
+                context: null,
+                gateToken: WorldLifecycleTokens.WorldResetToken,
+                startLog: "World Reset Started",
+                completionLog: "World Reset Completed");
+        }
 
-            IDisposable gateHandle = null;
-            var gateAcquired = false;
-            var completed = false;
-
-            try
-            {
-                LogActorRegistryCount("Reset start");
-
-                if (_spawnServices == null || _spawnServices.Count == 0)
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                        $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
-                }
-
-                if (_gateService != null)
-                {
-                    gateHandle = _gateService.Acquire(WorldLifecycleTokens.WorldResetToken);
-                    gateAcquired = true;
-                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "Gate Acquired");
-                }
-                else
-                {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
-                        "ISimulationGateService ausente: reset seguirá sem gate.");
-                }
-
-                // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
-                // hooks pós-despawn/pré-spawn → spawn → hooks de atores → hooks finais.
-                await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
-                await RunActorHooksBeforeDespawnAsync();
-
-                await RunPhaseAsync("Despawn", service => service.DespawnAsync());
-                LogActorRegistryCount("After Despawn");
-
-                await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
-                await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
-
-                await RunPhaseAsync("Spawn", service => service.SpawnAsync());
-                LogActorRegistryCount("After Spawn");
-
-                await RunActorHooksAfterSpawnAsync();
-                await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
-
-                completed = true;
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator), $"World reset failed: {ex}");
-                throw;
-            }
-            finally
-            {
-                resetWatch.Stop();
-
-                ClearActorHookCacheForCycle();
-
-                if (gateHandle != null)
-                {
-                    try
-                    {
-                        gateHandle.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                            $"Failed to release gate handle: {ex}");
-                    }
-                }
-
-                if (gateAcquired)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "Gate Released");
-                }
-
-                if (completed)
-                {
-                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "World Reset Completed");
-                }
-
-                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
-                    $"Reset duration: {resetWatch.ElapsedMilliseconds}ms");
-            }
+        public async Task ResetScopesAsync(IReadOnlyList<ResetScope> scopes, string reason)
+        {
+            var context = new ResetContext(reason, scopes, ResetFlags.SoftReset);
+            await ResetInternalAsync(
+                context,
+                SimulationGateTokens.SoftReset,
+                startLog: $"Scoped Reset Started ({context})",
+                completionLog: "Scoped Reset Completed");
         }
 
         private async Task RunPhaseAsync(string phaseName, Func<IWorldSpawnService, Task> phaseAction)
@@ -158,6 +90,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
                         $"{phaseName} service é nulo e será ignorado.");
+                    continue;
+                }
+
+                if (!ShouldIncludeForScopes(service))
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                        $"{phaseName} service skipped by scope filter: {service.Name}");
                     continue;
                 }
 
@@ -459,23 +398,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         continue;
                     }
 
-                    hooks.Add((service.Name, lifecycleHook));
+                    if (ShouldIncludeForScopes(lifecycleHook))
+                    {
+                        hooks.Add((service.Name, lifecycleHook));
+                    }
                 }
             }
 
             var sceneHooks = ResolveSceneHooks();
             foreach (var hook in sceneHooks)
             {
-                hooks.Add((hook?.GetType().Name ?? "<null scene hook>", hook));
+                if (ShouldIncludeForScopes(hook))
+                {
+                    hooks.Add((hook?.GetType().Name ?? "<null scene hook>", hook));
+                }
             }
 
             var registryHooks = ResolveRegistryHooks();
             foreach (var hook in registryHooks)
             {
-                hooks.Add((hook?.GetType().Name ?? "<null registry hook>", hook));
+                if (ShouldIncludeForScopes(hook))
+                {
+                    hooks.Add((hook?.GetType().Name ?? "<null registry hook>", hook));
+                }
             }
 
-            hooks.Sort(CompareHooks<IWorldLifecycleHook>);
+            hooks.Sort(CompareHooksWithScope<IWorldLifecycleHook>);
 
             return hooks;
         }
@@ -587,6 +535,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     continue;
                 }
 
+                if (!ShouldIncludeForScopes(hook))
+                {
+                    continue;
+                }
+
                 actorHooks ??= new List<(string Label, IActorLifecycleHook Hook)>();
                 actorHooks.Add((component.GetType().Name, hook));
             }
@@ -596,7 +549,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return EmptyActorHookList;
             }
 
-            actorHooks.Sort(CompareHooks<IActorLifecycleHook>);
+            actorHooks.Sort(CompareHooksWithScope<IActorLifecycleHook>);
             return actorHooks;
         }
 
@@ -638,6 +591,161 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             public Transform Root { get; }
 
             public List<(string Label, IActorLifecycleHook Hook)> Hooks { get; }
+        }
+        private async Task ResetInternalAsync(
+            ResetContext? context,
+            string gateToken,
+            string startLog,
+            string completionLog)
+        {
+            var previousContext = _currentResetContext;
+            _currentResetContext = context;
+
+            var resetWatch = Stopwatch.StartNew();
+            DebugUtility.Log(typeof(WorldLifecycleOrchestrator), startLog);
+
+            IDisposable gateHandle = null;
+            var gateAcquired = false;
+            var completed = false;
+
+            try
+            {
+                LogActorRegistryCount("Reset start");
+
+                if (_spawnServices == null || _spawnServices.Count == 0)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                        $"Nenhum spawn service disponível para a cena '{_sceneName ?? "<unknown>"}'. Reset seguirá apenas com hooks.");
+                }
+
+                if (_gateService != null && !string.IsNullOrWhiteSpace(gateToken))
+                {
+                    gateHandle = _gateService.Acquire(gateToken);
+                    gateAcquired = true;
+                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), $"Gate Acquired ({gateToken})");
+                }
+                else
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleOrchestrator),
+                        "ISimulationGateService ausente: reset seguirá sem gate.");
+                }
+
+                // Ordem fixa do reset: hooks pré-despawn → hooks de atores → despawn →
+                // hooks pós-despawn/pré-spawn → spawn → hooks de atores → hooks finais.
+                await RunHookPhaseAsync("OnBeforeDespawn", hook => hook.OnBeforeDespawnAsync());
+                await RunActorHooksBeforeDespawnAsync();
+
+                await RunPhaseAsync("Despawn", service => service.DespawnAsync());
+                LogActorRegistryCount("After Despawn");
+
+                await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
+                await RunHookPhaseAsync("OnBeforeSpawn", hook => hook.OnBeforeSpawnAsync());
+
+                await RunPhaseAsync("Spawn", service => service.SpawnAsync());
+                LogActorRegistryCount("After Spawn");
+
+                await RunActorHooksAfterSpawnAsync();
+                await RunHookPhaseAsync("OnAfterSpawn", hook => hook.OnAfterSpawnAsync());
+
+                completed = true;
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator), $"World reset failed: {ex}");
+                throw;
+            }
+            finally
+            {
+                resetWatch.Stop();
+
+                ClearActorHookCacheForCycle();
+
+                if (gateHandle != null)
+                {
+                    try
+                    {
+                        gateHandle.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                            $"Failed to release gate handle: {ex}");
+                    }
+                }
+
+                if (gateAcquired)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), "Gate Released");
+                }
+
+                if (completed)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleOrchestrator), completionLog);
+                }
+
+                DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
+                    $"Reset duration: {resetWatch.ElapsedMilliseconds}ms");
+
+                _currentResetContext = previousContext;
+            }
+        }
+
+        private bool ShouldIncludeForScopes(object candidate)
+        {
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            if (_currentResetContext == null)
+            {
+                return true;
+            }
+
+            var context = _currentResetContext.Value;
+            if (context.ContainsScope(ResetScope.World))
+            {
+                return true;
+            }
+
+            if (candidate is IResetScopeParticipant scopedParticipant)
+            {
+                return context.ContainsScope(scopedParticipant.Scope);
+            }
+
+            return false;
+        }
+
+        private int CompareScope(object left, object right)
+        {
+            if (_currentResetContext == null)
+            {
+                return 0;
+            }
+
+            var leftScope = GetParticipantScope(left);
+            var rightScope = GetParticipantScope(right);
+
+            return leftScope.CompareTo(rightScope);
+        }
+
+        private static int GetParticipantScope(object participant)
+        {
+            return participant is IResetScopeParticipant scoped ? (int)scoped.Scope : int.MaxValue;
+        }
+
+        private int CompareHooksWithScope<THook>(
+            (string Label, THook Hook) left,
+            (string Label, THook Hook) right)
+            where THook : class
+        {
+            var scopeComparison = CompareScope(left.Hook, right.Hook);
+            if (scopeComparison != 0)
+            {
+                return scopeComparison;
+            }
+
+            return CompareHooks(left, right);
         }
     }
 
