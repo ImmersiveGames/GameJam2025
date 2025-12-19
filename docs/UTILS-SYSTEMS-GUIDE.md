@@ -180,11 +180,12 @@ Encapsular cálculos recorrentes (ex.: bounds reais de objetos ignorando marcado
 - `Predicates`/`CalculateRealLength` → utilitários autônomos, sem dependências fortes.
 Dependências aceitáveis: infraestrutura chamando utilidades (ex.: DI registrando EventBus). Dependências perigosas: gameplay depender diretamente de `DependencyBootstrapper` ou `PoolManager` global para lógica crítica de rodada (acoplamento ao escopo global).
 
-## 5. Relação com Reset / Spawn / Lifecycle
+## 5. Relação com Reset / Spawn / Lifecycle (infra)
 - Participam ativamente do reset: `SceneServiceRegistry` limpa serviços ao descarregar cena via `SceneServiceCleaner`, evitando vazamento de instâncias entre rounds.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceCleaner.cs†L10-L23】
 - Reagem a reset/descarte: `DependencyManager` remove serviços em `OnDestroy`/`OnApplicationQuit`; `EventBusUtil` limpa buses ao sair do Play Mode (Editor), mas não há limpeza automática ao trocar cena em runtime além do que os registries fizerem.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L101-L124】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L35】
 - `PoolManager` e pools não são limpos automaticamente por cena; se usados para objetos de gameplay por rodada, precisam de limpeza manual ou segregação por cena (ponto de fragilidade).
 - `UniqueIdFactory` mantém contadores enquanto o serviço global existir; em resets de partida, IDs podem continuar incrementando, o que pode afetar lógica que espera contagem reiniciada.
+- Contratos operacionais de pipeline/fases/escopos estão em `docs/world-lifecycle/WorldLifecycle.md`; aqui mantemos apenas a visão infra e impactos.
 
 ## 6. Pontos Fortes do Design Atual
 - Ordem de inicialização explícita (RuntimeInitializeOnLoad + DefaultExecutionOrder) para DI, debug e buses, garantindo infraestrutura antes das cenas.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L26-L118】【F:Assets/_ImmersiveGames/Scripts/Utils/DebugSystems/DebugManager.cs†L5-L41】

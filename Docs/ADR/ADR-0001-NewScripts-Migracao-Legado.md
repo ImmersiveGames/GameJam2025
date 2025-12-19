@@ -23,6 +23,7 @@
 - Soft reset executa apenas `IResetScopeParticipant` para escopos solicitados; não existe execução implícita global.
 - Escopos de reset são contratos funcionais (resultado de gameplay), não contratos estruturais de prefab/objeto; participação de legado deve ser declarada via adaptadores ou participantes de escopo, mantendo o pipeline intacto.
 - `ISimulationGateService` é o gate oficial para bloquear a simulação durante resets/transições.
+- Detalhes operacionais do pipeline, escopos e troubleshooting estão em `../../docs/world-lifecycle/WorldLifecycle.md`; este ADR mantém a decisão e guardrails de migração.
 
 ## Arquitetura atual (resumo)
 - **Global**: `GlobalBootstrap` registra `IUniqueIdFactory`, `ISimulationGateService`, `WorldLifecycleRuntimeDriver` e readiness (`GameReadinessService`).

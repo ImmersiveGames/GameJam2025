@@ -6,8 +6,10 @@ Toda a documentação técnica, arquitetural e ADRs do projeto vivem exclusivame
 
 ## Documentação principal
 - [Arquitetura Base](docs/ARCHITECTURE.md)
-- [Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)](docs/world-lifecycle/WorldLifecycle.md)
+- [Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle) — contrato operacional único](docs/world-lifecycle/WorldLifecycle.md)
 - [ADRs Consolidados](docs/adr/ADR.md)
-- [ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas](docs/adr/ADR-ciclo-de-vida-jogo.md)
+- [ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas (decisão)](docs/adr/ADR-ciclo-de-vida-jogo.md)
 - [Decisões — O que este projeto NÃO faz](docs/DECISIONS.md)
 - [Guia de Sistemas Úteis](docs/UTILS-SYSTEMS-GUIDE.md)
+- [Checklist QA — WorldLifecycle Baseline](Docs/QA/WorldLifecycle-Baseline-Checklist.md)
+- [ADR-0001 — Migração incremental do Legado → NewScripts](Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md)
