@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -48,15 +49,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal(out IUniqueIdFactory factory) || factory == null)
+            DependencyManager.Provider.TryGetGlobal<IUniqueIdFactory>(out var factory);
+            if (factory == null)
             {
-                DebugUtility.LogWarning(typeof(PlayerActor),
-                    "IUniqueIdFactory não encontrado; criando instância local para gerar ActorId.");
-                factory = new UniqueIdFactory();
-                DependencyManager.Provider.RegisterGlobal(factory);
+                DebugUtility.LogError(typeof(PlayerActor),
+                    "IUniqueIdFactory não encontrado; gerando ActorId local para PlayerActor.");
+                _actorId = $"A_{Guid.NewGuid():N}";
+                return;
             }
 
             _actorId = factory.GenerateId(gameObject);
+
+            if (string.IsNullOrWhiteSpace(_actorId))
+            {
+                DebugUtility.LogError(typeof(PlayerActor),
+                    "Falha ao gerar ActorId via IUniqueIdFactory; gerando ActorId local.");
+                _actorId = $"A_{Guid.NewGuid():N}";
+            }
         }
     }
 }
