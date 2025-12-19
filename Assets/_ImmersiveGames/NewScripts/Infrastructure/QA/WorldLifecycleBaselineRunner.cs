@@ -76,6 +76,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
+        private void OnDestroy()
+        {
+            RestoreRepeatedWarningSuppressionIfNeeded();
+        }
+
         [ContextMenu("QA/Baseline/Run Hard Reset")]
         public async void RunHardResetContextMenu()
         {
@@ -309,7 +314,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            SaveRepeatedWarningStateIfNeeded();
             DebugUtility.SetRepeatedCallVerbose(false);
 #endif
         }
@@ -327,6 +331,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 BaselineDebugBootstrap.RestoreIfNeeded(_savedRepeatedVerbose);
                 _restoredBootstrapSuppression = true;
                 _ownsBootstrapSuppression = false;
+                _hasSavedRepeatedVerbose = false;
                 return;
             }
 #endif

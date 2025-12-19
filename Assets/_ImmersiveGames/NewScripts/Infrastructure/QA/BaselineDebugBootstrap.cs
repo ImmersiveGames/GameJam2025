@@ -129,6 +129,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             DebugUtility.SetRepeatedCallVerbose(_previousRepeatedVerbose);
             _restored = true;
+            DebugUtility.Log(typeof(BaselineDebugBootstrap),
+                "[Baseline] Repeated-call warning auto-restaurado pelo driver (nenhum runner assumiu).");
+            DestroyDriverIfExists();
         }
 
         private sealed class BaselineDebugBootstrapDriver : MonoBehaviour
