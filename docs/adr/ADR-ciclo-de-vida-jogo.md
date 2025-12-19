@@ -1,4 +1,5 @@
 Doc update: Reset-In-Place semantics clarified
+
 # ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
 
 ## Contexto
@@ -19,7 +20,7 @@ Doc update: Reset-In-Place semantics clarified
 - **Scene Flow**: responsável por readiness de cena e binds cross-scene. Fornece estados `SceneScopeReady` e `SceneScopeBound` antes de liberar gameplay.
 - **WorldLifecycle**: permanece encarregado de reset determinístico de atores/serviços, agora acionado por escopo (soft/hard) e alinhado às fases de Scene Flow.
 - **Coordenação**: Scene Flow coordena gates de readiness; WorldLifecycle executa despawn/spawn/reset; FSM apenas navega entre cenas/partidas.
- - **Detalhamento operacional**: o pipeline completo, ordenação determinística, contratos de escopo e troubleshooting vivem em `docs/world-lifecycle/WorldLifecycle.md` como fonte operacional única.
+- **Detalhamento operacional**: o pipeline completo, ordenação determinística, contratos de escopo e troubleshooting vivem em `docs/world-lifecycle/WorldLifecycle.md` como fonte operacional única.
 
 ## Definição de Fases (linha do tempo)
 `SceneScopeReady → WorldServicesReady → SpawnPrewarm → SceneScopeBound → GameplayReady`
@@ -28,44 +29,72 @@ Doc update: Reset-In-Place semantics clarified
 
 ## Reset Scopes
 - **Owner das semânticas**: contrato completo em `../world-lifecycle/WorldLifecycle.md#escopos-de-reset` e `#resets-por-escopo`.
-- **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds/registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
+- **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds e registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
 
 ### Soft Reset Semantics — Reset-In-Place
-- **Decisão arquitetural**: `Soft Reset Players = reset-in-place`. Não há pipeline de despawn/spawn; somente revalidação lógica via participantes de escopo.
-- **Preservado**:
-  - `GameObject` / instância do ator permanece viva (não é despawnado).
-  - Identidade (`ActorId`) permanece a mesma (não é recriada).
-  - Registro no `ActorRegistry` permanece (contagem não diminui).
-- **Não acontece no Soft Reset Players**:
-  - `IWorldSpawnService.DespawnAsync` não é chamado.
-  - `IWorldSpawnService.SpawnAsync` não é chamado.
-- **O que acontece**:
-  - Execução exclusiva de `IResetScopeParticipant` do escopo solicitado (ex.: `PlayersResetParticipant`) na ordem determinística definida.
-  - Gate utilizado, conforme logs: `flow.soft_reset`.
-- **Justificativa**:
-  - Reduz churn de instanciamento e preserva performance.
-  - Mantém referências externas estáveis (bindings de UI, listeners, caches).
-  - Preserva determinismo do estado via reset explícito dos participantes.
-  - Evita recriação de `ActorId`, mantendo correlação de telemetria e QA.
-- **Escopo como domínio funcional**: `ResetScope.Players` representa o baseline funcional de gameplay (input, câmera, HUD/UI, managers/caches, timers globais), não a hierarquia do prefab. Participantes podem atuar fora do GameObject para restaurar o resultado de gameplay.
+- **Decisão arquitetural**: `Soft Reset Players = reset-in-place`.
+- **Contrato explícito**: não existe pipeline de despawn/spawn nesse fluxo.
+
+#### Preservado
+- `GameObject` / instância do ator permanece viva (não é despawnada).
+- Identidade (`ActorId`) permanece a mesma (não é recriada).
+- Registro no `ActorRegistry` permanece ativo (contagem não diminui).
+
+#### Não acontece no Soft Reset Players
+- `IWorldSpawnService.DespawnAsync` **não é chamado** (skip por filtro de escopo).
+- `IWorldSpawnService.SpawnAsync` **não é chamado** (skip por filtro de escopo).
+- Nenhuma instância é destruída ou recriada.
+- Nenhum `ActorId` é regenerado.
+
+#### O que acontece
+- Execução exclusiva de `IResetScopeParticipant` pertencentes ao escopo solicitado
+  (ex.: `PlayersResetParticipant`).
+- Ordem determinística conforme registro.
+- Uso explícito do gate `flow.soft_reset`, conforme logs validados.
+
+#### Justificativa
+- Reduz churn de instanciamento e custo de GC.
+- Mantém referências externas estáveis (UI, câmera, input, listeners).
+- Preserva determinismo via reset explícito de estado lógico.
+- Mantém continuidade de telemetria e QA ao preservar `ActorId`.
+
+#### Escopo como domínio funcional
+- `ResetScope.Players` representa o **baseline funcional de gameplay**
+  (input, câmera, HUD/UI, managers, caches, timers globais),
+  não a hierarquia do prefab.
+- Participantes podem atuar fora do GameObject para restaurar o estado esperado.
+
+#### Contrato estável
+- Reset-in-place é parte **formal** do contrato do WorldLifecycle.
+- Não é workaround, nem comportamento temporário.
 
 ### Hard Reset vs Soft Reset Players
-- **Hard Reset**: reconstrução completa. Executa `DespawnAsync` + `SpawnAsync`, recria instâncias e `ActorId`, usa o gate `WorldLifecycle.WorldReset` e recompõe bindings/registries.
-- **Soft Reset Players**: reset lógico in-place. Ignora `DespawnAsync`/`SpawnAsync` por filtro de escopo, mantém instâncias/identidades/registro e executa apenas `IResetScopeParticipant` do escopo `Players` sob o gate `flow.soft_reset` com logs de "skipped by scope filter" para serviços de spawn/despawn.
-- **Racional**: decisão intencional para garantir determinismo, testabilidade (baseline de QA) e evolução de gameplay sem acoplamento estrutural; não é workaround nem comportamento temporário.
+
+| Aspecto        | Hard Reset                  | Soft Reset Players (Reset-In-Place) |
+|---------------|-----------------------------|-------------------------------------|
+| Despawn       | Sim                         | Não (skip por scope filter)          |
+| Spawn         | Sim                         | Não (skip por scope filter)          |
+| ActorId       | Recriado                    | Preservado                           |
+| GameObject    | Reinstanciado               | Mantido                              |
+| Registry      | Recomposto                  | Mantido (contagem estável)           |
+| Gate          | `WorldLifecycle.WorldReset` | `flow.soft_reset`                    |
+| Semântica     | Reconstrução total          | Reset lógico in-place                |
+
+- **Racional**: decisão intencional para garantir determinismo, testabilidade (baseline de QA) e evolução de gameplay sem acoplamento estrutural.
 
 ## Spawn Passes
 - **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
-- **Resumo**: pipeline determinístico em passes (pré-warm, serviços de mundo, atores, late bindables) para garantir multiplayer local previsível.
+- **Resumo**: pipeline determinístico em passes (prewarm, serviços de mundo, atores, late bindables).
 
 ## Late Bind (UI cross-scene)
-- **Owner das regras de bind**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
-- **Resumo**: binds de HUD/overlay são liberados apenas após `SceneScopeBound`; UI deve se registrar como late bindable e aguardar o sinal.
+- **Owner das regras**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
+- **Resumo**: binds de HUD/overlay são liberados apenas após `SceneScopeBound`.
 
 ## Uso do SimulationGateService
-- `SimulationGateService` é requerido para serializar resets e readiness de cena.
-- Scene Flow adquire o gate em `SceneScopeReady`, mantém durante Spawn/Bind e libera em `GameplayReady`.
-- Resets hard reabrem o gate; resets soft reutilizam o gate existente, bloqueando apenas enquanto o WorldLifecycle roda.
+- `SimulationGateService` é obrigatório para serializar readiness e resets.
+- Scene Flow adquire o gate em `SceneScopeReady` e libera em `GameplayReady`.
+- Hard resets reabrem o gate.
+- Soft resets reutilizam o gate existente, bloqueando apenas durante o reset.
 
 ## Linha do tempo oficial
 ````
@@ -75,36 +104,34 @@ SceneScopeReady (Gate Acquired, registries prontos)
 ↓
 SceneTransitionScenesReady
 ↓
-WorldLoaded (registries e serviços de mundo configurados)
+WorldLoaded
 ↓
-SpawnPrewarm (Passo 0)
+SpawnPrewarm
 ↓
-SceneScopeBound (Late Bind liberado; HUD/overlays conectados)
+SceneScopeBound (Late Bind liberado)
 ↓
 SceneTransitionCompleted
 ↓
-GameplayReady (Gate liberado; gameplay habilitado)
+GameplayReady (Gate liberado)
 ↓
-[Soft Reset? → WorldLifecycle reset scoped]
-[Hard Reset? → Desbind + WorldLifecycle full reset + reacquire gate]
-```
-- **Owner**: linha do tempo, ordenação e logs pertencem a `../world-lifecycle/WorldLifecycle.md#linha-do-tempo-oficial`.
+[Soft Reset → WorldLifecycle reset scoped]
+[Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
+````
 
 ## Consequências
-- **Determinismo**: fases claras evitam corridas de spawn/bind em multiplayer local.
-- **Observabilidade**: cada fase/pass dispara logs e telemetria, facilitando QA.
-- **Resiliência de UI**: binds tardios evitam referências nulas em HUDs compartilhados.
-- **Escopos explícitos**: operações de reset documentadas; controladores não precisam heurísticas.
-- **Detalhes operacionais**: o pipeline de reset determinístico e os hooks correspondentes estão descritos em `docs/world-lifecycle/WorldLifecycle.md` (fonte única).
+- Determinismo forte entre cenas.
+- Observabilidade clara por logs.
+- UI resiliente a reloads e resets.
+- Escopos explícitos eliminam heurísticas em controladores.
 
 ## Não-objetivos
-- Alterar APIs públicas atuais de WorldLifecycle ou Scene Flow.
-- Implementar novos sistemas de rede ou multiplayer online (escopo permanece local).
-- Introduzir QA automatizado neste ADR.
+- Alterar APIs públicas existentes.
+- Introduzir multiplayer online.
+- Implementar QA automatizado neste ADR.
 
 ## Plano de Implementação (fases)
-1. **Fase 1 — Contratos e sinais**: definir enums/identificadores de `ResetScope`, fases (`SceneScopeReady`, `GameplayReady`) e eventos de Scene Flow; adicionar logs/gates sem mudar APIs.
-2. **Fase 2 — Scene Flow**: orquestrar aquisição/liberação do `SimulationGateService`, ordenar spawn passes e emitir sinal de `SceneScopeBound` para late bind.
-3. **Fase 3 — WorldLifecycle**: adaptar reset para aceitar `ResetScope` (soft/hard) sem quebrar contratos; manter ordenação determinística e cache por ciclo.
-4. **Fase 4 — UI Late Bind**: alinhar HUD/overlays para escutar `SceneScopeBound`, mover binds críticos para esse ponto, remover binds antecipados.
-5. **Fase 5 — Telemetria e QA manual**: instrumentar logs por fase/pass, criar checklist manual para validar ordem e binds; sem testes automatizados neste estágio.
+1. **Contratos e sinais**
+2. **Scene Flow**
+3. **WorldLifecycle**
+4. **UI Late Bind**
+5. **Telemetria e QA manual**
