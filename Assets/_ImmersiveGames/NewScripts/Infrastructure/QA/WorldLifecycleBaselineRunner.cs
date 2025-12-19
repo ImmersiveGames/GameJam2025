@@ -22,6 +22,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _autoInitDisabled;
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
+        private bool _ownsBootstrapSuppression;
+        private bool _restoredBootstrapSuppression;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
@@ -29,12 +31,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
-            SaveRepeatedWarningStateIfNeeded();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (suppressRepeatedCallWarningsDuringBaseline &&
+                BaselineDebugBootstrap.TryTakeOwnership(out var previousVerbose))
+            {
+                _ownsBootstrapSuppression = true;
+                _savedRepeatedVerbose = previousVerbose;
+                _hasSavedRepeatedVerbose = true;
+            }
+            else
+            {
+                SaveRepeatedWarningStateIfNeeded();
+            }
 
             if (suppressRepeatedCallWarningsDuringBaseline)
             {
                 DebugUtility.SetRepeatedCallVerbose(false);
             }
+#else
+            SaveRepeatedWarningStateIfNeeded();
+#endif
 
             if (!disableControllerAutoInitializeOnStart)
             {
@@ -57,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void OnDisable()
         {
-            RestoreRepeatedWarningState();
+            RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
         [ContextMenu("QA/Baseline/Run Hard Reset")]
@@ -287,6 +303,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void ApplyRepeatedWarningSuppressionIfNeeded()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!suppressRepeatedCallWarningsDuringBaseline)
             {
                 return;
@@ -294,11 +311,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             SaveRepeatedWarningStateIfNeeded();
             DebugUtility.SetRepeatedCallVerbose(false);
+#endif
         }
 
         private void RestoreRepeatedWarningSuppressionIfNeeded()
         {
-            if (!restoreDebugSettingsAfterBaseline || !_hasSavedRepeatedVerbose)
+            if (!restoreDebugSettingsAfterBaseline)
+            {
+                return;
+            }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_ownsBootstrapSuppression && !_restoredBootstrapSuppression)
+            {
+                BaselineDebugBootstrap.RestoreIfNeeded(_savedRepeatedVerbose);
+                _restoredBootstrapSuppression = true;
+                _ownsBootstrapSuppression = false;
+                return;
+            }
+#endif
+
+            if (!_hasSavedRepeatedVerbose)
             {
                 return;
             }
