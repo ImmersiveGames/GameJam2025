@@ -20,8 +20,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private bool _isRunning;
         private bool _autoInitDisabled;
+        private bool _savedRepeatedVerbose;
+        private bool _hasSavedRepeatedVerbose;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
+        [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
+        [SerializeField] private bool restoreDebugSettingsAfterBaseline = true;
 
         private void Awake()
         {
@@ -88,27 +92,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             var runId = NextRunId();
+            ApplyRepeatedWarningSuppressionIfNeeded();
+
             var controller = FindController();
-            if (controller == null)
-            {
-                _isRunning = false;
-                return;
-            }
-
-            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
-
-            LogInfo(runId, $"START Hard Reset (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
-                await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
-                LogInfo(runId, $"END Hard Reset ({BuildSceneTimeScaleInfo()})");
-            }
-            catch (Exception ex)
-            {
-                LogError(runId, $"Exception during Hard Reset: {ex}");
+                if (controller == null)
+                {
+                    return;
+                }
+
+                DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+
+                LogInfo(runId, $"START Hard Reset (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
+                try
+                {
+                    await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
+                    LogInfo(runId, $"END Hard Reset ({BuildSceneTimeScaleInfo()})");
+                }
+                catch (Exception ex)
+                {
+                    LogError(runId, $"Exception during Hard Reset: {ex}");
+                }
             }
             finally
             {
+                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
             }
         }
@@ -121,27 +130,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             var runId = NextRunId();
+            ApplyRepeatedWarningSuppressionIfNeeded();
+
             var controller = FindController();
-            if (controller == null)
-            {
-                _isRunning = false;
-                return;
-            }
-
-            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
-
-            LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
-                await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
-                LogInfo(runId, $"END Soft Reset Players ({BuildSceneTimeScaleInfo()})");
-            }
-            catch (Exception ex)
-            {
-                LogError(runId, $"Exception during Soft Reset Players: {ex}");
+                if (controller == null)
+                {
+                    return;
+                }
+
+                DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+
+                LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
+                try
+                {
+                    await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
+                    LogInfo(runId, $"END Soft Reset Players ({BuildSceneTimeScaleInfo()})");
+                }
+                catch (Exception ex)
+                {
+                    LogError(runId, $"Exception during Soft Reset Players: {ex}");
+                }
             }
             finally
             {
+                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
             }
         }
@@ -154,34 +168,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             var runId = NextRunId();
+            ApplyRepeatedWarningSuppressionIfNeeded();
+
             var controller = FindController();
-            if (controller == null)
-            {
-                _isRunning = false;
-                return;
-            }
-
-            DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
-
-            LogInfo(runId, $"START Full Baseline (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
             try
             {
-                LogInfo(runId, "Hard Reset - BEGIN");
-                await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
-                LogInfo(runId, "Hard Reset - END");
+                if (controller == null)
+                {
+                    return;
+                }
 
-                LogInfo(runId, "Soft Reset Players - BEGIN");
-                await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
-                LogInfo(runId, "Soft Reset Players - END");
+                DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
 
-                LogInfo(runId, $"END Full Baseline ({BuildSceneTimeScaleInfo()})");
-            }
-            catch (Exception ex)
-            {
-                LogError(runId, $"Exception during Full Baseline: {ex}");
+                LogInfo(runId, $"START Full Baseline (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
+                try
+                {
+                    LogInfo(runId, "Hard Reset - BEGIN");
+                    await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
+                    LogInfo(runId, "Hard Reset - END");
+
+                    LogInfo(runId, "Soft Reset Players - BEGIN");
+                    await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
+                    LogInfo(runId, "Soft Reset Players - END");
+
+                    LogInfo(runId, $"END Full Baseline ({BuildSceneTimeScaleInfo()})");
+                }
+                catch (Exception ex)
+                {
+                    LogError(runId, $"Exception during Full Baseline: {ex}");
+                }
             }
             finally
             {
+                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
             }
         }
@@ -252,6 +271,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             _autoInitDisabled = true;
             LogInfo(runId, $"AutoInitializeOnStart desabilitado pelo baseline runner ({BuildSceneTimeScaleInfo()})");
+        }
+
+        private void ApplyRepeatedWarningSuppressionIfNeeded()
+        {
+            if (!suppressRepeatedCallWarningsDuringBaseline || _hasSavedRepeatedVerbose)
+            {
+                return;
+            }
+
+            _savedRepeatedVerbose = DebugUtility.GetRepeatedCallVerbose();
+            _hasSavedRepeatedVerbose = true;
+            DebugUtility.SetRepeatedCallVerbose(false);
+        }
+
+        private void RestoreRepeatedWarningSuppressionIfNeeded()
+        {
+            if (!restoreDebugSettingsAfterBaseline || !_hasSavedRepeatedVerbose)
+            {
+                return;
+            }
+
+            DebugUtility.SetRepeatedCallVerbose(_savedRepeatedVerbose);
+            _hasSavedRepeatedVerbose = false;
         }
     }
 }
