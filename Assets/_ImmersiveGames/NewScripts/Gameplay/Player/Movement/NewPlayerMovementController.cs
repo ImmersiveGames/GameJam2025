@@ -1,7 +1,7 @@
 /*
  * ChangeLog
  * - Padronizado para Unity 6+: uso exclusivo de Rigidbody.linearVelocity (movimento e resets); removido qualquer conceito de Rigidbody.velocity.
- * - Pointer look usa Pointer.current (fallback para Mouse.current), evitando interpretar _lookInput como ScreenPoint no modo Auto.
+ * - Pointer look usa Pointer.current (fallback para Mouse.current), sem tratar _lookInput como ScreenPoint em LookMode.Auto.
  * - Raycast do look usa plano no Y do player (transform.position.y) para evitar drift quando o chão não é y=0.
  * - Auto LookMode mais resiliente: se o modo escolhido não tiver dados disponíveis, tenta o outro modo.
  * - Mantido ciclo de reset idempotente e fallbacks de câmera (resolver -> fallback -> Camera.main).
@@ -236,10 +236,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void SetCamera(Camera cam)
         {
-            if (cam != null)
-            {
-                _camera = cam;
-            }
+            _camera = cam ?? fallbackCamera ?? Camera.main;
         }
 
         #endregion
@@ -364,13 +361,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             if (Mouse.current != null)
             {
                 screenPos = Mouse.current.position.ReadValue();
-                return true;
-            }
-
-            // Fallback explícito: apenas se o modo foi forçado para PointerScreen.
-            if (lookMode == LookMode.PointerScreen && _lookInput != Vector2.zero)
-            {
-                screenPos = _lookInput;
                 return true;
             }
 
