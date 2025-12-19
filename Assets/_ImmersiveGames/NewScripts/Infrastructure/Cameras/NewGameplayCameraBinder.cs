@@ -76,16 +76,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
                 return true;
             }
 
-            if (_warnedMissingResolver)
+            if (!_warnedMissingResolver)
             {
-                return false;
+                _warnedMissingResolver = true;
+
+                DebugUtility.LogWarning<NewGameplayCameraBinder>(
+                    $"ICameraResolver não encontrado no DI global durante {context}. Vou tentar novamente automaticamente.",
+                    this);
             }
-
-            _warnedMissingResolver = true;
-
-            DebugUtility.LogWarning<NewGameplayCameraBinder>(
-                $"ICameraResolver não encontrado no DI global durante {context}. Vou tentar novamente automaticamente.",
-                this);
 
             return false;
         }
