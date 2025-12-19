@@ -15,5 +15,5 @@ MonoBehaviour:
   spawnEntries:
   - kind: 1
     enabled: 1
-    prefab: {fileID: 6539729360946555031, guid: 717dd33d909c0654f8f188dea10d219c, type: 3}
-    notes: Player02 (baseline real)
+    prefab: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
+    notes: Player_NewScripts (baseline QA)

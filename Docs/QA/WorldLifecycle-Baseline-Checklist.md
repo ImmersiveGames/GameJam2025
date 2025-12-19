@@ -44,7 +44,7 @@ Este checklist referencia o contrato operacional em `WorldLifecycle.md` e foca a
 
     * `NewSceneBootstrapper`
     * `WorldLifecycleController`
-    * `WorldDefinition` com ao menos 1 spawn service (ex.: `DummyActorSpawnService` **ou** `PlayerSpawnService` com o prefab real do Player)
+    * `WorldDefinition` com ao menos 1 spawn service (ex.: `DummyActorSpawnService` **ou** `PlayerSpawnService` com o prefab de QA `Player_NewScripts`)
 * Hooks de QA são opcionais, mas recomendados:
 
     * Cena: `SceneLifecycleHookLoggerA / B`
@@ -81,7 +81,7 @@ O soft reset deve:
 * Log de release do gate (token `flow.soft_reset`)
 * Quando `PlayerSpawnService` estiver ativo na `WorldDefinition`:
 
-    * Pass: log de spawn do Player contendo ActorId + prefab/instância/root/scene.
+    * Pass: log de spawn do Player contendo ActorId + prefab/instância/root/scene (esperado: prefab `Player_NewScripts` do pacote NewScripts/QA; é proibido alterar prefabs legados para QA).
     * Pass: `Registry count` ≥ 1 após o spawn do Player.
     * Pass: logs de despawn do Player com ActorId e `Registry count` atualizado (no hard reset).
     * Pass: verbose de `SpawnAsync iniciado` indicando a cena atual.

@@ -151,7 +151,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             if (actor == null)
             {
-                actor = instance.AddComponent<PlayerActorAdapter>();
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "Prefab não possui componente IActor. Player não será instanciado.");
+                return false;
             }
 
             if (!EnsureActorId(instance, actor))
@@ -172,13 +174,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return false;
             }
 
+            if (actor is PlayerActor playerActor && !string.IsNullOrWhiteSpace(playerActor.ActorId))
+            {
+                playerActor.Initialize(playerActor.ActorId);
+                return true;
+            }
+
             if (!string.IsNullOrWhiteSpace(actor.ActorId))
             {
-                if (actor is PlayerActorAdapter adapterWithId)
-                {
-                    adapterWithId.Initialize(adapterWithId.ActorId);
-                }
-
                 return true;
             }
 
@@ -195,9 +198,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return false;
             }
 
-            if (actor is PlayerActorAdapter adapter)
+            if (actor is PlayerActor player)
             {
-                adapter.Initialize(actorId);
+                player.Initialize(actorId);
                 return true;
             }
 
