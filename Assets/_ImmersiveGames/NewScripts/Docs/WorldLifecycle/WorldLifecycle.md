@@ -193,6 +193,64 @@ Interpretar `ResetScope.Players` como “reset apenas dos componentes dentro do 
 
 ---
 
+## Baseline Audit — ResetScope.Players (2025-12-19)
+
+### Contexto
+Foi realizada uma auditoria técnica para verificar o estado real da implementação de `ResetScope.Players`
+em relação ao contrato de **Soft Reset Players (Reset-In-Place)**.
+
+O objetivo foi identificar:
+- quais mecanismos já existem,
+- quais subsistemas efetivamente participam do reset,
+- e quais lacunas impedem o uso do soft reset como mecânica de gameplay (retry / restart).
+
+### Estado encontrado (As-Is)
+
+**Infraestrutura**
+- `ResetScope`, `ResetContext`, `IResetScopeParticipant` e filtros por escopo existem em `ResetScopeTypes.cs`.
+- `WorldLifecycleController` expõe `ResetPlayersAsync` para soft reset Players.
+- `WorldLifecycleOrchestrator` executa reset por escopo via `ResetScopesAsync` com gate `SimulationGateTokens.SoftReset`.
+- O filtro por escopo impede despawn/spawn e ignora hooks de mundo e de ator (comportamento consistente com reset-in-place).
+
+**Participantes**
+- Existe apenas um participante registrado para `ResetScope.Players`: `PlayersResetParticipant`.
+- O participante atual executa apenas logs e **não reseta subsistemas**.
+
+**Efeito prático**
+- O Soft Reset Players executa gate + pipeline, mas **não restaura baseline de gameplay**.
+- Nenhum estado de player, input, câmera, UI, cooldowns ou caches é resetado.
+
+### Baseline funcional identificado (fora do NewScripts)
+
+Foram identificados subsistemas com APIs explícitas de reset-in-place já existentes:
+
+**Dentro do prefab do Player**
+- `PlayerMovementController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
+- `PlayerShootController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
+- `PlayerInteractController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
+- `PlayerDetectionController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
+
+**Fora do prefab (cross-object)**
+- `CanvasCameraBinder` — rebind de câmera em UI world-space.
+- `RuntimeAttributeControllers / bridges` — UI/atributos ligados a atores.
+
+Esses sistemas **não estão atualmente conectados** ao `ResetScope.Players`.
+
+### Lacunas principais
+1. `ResetScope.Players` não executa reset funcional de gameplay.
+2. Hooks de mundo e de ator não participam do soft reset (por filtro de escopo).
+3. Nenhum participante externo (UI, câmera, domínios/managers/timers) está registrado.
+4. Serviços de domínio/registries e pools podem reter estado entre retries.
+
+### Conclusão
+O contrato de Soft Reset Players está corretamente definido e protegido (reset-in-place, sem despawn/spawn),
+porém **carece de payload funcional**.
+
+Próximos passos devem focar em acionar o baseline existente via `IResetScopeParticipant`, sem alterar o pipeline
+nem o contrato do WorldLifecycle.
+
+---
+
 ## Onde o registry é criado e como injetar
 
 - `WorldLifecycleHookRegistry` é criado e registrado apenas pelo `NewSceneBootstrapper`.

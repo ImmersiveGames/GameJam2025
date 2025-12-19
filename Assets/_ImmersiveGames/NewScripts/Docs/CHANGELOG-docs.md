@@ -1,3 +1,6 @@
+## [2025-12-19]
+- Added: Baseline Audit for `ResetScope.Players` documenting As-Is state, identified subsystems, and gaps prior to gameplay integration.
+
 ## Documentação — Changelog de Normalização
 
 - Moved: referência de pipeline/ordenção de hooks de `ARCHITECTURE.md` (resumo) → `WorldLifecycle/WorldLifecycle.md` (owner operacional já existente; arquitetura mantém o link de resumo)
