@@ -67,6 +67,7 @@ namespace _ImmersiveGames.Scripts.Utils.DebugSystems
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
         public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
+        public static bool GetRepeatedCallVerbose() => _repeatedCallVerboseEnabled;
         public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
