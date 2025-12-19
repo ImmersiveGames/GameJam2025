@@ -2,6 +2,7 @@
  * ChangeLog
  * - Ajustado GetDefaultCamera para fallback em Camera.main quando não houver padrão registrado.
  * - Mantida idempotência de registro/desregistro com logs coerentes e evento de câmera padrão.
+ * - Resiliência extra: evita eventos duplicados e usa fallback de câmera padrão ao consultar player específico.
  */
 using System;
 using System.Collections.Generic;
@@ -72,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
                 return camera;
             }
 
-            return _defaultCamera;
+            return GetDefaultCamera();
         }
 
         public Camera GetDefaultCamera()
