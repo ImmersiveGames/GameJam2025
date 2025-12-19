@@ -1,4 +1,5 @@
 # World Lifecycle (NewScripts)
+_Doc update: Reset-In-Place semantics clarified._
 
 > Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
 
@@ -24,6 +25,14 @@ Fonte operacional única sobre readiness, spawn, bind e reset. As fases oficiais
 
 ## Escopos de Reset
 Define como o jogo reinicia e quais partes são recriadas em cada modo de reset. Decisão de escopos e fases vem do ADR `../adr/ADR-ciclo-de-vida-jogo.md`.
+
+### Hard Reset vs Soft Reset
+- **Hard Reset**: executa despawn + spawn dos `IWorldSpawnService`, recriando instâncias e `ActorId`, com hooks de cena/ator em todas as fases.
+- **Soft Reset Players** (reset-in-place):
+  - Mantém instâncias e `ActorId` dos atores (`ActorRegistry` não reduz).
+  - Não chama `IWorldSpawnService.DespawnAsync` nem `IWorldSpawnService.SpawnAsync`.
+  - Executa apenas os `IResetScopeParticipant` do escopo solicitado (ex.: `PlayersResetParticipant`) com o gate `flow.soft_reset`.
+  - Logs esperados mostram services de spawn como “skipped” por filtro de escopo.
 
 ## Otimização: cache de Actor hooks por ciclo
 Durante `ResetWorldAsync`, os hooks de ator (`IActorLifecycleHook`) podem ser cacheados por `Transform` dentro do ciclo para evitar varreduras duplicadas.
@@ -84,7 +93,7 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Binds de UI**: HUD/overlays só conectam a providers após o sinal `SceneScopeBound`, evitando referências nulas e respeitando multiplayer local.
 
 ### Resets por escopo
-- **Soft Reset**: reexecuta o reset do `WorldLifecycle` (despawn/respawn de atores e serviços voláteis) mantendo binds de UI e registries de cena. O gate permanece adquirido durante o reset e é liberado em `GameplayReady`.
+- **Soft Reset**: reset-in-place para os escopos solicitados. Não há despawn/spawn para atores do escopo `Players`; serviços de spawn são ignorados pelo filtro de escopo. Executa somente `IResetScopeParticipant` do escopo, mantém binds/registries de cena e conserva `ActorId` e contagem do `ActorRegistry`. O gate permanece adquirido durante o reset (`flow.soft_reset`) e é liberado em `GameplayReady`.
 - **Hard Reset**: realiza desbind de UI, despawn completo e rebuild de registries, reacquire do gate e reinstala Scene Flow antes de liberar `GameplayReady`. Usado para troca de mapa ou rollback de partida.
 - **Escopo explícito**: todos os resets devem registrar `ResetScope` (Soft/Hard) em logs/telemetria para evitar heurísticas.
 
@@ -96,6 +105,9 @@ Define como o spawn acontece em passes ordenados e como binds tardios evitam inc
 - **Exemplos práticos**: `Players` pode englobar limpar buffers de input, reconfigurar HUD/overlays, resetar caches de atributos/estado de gameplay, reenquadrar câmera, invalidar timers globais dependentes do player ou sincronizar roteadores de câmera/input — tudo via participantes de `Scope=Players`, mesmo fora do prefab.
 - **Anti-pattern explícito**: interpretar `ResetScope.Players` como “reset apenas dos componentes dentro do GameObject Player” é incorreto; o contrato é restaurar baseline funcional do domínio.
 - **Determinismo preservado**: o pipeline continua o mesmo (Gate → Hooks → Scoped Participants → Hooks → Gate), apenas filtrando quem participa pelo escopo solicitado; o impacto pode atravessar fronteiras de sistemas para garantir o baseline do jogador.
+
+### Fluxo textual do Soft Reset Players (reset-in-place)
+Gate (`flow.soft_reset`) → hooks aplicáveis (se houver) → `IResetScopeParticipant` do escopo `Players` → hooks finais (se houver) → release do gate. Não há despawn/spawn nem recriação de atores/IDs.
 
 ### ResetScope as Gameplay Outcome (Not Object Hierarchy)
 - **Conceito**: `ResetScope` representa o resultado esperado de gameplay (ex.: “resetar players corretamente”), e não “quais componentes do prefab/player serão tocados”.

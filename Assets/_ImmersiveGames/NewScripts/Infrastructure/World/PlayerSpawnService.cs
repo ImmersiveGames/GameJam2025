@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
-using LegacyActor = _ImmersiveGames.Scripts.ActorSystems.IActor;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -147,63 +146,56 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private bool TryResolveActor(GameObject instance, out IActor actor)
         {
-            actor = instance.GetComponent<IActor>();
+            var player = instance.GetComponent<PlayerActor>();
+            actor = player;
 
-            if (actor == null)
+            if (player == null)
             {
-                actor = instance.AddComponent<PlayerActorAdapter>();
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "Prefab não possui PlayerActor. Player não será instanciado.");
+                return false;
             }
 
-            if (!EnsureActorId(instance, actor))
+            if (!EnsureActorId(instance, player))
             {
                 DebugUtility.LogError(typeof(PlayerSpawnService),
                     "ActorId inválido para Player. Instância será destruída.");
-                actor = null;
                 return false;
             }
 
             return true;
         }
 
-        private bool EnsureActorId(GameObject instance, IActor actor)
+        private bool EnsureActorId(GameObject instance, PlayerActor player)
         {
-            if (actor == null)
+            if (player == null)
             {
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(actor.ActorId))
+            if (!string.IsNullOrWhiteSpace(player.ActorId))
             {
-                if (actor is PlayerActorAdapter adapterWithId)
-                {
-                    adapterWithId.Initialize(adapterWithId.ActorId);
-                }
-
                 return true;
             }
 
-            var legacyActor = instance.GetComponent<LegacyActor>();
-            var actorId = legacyActor?.ActorId;
-
-            if (string.IsNullOrWhiteSpace(actorId))
+            if (_uniqueIdFactory == null)
             {
-                actorId = _uniqueIdFactory?.GenerateId(instance);
-            }
-
-            if (string.IsNullOrWhiteSpace(actorId))
-            {
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "IUniqueIdFactory ausente; não é possível gerar ActorId para Player.");
                 return false;
             }
 
-            if (actor is PlayerActorAdapter adapter)
+            var actorId = _uniqueIdFactory.GenerateId(instance);
+
+            if (string.IsNullOrWhiteSpace(actorId))
             {
-                adapter.Initialize(actorId);
-                return true;
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "IUniqueIdFactory retornou ActorId vazio; abortando spawn do Player.");
+                return false;
             }
 
-            DebugUtility.LogWarning(typeof(PlayerSpawnService),
-                $"ActorId não pôde ser aplicado em '{actor.GetType().Name}'. Valor calculado: '{actorId}'.");
-            return !string.IsNullOrWhiteSpace(actor.ActorId);
+            player.Initialize(actorId);
+            return true;
         }
     }
 }
