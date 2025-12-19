@@ -1,132 +1,262 @@
 # WorldLifecycle — Baseline Checklist (Manual QA)
 
-Objetivo: validar, por logs, que o pipeline do WorldLifecycle está **determinístico**, com **gate correto**, **ordem correta** de fases e comportamento consistente **com e sem** o runner de baseline.
+**Status:** Estável
+**Escopo:** WorldLifecycle / QA Baseline
+**Última validação:** Hard Reset + Soft Reset Players (Runner e sem Runner)
 
-Referência do contrato: ver `WorldLifecycle.md` (Validation Contract).:contentReference[oaicite:2]{index=2}
+## Objetivo
+
+Validar, exclusivamente por logs, que o **WorldLifecycle** executa de forma **determinística**, com:
+
+* Ordem correta de fases
+* Aquisição/liberação correta de gates
+* Separação clara entre **produção (auto-init)** e **QA (runner)**
+* Supressão controlada de ruído de log (`Repeated-call warning`) **sem efeitos colaterais**
+
+Este checklist é a referência oficial para validação manual de baseline.
 
 ---
 
 ## 0) Pré-condições (Setup)
 
-- Cena de teste recomendada: `NewBootstrap`.
-- Deve existir na cena:
-    - `NewSceneBootstrapper` ativo (cria registries de cena).
-    - `WorldLifecycleController` presente.
-    - Ao menos 1 spawn service configurado no `WorldDefinition` (ex.: `DummyActorSpawnService`).
-    - (Opcional) hooks de cena para ver fases: `SceneLifecycleHookLoggerA/B` e hook de ator (ex.: `ActorLifecycleHookLogger`).
-- Se `NEWSCRIPTS_MODE` estiver ativo, inicializadores legados podem ser ignorados; isso **não** invalida o baseline, mas deve ser considerado ao avaliar logs iniciais.
+* Cena recomendada: `NewBootstrap`
+* A cena deve conter:
+
+    * `NewSceneBootstrapper`
+    * `WorldLifecycleController`
+    * `WorldDefinition` com ao menos 1 spawn service (ex.: `DummyActorSpawnService`)
+* Hooks de QA são opcionais, mas recomendados:
+
+    * Cena: `SceneLifecycleHookLoggerA / B`
+    * Ator: `ActorLifecycleHookLogger`
+* `NEWSCRIPTS_MODE` pode estar ativo (logs de inicializadores ignorados **não invalidam** o baseline).
+* Se presente, `BaselineDebugBootstrap` pode **temporariamente** alterar o comportamento de warnings (ver seções 2.3 e 3.7).
 
 ---
 
-## 1) Critérios globais de aprovação (vale para qualquer execução)
+## 1) Critérios globais de aprovação (todos os fluxos)
 
-### 1.1 Ordem e completude do Hard Reset (ResetWorldAsync)
-A execução deve evidenciar (via logs) o ciclo completo do WorldLifecycle, nesta ordem lógica:
-**Acquire Gate → Hooks pré-despawn → Hooks de ator pré-despawn → Despawn → Hooks pós-despawn → Hooks pré-spawn → Spawn → Hooks de ator pós-spawn → Hooks finais → Release Gate**.:contentReference[oaicite:3]{index=3}:contentReference[oaicite:4]{index=4}
+### 1.1 Hard Reset (`ResetWorldAsync`)
 
-Verificações mínimas:
-- Existe log de acquire do gate com token de hard reset (`WorldLifecycle.WorldReset`, ou equivalente do hard reset usado).:contentReference[oaicite:5]{index=5}
-- Existem logs de fases (mesmo quando “skipped”) e logs de término (`World Reset Completed`).
-- Existe log de release do gate ao final do ciclo.:contentReference[oaicite:6]{index=6}
+O ciclo **completo** deve aparecer nos logs, respeitando a ordem lógica:
 
-### 1.2 Soft Reset (Players)
-Soft reset `Players` deve:
-- Adquirir token esperado de soft reset (documento cita `SimulationGateTokens.SoftReset`).:contentReference[oaicite:7]{index=7}
-- Executar **apenas** participantes `IResetScopeParticipant` filtrados por `ResetContext.Scopes` (ex.: `PlayersResetParticipant`), em ordem determinística.
-- Permitir logs de “fase/serviço pulado” por filtro de escopo (`phase skipped (hooks=0)`, `service skipped by scope filter`) quando apropriado — isso é esperado.:contentReference[oaicite:8]{index=8}
+1. Acquire Gate (hard reset)
+2. OnBeforeDespawn (hooks de cena)
+3. Despawn (spawn services)
+4. OnAfterDespawn
+5. OnBeforeSpawn
+6. Spawn
+7. OnAfterActorSpawn (por ator)
+8. OnAfterSpawn
+9. Release Gate
+10. `World Reset Completed`
+
+**Obrigatório:**
+
+* Log de acquire do gate (ex.: `WorldLifecycle.WorldReset`)
+* Log de release do gate
+* Nenhuma exceção no fluxo
 
 ---
 
-## 2) Fluxo A — Baseline sem Runner (produção / controller rodando por Start)
+### 1.2 Soft Reset Players (`ResetPlayersAsync`)
+
+O soft reset deve:
+
+* Adquirir o gate correto
+  Ex.: `Acquire token='flow.soft_reset'`
+* Executar **apenas** participantes compatíveis com `Scopes = Players`
+
+    * Ex.: `PlayersResetParticipant`
+* Permitir logs de *skip* por filtro de escopo (esperado)
+
+---
+
+## 2) Fluxo A — Sem Runner (produção / auto-init)
 
 ### 2.1 Execução
-- Garanta `WorldLifecycleController.AutoInitializeOnStart = true`.
-- Entre em Play Mode e deixe o controller rodar o reset automático no `Start()`.
+
+* `WorldLifecycleController.AutoInitializeOnStart = true`
+* Entrar em Play Mode
+* Não acionar runner manualmente
 
 ### 2.2 Esperado
-- `WorldLifecycleController` inicia o reset com reason semelhante a `AutoInitialize/Start`.
-- Hard reset executa o pipeline completo (seção 1.1).
-- Ao final, o gate é liberado e o reset finaliza com “Completed”.
 
-### 2.3 Debug (Repeated-call warning)
-- Se houver `BaselineDebugBootstrap` ativo no projeto, pode aparecer log indicando supressão no bootstrap “pre-scene-load”.
-- Como **não há runner** para “assumir” o baseline, o sistema deve **auto-restaurar** as configurações ao final (ex.: “auto-restaurado pelo driver (nenhum runner assumiu)”).
+* Reset iniciado automaticamente:
 
-Aprovação: o repeated-call warning não deve “ficar preso” em estado alterado após o baseline sem runner.
+    * `Reset iniciado. reason='AutoInitialize/Start'`
+* Hard reset completo conforme seção 1.1
 
----
+### 2.3 Repeated-call warning (com `BaselineDebugBootstrap`)
 
-## 3) Fluxo B — Baseline com WorldLifecycleBaselineRunner (QA / acionamento manual)
+Fluxo esperado:
 
-> Este fluxo valida o runner e garante que `AutoInitializeOnStart` pode ser desabilitado com segurança para baseline manual.
+1. Bootstrap:
 
-### 3.1 Setup (Runner)
-- Adicione `WorldLifecycleBaselineRunner` na cena (`DefaultExecutionOrder` bem cedo).
-- Configure:
-    - `disableControllerAutoInitializeOnStart = true`
-    - `suppressRepeatedCallWarningsDuringBaseline = true` (somente Editor/Dev)
-    - `restoreDebugSettingsAfterBaseline = true`
+    * `Repeated-call warning desabilitado no bootstrap (pre-scene-load).`
+2. Após carregar a cena:
 
-### 3.2 Esperado no Awake (pré-Start)
-- Runner deve logar que desabilitou `AutoInitializeOnStart` do controller (se controller for encontrado no Awake).
-- `WorldLifecycleController` deve logar que está com AutoInitialize desabilitado e aguardando acionamento externo.
+    * `Repeated-call warning restaurado pelo bootstrap driver (nenhum runner ativo).`
 
-### 3.3 Execução do Baseline (context menu ou hotkeys)
-Dispare:
-- `QA/Baseline/Run Hard Reset`
-- `QA/Baseline/Run Soft Reset Players`
-- `QA/Baseline/Run Full Baseline (Hard then Players)`
-
-### 3.4 Esperado — Hard Reset (Runner)
-- Logs com prefixo `[Baseline] [Run-XXXX]` indicando START/END.
-- Dentro do reset, deve satisfazer os critérios do Hard Reset (seção 1.1).:contentReference[oaicite:9]{index=9}
-
-### 3.5 Esperado — Soft Reset Players (Runner)
-- Logs com prefixo `[Baseline] [Run-XXXX]` indicando START/END.
-- Dentro do reset, deve satisfazer critérios de soft reset (seção 1.2).:contentReference[oaicite:10]{index=10}
-
-### 3.6 Concurrency / reentrada
-- Se tentar disparar baseline enquanto `_isRunning == true`, deve haver warning e **não** iniciar nova execução.
-- Após `finally`, `_isRunning` volta para false e novas execuções são permitidas.
+**Critério:**
+O warning **não pode permanecer suprimido** após o bootstrap.
 
 ---
 
-## 4) Checklist de logs “sinais vitais” (rápido)
+## 3) Fluxo B — Com Runner (`WorldLifecycleBaselineRunner`)
 
-Marque como OK quando encontrar evidência no console:
+### 3.1 Setup do Runner
 
-### 4.1 Registries de cena
-- [ ] `IActorRegistry` registrado para a cena.
-- [ ] `IWorldSpawnServiceRegistry` registrado para a cena.
-- [ ] `WorldLifecycleHookRegistry` registrado para a cena.
+Configuração esperada:
 
-### 4.2 Hard Reset
-- [ ] Gate acquired com token de hard reset. :contentReference[oaicite:11]{index=11}
-- [ ] Fases executadas na ordem do contrato (mesmo que hooks/serviços “skipped” em alguns cenários).:contentReference[oaicite:12]{index=12}
-- [ ] Gate released ao final. :contentReference[oaicite:13]{index=13}
-- [ ] “World Reset Completed”.
+* `disableControllerAutoInitializeOnStart = true`
+* `suppressRepeatedCallWarningsDuringBaseline = true`
+* `restoreDebugSettingsAfterBaseline = true`
 
-### 4.3 Soft Reset Players
-- [ ] Token de soft reset adquirido e liberado (conforme contrato).:contentReference[oaicite:14]{index=14}
-- [ ] Execução do(s) `IResetScopeParticipant` de Players (ex.: `PlayersResetParticipant`) com `ResetContext` completo.
-- [ ] Logs de “skipped by scope filter” são aceitáveis quando o escopo não inclui spawn services.
+### 3.2 Awake (pré-Start)
 
----
+Logs esperados:
 
-## 5) Pós-execução / encerramento (Editor Play Mode)
+* Runner:
 
-Ao sair do Play Mode, é aceitável ver logs de limpeza:
-- Limpeza de serviços por objeto/cena/global pelo `DependencyManager`.
-- `Scene scope cleared: <SceneName>` pelo `NewSceneBootstrapper`.
+    * `[Baseline] AutoInitializeOnStart desabilitado no Awake (pre-Start)`
+* Controller:
 
-Aprovação: nenhuma exceção durante cleanup; nenhuma configuração de debug “presa” (em especial, repeated-call warning) após o término do baseline.
+    * `AutoInitializeOnStart desabilitado — aguardando acionamento externo`
+
+**Critério:**
+Nenhum reset automático deve ocorrer.
 
 ---
 
-## 6) Critérios de reprovação (falhas)
+### 3.3 Execução do Baseline
 
-- Gate não é adquirido antes do reset ou não é liberado ao final.
-- Ordem de fases do hard reset diverge do contrato.
-- Soft reset `Players` executa despawn/spawn indevido (quando deveria ser filtrado por escopo) ou não executa participantes `Players`.
-- Runner não consegue desabilitar `AutoInitializeOnStart` e o controller dispara reset automático antes do baseline manual (quando o fluxo B está sendo testado).
-- Configuração de repeated-call warning não é restaurada após baseline (Runner ou auto-restore).
+Via ContextMenu ou Hotkeys:
+
+* F7 → Hard Reset
+* F8 → Soft Reset Players
+* F9 → Full Baseline (Hard + Players)
+
+---
+
+### 3.4 Hard Reset (Runner)
+
+Logs esperados:
+
+* `[Baseline] [Run-XXXX] START Hard Reset`
+* Pipeline completo conforme seção 1.1
+* `[Baseline] [Run-XXXX] END Hard Reset`
+
+---
+
+### 3.5 Soft Reset Players (Runner)
+
+Logs esperados:
+
+* `[Baseline] [Run-XXXX] START Soft Reset Players`
+* Execução de `PlayersResetParticipant`
+* Gate `flow.soft_reset` adquirido e liberado
+* `[Baseline] [Run-XXXX] END Soft Reset Players`
+
+---
+
+### 3.6 Proteção contra reentrada
+
+* Disparo simultâneo deve ser bloqueado:
+
+    * `baseline ignorado — já existe uma execução em andamento.`
+* Após finalizar, novas execuções devem ser permitidas.
+
+---
+
+### 3.7 Repeated-call warning (Runner and Bootstrap)
+
+Com runner ativo, o comportamento **obrigatório** é:
+
+1. Bootstrap:
+
+    * `Repeated-call warning desabilitado no bootstrap (pre-scene-load).`
+2. Pós-load:
+
+    * `Repeated-call warning: skip restore (runner ativo).`
+3. Durante baseline:
+
+    * Supressão ativa (sem warnings de chamada repetida).
+4. Final do baseline / saída do Play Mode:
+
+    * Estado original restaurado pelo runner.
+
+**Critério:**
+O bootstrap **não pode** restaurar enquanto o runner estiver ativo.
+
+---
+
+## 4) Checklist rápido (marcação)
+
+### Registries
+
+* [ ] `IActorRegistry` registrado
+* [ ] `IWorldSpawnServiceRegistry` registrado
+* [ ] `WorldLifecycleHookRegistry` registrado
+
+### Hard Reset
+
+* [ ] Gate hard reset adquirido
+* [ ] Gate liberado
+* [ ] `World Reset Completed`
+
+### Soft Reset Players
+
+* [ ] Gate `flow.soft_reset`
+* [ ] `PlayersResetParticipant` executado
+* [ ] Serviços fora do escopo corretamente ignorados
+
+### Debug / Warnings
+
+**Sem runner**
+
+* [ ] Bootstrap restaura warnings
+
+**Com runner**
+
+* [ ] Bootstrap faz *skip restore*
+* [ ] Runner restaura warnings ao final
+
+---
+
+## 5) Encerramento
+
+Ao sair do Play Mode, é aceitável:
+
+* Limpeza de serviços (object/scene/global)
+* `Scene scope cleared: <SceneName>`
+
+**Falha:** qualquer exceção ou estado de debug persistente.
+
+---
+
+## 6) Critérios de reprovação
+
+* Gate não adquirido ou não liberado
+* Ordem de fases quebrada
+* Soft reset executa despawn/spawn indevido
+* Runner não bloqueia auto-init
+* Repeated-call warning fica permanentemente alterado
+
+---
+
+## Changelog
+
+### ✔️ Atualização — QA Baseline + Debug Bootstrap
+
+* Adicionada distinção formal entre:
+
+    * **Fluxo A:** sem runner (produção / auto-init)
+    * **Fluxo B:** com `WorldLifecycleBaselineRunner`
+* Documentado o **ownership correto** do `Repeated-call warning`:
+
+    * Bootstrap suprime preventivamente
+    * Runner assume controle quando presente
+* Eliminadas ambiguidades de timing (frame 0 / bootstrap).
+* Logs de *skip restore (runner ativo)* agora fazem parte do contrato.
+* Checklist alinhado com logs reais validados em Editor.

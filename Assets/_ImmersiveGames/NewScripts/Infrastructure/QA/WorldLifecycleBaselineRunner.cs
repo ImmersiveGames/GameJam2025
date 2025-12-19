@@ -22,8 +22,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _autoInitDisabled;
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
-        private bool _ownsBootstrapSuppression;
-        private bool _restoredBootstrapSuppression;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
@@ -31,26 +29,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (suppressRepeatedCallWarningsDuringBaseline &&
-                BaselineDebugBootstrap.TryTakeOwnership(out var previousVerbose))
-            {
-                _ownsBootstrapSuppression = true;
-                _savedRepeatedVerbose = previousVerbose;
-                _hasSavedRepeatedVerbose = true;
-            }
-            else
-            {
-                SaveRepeatedWarningStateIfNeeded();
-            }
-
-            if (suppressRepeatedCallWarningsDuringBaseline)
-            {
-                DebugUtility.SetRepeatedCallVerbose(false);
-            }
-#else
-            SaveRepeatedWarningStateIfNeeded();
-#endif
+            BaselineDebugBootstrap.IsBaselineRunning = true;
 
             if (!disableControllerAutoInitializeOnStart)
             {
@@ -73,11 +52,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void OnDisable()
         {
+            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
         private void OnDestroy()
         {
+            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
@@ -150,8 +131,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -188,8 +170,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -233,8 +216,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -248,6 +232,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             _isRunning = true;
+            BaselineDebugBootstrap.IsBaselineRunning = true;
             return true;
         }
 
@@ -308,6 +293,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void ApplyRepeatedWarningSuppressionIfNeeded()
         {
+            SaveRepeatedWarningStateIfNeeded();
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!suppressRepeatedCallWarningsDuringBaseline)
             {
@@ -324,18 +311,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 return;
             }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_ownsBootstrapSuppression && !_restoredBootstrapSuppression)
-            {
-                BaselineDebugBootstrap.RestoreIfNeeded(_savedRepeatedVerbose);
-                _restoredBootstrapSuppression = true;
-                _ownsBootstrapSuppression = false;
-                _savedRepeatedVerbose = false;
-                _hasSavedRepeatedVerbose = false;
-                return;
-            }
-#endif
 
             if (!_hasSavedRepeatedVerbose)
             {
