@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
         private bool _pausedByQAToggle;
+        private bool _lastPublishedPauseState;
         private bool _loggedEventBusUnavailable;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
@@ -396,20 +397,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #endif
         }
 
+        // Gate toggle de QA: publica eventos para bloquear/liberar ações.
+        // Importante: o gate não congela física; gravidade/rigidbodies continuam como parte do loop normal ou FSM.
         private void ApplyPauseState(bool paused)
         {
+            if (_lastPublishedPauseState == paused)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                    paused
+                        ? "[QA Gate Toggle] Ignorado: ações já estavam bloqueadas; física segue não congelada."
+                        : "[QA Gate Toggle] Ignorado: ações já estavam liberadas; física continua normal.");
+                return;
+            }
+
             try
             {
                 EventBus<GamePauseEvent>.Raise(new GamePauseEvent(paused));
                 DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
-                    $"[QA Gate Toggle] Published GamePauseEvent paused={paused}");
+                    paused
+                        ? "[QA Gate Toggle] Ações bloqueadas; física NÃO congelada (GamePauseEvent)."
+                        : "[QA Gate Toggle] Ações liberadas; física continua normal (GamePauseEvent).");
 
                 if (!paused)
                 {
                     EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
                     DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
-                        "[QA Gate Toggle] Published GameResumeRequestedEvent");
+                        "[QA Gate Toggle] GameResumeRequestedEvent publicado (gate libera ações; física não é congelada pelo gate).");
                 }
+
+                _lastPublishedPauseState = paused;
             }
             catch (Exception ex)
             {
