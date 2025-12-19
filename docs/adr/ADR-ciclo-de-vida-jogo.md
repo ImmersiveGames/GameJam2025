@@ -35,7 +35,7 @@
 ## Spawn Passes
 1. **Passo 0 — Prewarm Pools**: registra pools necessários e aquece recursos críticos (VFX, projectiles, HUD render textures).
 2. **Passo 1 — World Services Spawn**: instancia serviços dependentes de mundo (spawners determinísticos, orquestradores de rodada).
-3. **Passo 2 — Actors Spawn**: cria atores jogáveis e NPCs com ordem determinística de hooks (`Order`, `Type.FullName`).
+3. **Passo 2 — Actors Spawn**: cria atores jogáveis e NPCs.
 4. **Passo 3 — Late Bindables**: objetos que precisam existir para UI (trackers, score providers) mas ainda sem UI vinculada.
 
 ## Late Bind (UI cross-scene)
@@ -49,7 +49,7 @@
 - Resets hard reabrem o gate; resets soft reutilizam o gate existente, bloqueando apenas enquanto o WorldLifecycle roda.
 
 ## Linha do tempo oficial
-```
+````
 SceneTransitionStarted
 ↓
 SceneScopeReady (Gate Acquired, registries prontos)
@@ -68,14 +68,13 @@ GameplayReady (Gate liberado; gameplay habilitado)
 ↓
 [Soft Reset? → WorldLifecycle reset scoped]
 [Hard Reset? → Desbind + WorldLifecycle full reset + reacquire gate]
-```
+````
 
 ## Consequências
 - **Determinismo**: fases claras evitam corridas de spawn/bind em multiplayer local.
 - **Observabilidade**: cada fase/pass dispara logs e telemetria, facilitando QA.
 - **Resiliência de UI**: binds tardios evitam referências nulas em HUDs compartilhados.
 - **Escopos explícitos**: operações de reset documentadas; controladores não precisam heurísticas.
-- **Detalhes operacionais**: o pipeline de reset determinístico e os hooks correspondentes estão descritos em `docs/world-lifecycle/WorldLifecycle.md`.
 
 ## Não-objetivos
 - Alterar APIs públicas atuais de WorldLifecycle ou Scene Flow.
@@ -88,17 +87,3 @@ GameplayReady (Gate liberado; gameplay habilitado)
 3. **Fase 3 — WorldLifecycle**: adaptar reset para aceitar `ResetScope` (soft/hard) sem quebrar contratos; manter ordenação determinística e cache por ciclo.
 4. **Fase 4 — UI Late Bind**: alinhar HUD/overlays para escutar `SceneScopeBound`, mover binds críticos para esse ponto, remover binds antecipados.
 5. **Fase 5 — Telemetria e QA manual**: instrumentar logs por fase/pass, criar checklist manual para validar ordem e binds; sem testes automatizados neste estágio.
-
-## Fase 1 — Ready Gate e Sinais de Scene Flow
-- **Fonte oficial dos sinais**: o **Scene Flow** é a fonte de verdade para readiness de cena. Ele publica os eventos de transição que determinam a entrada/saída do estado “ready” do jogo e dirigem as fases iniciais do ciclo de vida.
-
-- **Mapeamento de eventos → fases**:
-  - `SceneTransitionStarted`: jogo entra em **Not Ready**; o `SimulationGate` é adquirido enquanto a transição/carregamento ocorre.
-  - `SceneTransitionScenesReady`: fase **WorldLoaded**; cenas carregadas, `ActiveScene` definida e ponto seguro para resets de mundo (Fase 2).
-  - `SceneTransitionCompleted`: fase **GameplayReady**; gate liberado, input e simulação podem iniciar.
-
-- **Responsabilidades explícitas**:
-  - `GameManager`/FSM não definem readiness; apenas navegam entre cenas/partidas.
-  - `WorldLifecycle` não decide **quando** rodar; ele reage aos sinais de Scene Flow e executa reset determinístico conforme o escopo.
-  - `Scene Flow` publica os sinais e é o único autor das transições de readiness.
-  - Drivers de runtime e fases futuras (UI, input, simulação) consomem esses sinais para acionar gates, spawn/bind e resets conforme o contrato.

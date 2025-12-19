@@ -19,19 +19,18 @@
 3. **Gameplay**: ocorre por eventos/contratos entre atores/serviços configurados na cena.
 4. **Unload da Cena**: serviços e registries de cena são descartados; próxima cena cria um novo grafo.
 5. **Notas para QA/Testers**:
-   - São consumidores de scene-scope; podem falhar no `Awake` se o boot ainda não ocorreu.
-   - Padrão recomendado: `Start()` ou lazy injection + retry/timeout para evitar falso negativo.
-   - Erros no início do Play Mode normalmente indicam ordem de inicialização/ausência do bootstrapper, não falha do reset.
+    - São consumidores de scene-scope; podem falhar no `Awake` se o boot ainda não ocorreu.
+    - Padrão recomendado: `Start()` ou lazy injection + retry/timeout para evitar falso negativo.
+    - Erros no início do Play Mode normalmente indicam ordem de inicialização/ausência do bootstrapper, não falha do reset.
 
 ### World Lifecycle Reset & Hooks (As-Is)
-- **Guardrails do Registry**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem via DI. Segunda tentativa de registro é logada como erro e reusa a instância existente (ownership é do bootstrapper da cena).
 - **Fontes de hooks executados em cada fase**:
-  1. **Spawn Service Hooks (`IWorldLifecycleHook`)**: implementados por serviços de spawn; usados para limpar caches/preparar pools.
-  2. **Scene Hooks via DI**: serviços registrados no escopo de cena e resolvidos via `IDependencyProvider.GetAllForScene`.
-  3. **Scene Hooks via Registry**: criados/registrados pelo bootstrapper (ex.: QA `SceneLifecycleHookLoggerA/B`) sem duplicar e reutilizados entre resets da mesma cena.
-  4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
-- **Ordenação determinística**: todos os hooks (mundo e ator) seguem (`Order`, `Type.FullName`) com comparador ordinal, sem reflection, garantindo logs e execução estáveis entre resets.
-- **Otimização (cache por ciclo)**: o orquestrador reusa por ciclo a lista ordenada de hooks de ator para reduzir chamadas a `GetComponentsInChildren` em resets com muitos atores. Usa sentinela `EmptyActorHookList` para evitar alocações e não cacheia a sentinela; invalidação permanece por `root` e o cache é limpo no `finally` do reset.
+    1. **Spawn Service Hooks (`IWorldLifecycleHook`)**: implementados por serviços de spawn; usados para limpar caches/preparar pools.
+    2. **Scene Hooks via DI**: serviços registrados no escopo de cena e resolvidos via `IDependencyProvider.GetAllForScene`.
+    3. **Scene Hooks via Registry**: criados/registrados pelo bootstrapper (ex.: QA `SceneLifecycleHookLoggerA/B`) sem duplicar e reutilizados entre resets da mesma cena.
+    4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
+- **Ordenação determinística**: todos os hooks (mundo e ator) seguem (`Order`, `Type.FullName`) com comparador ordinal, garantindo logs e execução estáveis entre resets.
+- **Otimização (cache por ciclo)**: o orquestrador reusa por ciclo a lista ordenada de hooks de ator para reduzir chamadas a `GetComponentsInChildren` em resets com muitos atores.
 - **Garantias**: hooks são opt-in; falha interrompe o reset (fail-fast); ordem permanece determinística em todas as fases.
 
 ## Planned (To-Be / Roadmap)
