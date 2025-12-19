@@ -5,11 +5,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Detections;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting;
-using _ImmersiveGames.Scripts.Utils.CameraSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -28,7 +23,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly List<PlayerTarget> _playerTargets = new(8);
         private readonly List<NewActor> _actorBuffer = new(16);
         private readonly List<LegacyActor> _legacyPlayerBuffer = new(16);
-        private readonly List<CanvasCameraBinder> _canvasBinders = new(8);
+        private readonly List<IResetInterfaces> _resetBuffer = new(16);
+        private readonly List<ResetParticipantEntry> _orderedResets = new(32);
+        private readonly List<_ImmersiveGames.Scripts.Utils.CameraSystems.CanvasCameraBinder> _canvasBinders = new(8);
 
         private IActorRegistry _actorRegistry;
         private IPlayerDomain _playerDomain;
@@ -54,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             foreach (var target in _playerTargets)
             {
-                var components = ResolvePlayerComponents(target);
+                var components = ResolveResettableComponents(target);
                 await RunPhaseAsync(target, components, GameplayResetStructs.Cleanup, request, serial);
                 await RunPhaseAsync(target, components, GameplayResetStructs.Restore, request, serial);
                 await RunPhaseAsync(target, components, GameplayResetStructs.Rebind, request, serial);
@@ -238,32 +235,82 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 phase);
         }
 
-        private PlayerComponents ResolvePlayerComponents(PlayerTarget target)
+        private IReadOnlyList<ResetParticipantEntry> ResolveResettableComponents(PlayerTarget target)
         {
             var actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
+            _orderedResets.Clear();
+            _resetBuffer.Clear();
 
-            return new PlayerComponents(
-                TryFindComponent<PlayerMovementController>(target.Root, actorId),
-                TryFindComponent<PlayerShootController>(target.Root, actorId),
-                TryFindComponent<PlayerInteractController>(target.Root, actorId),
-                TryFindComponent<PlayerDetectionController>(target.Root, actorId));
-        }
+            var root = target.Root;
 
-        private T TryFindComponent<T>(GameObject root, string actorId) where T : class
-        {
             if (root == null)
             {
-                return null;
+                return Array.Empty<ResetParticipantEntry>();
             }
 
-            var component = root.GetComponentInChildren<T>(true);
-            if (component == null)
+            var monoBehaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
+            if (monoBehaviours == null || monoBehaviours.Length == 0)
+            {
+                return Array.Empty<ResetParticipantEntry>();
+            }
+
+            foreach (var behaviour in monoBehaviours)
+            {
+                if (behaviour is not IResetInterfaces resettable)
+                {
+                    continue;
+                }
+
+                if (resettable is IResetScopeFilter filter &&
+                    !filter.ShouldParticipate(GameplayResetScope.PlayersOnly))
+                {
+                    continue;
+                }
+
+                _resetBuffer.Add(resettable);
+            }
+
+            if (_resetBuffer.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
-                    $"[PlayersResetParticipant] Component missing (actorId={actorId}, type={typeof(T).Name})");
+                    $"[PlayersResetParticipant] Resetables collected (actorId={actorId}, count=0)");
+                return Array.Empty<ResetParticipantEntry>();
             }
 
-            return component;
+            foreach (var resettable in _resetBuffer)
+            {
+                var order = resettable is IResetOrder resetOrder ? resetOrder.ResetOrder : 0;
+                _orderedResets.Add(new ResetParticipantEntry(resettable, order));
+            }
+
+            _orderedResets.Sort((left, right) =>
+            {
+                var orderCompare = left.Order.CompareTo(right.Order);
+                if (orderCompare != 0)
+                {
+                    return orderCompare;
+                }
+
+                var leftName = left.Component?.GetType().FullName;
+                var rightName = right.Component?.GetType().FullName;
+                var nameCompare = string.CompareOrdinal(leftName, rightName);
+                if (nameCompare != 0)
+                {
+                    return nameCompare;
+                }
+
+                var leftId = (left.Component as MonoBehaviour)?.GetInstanceID() ?? 0;
+                var rightId = (right.Component as MonoBehaviour)?.GetInstanceID() ?? 0;
+                return leftId.CompareTo(rightId);
+            });
+
+            var typesLabel = string.Join(", ",
+                _orderedResets.Select(entry => entry.Component?.GetType().Name ?? "<null>"));
+
+            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] Resetables collected (actorId={actorId}, count={_orderedResets.Count}) => {typesLabel}");
+
+            return _orderedResets;
         }
 
         private static Task InvokePhaseAsync(IResetInterfaces component, GameplayResetStructs phase, GameplayResetContext ctx)
@@ -285,7 +332,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private async Task RunCanvasCameraBinderPhasesAsync(GameplayResetRequest request, int serial)
         {
             _canvasBinders.Clear();
-            _canvasBinders.AddRange(FindObjectsOfType<CanvasCameraBinder>(includeInactive: false));
+            _canvasBinders.AddRange(FindObjectsOfType<_ImmersiveGames.Scripts.Utils.CameraSystems.CanvasCameraBinder>(includeInactive: false));
 
             if (!string.IsNullOrWhiteSpace(_sceneName))
             {
@@ -350,27 +397,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             public Transform Transform { get; }
         }
 
-        private readonly struct PlayerComponents
+        private readonly struct ResetParticipantEntry
         {
-            public PlayerComponents(
-                PlayerMovementController movement,
-                PlayerShootController shoot,
-                PlayerInteractController interact,
-                PlayerDetectionController detection)
+            public ResetParticipantEntry(IResetInterfaces component, int order)
             {
-                Movement = movement;
-                Shoot = shoot;
-                Interact = interact;
-                Detection = detection;
+                Component = component;
+                Order = order;
             }
 
-            public PlayerMovementController Movement { get; }
+            public IResetInterfaces Component { get; }
 
-            public PlayerShootController Shoot { get; }
-
-            public PlayerInteractController Interact { get; }
-
-            public PlayerDetectionController Detection { get; }
+            public int Order { get; }
         }
     }
 }
