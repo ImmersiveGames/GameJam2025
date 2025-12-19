@@ -1,7 +1,8 @@
 /*
  * ChangeLog
- * - Tornado registro/desregistro idempotente, evitando logs repetitivos ao resolver indisponível.
+ * - Mantido registro/desregistro idempotente, evitando logs repetitivos ao resolver indisponível.
  * - Mantido retry em Awake/Start/OnEnable, com log único quando o resolver aparece após falha.
+ * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
  */
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -47,6 +48,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
         }
 
         private void OnDisable()
+        {
+            TryUnregisterCamera();
+        }
+
+        private void OnDestroy()
         {
             TryUnregisterCamera();
         }

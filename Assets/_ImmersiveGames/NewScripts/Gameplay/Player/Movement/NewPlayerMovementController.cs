@@ -1,20 +1,23 @@
 /*
  * ChangeLog
- * - Robustecido ciclo de reset: limpa eventos de câmera, zera referência local e re resolve serviços em rebind.
- * - Ajustado uso de Rigidbody.velocity para compatibilidade e mantidos fallbacks de câmera.
- * - Comentado intenção do input Look (delta/pointer) mantendo comportamento atual.
+ * - Padronizado para Unity 6+: uso exclusivo de Rigidbody.linearVelocity (movimento e resets); removido qualquer conceito de Rigidbody.velocity.
+ * - Pointer look usa Pointer.current (fallback para Mouse.current), evitando interpretar _lookInput como ScreenPoint no modo Auto.
+ * - Raycast do look usa plano no Y do player (transform.position.y) para evitar drift quando o chão não é y=0.
+ * - Auto LookMode mais resiliente: se o modo escolhido não tiver dados disponíveis, tenta o outro modo.
+ * - Mantido ciclo de reset idempotente e fallbacks de câmera (resolver -> fallback -> Camera.main).
  */
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
+using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
+using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 {
@@ -30,13 +33,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         [SerializeField] private Camera fallbackCamera;
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float rotationSpeed = 10f;
+        [SerializeField] private LookMode lookMode = LookMode.Auto;
+        [SerializeField] private float stickDeadzone = 0.2f;
 
         #endregion
 
         #region Private Fields
 
         private Rigidbody _rb;
+        private PlayerInput _playerInput;
         private PlayerInputActions _actions;
+
         private Vector2 _moveInput;
         private Vector2 _lookInput;
 
@@ -54,9 +61,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         #endregion
 
+        #region Look Mode
+
+        private enum LookMode
+        {
+            Auto,
+            PointerScreen,
+            StickDirection
+        }
+
+        #endregion
+
         #region Reset Order / Scope
 
-        // Ordem negativa para limpar física e entrada antes de outros rebinds.
         public int ResetOrder => -50;
 
         public bool ShouldParticipate(ResetScope scope)
@@ -75,6 +92,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             _sceneName = gameObject.scene.name;
 
             _rb = GetComponent<Rigidbody>();
+            _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
 
             _actions = new PlayerInputActions();
@@ -213,17 +231,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void ResolveAndSetCamera()
         {
-            _camera = _cameraResolver?.GetDefaultCamera() ?? fallbackCamera;
+            _camera = _cameraResolver?.GetDefaultCamera() ?? fallbackCamera ?? Camera.main;
         }
 
         private void SetCamera(Camera cam)
         {
-            if (cam == null)
+            if (cam != null)
             {
-                return;
+                _camera = cam;
             }
-
-            _camera = cam;
         }
 
         #endregion
@@ -232,36 +248,180 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void PerformMovement()
         {
+            if (_rb == null)
+            {
+                return;
+            }
+
             var dir = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
             _rb.linearVelocity = dir * moveSpeed;
         }
 
         private void PerformLook()
         {
-            if (_lookInput == Vector2.zero || _camera == null)
+            if (_camera == null)
             {
                 return;
             }
 
-            // TODO: Look usa delta de ponteiro no esquema atual; para usar ScreenPoint com mouse precisaríamos de cursor virtual.
-            var ray = _camera.ScreenPointToRay(_lookInput);
-            var plane = new Plane(Vector3.up, Vector3.zero);
+            var resolved = ResolveLookMode();
+
+            // Resiliência: se o modo escolhido não tiver dados, tenta o outro.
+            if (resolved == LookMode.PointerScreen)
+            {
+                if (!PerformPointerLook())
+                {
+                    PerformStickLook();
+                }
+            }
+            else if (resolved == LookMode.StickDirection)
+            {
+                if (!PerformStickLook())
+                {
+                    PerformPointerLook();
+                }
+            }
+        }
+
+        private LookMode ResolveLookMode()
+        {
+            if (lookMode != LookMode.Auto)
+            {
+                return lookMode;
+            }
+
+            var scheme = _playerInput?.currentControlScheme;
+            if (!string.IsNullOrWhiteSpace(scheme))
+            {
+                return scheme.IndexOf("gamepad", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? LookMode.StickDirection
+                    : LookMode.PointerScreen;
+            }
+
+            if (_lookInput.sqrMagnitude >= stickDeadzone * stickDeadzone && Gamepad.current != null)
+            {
+                return LookMode.StickDirection;
+            }
+
+            if (Pointer.current != null || Mouse.current != null)
+            {
+                return LookMode.PointerScreen;
+            }
+
+            if (Gamepad.current != null)
+            {
+                return LookMode.StickDirection;
+            }
+
+            return LookMode.PointerScreen;
+        }
+
+        private bool PerformPointerLook()
+        {
+            if (!TryGetPointerScreenPosition(out var screenPos))
+            {
+                return false;
+            }
+
+            var ray = _camera.ScreenPointToRay(screenPos);
+
+            // Usa o plano no Y do player para evitar drift quando "chão" não é y=0.
+            var plane = new Plane(Vector3.up, transform.position);
 
             if (!plane.Raycast(ray, out var dist))
             {
-                return;
+                return false;
             }
 
             var point = ray.GetPoint(dist);
-            var dir = (point - transform.position).normalized;
+            var dir = point - transform.position;
+            dir.y = 0f;
 
-            var angle = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-            var targetRot = Quaternion.Euler(0f, angle, 0f);
+            if (dir.sqrMagnitude <= float.Epsilon)
+            {
+                return false;
+            }
+
+            var targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
 
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRot,
                 rotationSpeed * Time.fixedDeltaTime);
+
+            return true;
+        }
+
+        private bool TryGetPointerScreenPosition(out Vector2 screenPos)
+        {
+            // Preferência: Pointer.current (cobre mouse como pointer em muitas plataformas)
+            if (Pointer.current != null)
+            {
+                screenPos = Pointer.current.position.ReadValue();
+                return true;
+            }
+
+            if (Mouse.current != null)
+            {
+                screenPos = Mouse.current.position.ReadValue();
+                return true;
+            }
+
+            // Fallback explícito: apenas se o modo foi forçado para PointerScreen.
+            if (lookMode == LookMode.PointerScreen && _lookInput != Vector2.zero)
+            {
+                screenPos = _lookInput;
+                return true;
+            }
+
+            screenPos = Vector2.zero;
+            return false;
+        }
+
+        private bool PerformStickLook()
+        {
+            var magnitude = _lookInput.magnitude;
+            if (magnitude < stickDeadzone)
+            {
+                return false;
+            }
+
+            Vector3 dir;
+
+            var camTransform = _camera != null ? _camera.transform : null;
+            if (camTransform != null)
+            {
+                var camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
+                var camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
+
+                if (camForward.sqrMagnitude <= float.Epsilon || camRight.sqrMagnitude <= float.Epsilon)
+                {
+                    dir = new Vector3(_lookInput.x, 0f, _lookInput.y);
+                }
+                else
+                {
+                    dir = camRight * _lookInput.x + camForward * _lookInput.y;
+                }
+            }
+            else
+            {
+                dir = new Vector3(_lookInput.x, 0f, _lookInput.y);
+            }
+
+            dir.y = 0f;
+            if (dir.sqrMagnitude <= float.Epsilon)
+            {
+                return false;
+            }
+
+            var targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRot,
+                rotationSpeed * Time.fixedDeltaTime);
+
+            return true;
         }
 
         #endregion
