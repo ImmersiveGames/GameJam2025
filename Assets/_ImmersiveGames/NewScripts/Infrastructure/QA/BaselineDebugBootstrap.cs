@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     internal static class BaselineDebugBootstrap
     {
         internal static bool IsBaselineRunning { get; set; }
+        internal static bool IsRunnerActive { get; private set; }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private const string DriverName = "BaselineDebugBootstrapDriver";
@@ -24,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static void ResetStatics()
         {
             IsBaselineRunning = false;
+            IsRunnerActive = false;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _hasSavedPrevious = false;
@@ -50,6 +52,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             CreateDriver();
 #endif
+        }
+
+        internal static void SetRunnerActive(bool active)
+        {
+            IsRunnerActive = active;
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -100,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     yield break;
                 }
 
-                if (IsBaselineRunning)
+                if (IsRunnerActive)
                 {
                     DebugUtility.Log(typeof(BaselineDebugBootstrap),
                         "[Baseline] Repeated-call warning: skip restore (runner ativo).");

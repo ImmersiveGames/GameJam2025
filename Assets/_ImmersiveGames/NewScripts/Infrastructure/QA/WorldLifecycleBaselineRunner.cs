@@ -30,6 +30,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            BaselineDebugBootstrap.SetRunnerActive(true);
+#endif
             BaselineDebugBootstrap.IsBaselineRunning = true;
 
             if (!disableControllerAutoInitializeOnStart)
@@ -53,12 +56,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void OnDisable()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            BaselineDebugBootstrap.SetRunnerActive(false);
+#endif
             BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
         private void OnDestroy()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            BaselineDebugBootstrap.SetRunnerActive(false);
+#endif
             BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
