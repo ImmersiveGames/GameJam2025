@@ -29,15 +29,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
-            SaveRepeatedWarningStateIfNeeded();
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (suppressRepeatedCallWarningsDuringBaseline)
-            {
-                DebugUtility.SetRepeatedCallVerbose(false);
-            }
-#endif
-
             if (!disableControllerAutoInitializeOnStart)
             {
                 return;
@@ -59,11 +50,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void OnDisable()
         {
+            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
         private void OnDestroy()
         {
+            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
@@ -136,8 +129,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -174,8 +168,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -219,8 +214,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
-                RestoreRepeatedWarningSuppressionIfNeeded();
                 _isRunning = false;
+                BaselineDebugBootstrap.IsBaselineRunning = false;
+                RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
 
@@ -234,6 +230,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             _isRunning = true;
+            BaselineDebugBootstrap.IsBaselineRunning = true;
             return true;
         }
 

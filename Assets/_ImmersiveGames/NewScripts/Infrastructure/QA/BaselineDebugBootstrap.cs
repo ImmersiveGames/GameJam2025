@@ -1,3 +1,4 @@
+using System.Collections;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -5,20 +6,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Supressão defensiva global dos avisos de chamadas repetidas antes do carregamento da cena.
+    /// Restaura automaticamente apenas se nenhum runner estiver ativo.
     /// </summary>
     internal static class BaselineDebugBootstrap
     {
+        internal static bool IsBaselineRunning { get; set; }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private const string DriverName = "BaselineDebugBootstrapDriver";
+
         private static bool _hasSavedPrevious;
         private static bool _previousRepeatedVerbose = true;
+        private static GameObject _driverObject;
 #endif
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
+            IsBaselineRunning = false;
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             _hasSavedPrevious = false;
             _previousRepeatedVerbose = true;
+            DestroyDriverIfExists();
 #endif
         }
 
@@ -37,22 +47,74 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.SetRepeatedCallVerbose(false);
             DebugUtility.Log(typeof(BaselineDebugBootstrap),
                 "[Baseline] Repeated-call warning desabilitado no bootstrap (pre-scene-load).");
+
+            CreateDriver();
 #endif
         }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void RestoreRepeatedCallWarningsAfterScene()
-        {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!_hasSavedPrevious)
+        private static void CreateDriver()
+        {
+            if (_driverObject != null)
             {
                 return;
             }
 
-            DebugUtility.SetRepeatedCallVerbose(_previousRepeatedVerbose);
-            DebugUtility.Log(typeof(BaselineDebugBootstrap),
-                "[Baseline] Repeated-call warning restaurado após bootstrap (post-scene-load).");
-#endif
+            _driverObject = new GameObject(DriverName)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+
+            Object.DontDestroyOnLoad(_driverObject);
+            _driverObject.AddComponent<BaselineDebugBootstrapDriver>();
         }
+
+        private static void DestroyDriverIfExists()
+        {
+            if (_driverObject == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Object.Destroy(_driverObject);
+            }
+            else
+            {
+                Object.DestroyImmediate(_driverObject);
+            }
+
+            _driverObject = null;
+        }
+
+        private sealed class BaselineDebugBootstrapDriver : MonoBehaviour
+        {
+            private IEnumerator Start()
+            {
+                yield return null;
+
+                if (IsBaselineRunning || !_hasSavedPrevious)
+                {
+                    Destroy(gameObject);
+                    yield break;
+                }
+
+                DebugUtility.SetRepeatedCallVerbose(_previousRepeatedVerbose);
+                DebugUtility.Log(typeof(BaselineDebugBootstrap),
+                    "[Baseline] Repeated-call warning restaurado pelo bootstrap driver (nenhum runner ativo).");
+
+                Destroy(gameObject);
+            }
+
+            private void OnDestroy()
+            {
+                if (ReferenceEquals(_driverObject, gameObject))
+                {
+                    _driverObject = null;
+                }
+            }
+        }
+#endif
     }
 }
