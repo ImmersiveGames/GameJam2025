@@ -1,3 +1,4 @@
+Doc update: Reset-In-Place semantics clarified
 # ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
 
 ## Contexto
@@ -28,6 +29,30 @@
 ## Reset Scopes
 - **Owner das semânticas**: contrato completo em `../world-lifecycle/WorldLifecycle.md#escopos-de-reset` e `#resets-por-escopo`.
 - **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds/registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
+
+### Soft Reset Semantics — Reset-In-Place
+- **Decisão arquitetural**: `Soft Reset Players = reset-in-place`. Não há pipeline de despawn/spawn; somente revalidação lógica via participantes de escopo.
+- **Preservado**:
+  - `GameObject` / instância do ator permanece viva (não é despawnado).
+  - Identidade (`ActorId`) permanece a mesma (não é recriada).
+  - Registro no `ActorRegistry` permanece (contagem não diminui).
+- **Não acontece no Soft Reset Players**:
+  - `IWorldSpawnService.DespawnAsync` não é chamado.
+  - `IWorldSpawnService.SpawnAsync` não é chamado.
+- **O que acontece**:
+  - Execução exclusiva de `IResetScopeParticipant` do escopo solicitado (ex.: `PlayersResetParticipant`) na ordem determinística definida.
+  - Gate utilizado, conforme logs: `flow.soft_reset`.
+- **Justificativa**:
+  - Reduz churn de instanciamento e preserva performance.
+  - Mantém referências externas estáveis (bindings de UI, listeners, caches).
+  - Preserva determinismo do estado via reset explícito dos participantes.
+  - Evita recriação de `ActorId`, mantendo correlação de telemetria e QA.
+- **Escopo como domínio funcional**: `ResetScope.Players` representa o baseline funcional de gameplay (input, câmera, HUD/UI, managers/caches, timers globais), não a hierarquia do prefab. Participantes podem atuar fora do GameObject para restaurar o resultado de gameplay.
+
+### Hard Reset vs Soft Reset Players
+- **Hard Reset**: reconstrução completa. Executa `DespawnAsync` + `SpawnAsync`, recria instâncias e `ActorId`, usa o gate `WorldLifecycle.WorldReset` e recompõe bindings/registries.
+- **Soft Reset Players**: reset lógico in-place. Ignora `DespawnAsync`/`SpawnAsync` por filtro de escopo, mantém instâncias/identidades/registro e executa apenas `IResetScopeParticipant` do escopo `Players` sob o gate `flow.soft_reset` com logs de "skipped by scope filter" para serviços de spawn/despawn.
+- **Racional**: decisão intencional para garantir determinismo, testabilidade (baseline de QA) e evolução de gameplay sem acoplamento estrutural; não é workaround nem comportamento temporário.
 
 ## Spawn Passes
 - **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
