@@ -26,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         private readonly List<LegacyActor> _legacyPlayerBuffer = new(16);
         private readonly List<IResetInterfaces> _resetBuffer = new(16);
         private readonly List<ResetParticipantEntry> _orderedResets = new(32);
-        private readonly List<_ImmersiveGames.Scripts.Utils.CameraSystems.CanvasCameraBinder> _canvasBinders = new(8);
 
         private IActorRegistry _actorRegistry;
         private IPlayerDomain _playerDomain;
@@ -57,8 +56,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 await RunPhaseAsync(target, components, GameplayResetStructs.Restore, request, serial);
                 await RunPhaseAsync(target, components, GameplayResetStructs.Rebind, request, serial);
             }
-
-            await RunCanvasCameraBinderPhasesAsync(request, serial);
 
             DebugUtility.Log(typeof(PlayersResetParticipant),
                 $"[PlayersResetParticipant] ResetScope.Players end (reason={reason}, players={_playerTargets.Count})");
@@ -197,26 +194,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunPhaseAsync(
             PlayerTarget target,
-            PlayerComponents components,
+            IReadOnlyList<ResetParticipantEntry> components,
             GameplayResetStructs phase,
             GameplayResetRequest request,
             int serial)
         {
             var ctx = CreateGameplayResetContext(request, phase, serial);
-            var actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
-            var goName = target.Root != null ? target.Root.name : "<null>";
-            var phaseLabel = phase.ToString();
 
-            DebugUtility.Log(typeof(PlayersResetParticipant),
-                $"[PlayersResetParticipant] {phaseLabel} start (actorId={actorId}, go={goName})");
-
-            await InvokePhaseAsync(components.Movement, phase, ctx);
-            await InvokePhaseAsync(components.Shoot, phase, ctx);
-            await InvokePhaseAsync(components.Interact, phase, ctx);
-            await InvokePhaseAsync(components.Detection, phase, ctx);
-
-            DebugUtility.Log(typeof(PlayersResetParticipant),
-                $"[PlayersResetParticipant] {phaseLabel} end (actorId={actorId}, go={goName})");
+            foreach (var component in components)
+            {
+                await InvokePhaseAsync(component.Component, phase, ctx);
+            }
         }
 
         private GameplayResetContext CreateGameplayResetContext(
@@ -328,66 +316,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 GameplayResetStructs.Rebind => component.Reset_RebindAsync(ctx),
                 _ => Task.CompletedTask
             };
-        }
-
-        private async Task RunCanvasCameraBinderPhasesAsync(GameplayResetRequest request, int serial)
-        {
-            _canvasBinders.Clear();
-            _canvasBinders.AddRange(FindObjectsOfType<_ImmersiveGames.Scripts.Utils.CameraSystems.CanvasCameraBinder>(includeInactive: false));
-
-            // Compatível com versões do Unity que não suportam FindObjectsOfType<T>(bool includeInactive).
-            // Por padrão, FindObjectsOfType retorna apenas objetos ativos na cena.
-            var foundBinders = UnityEngine.Object.FindObjectsOfType<CanvasCameraBinder>();
-            if (foundBinders != null && foundBinders.Length > 0)
-            {
-                _canvasBinders.AddRange(foundBinders.Where(b => b != null && b.gameObject.activeInHierarchy));
-            }
-
-            if (!string.IsNullOrWhiteSpace(_sceneName))
-            {
-                _canvasBinders.RemoveAll(binder => binder == null || binder.gameObject.scene.name != _sceneName);
-            }
-            else
-            {
-                _canvasBinders.RemoveAll(binder => binder == null);
-            }
-
-            if (_canvasBinders.Count > 1)
-            {
-                _canvasBinders.Sort((left, right) =>
-                {
-                    if (left == null && right == null) return 0;
-                    if (left == null) return 1;
-                    if (right == null) return -1;
-
-                    var typeCompare = string.CompareOrdinal(
-                        left.GetType().FullName,
-                        right.GetType().FullName);
-
-                    if (typeCompare != 0)
-                    {
-                        return typeCompare;
-                    }
-
-                    return left.GetInstanceID().CompareTo(right.GetInstanceID());
-                });
-            }
-
-            var cleanupCtx = CreateGameplayResetContext(request, GameplayResetStructs.Cleanup, serial);
-            var restoreCtx = CreateGameplayResetContext(request, GameplayResetStructs.Restore, serial);
-            var rebindCtx = CreateGameplayResetContext(request, GameplayResetStructs.Rebind, serial);
-
-            foreach (var binder in _canvasBinders)
-            {
-                if (binder == null)
-                {
-                    continue;
-                }
-
-                await binder.Reset_CleanupAsync(cleanupCtx);
-                await binder.Reset_RestoreAsync(restoreCtx);
-                await binder.Reset_RebindAsync(rebindCtx);
-            }
         }
 
         private readonly struct PlayerTarget
