@@ -13,6 +13,7 @@ using GameplayResetContext = _ImmersiveGames.Scripts.GameplaySystems.Reset.Reset
 using GameplayResetRequest = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetRequest;
 using GameplayResetScope = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetScope;
 using GameplayResetStructs = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetStructs;
+using IActorRegistry = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActorRegistry;
 using LegacyActor = _ImmersiveGames.Scripts.ActorSystems.IActor;
 using NewActor = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActor;
 
@@ -333,6 +334,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         {
             _canvasBinders.Clear();
             _canvasBinders.AddRange(FindObjectsOfType<_ImmersiveGames.Scripts.Utils.CameraSystems.CanvasCameraBinder>(includeInactive: false));
+
+            // Compatível com versões do Unity que não suportam FindObjectsOfType<T>(bool includeInactive).
+            // Por padrão, FindObjectsOfType retorna apenas objetos ativos na cena.
+            var foundBinders = UnityEngine.Object.FindObjectsOfType<CanvasCameraBinder>();
+            if (foundBinders != null && foundBinders.Length > 0)
+            {
+                _canvasBinders.AddRange(foundBinders.Where(b => b != null && b.gameObject.activeInHierarchy));
+            }
 
             if (!string.IsNullOrWhiteSpace(_sceneName))
             {
