@@ -16,10 +16,10 @@ O reset do mundo segue a ordem garantida pelo `WorldLifecycleOrchestrator`: Acqu
  - Nota: se não houver hooks registrados para uma fase, o sistema emite log verbose `"<PhaseName> phase skipped (hooks=0)"` para diagnóstico e para confirmar que a fase foi considerada.
 
 ## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
-Texto de referência para Scene Flow / WorldLifecycle sobre readiness, spawn, bind e reset.
+Fonte operacional única sobre readiness, spawn, bind e reset. As fases oficiais foram decididas no ADR `../adr/ADR-ciclo-de-vida-jogo.md`.
 
 ## Escopos de Reset
-Define como o jogo reinicia e quais partes são recriadas em cada modo de reset.
+Define como o jogo reinicia e quais partes são recriadas em cada modo de reset. Decisão de escopos e fases vem do ADR `../adr/ADR-ciclo-de-vida-jogo.md`.
 
 - **Soft Reset (ex.: PlayerDeath)**:
   - Opt-in por escopo: apenas participantes que implementam `IResetScopeParticipant` e cujo `ResetScope` esteja em `ResetContext.Scopes` executam; `ResetScopesAsync` ignora listas vazias e rejeita `ResetScope.World` (para hard reset usar `ResetWorldAsync`).
@@ -58,9 +58,10 @@ GameplayReady (gate liberado; gameplay habilitado)
 [Soft Reset → WorldLifecycle reset scoped]
 [Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
 ```
+Origem da decisão de fases: `../adr/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`.
 
 ## Fases de Readiness
-Fases formais que controlam quem pode agir e quando, garantindo que spawn/bind e gameplay sigam uma ordem previsível.
+Fases formais que controlam quem pode agir e quando, garantindo que spawn/bind e gameplay sigam uma ordem previsível. Ver decisão em `../adr/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`.
 
 - **SceneScopeReady**: a cena concluiu a configuração básica e adquiriu o gate. Providers e registries de cena estão disponíveis, porém nenhum ator ou sistema de gameplay deve executar lógica ainda. Somente serviços de bootstrap e validações estruturais podem agir.
 - **WorldLoaded**: o WorldLifecycle está configurado, registries de atores/spawn estão ativos e serviços de mundo podem preparar dados. Spawners determinísticos podem registrar intenções, mas o gameplay continua bloqueado.
@@ -69,7 +70,7 @@ Fases formais que controlam quem pode agir e quando, garantindo que spawn/bind e
 Regra explícita: gameplay, atores e sistemas de fase só iniciam após `GameplayReady`. Soft resets mantêm essa garantia porque o gate permanece adquirido até a fase ser sinalizada novamente.
 
 ## Spawn determinístico e Late Bind
-Define como o spawn acontece em passes ordenados e como binds tardios evitam inconsistências de UI/canvas cross-scene.
+Define como o spawn acontece em passes ordenados e como binds tardios evitam inconsistências de UI/canvas cross-scene. Decisão de passes descrita em `../adr/ADR-ciclo-de-vida-jogo.md#spawn-passes`.
 
 - **Por que spawn ocorre em passes**: o WorldLifecycle executa passos previsíveis (pré-warm, serviços de mundo, atores, late bindables) para manter determinismo em multiplayer local e permitir reset por escopo sem efeitos colaterais.
 - **Problema clássico de Canvas/UI criados após atores**: se UI/canvas cruzados de cena nascem após atores, binds diretos falham ou geram referências nulas. Por isso, a criação de UI pode ocorrer antes, mas o bind real só acontece em uma fase de readiness específica.

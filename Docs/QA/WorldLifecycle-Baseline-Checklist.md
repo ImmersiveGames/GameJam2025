@@ -8,12 +8,12 @@
 
 Validar, exclusivamente por logs, que o **WorldLifecycle** executa de forma **determinística**, com:
 
-* Ordem correta de fases
-* Aquisição/liberação correta de gates
+* Ordem correta de fases (fonte: contrato em `../../docs/world-lifecycle/WorldLifecycle.md#validation-contract-baseline`)
+* Aquisição/liberação correta de gates (fonte: `WorldLifecycle.md` — seções de validação e linha do tempo)
 * Separação clara entre **produção (auto-init)** e **QA (runner)**
 * Supressão controlada de ruído de log (`Repeated-call warning`) **sem efeitos colaterais**
 
-Este checklist é a referência oficial para validação manual de baseline.
+Este checklist referencia o contrato operacional em `WorldLifecycle.md` e foca apenas em passos/esperados de QA.
 
 ---
 
@@ -38,18 +38,7 @@ Este checklist é a referência oficial para validação manual de baseline.
 
 ### 1.1 Hard Reset (`ResetWorldAsync`)
 
-O ciclo **completo** deve aparecer nos logs, respeitando a ordem lógica:
-
-1. Acquire Gate (hard reset)
-2. OnBeforeDespawn (hooks de cena)
-3. Despawn (spawn services)
-4. OnAfterDespawn
-5. OnBeforeSpawn
-6. Spawn
-7. OnAfterActorSpawn (por ator)
-8. OnAfterSpawn
-9. Release Gate
-10. `World Reset Completed`
+O ciclo **completo** deve aparecer nos logs, respeitando a ordem descrita em `WorldLifecycle.md#validation-contract-baseline`.
 
 **Obrigatório:**
 
@@ -65,7 +54,7 @@ O soft reset deve:
 
 * Adquirir o gate correto
   Ex.: `Acquire token='flow.soft_reset'`
-* Executar **apenas** participantes compatíveis com `Scopes = Players`
+* Executar **apenas** participantes compatíveis com `Scopes = Players` (contrato operacional em `WorldLifecycle.md#resets-por-escopo`)
 
     * Ex.: `PlayersResetParticipant`
 * Permitir logs de *skip* por filtro de escopo (esperado)
@@ -85,7 +74,7 @@ O soft reset deve:
 * Reset iniciado automaticamente:
 
     * `Reset iniciado. reason='AutoInitialize/Start'`
-* Hard reset completo conforme seção 1.1
+* Hard reset completo conforme seção 1.1 (pipeline em `WorldLifecycle.md#validation-contract-baseline`)
 
 ### 2.3 Repeated-call warning (com `BaselineDebugBootstrap`)
 
@@ -144,7 +133,7 @@ Via ContextMenu ou Hotkeys:
 Logs esperados:
 
 * `[Baseline] [Run-XXXX] START Hard Reset`
-* Pipeline completo conforme seção 1.1
+* Pipeline completo conforme seção 1.1 (detalhe em `WorldLifecycle.md#validation-contract-baseline`)
 * `[Baseline] [Run-XXXX] END Hard Reset`
 
 ---
@@ -155,7 +144,7 @@ Logs esperados:
 
 * `[Baseline] [Run-XXXX] START Soft Reset Players`
 * Execução de `PlayersResetParticipant`
-* Gate `flow.soft_reset` adquirido e liberado
+* Gate `flow.soft_reset` adquirido e liberado (ver contrato em `WorldLifecycle.md#resets-por-escopo`)
 * `[Baseline] [Run-XXXX] END Soft Reset Players`
 
 ---
@@ -201,14 +190,14 @@ O bootstrap **não pode** restaurar enquanto o runner estiver ativo.
 
 ### Hard Reset
 
-* [ ] Gate hard reset adquirido
+* [ ] Gate hard reset adquirido (ver `WorldLifecycle.md#validation-contract-baseline`)
 * [ ] Gate liberado
 * [ ] `World Reset Completed`
 
 ### Soft Reset Players
 
 * [ ] Gate `flow.soft_reset`
-* [ ] `PlayersResetParticipant` executado
+* [ ] `PlayersResetParticipant` executado (contrato em `WorldLifecycle.md#resets-por-escopo`)
 * [ ] Serviços fora do escopo corretamente ignorados
 
 ### Debug / Warnings

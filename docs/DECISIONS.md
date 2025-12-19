@@ -10,6 +10,7 @@
 - WorldLifecycleHookRegistry ownership: Bootstrapper-only.
 - Controller/Orchestrator são consumidores; guardrails e logs para flagrar duplo-registro ou resolução fora de ordem.
 - QA/Testers não garantem execução em `Awake`; devem tolerar boot order com lazy injection + retry/timeout e falhar com mensagem acionável se o bootstrapper não rodou.
+- Fluxo operacional detalhado do WorldLifecycle vive em `docs/world-lifecycle/WorldLifecycle.md`; este arquivo mantém apenas normas/guardrails.
 
 ## Política de Uso do Legado
 - NewScripts define a arquitetura e os contratos ideais como fonte de verdade; o legado não é baseline.
