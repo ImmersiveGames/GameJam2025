@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.Scripts.Utils;
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;

@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
@@ -9,6 +8,7 @@ using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 {

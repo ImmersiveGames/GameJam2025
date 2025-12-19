@@ -6,12 +6,12 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 
 namespace _ImmersiveGames.Scripts.Utils
 {
+
     public interface IUniqueIdFactory
     {
         string GenerateId(GameObject owner, string prefix = null);
         int GetInstanceCount(string actorName);
     }
-    
     public class UniqueIdFactory : IUniqueIdFactory
     {
         private readonly Dictionary<string, int> _instanceCounts = new();

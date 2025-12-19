@@ -6,6 +6,11 @@ using _ImmersiveGames.Scripts.Utils;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
 {
+    public interface IUniqueIdFactory
+    {
+        string GenerateId(GameObject owner, string prefix = null);
+        int GetInstanceCount(string actorName);
+    }
     /// <summary>
     /// NewScripts generic unique ID generator.
     /// Goals:

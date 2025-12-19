@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -8,8 +9,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State.Legacy;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.CameraSystems;
-using _ImmersiveGames.Scripts.Utils;
+using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // TEMP bridge até o FSM novo ser implementado (NS-FSM-001).
             RegisterIfMissing<IStateDependentService>(() => new LegacyStateDependentServiceBridge());
 
-            // TEMP: Legacy bridge. Remove after NewScripts Camera system is implemented (NS-CAM-001).
+            // Sistema de câmera nativo do NewScripts.
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
         }
 
