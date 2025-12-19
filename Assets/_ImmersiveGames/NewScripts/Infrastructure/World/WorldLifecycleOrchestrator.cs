@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     /// </summary>
     public sealed class WorldLifecycleOrchestrator
     {
-        // Guardrail de QA: manter a ordem das fases exatamente como descrita aqui.
+        // Guardrail de QA: manter a ordem das fases como exatamente descrita aqui.
         // Não reorganizar o fluxo do reset ou mover responsabilidades entre classes.
         private readonly ISimulationGateService _gateService;
         private readonly IReadOnlyList<IWorldSpawnService> _spawnServices;
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return;
             }
 
-            for (var i = 0; i < scopes.Count; i++)
+            for (int i = 0; i < scopes.Count; i++)
             {
                 if (scopes[i] == ResetScope.World)
                 {
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunHookPhaseAsync(string hookName, Func<IWorldLifecycleHook, Task> hookAction)
         {
-            var collectedHooks = CollectHooks();
+            List<(string Label, IWorldLifecycleHook Hook)> collectedHooks = CollectHooks();
             if (collectedHooks.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return;
             }
 
-            var totalHooks = collectedHooks.Count;
+            int totalHooks = collectedHooks.Count;
 
             var phaseWatch = Stopwatch.StartNew();
             DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunActorHooksBeforeDespawnAsync()
         {
-            var actors = SnapshotActors();
+            List<IActor> actors = SnapshotActors();
             if (actors.Count == 0)
             {
                 return;
@@ -197,7 +197,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task RunActorHooksAfterSpawnAsync()
         {
-            var actors = SnapshotActors();
+            List<IActor> actors = SnapshotActors();
             if (actors.Count == 0)
             {
                 return;
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     continue;
                 }
 
-                var actorLabel = GetActorLabel(actor);
+                string actorLabel = GetActorLabel(actor);
                 var actorWatch = Stopwatch.StartNew();
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                     $"{hookName} actor started: {actorLabel}");
@@ -239,7 +239,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                         continue;
                     }
 
-                    if (!TryGetCachedActorHooks(transform, out var actorHooks))
+                    if (!TryGetCachedActorHooks(transform, out List<(string Label, IActorLifecycleHook Hook)> actorHooks))
                     {
                         actorHooks = CollectActorHooks(transform);
                         CacheActorHooks(transform, actorHooks);
@@ -423,16 +423,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
-            var sceneHooks = ResolveSceneHooks();
-            foreach (var hook in sceneHooks)
-            {
-                if (ShouldIncludeForScopes(hook))
-                {
-                    hooks.Add((hook?.GetType().Name ?? "<null scene hook>", hook));
-                }
-            }
+            IReadOnlyList<IWorldLifecycleHook> sceneHooks = ResolveSceneHooks();
+            hooks.AddRange(from hook in sceneHooks where ShouldIncludeForScopes(hook) select (hook?.GetType().Name ?? "<null scene hook>", hook));
 
-            var registryHooks = ResolveRegistryHooks();
+            IReadOnlyList<IWorldLifecycleHook> registryHooks = ResolveRegistryHooks();
             foreach (var hook in registryHooks)
             {
                 if (ShouldIncludeForScopes(hook))
@@ -441,7 +435,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
-            hooks.Sort(CompareHooksWithScope<IWorldLifecycleHook>);
+            hooks.Sort(CompareHooksWithScope);
 
             return hooks;
         }
@@ -451,17 +445,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             (string Label, THook Hook) right)
             where THook : class
         {
-            var leftOrder = GetHookOrder(left.Hook);
-            var rightOrder = GetHookOrder(right.Hook);
+            int leftOrder = GetHookOrder(left.Hook);
+            int rightOrder = GetHookOrder(right.Hook);
 
-            var orderComparison = leftOrder.CompareTo(rightOrder);
+            int orderComparison = leftOrder.CompareTo(rightOrder);
             if (orderComparison != 0)
             {
                 return orderComparison;
             }
 
-            var leftTypeName = left.Hook?.GetType().FullName ?? string.Empty;
-            var rightTypeName = right.Hook?.GetType().FullName ?? string.Empty;
+            string leftTypeName = left.Hook?.GetType().FullName ?? string.Empty;
+            string rightTypeName = right.Hook?.GetType().FullName ?? string.Empty;
 
             return string.Compare(leftTypeName, rightTypeName, StringComparison.Ordinal);
         }
@@ -484,11 +478,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return;
             }
 
-            var orderedLabels = collectedHooks
+            string[] orderedLabels = collectedHooks
                 .Select(entry =>
                 {
-                    var order = GetHookOrder(entry.Hook);
-                    var typeName = entry.Hook?.GetType().Name ?? entry.Label;
+                    int order = GetHookOrder(entry.Hook);
+                    string typeName = entry.Hook?.GetType().Name ?? entry.Label;
                     return $"{typeName}(order={order})";
                 })
                 .ToArray();
@@ -538,7 +532,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private List<(string Label, IActorLifecycleHook Hook)> CollectActorHooks(Transform transform)
         {
-            var components = transform.GetComponentsInChildren<MonoBehaviour>(true);
+            MonoBehaviour[] components = transform.GetComponentsInChildren<MonoBehaviour>(true);
             if (components == null || components.Length == 0)
             {
                 return EmptyActorHookList;
@@ -567,7 +561,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return EmptyActorHookList;
             }
 
-            actorHooks.Sort(CompareHooksWithScope<IActorLifecycleHook>);
+            actorHooks.Sort(CompareHooksWithScope);
             return actorHooks;
         }
 
@@ -616,15 +610,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             string startLog,
             string completionLog)
         {
-            var previousContext = _currentResetContext;
+            ResetContext? previousContext = _currentResetContext;
             _currentResetContext = context;
 
             var resetWatch = Stopwatch.StartNew();
             DebugUtility.Log(typeof(WorldLifecycleOrchestrator), startLog);
 
             IDisposable gateHandle = null;
-            var gateAcquired = false;
-            var completed = false;
+            bool gateAcquired = false;
+            bool completed = false;
 
             try
             {
@@ -657,7 +651,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 LogActorRegistryCount("After Despawn");
 
                 await RunHookPhaseAsync("OnAfterDespawn", hook => hook.OnAfterDespawnAsync());
-                
+
                 if (context != null)
                 {
                     await RunScopedParticipantsResetAsync(context.Value);
@@ -741,8 +735,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return 0;
             }
 
-            var leftScope = GetParticipantScope(left);
-            var rightScope = GetParticipantScope(right);
+            int leftScope = GetParticipantScope(left);
+            int rightScope = GetParticipantScope(right);
 
             return leftScope.CompareTo(rightScope);
         }
@@ -757,7 +751,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             (string Label, THook Hook) right)
             where THook : class
         {
-            var scopeComparison = CompareScope(left.Hook, right.Hook);
+            int scopeComparison = CompareScope(left.Hook, right.Hook);
             if (scopeComparison != 0)
             {
                 return scopeComparison;
@@ -770,7 +764,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         {
             // Soft reset executa apenas participantes que declaram escopo via IResetScopeParticipant.
             // Caso seja necessário um hook global no futuro, isso deve acontecer por meio de um escopo/interface explícitos.
-            var participants = CollectScopedParticipants();
+            List<IResetScopeParticipant> participants = CollectScopedParticipants();
             if (participants.Count == 0)
             {
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
@@ -810,7 +804,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             foreach (var participant in filtered)
             {
-                var participantType = participant.GetType().FullName ?? participant.GetType().Name;
+                string participantType = participant.GetType().FullName ?? participant.GetType().Name;
                 var watch = Stopwatch.StartNew();
                 DebugUtility.LogVerbose(typeof(WorldLifecycleOrchestrator),
                     $"Scoped reset started: {participantType}");
@@ -867,7 +861,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 var sceneParticipants = new List<IResetScopeParticipant>();
                 _provider.GetAllForScene(_sceneName, sceneParticipants);
 
-                for (var i = 0; i < sceneParticipants.Count; i++)
+                for (int i = 0; i < sceneParticipants.Count; i++)
                 {
                     var participant = sceneParticipants[i];
                     if (participant == null)
@@ -882,8 +876,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
-            var sceneHooks = ResolveSceneHooks();
-            for (var i = 0; i < sceneHooks.Count; i++)
+            IReadOnlyList<IWorldLifecycleHook> sceneHooks = ResolveSceneHooks();
+            for (int i = 0; i < sceneHooks.Count; i++)
             {
                 if (sceneHooks[i] is IResetScopeParticipant participant)
                 {
@@ -894,8 +888,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 }
             }
 
-            var registryHooks = ResolveRegistryHooks();
-            for (var i = 0; i < registryHooks.Count; i++)
+            IReadOnlyList<IWorldLifecycleHook> registryHooks = ResolveRegistryHooks();
+            for (int i = 0; i < registryHooks.Count; i++)
             {
                 if (registryHooks[i] is IResetScopeParticipant participant)
                 {
@@ -926,30 +920,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return -1;
             }
 
-            var scopeComparison = left.Scope.CompareTo(right.Scope);
+            int scopeComparison = left.Scope.CompareTo(right.Scope);
             if (scopeComparison != 0)
             {
                 return scopeComparison;
             }
 
-            var orderComparison = left.Order.CompareTo(right.Order);
+            int orderComparison = left.Order.CompareTo(right.Order);
             if (orderComparison != 0)
             {
                 return orderComparison;
             }
 
-            var leftType = left.GetType().FullName ?? left.GetType().Name;
-            var rightType = right.GetType().FullName ?? right.GetType().Name;
+            string leftType = left.GetType().FullName ?? left.GetType().Name;
+            string rightType = right.GetType().FullName ?? right.GetType().Name;
 
             return string.Compare(leftType, rightType, StringComparison.Ordinal);
         }
 
         private void LogScopedParticipantOrder(List<IResetScopeParticipant> participants)
         {
-            var orderedLabels = participants
+            string[] orderedLabels = participants
                 .Select(participant =>
                 {
-                    var typeName = participant?.GetType().Name ?? "<null participant>";
+                    string typeName = participant?.GetType().Name ?? "<null participant>";
                     return $"{typeName}(scope={participant?.Scope}, order={participant?.Order})";
                 })
                 .ToArray();

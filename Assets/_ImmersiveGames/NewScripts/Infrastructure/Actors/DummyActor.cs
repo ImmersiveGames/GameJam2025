@@ -8,9 +8,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     public sealed class DummyActor : MonoBehaviour, IActor
     {
         [SerializeField]
-        private string _actorId = string.Empty;
+        private string actorId = string.Empty;
 
-        public string ActorId => _actorId;
+        public string ActorId => actorId;
 
         public string DisplayName => gameObject != null ? gameObject.name : nameof(DummyActor);
 
@@ -18,9 +18,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
 
         public bool IsActive => isActiveAndEnabled;
 
-        public void Initialize(string actorId)
+        public void Initialize(string id)
         {
-            _actorId = actorId ?? string.Empty;
+            actorId = id ?? string.Empty;
         }
     }
 }

@@ -13,14 +13,14 @@ namespace _ImmersiveGames.NewScripts.QA
         AfterSpawn
     }
 
-    public sealed class QAFaultySceneLifecycleHook : IWorldLifecycleHook
+    public sealed class QaFaultySceneLifecycleHook : IWorldLifecycleHook
     {
         private readonly FaultyLifecyclePhase _faultyPhase;
         private readonly string _label;
 
-        public QAFaultySceneLifecycleHook(string label, FaultyLifecyclePhase faultyPhase)
+        public QaFaultySceneLifecycleHook(string label, FaultyLifecyclePhase faultyPhase)
         {
-            _label = string.IsNullOrWhiteSpace(label) ? nameof(QAFaultySceneLifecycleHook) : label;
+            _label = string.IsNullOrWhiteSpace(label) ? nameof(QaFaultySceneLifecycleHook) : label;
             _faultyPhase = faultyPhase;
         }
 
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 throw new InvalidOperationException($"[QA] {_label} forced failure at {methodName}");
             }
 
-            DebugUtility.Log(typeof(QAFaultySceneLifecycleHook),
+            DebugUtility.Log(typeof(QaFaultySceneLifecycleHook),
                 $"[QA] {_label} executed successfully at {methodName}");
             return Task.CompletedTask;
         }

@@ -36,15 +36,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                 case ServiceState.Playing:
                     return action switch
                     {
-                        ActionType.Move => true,
-                        ActionType.Shoot => true,
-                        ActionType.Spawn => true,
-                        ActionType.Interact => true,
-                        ActionType.Navigate => true,
-                        ActionType.UiSubmit => true,
-                        ActionType.UiCancel => true,
-                        ActionType.RequestReset => true,
-                        ActionType.RequestQuit => true,
                         _ => true
                     };
                 case ServiceState.Menu:
@@ -105,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
         private void OnGamePause(GamePauseEvent evt)
         {
-            SetState(evt != null && evt.IsPaused ? ServiceState.Paused : ServiceState.Playing);
+            SetState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
         }
 
         private void SetState(ServiceState next)

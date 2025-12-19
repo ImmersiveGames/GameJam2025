@@ -2,7 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 
@@ -23,6 +25,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _autoInitDisabled;
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
+        private bool _pausedByQaToggle;
+        private bool _lastPublishedPauseState;
+        private bool _loggedEventBusUnavailable;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
@@ -40,7 +45,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             BaselineDebugBootstrap.SetRunnerActive(true);
 #endif
-            BaselineDebugBootstrap.IsBaselineRunning = true;
 
             if (!disableControllerAutoInitializeOnStart)
             {
@@ -66,7 +70,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             BaselineDebugBootstrap.SetRunnerActive(false);
 #endif
-            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
@@ -75,7 +78,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             BaselineDebugBootstrap.SetRunnerActive(false);
 #endif
-            BaselineDebugBootstrap.IsBaselineRunning = false;
             RestoreRepeatedWarningSuppressionIfNeeded();
         }
 
@@ -95,6 +97,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         public async void RunFullBaselineContextMenu()
         {
             await RunFullBaselineAsync("ContextMenu/FullBaseline");
+        }
+
+        [ContextMenu("QA/Gate/Toggle Pause (EventBus)")]
+        public void TogglePauseEventBus()
+        {
+            _pausedByQaToggle = !_pausedByQaToggle;
+            ApplyPauseState(_pausedByQaToggle);
+        }
+
+        [ContextMenu("QA/Gate/Force Pause (EventBus)")]
+        public void ForcePauseEventBus()
+        {
+            _pausedByQaToggle = true;
+            ApplyPauseState(true);
+        }
+
+        [ContextMenu("QA/Gate/Force Resume (EventBus)")]
+        public void ForceResumeEventBus()
+        {
+            _pausedByQaToggle = false;
+            ApplyPauseState(false);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -149,7 +172,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             finally
             {
                 _isRunning = false;
-                BaselineDebugBootstrap.IsBaselineRunning = false;
                 RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
@@ -188,7 +210,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             finally
             {
                 _isRunning = false;
-                BaselineDebugBootstrap.IsBaselineRunning = false;
                 RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
@@ -242,7 +263,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 LogInfo(runId,
                     $"Baseline Summary — activeScene='{SceneManager.GetActiveScene().name}', runId='{runId}', Hard Reset={(hardResetSucceeded ? "SUCCESS" : "FAILED")}, Soft Reset Players={(softResetSucceeded ? "SUCCESS" : "FAILED")}, totalTimeMs={stopwatch.ElapsedMilliseconds}");
                 _isRunning = false;
-                BaselineDebugBootstrap.IsBaselineRunning = false;
                 RestoreRepeatedWarningSuppressionIfNeeded();
             }
         }
@@ -257,7 +277,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             _isRunning = true;
-            BaselineDebugBootstrap.IsBaselineRunning = true;
             return true;
         }
 
@@ -369,6 +388,49 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.SetRepeatedCallVerbose(_savedRepeatedVerbose);
             _hasSavedRepeatedVerbose = false;
 #endif
+        }
+
+        // Gate toggle de QA: publica eventos para bloquear/liberar ações.
+        // Importante: o gate não congela física; gravidade/rigidbodies continuam como parte do loop normal ou FSM.
+        private void ApplyPauseState(bool paused)
+        {
+            if (_lastPublishedPauseState == paused)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                    paused
+                        ? "[QA Gate Toggle] Ignorado: ações já estavam bloqueadas; física segue não congelada."
+                        : "[QA Gate Toggle] Ignorado: ações já estavam liberadas; física continua normal.");
+                return;
+            }
+
+            try
+            {
+                EventBus<GamePauseEvent>.Raise(new GamePauseEvent(paused));
+                DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                    paused
+                        ? "[QA Gate Toggle] Ações bloqueadas; física NÃO congelada (GamePauseEvent)."
+                        : "[QA Gate Toggle] Ações liberadas; física continua normal (GamePauseEvent).");
+
+                if (!paused)
+                {
+                    EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                        "[QA Gate Toggle] GameResumeRequestedEvent publicado (gate libera ações; física não é congelada pelo gate).");
+                }
+
+                _lastPublishedPauseState = paused;
+            }
+            catch (Exception ex)
+            {
+                if (_loggedEventBusUnavailable)
+                {
+                    return;
+                }
+
+                DebugUtility.LogWarning(typeof(WorldLifecycleBaselineRunner),
+                    $"[QA Gate Toggle] EventBus indisponível; não foi possível publicar pause/resume ({ex.GetType().Name})");
+                _loggedEventBusUnavailable = true;
+            }
         }
     }
 }

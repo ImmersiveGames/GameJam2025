@@ -17,7 +17,7 @@ using IActorRegistry = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActorRe
 using LegacyActor = _ImmersiveGames.Scripts.ActorSystems.IActor;
 using NewActor = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActor;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 {
     public sealed class PlayersResetParticipant : IResetScopeParticipant
     {
@@ -74,8 +74,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             var provider = DependencyManager.Provider;
 
-            provider.TryGetForScene<IActorRegistry>(_sceneName, out _actorRegistry);
-            provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
+            provider.TryGetForScene(_sceneName, out _actorRegistry);
+            provider.TryGetForScene(_sceneName, out _playerDomain);
 
             _dependenciesResolved = true;
         }
@@ -138,17 +138,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             return _playerTargets.Count > 0;
         }
 
-        private bool TryCollectFromPlayerDomain()
+        private void TryCollectFromPlayerDomain()
         {
             if (_playerDomain == null)
             {
-                return false;
+                return;
             }
 
             var players = _playerDomain.Players;
             if (players == null || players.Count == 0)
             {
-                return false;
+                return;
             }
 
             _legacyPlayerBuffer.Clear();
@@ -173,7 +173,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
             }
 
-            return _playerTargets.Count > 0;
         }
 
         private static bool IsPlayerActor(NewActor actor)

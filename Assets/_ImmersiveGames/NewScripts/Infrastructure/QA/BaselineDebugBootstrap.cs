@@ -10,8 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// </summary>
     internal static class BaselineDebugBootstrap
     {
-        internal static bool IsBaselineRunning { get; set; }
-        internal static bool IsRunnerActive { get; private set; }
+        private static bool IsRunnerActive { get; set; }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private const string DriverName = "BaselineDebugBootstrapDriver";
@@ -24,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
-            IsBaselineRunning = false;
             IsRunnerActive = false;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

@@ -7,8 +7,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
     /// sem depender de Time.timeScale.
     ///
     /// Abertura/fechamento é controlado por "tokens" (strings).
-    /// - Se existir pelo menos 1 token ativo => Gate FECHADO (simulação bloqueada)
-    /// - Se não existir token => Gate ABERTO (simulação liberada)
+    /// - Se existir pelo menos 1 token ativo → Gate FECHADO (simulação bloqueada)
+    /// - Se não existir token → Gate ABERTO (simulação liberada)
     ///
     /// Padrão recomendado: cada sistema/domínio/estado adquire um token no OnEnter
     /// e libera no OnExit (ou via IDisposable).

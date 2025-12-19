@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         public ResetFlags Flags { get; }
 
-        public bool HasScopes => Scopes != null && Scopes.Count > 0;
+        public bool HasScopes => Scopes is { Count: > 0 };
 
         public bool ContainsScope(ResetScope scope)
         {
@@ -56,15 +57,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return false;
             }
 
-            for (var i = 0; i < Scopes.Count; i++)
-            {
-                if (Scopes[i] == scope)
-                {
-                    return true;
-                }
-            }
+            return Scopes.Any(t => t == scope);
 
-            return false;
         }
 
         public override string ToString()

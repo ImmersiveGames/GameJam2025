@@ -75,12 +75,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
                 return false;
             }
 
-            if (!_actors.TryGetValue(actorId, out var actor))
+            if (!_actors.Remove(actorId, out var actor))
             {
                 return false;
             }
-
-            _actors.Remove(actorId);
 
             if (actor != null)
             {

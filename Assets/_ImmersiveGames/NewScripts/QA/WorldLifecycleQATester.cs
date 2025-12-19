@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.QA
     /// Usa injeção lazy com retry/timeout para evitar falso negativo quando o bootstrapper ainda não rodou.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class WorldLifecycleQATester : MonoBehaviour
+    public sealed class WorldLifecycleQaTester : MonoBehaviour
     {
         [Header("Configuração")]
         [SerializeField] private string label = "WorldLifecycleQATester";
@@ -88,21 +88,21 @@ namespace _ImmersiveGames.NewScripts.QA
         [ContextMenu("QA/Dump Diagnostics")]
         public void DumpDiagnostics()
         {
-            var hookCount = _hookRegistry?.Hooks?.Count ?? -1;
+            int hookCount = _hookRegistry?.Hooks?.Count ?? -1;
 
-            DebugUtility.Log(typeof(WorldLifecycleQATester),
+            DebugUtility.Log(typeof(WorldLifecycleQaTester),
                 $"[QA] {label}: scene='{_sceneName}', controller={(_controller != null)}, actorRegistry={(_actorRegistry != null)}, " +
                 $"spawnRegistry={(_spawnRegistry != null)}, hookRegistry={(_hookRegistry != null ? hookCount.ToString() : "-")}");
 
             if (hookCount >= 0)
             {
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                DebugUtility.Log(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: hook registry contains {hookCount} item(s).");
             }
 
             if (IsNewscriptsModeActive)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                DebugUtility.LogWarning(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: NEWSCRIPTS_MODE ativo — inicializadores podem ser ignorados (comportamento esperado em modo de desenvolvimento).");
             }
         }
@@ -111,12 +111,12 @@ namespace _ImmersiveGames.NewScripts.QA
         {
             if (_isResetting)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                DebugUtility.LogWarning(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: reset ignorado porque outro reset está em andamento.");
                 return;
             }
 
-            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
+            bool injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
             if (!injected)
             {
                 return;
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
             if (_actorRegistry == null || _spawnRegistry == null)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                DebugUtility.LogError(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: não encontrou registries críticos. Verifique NewSceneBootstrapper na cena.");
                 return;
             }
@@ -133,17 +133,17 @@ namespace _ImmersiveGames.NewScripts.QA
             try
             {
                 var orchestrator = CreateOrchestrator();
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                DebugUtility.Log(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: disparando reset único (scene='{_sceneName}').");
 
                 await orchestrator.ResetWorldAsync();
 
-                DebugUtility.Log(typeof(WorldLifecycleQATester),
+                DebugUtility.Log(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: reset concluído (scene='{_sceneName}').");
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                DebugUtility.LogError(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: erro durante reset: {ex.Message}");
             }
             finally
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
         private async Task RunStressResetsAsync(CancellationToken token)
         {
-            var injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
+            bool injected = await EnsureDependenciesAsync(token, logSuccess: verboseLogs, logWaiting: verboseLogs);
             if (!injected)
             {
                 return;
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
             if (stressResetCount <= 0)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                DebugUtility.LogWarning(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: stressResetCount inválido ({stressResetCount}). Nada a fazer.");
                 return;
             }
@@ -171,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.QA
             {
                 if (token.IsCancellationRequested)
                 {
-                    DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                    DebugUtility.LogWarning(typeof(WorldLifecycleQaTester),
                         $"[QA] {label}: stress reset cancelado (iteration={i}).");
                     return;
                 }
@@ -182,19 +182,19 @@ namespace _ImmersiveGames.NewScripts.QA
                 {
                     try
                     {
-                        var delayMs = Mathf.Max(1, (int)(stressResetDelaySeconds * 1000f));
+                        int delayMs = Mathf.Max(1, (int)(stressResetDelaySeconds * 1000f));
                         await Task.Delay(delayMs, token);
                     }
                     catch (OperationCanceledException)
                     {
-                        DebugUtility.LogWarning(typeof(WorldLifecycleQATester),
+                        DebugUtility.LogWarning(typeof(WorldLifecycleQaTester),
                             $"[QA] {label}: stress reset cancelado durante o delay.");
                         return;
                     }
                 }
             }
 
-            DebugUtility.Log(typeof(WorldLifecycleQATester),
+            DebugUtility.Log(typeof(WorldLifecycleQaTester),
                 $"[QA] {label}: stress reset finalizado ({stressResetCount}x).");
         }
 
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 return true;
             }
 
-            var deadline = Time.realtimeSinceStartup + Mathf.Max(0.01f, resolveTimeoutSeconds);
+            float deadline = Time.realtimeSinceStartup + Mathf.Max(0.01f, resolveTimeoutSeconds);
             _waitingForBootstrapLogEmitted = false;
 
             while (Time.realtimeSinceStartup <= deadline && !token.IsCancellationRequested)
@@ -218,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.QA
                     _waitingForBootstrapLogEmitted = false;
                     if (logSuccess)
                     {
-                        DebugUtility.Log(typeof(WorldLifecycleQATester),
+                        DebugUtility.Log(typeof(WorldLifecycleQaTester),
                             $"[QA] {label}: dependências resolvidas via lazy injection.");
                     }
                     return true;
@@ -226,12 +226,12 @@ namespace _ImmersiveGames.NewScripts.QA
 
                 if (logWaiting && !_waitingForBootstrapLogEmitted)
                 {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleQATester),
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleQaTester),
                         $"[QA] {label}: aguardando NewSceneBootstrapper registrar serviços de cena (scene='{_sceneName}').");
                     _waitingForBootstrapLogEmitted = true;
                 }
 
-                var retryMs = Mathf.Max(1, (int)(retryIntervalSeconds * 1000f));
+                int retryMs = Mathf.Max(1, (int)(retryIntervalSeconds * 1000f));
                 try
                 {
                     await Task.Delay(retryMs, token);
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
             if (!HasResolvedDependencies() && !token.IsCancellationRequested)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleQATester),
+                DebugUtility.LogError(typeof(WorldLifecycleQaTester),
                     $"[QA] {label}: falha ao resolver dependências em {resolveTimeoutSeconds:F2}s (scene='{_sceneName}'). " +
                     "Confirme que o NewSceneBootstrapper está ativo na cena e executa antes deste tester (ordem de execução). " +
                     $"controller={(_controller != null)}, gateService={(_gateService != null)}, actorRegistry={(_actorRegistry != null)}, " +
@@ -305,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 _lifetimeCts.Cancel();
                 if (verboseLogs)
                 {
-                    DebugUtility.Log(typeof(WorldLifecycleQATester),
+                    DebugUtility.Log(typeof(WorldLifecycleQaTester),
                         $"[QA] {label}: cancelado ({reason}).");
                 }
             }

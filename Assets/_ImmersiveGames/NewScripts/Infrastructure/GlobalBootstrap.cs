@@ -25,7 +25,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
-            if (_initialized) return;
+            if (_initialized)
+            {
+                return;
+            }
             _initialized = true;
 
             InitializeLogging();
@@ -47,11 +50,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void EnsureDependencyProvider()
         {
-            if (!DependencyManager.HasInstance)
+            if (DependencyManager.HasInstance)
             {
-                _ = DependencyManager.Provider;
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap), "DependencyManager created for global scope.");
+                return;
             }
+            _ = DependencyManager.Provider;
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap), "DependencyManager created for global scope.");
         }
 
         private static void RegisterEssentialServicesOnly()

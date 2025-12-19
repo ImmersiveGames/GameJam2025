@@ -13,17 +13,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     public sealed class PlayerActor : MonoBehaviour, IActor
     {
         [SerializeField]
-        private string _actorId = string.Empty;
+        private string actorId = string.Empty;
 
         [SerializeField]
         [Tooltip("Opcional: nome amigável exibido em logs do pipeline de baseline.")]
-        private string _displayName = string.Empty;
+        private string displayName = string.Empty;
 
-        public string ActorId => _actorId;
+        public string ActorId => actorId;
 
-        public string DisplayName => string.IsNullOrWhiteSpace(_displayName)
+        public string DisplayName => string.IsNullOrWhiteSpace(displayName)
             ? (gameObject != null ? gameObject.name : nameof(PlayerActor))
-            : _displayName;
+            : displayName;
 
         public Transform Transform => transform;
 
@@ -34,17 +34,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
             EnsureActorId();
         }
 
-        internal void Initialize(string actorId)
+        internal void Initialize(string newActorId)
         {
-            if (!string.IsNullOrWhiteSpace(actorId))
+            if (!string.IsNullOrWhiteSpace(newActorId))
             {
-                _actorId = actorId;
+                actorId = newActorId;
             }
         }
 
         private void EnsureActorId()
         {
-            if (!string.IsNullOrWhiteSpace(_actorId))
+            if (!string.IsNullOrWhiteSpace(actorId))
             {
                 return;
             }
@@ -54,17 +54,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
             {
                 DebugUtility.LogError(typeof(PlayerActor),
                     "IUniqueIdFactory não encontrado; gerando ActorId local para PlayerActor.");
-                _actorId = $"A_{Guid.NewGuid():N}";
+                actorId = $"A_{Guid.NewGuid():N}";
                 return;
             }
 
-            _actorId = factory.GenerateId(gameObject);
+            actorId = factory.GenerateId(gameObject);
 
-            if (string.IsNullOrWhiteSpace(_actorId))
+            if (string.IsNullOrWhiteSpace(actorId))
             {
                 DebugUtility.LogError(typeof(PlayerActor),
                     "Falha ao gerar ActorId via IUniqueIdFactory; gerando ActorId local.");
-                _actorId = $"A_{Guid.NewGuid():N}";
+                actorId = $"A_{Guid.NewGuid():N}";
             }
         }
     }

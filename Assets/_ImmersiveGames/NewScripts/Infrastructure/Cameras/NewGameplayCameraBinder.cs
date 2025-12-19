@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
     [RequireComponent(typeof(Camera))]
     public sealed class NewGameplayCameraBinder : MonoBehaviour
     {
-        [SerializeField] private int playerId = 0;
+        [SerializeField] private int playerId;
 
         private Camera _camera;
         private ICameraResolver _resolver;

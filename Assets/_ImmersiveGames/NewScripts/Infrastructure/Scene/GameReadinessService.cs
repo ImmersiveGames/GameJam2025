@@ -15,9 +15,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     public sealed class GameReadinessService
     {
         private readonly ISimulationGateService _gateService;
-        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
-        private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
-        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
         private IDisposable _activeGateHandle;
         private bool _gameplayReady;
@@ -26,13 +23,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             _gateService = gateService;
 
-            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
-            _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
-            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
+            var transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
+            var transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
+            var transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
 
-            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
-            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+            EventBus<SceneTransitionStartedEvent>.Register(transitionStartedBinding);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(transitionScenesReadyBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(transitionCompletedBinding);
 
             DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
         }

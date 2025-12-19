@@ -11,18 +11,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     public sealed class PlayerActorAdapter : MonoBehaviour, IActor
     {
         [SerializeField]
-        private string _actorId = string.Empty;
+        private string actorId = string.Empty;
 
         [SerializeField]
         [Tooltip("Opcional: exibir um nome amigável para diagnósticos do pipeline de baseline.")]
-        private string _displayName;
+        private string displayName;
 
         private LegacyActor _legacyActor;
 
-        public string ActorId => _actorId;
+        public string ActorId => actorId;
 
-        public string DisplayName => !string.IsNullOrWhiteSpace(_displayName)
-            ? _displayName
+        public string DisplayName => !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
             : gameObject != null ? gameObject.name : nameof(PlayerActorAdapter);
 
         public Transform Transform => transform;
@@ -32,21 +32,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
         private void Awake()
         {
             _legacyActor = GetComponent<LegacyActor>();
-            if (_legacyActor != null && string.IsNullOrWhiteSpace(_actorId))
+            if (_legacyActor != null && string.IsNullOrWhiteSpace(actorId))
             {
-                _actorId = _legacyActor.ActorId ?? string.Empty;
+                actorId = _legacyActor.ActorId ?? string.Empty;
             }
         }
 
-        internal void Initialize(string actorId)
+        internal void Initialize(string newActorId)
         {
-            if (!string.IsNullOrWhiteSpace(actorId))
+            if (!string.IsNullOrWhiteSpace(newActorId))
             {
-                _actorId = actorId;
+                actorId = newActorId;
             }
             else if (_legacyActor != null)
             {
-                _actorId = _legacyActor.ActorId ?? string.Empty;
+                actorId = _legacyActor.ActorId ?? string.Empty;
             }
         }
     }

@@ -19,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     public sealed class WorldLifecycleRuntimeDriver
     {
         private readonly ISimulationGateService _gateService;
-        private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private readonly object _resetLock = new();
 
         private Task _ongoingResetTask;
@@ -37,8 +36,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 DebugUtility.LogWarning<WorldLifecycleRuntimeDriver>("[WorldLifecycle] ISimulationGateService ausente. Reset seguirá sem gate dedicado.");
             }
 
-            _scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
+            var scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(scenesReadyBinding);
 
             DebugUtility.LogVerbose<WorldLifecycleRuntimeDriver>("[WorldLifecycle] Runtime driver registrado para SceneTransitionScenesReadyEvent.");
         }

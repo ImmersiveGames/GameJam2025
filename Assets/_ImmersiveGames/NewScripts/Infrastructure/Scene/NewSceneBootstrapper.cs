@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -42,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             var worldRoot = EnsureWorldRoot();
             _worldSpawnContext = new WorldSpawnContext(_sceneName, worldRoot);
 
-            provider.RegisterForScene<IWorldSpawnContext>(
+            provider.RegisterForScene(
                 _sceneName,
                 _worldSpawnContext,
                 allowOverride: false);
@@ -73,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             else
             {
                 hookRegistry = new WorldLifecycleHookRegistry();
-                provider.RegisterForScene<WorldLifecycleHookRegistry>(
+                provider.RegisterForScene(
                     _sceneName,
                     hookRegistry,
                     allowOverride: false);

@@ -93,8 +93,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return Task.CompletedTask;
             }
 
-            var prefabName = _prefab != null ? _prefab.name : "<null>";
-            var instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
+            string prefabName = _prefab != null ? _prefab.name : "<null>";
+            string instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
             DebugUtility.Log(typeof(PlayerSpawnService),
                 $"Actor spawned: {_spawnedActor.ActorId} (prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
             DebugUtility.Log(typeof(PlayerSpawnService), $"Registry count: {_actorRegistry.Count}");
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return Task.CompletedTask;
             }
 
-            var actorId = _spawnedActor.ActorId;
+            string actorId = _spawnedActor.ActorId;
 
             if (!_actorRegistry.Unregister(actorId))
             {
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                 return false;
             }
 
-            var actorId = _uniqueIdFactory.GenerateId(instance);
+            string actorId = _uniqueIdFactory.GenerateId(instance);
 
             if (string.IsNullOrWhiteSpace(actorId))
             {
