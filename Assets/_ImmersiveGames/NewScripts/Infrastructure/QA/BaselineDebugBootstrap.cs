@@ -94,8 +94,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 yield return null;
 
-                if (IsBaselineRunning || !_hasSavedPrevious)
+                if (!_hasSavedPrevious)
                 {
+                    Destroy(gameObject);
+                    yield break;
+                }
+
+                if (IsBaselineRunning)
+                {
+                    DebugUtility.Log(typeof(BaselineDebugBootstrap),
+                        "[Baseline] Repeated-call warning: skip restore (runner ativo).");
                     Destroy(gameObject);
                     yield break;
                 }

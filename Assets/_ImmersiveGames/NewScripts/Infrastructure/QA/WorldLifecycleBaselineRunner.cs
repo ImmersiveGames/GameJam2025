@@ -29,6 +29,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
+            BaselineDebugBootstrap.IsBaselineRunning = true;
+
             if (!disableControllerAutoInitializeOnStart)
             {
                 return;
