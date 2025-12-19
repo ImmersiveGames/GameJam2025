@@ -1,3 +1,4 @@
+Doc update: Reset-In-Place semantics clarified
 # Checklist de Validação — WorldLifecycle (Baseline)
 
 ## Hard Reset
@@ -19,11 +20,14 @@
 - **Ordem esperada**:
     1. `[Gate] Acquire token='flow.soft_reset'` (valor de `SimulationGateTokens.SoftReset`).
     2. `ResetContext.Scopes` inclui apenas `Players`; somente `IResetScopeParticipant` com esse escopo executa.
-    3. Hooks pré/pós-despawn/spawn seguem a mesma ordem determinística do hard reset, porém limitados ao escopo solicitado.
+    3. Hooks seguem a mesma ordem determinística do hard reset, porém serviços de despawn/spawn são pulados pelo filtro de escopo (reset-in-place).
     4. `[Gate] Released` após os hooks finais.
 - **Pass/Fail signals**:
-    - Pass: log de start/end do `PlayersResetParticipant` com `ResetContext.Scopes=[Players]` antes do respawn.
+    - Pass: log de start/end do `PlayersResetParticipant` com `ResetContext.Scopes=[Players]` antes da liberação do gate.
     - Pass: ordem de fases espelhando o hard reset, sem recriar bindings de UI/canvas.
+    - Pass: `ActorRegistry` mantém a mesma contagem antes/depois do soft reset (reset-in-place).
+    - Pass: serviços de spawn/despawn logados como “skipped by scope filter” ou equivalente (não executados).
+    - Pass: `ActorId` permanece inalterado; nenhum novo `ActorId` é gerado.
     - Fail: participantes fora do escopo executando ou ausência do log de filtro de escopo.
 
 Validar, exclusivamente por logs, que o **WorldLifecycle** executa de forma **determinística**, com:

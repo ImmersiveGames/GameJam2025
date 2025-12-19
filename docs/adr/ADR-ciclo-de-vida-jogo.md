@@ -1,3 +1,4 @@
+Doc update: Reset-In-Place semantics clarified
 # ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
 
 ## Contexto
@@ -28,6 +29,24 @@
 ## Reset Scopes
 - **Owner das semânticas**: contrato completo em `../world-lifecycle/WorldLifecycle.md#escopos-de-reset` e `#resets-por-escopo`.
 - **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds/registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
+
+### Soft Reset Semantics — Reset-In-Place
+- **Definição formal**: `Soft Reset Players = reset-in-place`, reaplicando o baseline sem despawn/spawn de atores.
+- **Preservado**:
+  - `GameObject` / instância do ator permanece viva (não é despawnado).
+  - Identidade (`ActorId`) permanece a mesma (não é recriada).
+  - Registro no `ActorRegistry` permanece (contagem não diminui).
+- **Não acontece no Soft Reset Players**:
+  - `IWorldSpawnService.DespawnAsync` não é chamado.
+  - `IWorldSpawnService.SpawnAsync` não é chamado.
+- **O que acontece**:
+  - Execução de `IResetScopeParticipant` no escopo solicitado (ex.: `PlayersResetParticipant`), seguindo a ordem declarada.
+  - Gate utilizado, conforme logs: `flow.soft_reset`.
+- **Justificativa**:
+  - Reduz churn de instanciamento e preserva performance.
+  - Mantém referências externas estáveis (bindings de UI, listeners, caches).
+  - Preserva determinismo do estado via reset explícito dos participantes.
+  - Evita recriação de `ActorId`, mantendo correlação de telemetria e QA.
 
 ## Spawn Passes
 - **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
