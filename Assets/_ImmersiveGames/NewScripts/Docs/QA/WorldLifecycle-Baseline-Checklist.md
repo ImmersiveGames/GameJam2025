@@ -4,7 +4,7 @@ Doc update: Reset-In-Place semantics clarified
 
 Este checklist valida **exclusivamente por logs** o comportamento determinístico do
 `WorldLifecycle`, conforme contrato operacional definido em
-`../../docs/world-lifecycle/WorldLifecycle.md`.
+`../WorldLifecycle/WorldLifecycle.md`.
 
 ---
 

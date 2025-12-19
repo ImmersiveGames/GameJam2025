@@ -20,15 +20,15 @@ Doc update: Reset-In-Place semantics clarified
 - **Scene Flow**: responsável por readiness de cena e binds cross-scene. Fornece estados `SceneScopeReady` e `SceneScopeBound` antes de liberar gameplay.
 - **WorldLifecycle**: permanece encarregado de reset determinístico de atores/serviços, agora acionado por escopo (soft/hard) e alinhado às fases de Scene Flow.
 - **Coordenação**: Scene Flow coordena gates de readiness; WorldLifecycle executa despawn/spawn/reset; FSM apenas navega entre cenas/partidas.
-- **Detalhamento operacional**: o pipeline completo, ordenação determinística, contratos de escopo e troubleshooting vivem em `docs/world-lifecycle/WorldLifecycle.md` como fonte operacional única.
+- **Detalhamento operacional**: o pipeline completo, ordenação determinística, contratos de escopo e troubleshooting vivem em `../WorldLifecycle/WorldLifecycle.md` como fonte operacional única.
 
 ## Definição de Fases (linha do tempo)
 `SceneScopeReady → WorldServicesReady → SpawnPrewarm → SceneScopeBound → GameplayReady`
-- **Owner das fases**: detalhamento e logs esperados estão em `../world-lifecycle/WorldLifecycle.md#fases-de-readiness`.
+- **Owner das fases**: detalhamento e logs esperados estão em `../WorldLifecycle/WorldLifecycle.md#fases-de-readiness`.
 - **Resumo**: Scene Flow prepara e adquire o gate em `SceneScopeReady`, configura serviços em `WorldServicesReady`, realiza prewarm em `SpawnPrewarm`, libera binds em `SceneScopeBound` e autoriza gameplay apenas em `GameplayReady`.
 
 ## Reset Scopes
-- **Owner das semânticas**: contrato completo em `../world-lifecycle/WorldLifecycle.md#escopos-de-reset` e `#resets-por-escopo`.
+- **Owner das semânticas**: contrato completo em `../WorldLifecycle/WorldLifecycle.md#escopos-de-reset` e `#resets-por-escopo`.
 - **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds e registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
 
 ### Soft Reset Semantics — Reset-In-Place
@@ -83,11 +83,11 @@ Doc update: Reset-In-Place semantics clarified
 - **Racional**: decisão intencional para garantir determinismo, testabilidade (baseline de QA) e evolução de gameplay sem acoplamento estrutural.
 
 ## Spawn Passes
-- **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
+- **Owner do pipeline de passes**: `../WorldLifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
 - **Resumo**: pipeline determinístico em passes (prewarm, serviços de mundo, atores, late bindables).
 
 ## Late Bind (UI cross-scene)
-- **Owner das regras**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
+- **Owner das regras**: `../WorldLifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
 - **Resumo**: binds de HUD/overlay são liberados apenas após `SceneScopeBound`.
 
 ## Uso do SimulationGateService

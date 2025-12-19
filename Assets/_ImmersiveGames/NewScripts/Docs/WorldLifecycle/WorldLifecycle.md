@@ -2,7 +2,7 @@ Doc update: Reset-In-Place semantics clarified
 # World Lifecycle (NewScripts)
 
 > Este documento descreve **operacionalmente** o comportamento do WorldLifecycle e implementa as decisões descritas no
-> **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas** (`../adr/ADR-ciclo-de-vida-jogo.md`).
+> **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas** (`../ADR/ADR-ciclo-de-vida-jogo.md`).
 
 ---
 
@@ -113,7 +113,7 @@ Durante `ResetWorldAsync`, hooks de ator (`IActorLifecycleHook`) podem ser cache
 
 O **Scene Flow** orquestra readiness e binds cross-scene; o **WorldLifecycle** executa despawn/spawn/reset.
 As fases oficiais foram decididas no ADR:
-`../adr/ADR-ciclo-de-vida-jogo.md`.
+`../ADR/ADR-ciclo-de-vida-jogo.md`.
 
 ### Linha do tempo oficial
 ````
@@ -138,7 +138,7 @@ GameplayReady (gate liberado; gameplay habilitado)
 ````
 
 Origem da decisão de fases:
-`../adr/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`.
+`../ADR/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`.
 
 ---
 
@@ -161,7 +161,7 @@ Regra explícita:
 
 Define como spawn acontece em passes ordenados e como binds tardios evitam inconsistências de UI/canvas cross-scene.
 Decisão de passes descrita no ADR:
-`../adr/ADR-ciclo-de-vida-jogo.md#spawn-passes`.
+`../ADR/ADR-ciclo-de-vida-jogo.md#spawn-passes`.
 
 ### Por que spawn ocorre em passes
 O WorldLifecycle executa passos previsíveis (pré-warm, serviços, atores, late bindables) para manter determinismo e reduzir corrida de dependências.
@@ -226,4 +226,4 @@ Ações:
 ## Baseline Validation Contract
 
 Checklist detalhado:
-`Docs/QA/WorldLifecycle-Baseline-Checklist.md`
+`../QA/WorldLifecycle-Baseline-Checklist.md`
