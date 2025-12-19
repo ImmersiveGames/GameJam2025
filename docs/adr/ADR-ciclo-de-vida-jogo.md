@@ -47,10 +47,12 @@ Doc update: Reset-In-Place semantics clarified
   - Mantém referências externas estáveis (bindings de UI, listeners, caches).
   - Preserva determinismo do estado via reset explícito dos participantes.
   - Evita recriação de `ActorId`, mantendo correlação de telemetria e QA.
+- **Escopo como domínio funcional**: `ResetScope.Players` representa o baseline funcional de gameplay (input, câmera, HUD/UI, managers/caches, timers globais), não a hierarquia do prefab. Participantes podem atuar fora do GameObject para restaurar o resultado de gameplay.
 
 ### Hard Reset vs Soft Reset Players
 - **Hard Reset**: reconstrução completa. Executa `DespawnAsync` + `SpawnAsync`, recria instâncias e `ActorId`, usa o gate `WorldLifecycle.WorldReset` e recompõe bindings/registries.
 - **Soft Reset Players**: reset lógico in-place. Ignora `DespawnAsync`/`SpawnAsync` por filtro de escopo, mantém instâncias/identidades/registro e executa apenas `IResetScopeParticipant` do escopo `Players` sob o gate `flow.soft_reset` com logs de "skipped by scope filter" para serviços de spawn/despawn.
+- **Racional**: decisão intencional para garantir determinismo, testabilidade (baseline de QA) e evolução de gameplay sem acoplamento estrutural; não é workaround nem comportamento temporário.
 
 ## Spawn Passes
 - **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.

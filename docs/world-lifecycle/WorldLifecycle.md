@@ -39,6 +39,7 @@ Durante `ResetWorldAsync`, os hooks de ator (`IActorLifecycleHook`) podem ser ca
 - Para `ResetScope.Players`, aplica reset-in-place: não chama `IWorldSpawnService.DespawnAsync` nem `IWorldSpawnService.SpawnAsync`; mantém instâncias e `ActorId` existentes no `ActorRegistry`.
 - Gate utilizado: token `flow.soft_reset` (`SimulationGateTokens.SoftReset`), alinhado aos logs do `WorldLifecycleController`.
 - Logs esperados: serviços de spawn/despawn aparecem como “skipped by scope filter” durante soft reset.
+- Pipeline preservado: mesma ordem do hard reset; apenas substitui despawn/spawn por execução filtrada de `IResetScopeParticipant` do escopo solicitado.
 
 ### Hard Reset vs Soft Reset
 - **Hard Reset**: despawn + spawn de todos os serviços e atores do escopo, recriando instâncias e `ActorId`; reabre o gate `WorldLifecycle.WorldReset` e reconstrói bindings/registries.

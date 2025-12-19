@@ -28,7 +28,8 @@ Doc update: Reset-In-Place semantics clarified
     - Pass: `ActorRegistry` mantém a mesma contagem antes/depois do soft reset (reset-in-place).
     - Pass: serviços de spawn/despawn logados como “skipped by scope filter” ou equivalente (não executados).
     - Pass: `ActorId` permanece inalterado; nenhum novo `ActorId` é gerado.
-    - Fail: participantes fora do escopo executando, ausência do log de filtro de escopo ou qualquer evidência de despawn/spawn durante o soft reset.
+    - Pass: cena pode aparentar nenhuma mudança visual imediata; validação é por logs e contrato.
+    - Fail: participantes fora do escopo executando, ausência do log de filtro de escopo, qualquer evidência de despawn/spawn ou novo `ActorId` durante o soft reset.
 
 Validar, exclusivamente por logs, que o **WorldLifecycle** executa de forma **determinística**, com:
 
