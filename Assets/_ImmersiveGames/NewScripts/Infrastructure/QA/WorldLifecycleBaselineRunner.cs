@@ -22,8 +22,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _autoInitDisabled;
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
-        private bool _ownsBootstrapSuppression;
-        private bool _restoredBootstrapSuppression;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
@@ -31,25 +29,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (suppressRepeatedCallWarningsDuringBaseline &&
-                BaselineDebugBootstrap.TryTakeOwnership(out var previousVerbose))
-            {
-                _ownsBootstrapSuppression = true;
-                _savedRepeatedVerbose = previousVerbose;
-                _hasSavedRepeatedVerbose = true;
-            }
-            else
-            {
-                SaveRepeatedWarningStateIfNeeded();
-            }
+            SaveRepeatedWarningStateIfNeeded();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (suppressRepeatedCallWarningsDuringBaseline)
             {
                 DebugUtility.SetRepeatedCallVerbose(false);
             }
-#else
-            SaveRepeatedWarningStateIfNeeded();
 #endif
 
             if (!disableControllerAutoInitializeOnStart)
@@ -308,6 +294,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void ApplyRepeatedWarningSuppressionIfNeeded()
         {
+            SaveRepeatedWarningStateIfNeeded();
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!suppressRepeatedCallWarningsDuringBaseline)
             {
@@ -324,18 +312,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 return;
             }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_ownsBootstrapSuppression && !_restoredBootstrapSuppression)
-            {
-                BaselineDebugBootstrap.RestoreIfNeeded(_savedRepeatedVerbose);
-                _restoredBootstrapSuppression = true;
-                _ownsBootstrapSuppression = false;
-                _savedRepeatedVerbose = false;
-                _hasSavedRepeatedVerbose = false;
-                return;
-            }
-#endif
 
             if (!_hasSavedRepeatedVerbose)
             {
