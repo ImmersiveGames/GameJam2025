@@ -31,7 +31,7 @@ Doc update: Reset-In-Place semantics clarified
 - **Resumo**: soft reset é opt-in por escopo (`ResetContext.Scopes`), mantendo binds/registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
 
 ### Soft Reset Semantics — Reset-In-Place
-- **Definição formal**: `Soft Reset Players = reset-in-place`, reaplicando o baseline sem despawn/spawn de atores.
+- **Decisão arquitetural**: `Soft Reset Players = reset-in-place`. Não há pipeline de despawn/spawn; somente revalidação lógica via participantes de escopo.
 - **Preservado**:
   - `GameObject` / instância do ator permanece viva (não é despawnado).
   - Identidade (`ActorId`) permanece a mesma (não é recriada).
@@ -40,13 +40,17 @@ Doc update: Reset-In-Place semantics clarified
   - `IWorldSpawnService.DespawnAsync` não é chamado.
   - `IWorldSpawnService.SpawnAsync` não é chamado.
 - **O que acontece**:
-  - Execução de `IResetScopeParticipant` no escopo solicitado (ex.: `PlayersResetParticipant`), seguindo a ordem declarada.
+  - Execução exclusiva de `IResetScopeParticipant` do escopo solicitado (ex.: `PlayersResetParticipant`) na ordem determinística definida.
   - Gate utilizado, conforme logs: `flow.soft_reset`.
 - **Justificativa**:
   - Reduz churn de instanciamento e preserva performance.
   - Mantém referências externas estáveis (bindings de UI, listeners, caches).
   - Preserva determinismo do estado via reset explícito dos participantes.
   - Evita recriação de `ActorId`, mantendo correlação de telemetria e QA.
+
+### Hard Reset vs Soft Reset Players
+- **Hard Reset**: reconstrução completa. Executa `DespawnAsync` + `SpawnAsync`, recria instâncias e `ActorId`, usa o gate `WorldLifecycle.WorldReset` e recompõe bindings/registries.
+- **Soft Reset Players**: reset lógico in-place. Ignora `DespawnAsync`/`SpawnAsync` por filtro de escopo, mantém instâncias/identidades/registro e executa apenas `IResetScopeParticipant` do escopo `Players` sob o gate `flow.soft_reset` com logs de "skipped by scope filter" para serviços de spawn/despawn.
 
 ## Spawn Passes
 - **Owner do pipeline de passes**: `../world-lifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.

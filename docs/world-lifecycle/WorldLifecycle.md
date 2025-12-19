@@ -38,11 +38,12 @@ Durante `ResetWorldAsync`, os hooks de ator (`IActorLifecycleHook`) podem ser ca
 - Não desregistra binds de UI/canvas.
 - Para `ResetScope.Players`, aplica reset-in-place: não chama `IWorldSpawnService.DespawnAsync` nem `IWorldSpawnService.SpawnAsync`; mantém instâncias e `ActorId` existentes no `ActorRegistry`.
 - Gate utilizado: token `flow.soft_reset` (`SimulationGateTokens.SoftReset`), alinhado aos logs do `WorldLifecycleController`.
+- Logs esperados: serviços de spawn/despawn aparecem como “skipped by scope filter” durante soft reset.
 
 ### Hard Reset vs Soft Reset
 - **Hard Reset**: despawn + spawn de todos os serviços e atores do escopo, recriando instâncias e `ActorId`; reabre o gate `WorldLifecycle.WorldReset` e reconstrói bindings/registries.
-- **Soft Reset Players**: reset-in-place; mantém instâncias e identidades registradas, não despawna nem spawna via `IWorldSpawnService`, executa apenas `IResetScopeParticipant` do escopo em ordem determinística, usando o gate `flow.soft_reset`.
-- **Exemplo de fluxo — Soft Reset Players**: `Acquire gate (flow.soft_reset) → Hooks (se houver) → Reset participants por escopo → Release (sem despawn/spawn; instâncias e ActorId preservados)`.
+- **Soft Reset Players**: reset-in-place; mantém instâncias e identidades registradas, não despawna nem spawna via `IWorldSpawnService`, executa apenas `IResetScopeParticipant` do escopo em ordem determinística, usando o gate `flow.soft_reset` e registrando “skipped by scope filter” para spawn/despawn.
+- **Exemplo de fluxo — Soft Reset Players**: `Acquire gate (flow.soft_reset) → Hooks (se houver) → Reset participants por escopo → Release (sem despawn/spawn; instâncias e ActorId preservados; logs de skip para spawn/despawn)`.
 
 ### Linha do tempo oficial
 ```
