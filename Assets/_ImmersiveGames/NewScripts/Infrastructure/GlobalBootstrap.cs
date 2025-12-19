@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -7,7 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.NewScripts.Infrastructure.State;
+using _ImmersiveGames.NewScripts.Infrastructure.State.Legacy;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
@@ -64,8 +63,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
-            // Serviço mínimo de permissões de ações para NewScripts.
-            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
+            // TEMP bridge até o FSM novo ser implementado (NS-FSM-001).
+            RegisterIfMissing<IStateDependentService>(() => new LegacyStateDependentServiceBridge());
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class
