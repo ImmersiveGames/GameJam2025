@@ -29,6 +29,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Awake()
         {
+            SaveRepeatedWarningStateIfNeeded();
+
+            if (suppressRepeatedCallWarningsDuringBaseline)
+            {
+                DebugUtility.SetRepeatedCallVerbose(false);
+            }
+
             if (!disableControllerAutoInitializeOnStart)
             {
                 return;
@@ -46,6 +53,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             _autoInitDisabled = true;
             DebugUtility.Log(typeof(WorldLifecycleBaselineRunner),
                 $"{LogPrefix} AutoInitializeOnStart desabilitado no Awake (pre-Start) ({BuildSceneTimeScaleInfo()})");
+        }
+
+        private void OnDisable()
+        {
+            RestoreRepeatedWarningState();
         }
 
         [ContextMenu("QA/Baseline/Run Hard Reset")]
@@ -275,19 +287,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void ApplyRepeatedWarningSuppressionIfNeeded()
         {
-            if (!suppressRepeatedCallWarningsDuringBaseline || _hasSavedRepeatedVerbose)
+            if (!suppressRepeatedCallWarningsDuringBaseline)
             {
                 return;
             }
 
-            _savedRepeatedVerbose = DebugUtility.GetRepeatedCallVerbose();
-            _hasSavedRepeatedVerbose = true;
+            SaveRepeatedWarningStateIfNeeded();
             DebugUtility.SetRepeatedCallVerbose(false);
         }
 
         private void RestoreRepeatedWarningSuppressionIfNeeded()
         {
             if (!restoreDebugSettingsAfterBaseline || !_hasSavedRepeatedVerbose)
+            {
+                return;
+            }
+
+            RestoreRepeatedWarningState();
+        }
+
+        private void SaveRepeatedWarningStateIfNeeded()
+        {
+            if (_hasSavedRepeatedVerbose)
+            {
+                return;
+            }
+
+            _savedRepeatedVerbose = DebugUtility.GetRepeatedCallVerbose();
+            _hasSavedRepeatedVerbose = true;
+        }
+
+        private void RestoreRepeatedWarningState()
+        {
+            if (!_hasSavedRepeatedVerbose || !restoreDebugSettingsAfterBaseline)
             {
                 return;
             }
