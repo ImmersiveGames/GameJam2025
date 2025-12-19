@@ -7,8 +7,8 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State.Legacy;
-using _ImmersiveGames.NewScripts.Infrastructure.Camera.Legacy;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.Scripts.CameraSystems;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
 {
@@ -67,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // TEMP bridge até o FSM novo ser implementado (NS-FSM-001).
             RegisterIfMissing<IStateDependentService>(() => new LegacyStateDependentServiceBridge());
 
-            // TEMP bridge para resolver câmera padrão enquanto o sistema novo não chega.
-            RegisterIfMissing<ICameraResolver>(() => new LegacyCameraResolverBridge());
+            // TEMP: Legacy bridge. Remove after NewScripts Camera system is implemented (NS-CAM-001).
+            RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class
