@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -184,6 +185,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             var runId = NextRunId();
+            var stopwatch = Stopwatch.StartNew();
+            var hardResetSucceeded = false;
+            var softResetSucceeded = false;
             ApplyRepeatedWarningSuppressionIfNeeded();
 
             var controller = FindController();
@@ -201,10 +205,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 {
                     LogInfo(runId, "Hard Reset - BEGIN");
                     await controller.ResetWorldAsync($"Baseline/HardReset/{runId}");
+                    hardResetSucceeded = true;
                     LogInfo(runId, "Hard Reset - END");
 
                     LogInfo(runId, "Soft Reset Players - BEGIN");
                     await controller.ResetPlayersAsync($"Baseline/SoftResetPlayers/{runId}");
+                    softResetSucceeded = true;
                     LogInfo(runId, "Soft Reset Players - END");
 
                     LogInfo(runId, $"END Full Baseline ({BuildSceneTimeScaleInfo()})");
@@ -216,6 +222,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             finally
             {
+                stopwatch.Stop();
+                LogInfo(runId,
+                    $"Baseline Summary — activeScene='{SceneManager.GetActiveScene().name}', runId='{runId}', Hard Reset={(hardResetSucceeded ? "SUCCESS" : "FAILED")}, Soft Reset Players={(softResetSucceeded ? "SUCCESS" : "FAILED")}, totalTimeMs={stopwatch.ElapsedMilliseconds}");
                 _isRunning = false;
                 BaselineDebugBootstrap.IsBaselineRunning = false;
                 RestoreRepeatedWarningSuppressionIfNeeded();
