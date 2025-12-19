@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private IPlayerDomain _playerDomain;
         private string _sceneName;
 
-        [Inject] private IStateDependentService _stateService;
+        private IStateDependentService _stateService;
 
         private bool _inputBound;
         private bool _cameraBound;
@@ -74,6 +74,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             _actions = new PlayerInputActions();
 
             DependencyManager.Provider.InjectDependencies(this);
+
+            DependencyManager.Provider.TryGetGlobal(out _stateService);
 
             if (!DependencyManager.Provider.TryGetGlobal(out _cameraResolver))
             {
@@ -320,6 +322,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             if (_cameraResolver == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _cameraResolver);
+            }
+            if (_stateService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _stateService);
             }
 
             UnbindCameraEvents();
