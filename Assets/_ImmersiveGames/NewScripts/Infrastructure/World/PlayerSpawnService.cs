@@ -124,7 +124,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             var actorId = _spawnedActor.ActorId;
 
-            _actorRegistry.Unregister(actorId);
+            if (!_actorRegistry.Unregister(actorId))
+            {
+                DebugUtility.LogWarning(typeof(PlayerSpawnService),
+                    $"Falha ao remover ator do registry. ActorId={actorId}");
+            }
+
             if (_spawnedObject != null)
             {
                 Object.Destroy(_spawnedObject);
