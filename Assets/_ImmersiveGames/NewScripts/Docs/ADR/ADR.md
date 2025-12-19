@@ -2,13 +2,13 @@
 
 ## Atualizações 02/2026 — Defesa Planetária v2.2
 
-- Política global: ver `docs/DECISIONS.md` (seção “Política de Uso do Legado”); NewScripts é fonte de verdade e qualquer reaproveitamento do legado exige autorização explícita.
+- Política global: ver `../DECISIONS.md` (seção “Política de Uso do Legado”); NewScripts é fonte de verdade e qualquer reaproveitamento do legado exige autorização explícita.
 
 ### ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
 - Documenta fases formais (`SceneScopeReady → GameplayReady`), reset por escopo (soft/hard), passes de spawn e late bind de UI cross-scene.
 - Integra Scene Flow, WorldLifecycle e `SimulationGateService` sem alterar APIs atuais, priorizando determinismo e telemetria.
 - Inclui linha do tempo oficial e plano de implementação por fases para adoção incremental.
-- Fonte operacional do pipeline/hook ordering/QA: `docs/world-lifecycle/WorldLifecycle.md`.
+- Fonte operacional do pipeline/hook ordering/QA: `../WorldLifecycle/WorldLifecycle.md`.
 
 ### Consolidação final
 - Interfaces de defesa centralizadas em `PlanetDefenseInterfaces.cs`, incluindo `IPlanetDefenseSetupOrchestrator`, `IPlanetDefensePoolRunner` e `IPlanetDefenseWaveRunner`, para manter contratos únicos e alinhados ao DI do projeto.

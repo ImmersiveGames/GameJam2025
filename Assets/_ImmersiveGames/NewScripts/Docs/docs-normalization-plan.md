@@ -2,26 +2,26 @@
 
 ## 1. Inventário de documentos existentes
 
-- **docs/DECISIONS.md** — Documento normativo de limites e guardrails do projeto; principais seções: Política de Uso do Legado, Checklist para PR/Commit; ~26 linhas.
-- **docs/ARCHITECTURE.md** — Descritivo arquitetural (as-is/roadmap) com princípios, escopos, fluxo de vida atual e visão planejada; ~41 linhas.
-- **docs/UTILS-SYSTEMS-GUIDE.md** — Guia técnico operacional da pasta Úteis (sistemas de infraestrutura, DI/EventBus, pooling, etc.); ~207 linhas.
-- **docs/adr/ADR-ciclo-de-vida-jogo.md** — ADR de decisão para fases de readiness, reset por escopo, passes de spawn e late bind; ~104 linhas.
-- **Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md** — ADR de estratégia de migração legado → NewScripts com guardrails e plano incremental; ~56 linhas.
-- **docs/world-lifecycle/WorldLifecycle.md** — Documento operacional de ciclo de vida/reset determinístico, fases, hooks e contrato de validação; ~262 linhas.
-- **Docs/QA/WorldLifecycle-Baseline-Checklist.md** — Checklist normativo/QA para validar baseline do WorldLifecycle em logs (hard/soft reset, runner vs auto-init); ~262 linhas.
-- **docs/adr/ADR.md** — Compilado de ADRs históricos e decisões relacionadas ao WorldLifecycle e papéis; ~227 linhas.
+- **DECISIONS.md** — Documento normativo de limites e guardrails do projeto; principais seções: Política de Uso do Legado, Checklist para PR/Commit; ~26 linhas.
+- **ARCHITECTURE.md** — Descritivo arquitetural (as-is/roadmap) com princípios, escopos, fluxo de vida atual e visão planejada; ~41 linhas.
+- **Guides/UTILS-SYSTEMS-GUIDE.md** — Guia técnico operacional da pasta Úteis (sistemas de infraestrutura, DI/EventBus, pooling, etc.); ~207 linhas.
+- **ADR/ADR-ciclo-de-vida-jogo.md** — ADR de decisão para fases de readiness, reset por escopo, passes de spawn e late bind; ~104 linhas.
+- **ADR/ADR-0001-NewScripts-Migracao-Legado.md** — ADR de estratégia de migração legado → NewScripts com guardrails e plano incremental; ~56 linhas.
+- **WorldLifecycle/WorldLifecycle.md** — Documento operacional de ciclo de vida/reset determinístico, fases, hooks e contrato de validação; ~262 linhas.
+- **QA/WorldLifecycle-Baseline-Checklist.md** — Checklist normativo/QA para validar baseline do WorldLifecycle em logs (hard/soft reset, runner vs auto-init); ~262 linhas.
+- **ADR/ADR.md** — Compilado de ADRs históricos e decisões relacionadas ao WorldLifecycle e papéis; ~227 linhas.
 - **README.md** — Índice de documentação apontando para os artefatos acima; ~13 linhas.
 
 ## 2. Observações por documento (objetivo, seções, tamanho aproximado)
 
-- **docs/DECISIONS.md** — Normativo. Seções: Limites atuais; Política de Uso do Legado; Checklist para PR/Commit. ~26 linhas.
-- **docs/ARCHITECTURE.md** — Descritivo (as-is + roadmap). Seções: Princípios Fundamentais; Escopos; Fluxo de Vida Atual; World Lifecycle Reset & Hooks (As-Is); Planned (To-Be / Roadmap). ~41 linhas.
-- **docs/UTILS-SYSTEMS-GUIDE.md** — Guia técnico. Seções: Visão Geral; Política de Uso do Legado; Mapa de Sistemas; Guia por sistema (Event Bus, DI, Logging, Pooling, UniqueId, Predicados, Helpers); Dependências entre Sistemas; Relação com Reset/Spawn/Lifecycle; Pontos Fortes; Riscos; Glossário. ~207 linhas.
-- **docs/adr/ADR-ciclo-de-vida-jogo.md** — ADR (decisão). Seções: Contexto; Objetivos; Decisões Arquiteturais; Definição de Fases; Reset Scopes; Spawn Passes; Late Bind; Uso do SimulationGateService; Linha do tempo oficial; Consequências; Não-objetivos; Plano de Implementação; Fase 1. ~104 linhas.
-- **Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md** — ADR (decisão/roadmap de migração). Seções: Contexto; Decisão; Guardrails; Arquitetura atual (resumo); Plano incremental; Critérios de validação; Consequências; Validation/Exit Criteria. ~56 linhas.
-- **docs/world-lifecycle/WorldLifecycle.md** — Contrato operacional. Seções: Visão geral do reset determinístico; Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle); Escopos de Reset; Linha do tempo oficial; Fases de Readiness; Spawn determinístico e Late Bind; Resets por escopo; Soft Reset por Escopo; ResetScope as Gameplay Outcome; Registry e injeção; Hooks disponíveis; Otimização de cache; Scene Hooks; QA/Validação de Ordenação; Ordenação determinística; Do/Don't; Como registrar hooks; IOrderedLifecycleHook; Hooks em ator; QA: como reproduzir; Validation Contract (Hard/Soft/Driver); Troubleshooting; Boot order & DI timing; Migration Strategy; Baseline Validation Contract. ~262 linhas.
-- **Docs/QA/WorldLifecycle-Baseline-Checklist.md** — Checklist operacional de QA. Seções: Objetivo; Pré-condições; Critérios globais (Hard/Soft); Fluxo A (sem runner); Fluxo B (com runner); Hard Reset; Soft Reset Players; Proteção contra reentrada; Warnings; Checklist rápido; Encerramento; Critérios de reprovação; Changelog. ~262 linhas.
-- **docs/adr/ADR.md** — Compilado/guia de ADRs. Seções: Atualizações 02/2026; ADR – Ciclo de Vida do Jogo; Consolidação final; Divisão por Responsabilidade Única; Correções passo a passo; ADR: World Lifecycle Hooks Architecture (Context/Decision/Consequences, Lazy Injection, Separação de responsabilidades, Cache por ciclo); NewScripts ADRs (propriedade do registry, execução determinística). ~227 linhas.
+- **DECISIONS.md** — Normativo. Seções: Limites atuais; Política de Uso do Legado; Checklist para PR/Commit. ~26 linhas.
+- **ARCHITECTURE.md** — Descritivo (as-is + roadmap). Seções: Princípios Fundamentais; Escopos; Fluxo de Vida Atual; World Lifecycle Reset & Hooks (As-Is); Planned (To-Be / Roadmap). ~41 linhas.
+- **Guides/UTILS-SYSTEMS-GUIDE.md** — Guia técnico. Seções: Visão Geral; Política de Uso do Legado; Mapa de Sistemas; Guia por sistema (Event Bus, DI, Logging, Pooling, UniqueId, Predicados, Helpers); Dependências entre Sistemas; Relação com Reset/Spawn/Lifecycle; Pontos Fortes; Riscos; Glossário. ~207 linhas.
+- **ADR/ADR-ciclo-de-vida-jogo.md** — ADR (decisão). Seções: Contexto; Objetivos; Decisões Arquiteturais; Definição de Fases; Reset Scopes; Spawn Passes; Late Bind; Uso do SimulationGateService; Linha do tempo oficial; Consequências; Não-objetivos; Plano de Implementação; Fase 1. ~104 linhas.
+- **ADR/ADR-0001-NewScripts-Migracao-Legado.md** — ADR (decisão/roadmap de migração). Seções: Contexto; Decisão; Guardrails; Arquitetura atual (resumo); Plano incremental; Critérios de validação; Consequências; Validation/Exit Criteria. ~56 linhas.
+- **WorldLifecycle/WorldLifecycle.md** — Contrato operacional. Seções: Visão geral do reset determinístico; Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle); Escopos de Reset; Linha do tempo oficial; Fases de Readiness; Spawn determinístico e Late Bind; Resets por escopo; Soft Reset por Escopo; ResetScope as Gameplay Outcome; Registry e injeção; Hooks disponíveis; Otimização de cache; Scene Hooks; QA/Validação de Ordenação; Ordenação determinística; Do/Don't; Como registrar hooks; IOrderedLifecycleHook; Hooks em ator; QA: como reproduzir; Validation Contract (Hard/Soft/Driver); Troubleshooting; Boot order & DI timing; Migration Strategy; Baseline Validation Contract. ~262 linhas.
+- **QA/WorldLifecycle-Baseline-Checklist.md** — Checklist operacional de QA. Seções: Objetivo; Pré-condições; Critérios globais (Hard/Soft); Fluxo A (sem runner); Fluxo B (com runner); Hard Reset; Soft Reset Players; Proteção contra reentrada; Warnings; Checklist rápido; Encerramento; Critérios de reprovação; Changelog. ~262 linhas.
+- **ADR/ADR.md** — Compilado/guia de ADRs. Seções: Atualizações 02/2026; ADR – Ciclo de Vida do Jogo; Consolidação final; Divisão por Responsabilidade Única; Correções passo a passo; ADR: World Lifecycle Hooks Architecture (Context/Decision/Consequences, Lazy Injection, Separação de responsabilidades, Cache por ciclo); NewScripts ADRs (propriedade do registry, execução determinística). ~227 linhas.
 - **README.md** — Índice/roteiro. Seções: Índice; Documentação principal (links para arquitetura, ciclo de vida, ADRs, decisões, guia de sistemas). ~13 linhas.
 
 ## 3. Duplicações conceituais/textuais detectadas
@@ -62,7 +62,7 @@
 
 5. **Índice e navegação**  
    - Atualizar README.md para refletir a divisão de responsabilidades (ADR = decisão, WorldLifecycle = operação, Checklist = QA, ARCHITECTURE = as-is, UTILS = infra).  
-   - Opcional: criar mini-seção em docs/adr/ADR.md apontando para o ADR-ciclo-de-vida-jogo como fonte única das fases/escopos e para WorldLifecycle.md como contrato operacional.
+   - Opcional: criar mini-seção em `ADR/ADR.md` apontando para o ADR-ciclo-de-vida-jogo como fonte única das fases/escopos e para WorldLifecycle.md como contrato operacional.
 
 6. **Governança futura**  
    - Adotar regra: qualquer nova seção operacional sobre lifecycle deve nascer em WorldLifecycle.md; ADRs podem referenciar, mas não duplicar.  

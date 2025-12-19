@@ -23,15 +23,15 @@ Para entender o sistema corretamente, siga esta ordem:
    Visão geral da arquitetura **as-is** e roadmap.
    → *Descritivo, sem regras duras.*
 
-3. **ADR – Ciclo de Vida do Jogo** (`docs/adr/ADR-ciclo-de-vida-jogo.md`)
+3. **ADR – Ciclo de Vida do Jogo** (`ADR/ADR-ciclo-de-vida-jogo.md`)
    Justificativa e decisões arquiteturais sobre fases, resets e readiness.
    → *Por que o lifecycle é assim.*
 
-4. **WorldLifecycle.md** (`docs/world-lifecycle/WorldLifecycle.md`)
+4. **WorldLifecycle.md** (`WorldLifecycle/WorldLifecycle.md`)
    Contrato operacional completo do ciclo de vida e reset determinístico.
    → *Fonte única de verdade operacional.*
 
-5. **WorldLifecycle-Baseline-Checklist.md** (`Docs/QA/WorldLifecycle-Baseline-Checklist.md`)
+5. **WorldLifecycle-Baseline-Checklist.md** (`QA/WorldLifecycle-Baseline-Checklist.md`)
    Checklist prescritivo de QA para validar ordem, logs e comportamento.
    → *Como verificar se está correto.*
 
@@ -39,7 +39,7 @@ Para entender o sistema corretamente, siga esta ordem:
    Guia técnico de sistemas transversais (DI, EventBus, Debug, Pooling, etc.).
    → *Infraestrutura, não gameplay.*
 
-7. **ADR-0001 — Migração do Legado** (`Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md`)
+7. **ADR-0001 — Migração do Legado** (`ADR/ADR-0001-NewScripts-Migracao-Legado.md`)
    Estratégia oficial de migração incremental do legado para o NewScripts.
    → *Como atravessar fronteiras sem quebrar o determinismo.*
 
@@ -56,7 +56,7 @@ Para entender o sistema corretamente, siga esta ordem:
 | WorldLifecycle-Baseline-Checklist.md | Validação QA |
 | UTILS-SYSTEMS-GUIDE.md | Infraestrutura |
 | ADR-0001 | Migração do legado |
-| docs/adr/ADR.md | Histórico consolidado de ADRs |
+| ADR/ADR.md | Histórico consolidado de ADRs |
 
 ---
 
