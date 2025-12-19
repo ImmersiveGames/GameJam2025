@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     public sealed class WorldDefinition : ScriptableObject
     {
         [SerializeField]
-        private List<SpawnEntry> spawnEntries = new();
+        public List<SpawnEntry> spawnEntries = new();
 
         public IReadOnlyList<SpawnEntry> Entries => spawnEntries;
 
