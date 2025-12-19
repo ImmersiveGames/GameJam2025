@@ -134,13 +134,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void FixedUpdate()
         {
             var canMove = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
-            if (_actor != null && (!_actor.IsActive || !canMove))
+            var isActorActive = _actor == null || _actor.IsActive;
+
+            if (!isActorActive || !canMove)
             {
+                StopRigidbodyMotion();
                 return;
             }
 
             PerformMovement();
-            PerformLook();
+            PerformLook(canMove);
         }
 
         #endregion
@@ -254,8 +257,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             _rb.linearVelocity = dir * moveSpeed;
         }
 
-        private void PerformLook()
+        private void PerformLook(bool canExecuteLook)
         {
+            if (!canExecuteLook)
+            {
+                return;
+            }
+
             if (_camera == null)
             {
                 return;
@@ -423,11 +431,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             _moveInput = Vector2.zero;
             _lookInput = Vector2.zero;
 
-            if (_rb != null)
-            {
-                _rb.linearVelocity = Vector3.zero;
-                _rb.angularVelocity = Vector3.zero;
-            }
+            StopRigidbodyMotion();
 
             UnbindInput();
             UnbindCameraEvents();
@@ -449,14 +453,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 {
                     if (_rb != null)
                     {
-                        _rb.linearVelocity = Vector3.zero;
-                        _rb.angularVelocity = Vector3.zero;
+                        StopRigidbodyMotion();
 
                         _rb.position = pose.position;
                         _rb.rotation = pose.rotation;
 
-                        _rb.linearVelocity = Vector3.zero;
-                        _rb.angularVelocity = Vector3.zero;
+                        StopRigidbodyMotion();
                     }
                     else
                     {
@@ -492,6 +494,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             ResolveAndSetCamera();
 
             return Task.CompletedTask;
+        }
+
+        #endregion
+
+        #region Helpers
+
+        private void StopRigidbodyMotion()
+        {
+            if (_rb == null)
+            {
+                return;
+            }
+
+            _rb.linearVelocity = Vector3.zero;
+            _rb.angularVelocity = Vector3.zero;
         }
 
         #endregion
