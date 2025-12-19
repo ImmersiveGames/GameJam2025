@@ -28,6 +28,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
         [SerializeField] private bool restoreDebugSettingsAfterBaseline = true;
 
+        private void OnEnable()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            BaselineDebugBootstrap.SetRunnerActive(true);
+#endif
+        }
+
         private void Awake()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -311,9 +318,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void ApplyRepeatedWarningSuppressionIfNeeded()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             SaveRepeatedWarningStateIfNeeded();
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!suppressRepeatedCallWarningsDuringBaseline)
             {
                 return;
@@ -340,6 +347,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void SaveRepeatedWarningStateIfNeeded()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (_hasSavedRepeatedVerbose)
             {
                 return;
@@ -347,10 +355,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             _savedRepeatedVerbose = DebugUtility.GetRepeatedCallVerbose();
             _hasSavedRepeatedVerbose = true;
+#endif
         }
 
         private void RestoreRepeatedWarningState()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!_hasSavedRepeatedVerbose || !restoreDebugSettingsAfterBaseline)
             {
                 return;
@@ -358,6 +368,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             DebugUtility.SetRepeatedCallVerbose(_savedRepeatedVerbose);
             _hasSavedRepeatedVerbose = false;
+#endif
         }
     }
 }
