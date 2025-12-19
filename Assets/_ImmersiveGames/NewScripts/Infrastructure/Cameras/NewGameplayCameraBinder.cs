@@ -1,3 +1,8 @@
+/*
+ * ChangeLog
+ * - Tornado registro/desregistro idempotente, evitando logs repetitivos ao resolver indisponível.
+ * - Mantido retry em Awake/Start/OnEnable, com log único quando o resolver aparece após falha.
+ */
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
@@ -33,32 +38,41 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
             TryRegisterCamera("OnEnable");
         }
 
+        private void Update()
+        {
+            if (!_registered)
+            {
+                TryRegisterCamera("Update");
+            }
+        }
+
         private void OnDisable()
         {
             TryUnregisterCamera();
         }
 
-        private void TryResolveResolver(string context)
+        private bool TryResolveResolver(string context)
         {
             if (_resolver != null)
             {
-                return;
+                return true;
             }
 
             if (DependencyManager.Provider.TryGetGlobal(out _resolver) && _resolver != null)
             {
-                DebugUtility.LogVerbose<NewGameplayCameraBinder>(
-                    $"ICameraResolver resolved in {context}.",
-                    DebugUtility.Colors.Info);
-                return;
+                var message = _warnedMissingResolver
+                    ? $"ICameraResolver resolvido após indisponibilidade em {context}."
+                    : $"ICameraResolver resolved in {context}.";
+
+                DebugUtility.LogVerbose<NewGameplayCameraBinder>(message, DebugUtility.Colors.Info);
+
+                _warnedMissingResolver = false;
+                return true;
             }
 
             if (_warnedMissingResolver)
             {
-                DebugUtility.LogVerbose<NewGameplayCameraBinder>(
-                    $"ICameraResolver ainda indisponível em {context}. Tentarei novamente automaticamente.",
-                    DebugUtility.Colors.Warning);
-                return;
+                return false;
             }
 
             _warnedMissingResolver = true;
@@ -66,6 +80,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
             DebugUtility.LogWarning<NewGameplayCameraBinder>(
                 $"ICameraResolver não encontrado no DI global durante {context}. Vou tentar novamente automaticamente.",
                 this);
+
+            return false;
         }
 
         private void TryRegisterCamera(string context)
@@ -83,9 +99,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
                 return;
             }
 
-            TryResolveResolver(context);
-
-            if (_resolver == null)
+            if (!TryResolveResolver(context))
             {
                 return;
             }

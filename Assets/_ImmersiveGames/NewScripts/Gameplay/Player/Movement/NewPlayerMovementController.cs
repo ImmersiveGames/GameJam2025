@@ -1,3 +1,9 @@
+/*
+ * ChangeLog
+ * - Robustecido ciclo de reset: limpa eventos de câmera, zera referência local e re resolve serviços em rebind.
+ * - Ajustado uso de Rigidbody.velocity para compatibilidade e mantidos fallbacks de câmera.
+ * - Comentado intenção do input Look (delta/pointer) mantendo comportamento atual.
+ */
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
@@ -227,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void PerformMovement()
         {
             var dir = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
-            _rb.linearVelocity = dir * moveSpeed;
+            _rb.velocity = dir * moveSpeed;
         }
 
         private void PerformLook()
@@ -237,6 +243,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 return;
             }
 
+            // TODO: Look usa delta de ponteiro no esquema atual; para usar ScreenPoint com mouse precisaríamos de cursor virtual.
             var ray = _camera.ScreenPointToRay(_lookInput);
             var plane = new Plane(Vector3.up, Vector3.zero);
 
@@ -268,11 +275,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
             if (_rb != null)
             {
-                _rb.linearVelocity = Vector3.zero;
+                _rb.velocity = Vector3.zero;
                 _rb.angularVelocity = Vector3.zero;
             }
 
             UnbindInput();
+            UnbindCameraEvents();
+            _camera = null;
 
             return Task.CompletedTask;
         }
@@ -290,13 +299,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 {
                     if (_rb != null)
                     {
-                        _rb.linearVelocity = Vector3.zero;
+                        _rb.velocity = Vector3.zero;
                         _rb.angularVelocity = Vector3.zero;
 
                         _rb.position = pose.position;
                         _rb.rotation = pose.rotation;
 
-                        _rb.linearVelocity = Vector3.zero;
+                        _rb.velocity = Vector3.zero;
                         _rb.angularVelocity = Vector3.zero;
                     }
                     else
