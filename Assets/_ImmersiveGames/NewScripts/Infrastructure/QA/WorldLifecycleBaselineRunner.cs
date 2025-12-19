@@ -2,7 +2,9 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 
@@ -23,6 +25,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool _autoInitDisabled;
         private bool _savedRepeatedVerbose;
         private bool _hasSavedRepeatedVerbose;
+        private bool _pausedByQAToggle;
+        private bool _loggedEventBusUnavailable;
 
         [SerializeField] private bool disableControllerAutoInitializeOnStart = true;
         [SerializeField] private bool suppressRepeatedCallWarningsDuringBaseline = true;
@@ -95,6 +99,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         public async void RunFullBaselineContextMenu()
         {
             await RunFullBaselineAsync("ContextMenu/FullBaseline");
+        }
+
+        [ContextMenu("QA/Gate/Toggle Pause (EventBus)")]
+        public void TogglePauseEventBus()
+        {
+            _pausedByQAToggle = !_pausedByQAToggle;
+            ApplyPauseState(_pausedByQAToggle);
+        }
+
+        [ContextMenu("QA/Gate/Force Pause (EventBus)")]
+        public void ForcePauseEventBus()
+        {
+            _pausedByQAToggle = true;
+            ApplyPauseState(true);
+        }
+
+        [ContextMenu("QA/Gate/Force Resume (EventBus)")]
+        public void ForceResumeEventBus()
+        {
+            _pausedByQAToggle = false;
+            ApplyPauseState(false);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -369,6 +394,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.SetRepeatedCallVerbose(_savedRepeatedVerbose);
             _hasSavedRepeatedVerbose = false;
 #endif
+        }
+
+        private void ApplyPauseState(bool paused)
+        {
+            try
+            {
+                EventBus<GamePauseEvent>.Raise(new GamePauseEvent(paused));
+                DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                    $"[QA Gate Toggle] Published GamePauseEvent paused={paused}");
+
+                if (!paused)
+                {
+                    EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
+                        "[QA Gate Toggle] Published GameResumeRequestedEvent");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (_loggedEventBusUnavailable)
+                {
+                    return;
+                }
+
+                DebugUtility.LogWarning(typeof(WorldLifecycleBaselineRunner),
+                    $"[QA Gate Toggle] EventBus indisponível; não foi possível publicar pause/resume ({ex.GetType().Name})");
+                _loggedEventBusUnavailable = true;
+            }
         }
     }
 }
