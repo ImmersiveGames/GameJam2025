@@ -331,6 +331,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 BaselineDebugBootstrap.RestoreIfNeeded(_savedRepeatedVerbose);
                 _restoredBootstrapSuppression = true;
                 _ownsBootstrapSuppression = false;
+                _savedRepeatedVerbose = false;
                 _hasSavedRepeatedVerbose = false;
                 return;
             }
