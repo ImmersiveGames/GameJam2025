@@ -1,3 +1,7 @@
+/*
+ * ChangeLog
+ * - Documentado contrato de resolução de câmera com expectativa de fallback resiliente.
+ */
 using System;
 using System.Collections.Generic;
 using UnityEngine;

@@ -1,3 +1,8 @@
+/*
+ * ChangeLog
+ * - Ajustado GetDefaultCamera para fallback em Camera.main quando não houver padrão registrado.
+ * - Mantida idempotência de registro/desregistro com logs coerentes e evento de câmera padrão.
+ */
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -72,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras
 
         public Camera GetDefaultCamera()
         {
-            return _defaultCamera;
+            return _defaultCamera ?? Camera.main;
         }
 
         private void UpdateDefaultCamera(Camera nextDefault)

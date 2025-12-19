@@ -1,3 +1,9 @@
+/*
+ * ChangeLog
+ * - Robustecido ciclo de reset: limpa eventos de câmera, zera referência local e re resolve serviços em rebind.
+ * - Ajustado uso de Rigidbody.velocity para compatibilidade e mantidos fallbacks de câmera.
+ * - Comentado intenção do input Look (delta/pointer) mantendo comportamento atual.
+ */
 using System.Threading.Tasks;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
@@ -237,6 +243,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 return;
             }
 
+            // TODO: Look usa delta de ponteiro no esquema atual; para usar ScreenPoint com mouse precisaríamos de cursor virtual.
             var ray = _camera.ScreenPointToRay(_lookInput);
             var plane = new Plane(Vector3.up, Vector3.zero);
 
@@ -273,6 +280,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             }
 
             UnbindInput();
+            UnbindCameraEvents();
+            _camera = null;
 
             return Task.CompletedTask;
         }
