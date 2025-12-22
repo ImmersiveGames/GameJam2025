@@ -8,11 +8,11 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine;
 

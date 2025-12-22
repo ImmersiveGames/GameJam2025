@@ -18,6 +18,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private MonoBehaviour debugLogTester;
         [SerializeField] private MonoBehaviour diTester;
         [SerializeField] private MonoBehaviour fsmTester;
+        [SerializeField] private MonoBehaviour eventBusTester;
+        [SerializeField] private MonoBehaviour filteredEventBusTester;
         [SerializeField] private bool verbose = true;
 
         private int _passes;
@@ -62,6 +64,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             ExecuteTester(fsmTester, "FsmPredicateQATester");
+            if (stopOnFirstFail && _fails > 0)
+            {
+                DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
+                    "[QA][Infra] stopOnFirstFail ativo; execução interrompida após falha.");
+                Complete();
+                return;
+            }
+
+            ExecuteTester(eventBusTester, "EventBusSmokeQATester");
+            if (stopOnFirstFail && _fails > 0)
+            {
+                DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
+                    "[QA][Infra] stopOnFirstFail ativo; execução interrompida após falha.");
+                Complete();
+                return;
+            }
+
+            ExecuteTester(filteredEventBusTester, "FilteredEventBusSmokeQATester");
 
             Complete();
         }

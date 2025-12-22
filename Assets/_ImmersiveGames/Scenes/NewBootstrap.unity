@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 826837240}
   - component: {fileID: 826837239}
   - component: {fileID: 826837238}
+  - component: {fileID: 826837243}
   m_Layer: 0
   m_Name: QA
   m_TagString: Untagged
@@ -239,7 +240,21 @@ MonoBehaviour:
   debugLogTester: {fileID: 826837241}
   diTester: {fileID: 826837240}
   fsmTester: {fileID: 826837239}
+  eventBusTester: {fileID: 826837243}
+  filteredEventBusTester: {fileID: 826837243}
   verbose: 1
+--- !u!114 &826837243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826837234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d49c98e03bd285448d2b36ca7078f85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &925051305
 GameObject:
   m_ObjectHideFlags: 0

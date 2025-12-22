@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
