@@ -6,6 +6,7 @@ using System;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 {
@@ -29,12 +30,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
         public GamePauseGateBridge(ISimulationGateService gateService)
         {
-            _gateService = gateService;
+            _gateService = gateService ?? ResolveGateService();
 
             _pauseBinding = new EventBinding<GamePauseEvent>(OnGamePause);
             _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate("GameResumeRequestedEvent"));
 
             TryRegisterBindings();
+        }
+
+        private ISimulationGateService ResolveGateService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
+            {
+                DebugUtility.LogVerbose<GamePauseGateBridge>(
+                    "[PauseBridge] ISimulationGateService resolvido via DependencyManager.");
+                return resolved;
+            }
+
+            DebugUtility.LogWarning<GamePauseGateBridge>(
+                "[PauseBridge] ISimulationGateService indisponível; bridge ficará inativo até que um gate seja registrado.");
+            _loggedMissingGate = true;
+            return null;
         }
 
         public void Dispose()

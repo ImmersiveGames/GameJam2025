@@ -31,6 +31,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+#if !NEWSCRIPTS_MODE
+            DebugUtility.Log(typeof(GlobalBootstrap),
+                "NEWSCRIPTS_MODE desativado: GlobalBootstrap ignorado.");
+            return;
+#endif
             if (_initialized)
             {
                 return;

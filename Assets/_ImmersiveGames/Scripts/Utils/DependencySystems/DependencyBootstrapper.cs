@@ -11,7 +11,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -102,7 +101,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 RegisterEventBuses();
 
-                EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
+                RegisterStateDependentService();
 
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());
@@ -191,5 +190,22 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
             _initialized = false;
         }
 #endif
+
+        /// <summary>
+        /// Registro explícito do serviço legado de StateDependent.
+        /// Mantido aqui para evitar dependência cruzada com o bootstrap do NewScripts.
+        /// </summary>
+        private void RegisterStateDependentService()
+        {
+            var stateMachine = GameManagerStateMachine.Instance;
+            if (stateMachine == null)
+            {
+                DebugUtility.LogWarning<DependencyBootstrapper>(
+                    "GameManagerStateMachine não disponível; IStateDependentService não será registrado.");
+                return;
+            }
+
+            EnsureGlobal<IStateDependentService>(() => new StateDependentService(stateMachine));
+        }
     }
 }
