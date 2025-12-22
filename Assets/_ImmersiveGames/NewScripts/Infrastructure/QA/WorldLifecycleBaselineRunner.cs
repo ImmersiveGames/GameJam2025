@@ -1,5 +1,6 @@
 /*
  * ChangeLog
+ * - Gate Validation agora força spawn do player via ResetWorldAsync se necessário e aguarda warmup determinístico.
  * - Adicionado validador automatizado do Gate (ações) com ContextMenu/Hotkey e logs determinísticos para QA.
  */
 using System;
@@ -465,6 +466,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private async Task RunGateValidationAsync(string trigger)
         {
+            if (_isRunning)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleBaselineRunner),
+                    $"{LogPrefix} Gate validation ignorada — baseline em andamento.");
+                return;
+            }
+
             if (_isGateValidationRunning)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleBaselineRunner),
@@ -479,10 +487,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             try
             {
-                var controller = FindFirstObjectByType<NewPlayerMovementController>();
+                var controller = await EnsurePlayerSpawnedForGateValidationAsync(runId);
                 if (controller == null)
                 {
-                    LogError(runId, "FAIL Gate Validation — NewPlayerMovementController não encontrado na cena.");
                     return;
                 }
 
@@ -549,6 +556,54 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             finally
             {
                 _isGateValidationRunning = false;
+            }
+        }
+
+        private async Task<NewPlayerMovementController> EnsurePlayerSpawnedForGateValidationAsync(string runId)
+        {
+            var controller = FindFirstObjectByType<NewPlayerMovementController>();
+            if (controller != null)
+            {
+                return controller;
+            }
+
+            var lifecycleController = FindFirstObjectByType<WorldLifecycleController>();
+            if (lifecycleController == null)
+            {
+                LogError(runId,
+                    $"FAIL Gate Validation — Player não encontrado e WorldLifecycleController ausente. activeScene='{SceneManager.GetActiveScene().name}', runnerScene='{gameObject.scene.name}'. Sugestão: execute Hard Reset/Baseline antes.");
+                return null;
+            }
+
+            LogInfo(runId, "Player não encontrado; executando ResetWorldAsync para forçar spawn antes da validação do Gate.");
+            try
+            {
+                await lifecycleController.ResetWorldAsync($"Baseline/GateValidation/Spawn/{runId}");
+            }
+            catch (Exception ex)
+            {
+                LogError(runId, $"FAIL Gate Validation — exceção ao forçar spawn via ResetWorldAsync: {ex}");
+                return null;
+            }
+
+            await AwaitFrames(3);
+
+            controller = FindFirstObjectByType<NewPlayerMovementController>();
+            if (controller == null)
+            {
+                LogError(runId,
+                    $"FAIL Gate Validation — Player ainda não encontrado após reset. activeScene='{SceneManager.GetActiveScene().name}', runnerScene='{gameObject.scene.name}'. Sugestão: execute Hard Reset/Baseline primeiro.");
+            }
+
+            return controller;
+        }
+
+        private static async Task AwaitFrames(int frames)
+        {
+            var target = Mathf.Max(1, frames);
+            for (var i = 0; i < target; i++)
+            {
+                await Task.Yield();
             }
         }
 
