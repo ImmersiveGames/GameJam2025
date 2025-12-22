@@ -7,6 +7,7 @@ using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.State
@@ -31,8 +32,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
         private bool _bindingsRegistered;
         private bool _loggedGateBlock;
+        private bool _loggedGameLoopUsage;
 
         private readonly ISimulationGateService _gateService;
+        private readonly IGameLoopService _gameLoopService;
 
         public NewScriptsStateDependentService(ISimulationGateService gateService = null)
         {
@@ -41,6 +44,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             if (_gateService == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _gateService);
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal(out IGameLoopService gameLoopService))
+            {
+                _gameLoopService = gameLoopService;
             }
 
             TryRegisterEvents();
@@ -53,7 +61,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                 return false;
             }
 
-            switch (_state)
+            var serviceState = ResolveServiceState();
+
+            switch (serviceState)
             {
                 case ServiceState.Playing:
                     return action switch
@@ -78,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
         public bool IsGameActive()
         {
-            return _state == ServiceState.Playing;
+            return ResolveServiceState() == ServiceState.Playing;
         }
 
         public void Dispose()
@@ -124,6 +134,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private void SetState(ServiceState next)
         {
             _state = next;
+        }
+
+        private ServiceState ResolveServiceState()
+        {
+            if (_gameLoopService != null && !string.IsNullOrWhiteSpace(_gameLoopService.CurrentStateName))
+            {
+                if (!_loggedGameLoopUsage)
+                {
+                    DebugUtility.LogVerbose<NewScriptsStateDependentService>(
+                        "[StateDependent] Integrado ao GameLoop: usando estado atual como fonte primária.");
+                    _loggedGameLoopUsage = true;
+                }
+
+                return _gameLoopService.CurrentStateName switch
+                {
+                    nameof(GameLoopStateId.Playing) => ServiceState.Playing,
+                    nameof(GameLoopStateId.Paused) => ServiceState.Paused,
+                    _ => ServiceState.Menu
+                };
+            }
+
+            return _state;
         }
 
         private bool IsPausedByGate(ActionType action)
