@@ -133,5 +133,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             public bool HasScene => _scene != null;
             public string Report() => $"HasGlobal={HasGlobal} HasScene={HasScene} G={_global?.Id} S={_scene?.Id}";
         }
+
+        /// <summary>
+        /// Wrapper para execução pelo runner agregado.
+        /// </summary>
+        public void Run()
+        {
+            RunSmoke();
+        }
     }
 }
