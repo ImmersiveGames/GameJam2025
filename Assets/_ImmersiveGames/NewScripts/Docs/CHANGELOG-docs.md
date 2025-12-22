@@ -1,3 +1,6 @@
+## [2025-12-20]
+- Added: Seção de pause em `WorldLifecycle/WorldLifecycle.md` descrevendo bloqueio de ações via gate sem congelar física/timeScale.
+
 ## [2025-12-19]
 - Added: Baseline Audit for `ResetScope.Players` documenting As-Is state, identified subsystems, and gaps prior to gameplay integration.
 

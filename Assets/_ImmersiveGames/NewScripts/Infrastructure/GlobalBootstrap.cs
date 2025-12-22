@@ -1,3 +1,8 @@
+/*
+ * ChangeLog
+ * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
+ * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
+ */
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -66,6 +71,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
+            RegisterPauseBridge();
+
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
@@ -111,6 +118,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPauseBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pause] GamePauseGateBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            {
+                DebugUtility.LogError(typeof(GlobalBootstrap),
+                    "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
+                return;
+            }
+
+            var bridge = new GamePauseGateBridge(gateService);
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
                 DebugUtility.Colors.Info);
         }
     }
