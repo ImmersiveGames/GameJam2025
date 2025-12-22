@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {

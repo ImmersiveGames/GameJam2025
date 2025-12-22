@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World

@@ -5,8 +5,8 @@
 using System;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 {

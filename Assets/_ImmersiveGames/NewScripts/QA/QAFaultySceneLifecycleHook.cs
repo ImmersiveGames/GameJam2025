@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
 
 namespace _ImmersiveGames.NewScripts.QA
 {

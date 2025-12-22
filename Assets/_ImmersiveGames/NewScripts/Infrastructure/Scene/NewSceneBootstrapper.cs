@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players;
 using UnityEngine;

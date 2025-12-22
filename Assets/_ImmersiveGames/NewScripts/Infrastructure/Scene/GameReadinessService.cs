@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Debug;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
