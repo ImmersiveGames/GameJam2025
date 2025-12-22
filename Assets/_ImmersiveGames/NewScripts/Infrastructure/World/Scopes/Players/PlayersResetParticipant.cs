@@ -3,32 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.Scripts.GameplaySystems.Domain;
-using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.NewScripts.Infrastructure.World.Reset;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using GameplayResetContext = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetContext;
-using GameplayResetRequest = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetRequest;
-using GameplayResetScope = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetScope;
-using GameplayResetStructs = _ImmersiveGames.Scripts.GameplaySystems.Reset.ResetStructs;
-using IActorRegistry = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActorRegistry;
-using LegacyActor = _ImmersiveGames.Scripts.ActorSystems.IActor;
-using NewActor = _ImmersiveGames.NewScripts.Infrastructure.Actors.IActor;
+using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 {
     public sealed class PlayersResetParticipant : IResetScopeParticipant
     {
         private readonly List<PlayerTarget> _playerTargets = new(8);
-        private readonly List<NewActor> _actorBuffer = new(16);
-        private readonly List<LegacyActor> _legacyPlayerBuffer = new(16);
+        private readonly List<IActor> _actorBuffer = new(16);
         private readonly List<IResetInterfaces> _resetBuffer = new(16);
         private readonly List<ResetParticipantEntry> _orderedResets = new(32);
 
         private IActorRegistry _actorRegistry;
-        private IPlayerDomain _playerDomain;
         private string _sceneName = string.Empty;
         private int _resetSerial;
         private bool _dependenciesResolved;
@@ -75,7 +67,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
             var provider = DependencyManager.Provider;
 
             provider.TryGetForScene(_sceneName, out _actorRegistry);
-            provider.TryGetForScene(_sceneName, out _playerDomain);
 
             _dependenciesResolved = true;
         }
@@ -89,13 +80,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
                 return;
             }
 
-            TryCollectFromPlayerDomain();
-
-            if (_playerTargets.Count > 1)
-            {
-                _playerTargets.Sort((left, right) =>
-                    string.CompareOrdinal(left.ActorId, right.ActorId));
-            }
+            TryCollectFromSceneActors();
+            SortTargets();
         }
 
         private bool TryCollectFromActorRegistry()
@@ -115,67 +101,56 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 
             foreach (var actor in _actorBuffer)
             {
-                if (actor == null)
-                {
-                    continue;
-                }
-
-                if (!IsPlayerActor(actor))
-                {
-                    continue;
-                }
-
-                var transform = actor.Transform;
-                if (transform == null)
-                {
-                    continue;
-                }
-
-                var actorId = actor.ActorId ?? string.Empty;
-                _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
+                TryAddActorTarget(actor);
             }
 
             return _playerTargets.Count > 0;
         }
 
-        private void TryCollectFromPlayerDomain()
+        private void TryCollectFromSceneActors()
         {
-            if (_playerDomain == null)
+            var adapters = Object.FindObjectsByType<PlayerActorAdapter>(FindObjectsSortMode.None);
+            foreach (var adapter in adapters)
             {
-                return;
+                TryAddActorTarget(adapter);
             }
 
-            var players = _playerDomain.Players;
-            if (players == null || players.Count == 0)
+            var actors = Object.FindObjectsByType<PlayerActor>(FindObjectsSortMode.None);
+            foreach (var actor in actors)
             {
-                return;
+                TryAddActorTarget(actor);
             }
-
-            _legacyPlayerBuffer.Clear();
-            _legacyPlayerBuffer.AddRange(players.Where(p => p != null));
-            _legacyPlayerBuffer.Sort((left, right) =>
-                string.CompareOrdinal(left?.ActorId, right?.ActorId));
-
-            foreach (var player in _legacyPlayerBuffer)
-            {
-                if (player == null)
-                {
-                    continue;
-                }
-
-                var transform = player.Transform;
-                if (transform == null)
-                {
-                    continue;
-                }
-
-                var actorId = player.ActorId ?? string.Empty;
-                _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
-            }
-
         }
 
-        private static bool IsPlayerActor(NewActor actor)
+        private void TryAddActorTarget(IActor actor)
+        {
+            if (actor == null || !IsPlayerActor(actor))
+            {
+                return;
+            }
+
+            var transform = actor.Transform;
+            if (transform == null || transform.gameObject.scene.name != _sceneName)
+            {
+                return;
+            }
+
+            var actorId = actor.ActorId ?? string.Empty;
+            _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
+        }
+
+        private void SortTargets()
+        {
+            if (_playerTargets.Count <= 1)
+            {
+                return;
+            }
+
+            _playerTargets.Sort((left, right) =>
+                string.CompareOrdinal(left.ActorId, right.ActorId));
+        }
+
+        private static bool IsPlayerActor(IActor actor)
         {
             return actor is PlayerActor or PlayerActorAdapter;
         }

@@ -2,10 +2,10 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
-using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
                 $"[WorldLifecycle] Disparando hard reset após ScenesReady. Context={evt.Context}");
 
-            TriggerResetAsync($"ScenesReady/{evt.Context.targetActiveScene}", contextSignature, evt.Context);
+            TriggerResetAsync($"ScenesReady/{evt.Context.TargetActiveScene}", contextSignature, evt.Context);
         }
 
         private void TriggerResetAsync(string reason, string contextSignature, object contextForLog)
@@ -196,11 +196,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private static string BuildContextSignature(SceneTransitionContext context)
         {
-            var targetScene = string.IsNullOrEmpty(context.targetActiveScene) ? "<null>" : context.targetActiveScene;
-            var useFade = context.useFade ? "1" : "0";
-            var loadPart = BuildListPart(context.scenesToLoad);
-            var unloadPart = BuildListPart(context.scenesToUnload);
-            var profileId = context.transitionProfile == null ? "<null>" : context.transitionProfile.name;
+            var targetScene = string.IsNullOrEmpty(context.TargetActiveScene) ? "<null>" : context.TargetActiveScene;
+            var useFade = context.UseFade ? "1" : "0";
+            var loadPart = BuildListPart(context.ScenesToLoad);
+            var unloadPart = BuildListPart(context.ScenesToUnload);
+            var profileId = string.IsNullOrWhiteSpace(context.TransitionProfileName) ? "<null>" : context.TransitionProfileName;
 
             return $"Target={targetScene};Fade={useFade};Load=[{loadPart}];Unload=[{unloadPart}];Profile={profileId}";
         }
