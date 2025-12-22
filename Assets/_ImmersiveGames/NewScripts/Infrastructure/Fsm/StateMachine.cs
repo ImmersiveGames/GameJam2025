@@ -1,0 +1,127 @@
+using System;
+using System.Collections.Generic;
+using _ImmersiveGames.Scripts.Utils.Predicates;
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
+{
+    public class StateMachine
+    {
+        private StateNode _currentNode;
+        private readonly Dictionary<Type, StateNode> _nodes = new();
+        private readonly HashSet<Transition> _anyTransitions = new();
+
+        public IState CurrentState => _currentNode?.State;
+
+        public void Update()
+        {
+            var transition = GetTransition();
+
+            if (transition != null)
+            {
+                ChangeState(transition.To);
+            }
+
+            _currentNode?.State?.Update();
+        }
+
+        public void FixedUpdate()
+        {
+            _currentNode?.State?.FixedUpdate();
+        }
+
+        public void SetState(IState state)
+        {
+            var node = GetNodeOrThrow(state.GetType());
+            _currentNode = node;
+            _currentNode.State?.OnEnter();
+        }
+
+        public void AddTransition<T>(IState from, IState to, T condition)
+        {
+            GetOrAddNode(from).AddTransition(GetOrAddNode(to).State, condition);
+        }
+
+        public void AddAnyTransition<T>(IState to, T condition)
+        {
+            _anyTransitions.Add(new Transition<T>(GetOrAddNode(to).State, condition));
+        }
+
+        public void RegisterState(IState state)
+        {
+            Preconditions.CheckNotNull(state, "Estado não pode ser nulo.");
+            GetOrAddNode(state);
+        }
+
+        private void ChangeState(IState state)
+        {
+            if (_currentNode != null && state == _currentNode.State)
+                return;
+
+            var nextNode = GetNodeOrThrow(state.GetType());
+            var previousState = _currentNode?.State;
+            var nextState = nextNode.State;
+
+            _currentNode = nextNode;
+
+            previousState?.OnExit();
+            nextState?.OnEnter();
+        }
+
+        private Transition GetTransition()
+        {
+            if (_currentNode == null)
+                return null;
+
+            foreach (var transition in _anyTransitions)
+            {
+                if (transition.Evaluate())
+                    return transition;
+            }
+
+            foreach (var transition in _currentNode.Transitions)
+            {
+                if (transition.Evaluate())
+                    return transition;
+            }
+
+            return null;
+        }
+
+        private StateNode GetOrAddNode(IState state)
+        {
+            var node = _nodes.GetValueOrDefault(state.GetType());
+            if (node == null)
+            {
+                node = new StateNode(state);
+                _nodes[state.GetType()] = node;
+            }
+
+            return node;
+        }
+
+        private StateNode GetNodeOrThrow(Type stateType)
+        {
+            if (!_nodes.TryGetValue(stateType, out var node))
+                throw new InvalidOperationException($"Estado {stateType.Name} não foi registrado na StateMachine.");
+
+            return node;
+        }
+
+        private class StateNode
+        {
+            public StateNode(IState state)
+            {
+                State = state;
+                Transitions = new HashSet<Transition>();
+            }
+
+            public IState State { get; }
+            public HashSet<Transition> Transitions { get; }
+
+            public void AddTransition<T>(IState to, T predicate)
+            {
+                Transitions.Add(new Transition<T>(to, predicate));
+            }
+        }
+    }
+}

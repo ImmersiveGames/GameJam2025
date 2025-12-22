@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
             // Bridge oficial de permissões de ações (gate-aware).
-            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
+            RegisterStateDependentService();
 
             // Sistema de câmera nativo do NewScripts.
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
@@ -144,6 +144,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterStateDependentService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IStateDependentService>(out var existing) && existing != null)
+            {
+                if (existing is NewScriptsStateDependentService)
+                {
+                    DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                        "[StateDependent] NewScriptsStateDependentService já registrado no DI global.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    $"[StateDependent] Serviço legado detectado ({existing.GetType().Name}); substituindo por NewScriptsStateDependentService.");
+            }
+
+            var service = new NewScriptsStateDependentService();
+            DependencyManager.Provider.RegisterGlobal<IStateDependentService>(service, allowOverride: true);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
                 DebugUtility.Colors.Info);
         }
     }

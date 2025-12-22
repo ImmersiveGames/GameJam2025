@@ -1,6 +1,7 @@
 Doc update:
 - Reset-In-Place semantics clarified
 - Pause: GamePauseGateBridge ativa token SimulationGateTokens.Pause e NewScriptsStateDependentService bloqueia Move via gate (sem congelar física/timeScale)
+- Infra FSM: assets e GameLoop FSM documentados
 # World Lifecycle (NewScripts)
 
 > Este documento descreve **operacionalmente** o comportamento do WorldLifecycle e implementa as decisões descritas no
@@ -15,6 +16,11 @@ Há dois contratos principais:
 
 - **Hard Reset (Full Reset)**: reconstrói o mundo de forma completa (despawn + spawn).
 - **Soft Reset Players (Reset-In-Place)**: reset lógico por escopo, **sem despawn/spawn** (instâncias e identidades preservadas).
+
+### Notas rápidas de infraestrutura
+- Infra genérica de FSM: `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
+- FSM concreta do GameLoop: `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
+- Pause usa gate para bloquear ações (ex.: Move) e **não congela física/timeScale**.
 
 ### Pause (Gate não congela física)
 - O pause é propagado via `GamePauseEvent(paused=true)` → `GamePauseGateBridge` → token `SimulationGateTokens.Pause` no `SimulationGateService`.

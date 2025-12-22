@@ -34,9 +34,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
         private readonly ISimulationGateService _gateService;
 
-        public NewScriptsStateDependentService()
+        public NewScriptsStateDependentService(ISimulationGateService gateService = null)
         {
-            DependencyManager.Provider.TryGetGlobal(out _gateService);
+            _gateService = gateService;
+
+            if (_gateService == null)
+            {
+                DependencyManager.Provider.TryGetGlobal(out _gateService);
+            }
+
             TryRegisterEvents();
         }
 
