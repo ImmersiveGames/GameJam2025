@@ -15,7 +15,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -83,7 +82,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterPauseBridge();
             RegisterGameLoop();
-            RegisterLegacyGameLoopBridge();
 
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
@@ -175,24 +173,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             GameLoopBootstrap.EnsureRegistered();
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global).",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterLegacyGameLoopBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<LegacyToNewGameLoopEventBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[GameLoop] LegacyToNewGameLoopEventBridge já registrado.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new LegacyToNewGameLoopEventBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[GameLoop] LegacyToNewGameLoopEventBridge registrado (legado → NewScripts).",
                 DebugUtility.Colors.Info);
         }
 
