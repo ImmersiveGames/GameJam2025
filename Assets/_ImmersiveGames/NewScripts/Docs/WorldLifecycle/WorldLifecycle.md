@@ -27,6 +27,7 @@ Há dois contratos principais:
 - O resume é liberado via `GamePauseEvent(paused=false)` ou `GameResumeRequestedEvent` (mesma ponte libera o token).
 - **Efeito**: o `NewScriptsStateDependentService` consulta o gate e bloqueia `ActionType.Move` (ações) enquanto o token de pause estiver ativo; **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
 - Gravidade e física continuam rodando; apenas os controladores deixam de aplicar inputs/velocidade.
+- O serviço de permissões oficial no baseline NewScripts é `NewScriptsStateDependentService`, registrado pelo `GlobalBootstrap` (nenhuma ponte legacy de StateDependent permanece).
 
 ---
 

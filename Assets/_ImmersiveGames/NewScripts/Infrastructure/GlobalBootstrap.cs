@@ -160,11 +160,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 }
 
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    $"[StateDependent] Serviço legado detectado ({existing.GetType().Name}); substituindo por NewScriptsStateDependentService.");
+                    $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por NewScriptsStateDependentService.");
+
+                DependencyManager.Provider.RegisterGlobal<IStateDependentService>(new NewScriptsStateDependentService(),
+                    allowOverride: true);
+
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
+                    DebugUtility.Colors.Info);
+                return;
             }
 
-            var service = new NewScriptsStateDependentService();
-            DependencyManager.Provider.RegisterGlobal<IStateDependentService>(service, allowOverride: true);
+            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
