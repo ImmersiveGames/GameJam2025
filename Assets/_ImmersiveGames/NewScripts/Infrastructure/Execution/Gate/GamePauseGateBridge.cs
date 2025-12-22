@@ -3,7 +3,7 @@
  * - Nova ponte de pause: converte GamePauseEvent/GameResumeRequestedEvent em gate SimulationGateTokens.Pause sem congelar física.
  */
 using System;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;

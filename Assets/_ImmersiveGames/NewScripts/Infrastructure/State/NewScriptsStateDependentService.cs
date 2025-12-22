@@ -2,7 +2,6 @@
  * ChangeLog
  * - Gate de pause (SimulationGateTokens.Pause) agora bloqueia ActionType.Move via IStateDependentService sem congelar física/timeScale.
  */
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;

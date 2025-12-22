@@ -13,10 +13,11 @@
 ## Bootstrap (NEWSCRIPTS_MODE)
 - O boot do NewScripts acontece via `GlobalBootstrap` (BeforeSceneLoad).
 - `GlobalBootstrap` registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e o pipeline de câmera do NewScripts.
+- O mesmo bootstrap agora inicializa os `EventBus` dos eventos do GameLoop e chama `GameLoopBootstrap.EnsureRegistered()` para registrar o serviço e a ponte de entrada no escopo global (sem depender do legado).
 - O bootstrap do legado **não** inicializa nem referencia serviços do NewScripts; a separação de bootstraps é obrigatória.
 
 ## De onde vêm os sinais (eventos → bridge → GameLoop)
-- Eventos globais existentes entram via **GameLoopEventInputBridge**:
+- Eventos globais existentes entram via **GameLoopEventInputBridge** (eventos definidos em `Gameplay/GameLoop/GameLoopEvents.cs`):
   - `GameStartEvent` → `RequestStart()`
   - `GamePauseEvent(IsPaused=true)` → `RequestPause()`
   - `GamePauseEvent(IsPaused=false)` ou `GameResumeRequestedEvent` → `RequestResume()`

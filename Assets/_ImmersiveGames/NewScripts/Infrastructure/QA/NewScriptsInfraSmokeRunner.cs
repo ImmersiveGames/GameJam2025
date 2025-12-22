@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private MonoBehaviour diTester;
         [SerializeField] private MonoBehaviour fsmTester;
         [SerializeField] private MonoBehaviour eventBusTester;
+        [SerializeField] private MonoBehaviour gameLoopEventBridgeTester;
         [SerializeField] private MonoBehaviour filteredEventBusTester;
         [SerializeField] private bool verbose = true;
 
@@ -73,6 +74,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             ExecuteTester(eventBusTester, "EventBusSmokeQATester");
+            if (stopOnFirstFail && _fails > 0)
+            {
+                DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
+                    "[QA][Infra] stopOnFirstFail ativo; execução interrompida após falha.");
+                Complete();
+                return;
+            }
+
+            gameLoopEventBridgeTester = gameLoopEventBridgeTester
+                                        ?? GetComponent<GameLoopEventInputBridgeSmokeQATester>()
+                                        ?? gameObject.AddComponent<GameLoopEventInputBridgeSmokeQATester>();
+
+            ExecuteTester(gameLoopEventBridgeTester, "GameLoopEventInputBridgeSmokeQATester");
             if (stopOnFirstFail && _fails > 0)
             {
                 DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),

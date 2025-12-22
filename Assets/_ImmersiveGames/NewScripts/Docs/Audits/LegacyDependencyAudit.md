@@ -1,55 +1,29 @@
 # Auditoria de Dependências Legadas — NewScripts
 
 ## Sumário
-- Total de referências ao legado `_ImmersiveGames.Scripts.*`: **82**.
-- Distribuição por tipo: **Código: 82**, **Asmdef: 0**, **Docs: 0**.
-- Arquivos de código afetados: **36** em `Assets/_ImmersiveGames/NewScripts`.
+- Total de referências ao legado `_ImmersiveGames.Scripts.*`: **21**.
+- Distribuição por tipo: **Código: 20**, **Asmdef: 0**, **Docs: 1**.
+- Arquivos de código afetados: **8** em `Assets/_ImmersiveGames/NewScripts`.
 
 ## Tabela 1 — Código
 | Caminho | Linhas/Trechos com referência | Tipos legados usados | Categoria |
 | --- | --- | --- | --- |
-| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-19 (usings de ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement, StateMachineSystems, Infrastructure.DebugLog/DI) | IActor, IPlayerDomain, IResetInterfaces/IResetScopeFilter/IResetOrder, ActionType, DebugUtility, DependencyManager | Reset |
-| Gameplay/GameLoop/GameLoopDriver.cs | 1-2 | DebugUtility, DependencyManager | DI |
-| Gameplay/GameLoop/GameLoopEventInputBridge.cs | 2-5 | GameStartEvent/GamePauseEvent/GameResumeRequestedEvent/GameResetRequestedEvent, EventBus/EventBinding, DebugUtility, DependencyManager | DI |
-| Gameplay/GameLoop/GameLoopBootstrap.cs | 1-2 | DebugUtility, DependencyManager | DI |
-| Infrastructure/Execution/Gate/GamePauseGateBridge.cs | 6-9 | GamePauseEvent/GameResumeRequestedEvent, EventBus/EventBinding, DebugUtility, DependencyManager | DI |
-| Infrastructure/Execution/Gate/SimulationGateService.cs | 3 | DebugUtility | Debug |
-| Infrastructure/Scene/GameReadinessService.cs | 2-4 | SceneTransitionStarted/ScenesReady/Completed events, EventBus/EventBinding, DebugUtility | Outro |
-| Infrastructure/Scene/NewSceneBootstrapper.cs | 3-4 | DebugUtility, DependencyManager | DI |
+| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-17 | ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement, StateMachineSystems | Reset |
+| Infrastructure/GlobalBootstrap.cs | 18 | IStateDependentService (StateMachineSystems) | DI |
+| Infrastructure/State/NewScriptsStateDependentService.cs | 5 | ActionType (StateMachineSystems) | DI |
+| Infrastructure/QA/WorldLifecycleBaselineRunner.cs | 13 | ActionType (StateMachineSystems) | QA |
+| Infrastructure/Scene/GameReadinessService.cs | 2 | SceneTransitionStarted/ScenesReady/Completed (scene flow legado) | Outro |
+| Infrastructure/World/WorldLifecycleRuntimeDriver.cs | 5 | SceneTransitionStarted/ScenesReady/Completed (scene flow legado) | Outro |
+| Infrastructure/World/Scopes/Players/PlayersResetParticipant.cs | 6-17 | GameplaySystems.Domain/Reset, ActorSystems aliases | Reset |
 | Infrastructure/Actors/PlayerActorAdapter.cs | 2 | LegacyActor alias (_ImmersiveGames.Scripts.ActorSystems.IActor_) | Outro |
-| Infrastructure/Actors/ActorRegistry.cs | 3 | DebugUtility | Debug |
-| Infrastructure/Actors/PlayerActor.cs | 3-4 | DebugUtility, DependencyManager | DI |
-| Infrastructure/Fsm/ITransition.cs | 1 | IPredicate (Utils.Predicates) | Outro |
-| Infrastructure/Fsm/StateMachineBuilder.cs | 1 | Preconditions/IPredicate (Utils.Predicates) | Outro |
-| Infrastructure/Fsm/StateMachine.cs | 3 | IPredicate (Utils.Predicates) | Outro |
-| Infrastructure/Fsm/Transition.cs | 2 | IPredicate (Utils.Predicates) | Outro |
-| Infrastructure/GlobalBootstrap.cs | 9-10,17 | DebugUtility, DependencyManager, IStateDependentService (StateMachineSystems) | DI |
-| Infrastructure/State/NewScriptsStateDependentService.cs | 5-9 | GameStart/GamePause/GameResumeRequested events, EventBus/EventBinding, ActionType (StateMachineSystems), DebugUtility, DependencyManager | DI |
-| Infrastructure/Cameras/NewGameplayCameraBinder.cs | 7-8 | DebugUtility, DependencyManager | DI |
-| Infrastructure/Cameras/CameraResolverService.cs | 9 | DebugUtility | Debug |
-| Infrastructure/QA/WorldLifecycleBaselineRunner.cs | 10-15 | GameManagerSystems.Events, EventBus, DebugUtility, ActionType (StateMachineSystems), DependencyManager | DI |
-| Infrastructure/QA/BaselineDebugBootstrap.cs | 2 | DebugUtility | Debug |
-| Infrastructure/World/WorldSpawnServiceRegistry.cs | 3 | DebugUtility | Debug |
-| Infrastructure/World/SceneLifecycleHookLoggerB.cs | 2 | DebugUtility | Debug |
-| Infrastructure/World/PlayerSpawnService.cs | 4 | DebugUtility | Debug |
-| Infrastructure/World/DummyActorSpawnService.cs | 4 | DebugUtility | Debug |
-| Infrastructure/World/Scopes/Players/PlayersResetParticipant.cs | 6-17 | GameplaySystems.Domain/Reset, DebugUtility, DependencyManager, aliases para ResetContext/ResetRequest/ResetScope/ResetStructs, LegacyActor | Reset |
-| Infrastructure/World/WorldLifecycleRuntimeDriver.cs | 5-8 | SceneTransition events, EventBus/EventBinding, DebugUtility, DependencyManager | DI |
-| Infrastructure/World/WorldLifecycleController.cs | 6-7 | DebugUtility, DependencyManager | DI |
-| Infrastructure/World/WorldLifecycleOrchestrator.cs | 9-10 | DependencyManager.IDependencyProvider, DebugUtility | DI |
-| Infrastructure/World/SceneLifecycleHookLoggerA.cs | 2 | DebugUtility | Debug |
-| Infrastructure/World/IWorldSpawnContext.cs | 1 | DebugUtility | Debug |
-| Infrastructure/World/WorldSpawnServiceFactory.cs | 3-4 | DebugUtility, DependencyManager | DI |
-| QA/WorldLifecycleQATester.cs | 8-9 | DebugUtility, DependencyManager | DI |
-| QA/QAFaultySceneLifecycleHook.cs | 4 | DebugUtility | Debug |
-| QA/ActorLifecycleHookLogger.cs | 3 | DebugUtility | Debug |
-| QA/WorldLifecycleAutoTestRunner.cs | 5-7 | GameManagerSystems.Events, EventBus, DebugUtility | DI |
 
 ## Tabela 2 — Asmdef
 Nenhuma `.asmdef` em `Assets/_ImmersiveGames/NewScripts` referencia assemblies do legado `_ImmersiveGames.Scripts.*`.
 
 ## Tabela 3 — Docs
-Nenhuma referência ao legado encontrada em documentação dentro de `Assets/_ImmersiveGames/NewScripts/Docs`.
+| Caminho | Referência | Motivo |
+| --- | --- | --- |
+| Docs/Audits/LegacyDependencyAudit.md | Lista consolidada das dependências acima. | Auditoria |
 
 ## Parte B — Propostas de Ação por Categoria (não executadas)
 Cada categoria abaixo segue as opções solicitadas e uma recomendação preliminar.
