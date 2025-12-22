@@ -1,6 +1,7 @@
 /*
  * ChangeLog
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
+ * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  */
 using System;
@@ -12,7 +13,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.NewScripts.Infrastructure.State.Legacy;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -76,8 +77,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
-            // TEMP bridge até o FSM novo ser implementado (NS-FSM-001).
-            RegisterIfMissing<IStateDependentService>(() => new LegacyStateDependentServiceBridge());
+            // Bridge oficial de permissões de ações (gate-aware).
+            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
 
             // Sistema de câmera nativo do NewScripts.
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
