@@ -4,8 +4,6 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using GameResetRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResetRequestedEvent;
-using GameResumeRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResumeRequestedEvent;
 
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 {
