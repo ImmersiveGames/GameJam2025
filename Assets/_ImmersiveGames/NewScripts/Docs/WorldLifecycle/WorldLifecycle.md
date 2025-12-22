@@ -1,6 +1,6 @@
 Doc update:
 - Reset-In-Place semantics clarified
-- Pause: Gate bloqueia ações; física não é congelada (timeScale/constraints intactos)
+- Pause: Gate bloqueia ações (via IStateDependentService) sem congelar física/timeScale
 # World Lifecycle (NewScripts)
 
 > Este documento descreve **operacionalmente** o comportamento do WorldLifecycle e implementa as decisões descritas no
@@ -19,7 +19,7 @@ Há dois contratos principais:
 ### Pause (Gate não congela física)
 - O pause é propagado via `GamePauseEvent(paused=true)` → `SimulationGateTokens.Pause`.
 - O resume é liberado via `GamePauseEvent(paused=false)` ou `GameResumeRequestedEvent`.
-- **Efeito**: bloqueia ações (ex.: `ActionType.Move/Look`) por `IStateDependentService` e/ou listeners, mas **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
+- **Efeito**: bloqueia ações (ex.: `ActionType.Move/Look`) por `IStateDependentService` e/ou listeners via token do `SimulationGateService`, mas **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
 - Gravidade e física continuam rodando; apenas os controladores deixam de aplicar inputs/velocidade.
 
 ---
