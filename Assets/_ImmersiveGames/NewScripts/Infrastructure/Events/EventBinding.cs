@@ -25,6 +25,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Events
         public void Add(Action<T> onEvent) => _onEvent += onEvent;
         public void Add(Action onEventNoArgs) => _onEventNoArgs += onEventNoArgs;
         public void Remove(Action<T> onEvent) => _onEvent -= onEvent;
-        public void Remove(Action onEventNoArgs) => _onEventNoArgs = onEventNoArgs;
+        public void Remove(Action onEventNoArgs) => _onEventNoArgs -= onEventNoArgs;
     }
 }
