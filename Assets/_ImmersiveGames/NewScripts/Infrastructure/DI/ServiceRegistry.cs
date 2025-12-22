@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public abstract class ServiceRegistry
     {
         private readonly Stack<Dictionary<Type, object>> _dictionaryPool = new();

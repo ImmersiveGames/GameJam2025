@@ -37,9 +37,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 DebugUtility.Colors.CrucialInfo);
         }
 
+        // Métodos da interface (apenas encaminham)
         public void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class =>
             _globalRegistry.Register(null, service, allowOverride);
-
         public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);
 
         public void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class

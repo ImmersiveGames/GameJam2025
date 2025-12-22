@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public class GlobalServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<Type, object> _services = new();
@@ -33,7 +33,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 $"Serviço {type.Name} registrado no escopo global.",
                 DebugUtility.Colors.Success);
         }
-
         public IEnumerable<T> GetAll<T>() where T : class
         {
             foreach (object svc in _services.Values)
