@@ -1,5 +1,5 @@
 ## [2025-12-20]
-- Added: Seção de pause em `WorldLifecycle/WorldLifecycle.md` descrevendo bloqueio de ações via gate sem congelar física/timeScale, agora explícito que o bloqueio ocorre via IStateDependentService (serviço oficial NewScripts).
+- Added: Seção de pause em `WorldLifecycle/WorldLifecycle.md` descrevendo bloqueio de ações via gate sem congelar física/timeScale, agora explícito que o fluxo é GamePauseGateBridge → SimulationGateTokens.Pause → NewScriptsStateDependentService (serviço oficial) bloqueando Move.
 
 ## [2025-12-19]
 - Added: Baseline Audit for `ResetScope.Players` documenting As-Is state, identified subsystems, and gaps prior to gameplay integration.
