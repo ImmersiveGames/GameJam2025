@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public class SceneServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _sceneServices = new();
@@ -95,7 +95,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
             return false;
         }
-
         public IEnumerable<T> GetAll<T>(string sceneName) where T : class
         {
             if (_sceneServices.TryGetValue(sceneName, out Dictionary<Type, object> sceneServices))
@@ -107,7 +106,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 }
             }
         }
-
         public override void Clear(string key)
         {
             if (string.IsNullOrEmpty(key))

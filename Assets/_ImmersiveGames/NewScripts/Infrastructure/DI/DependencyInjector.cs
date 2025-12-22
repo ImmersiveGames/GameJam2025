@@ -6,9 +6,9 @@ using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public class DependencyInjector
     {
         private readonly ObjectServiceRegistry _objectRegistry;
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         private bool CanInject(object target)
         {
             if (_injectedObjectsThisFrame.Add(target)) return true;
-            DebugUtility.LogVerbose(typeof(DependencyInjector),
+            DebugUtility.LogVerbose(typeof(DependencyInjector), 
                 $"Injeção ignorada para {target.GetType().Name}: já injetado neste frame.");
             return false;
         }
@@ -84,8 +84,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
         private object ResolveService(Type serviceType, string objectId, Type targetType)
         {
-            return ResolveFromObjectScope(serviceType, objectId, targetType)
-                ?? ResolveFromSceneScope(serviceType, targetType)
+            // Tenta resolver na ordem: Objeto → Cena → Global
+            return ResolveFromObjectScope(serviceType, objectId, targetType) 
+                ?? ResolveFromSceneScope(serviceType, targetType) 
                 ?? ResolveFromGlobalScope(serviceType, targetType);
         }
 
@@ -106,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         {
             string activeScene = SceneManager.GetActiveScene().name;
             object service = _sceneRegistry.TryGet(serviceType, activeScene);
-
+            
             if (service != null)
             {
                 DebugUtility.LogVerbose(typeof(DependencyInjector),
@@ -118,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         private object ResolveFromGlobalScope(Type serviceType, Type targetType)
         {
             object service = _globalRegistry.TryGet(serviceType);
-
+            
             if (service != null)
             {
                 DebugUtility.LogVerbose(typeof(DependencyInjector),
@@ -135,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
         private void LogInjectionError(Type fieldType, Type targetType)
         {
-            DebugUtility.LogError(typeof(DependencyInjector),
+            DebugUtility.LogError(typeof(DependencyInjector), 
                 $"Falha ao injetar {fieldType.Name} para {targetType.Name}: serviço não encontrado. " +
                 "Certifique-se de registrar o serviço no DependencyManager no escopo apropriado (objeto, cena ou global).");
         }
@@ -155,6 +156,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         }
     }
 
+    // Extensões para simplificar o TryGet genérico
     public static class ServiceRegistryExtensions
     {
         public static object TryGet(this ObjectServiceRegistry registry, Type serviceType, string objectId)
@@ -184,7 +186,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             return success ? parameters[1] : null;
         }
     }
-
     [AttributeUsage(AttributeTargets.Field)]
     public class InjectAttribute : Attribute { }
 }

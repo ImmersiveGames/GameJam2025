@@ -8,7 +8,7 @@
 ## Tabela 1 — Código
 | Caminho | Linhas/Trechos com referência | Tipos legados usados | Categoria |
 | --- | --- | --- | --- |
-| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-19 (usings de ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement, StateMachineSystems, Utils.DebugSystems/DependencySystems) | IActor, IPlayerDomain, IResetInterfaces/IResetScopeFilter/IResetOrder, ActionType, DebugUtility, DependencyManager | Reset |
+| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-19 (usings de ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement, StateMachineSystems, Infrastructure.DebugLog/DI) | IActor, IPlayerDomain, IResetInterfaces/IResetScopeFilter/IResetOrder, ActionType, DebugUtility, DependencyManager | Reset |
 | Gameplay/GameLoop/GameLoopDriver.cs | 1-2 | DebugUtility, DependencyManager | DI |
 | Gameplay/GameLoop/GameLoopEventInputBridge.cs | 2-5 | GameStartEvent/GamePauseEvent/GameResumeRequestedEvent/GameResetRequestedEvent, EventBus/EventBinding, DebugUtility, DependencyManager | DI |
 | Gameplay/GameLoop/GameLoopBootstrap.cs | 1-2 | DebugUtility, DependencyManager | DI |

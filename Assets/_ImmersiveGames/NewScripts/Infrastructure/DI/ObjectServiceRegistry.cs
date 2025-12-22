@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public class ObjectServiceRegistry : ServiceRegistry
     {
         private readonly Dictionary<string, Dictionary<Type, object>> _objectServices = new();
@@ -70,12 +70,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
             return false;
         }
-
         public IEnumerable<string> GetAllObjectIds()
         {
             return _objectServices.Keys;
         }
-
         public override void Clear(string key)
         {
             if (string.IsNullOrEmpty(key))

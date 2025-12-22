@@ -1,8 +1,8 @@
 ﻿using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+
     public class SceneServiceCleaner
     {
         private readonly SceneServiceRegistry _sceneRegistry;
