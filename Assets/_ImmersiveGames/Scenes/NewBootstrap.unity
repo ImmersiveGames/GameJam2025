@@ -129,6 +129,10 @@ GameObject:
   m_Component:
   - component: {fileID: 826837236}
   - component: {fileID: 826837237}
+  - component: {fileID: 826837242}
+  - component: {fileID: 826837241}
+  - component: {fileID: 826837240}
+  - component: {fileID: 826837239}
   - component: {fileID: 826837238}
   m_Layer: 0
   m_Name: QA
@@ -176,9 +180,66 @@ MonoBehaviour:
   m_GameObject: {fileID: 826837234}
   m_Enabled: 1
   m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1a960ba9013456db4097f7dae8f25d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  settings: {fileID: 11400000, guid: 4830ec2e6ecdfa1469f83d906049d4e8, type: 2}
+  applyOnAwake: 1
+--- !u!114 &826837239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826837234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 986f45b4565550d4dbeac1bc584eec25, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &826837240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826837234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e95f42430a58a748924a879b4a35f22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &826837241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826837234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c03aa7be6d243e1a31b07a772c9e632, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debugManager: {fileID: 826837238}
+--- !u!114 &826837242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826837234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4588284939b065c4db14aa943d91081c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  runOnStart: 1
+  stopOnFirstFail: 0
+  debugLogTester: {fileID: 826837241}
+  diTester: {fileID: 826837240}
+  fsmTester: {fileID: 826837239}
+  verbose: 1
 --- !u!1 &925051305
 GameObject:
   m_ObjectHideFlags: 0
