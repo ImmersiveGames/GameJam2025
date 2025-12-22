@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.Bridges.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
@@ -21,11 +21,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 {
     public sealed class PlayersResetParticipant : IResetScopeParticipant
     {
-        private readonly List<PlayerTarget> _playerTargets = new(8);
+        private readonly PlayersResetPayloadBuilder _payloadBuilder = new();
+        private readonly List<PlayerResetTarget> _playerTargets = new(8);
+        private readonly List<ResetTargetPayload> _payloads = new(8);
         private readonly List<NewActor> _actorBuffer = new(16);
         private readonly List<LegacyActor> _legacyPlayerBuffer = new(16);
-        private readonly List<IResetInterfaces> _resetBuffer = new(16);
-        private readonly List<ResetParticipantEntry> _orderedResets = new(32);
 
         private IActorRegistry _actorRegistry;
         private IPlayerDomain _playerDomain;
@@ -42,23 +42,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
             EnsureDependencies();
             CollectPlayerTargets();
 
-            var reason = context.Reason ?? "WorldLifecycle/SoftReset";
+            var reason = string.IsNullOrWhiteSpace(context.Reason)
+                ? "WorldLifecycle/SoftReset"
+                : context.Reason;
+
             var serial = ++_resetSerial;
             var request = BuildResetRequest(reason);
 
-            DebugUtility.Log(typeof(PlayersResetParticipant),
-                $"[PlayersResetParticipant] ResetScope.Players start (reason={reason}, players={_playerTargets.Count})");
-
-            foreach (var target in _playerTargets)
+            if (_playerTargets.Count == 0)
             {
-                var components = ResolveResettableComponents(target);
-                await RunPhaseAsync(target, components, GameplayResetStructs.Cleanup, request, serial);
-                await RunPhaseAsync(target, components, GameplayResetStructs.Restore, request, serial);
-                await RunPhaseAsync(target, components, GameplayResetStructs.Rebind, request, serial);
+                DebugUtility.LogWarning(typeof(PlayersResetParticipant),
+                    "[PlayersResetParticipant] Nenhum player identificado; o reset seguirá apenas com participantes de cena elegíveis.");
+            }
+
+            _payloads.Clear();
+            _payloads.AddRange(_payloadBuilder.Build(_playerTargets, GetSceneLabel()));
+
+            DebugUtility.Log(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] ResetScope.Players start (reason={reason}, players={_playerTargets.Count}, payloads={_payloads.Count})");
+
+            if (_payloads.Count == 0)
+            {
+                DebugUtility.LogWarning(typeof(PlayersResetParticipant),
+                    "[PlayersResetParticipant] Nenhum participante encontrado para ResetScope.Players. Verifique registries/PlayerDomain.");
+                return;
+            }
+
+            for (var i = 0; i < _payloads.Count; i++)
+            {
+                var payload = _payloads[i];
+                await RunPayloadAsync(payload, request, serial, reason);
             }
 
             DebugUtility.Log(typeof(PlayersResetParticipant),
-                $"[PlayersResetParticipant] ResetScope.Players end (reason={reason}, players={_playerTargets.Count})");
+                $"[PlayersResetParticipant] ResetScope.Players end (reason={reason}, players={_playerTargets.Count}, payloads={_payloads.Count})");
         }
 
         private void EnsureDependencies()
@@ -132,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
                 }
 
                 var actorId = actor.ActorId ?? string.Empty;
-                _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
+                _playerTargets.Add(new PlayerResetTarget(actorId, transform));
             }
 
             return _playerTargets.Count > 0;
@@ -152,7 +169,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
             }
 
             _legacyPlayerBuffer.Clear();
-            _legacyPlayerBuffer.AddRange(players.Where(p => p != null));
+            for (var i = 0; i < players.Count; i++)
+            {
+                var player = players[i];
+                if (player != null)
+                {
+                    _legacyPlayerBuffer.Add(player);
+                }
+            }
+
             _legacyPlayerBuffer.Sort((left, right) =>
                 string.CompareOrdinal(left?.ActorId, right?.ActorId));
 
@@ -170,9 +195,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
                 }
 
                 var actorId = player.ActorId ?? string.Empty;
-                _playerTargets.Add(new PlayerTarget(actorId, transform.gameObject, transform));
+                _playerTargets.Add(new PlayerResetTarget(actorId, transform));
             }
-
         }
 
         private static bool IsPlayerActor(NewActor actor)
@@ -182,28 +206,87 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 
         private GameplayResetRequest BuildResetRequest(string reason)
         {
-            var actorIds = _playerTargets
-                .Select(target => target.ActorId)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
+            var actorIds = new List<string>(_playerTargets.Count);
+
+            for (var i = 0; i < _playerTargets.Count; i++)
+            {
+                var id = _playerTargets[i].ActorId;
+                if (!string.IsNullOrWhiteSpace(id) && !actorIds.Contains(id))
+                {
+                    actorIds.Add(id);
+                }
+            }
 
             return new GameplayResetRequest(GameplayResetScope.PlayersOnly, reason, actorIds);
         }
 
-        private async Task RunPhaseAsync(
-            PlayerTarget target,
-            IReadOnlyList<ResetParticipantEntry> components,
-            GameplayResetStructs phase,
+        private async Task RunPayloadAsync(
+            ResetTargetPayload payload,
             GameplayResetRequest request,
-            int serial)
+            int serial,
+            string reason)
+        {
+            var components = payload.Components;
+            var label = payload.Label;
+            var componentCount = components?.Count ?? 0;
+
+            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] Payload start: {label} (sceneLevel={payload.IsSceneLevel}, components={componentCount})");
+
+            if (componentCount == 0)
+            {
+                DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                    $"[PlayersResetParticipant] Payload skipped (no components): {label}");
+                return;
+            }
+
+            await RunPhaseAsync(GameplayResetStructs.Cleanup, payload, request, serial, reason);
+            await RunPhaseAsync(GameplayResetStructs.Restore, payload, request, serial, reason);
+            await RunPhaseAsync(GameplayResetStructs.Rebind, payload, request, serial, reason);
+
+            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] Payload end: {label} (components={componentCount})");
+        }
+
+        private async Task RunPhaseAsync(
+            GameplayResetStructs phase,
+            ResetTargetPayload payload,
+            GameplayResetRequest request,
+            int serial,
+            string reason)
         {
             var ctx = CreateGameplayResetContext(request, phase, serial);
+            var components = payload.Components;
 
-            foreach (var component in components)
+            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] Phase start: {phase} | payload={payload.Label} | components={components.Count} | reason={reason}");
+
+            for (var i = 0; i < components.Count; i++)
             {
-                await InvokePhaseAsync(component.Component, phase, ctx);
+                var entry = components[i];
+                var component = entry.Component;
+
+                if (component == null)
+                {
+                    DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                        $"[PlayersResetParticipant] Component nulo ignorado durante {phase} | payload={payload.Label} | source={entry.SourceLabel}");
+                    continue;
+                }
+
+                try
+                {
+                    await InvokePhaseAsync(component, phase, ctx);
+                }
+                catch (Exception ex)
+                {
+                    DebugUtility.LogError(typeof(PlayersResetParticipant),
+                        $"[PlayersResetParticipant] Falha durante {phase} | payload={payload.Label} | source={entry.SourceLabel} | ex={ex}");
+                    throw;
+                }
             }
+
+            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
+                $"[PlayersResetParticipant] Phase end: {phase} | payload={payload.Label} | components={components.Count} | reason={reason}");
         }
 
         private GameplayResetContext CreateGameplayResetContext(
@@ -211,9 +294,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
             GameplayResetStructs phase,
             int serial)
         {
-            var sceneName = !string.IsNullOrWhiteSpace(_sceneName)
-                ? _sceneName
-                : SceneManager.GetActiveScene().name;
+            var sceneName = GetSceneLabel();
 
             return new GameplayResetContext(
                 sceneName,
@@ -223,91 +304,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
                 phase);
         }
 
-        private IReadOnlyList<ResetParticipantEntry> ResolveResettableComponents(PlayerTarget target)
-        {
-            var actorId = string.IsNullOrWhiteSpace(target.ActorId) ? "<unknown>" : target.ActorId;
-            _orderedResets.Clear();
-            _resetBuffer.Clear();
-
-            var root = target.Root;
-
-            if (root == null)
-            {
-                return Array.Empty<ResetParticipantEntry>();
-            }
-
-            var monoBehaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
-            if (monoBehaviours == null || monoBehaviours.Length == 0)
-            {
-                return Array.Empty<ResetParticipantEntry>();
-            }
-
-            foreach (var behaviour in monoBehaviours)
-            {
-                if (behaviour is not IResetInterfaces resettable)
-                {
-                    continue;
-                }
-
-                if (resettable is IResetScopeFilter filter &&
-                    !filter.ShouldParticipate(GameplayResetScope.PlayersOnly))
-                {
-                    continue;
-                }
-
-                _resetBuffer.Add(resettable);
-            }
-
-            if (_resetBuffer.Count == 0)
-            {
-                DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
-                    $"[PlayersResetParticipant] Resetables collected (actorId={actorId}, count=0)");
-                return Array.Empty<ResetParticipantEntry>();
-            }
-
-            foreach (var resettable in _resetBuffer)
-            {
-                var order = resettable is IResetOrder resetOrder ? resetOrder.ResetOrder : 0;
-                _orderedResets.Add(new ResetParticipantEntry(resettable, order));
-            }
-
-            _orderedResets.Sort((left, right) =>
-            {
-                var orderCompare = left.Order.CompareTo(right.Order);
-                if (orderCompare != 0)
-                {
-                    return orderCompare;
-                }
-
-                var leftName = left.Component?.GetType().FullName;
-                var rightName = right.Component?.GetType().FullName;
-                var nameCompare = string.CompareOrdinal(leftName, rightName);
-                if (nameCompare != 0)
-                {
-                    return nameCompare;
-                }
-
-                var leftId = (left.Component as MonoBehaviour)?.GetInstanceID() ?? 0;
-                var rightId = (right.Component as MonoBehaviour)?.GetInstanceID() ?? 0;
-                return leftId.CompareTo(rightId);
-            });
-
-            var typesLabel = string.Join(", ",
-                _orderedResets.Select(entry => entry.Component?.GetType().Name ?? "<null>"));
-
-            DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
-                $"[PlayersResetParticipant] Resetables collected (actorId={actorId}, count={_orderedResets.Count}) => {typesLabel}");
-
-            return _orderedResets;
-        }
-
         private static Task InvokePhaseAsync(IResetInterfaces component, GameplayResetStructs phase, GameplayResetContext ctx)
         {
-            if (component == null)
-            {
-                return Task.CompletedTask;
-            }
-
             return phase switch
             {
                 GameplayResetStructs.Cleanup => component.Reset_CleanupAsync(ctx),
@@ -317,33 +315,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
             };
         }
 
-        private readonly struct PlayerTarget
+        private string GetSceneLabel()
         {
-            public PlayerTarget(string actorId, GameObject root, Transform transform)
-            {
-                ActorId = actorId;
-                Root = root;
-                Transform = transform;
-            }
-
-            public string ActorId { get; }
-
-            public GameObject Root { get; }
-
-            public Transform Transform { get; }
-        }
-
-        private readonly struct ResetParticipantEntry
-        {
-            public ResetParticipantEntry(IResetInterfaces component, int order)
-            {
-                Component = component;
-                Order = order;
-            }
-
-            public IResetInterfaces Component { get; }
-
-            public int Order { get; }
+            return string.IsNullOrWhiteSpace(_sceneName)
+                ? SceneManager.GetActiveScene().name
+                : _sceneName;
         }
     }
 }
