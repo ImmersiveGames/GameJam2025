@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
@@ -13,49 +14,63 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [ContextMenu("QA/EventBus/Run")]
         public void Run()
         {
-            TestSubscribeAndPublish();
-            TestUnsubscribe();
-            DebugUtility.Log(typeof(EventBusSmokeQATester), "[QA][EventBus] QA complete.");
+            int passes = 0;
+            int fails = 0;
+
+            TestSubscribeAndPublish(ref passes, ref fails);
+            TestUnsubscribe(ref passes, ref fails);
+
+            DebugUtility.Log(typeof(EventBusSmokeQATester),
+                $"[QA][EventBus] QA complete. Passes={passes} Fails={fails}",
+                fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+
+            if (fails > 0)
+            {
+                throw new InvalidOperationException($"EventBusSmokeQATester detected {fails} failures.");
+            }
         }
 
-        private static void TestSubscribeAndPublish()
+        private static void TestSubscribeAndPublish(ref int passes, ref int fails)
         {
-            var binding = new EventBinding<SmokeTestEvent>(_ => { Received = true; });
+            bool received = false;
+            var binding = new EventBinding<SmokeTestEvent>(_ => { received = true; });
+
             EventBus<SmokeTestEvent>.Register(binding);
-
-            Received = false;
             EventBus<SmokeTestEvent>.Raise(new SmokeTestEvent());
+            EventBus<SmokeTestEvent>.Unregister(binding);
 
-            if (Received)
+            if (received)
             {
                 DebugUtility.Log(typeof(EventBusSmokeQATester), "[QA][EventBus][A] PASS - Subscriber received event.", DebugUtility.Colors.Success);
+                passes++;
             }
             else
             {
                 DebugUtility.LogError(typeof(EventBusSmokeQATester), "[QA][EventBus][A] FAIL - Subscriber did not receive event.");
+                fails++;
             }
         }
 
-        private static void TestUnsubscribe()
+        private static void TestUnsubscribe(ref int passes, ref int fails)
         {
-            var binding = new EventBinding<SmokeTestEvent>(_ => { Received = true; });
+            bool received = false;
+            var binding = new EventBinding<SmokeTestEvent>(_ => { received = true; });
             EventBus<SmokeTestEvent>.Register(binding);
             EventBus<SmokeTestEvent>.Unregister(binding);
 
-            Received = false;
             EventBus<SmokeTestEvent>.Raise(new SmokeTestEvent());
 
-            if (!Received)
+            if (!received)
             {
                 DebugUtility.Log(typeof(EventBusSmokeQATester), "[QA][EventBus][B] PASS - Unsubscribed listener did not receive event.", DebugUtility.Colors.Success);
+                passes++;
             }
             else
             {
                 DebugUtility.LogError(typeof(EventBusSmokeQATester), "[QA][EventBus][B] FAIL - Unsubscribed listener received event.");
+                fails++;
             }
         }
-
-        private static bool Received { get; set; }
 
         private sealed class SmokeTestEvent : IEvent { }
     }
