@@ -116,6 +116,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         protected void OnDestroy()
         {
             if (instance != this) return;
+            _sceneRegistry?.Dispose();
             ClearAllObjectServices();
             ClearAllSceneServices();
             ClearGlobalServices();
@@ -129,6 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         private void OnApplicationQuit()
         {
             if (instance != this) return;
+            _sceneRegistry?.Dispose();
             ClearAllObjectServices();
             ClearAllSceneServices();
             ClearGlobalServices();
