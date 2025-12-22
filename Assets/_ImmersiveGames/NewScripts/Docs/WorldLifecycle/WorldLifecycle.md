@@ -2,6 +2,7 @@ Doc update:
 - Reset-In-Place semantics clarified
 - Pause: GamePauseGateBridge ativa token SimulationGateTokens.Pause e NewScriptsStateDependentService bloqueia Move via gate (sem congelar física/timeScale)
 - Infra FSM: assets e GameLoop FSM documentados
+- Bootstrap NewScripts isolado do legado: GlobalBootstrap registra gate/bridge/StateDependentService sem depender do DependencyBootstrapper legado
 # World Lifecycle (NewScripts)
 
 > Este documento descreve **operacionalmente** o comportamento do WorldLifecycle e implementa as decisões descritas no
@@ -21,7 +22,7 @@ Há dois contratos principais:
 - Infra genérica de FSM: `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
 - FSM concreta do GameLoop: `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
 - Pause usa gate para bloquear ações (ex.: Move) e **não congela física/timeScale**.
-- Fronteira de boot: **o legado não inicializa o NewScripts**. Em `NEWSCRIPTS_MODE`, o `GlobalBootstrap` do NewScripts registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e demais serviços próprios antes das cenas.
+- Fronteira de boot: **o legado não inicializa o NewScripts**. O `DependencyBootstrapper` do legado não registra serviços do NewScripts. Em `NEWSCRIPTS_MODE`, o `GlobalBootstrap` do NewScripts registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e demais serviços próprios antes das cenas (sem depender do bootstrap legado).
 
 ### Pause (Gate não congela física)
 - O pause é propagado via `GamePauseEvent(paused=true)` → `GamePauseGateBridge` → token `SimulationGateTokens.Pause` no `SimulationGateService`.

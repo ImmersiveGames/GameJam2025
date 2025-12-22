@@ -13,7 +13,7 @@
 ## Bootstrap (NEWSCRIPTS_MODE)
 - O boot do NewScripts acontece via `GlobalBootstrap` (BeforeSceneLoad).
 - `GlobalBootstrap` registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e o pipeline de câmera do NewScripts.
-- O bootstrap do legado **não** inicializa esses serviços quando `NEWSCRIPTS_MODE` está ativo.
+- O bootstrap do legado **não** inicializa nem referencia serviços do NewScripts; a separação de bootstraps é obrigatória.
 
 ## De onde vêm os sinais (eventos → bridge → GameLoop)
 - Eventos globais existentes entram via **GameLoopEventInputBridge**:
