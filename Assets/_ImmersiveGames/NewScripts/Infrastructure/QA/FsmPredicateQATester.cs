@@ -30,15 +30,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.Log(typeof(FsmPredicateQATester),
                 $"[QA][FSM] Resultado => Passes: {_passes} | Fails: {_fails}",
                 _fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+            DebugUtility.Log(typeof(FsmPredicateQATester), "[QA][FSM] QA complete.");
         }
 
         private void ExecuteCoreFlowTests()
         {
             var builder = new StateMachineBuilder();
 
-            builder.AddState(new DummyState("A"), out var stateA);
-            builder.AddState(new DummyState("B"), out var stateB);
-            builder.AddState(new DummyState("C"), out var stateC);
+            builder.AddState(new StateA(), out var stateA);
+            builder.AddState(new StateB(), out var stateB);
+            builder.AddState(new StateC(), out var stateC);
 
             builder.StateInitial(stateA);
 
@@ -58,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             AssertState("A -> B via FuncPredicate", machine.CurrentState == stateB);
 
             machine.SetState(stateA);
+            goToB = false;
             togglePredicate.Trigger();
             machine.Update();
             AssertState("AnyTransition tem precedência e leva a C", machine.CurrentState == stateC);
@@ -67,8 +69,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             var builder = new StateMachineBuilder();
 
-            builder.AddState(new DummyState("A"), out var stateA);
-            builder.AddState(new DummyState("B"), out var stateB);
+            builder.AddState(new StateA(), out var stateA);
+            builder.AddState(new StateB(), out var stateB);
 
             builder.StateInitial(stateA);
 
@@ -121,37 +123,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.LogError(typeof(FsmPredicateQATester), $"[FAIL] {message}");
         }
 
-        private sealed class DummyState : IState
+        private sealed class StateA : IState
         {
-            private readonly string _name;
+            public void Update() { }
+            public void OnEnter() { }
+            public bool CanPerformAction(ActionType action) => true;
+            public bool IsGameActive() => true;
+        }
 
-            public DummyState(string name)
-            {
-                _name = name;
-            }
+        private sealed class StateB : IState
+        {
+            public void Update() { }
+            public void OnEnter() { }
+            public bool CanPerformAction(ActionType action) => true;
+            public bool IsGameActive() => true;
+        }
 
-            public void Update()
-            {
-            }
-
-            public void OnEnter()
-            {
-            }
-
-            public bool CanPerformAction(ActionType action)
-            {
-                return true;
-            }
-
-            public bool IsGameActive()
-            {
-                return true;
-            }
-
-            public override string ToString()
-            {
-                return _name;
-            }
+        private sealed class StateC : IState
+        {
+            public void Update() { }
+            public void OnEnter() { }
+            public bool CanPerformAction(ActionType action) => true;
+            public bool IsGameActive() => true;
         }
 
         private sealed class TogglePredicate : IPredicate
