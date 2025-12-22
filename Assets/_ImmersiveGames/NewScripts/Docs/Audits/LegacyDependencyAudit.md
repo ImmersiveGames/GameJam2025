@@ -3,17 +3,15 @@
 ## Sumário
 - Total de referências ao legado `_ImmersiveGames.Scripts.*`: **21**.
 - Distribuição por tipo: **Código: 20**, **Asmdef: 0**, **Docs: 1**.
-- Arquivos de código afetados: **8** em `Assets/_ImmersiveGames/NewScripts`.
+- Arquivos de código afetados: **6** em `Assets/_ImmersiveGames/NewScripts`.
 
 ## Tabela 1 — Código
 | Caminho | Linhas/Trechos com referência | Tipos legados usados | Categoria |
 | --- | --- | --- | --- |
-| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-17 | ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement, StateMachineSystems | Reset |
-| Infrastructure/GlobalBootstrap.cs | 18 | IStateDependentService (StateMachineSystems) | DI |
-| Infrastructure/State/NewScriptsStateDependentService.cs | 5 | ActionType (StateMachineSystems) | DI |
-| Infrastructure/QA/WorldLifecycleBaselineRunner.cs | 13 | ActionType (StateMachineSystems) | QA |
+| Gameplay/Player/Movement/NewPlayerMovementController.cs | 13-16 | ActorSystems, GameplaySystems.Domain/Reset, PlayerControllerSystem.Movement | Reset |
 | Infrastructure/Scene/GameReadinessService.cs | 2 | SceneTransitionStarted/ScenesReady/Completed (scene flow legado) | Outro |
 | Infrastructure/World/WorldLifecycleRuntimeDriver.cs | 5 | SceneTransitionStarted/ScenesReady/Completed (scene flow legado) | Outro |
+| Infrastructure/Bridges/LegacyToNewGameLoopEventBridge.cs | 5-10 | GameStart/GamePause/GameResumeRequested/GameResetRequested (EventBus legado) | Bridge |
 | Infrastructure/World/Scopes/Players/PlayersResetParticipant.cs | 6-17 | GameplaySystems.Domain/Reset, ActorSystems aliases | Reset |
 | Infrastructure/Actors/PlayerActorAdapter.cs | 2 | LegacyActor alias (_ImmersiveGames.Scripts.ActorSystems.IActor_) | Outro |
 
