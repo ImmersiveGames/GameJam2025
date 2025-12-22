@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.Scripts.StateMachineSystems;

@@ -1,3 +1,7 @@
+## [2025-12-22]
+- Updated: Eventos do GameLoop migrados para NewScripts (doc `GameLoop/GameLoop.md` menciona bootstrap global e localização dos eventos).
+- Updated: Auditoria de dependências legadas recalculada após remover referências a `GameManagerSystems.Events`; contagem ajustada para os arquivos restantes.
+
 ## [2025-12-20]
 - Added: Seção de pause em `WorldLifecycle/WorldLifecycle.md` descrevendo bloqueio de ações via gate sem congelar física/timeScale, agora explícito que o fluxo é GamePauseGateBridge → SimulationGateTokens.Pause → NewScriptsStateDependentService (serviço oficial) bloqueando Move.
 

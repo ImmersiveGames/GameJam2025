@@ -5,6 +5,7 @@
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  */
 using System;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -72,6 +73,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterEssentialServicesOnly()
         {
+            PrimeEventSystems();
+
             // NewScripts generic ID factory (no gameplay semantics).
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
 
@@ -79,6 +82,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
             RegisterPauseBridge();
+            RegisterGameLoop();
+            RegisterLegacyGameLoopBridge();
 
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
@@ -101,6 +106,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             var instance = factory();
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
+        }
+
+        private static void PrimeEventSystems()
+        {
+            EventBus<GameStartEvent>.Clear();
+            EventBus<GamePauseEvent>.Clear();
+            EventBus<GameResumeRequestedEvent>.Clear();
+            EventBus<GameResetRequestedEvent>.Clear();
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[EventBus] EventBus inicializado para eventos do GameLoop (NewScripts).",
+                DebugUtility.Colors.Info);
         }
 
         private static void InitializeReadinessGate()
@@ -150,6 +167,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameLoop()
+        {
+            GameLoopBootstrap.EnsureRegistered();
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLegacyGameLoopBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<LegacyToNewGameLoopEventBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoop] LegacyToNewGameLoopEventBridge já registrado.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new LegacyToNewGameLoopEventBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] LegacyToNewGameLoopEventBridge registrado (legado → NewScripts).",
                 DebugUtility.Colors.Info);
         }
 
