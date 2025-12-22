@@ -9,6 +9,9 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using _ImmersiveGames.Scripts.TimerSystem;
 using UnityEngine;
+using GamePauseEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GamePauseEvent;
+using GameResumeRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResumeRequestedEvent;
+using GameResetRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResetRequestedEvent;
 
 namespace _ImmersiveGames.Scripts.QA
 {

@@ -1,6 +1,11 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
+using GameStartEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameStartEvent;
+using GamePauseEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GamePauseEvent;
+using GameResumeRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResumeRequestedEvent;
+using GameResetRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResetRequestedEvent;
+
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {
     public class StateChangedEvent : IEvent
@@ -12,11 +17,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
             this.isGameActive = isGameActive;
         }
     }
-    public class GameStartEvent : IEvent
-    {
-        // Não precisa de dados adicionais, mas pode incluir se necessário
-    }
-
     public class GameStartRequestedEvent : IEvent
     {
         // Solicitado por UI/controles para iniciar uma sessão
@@ -25,16 +25,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
     public class GamePauseRequestedEvent : IEvent
     {
         // Solicitado por UI/controles para pausar a sessão
-    }
-
-    public class GameResumeRequestedEvent : IEvent
-    {
-        // Solicitado por UI/controles para retomar após pausa
-    }
-
-    public class GameResetRequestedEvent : IEvent
-    {
-        // Solicitado por UI/controles para reiniciar a sessão
     }
 
     // Evento disparado para sinalizar o início de um pipeline de reset
@@ -59,16 +49,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
         // Pode incluir dados como pontuação, se necessário
     }
 
-    // Evento disparado quando o jogo é pausado ou despausado
-    public class GamePauseEvent : IEvent
-    {
-        public bool IsPaused { get; }
-
-        public GamePauseEvent(bool isPaused)
-        {
-            IsPaused = isPaused;
-        }
-    }
     public class ActorDeathEvent : IEvent
     {
         public Vector3 Position { get; }

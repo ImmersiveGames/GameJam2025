@@ -5,6 +5,10 @@ using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;
 using UnityEngine.UI;
+using GameStartEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameStartEvent;
+using GamePauseEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GamePauseEvent;
+using GameResumeRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResumeRequestedEvent;
+using GameResetRequestedEvent = _ImmersiveGames.NewScripts.Gameplay.GameLoop.GameResetRequestedEvent;
 namespace _ImmersiveGames.Scripts.UISystems.GameLoop
 {
     public enum GameLoopRequestType
