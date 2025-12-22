@@ -1,6 +1,13 @@
+/*
+ * ChangeLog
+ * - Gate de pause (SimulationGateTokens.Pause) agora bloqueia ActionType.Move via IStateDependentService sem congelar física/timeScale.
+ */
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
+using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.State
 {
@@ -23,14 +30,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private EventBinding<GamePauseEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
         private bool _bindingsRegistered;
+        private bool _loggedGateBlock;
+
+        private readonly ISimulationGateService _gateService;
 
         public NewScriptsStateDependentService()
         {
+            DependencyManager.Provider.TryGetGlobal(out _gateService);
             TryRegisterEvents();
         }
 
         public bool CanExecuteAction(ActionType action)
         {
+            if (IsPausedByGate(action))
+            {
+                return false;
+            }
+
             switch (_state)
             {
                 case ServiceState.Playing:
@@ -102,6 +118,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private void SetState(ServiceState next)
         {
             _state = next;
+        }
+
+        private bool IsPausedByGate(ActionType action)
+        {
+            if (_gateService == null)
+            {
+                return false;
+            }
+
+            if (!_gateService.IsTokenActive(SimulationGateTokens.Pause))
+            {
+                _loggedGateBlock = false;
+                return false;
+            }
+
+            var shouldBlock = action == ActionType.Move;
+            if (shouldBlock && !_loggedGateBlock)
+            {
+                DebugUtility.LogVerbose<NewScriptsStateDependentService>(
+                    "[StateDependent] Action 'Move' bloqueada por gate Pause (SimulationGateTokens.Pause). Física permanece ativa (sem timeScale/constraints).");
+                _loggedGateBlock = true;
+            }
+
+            return shouldBlock;
         }
     }
 }

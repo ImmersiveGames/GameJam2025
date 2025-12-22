@@ -1,3 +1,9 @@
+/*
+ * ChangeLog
+ * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
+ * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
+ * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
+ */
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -7,7 +13,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.NewScripts.Infrastructure.State.Legacy;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -66,11 +72,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
+            RegisterPauseBridge();
+
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
-            // TEMP bridge até o FSM novo ser implementado (NS-FSM-001).
-            RegisterIfMissing<IStateDependentService>(() => new LegacyStateDependentServiceBridge());
+            // Bridge oficial de permissões de ações (gate-aware).
+            RegisterIfMissing<IStateDependentService>(() => new NewScriptsStateDependentService());
 
             // Sistema de câmera nativo do NewScripts.
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
@@ -111,6 +119,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPauseBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pause] GamePauseGateBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            {
+                DebugUtility.LogError(typeof(GlobalBootstrap),
+                    "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
+                return;
+            }
+
+            var bridge = new GamePauseGateBridge(gateService);
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
                 DebugUtility.Colors.Info);
         }
     }

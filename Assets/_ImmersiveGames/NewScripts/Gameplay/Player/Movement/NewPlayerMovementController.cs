@@ -1,5 +1,6 @@
 /*
  * ChangeLog
+ * - Adicionados hooks de QA (Set/Clear inputs) para validação determinística do Gate sem alterar comportamento de runtime.
  * - Padronizado para Unity 6+: uso exclusivo de Rigidbody.linearVelocity (movimento e resets); removido qualquer conceito de Rigidbody.velocity.
  * - Pointer look usa Pointer.current (fallback para Mouse.current), sem tratar _lookInput como ScreenPoint em LookMode.Auto.
  * - Raycast do look usa plano no Y do player (transform.position.y) para evitar drift quando o chão não é y=0.
@@ -501,6 +502,27 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         #endregion
 
         #region Helpers
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// QA-only: injeta diretamente o input de movimento, bypassando sistemas de input.
+        /// </summary>
+        public void QA_SetMoveInput(Vector2 move) => _moveInput = move;
+
+        /// <summary>
+        /// QA-only: injeta diretamente o input de look, bypassando sistemas de input.
+        /// </summary>
+        public void QA_SetLookInput(Vector2 look) => _lookInput = look;
+
+        /// <summary>
+        /// QA-only: limpa todos os inputs sintéticos.
+        /// </summary>
+        public void QA_ClearInputs()
+        {
+            _moveInput = Vector2.zero;
+            _lookInput = Vector2.zero;
+        }
+#endif
 
         private void StopRigidbodyMotion()
         {
