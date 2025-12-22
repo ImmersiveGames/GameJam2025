@@ -24,14 +24,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Bridges.Reset
         };
 
         private readonly List<ResetTargetPayload> _payloads = new(8);
-        private readonly HashSet<IResetInterfaces> _uniques = new(ReferenceEqualityComparer<IResetInterfaces>.Instance);
+        private readonly HashSet<IResetInterfaces> _sceneLevelUniques = new(ReferenceEqualityComparer<IResetInterfaces>.Instance);
 
         public IReadOnlyList<ResetTargetPayload> Build(
             IReadOnlyList<PlayerResetTarget> playerTargets,
             string sceneName)
         {
             _payloads.Clear();
-            _uniques.Clear();
+            _sceneLevelUniques.Clear();
 
             if (playerTargets is { Count: > 0 })
             {
@@ -97,6 +97,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Bridges.Reset
             IReadOnlyList<PlayerResetTarget> playerTargets)
         {
             var entries = new List<ResetParticipantEntry>();
+            var localUniques = isSceneLevel ? _sceneLevelUniques : new HashSet<IResetInterfaces>(ReferenceEqualityComparer<IResetInterfaces>.Instance);
 
             if (root == null)
             {
@@ -122,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Bridges.Reset
                     continue;
                 }
 
-                if (!_uniques.Add(resettable))
+                if (!localUniques.Add(resettable))
                 {
                     continue;
                 }

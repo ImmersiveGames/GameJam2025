@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     /// Mantém o ActorId sincronizado com o ator legado quando disponível.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerActorAdapter : MonoBehaviour, IActor
+    public sealed class PlayerActorAdapter : MonoBehaviour, IActor, IPlayerActorMarker
     {
         [SerializeField]
         private string actorId = string.Empty;

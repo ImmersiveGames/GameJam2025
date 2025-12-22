@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     /// Implementação simples de IActor para o baseline de NewScripts.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerActor : MonoBehaviour, IActor
+    public sealed class PlayerActor : MonoBehaviour, IActor, IPlayerActorMarker
     {
         [SerializeField]
         private string actorId = string.Empty;

@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 
         private static bool IsPlayerActor(NewActor actor)
         {
-            return actor is PlayerActor or PlayerActorAdapter;
+            return actor is IPlayerActorMarker;
         }
 
         private GameplayResetRequest BuildResetRequest(string reason)
@@ -257,6 +257,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
         {
             var ctx = CreateGameplayResetContext(request, phase, serial);
             var components = payload.Components;
+            var failures = new List<string>();
 
             DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
                 $"[PlayersResetParticipant] Phase start: {phase} | payload={payload.Label} | components={components.Count} | reason={reason}");
@@ -281,8 +282,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
                 {
                     DebugUtility.LogError(typeof(PlayersResetParticipant),
                         $"[PlayersResetParticipant] Falha durante {phase} | payload={payload.Label} | source={entry.SourceLabel} | ex={ex}");
-                    throw;
+                    failures.Add($"{entry.SourceLabel}::{component.GetType().Name} => {ex.GetType().Name}");
                 }
+            }
+
+            if (failures.Count > 0)
+            {
+                var summary = string.Join("; ", failures);
+                DebugUtility.LogError(typeof(PlayersResetParticipant),
+                    $"[PlayersResetParticipant] Falhas detectadas em {phase} | payload={payload.Label} | count={failures.Count} | sources={summary}");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                throw new AggregateException($"PlayersResetParticipant failures in {phase} ({payload.Label})", new Exception(summary));
+#endif
             }
 
             DebugUtility.LogVerbose(typeof(PlayersResetParticipant),
