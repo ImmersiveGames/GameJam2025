@@ -28,6 +28,7 @@ Há dois contratos principais:
 - **Efeito**: o `NewScriptsStateDependentService` consulta o gate e bloqueia `ActionType.Move` (ações) enquanto o token de pause estiver ativo; **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
 - Gravidade e física continuam rodando; apenas os controladores deixam de aplicar inputs/velocidade.
 - O serviço de permissões oficial no baseline NewScripts é `NewScriptsStateDependentService`, registrado pelo `GlobalBootstrap` (nenhuma ponte legacy de StateDependent permanece).
+- Para detalhes do estado global (Playing/Paused/Boot) e como os eventos entram no loop, veja `../GameLoop/GameLoop.md`.
 
 ---
 
