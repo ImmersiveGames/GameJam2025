@@ -1,5 +1,5 @@
 using System.Collections;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA

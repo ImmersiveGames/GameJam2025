@@ -4,8 +4,9 @@
  * - Mantido retry em Awake/Start/OnEnable, com log único quando o resolver aparece após falha.
  * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
  */
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Cameras

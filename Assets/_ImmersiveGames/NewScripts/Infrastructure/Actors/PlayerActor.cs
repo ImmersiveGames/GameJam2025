@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Actors

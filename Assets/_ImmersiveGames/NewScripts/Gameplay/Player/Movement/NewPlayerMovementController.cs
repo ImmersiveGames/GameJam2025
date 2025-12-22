@@ -15,9 +15,9 @@ using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
 using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 using UnityEngine.InputSystem;
 

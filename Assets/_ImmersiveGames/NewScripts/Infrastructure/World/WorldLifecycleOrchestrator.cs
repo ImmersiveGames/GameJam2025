@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
-using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.Scripts.Utils.DebugSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
