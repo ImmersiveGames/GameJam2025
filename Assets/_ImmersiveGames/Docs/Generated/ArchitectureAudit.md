@@ -27,7 +27,7 @@ Arquivos com achados: **84**
 
 ### Time.timeScale
 - Assets/_ImmersiveGames/Scripts/GameManagerSystems/GameManager.SceneFlow.cs
-- Assets/_ImmersiveGames/Scripts/StateMachineSystems/GameStates/GameStates.cs
+- Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopStates.cs
 - Assets/_ImmersiveGames/Scripts/Utils/Diagnostics/Editor/Diagnostics.Editor.cs
 
 ### Find usage (FindObjectOfType/FindFirstObjectByType/GameObject.Find)
@@ -65,7 +65,7 @@ Arquivos com achados: **84**
 - Assets/_ImmersiveGames/Scripts/ResourceSystems/Services/CanvasPipelineManager.cs
 - Assets/_ImmersiveGames/Scripts/ResourceSystems/Test/EntityDebugUtility.cs
 - Assets/_ImmersiveGames/Scripts/SceneManagement/Editor/SceneFlowDebugTools.cs
-- Assets/_ImmersiveGames/Scripts/StateMachineSystems/GameManagerStateMachine.cs
+- Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopStateMachine.cs
 - Assets/_ImmersiveGames/Scripts/StateMachineSystems/StateDependentBehavior.cs
 - Assets/_ImmersiveGames/Scripts/TimerSystem/GameTimer.cs
 - Assets/_ImmersiveGames/Scripts/TimerSystem/TimerDisplay.cs
@@ -103,7 +103,7 @@ Arquivos com achados: **84**
 - Assets/_ImmersiveGames/Scripts/SkinSystems/Configurable/SkinConfigurable.cs
 - Assets/_ImmersiveGames/Scripts/SkinSystems/Controllers/ActorSkinController.cs
 - Assets/_ImmersiveGames/Scripts/SkinSystems/Threshold/ResourceThresholdListener.cs
-- Assets/_ImmersiveGames/Scripts/StateMachineSystems/GameManagerStateMachine.cs
+- Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopStateMachine.cs
 - Assets/_ImmersiveGames/Scripts/StateMachineSystems/StateDependentBehavior.cs
 - Assets/_ImmersiveGames/Scripts/StateMachineSystems/StateDependentService.cs
 - Assets/_ImmersiveGames/Scripts/TimerSystem/GameTimer.cs
@@ -556,20 +556,18 @@ Arquivos com achados: **84**
 - **EventBus.Unregister**: linhas 103
 - **FilteredEventBus**: linhas 83, 85, 95, 98
 
-### Assets/_ImmersiveGames/Scripts/StateMachineSystems/GameManagerStateMachine.cs
-- Namespace: `_ImmersiveGames.Scripts.StateMachineSystems`
-- Classes: `GameManagerStateMachine`
+### Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopStateMachine.cs
+- Namespace: `_ImmersiveGames.NewScripts.Gameplay.GameLoop`
+- Classes: `GameLoopStateMachine`
 
 - **EventBinding**: linhas 16, 17, 18, 19, 20, 21, 104, 107, 110, 113, 116, 119
 - **EventBus.Register**: linhas 105, 108, 111, 114, 117, 120
 - **EventBus.Unregister**: linhas 132, 138, 144, 150, 156, 162
 - **SingletonBase**: linhas 12
 
-### Assets/_ImmersiveGames/Scripts/StateMachineSystems/GameStates/GameStates.cs
-- Namespace: `_ImmersiveGames.Scripts.StateMachineSystems.GameStates`
+### Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/GameLoopStates.cs
+- Namespace: `_ImmersiveGames.NewScripts.Gameplay.GameLoop`
 - Classes: `GameStateBase`, `MenuState`, `PlayingState`, `PausedState`, `GameOverState`, `VictoryState`
-
-- **Time.timeScale**: linhas 106, 114, 136, 143, 161, 167
 
 ### Assets/_ImmersiveGames/Scripts/StateMachineSystems/StateDependentBehavior.cs
 - Namespace: `_ImmersiveGames.Scripts.StateMachineSystems`

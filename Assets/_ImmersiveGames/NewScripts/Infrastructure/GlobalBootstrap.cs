@@ -14,7 +14,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure

@@ -1,5 +1,4 @@
-﻿using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
+﻿using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
 
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void Update()
         {
-            var state = GameManagerStateMachine.Instance != null ? GameManagerStateMachine.Instance.CurrentState : null;
+            var state = GameLoopStateMachine.Instance != null ? GameLoopStateMachine.Instance.CurrentState : null;
             var currentType = state?.GetType();
 
             if (currentType == _lastStateType)
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void SnapshotState(string label)
         {
-            var state = GameManagerStateMachine.Instance != null ? GameManagerStateMachine.Instance.CurrentState : null;
+            var state = GameLoopStateMachine.Instance != null ? GameLoopStateMachine.Instance.CurrentState : null;
             _lastStateType = state?.GetType();
             DebugUtility.LogVerbose<TerminalOverlayStateWatcher>(
                 $"[TerminalOverlayWatcher] {label} | State='{_lastStateType?.Name ?? "null"}'");

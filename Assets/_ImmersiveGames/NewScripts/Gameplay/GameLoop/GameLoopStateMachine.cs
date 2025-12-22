@@ -1,16 +1,16 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems;
+﻿using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;
 using UnityUtils;
 
-namespace _ImmersiveGames.Scripts.StateMachineSystems
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public class GameManagerStateMachine : PersistentSingleton<GameManagerStateMachine>
+    public class GameLoopStateMachine : PersistentSingleton<GameLoopStateMachine>
     {
         private StateMachine _stateMachine;
         private GameManager _gameManager;
@@ -282,7 +282,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             if (!IsPlaying())
             {
-                DebugUtility.LogWarning<GameManagerStateMachine>("GameOverEvent ignorado: estado atual não é Playing.");
+                DebugUtility.LogWarning<GameLoopStateMachine>("GameOverEvent ignorado: estado atual não é Playing.");
                 return;
             }
 
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
             if (!IsPlaying())
             {
-                DebugUtility.LogWarning<GameManagerStateMachine>("GameVictoryEvent ignorado: estado atual não é Playing.");
+                DebugUtility.LogWarning<GameLoopStateMachine>("GameVictoryEvent ignorado: estado atual não é Playing.");
                 return;
             }
 

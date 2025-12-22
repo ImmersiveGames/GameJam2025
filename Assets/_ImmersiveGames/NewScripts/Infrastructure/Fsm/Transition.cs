@@ -1,8 +1,10 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.Utils.Predicates;
-namespace _ImmersiveGames.Scripts.StateMachineSystems 
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
 {
-    public abstract class Transition {
+    public abstract class Transition
+    {
         public IState To { get; protected set; }
         public abstract bool Evaluate();
     }
@@ -25,10 +27,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
             {
                 return predicate.Evaluate();
             }
+
             if (Condition is Func<bool> func)
             {
                 return func.Invoke();
             }
+
             return false;
         }
     }
@@ -36,10 +40,12 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
     /// <summary>
     /// Represents a predicate that uses a Func delegate to evaluate a condition.
     /// </summary>
-    public class FuncPredicate : IPredicate {
+    public class FuncPredicate : IPredicate
+    {
         private readonly Func<bool> _func;
 
-        public FuncPredicate(Func<bool> func) {
+        public FuncPredicate(Func<bool> func)
+        {
             _func = func;
         }
 
@@ -70,6 +76,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         /// <returns>Verdadeiro caso a transição deva ocorrer.</returns>
         protected abstract bool EvaluateInternal();
     }
+
     public class EventTriggeredPredicate : ActionPredicate
     {
         private bool _triggered;
@@ -79,10 +86,10 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         protected override bool EvaluateInternal()
         {
             bool result = _triggered;
-            _triggered = false; // Reset
+            _triggered = false;
             return result;
         }
 
-        public void Trigger() => _triggered = true; // Chamado por listener de evento
+        public void Trigger() => _triggered = true;
     }
 }

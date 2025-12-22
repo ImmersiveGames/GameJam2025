@@ -1,18 +1,22 @@
 ﻿using UnityEngine;
-namespace _ImmersiveGames.Scripts.StateMachineSystems
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
 {
     public interface IState
     {
         void Update();
-        void FixedUpdate(){}
+        void FixedUpdate() { }
         void OnEnter();
-        void OnExit(){}
+        void OnExit() { }
         bool CanPerformAction(ActionType action);
         bool IsGameActive();
     }
-    public interface IHandleMomentum {
+
+    public interface IHandleMomentum
+    {
         void HandleMomentum(Vector3 normalGround);
     }
+
     public enum ActionType
     {
         Spawn,

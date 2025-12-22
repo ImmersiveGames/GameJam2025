@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityUtils;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
@@ -340,7 +340,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             if (_sessionActive || _autoStartLocked)
                 return;
 
-            var stateMachine = GameManagerStateMachine.Instance;
+            var stateMachine = GameLoopStateMachine.Instance;
             if (stateMachine == null || stateMachine.CurrentState is not PlayingState)
                 return;
 

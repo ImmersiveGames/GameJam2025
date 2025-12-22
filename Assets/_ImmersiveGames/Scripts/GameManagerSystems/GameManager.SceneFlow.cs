@@ -3,8 +3,8 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private bool IsGameplayReady()
         {
-            var current = GameManagerStateMachine.Instance.CurrentState;
+            var current = GameLoopStateMachine.Instance.CurrentState;
             return current is PlayingState || current is PausedState;
         }
 
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             // Critério mínimo e seguro:
             // - já estamos em MenuState
             // - e a cena ativa é Menu (ou o grupo já está carregado)
-            var current = GameManagerStateMachine.Instance.CurrentState;
+            var current = GameLoopStateMachine.Instance.CurrentState;
             if (current is not MenuState)
                 return false;
 
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
                 Time.timeScale = 1f;
 
-                GameManagerStateMachine.Instance.Rebuild(this);
+                GameLoopStateMachine.Instance.Rebuild(this);
 
                 EnsureSceneTransitionServices();
 
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             const float timeoutSeconds = 1.5f;
             float elapsed = 0f;
 
-            while (!(GameManagerStateMachine.Instance.CurrentState is MenuState) && elapsed < timeoutSeconds)
+            while (!(GameLoopStateMachine.Instance.CurrentState is MenuState) && elapsed < timeoutSeconds)
             {
                 elapsed += Time.unscaledDeltaTime;
                 await Task.Yield();
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             const float timeoutSeconds = 1.5f;
             float elapsed = 0f;
 
-            while (!(GameManagerStateMachine.Instance.CurrentState is PlayingState) && elapsed < timeoutSeconds)
+            while (!(GameLoopStateMachine.Instance.CurrentState is PlayingState) && elapsed < timeoutSeconds)
             {
                 elapsed += Time.unscaledDeltaTime;
                 await Task.Yield();
@@ -295,8 +295,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 }
 
                 // Só rebuild se não for MenuState (reduz churn e token spam)
-                if (!(GameManagerStateMachine.Instance.CurrentState is MenuState))
-                    GameManagerStateMachine.Instance.Rebuild(this);
+                if (!(GameLoopStateMachine.Instance.CurrentState is MenuState))
+                    GameLoopStateMachine.Instance.Rebuild(this);
 
                 var targetGroup = GetMenuGroup();
                 if (targetGroup == null)
@@ -356,8 +356,8 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 Time.timeScale = 1f;
 
                 // Só rebuild se não for MenuState (reduz churn e token spam)
-                if (!(GameManagerStateMachine.Instance.CurrentState is MenuState))
-                    GameManagerStateMachine.Instance.Rebuild(this);
+                if (!(GameLoopStateMachine.Instance.CurrentState is MenuState))
+                    GameLoopStateMachine.Instance.Rebuild(this);
 
                 var targetGroup = GetGameplayGroup();
                 if (targetGroup == null)

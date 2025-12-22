@@ -1,4 +1,6 @@
-﻿using _ImmersiveGames.Scripts.GameManagerSystems.Events;
+﻿using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
@@ -25,7 +27,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
 
         public bool CanExecuteAction(ActionType action)
         {
-            return _isGameActive && (GameManagerStateMachine.Instance.CurrentState?.CanPerformAction(action) ?? false);
+            return _isGameActive && (GameLoopStateMachine.Instance.CurrentState?.CanPerformAction(action) ?? false);
         }
     }
 }

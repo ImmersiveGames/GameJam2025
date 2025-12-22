@@ -3,7 +3,8 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -83,8 +84,8 @@ namespace _ImmersiveGames.Scripts.QA
 
         private void LogDiagnostics(string header)
         {
-            string fsmState = GameManagerStateMachine.Instance != null
-                ? GameManagerStateMachine.Instance.CurrentState?.GetType().Name ?? "null"
+            string fsmState = GameLoopStateMachine.Instance != null
+                ? GameLoopStateMachine.Instance.CurrentState?.GetType().Name ?? "null"
                 : "FSM.Instance=null";
 
             DebugUtility.LogVerbose<MenuContextController>(

@@ -14,10 +14,10 @@
 ---
 
 ## Visão Geral
-A infraestrutura de FSM (`StateMachineSystems`) controla o ciclo completo do jogo multiplayer local. Ela segue princípios SOLID, desacoplados via `EventBus`, permitindo que UI, controles físicos ou automações de QA disparem o fluxo sem depender de `Input` direto.
+A infraestrutura de FSM (`_ImmersiveGames.NewScripts.Infrastructure.Fsm`) controla o ciclo completo do jogo multiplayer local. Ela segue princípios SOLID, desacoplados via `EventBus`, permitindo que UI, controles físicos ou automações de QA disparem o fluxo sem depender de `Input` direto.
 
 Componentes principais:
-- `GameManagerStateMachine`: orquestra transições entre estados.
+- `GameLoopStateMachine`: orquestra transições entre estados.
 - Estados concretos (`MenuState`, `PlayingState`, `PausedState`, `GameOverState`, `VictoryState`), cada um responsável apenas por suas ações.
 - `StateMachine` genérica e `StateMachineBuilder`: infraestrutura reutilizável para qualquer FSM do projeto.
 - `GameManager`: ponto de entrada que escuta pedidos e publica eventos efetivos (start/pause/resume/reset/game over/victory).
@@ -29,7 +29,7 @@ Componentes principais:
 ```
 UI / Controles → GameLoopRequestEvent (EventBus)
                              ↓
-                GameManagerStateMachine
+                GameLoopStateMachine
                              ↓
                      GameManager valida
                              ↓
@@ -39,9 +39,9 @@ UI / Controles → GameLoopRequestEvent (EventBus)
 ```
 
 1. UI ou outros sistemas disparam *pedidos* (`GameStartRequestedEvent`, `GameResetRequestedEvent`, etc.).
-2. `GameManagerStateMachine` converte pedidos em transições internas usando `EventTriggeredPredicate`.
+2. `GameLoopStateMachine` converte pedidos em transições internas usando `EventTriggeredPredicate`.
 3. `GameManager` verifica se o pedido é válido para o estado atual antes de publicar o evento definitivo (`GamePauseEvent`, `GameStartEvent`, `GameOverEvent`, `GameVictoryEvent`).
-4. Estados concretos executam lógica de entrada/saída (UI, time scale, etc.) e notificam demais serviços.
+4. Estados concretos executam lógica de entrada/saída (UI, gates, notificações) e notificam demais serviços.
 
 Essa separação garante que qualquer camada (UI, IA, automação) possa pilotar o loop sem conhecer implementações internas.
 
@@ -101,7 +101,7 @@ Eventos disponíveis no `GameEventsBus`:
 
 ### Ordem típica para iniciar uma partida
 1. UI dispara `GameStartRequestedEvent`.
-2. `GameManagerStateMachine` muda de `MenuState` → `PlayingState`.
+2. `GameLoopStateMachine` muda de `MenuState` → `PlayingState`.
 3. `GameManager` publica `GameStartEvent` para iniciar gameplay.
 4. Subscritores (`SpawnSystems`, `TimerSystem`, etc.) respondem ao `GameStartEvent`.
 
@@ -171,7 +171,7 @@ Acesse clicando no ícone ☰ do componente `GameManager` no inspetor e selecion
 ## Boas Práticas
 
 - **Dispare pedidos, não estados**: UI deve enviar `*RequestedEvent` para permitir que `GameManager` valide a transição.
-- **Evite dependência direta de `GameManagerStateMachine`**: sempre use o `EventBus`.
+- **Evite dependência direta de `GameLoopStateMachine`**: sempre use o `EventBus`.
 - **Desinscreva bindings**: quando adicionar novos serviços que escutam eventos, use `EventBinding` e limpe-os em `OnDestroy`.
 - **Testes automatizados**: para simular fluxo no editor, use `ContextMenu` ou scripts de editor que chamem `RaiseRequest`.
 - **Extensão de estados**: ao adicionar novos estados, registre-os no `StateMachineBuilder` e exponha novos eventos de pedido/efetivação conforme necessário.

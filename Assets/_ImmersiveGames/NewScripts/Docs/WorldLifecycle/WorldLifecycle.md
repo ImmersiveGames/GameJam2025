@@ -22,6 +22,12 @@ Há dois contratos principais:
 - **Efeito**: o `NewScriptsStateDependentService` consulta o gate e bloqueia `ActionType.Move` (ações) enquanto o token de pause estiver ativo; **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
 - Gravidade e física continuam rodando; apenas os controladores deixam de aplicar inputs/velocidade.
 
+### Organização de FSM e bridges (NewScripts)
+- Infraestrutura genérica de FSM: `Assets/_ImmersiveGames/NewScripts/Infrastructure/Fsm` (independente de gameplay).
+- FSM concreta do GameLoop (Menu/Playing/Paused/etc.): `Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop`.
+- Bridges de infraestrutura (ex.: pause → gate): `Assets/_ImmersiveGames/NewScripts/Infrastructure/Execution/Gate`.
+- Serviço oficial de permissões: `NewScriptsStateDependentService` (registrado no `GlobalBootstrap`); o bridge legacy (`LegacyStateDependentServiceBridge`) não é mais usado.
+
 ---
 
 ## Reset determinístico — Hard Reset (Full Reset)

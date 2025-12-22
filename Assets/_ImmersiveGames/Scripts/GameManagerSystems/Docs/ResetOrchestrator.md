@@ -254,7 +254,7 @@ O Orchestrator deve impor regras para evitar os bugs que vocês já encontraram:
 * Continua responsável por trocar grupos/cenas (Menu ↔ Gameplay).
 * Não deve ter lógica de “reset de atores”.
 
-## GameManagerStateMachine
+## GameLoopStateMachine
 
 * Pode continuar com transição para MenuState ou PlayingState conforme design.
 * Mas reset **não pode depender** de “rebuild state machine” para limpar atores.

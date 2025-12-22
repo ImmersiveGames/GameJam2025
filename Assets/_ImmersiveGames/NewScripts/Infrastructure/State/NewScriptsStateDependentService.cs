@@ -2,15 +2,22 @@
  * ChangeLog
  * - Gate de pause (SimulationGateTokens.Pause) agora bloqueia ActionType.Move via IStateDependentService sem congelar física/timeScale.
  */
+using System;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.State
 {
+    public interface IStateDependentService : IDisposable
+    {
+        bool CanExecuteAction(ActionType action);
+        bool IsGameActive();
+    }
+
     /// <summary>
     /// Serviço mínimo para coordenar permissões de ações no baseline NewScripts.
     /// Inicia em Playing e troca de estado conforme eventos globais (se disponíveis).

@@ -2,7 +2,8 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;
-using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
 using UnityEngine;

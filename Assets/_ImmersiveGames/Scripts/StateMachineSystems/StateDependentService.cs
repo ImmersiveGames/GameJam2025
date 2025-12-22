@@ -1,4 +1,7 @@
 using System;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 
@@ -7,10 +10,10 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
     public class StateDependentService : IStateDependentService
     {
         private bool _isGameActive;
-        private readonly GameManagerStateMachine _stateMachine;
+        private readonly GameLoopStateMachine _stateMachine;
         private readonly EventBinding<StateChangedEvent> _stateChangedEvent;
 
-        public StateDependentService(GameManagerStateMachine stateMachine)
+        public StateDependentService(GameLoopStateMachine stateMachine)
         {
             _stateMachine = stateMachine;
             _isGameActive = stateMachine.CurrentState?.IsGameActive() ?? false;
@@ -39,11 +42,5 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         {
             EventBus<StateChangedEvent>.Unregister(_stateChangedEvent);
         }
-    }
-
-    public interface IStateDependentService : IDisposable
-    {
-        bool CanExecuteAction(ActionType action);
-        bool IsGameActive();
     }
 }

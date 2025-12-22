@@ -1,5 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.EaterSystem.States;
-using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.Predicates;
 using UnityEngine;

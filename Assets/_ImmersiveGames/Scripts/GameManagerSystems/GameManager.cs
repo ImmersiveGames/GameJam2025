@@ -1,6 +1,6 @@
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using _ImmersiveGames.Scripts.Utils.DependencySystems;
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void Initialize()
         {
-            GameManagerStateMachine.Instance.InitializeStateMachine(this);
+            GameLoopStateMachine.Instance.InitializeStateMachine(this);
 
             _gameStartEvent = new EventBinding<GameStartEvent>(OnGameStart);
             EventBus<GameStartEvent>.Register(_gameStartEvent);
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public bool IsGameActive()
         {
-            return GameManagerStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
+            return GameLoopStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
         }
 
         public bool TryTriggerGameOver(string reason = null)
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private bool IsCurrentState<T>() where T : GameStateBase
         {
-            return GameManagerStateMachine.Instance.CurrentState is T;
+            return GameLoopStateMachine.Instance.CurrentState is T;
         }
 
         private void ConfigureDebug()
@@ -217,9 +217,9 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 provider.RegisterGlobal(gameConfig, allowOverride: true);
             }
 
-            if (!provider.TryGetGlobal<GameManagerStateMachine>(out _))
+            if (!provider.TryGetGlobal<GameLoopStateMachine>(out _))
             {
-                provider.RegisterGlobal(GameManagerStateMachine.Instance, allowOverride: true);
+                provider.RegisterGlobal(GameLoopStateMachine.Instance, allowOverride: true);
             }
 
             EnsureSceneTransitionServices(); // Implementado na partial SceneFlow

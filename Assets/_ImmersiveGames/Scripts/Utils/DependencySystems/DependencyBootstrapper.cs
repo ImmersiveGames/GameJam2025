@@ -10,7 +10,9 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
-using _ImmersiveGames.Scripts.StateMachineSystems;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
 using UnityEngine;
@@ -103,7 +105,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 EnsureGlobal<IStateDependentService>(() =>
                 {
-                    var fsm = GameManagerStateMachine.Instance;
+                    var fsm = GameLoopStateMachine.Instance;
                     return new StateDependentService(fsm);
                 });
 

@@ -37,8 +37,8 @@
 
 ### FSM macro / fluxo
 
-* `GameManagerStateMachine.cs`
-* `GameStates.cs` (seus estados)
+* `GameLoopStateMachine.cs`
+* `GameLoopStates.cs` (seus estados)
 * `StateMachine.cs`, `StateMachineBuilder.cs`, `Transition.cs`
 * `StateDependentBehavior.cs`, `StateDependentService.cs` (gate atual via bool)
 
@@ -49,7 +49,7 @@
 * `GameEventsBus.cs` (se existir integração de eventos macro)
 * `GameTimer.cs`
 * `GameLoopRequestButton.cs`
-* `GameStates.cs` (duplicado no upload, manter “fonte de verdade” única)
+* `GameLoopStates.cs` (duplicado no upload, manter “fonte de verdade” única)
 
 ### Pooling / lifetime
 
@@ -129,8 +129,8 @@ Sem ainda aplicar bloqueio em atores; apenas declarar/publicar.
 
 ### FSM e states
 
-* `GameManagerStateMachine.cs` (passa a emitir ExecutionProfileChanged)
-* `GameStates.cs` (cada estado declara: tokens/time/action)
+* `GameLoopStateMachine.cs` (passa a emitir ExecutionProfileChanged)
+* `GameLoopStates.cs` (cada estado declara: tokens/time/action)
 
     * estados atuais: Menu, Playing, Paused, Victory, GameOver
     * adicionar (recomendado): Loading/Transition, Cinematic, Splash/PreGameplay
@@ -168,7 +168,7 @@ Implementar gate com tokens para resolver concorrência (Loading + Cinematic + O
 
 ### Alterar
 
-* `GameManagerStateMachine.cs` e/ou estados em `GameStates.cs`
+* `GameLoopStateMachine.cs` e/ou estados em `GameLoopStates.cs`
 
     * ao entrar/sair de estado: Acquire/Release tokens do perfil do estado
 * `StateDependentService.cs`
@@ -274,7 +274,7 @@ Resetar o **mesmo objeto** (mesmo ActorId), sem reload de cena e sem respawn, el
 
 * FSM/Flow (para disparar reset):
 
-    * `GameManagerStateMachine.cs` (ex.: GameOver → Retry → RequestReset)
+    * `GameLoopStateMachine.cs` (ex.: GameOver → Retry → RequestReset)
     * `GameLoopRequestButton.cs` (se for o botão que solicita loop/retry)
 * Pool:
 
@@ -355,13 +355,13 @@ Use isto como “verdade única” na hora de implementar:
 
 ### FSM / Perfil
 
-* FSM: `GameManagerStateMachine`, `GameStates`, `StateMachine*`, `Transition`
+* FSM: `GameLoopStateMachine`, `GameStates`, `StateMachine*`, `Transition`
 * Dependentes: `StateDependentService`, `StateDependentBehavior`
 
 ### Gate
 
 * Novo: `SimulationGateService`
-* FSM: `GameManagerStateMachine` (acquire/release tokens)
+* FSM: `GameLoopStateMachine` (acquire/release tokens)
 
 ### Aplicação do Gate na gameplay
 

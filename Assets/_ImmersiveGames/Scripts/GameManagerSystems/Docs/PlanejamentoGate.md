@@ -147,7 +147,7 @@ Fase 5 – Limpeza / consolidação final ........ ⏳ NÃO INICIADA
 
 * `GameManager.ResetGameAsync`
 * Uso defensivo de Gate durante reset
-* Rebuild do `GameManagerStateMachine`
+* Rebuild do `GameLoopStateMachine`
 * Integração com SceneFlow moderno
 * Eventos:
 

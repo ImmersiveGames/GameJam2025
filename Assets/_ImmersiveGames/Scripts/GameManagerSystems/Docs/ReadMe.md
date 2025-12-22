@@ -1,7 +1,7 @@
 # Game Manager System – Visão Geral Atual
 
 O Game Manager centraliza o ciclo de vida da sessão em uma máquina de estados explícita
-(`GameManagerStateMachine`) e fornece pontos de extensão via eventos e DI para UI, serviços
+(`GameLoopStateMachine`) e fornece pontos de extensão via eventos e DI para UI, serviços
 persistentes e lógicas de gameplay. Este documento resume o fluxo atual, estados, eventos e
 como integrar novas funcionalidades sem acoplamento.
 
@@ -11,12 +11,12 @@ como integrar novas funcionalidades sem acoplamento.
 | --- | --- | --- |
 | `MenuState` | Navegação básica (`Navigate`, `UiSubmit`, `UiCancel`) e atalhos de ciclo (`RequestReset`, `RequestQuit`). | Emite `StateChangedEvent(false)` e `ActorStateChangedEvent(false)` ao entrar; restaura ambos ao sair. |
 | `PlayingState` | Gameplay (`Move`, `Shoot`, `Spawn`, `Interact`). | Emite `StateChangedEvent(true)` e `ActorStateChangedEvent(true)`; não altera `timeScale`. |
-| `PausedState` | Navegação + reset/quit (mesmos atalhos de menu). | Define `Time.timeScale = 0`; notifica `StateChangedEvent(false)`/`ActorStateChangedEvent(false)`; restaura `timeScale` e notificações ao sair. |
-| `GameOverState` | Navegação + reset/quit. | Pausa o tempo (`timeScale = 0`), emite `StateChangedEvent(false)`; restaura `timeScale` ao sair. |
-| `VictoryState` | Navegação + reset/quit. | Pausa o tempo (`timeScale = 0`), emite `StateChangedEvent(false)`; restaura `timeScale` ao sair. |
+| `PausedState` | Navegação + reset/quit (mesmos atalhos de menu). | Adquire `SimulationGateTokens.Pause`, emite `StateChangedEvent(false)`/`ActorStateChangedEvent(false)`; **não altera `timeScale`**. |
+| `GameOverState` | Navegação + reset/quit. | Adquire `SimulationGateTokens.GameOver`, emite `StateChangedEvent(false)`; mantém `timeScale` intacto. |
+| `VictoryState` | Navegação + reset/quit. | Adquire `SimulationGateTokens.Victory`, emite `StateChangedEvent(false)`; mantém `timeScale` intacto. |
 
-O estado inicial é sempre `MenuState`. Estados que pausam o tempo mantêm a UI operável através
-do perfil de navegação compartilhado, permitindo reiniciar ou sair mesmo com `timeScale` travado.
+O estado inicial é sempre `MenuState`. Estados que bloqueiam ações mantêm a UI operável através
+do perfil de navegação compartilhado, permitindo reiniciar ou sair sem congelar física (`timeScale` permanece inalterado).
 
 ## Eventos de ciclo de vida
 
@@ -37,14 +37,14 @@ do perfil de navegação compartilhado, permitindo reiniciar ou sair mesmo com `
 2. Publica `GameResetStartedEvent` para que pools, HUDs ou serviços persistentes limpem estado.
 3. Aguarda um frame para que handlers desliguem timers/spawns, depois espera a FSM voltar ao
    `MenuState` (usa `Time.unscaledDeltaTime` para respeitar pausas).
-4. Normaliza `Time.timeScale = 1` para evitar travamento de física após estados que pausam.
-5. Reconstrói a FSM (`GameManagerStateMachine.Rebuild`) limpando bindings antigos.
+4. Normaliza `Time.timeScale = 1` de forma defensiva (FSM não altera mais o tempo, mas mantém proteção em resets).
+5. Reconstrói a FSM (`GameLoopStateMachine.Rebuild`) limpando bindings antigos.
 6. Recarrega a cena ativa via `SceneLoader.ReloadCurrentSceneAsync` e reanexa a cena de UI.
 7. Publica `GameResetCompletedEvent` e libera o flag de reset em andamento.
 
 ## Integração via DI
 
-`GameManager`, `GameConfig` e `GameManagerStateMachine` são registrados como serviços globais no
+`GameManager`, `GameConfig` e `GameLoopStateMachine` são registrados como serviços globais no
 `DependencyManager`. Prefira resolver `IGameManager` e `GameConfig` por DI em vez de acessar o
 singleton diretamente. Isso permite substituir implementações em testes ou em fluxos de recarga
 sem acoplamento.
