@@ -1,8 +1,8 @@
 ﻿using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
+    
     public class SceneServiceCleaner
     {
         private readonly SceneServiceRegistry _sceneRegistry;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 DebugUtility.Colors.CrucialInfo);
         }
 
-        private void OnSceneUnloaded(UnityEngine.SceneManagement.Scene scene)
+        private void OnSceneUnloaded(Scene scene)
         {
             _sceneRegistry.Clear(scene.name);
             DebugUtility.LogVerbose(

@@ -20,7 +20,7 @@ A pasta **Uteis** concentra utilidades arquiteturais transversais (Event Bus, In
   - Papel: mensageria tipada, com opção global e filtrada por escopo; integra com DI.
   - Escopo: global por tipo de evento; filtrado por chave (ex.: ActorId) para isolamento por ator/cena.
 - **Dependency Injection / Service Registries**
-  - Arquivos: `DependencySystems/*` (`DependencyManager`, `DependencyBootstrapper`, registries, `DependencyInjector`, `IDependencyProvider`).
+  - Arquivos: `Infrastructure/DI/*` (`DependencyManager`, registries, `DependencyInjector`, `IDependencyProvider`, `SceneServiceCleaner`).
   - Papel: registrar e resolver serviços por escopo (global/cena/objeto) e injetar campos anotados.
   - Escopo: global (singletons), por cena, por objeto; limpeza automática em unload/destruição.
 - **Debug / Logging**
@@ -61,7 +61,7 @@ Sistema de publicação/assinatura tipado que evita acoplamento direto entre pro
 - Uso: bindings registrados/desregistrados por componente (`EventBus<T>.Register/Unregister`, `FilteredEventBus<T>.Register/Unregister`).
 - Limpeza: `EventBus<T>.Clear()` limpa um tipo; `FilteredEventBus<T>.Unregister(scope)` remove bindings de um escopo; `EventBusUtil.ClearAllBuses()` limpa todos (chamado no Editor ao sair do Play Mode).【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L35】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/FilteredEventBus.cs†L16-L58】
 #### 3.5 Regras implícitas detectadas
-- Assume que `EventBusUtil.EventTypes` foi populado antes de `DependencyBootstrapper.RegisterEventBuses()`; caso contrário, buses injetáveis não são registrados.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L140-L175】
+- Se for registrar buses injetáveis no NewScripts, garanta que `EventBusUtil.EventTypes` esteja populado antes do bootstrap custom (ex.: `GlobalBootstrap` ou registrador de cena); não há mais registro automático herdado do legado.【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L38-L74】
 - Handlers que lançam exceção não interrompem o bus, mas são logados; não confiar em ordem determinística de execução.【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/InjectableEventBus.cs†L22-L43】
 - Bindings precisam ser desregistrados manualmente em `OnDisable/OnDestroy` para evitar notificações de objetos destruídos (não há coleta automática fora dos `Clear`).
 
@@ -74,17 +74,17 @@ Fornecer resolução de serviços por escopo (global/cena/objeto) e injeção em
 - Associar serviços a instâncias de atores/objetos via `objectId` (ex.: HUD de um jogador).
 #### 3.3 Quando NÃO usar
 - Não registrar serviços de gameplay efêmeros no escopo global (risco de vazamento entre cenas e persistência indesejada).
-- Não chamar `InjectDependencies` repetidamente no mesmo frame (o injetor deduplica e silencia chamadas redundantes).【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyInjector.cs†L19-L63】
+- Não chamar `InjectDependencies` repetidamente no mesmo frame (o injetor deduplica e silencia chamadas redundantes).【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyInjector.cs†L26-L154】
 - Evitar `TryGet` com `objectId` nulo para serviços que deveriam ser por objeto; use o escopo correto para evitar colisões.
 #### 3.4 Ciclo de vida
-- Nascimento: `DependencyBootstrapper.Initialize()` (BeforeSceneLoad) força criação do `DependencyManager` e registra serviços essenciais (loader de cena, fade, gates, buses, atributos runtime).【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L26-L118】
-- Uso: `DependencyManager` registra/resolve em três registries (`ObjectServiceRegistry`, `SceneServiceRegistry`, `GlobalServiceRegistry`) e injeta dependências via `InjectAttribute`.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L24-L99】【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyInjector.cs†L19-L109】
-- Limpeza: serviços por cena são limpos no unload (`SceneServiceCleaner` assina `sceneUnloaded`), e o manager limpa todos os escopos em `OnDestroy`/`OnApplicationQuit`.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceCleaner.cs†L10-L23】【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L101-L124】
+- Nascimento (global): `GlobalBootstrap.Initialize()` roda em `BeforeSceneLoad`, cria o `DependencyManager` singleton e registra apenas os serviços globais mínimos (ID factory, gate, câmera, bridges de pause/state).【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L31-L184】
+- Nascimento (cena): `NewSceneBootstrapper.Awake` monta o escopo da cena (registries, hook registry, participantes de reset, serviços declarados) e garante limpeza determinística no `OnDestroy` via `ClearSceneServices`.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L25-L118】
+- Uso: `DependencyManager` registra/resolve em três registries (`ObjectServiceRegistry`, `SceneServiceRegistry`, `GlobalServiceRegistry`) e injeta dependências via `InjectAttribute`/`DependencyInjector`.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyManager.cs†L24-L115】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyInjector.cs†L26-L155】
+- Limpeza: `SceneServiceCleaner` assina `sceneUnloaded` para varrer serviços de cena; o manager limpa escopos de objeto/cena/global em `OnDestroy`/`OnApplicationQuit`, evitando vazamento entre sessões e cenas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceCleaner.cs†L6-L35】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyManager.cs†L106-L139】
 #### 3.5 Regras implícitas detectadas
-- `DependencyBootstrapper` assume que `DependencyManager.Provider` existe antes de registrar serviços; não desabilitar o singleton de regulador.
-- `SceneServiceRegistry` valida nomes de cena contra build; registrar com nome incorreto gera warning e impede injeção.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceRegistry.cs†L17-L74】
-- Limite de serviços por cena (`maxSceneServices`) pode rejeitar registros adicionais silenciosamente com warning; ajustar se necessário.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceRegistry.cs†L13-L38】
-- Serviços registrados com `allowOverride` descartam implementações anteriores via `Dispose` se implementarem `IDisposable`.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/GlobalServiceRegistry.cs†L12-L38】
+- `GlobalBootstrap` assume o `DependencyManager.Provider` ativo antes das cenas; evite criar instâncias paralelas ou desabilitar o singleton.
+- `SceneServiceRegistry` valida nomes de cena contra a build e limita serviços distintos por cena; nomes inválidos ou excesso de tipos geram warnings e bloqueiam registro/injeção.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceRegistry.cs†L23-L175】
+- Serviços registrados com `allowOverride` descartam implementações anteriores via `Dispose` se implementarem `IDisposable` (global/cena/objeto).【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/GlobalServiceRegistry.cs†L11-L75】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceRegistry.cs†L44-L71】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/ObjectServiceRegistry.cs†L29-L46】
 
 ### Debug / Logging
 #### 3.1 Propósito
@@ -133,7 +133,7 @@ Gerar identificadores estáveis para atores e objetos, garantindo distinção po
 - Não reutilizar IDs manuais em objetos filhos que já herdam `ActorId` do pai; fábrica reaproveita automaticamente para children sem `IActor` próprio.【F:Assets/_ImmersiveGames/Scripts/Utils/UniqueIdFactory.cs†L21-L50】
 - Evitar chamar antes de `IActor` estar disponível no objeto/ancestors (gera prefixos genéricos `Obj_*`).【F:Assets/_ImmersiveGames/Scripts/Utils/UniqueIdFactory.cs†L57-L65】
 #### 3.4 Ciclo de vida
-- Nascimento: instanciado e registrado globalmente pelo `DependencyBootstrapper` (serviço global).【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L46-L50】
+- Nascimento: registrado no escopo global pelo `GlobalBootstrap` do NewScripts (BeforeSceneLoad) usando `NewUniqueIdFactory`.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L72-L101】
 - Uso: `GenerateId` calcula ID com contadores por baseActorName; `GetInstanceCount` expõe número atual.
 - Limpeza: sem reset automático de contadores; persiste enquanto o serviço existir (global).
 #### 3.5 Regras implícitas detectadas
@@ -173,36 +173,36 @@ Encapsular cálculos recorrentes (ex.: bounds reais de objetos ignorando marcado
 - Filhos com `IgnoreBoundsFlag` são ignorados no cálculo; todos os demais filhos são encapsulados recursivamente.【F:Assets/_ImmersiveGames/Scripts/Utils/CalculateRealLength.cs†L11-L25】
 
 ## 4. Dependências entre Sistemas
-- `DependencyBootstrapper` → registra `IUniqueIdFactory`, serviços de cena/transição, `ISimulationGateService` e **EventBus** injetáveis; depende de `EventBusUtil.EventTypes` já carregado.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L46-L175】
-- `DependencyManager` → depende de registries (`Object/Scene/Global`) e `DependencyInjector`; `SceneServiceRegistry` depende do `SceneServiceCleaner` para limpar no unload.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L24-L99】【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceCleaner.cs†L10-L23】
+- `GlobalBootstrap` → registra `DependencyManager` e serviços globais (gate, câmera, bridges de pause/state, ID factory) antes das cenas em `NEWSCRIPTS_MODE`.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L31-L184】
+- `DependencyManager` → depende de registries (`Object/Scene/Global`) e `DependencyInjector`; `SceneServiceRegistry` depende do `SceneServiceCleaner` para limpar no unload.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyManager.cs†L24-L139】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceCleaner.cs†L6-L35】
 - `PoolManager` → usa `DebugUtility` para logs e `PersistentSingleton` para persistir; não integra com DI diretamente.
-- `Event Bus` → pode operar isolado, mas é registrado como serviço global pelo bootstrap para permitir injeção.
+- `Event Bus` → pode operar isolado; para injeção, registre instâncias manualmente (global) após povoar `EventBusUtil.EventTypes` dentro do bootstrap adequado.【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L74】
 - `Predicates`/`CalculateRealLength` → utilitários autônomos, sem dependências fortes.
-Dependências aceitáveis: infraestrutura chamando utilidades (ex.: DI registrando EventBus). Dependências perigosas: gameplay depender diretamente de `DependencyBootstrapper` ou `PoolManager` global para lógica crítica de rodada (acoplamento ao escopo global).
+Dependências aceitáveis: infraestrutura registrando serviços via `DependencyManager` (ex.: EventBus, gate). Dependências perigosas: gameplay criar serviços globais fora do `GlobalBootstrap` ou acoplar lógica a singletons persistentes (ex.: `PoolManager`) para lógica crítica sem limpeza explícita.
 
 ## 5. Relação com Reset / Spawn / Lifecycle (infra)
-- Participam ativamente do reset: `SceneServiceRegistry` limpa serviços ao descarregar cena via `SceneServiceCleaner`, evitando vazamento de instâncias entre rounds.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceCleaner.cs†L10-L23】
-- Reagem a reset/descarte: `DependencyManager` remove serviços em `OnDestroy`/`OnApplicationQuit`; `EventBusUtil` limpa buses ao sair do Play Mode (Editor), mas não há limpeza automática ao trocar cena em runtime além do que os registries fizerem.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L101-L124】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L35】
+- `SceneServiceRegistry` limpa serviços ao descarregar cena via `SceneServiceCleaner`, evitando vazamento de instâncias entre rounds.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceCleaner.cs†L6-L35】
+- Reagem a reset/descarte: `DependencyManager` remove serviços em `OnDestroy`/`OnApplicationQuit`; `EventBusUtil` limpa buses ao sair do Play Mode (Editor), mas não há limpeza automática ao trocar cena em runtime além do que os registries fizerem.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyManager.cs†L106-L139】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L35】
 - `PoolManager` e pools não são limpos automaticamente por cena; se usados para objetos de gameplay por rodada, precisam de limpeza manual ou segregação por cena (ponto de fragilidade).
-- `UniqueIdFactory` mantém contadores enquanto o serviço global existir; em resets de partida, IDs podem continuar incrementando, o que pode afetar lógica que espera contagem reiniciada.
+- `UniqueIdFactory` mantém contadores enquanto o serviço global existir (registrado via `GlobalBootstrap`); em resets de partida, IDs podem continuar incrementando, o que pode afetar lógica que espera contagem reiniciada.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L72-L101】
 - Contratos operacionais de pipeline/fases/escopos estão em `../WorldLifecycle/WorldLifecycle.md`; aqui mantemos apenas a visão infra e impactos.
 
 ## 6. Pontos Fortes do Design Atual
-- Ordem de inicialização explícita (RuntimeInitializeOnLoad + DefaultExecutionOrder) para DI, debug e buses, garantindo infraestrutura antes das cenas.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L26-L118】【F:Assets/_ImmersiveGames/Scripts/Utils/DebugSystems/DebugManager.cs†L5-L41】
-- Separação clara de escopos no `DependencyManager` (global/cena/objeto) com limpeza automatizada por unload e encerramento.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyManager.cs†L59-L124】【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceCleaner.cs†L10-L23】
-- Event Bus tipado e injetável, com suporte a filtragem por escopo e limpeza integrada ao ciclo do Editor.【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L38-L74】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/FilteredEventBus.cs†L10-L58】
+- Ordem de inicialização explícita: `GlobalBootstrap` roda antes das cenas e `NewSceneBootstrapper` monta o escopo da cena no `Awake`, garantindo DI antes da lógica da cena.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L31-L184】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/NewSceneBootstrapper.cs†L25-L118】
+- Separação clara de escopos no `DependencyManager` (global/cena/objeto) com limpeza automatizada por unload e encerramento.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyManager.cs†L40-L139】【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceCleaner.cs†L6-L35】
+- Event Bus tipado e injetável, com suporte a filtragem por escopo e limpeza integrada ao ciclo do Editor.【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/EventBusUtil.cs†L25-L74】【F:Assets/_ImmersiveGames/Scripts/Utils/BusEventSystems/FilteredEventBus.cs†L10-L58】
 
 ## 7. Riscos e Armadilhas Conhecidas
 - Dependência de inicialização refletiva (`EventBusUtil.EventTypes`) para registrar buses; se assemblies mudarem ou tipos não carregarem, DI de buses falha silenciosamente.
 - Pools persistentes não vinculados a cena podem manter referências a objetos destruídos se `ClearAllPools` não for chamado entre partidas (vazamento de estado).
 - `UniqueIdFactory` não reseta contadores; reinícios de partida podem gerar IDs crescentes e quebrar suposições de lógica por índice.
-- Registro de serviços em `SceneServiceRegistry` com nome inválido passa com warning, mas injeções futuras falham silenciosamente, dificultando diagnóstico.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/SceneServiceRegistry.cs†L17-L74】
-- `DependencyInjector` ignora injeções repetidas no mesmo frame; scripts que esperam reconfiguração imediata após troca de escopo podem ficar sem dependências atualizadas.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyInjector.cs†L31-L63】
+- Registro de serviços em `SceneServiceRegistry` com nome inválido passa com warning, mas injeções futuras falham silenciosamente, dificultando diagnóstico.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/SceneServiceRegistry.cs†L23-L175】
+- `DependencyInjector` ignora injeções repetidas no mesmo frame; scripts que esperam reconfiguração imediata após troca de escopo podem ficar sem dependências atualizadas.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/DI/DependencyInjector.cs†L26-L155】
 
 ## 8. Glossário de Conceitos
 - **EventBus**: Fachada estática para publicar/assinar eventos `IEvent`, com implementação injetável e opção de filtro por escopo.
 - **Escopo Global / Scene / Object**: Níveis de registro de serviço no `DependencyManager` — global persiste entre cenas, scene vive enquanto a cena está carregada, object vincula um ID específico e deve ser limpo manualmente.
-- **ActorId**: Identificador lógico de ator (player/NPC), derivado de `IActor` ou `PlayerInput`, usado para escopos de evento e UI.【F:Assets/_ImmersiveGames/Scripts/Utils/UniqueIdFactory.cs†L21-L50】
-- **Gate**: Controle de execução/simulação registrado como serviço global (`ISimulationGateService`) para habilitar/pausar lógicas sem alterar `timeScale`.【F:Assets/_ImmersiveGames/Scripts/Utils/DependencySystems/DependencyBootstrapper.cs†L46-L52】
-- **Bootstrap**: Classe com `RuntimeInitializeOnLoadMethod`/singleton persistente que registra serviços essenciais antes das cenas (`DependencyBootstrapper`).
+- **ActorId**: Identificador lógico usado em eventos/escopos; no NewScripts é gerado por `NewUniqueIdFactory` (sem semântica de Player/NPC).【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/Ids/NewUniqueIdFactory.cs†L8-L113】
+- **Gate**: Controle de execução/simulação registrado como serviço global (`ISimulationGateService`) pelo `GlobalBootstrap` para habilitar/pausar lógicas sem alterar `timeScale`.【F:Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs†L72-L150】
+- **Bootstrap**: Classe com `RuntimeInitializeOnLoadMethod` persistente que registra serviços essenciais antes das cenas (`GlobalBootstrap` no NewScripts).
 - **Reset**: Limpeza de serviços/buses ao trocar de cena ou sair do Play Mode; inclui `Clear` em registries e `EventBusUtil.ClearAllBuses` no Editor.
