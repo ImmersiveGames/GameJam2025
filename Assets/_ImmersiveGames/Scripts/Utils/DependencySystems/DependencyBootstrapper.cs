@@ -8,11 +8,11 @@ using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
+using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using _ImmersiveGames.Scripts.SceneManagement.Transition;
 using _ImmersiveGames.Scripts.Utils.BusEventSystems;
 using _ImmersiveGames.Scripts.Utils.DebugSystems;
-using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
 using UnityUtils;
 
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.Scripts.Utils.DependencySystems
 
                 RegisterEventBuses();
 
-                EnsureGlobal<IStateDependentService>(() => new NewScriptsStateDependentService());
+                EnsureGlobal<IStateDependentService>(() => new StateDependentService(GameManagerStateMachine.Instance));
 
                 EnsureGlobal(() => new DefenseStateManager());
                 EnsureGlobal<IPlanetDefensePoolRunner>(() => new RealPlanetDefensePoolRunner());

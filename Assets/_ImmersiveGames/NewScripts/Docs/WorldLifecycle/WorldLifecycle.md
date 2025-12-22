@@ -21,6 +21,7 @@ Há dois contratos principais:
 - Infra genérica de FSM: `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
 - FSM concreta do GameLoop: `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
 - Pause usa gate para bloquear ações (ex.: Move) e **não congela física/timeScale**.
+- Fronteira de boot: **o legado não inicializa o NewScripts**. Em `NEWSCRIPTS_MODE`, o `GlobalBootstrap` do NewScripts registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e demais serviços próprios antes das cenas.
 
 ### Pause (Gate não congela física)
 - O pause é propagado via `GamePauseEvent(paused=true)` → `GamePauseGateBridge` → token `SimulationGateTokens.Pause` no `SimulationGateService`.

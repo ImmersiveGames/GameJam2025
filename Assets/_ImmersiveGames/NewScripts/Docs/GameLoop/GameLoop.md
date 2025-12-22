@@ -10,6 +10,11 @@
 - Tokens de gate (`SimulationGateTokens.Pause`) continuam sendo a proteção para entradas de movimento.
 - Resultado: inputs de movimentação são bloqueados, mas simulação física/gravity continuam ativas.
 
+## Bootstrap (NEWSCRIPTS_MODE)
+- O boot do NewScripts acontece via `GlobalBootstrap` (BeforeSceneLoad).
+- `GlobalBootstrap` registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e o pipeline de câmera do NewScripts.
+- O bootstrap do legado **não** inicializa esses serviços quando `NEWSCRIPTS_MODE` está ativo.
+
 ## De onde vêm os sinais (eventos → bridge → GameLoop)
 - Eventos globais existentes entram via **GameLoopEventInputBridge**:
   - `GameStartEvent` → `RequestStart()`

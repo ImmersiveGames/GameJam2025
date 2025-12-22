@@ -17,6 +17,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void Tick(float dt);
 
         /// <summary>
+        /// Marca intenção de iniciar o loop de jogo (Menu → Playing).
+        /// </summary>
+        void RequestStart();
+
+        /// <summary>
+        /// Marca intenção de pausar o loop.
+        /// </summary>
+        void RequestPause();
+
+        /// <summary>
+        /// Marca intenção de retomar o loop.
+        /// </summary>
+        void RequestResume();
+
+        /// <summary>
+        /// Marca intenção de resetar o loop para o estado inicial.
+        /// </summary>
+        void RequestReset();
+
+        /// <summary>
         /// Libera recursos e listeners associados ao serviço.
         /// </summary>
         void Dispose();
