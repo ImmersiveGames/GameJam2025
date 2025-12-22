@@ -109,22 +109,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 
         private void TryCollectFromSceneActors()
         {
-            var adapters = Object.FindObjectsByType<PlayerActorAdapter>(FindObjectsSortMode.None);
-            foreach (var adapter in adapters)
+            var behaviours = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None);
+            if (behaviours == null || behaviours.Length == 0)
             {
-                TryAddActorTarget(adapter);
+                return;
             }
 
-            var actors = Object.FindObjectsByType<PlayerActor>(FindObjectsSortMode.None);
-            foreach (var actor in actors)
+            foreach (var behaviour in behaviours)
             {
+                if (behaviour is not IActor actor)
+                {
+                    continue;
+                }
+
+                if (behaviour.gameObject == null || behaviour.gameObject.scene.name != _sceneName)
+                {
+                    continue;
+                }
+
                 TryAddActorTarget(actor);
             }
         }
 
         private void TryAddActorTarget(IActor actor)
         {
-            if (actor == null || !IsPlayerActor(actor))
+            if (actor == null)
             {
                 return;
             }
@@ -148,11 +157,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
 
             _playerTargets.Sort((left, right) =>
                 string.CompareOrdinal(left.ActorId, right.ActorId));
-        }
-
-        private static bool IsPlayerActor(IActor actor)
-        {
-            return actor is PlayerActor or PlayerActorAdapter;
         }
 
         private GameplayResetRequest BuildResetRequest(string reason)
