@@ -44,8 +44,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         public static void Initialize()
         {
 #if NEWSCRIPTS_MODE
-            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.");
-            return;
+            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.");
 #endif
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
@@ -63,6 +62,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         }
 
         #region Configurações
+        public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
+        public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
+        public static bool IsFallbacksEnabled => _logFallbacks;
+        public static bool IsRepeatedCallVerboseEnabled => _repeatedCallVerboseEnabled;
+        public static DebugLevel DefaultDebugLevel => _defaultDebugLevel;
         public static void SetGlobalDebugState(bool enabled) => _globalDebugEnabled = enabled;
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
