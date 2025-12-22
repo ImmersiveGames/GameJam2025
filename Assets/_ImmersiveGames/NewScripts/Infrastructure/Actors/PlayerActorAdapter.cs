@@ -1,5 +1,4 @@
 using UnityEngine;
-using LegacyActor = _ImmersiveGames.Scripts.ActorSystems.IActor;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
 {
@@ -17,8 +16,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
         [Tooltip("Opcional: exibir um nome amigável para diagnósticos do pipeline de baseline.")]
         private string displayName;
 
-        private LegacyActor _legacyActor;
-
         public string ActorId => actorId;
 
         public string DisplayName => !string.IsNullOrWhiteSpace(displayName)
@@ -31,11 +28,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
 
         private void Awake()
         {
-            _legacyActor = GetComponent<LegacyActor>();
-            if (_legacyActor != null && string.IsNullOrWhiteSpace(actorId))
-            {
-                actorId = _legacyActor.ActorId ?? string.Empty;
-            }
+            EnsureActorId();
         }
 
         internal void Initialize(string newActorId)
@@ -44,10 +37,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
             {
                 actorId = newActorId;
             }
-            else if (_legacyActor != null)
+        }
+
+        private void EnsureActorId()
+        {
+            if (!string.IsNullOrWhiteSpace(actorId))
             {
-                actorId = _legacyActor.ActorId ?? string.Empty;
+                return;
             }
+
+            actorId = gameObject != null ? gameObject.name : nameof(PlayerActorAdapter);
         }
     }
 }

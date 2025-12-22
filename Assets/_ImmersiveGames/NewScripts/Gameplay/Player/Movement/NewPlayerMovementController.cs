@@ -10,15 +10,13 @@
  */
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.GameplaySystems.Domain;
-using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.PlayerControllerSystem.Movement;
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
+using _ImmersiveGames.NewScripts.Infrastructure.World.Reset;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -54,7 +52,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private IActor _actor;
         private ICameraResolver _cameraResolver;
-        private IPlayerDomain _playerDomain;
+        private Vector3 _initialPosition;
+        private Quaternion _initialRotation;
+        private bool _hasInitialPose;
         private string _sceneName;
 
         private IStateDependentService _stateService;
@@ -79,11 +79,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         public int ResetOrder => -50;
 
-        public bool ShouldParticipate(ResetScope scope)
+        public bool ShouldParticipate(GameplayResetScope scope)
         {
-            return scope == ResetScope.AllActorsInScene ||
-                   scope == ResetScope.PlayersOnly ||
-                   scope == ResetScope.ActorIdSet;
+            return scope == GameplayResetScope.AllActorsInScene ||
+                   scope == GameplayResetScope.PlayersOnly ||
+                   scope == GameplayResetScope.ActorIdSet;
         }
 
         #endregion
@@ -93,6 +93,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void Awake()
         {
             _sceneName = gameObject.scene.name;
+            _initialPosition = transform.position;
+            _initialRotation = transform.rotation;
+            _hasInitialPose = true;
 
             _rb = GetComponent<Rigidbody>();
             _playerInput = GetComponent<PlayerInput>();
@@ -108,8 +111,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             {
                 DebugUtility.LogVerbose<NewPlayerMovementController>("CameraResolverService não encontrado.");
             }
-
-            DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
         }
 
         private void Start()
@@ -430,7 +431,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         #region Reset (IResetInterfaces)
 
-        public Task Reset_CleanupAsync(ResetContext ctx)
+        public Task Reset_CleanupAsync(GameplayResetContext ctx)
         {
             _moveInput = Vector2.zero;
             _lookInput = Vector2.zero;
@@ -444,35 +445,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task Reset_RestoreAsync(ResetContext ctx)
+        public Task Reset_RestoreAsync(GameplayResetContext ctx)
         {
-            if (_playerDomain == null)
+            if (_hasInitialPose)
             {
-                DependencyManager.Provider.TryGetForScene<IPlayerDomain>(_sceneName, out _playerDomain);
-            }
-
-            if (_actor != null && _playerDomain != null && !string.IsNullOrWhiteSpace(_actor.ActorId))
-            {
-                if (_playerDomain.TryGetSpawnPose(_actor.ActorId, out var pose))
+                if (_rb != null)
                 {
-                    if (_rb != null)
-                    {
-                        StopRigidbodyMotion();
+                    StopRigidbodyMotion();
 
-                        _rb.position = pose.position;
-                        _rb.rotation = pose.rotation;
+                    _rb.position = _initialPosition;
+                    _rb.rotation = _initialRotation;
 
-                        StopRigidbodyMotion();
-                    }
-                    else
-                    {
-                        transform.SetPositionAndRotation(pose.position, pose.rotation);
-                    }
+                    StopRigidbodyMotion();
                 }
                 else
                 {
-                    DebugUtility.LogVerbose<NewPlayerMovementController>(
-                        $"[Reset] SpawnPose não encontrado no PlayerDomain para ActorId='{_actor.ActorId}'.");
+                    transform.SetPositionAndRotation(_initialPosition, _initialRotation);
                 }
             }
 
@@ -482,7 +470,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task Reset_RebindAsync(ResetContext ctx)
+        public Task Reset_RebindAsync(GameplayResetContext ctx)
         {
             if (_cameraResolver == null)
             {
