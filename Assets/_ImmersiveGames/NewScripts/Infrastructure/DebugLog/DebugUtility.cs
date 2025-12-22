@@ -43,10 +43,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Initialize()
         {
-#if NEWSCRIPTS_MODE
-            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize ignorado.");
-            return;
-#endif
+            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.");
             _globalDebugEnabled = true;
             _verboseLoggingEnabled = Application.isEditor;
             _logFallbacks = Application.isEditor;

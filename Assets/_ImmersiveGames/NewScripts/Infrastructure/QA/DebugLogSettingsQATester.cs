@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DumpCurrentState();
             EmitLevelSamples();
             TestDeduplication();
+            DebugUtility.Log(typeof(DebugLogSettingsQATester), "[QA][DebugLog] QA complete.");
         }
 
         private void ApplySettings()

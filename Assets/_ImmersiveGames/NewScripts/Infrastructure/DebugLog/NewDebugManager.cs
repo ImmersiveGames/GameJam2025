@@ -8,10 +8,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
     public sealed class NewDebugManager : MonoBehaviour
     {
         [SerializeField] private DebugLogSettings settings;
+        [SerializeField] private bool applyOnAwake = true;
 
         private void Awake()
         {
-            ApplyConfiguration();
+            if (applyOnAwake)
+            {
+                ApplyConfiguration();
+            }
         }
 
         [ContextMenu("Debug/Apply Settings")]
