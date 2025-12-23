@@ -1,3 +1,8 @@
+## [2025-12-24]
+- Added: `QA/GameLoop-StateFlow-QA.md` com execução do GameLoop/StateDependent QA e resumo de QAs removidos.
+- Updated: `GameLoop/GameLoop.md` alinhado ao fluxo real (GameStartEvent + coordinator + ScenesReady → RequestStart).
+- Updated: `README.md` listando QA do GameLoop na ordem recomendada e na tabela de owners.
+
 ## [2025-12-23] (normalização adicional)
 - Merged: conteúdo de `Migrations/LegacyBridges.md` incorporado em `ADR/ADR-0001-NewScripts-Migracao-Legado.md#bridges-temporários-legacysceneflowbridge` (arquivo removido).
 - Updated: README/ARCHITECTURE/ADR/ADR-ciclo-de-vida-jogo.md/ADR.md alinhados aos owners (decisão vs operação vs QA) com links explícitos para `WorldLifecycle/WorldLifecycle.md`.
