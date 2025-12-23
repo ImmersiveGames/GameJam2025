@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private MonoBehaviour eventBusTester;
         [SerializeField] private MonoBehaviour gameLoopEventBridgeTester;
         [SerializeField] private MonoBehaviour filteredEventBusTester;
+        [SerializeField] private MonoBehaviour sceneTransitionServiceTester;
         [SerializeField] private MonoBehaviour legacySceneFlowBridgeTester;
         [SerializeField] private bool verbose = true;
 
@@ -97,6 +98,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             ExecuteTester(filteredEventBusTester, "FilteredEventBusSmokeQATester");
+
+            sceneTransitionServiceTester = sceneTransitionServiceTester
+                                            ?? GetComponent<SceneTransitionServiceSmokeQATester>()
+                                            ?? gameObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+
+            ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
+            if (stopOnFirstFail && _fails > 0)
+            {
+                DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
+                    "[QA][Infra] stopOnFirstFail ativo; execução interrompida após falha.");
+                Complete();
+                return;
+            }
 
             legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
                                           ?? GetComponent<LegacySceneFlowBridgeSmokeQATester>()

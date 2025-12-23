@@ -5,12 +5,12 @@
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  */
 using System;
-using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
@@ -30,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
         private static LegacySceneFlowBridge _legacySceneFlowBridge;
+        private const bool DefaultSceneFlowNativeEnabled = true;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -86,6 +87,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterGameLoop();
 
             RegisterLegacySceneFlowBridge();
+            RegisterSceneFlowNative();
 
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
@@ -164,6 +166,43 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[SceneBridge] LegacySceneFlowBridge registrado (Scene Flow legado → eventos NewScripts).",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterSceneFlowNative()
+        {
+            if (!IsSceneFlowNativeEnabled())
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] SceneTransitionService nativo desativado pela flag. Mantendo apenas o bridge legado.");
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] SceneTransitionService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var loaderAdapter = LegacySceneFlowAdapters.CreateLoaderAdapter(DependencyManager.Provider);
+            var fadeAdapter = LegacySceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
+
+            var service = new SceneTransitionService(loaderAdapter, fadeAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static bool IsSceneFlowNativeEnabled()
+        {
+#if NEWSCRIPTS_SCENEFLOW_NATIVE
+            return true;
+#else
+            return DefaultSceneFlowNativeEnabled;
+#endif
         }
 
         private static void RegisterPauseBridge()
