@@ -14,12 +14,13 @@ Bridge temporário localizado em `Assets/_ImmersiveGames/NewScripts/Bridges/Lega
 - Este bridge permite evolução incremental sem alterar o SceneTransitionService legado.
 
 ### Checklist de remoção
-- [ ] SceneTransitionService publica eventos NewScripts nativamente.
+- [ ] SceneTransitionService publica eventos NewScripts nativamente (NEWSCRIPTS_SCENEFLOW_NATIVE ligado ou config equivalente).
+- [ ] QAs do SceneTransitionServiceSmokeQATester passam em produção (commit 2).
 - [ ] Nenhum consumidor depende de eventos legados.
 - [ ] Remover registro do GlobalBootstrap e deletar `Bridges/LegacySceneFlow`.
 
 ### Remoção planejada
-- Gatilho: assim que o `SceneTransitionService` legado passar a publicar eventos NewScripts diretamente, remover este bridge.
+- Gatilho: assim que o `SceneTransitionService` NewScripts for a fonte primária dos eventos (flag NEWSCRIPTS_SCENEFLOW_NATIVE ativa e QAs verdes).
 - Passos: remover o registro no `GlobalBootstrap`, apagar `Assets/_ImmersiveGames/NewScripts/Bridges/LegacySceneFlow/` e revalidar consumidores.
 
 ### QA associado
