@@ -1,12 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 using LegacyRoot = global::_ImmersiveGames;
 using LegacyScripts = LegacyRoot.Scripts;
-using LegacyEventBus = LegacyScripts.Utils.BusEventSystems.EventBus;
-using LegacyEventBinding = LegacyScripts.Utils.BusEventSystems.EventBinding;
 using LegacySceneTransitionContext = LegacyScripts.SceneManagement.Transition.SceneTransitionContext;
 using LegacySceneTransitionStartedEvent = LegacyScripts.SceneManagement.Transition.SceneTransitionStartedEvent;
 using LegacySceneTransitionScenesReadyEvent = LegacyScripts.SceneManagement.Transition.SceneTransitionScenesReadyEvent;
@@ -21,9 +21,12 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LegacySceneFlowBridge : IDisposable
     {
-        private readonly LegacyEventBinding<LegacySceneTransitionStartedEvent> _transitionStartedBinding;
-        private readonly LegacyEventBinding<LegacySceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
-        private readonly LegacyEventBinding<LegacySceneTransitionCompletedEvent> _transitionCompletedBinding;
+        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionStartedEvent>
+            _transitionStartedBinding;
+        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionScenesReadyEvent>
+            _transitionScenesReadyBinding;
+        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionCompletedEvent>
+            _transitionCompletedBinding;
 
         private bool _bindingsRegistered;
         private bool _disposed;
@@ -31,11 +34,14 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
         public LegacySceneFlowBridge()
         {
             _transitionStartedBinding =
-                new LegacyEventBinding<LegacySceneTransitionStartedEvent>(OnLegacySceneTransitionStarted);
+                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionStartedEvent>(
+                    OnLegacySceneTransitionStarted);
             _transitionScenesReadyBinding =
-                new LegacyEventBinding<LegacySceneTransitionScenesReadyEvent>(OnLegacySceneTransitionScenesReady);
+                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionScenesReadyEvent>(
+                    OnLegacySceneTransitionScenesReady);
             _transitionCompletedBinding =
-                new LegacyEventBinding<LegacySceneTransitionCompletedEvent>(OnLegacySceneTransitionCompleted);
+                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionCompletedEvent>(
+                    OnLegacySceneTransitionCompleted);
 
             TryRegisterBindings();
         }
@@ -60,9 +66,12 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 
             try
             {
-                LegacyEventBus<LegacySceneTransitionStartedEvent>.Register(_transitionStartedBinding);
-                LegacyEventBus<LegacySceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
-                LegacyEventBus<LegacySceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                    LegacySceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                    LegacySceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
+                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                    LegacySceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<LegacySceneFlowBridge>(
@@ -83,9 +92,12 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
                 return;
             }
 
-            LegacyEventBus<LegacySceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
-            LegacyEventBus<LegacySceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
-            LegacyEventBus<LegacySceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
+            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                LegacySceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                LegacySceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
+            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
+                LegacySceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
             _bindingsRegistered = false;
 
             DebugUtility.LogVerbose<LegacySceneFlowBridge>(
@@ -121,30 +133,155 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 
         private static SceneTransitionContext BuildContext(LegacySceneTransitionContext legacyContext)
         {
-            var scenesToLoad = legacyContext.scenesToLoad ?? Array.Empty<string>();
-            var scenesToUnload = legacyContext.scenesToUnload ?? Array.Empty<string>();
+            var scenesToLoad = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
+                legacyContext,
+                Array.Empty<string>(),
+                "scenesToLoad",
+                "ScenesToLoad",
+                "ScenesToLoadList"));
+
+            var scenesToUnload = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
+                legacyContext,
+                Array.Empty<string>(),
+                "scenesToUnload",
+                "ScenesToUnload"));
+
+            var targetActiveScene = GetMemberOrDefault(
+                legacyContext,
+                defaultValue: (string)null,
+                "targetActiveScene",
+                "TargetActiveScene",
+                "activeScene",
+                "ActiveScene");
+
+            var useFade = GetMemberOrDefault(
+                legacyContext,
+                defaultValue: false,
+                "useFade",
+                "UseFade",
+                "fade",
+                "Fade");
+
             var profileName = TryResolveProfileName(legacyContext);
 
             return new SceneTransitionContext(
                 scenesToLoad,
                 scenesToUnload,
-                legacyContext.targetActiveScene,
-                legacyContext.useFade,
+                targetActiveScene,
+                useFade,
                 profileName);
         }
 
         private static string TryResolveProfileName(LegacySceneTransitionContext legacyContext)
         {
-            try
-            {
-                return legacyContext.transitionProfile != null
-                    ? legacyContext.transitionProfile.name
-                    : null;
-            }
-            catch (Exception)
+            if (!TryGetMember<object>(
+                    legacyContext,
+                    out var profile,
+                    "transitionProfile",
+                    "TransitionProfile",
+                    "profile",
+                    "Profile"))
             {
                 return null;
             }
+
+            return GetMemberOrDefault(
+                profile,
+                defaultValue: (string)null,
+                "name",
+                "Name");
+        }
+
+        private static bool TryGetMember<T>(object obj, out T value, params string[] names)
+        {
+            value = default;
+
+            if (obj == null || names == null || names.Length == 0)
+            {
+                return false;
+            }
+
+            var type = obj.GetType();
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            foreach (var name in names)
+            {
+                var property = type.GetProperty(name, flags);
+                if (property != null && property.CanRead)
+                {
+                    var candidate = property.GetValue(obj);
+                    if (TryConvert(candidate, out value))
+                    {
+                        return true;
+                    }
+                }
+
+                var field = type.GetField(name, flags);
+                if (field != null)
+                {
+                    var candidate = field.GetValue(obj);
+                    if (TryConvert(candidate, out value))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static T GetMemberOrDefault<T>(object obj, T defaultValue, params string[] names)
+        {
+            return TryGetMember(obj, out T value, names) ? value : defaultValue;
+        }
+
+        private static bool TryConvert<T>(object candidate, out T value)
+        {
+            value = default;
+
+            if (candidate is T typed)
+            {
+                value = typed;
+                return true;
+            }
+
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            // Conversão específica para coleções de string → IReadOnlyList<string>/IEnumerable<string>/List<string>
+            if (typeof(T) == typeof(IEnumerable<string>) ||
+                typeof(T) == typeof(IReadOnlyList<string>))
+            {
+                if (candidate is IEnumerable<string> enumerable)
+                {
+                    value = (T)enumerable;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<string> ToStringList(IEnumerable<string> source)
+        {
+            var list = new List<string>();
+            if (source == null)
+            {
+                return list;
+            }
+
+            foreach (var entry in source)
+            {
+                if (string.IsNullOrWhiteSpace(entry))
+                {
+                    continue;
+                }
+                list.Add(entry);
+            }
+
+            return list;
         }
     }
 }
