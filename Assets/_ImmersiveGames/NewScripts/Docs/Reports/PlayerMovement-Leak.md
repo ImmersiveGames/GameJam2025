@@ -1,6 +1,6 @@
 ﻿# Player Movement Leak Smoke Result
-- Timestamp (UTC): 2025-12-23T16:31:15.8787080Z
-- Cena ativa: NewBootstrap
+- Timestamp (UTC): 2025-12-23T17:20:57.2788101Z
+- Cena ativa: DontDestroyOnLoad
 - Player encontrado via: WorldRoot:WorldRoot
 - Reset API: SceneTransitionScenesReadyEvent
 - Gate inicial aberto: True
@@ -13,7 +13,7 @@
 - Teste C (Reabrir gate): status=PASS velApósReabertura=0,000 driftApósReabertura=0,000 detalhe=
 
 ## Logs (até 50 entradas)
-- [INFO] [PlayerMovementLeakSmokeBootstrap] [PlayerMoveTest][Leak] Runner iniciado (scene='NewBootstrap').
+- [INFO] [PlayerMovementLeakSmokeBootstrap] [PlayerMoveTest][Leak] Runner iniciado (scene='DontDestroyOnLoad').
 - [ERROR] [PlayerMovementLeakSmokeBootstrap] [PlayerMoveTest][Leak] Player não encontrado no WorldRoot ou fallbacks.
 - [INFO] [PlayerMovementLeakSmokeBootstrap] [PlayerMoveTest][Leak] Disparando ResetWorldAsync para spawn inicial.
 - [INFO] [PlayerMovementLeakSmokeBootstrap] [PlayerMoveTest][Leak] Player encontrado após spawn inicial (path='WorldRoot:WorldRoot').
