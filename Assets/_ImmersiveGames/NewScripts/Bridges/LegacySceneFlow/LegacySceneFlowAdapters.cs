@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.Scripts.FadeSystem;
+using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 {
@@ -38,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
             {
                 DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
                     "[SceneFlow] Usando IFadeService legado via adapter.");
-                return new LegacySceneFlowFadeAdapter(fadeService);
+                return new LegacySceneFlowFadeAdapter(fadeService, new SceneTransitionProfileResolver());
             }
 
             DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
@@ -99,21 +103,71 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     public sealed class LegacySceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
         private readonly IFadeService _fadeService;
+        private readonly SceneTransitionProfileResolver _profileResolver;
 
-        public LegacySceneFlowFadeAdapter(IFadeService fadeService)
+        public LegacySceneFlowFadeAdapter(IFadeService fadeService, SceneTransitionProfileResolver profileResolver)
         {
             _fadeService = fadeService ?? throw new ArgumentNullException(nameof(fadeService));
+            _profileResolver = profileResolver ?? new SceneTransitionProfileResolver();
         }
 
         public bool IsAvailable => _fadeService != null;
 
         public void ConfigureFromProfile(string profileName)
         {
-            // IFadeService legado não suporta profile diretamente; nada a configurar.
+            if (_fadeService is FadeService concreteFade)
+            {
+                var profile = _profileResolver.Resolve(profileName);
+                concreteFade.ConfigureFromProfile(profile);
+                return;
+            }
+
+            DebugUtility.LogVerbose<LegacySceneFlowFadeAdapter>(
+                "[SceneFlow] IFadeService não suporta configuração de profile diretamente (não é FadeService).");
         }
 
         public Task FadeInAsync() => _fadeService.FadeInAsync();
 
         public Task FadeOutAsync() => _fadeService.FadeOutAsync();
+    }
+
+    /// <summary>
+    /// Resolve SceneTransitionProfile por nome, usando Resources como fallback.
+    /// </summary>
+    public sealed class SceneTransitionProfileResolver
+    {
+        private readonly Dictionary<string, SceneTransitionProfile> _cache = new();
+
+        public SceneTransitionProfile Resolve(string profileName)
+        {
+            if (string.IsNullOrWhiteSpace(profileName))
+            {
+                return null;
+            }
+
+            if (_cache.TryGetValue(profileName, out var cached))
+            {
+                return cached;
+            }
+
+            var resolved = Resources.Load<SceneTransitionProfile>(profileName);
+
+            if (resolved == null)
+            {
+                resolved = Resources
+                    .FindObjectsOfTypeAll<SceneTransitionProfile>()
+                    .FirstOrDefault(p => string.Equals(p.name, profileName, StringComparison.Ordinal));
+            }
+
+            if (resolved == null)
+            {
+                DebugUtility.LogWarning<SceneTransitionProfileResolver>(
+                    $"[SceneFlow] SceneTransitionProfile '{profileName}' não encontrado (Resources). Fade usará defaults.");
+                return null;
+            }
+
+            _cache[profileName] = resolved;
+            return resolved;
+        }
     }
 }

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -24,7 +26,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var provider = DependencyManager.Provider;
             var readiness = ResolveReadiness(provider);
             var gateService = ResolveGate(provider);
-            var service = ResolveSceneTransitionService(provider);
+            var previousService = ResolveExistingService(provider);
+
+            var stubLoader = new StubSceneFlowLoaderAdapter();
+            var stubFade = new StubSceneFlowFadeAdapter();
+            var service = new SceneTransitionService(stubLoader, stubFade);
+            provider.RegisterGlobal<ISceneTransitionService>(service, allowOverride: true);
 
             var eventOrder = new List<string>();
             bool gameplayReadyAfterStart = true;
@@ -55,13 +62,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             try
             {
-                var activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-
                 var request = new SceneTransitionRequest(
-                    Array.Empty<string>(),
-                    Array.Empty<string>(),
-                    targetActiveScene: string.IsNullOrWhiteSpace(activeSceneName) ? null : activeSceneName,
-                    useFade: false);
+                    new[] { "QA_Load_A" },
+                    new[] { "QA_Unload_B" },
+                    targetActiveScene: "QA_TargetActive",
+                    useFade: true,
+                    transitionProfileName: "QA_Profile");
 
                 service.TransitionAsync(request).GetAwaiter().GetResult();
 
@@ -69,6 +75,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 Evaluate(eventOrder.Count >= 1 && eventOrder[0] == "Started", "Primeiro evento é Started.", ref passes, ref fails);
                 Evaluate(eventOrder.Count >= 2 && eventOrder[1] == "ScenesReady", "Segundo evento é ScenesReady.", ref passes, ref fails);
                 Evaluate(eventOrder.Count >= 3 && eventOrder[2] == "Completed", "Terceiro evento é Completed.", ref passes, ref fails);
+
+                Evaluate(stubLoader.LoadCalls.Contains("QA_Load_A"), "Loader adapter recebeu LoadSceneAsync para QA_Load_A.", ref passes, ref fails);
+                Evaluate(stubLoader.UnloadCalls.Contains("QA_Unload_B"), "Loader adapter recebeu UnloadSceneAsync para QA_Unload_B.", ref passes, ref fails);
+                Evaluate(string.Equals(stubLoader.ActiveScene, "QA_TargetActive", StringComparison.Ordinal),
+                    "Loader adapter recebeu TrySetActiveSceneAsync para QA_TargetActive.", ref passes, ref fails);
+                Evaluate(string.Equals(stubFade.ConfiguredProfileName, "QA_Profile", StringComparison.Ordinal),
+                    "Fade adapter configurado com TransitionProfileName.", ref passes, ref fails);
+                Evaluate(stubFade.FadeInCount == 1 && stubFade.FadeOutCount == 1,
+                    "Fade adapter executou FadeIn e FadeOut exatamente uma vez.", ref passes, ref fails);
 
                 Evaluate(!gameplayReadyAfterStart, "GameReadinessService marca gameplay como NOT READY após Started.", ref passes, ref fails);
                 Evaluate(gateOpenAfterStart == false, "SimulationGate fecha durante transição (após Started).", ref passes, ref fails);
@@ -86,6 +101,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 EventBus<SceneTransitionStartedEvent>.Unregister(startedBinding);
                 EventBus<SceneTransitionScenesReadyEvent>.Unregister(scenesReadyBinding);
                 EventBus<SceneTransitionCompletedEvent>.Unregister(completedBinding);
+                RestoreService(provider, previousService);
             }
 
             DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester),
@@ -123,20 +139,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         }
 
         private static ISceneTransitionService ResolveSceneTransitionService(IDependencyProvider provider)
+        private static ISceneTransitionService ResolveExistingService(IDependencyProvider provider)
         {
             if (provider.TryGetGlobal<ISceneTransitionService>(out var registered) && registered != null)
             {
                 return registered;
             }
-
-            DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQATester),
-                "[QA][SceneFlow] ISceneTransitionService não encontrado no DI global. Criando instância fallback.");
-
-            var loader = new SceneManagerLoaderAdapter();
-            var fade = new NullFadeAdapter();
-            var service = new SceneTransitionService(loader, fade);
-            provider.RegisterGlobal<ISceneTransitionService>(service, allowOverride: true);
-            return service;
+            return null;
         }
 
         private static void Evaluate(bool condition, string message, ref int passes, ref int fails)
@@ -152,6 +161,83 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQATester),
                     $"[QA][SceneFlow] FAIL - {message}");
                 fails++;
+            }
+        }
+
+        private static void RestoreService(IDependencyProvider provider, ISceneTransitionService previousService)
+        {
+            if (previousService != null)
+            {
+                provider.RegisterGlobal(previousService, allowOverride: true);
+                return;
+            }
+
+            var loader = LegacySceneFlowAdapters.CreateLoaderAdapter(provider);
+            var fade = LegacySceneFlowAdapters.CreateFadeAdapter(provider);
+            var service = new SceneTransitionService(loader, fade);
+            provider.RegisterGlobal<ISceneTransitionService>(service, allowOverride: true);
+        }
+
+        private sealed class StubSceneFlowLoaderAdapter : ISceneFlowLoaderAdapter
+        {
+            public List<string> LoadCalls { get; } = new();
+            public List<string> UnloadCalls { get; } = new();
+            public string ActiveScene { get; private set; }
+            private readonly HashSet<string> _loadedScenes = new(StringComparer.Ordinal);
+
+            public StubSceneFlowLoaderAdapter()
+            {
+                _loadedScenes.Add("QA_Unload_B"); // marca como carregada para exercitar Unload
+            }
+
+            public Task LoadSceneAsync(string sceneName)
+            {
+                LoadCalls.Add(sceneName);
+                _loadedScenes.Add(sceneName);
+                return Task.CompletedTask;
+            }
+
+            public Task UnloadSceneAsync(string sceneName)
+            {
+                UnloadCalls.Add(sceneName);
+                _loadedScenes.Remove(sceneName);
+                return Task.CompletedTask;
+            }
+
+            public bool IsSceneLoaded(string sceneName) => _loadedScenes.Contains(sceneName);
+
+            public Task<bool> TrySetActiveSceneAsync(string sceneName)
+            {
+                ActiveScene = sceneName;
+                return Task.FromResult(true);
+            }
+
+            public string GetActiveSceneName() => ActiveScene ?? string.Empty;
+        }
+
+        private sealed class StubSceneFlowFadeAdapter : ISceneFlowFadeAdapter
+        {
+            public int FadeInCount { get; private set; }
+            public int FadeOutCount { get; private set; }
+            public string ConfiguredProfileName { get; private set; }
+
+            public bool IsAvailable => true;
+
+            public void ConfigureFromProfile(string profileName)
+            {
+                ConfiguredProfileName = profileName;
+            }
+
+            public Task FadeInAsync()
+            {
+                FadeInCount++;
+                return Task.CompletedTask;
+            }
+
+            public Task FadeOutAsync()
+            {
+                FadeOutCount++;
+                return Task.CompletedTask;
             }
         }
     }

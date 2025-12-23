@@ -3,6 +3,7 @@
 - Added: SceneTransitionServiceSmokeQATester integrado ao NewScriptsInfraSmokeRunner para validar ordem de eventos e readiness/gate.
 - Updated: GlobalBootstrap registra SceneTransitionService nativo com flag NEWSCRIPTS_SCENEFLOW_NATIVE e fallback para bridge legado.
 - Updated: LegacyBridges.md marca explicitamente o LegacySceneFlowBridge como temporário até a ativação do Scene Flow nativo.
+- Updated: LegacySceneFlow adapters refinados para resolver SceneTransitionProfile por nome e QA reforçado para exercitar loader/fade nativos.
 
 ## [2025-12-22]
 - Updated: Eventos do GameLoop migrados para NewScripts (doc `GameLoop/GameLoop.md` menciona bootstrap global e localização dos eventos).
