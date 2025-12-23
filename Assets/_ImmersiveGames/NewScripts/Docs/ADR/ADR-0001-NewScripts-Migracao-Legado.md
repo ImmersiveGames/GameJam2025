@@ -1,5 +1,8 @@
 # ADR-0001 — Migração incremental do Legado para o NewScripts
 
+> Owner deste ADR: decisão/guardrails de migração e bridges.  
+> Owner operacional de pipeline/ordem/gates: `../WorldLifecycle/WorldLifecycle.md`.
+
 ## Contexto
 - O NewScripts é a camada de produto nova e já provê pipeline determinístico de reset, gate e registries por cena.
 - Componentes legados precisam migrar de forma progressiva (começando pelo Player) sem quebrar fluxo atual e sem contaminar a arquitetura nova.
@@ -42,6 +45,17 @@ SceneBootstrapper -> registries/context -> Controller -> Orchestrator -> SpawnSe
 - **Migrar capacidades**: mover módulos de input, movimento, vida, etc., para o NewScripts uma capacidade por vez, removendo dependências diretas do legado.
 - **Mapear baseline funcional**: identificar tudo o que precisa ser resetado para restaurar o baseline do player (incluindo managers, caches, serviços e UI fora do prefab) e decidir quem participa via `Scope=Players`.
 - **Atravessar fronteiras com adaptadores**: quando o baseline exigir tocar sistemas legados externos ao prefab (UI, roteadores de input, caches de gameplay), inserir participantes/adaptadores explícitos de `Scope=Players` sem quebrar o gate ou o pipeline determinístico.
+
+## Bridges Temporários (LegacySceneFlowBridge)
+
+- **O que faz**: `Bridges/LegacySceneFlow/LegacySceneFlowBridge.cs` observa eventos de transição do pipeline legado e publica os equivalentes no EventBus do NewScripts, convertendo o contexto legado via reflexão para `SceneTransitionContext` (com idempotência de registro e descarte via `IDisposable`).
+- **Por que existe**: consumidores do NewScripts (ex.: `GameReadinessService`, `WorldLifecycleRuntimeDriver`) já usam eventos novos, mas o fluxo de transição ainda é legado; o bridge permite evolução incremental sem alterar o `SceneTransitionService` legado.
+- **Checklist de remoção**:
+  - SceneTransitionService publica eventos NewScripts nativamente (flag `NEWSCRIPTS_SCENEFLOW_NATIVE` ou config equivalente).
+  - QAs do `SceneTransitionServiceSmokeQATester` passam em produção (com `NEWSCRIPTS_SCENEFLOW_NATIVE` ativo).
+  - Nenhum consumidor depende de eventos legados.
+  - Registro do bridge removido do `GlobalBootstrap` e pasta `Bridges/LegacySceneFlow` deletada.
+- **QA associado**: `LegacySceneFlowBridgeSmokeQATester` valida que os eventos do legado são refletidos corretamente no EventBus do NewScripts enquanto o bridge existir.
 
 ## Critérios de validação
 - Hard reset: logs de `Gate Acquire/Release` e fases em ordem, sem concorrência ou duplicação por `contextSignature`.

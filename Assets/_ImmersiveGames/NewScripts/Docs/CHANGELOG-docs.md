@@ -1,8 +1,15 @@
+## [2025-12-23] (normalização adicional)
+- Merged: conteúdo de `Migrations/LegacyBridges.md` incorporado em `ADR/ADR-0001-NewScripts-Migracao-Legado.md#bridges-temporários-legacysceneflowbridge` (arquivo removido).
+- Updated: README/ARCHITECTURE/ADR/ADR-ciclo-de-vida-jogo.md/ADR.md alinhados aos owners (decisão vs operação vs QA) com links explícitos para `WorldLifecycle/WorldLifecycle.md`.
+- Updated: documentos de planejamento/relato de normalização movidos para `Reports/` como evidência.
+- Updated: `HowTo-PlayerMovement.md` movido para `Reports/` junto das evidências de smoke.
+- Updated: referências a critérios de remoção do bridge apontam para o ADR de migração.
+
 ## [2025-12-23]
 - Added: SceneTransitionService nativo (NewScripts) com adapters para Fade/SceneLoader e proteção contra transições concorrentes.
 - Added: SceneTransitionServiceSmokeQATester integrado ao NewScriptsInfraSmokeRunner para validar ordem de eventos e readiness/gate.
 - Updated: GlobalBootstrap registra SceneTransitionService nativo com flag NEWSCRIPTS_SCENEFLOW_NATIVE e fallback para bridge legado.
-- Updated: LegacyBridges.md marca explicitamente o LegacySceneFlowBridge como temporário até a ativação do Scene Flow nativo.
+- Updated: LegacyBridges (bridge de Scene Flow legado) marcado explicitamente como temporário até a ativação do Scene Flow nativo.
 - Updated: LegacySceneFlow adapters refinados para resolver SceneTransitionProfile por nome e QA reforçado para exercitar loader/fade nativos.
 
 ## [2025-12-22]

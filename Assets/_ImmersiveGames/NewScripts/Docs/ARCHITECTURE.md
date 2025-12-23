@@ -13,26 +13,19 @@
 - **Scene**: cada cena monta seu próprio grafo de serviços e registries (ex.: `WorldLifecycleHookRegistry`), sem pressupor persistência entre cenas.
 - **Actor**: componentes e serviços específicos do ator; resetados via despawn/respawn.
 
-### Fluxo de Vida Atual (resumo; detalhes operacionais em `WorldLifecycle/WorldLifecycle.md`)
-1. **Bootstrap de Cena**: `NewSceneBootstrapper.Awake` registra serviços de cena e registries (incluindo `WorldLifecycleHookRegistry`, `IActorRegistry`, `IWorldSpawnServiceRegistry`) sem `allowOverride` e com logs de diagnóstico.
-2. **World Lifecycle**: `WorldLifecycleController` aciona `WorldLifecycleOrchestrator`, que coordena reset determinístico (Acquire Gate → hooks pré-despawn → actor hooks pré-despawn → despawn → hooks pós-despawn/pré-spawn → spawn → actor hooks pós-spawn → hooks finais → release), interrompendo em falhas (fail-fast) e registrando a ordem. Detalhes de pipeline, escopos e troubleshooting estão em `WorldLifecycle/WorldLifecycle.md` (owner operacional).
-3. **Gameplay**: ocorre por eventos/contratos entre atores/serviços configurados na cena.
-4. **Unload da Cena**: serviços e registries de cena são descartados; próxima cena cria um novo grafo.
-5. **Notas para QA/Testers**:
-    - São consumidores de scene-scope; podem falhar no `Awake` se o boot ainda não ocorreu.
-    - Padrão recomendado: `Start()` ou lazy injection + retry/timeout para evitar falso negativo.
-    - Erros no início do Play Mode normalmente indicam ordem de inicialização/ausência do bootstrapper, não falha do reset.
+### Fluxo de Vida Atual (resumo — detalhes operacionais em `WorldLifecycle/WorldLifecycle.md`)
+- **Bootstrap de Cena**: `NewSceneBootstrapper` registra serviços/registries de cena (incluindo `WorldLifecycleHookRegistry`, `IActorRegistry`, `IWorldSpawnServiceRegistry`) sem `allowOverride`.
+- **WorldLifecycle**: `WorldLifecycleController` orquestra o reset determinístico (gate → hooks/hard reset ou reset-in-place por escopo) seguindo o contrato descrito no documento operacional.
+- **Gameplay**: ocorre via eventos/contratos entre atores e serviços registrados na cena.
+- **Unload**: unload da cena descarta o grafo/registries; próxima cena recompõe serviços.
+- **QA/Testers**: consumidores de scene-scope; devem usar lazy injection/`Start()` para tolerar ordem de boot (detalhes em `WorldLifecycle/WorldLifecycle.md#troubleshooting-qatesters-e-boot-order`).
 
-### World Lifecycle Reset & Hooks (As-Is — owner operacional em `WorldLifecycle/WorldLifecycle.md`)
-- **Guardrails do Registry**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper`; controller/orchestrator apenas consomem via DI. Segunda tentativa de registro é logada como erro e reusa a instância existente (ownership é do bootstrapper da cena).
-- **Fontes de hooks executados em cada fase**:
-  1. **Spawn Service Hooks (`IWorldLifecycleHook`)**: implementados por serviços de spawn; usados para limpar caches/preparar pools.
-  2. **Scene Hooks via DI**: serviços registrados no escopo de cena e resolvidos via `IDependencyProvider.GetAllForScene`.
-  3. **Scene Hooks via Registry**: criados/registrados pelo bootstrapper (ex.: QA `SceneLifecycleHookLoggerA/B`) sem duplicar e reutilizados entre resets da mesma cena.
-  4. **Actor Component Hooks (`IActorLifecycleHook`)**: `MonoBehaviour` executados via `ActorRegistry` nas fases de ator.
-- **Ordenação determinística**: todos os hooks (mundo e ator) seguem (`Order`, `Type.FullName`) com comparador ordinal, sem reflection, garantindo logs e execução estáveis entre resets.
-- **Otimização (cache por ciclo)**: o orquestrador reusa por ciclo a lista ordenada de hooks de ator para reduzir chamadas a `GetComponentsInChildren` em resets com muitos atores. Usa sentinela `EmptyActorHookList` para evitar alocações e não cacheia a sentinela; invalidação permanece por `root` e o cache é limpo no `finally` do reset.
-- **Garantias**: hooks são opt-in; falha interrompe o reset (fail-fast); ordem permanece determinística em todas as fases. Consultar `WorldLifecycle/WorldLifecycle.md` para troubleshooting e contratos de reset por escopo.
+### World Lifecycle Reset & Hooks (referência cruzada)
+- **Owner operacional**: `WorldLifecycle/WorldLifecycle.md`.
+- **Guardrails**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper` (segundo registro reusa a instância e loga erro); hooks são opt-in e ordenados por (`Order`, `Type.FullName`) sem heurísticas.
+- **Fontes de hooks**: spawn services, serviços de cena via DI, hooks registrados no registry e `IActorLifecycleHook` em atores — todos executados pelo `WorldLifecycleOrchestrator` conforme pipeline oficial.
+- **Otimização**: cache de hooks de ator é válido apenas por ciclo de reset (limpo no `finally`), evitando custo de varredura múltipla.
+- **Determinismo**: falhas interrompem o reset (fail-fast) e a ordem é estável entre cenas/resets.
 
 ## Planned (To-Be / Roadmap)
 - Bootstrap global adicional para serviços compartilhados entre cenas, mantendo separação clara de estado.
