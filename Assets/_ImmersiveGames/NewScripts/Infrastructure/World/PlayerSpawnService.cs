@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
@@ -75,6 +76,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
 
             _spawnedObject.name = _prefab.name;
+            EnsureMovementStack(_spawnedObject);
 
             if (!TryResolveActor(_spawnedObject, out _spawnedActor))
             {
@@ -196,6 +198,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
             player.Initialize(actorId);
             return true;
+        }
+
+        private static void EnsureMovementStack(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            var input = instance.GetComponent<NewPlayerInputReader>() ?? instance.AddComponent<NewPlayerInputReader>();
+            var controller = instance.GetComponent<NewPlayerMovementController>() ?? instance.AddComponent<NewPlayerMovementController>();
+
+            if (controller != null && input != null)
+            {
+                controller.SetInputReader(input);
+            }
         }
     }
 }
