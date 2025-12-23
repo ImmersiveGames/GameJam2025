@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.Scripts.FadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
+using LegacyDependencyManager = _ImmersiveGames.Scripts.Utils.DependencySystems.DependencyManager;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
@@ -18,11 +19,11 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     /// </summary>
     public static class LegacySceneFlowAdapters
     {
+        private static readonly SceneTransitionProfileResolver SharedProfileResolver = new();
+
         public static ISceneFlowLoaderAdapter CreateLoaderAdapter(IDependencyProvider provider)
         {
-            if (provider != null &&
-                provider.TryGetGlobal<ISceneLoader>(out var legacyLoader) &&
-                legacyLoader != null)
+            if (TryResolveLegacyService(provider, out ISceneLoader legacyLoader))
             {
                 DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
                     "[SceneFlow] Usando ISceneLoader legado via adapter.");
@@ -36,18 +37,48 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 
         public static ISceneFlowFadeAdapter CreateFadeAdapter(IDependencyProvider provider)
         {
-            if (provider != null &&
-                provider.TryGetGlobal<IFadeService>(out var fadeService) &&
-                fadeService != null)
+            if (TryResolveLegacyService(provider, out IFadeService fadeService))
             {
                 DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
                     "[SceneFlow] Usando IFadeService legado via adapter.");
-                return new LegacySceneFlowFadeAdapter(fadeService, new SceneTransitionProfileResolver());
+                return new LegacySceneFlowFadeAdapter(fadeService, SharedProfileResolver);
             }
 
             DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
                 "[SceneFlow] IFadeService legado indisponível. Usando NullFadeAdapter.");
             return new NullFadeAdapter();
+        }
+
+        private static bool TryResolveLegacyService<T>(IDependencyProvider provider, out T service) where T : class
+        {
+            service = null;
+
+            if (provider != null &&
+                provider.TryGetGlobal(out service) &&
+                service != null)
+            {
+                return true;
+            }
+
+            try
+            {
+                var legacyProvider = LegacyDependencyManager.Provider;
+                if (legacyProvider != null &&
+                    legacyProvider.TryGetGlobal(out service) &&
+                    service != null)
+                {
+                    DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
+                        $"[SceneFlow] Serviço legado resolvido via DependencyManager legado: {typeof(T).Name}.");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(LegacySceneFlowAdapters),
+                    $"[SceneFlow] Falha ao resolver serviço legado {typeof(T).Name} via DependencyManager legado: {ex.Message}");
+            }
+
+            return false;
         }
     }
 
@@ -118,6 +149,11 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
             if (_fadeService is FadeService concreteFade)
             {
                 var profile = _profileResolver.Resolve(profileName);
+                if (profile == null && !string.IsNullOrWhiteSpace(profileName))
+                {
+                    DebugUtility.LogWarning<LegacySceneFlowFadeAdapter>(
+                        $"[SceneFlow] Profile '{profileName}' não encontrado. FadeService usará defaults.");
+                }
                 concreteFade.ConfigureFromProfile(profile);
                 return;
             }
