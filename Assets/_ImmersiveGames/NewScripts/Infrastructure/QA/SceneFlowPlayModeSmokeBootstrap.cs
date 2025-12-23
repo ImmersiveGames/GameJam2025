@@ -28,8 +28,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 #endif
 
         private readonly List<string> _sceneFlowLogs = new();
-        private bool _hasFailureHint;
-        private bool _hasPassHint;
+        private int _capturedLogCount;
+        private bool _nativePassMarkerFound;
+        private bool _bridgePassMarkerFound;
+        private bool _hasFailMarker;
+        private int _runnerLastPasses;
+        private int _runnerLastFails;
 
         private void Start()
         {
@@ -44,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} INCONCLUSIVE - NEWSCRIPTS_SCENEFLOW_NATIVE ausente.");
                 WriteReport("INCONCLUSIVE");
-                SetExit(3);
+                SetExit(3, "INCONCLUSIVE");
                 Application.logMessageReceived -= OnLogMessage;
                 if (Application.isBatchMode)
                 {
@@ -68,19 +72,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             catch (Exception ex)
             {
                 executionException = ex;
-                _hasFailureHint = true;
+                _hasFailMarker = true;
                 _sceneFlowLogs.Add($"{LogTag} Exception: {ex.GetType().Name}: {ex.Message}");
             }
 
             float start = Time.realtimeSinceStartup;
             while (Time.realtimeSinceStartup - start < TimeoutSeconds)
             {
-                if (_hasFailureHint)
+                if (_hasFailMarker || runner.LastRunHadFailures)
                 {
                     break;
                 }
 
-                if (_hasPassHint && !runner.LastRunHadFailures)
+                if (_nativePassMarkerFound && _bridgePassMarkerFound)
                 {
                     break;
                 }
@@ -90,8 +94,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             Application.logMessageReceived -= OnLogMessage;
 
-            bool fail = executionException != null || runner.LastRunHadFailures || _hasFailureHint;
-            string result = fail ? "FAIL" : _hasPassHint ? "PASS" : "FAIL";
+            _runnerLastPasses = runner.LastRunPasses;
+            _runnerLastFails = runner.LastRunFails;
+
+            bool fail = executionException != null
+                        || runner.LastRunHadFailures
+                        || _hasFailMarker
+                        || !_nativePassMarkerFound
+                        || !_bridgePassMarkerFound;
+            string result = fail ? "FAIL" : "PASS";
 
             if (result == "PASS")
             {
@@ -104,7 +115,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             WriteReport(result);
 
-            SetExit(result == "PASS" ? 0 : 2);
+            int exitCode = result == "PASS" ? 0 : 2;
+            SetExit(exitCode, result);
 
             Destroy(runnerObject);
 
@@ -123,18 +135,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (condition.Contains("[SceneFlowTest]", StringComparison.Ordinal))
             {
+                _capturedLogCount++;
                 _sceneFlowLogs.Add(condition);
 
                 if (condition.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     condition.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    _hasFailureHint = true;
+                    _hasFailMarker = true;
                 }
 
-                if (condition.IndexOf("PASS", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    condition.IndexOf("Completed", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (condition.IndexOf("[SceneFlowTest][Native] PASS", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    _hasPassHint = true;
+                    _nativePassMarkerFound = true;
+                }
+
+                if (condition.IndexOf("[SceneFlowTest][Bridge] PASS", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    _bridgePassMarkerFound = true;
                 }
             }
         }
@@ -154,6 +171,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 builder.AppendLine($"- Timestamp: {DateTime.UtcNow:O}");
                 builder.AppendLine($"- Defines: {GetDefines()}");
                 builder.AppendLine($"- Result: {result}");
+                builder.AppendLine($"- RunnerPasses: {_runnerLastPasses}");
+                builder.AppendLine($"- RunnerFails: {_runnerLastFails}");
+                builder.AppendLine($"- NativePassMarkerFound: {_nativePassMarkerFound}");
+                builder.AppendLine($"- BridgePassMarkerFound: {_bridgePassMarkerFound}");
+                builder.AppendLine($"- TotalMarkedLogsCaptured: {_capturedLogCount}");
                 builder.AppendLine();
                 builder.AppendLine("## Logs (até 30 entradas)");
 
@@ -170,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                         count++;
                         if (count >= 30)
                         {
-                            builder.AppendLine("- (truncado)");
+                            builder.AppendLine($"- (truncado; total={_sceneFlowLogs.Count})");
                             break;
                         }
                     }
@@ -200,10 +222,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             return string.Join(", ", defines);
         }
 
-        private static void SetExit(int code)
+        private static void SetExit(int code, string result)
         {
             Environment.ExitCode = code;
-            DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} ExitCode={code}");
+            DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} RESULT={result} ExitCode={code}");
         }
     }
 
