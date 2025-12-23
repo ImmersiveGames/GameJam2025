@@ -5,6 +5,7 @@
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  */
 using System;
+using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
     {
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
+        private static LegacySceneFlowBridge _legacySceneFlowBridge;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -82,6 +84,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterPauseBridge();
             RegisterGameLoop();
+
+            RegisterLegacySceneFlowBridge();
 
             // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
@@ -140,6 +144,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterLegacySceneFlowBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<LegacySceneFlowBridge>(out var existing) && existing != null)
+            {
+                _legacySceneFlowBridge = existing;
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneBridge] LegacySceneFlowBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            RegisterIfMissing(() => new LegacySceneFlowBridge());
+            DependencyManager.Provider.TryGetGlobal<LegacySceneFlowBridge>(out _legacySceneFlowBridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[SceneBridge] LegacySceneFlowBridge registrado (Scene Flow legado → eventos NewScripts).",
                 DebugUtility.Colors.Info);
         }
 
