@@ -241,15 +241,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 yield return resetCoroutine;
             }
 
-            PlayerContext newPlayerContext = default;
-            bool playerFound = false;
+            PlayerContext newPlayerContext = null;
             yield return WaitForRespawn(currentPlayer, provider, startTime, context =>
             {
                 newPlayerContext = context;
-                playerFound = true;
             });
 
-            if (!playerFound || newPlayerContext.Rigidbody == null)
+            if (newPlayerContext == null || newPlayerContext.Rigidbody == null)
             {
                 _testBResult = false;
                 _testBFailure = "Player não reapareceu após reset.";
@@ -379,7 +377,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             while (!HasTimedOut(startTime) && Time.realtimeSinceStartup - waitStart < TimeoutSeconds)
             {
                 var candidate = DiscoverPlayer(provider, suppressLog: true);
-                if (candidate != null && !ReferenceEquals(candidate.GameObject, oldPlayer.GameObject) && candidate.Rigidbody != null)
+                if (candidate != null && candidate.GameObject != null && oldPlayer != null &&
+                    !ReferenceEquals(candidate.GameObject, oldPlayer.GameObject) && candidate.Rigidbody != null)
                 {
                     DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
                         $"{LogTag} Player reapareceu após reset (path='{candidate.Path}').");
@@ -472,9 +471,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             return null;
         }
 
-        private bool ValidatePlayer(PlayerContext? player, string error, float startTime)
+        private bool ValidatePlayer(PlayerContext player, string error, float startTime)
         {
-            if (!player.HasValue || player.Value.Rigidbody == null || player.Value.Controller == null)
+            if (player == null || player.Rigidbody == null || player.Controller == null)
             {
                 MarkInconclusive(error);
                 FinalizeAndExit(startTime, "INCONCLUSIVE");
@@ -486,7 +485,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private bool TryFindSpawnedPlayer(IDependencyProvider provider, out PlayerContext context)
         {
-            context = default;
+            context = null;
             var sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (provider.TryGetForScene<IWorldSpawnContext>(sceneName, out var spawnContext) && spawnContext?.WorldRoot != null)
             {
@@ -686,7 +685,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             return string.Join("/", stack);
         }
 
-        private readonly struct PlayerContext
+        private sealed class PlayerContext
         {
             public PlayerContext(GameObject gameObject, PlayerActor actor, NewPlayerMovementController controller, Rigidbody rb, string path)
             {
