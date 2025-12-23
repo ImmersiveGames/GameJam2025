@@ -27,5 +27,5 @@
 
 ## Próximos passos sugeridos
 - Rodar os testers acima em ambiente com Unity e anexar logs reais.
-- Se PASS: avaliar remoção progressiva do bridge conforme `Docs/Migrations/LegacyBridges.md`.
+- Se PASS: avaliar remoção progressiva do bridge conforme `Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md#bridges-temporários-legacysceneflowbridge`.
 - Se FAIL: capturar stack/log e reabrir investigação no SceneTransitionService ou adapters.

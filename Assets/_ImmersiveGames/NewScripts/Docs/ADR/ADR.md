@@ -101,128 +101,16 @@
 ### 26/11/2025 — Estado do DefenseRoleConfig
 - O `DefenseRoleConfig` permanece no projeto apenas para compatibilidade com cenas antigas, mas o `PlanetDefenseController` não consulta mais esse asset; use providers (`IDefenseRoleProvider`) nos prefabs para definir o papel de defesa de forma explícita.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L17-L180】
 
-## ADR: World Lifecycle Hooks Architecture
+## ADR: World Lifecycle Hooks Architecture (índice)
 
-### Context
-- Necessidade de reset determinístico para manter consistência de mundo, atores e serviços de spawn.
-- Evitar acoplamento entre sistemas de UI, áudio, analytics e componentes de atores durante o ciclo de reset.
+Owner operacional e detalhes: `../WorldLifecycle/WorldLifecycle.md`. Este resumo mantém as decisões de arquitetura:
+- **Propriedade do registry**: `WorldLifecycleHookRegistry` nasce apenas no `NewSceneBootstrapper`; tentativas de recriação reutilizam a instância existente e logam erro.
+- **Ordenação determinística**: todos os hooks de mundo/ator seguem (`Order`, `Type.FullName`) e executam em ordem estável entre cenas/resets; responsabilidade do `WorldLifecycleOrchestrator`.
+- **Lazy injection / tolerância ao boot**: consumidores de serviços de cena devem usar `Start()` ou retry curto; falhas em `Awake` por ordem de boot são tratadas como diagnóstico, não como bug do orquestrador.
+- **Separação de responsabilidades**: world orquestra, scene registra serviços/registries, actors apenas reagem; nenhum nível cria hooks globais para outro.
+- **Cache por ciclo**: lista de hooks de ator é cacheada apenas dentro de um `ResetWorldAsync` e limpa no `finally` para reduzir custo sem perder determinismo.
 
-### Decision
-- Introdução de hooks opt-in em múltiplos níveis, permitindo que serviços de spawn, serviços de cena e componentes de atores participem do ciclo.
-- Separação clara entre responsabilidades de world, scene e actor, cada uma com registro explícito e resolução sem reflection.
-- Registry é criado no bootstrapper (escopo de cena) e consumido por DI; proibido criar/registrar fora do bootstrapper.
-
-### Consequences
-- Mais flexibilidade para instrumentar resets com telemetria, debug e limpeza direcionada.
-- Custo mínimo de complexidade ao manter contratos simples e determinísticos.
-- Arquitetura extensível para multiplayer local, replay e testes automatizados.
-- Previne duplo-registro, evita divergência de instância e garante previsibilidade em testes/QA.
-
-### Boot order & Dependency Injection timing (Scene scope)
-- Serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) nascem no `NewSceneBootstrapper`; nenhum outro componente deve criá-los ou registrá-los novamente.
-- Consumidores de cena evitam injetar no `Awake()` sem garantir ordem. Preferir `Start()` ou injeção lazy com retry curto/timeout para não rodar antes do bootstrap.
-- Testes/QA adotam o padrão lazy + retry: aguardam alguns frames por registro do bootstrapper e abortam com mensagem acionável se a cena ainda não registrou os serviços. Isso reduz falsos negativos em cenas novas sem alterar o `WorldLifecycleOrchestrator`.
-
-### Deterministic Ordering for World and Actor Lifecycle Hooks
-
-#### Context
-- O sistema de reset do mundo executa múltiplos tipos de hooks:
-  - hooks de serviços e de cena (`IWorldLifecycleHook`)
-  - hooks de componentes de ator (`IActorLifecycleHook`)
-- A ordem de enumeração dessas coleções não é garantida por:
-  - DI (`GetAllForScene`)
-  - `GetComponentsInChildren`
-  - ordem de registro acidental
-- Falta de determinismo gera bugs difíceis de reproduzir durante reset, QA e multiplayer local.
-
-#### Decision
-- Todos os hooks de lifecycle, independentemente da origem, são executados em ordem determinística.
-- A ordenação segue o critério:
-  - `Order` (quando o hook implementa `IOrderedLifecycleHook`, default = 0)
-  - `Type.FullName` (ordem ordinal) como desempate estável
-- A regra aplica-se igualmente a:
-  - hooks de mundo (`IWorldLifecycleHook`)
-  - hooks de ator (`IActorLifecycleHook`)
-- A ordenação é responsabilidade do `WorldLifecycleOrchestrator`.
-- Não é usado reflection nem heurísticas por nome de GameObject.
-
-#### Consequences
-- A execução do reset torna-se estável entre:
-  - múltiplos resets
-  - diferentes cenas
-  - Editor vs Build
-- Hooks passam a ter um mecanismo explícito de prioridade sem acoplamento.
-- Alterações de hierarquia ou ordem de componentes não afetam a execução.
-- Desenvolvedores devem definir `Order` apenas quando necessário; a maioria dos hooks pode permanecer com o valor padrão.
-
-### Lazy Injection and Boot Order Tolerance for Scene Consumers
-
-#### Context
-- Serviços de cena (`IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`) são criados exclusivamente pelo `NewSceneBootstrapper`.
-- Componentes de cena (QA, debug, ferramentas, controladores auxiliares) podem executar antes do bootstrap dependendo da ordem de execução do Unity.
-- Injeção direta no `Awake()` pode falhar legitimamente em cenas novas ou em cenários de desenvolvimento (`NEWSCRIPTS_MODE`).
-- Falhas precoces geram falsos negativos, confundindo erros de ordem de boot com falhas reais de runtime.
-
-#### Decision
-- Componentes consumidores de serviços de scene-scope:
-  - não devem assumir disponibilidade no `Awake()`;
-  - devem usar lazy injection com retry curto e timeout controlado.
-- Padrão recomendado:
-  - tentar injeção em `Start()` ou via rotina assíncrona curta;
-  - abortar com mensagem acionável se o bootstrapper não rodou.
-- O `WorldLifecycleOrchestrator` não corrige nem compensa ordem de boot; ele assume dependências resolvidas corretamente pelo fluxo de bootstrap.
-- Aplica-se especialmente a QA/Testers, ferramentas de debug e instaladores auxiliares de hooks.
-
-#### Consequences
-- Redução de falsos negativos em QA e testes locais.
-- Separação clara entre erro de boot/ordem de execução e erro real de lógica de reset.
-- Fluxo de inicialização mais resiliente sem introduzir acoplamento temporal no core do sistema.
-- Boot order torna-se um contrato explícito, não uma suposição implícita.
-
-### Explicit Separation of World, Scene, and Actor Lifecycle Responsibilities
-
-#### Context
-- O ciclo de reset envolve múltiplos níveis:
-  - mundo (spawn/despawn e serviços)
-  - cena (serviços e ferramentas registradas por escopo)
-  - ator (componentes `MonoBehaviour`)
-- Misturar responsabilidades (ex.: ator criando registry, controller criando hooks de cena) gera acoplamento indevido, duplicação de instâncias e comportamento imprevisível em resets.
-- Projetos Unity tendem a colapsar essas camadas sem um contrato explícito.
-
-#### Decision
-- Responsabilidades são explicitamente separadas:
-  - **World**: orquestra o reset e executa hooks; não cria serviços de cena.
-  - **Scene**: cria e registra serviços/registries no bootstrap (`NewSceneBootstrapper`).
-  - **Actor**: reage ao reset via componentes (`IActorLifecycleHook`); não registra hooks globais.
-- `WorldLifecycleHookRegistry` nasce apenas no bootstrapper da cena e é consumido via DI por QA, debug e ferramentas.
-- Hooks são opt-in e não implícitos; nenhum nível cria hooks para outro automaticamente.
-
-#### Consequences
-- Arquitetura previsível e escalável.
-- Evita efeitos colaterais entre cenas, atores e serviços globais.
-- Facilita testes, QA e evolução do sistema (ex.: multiplayer local, replay).
-- Permite extensão controlada sem violar princípios SOLID ou DI.
-
-### Optimization: Actor hook caching per reset cycle
-
-#### Context
-- Resets com muitos atores executam `GetComponentsInChildren` repetidamente no pré-despawn e pós-spawn para coletar `IActorLifecycleHook`, elevando custo e GC dentro do mesmo ciclo.
-
-#### Decision
-- Manter um cache por ator apenas durante o `ResetWorldAsync`, indexado pelo `Transform` e validado pelo `root`, reutilizando a lista já ordenada de hooks dentro do ciclo e limpando o cache no `finally` do reset.
-
-#### Consequences
-- Reduz custo e alocações ao evitar varreduras duplicadas na mesma hierarquia durante o ciclo.
-- Preserva determinismo e ordem (prioridade + `Type.FullName`), sem manter cache entre resets para evitar inconsistências entre ciclos.
-
-## NewScripts — ADRs do World Lifecycle (2025-12)
-
-### ADR-NS-001 — Propriedade do WorldLifecycleHookRegistry
-- **Context**: o registry deve existir uma única vez por cena para evitar divergência entre hooks de world/scene. Tentativas de recriação em runtime geram inconsistência ou shadowing da instância usada pelo orquestrador.
-- **Decision**: apenas o `NewSceneBootstrapper` cria e registra o `WorldLifecycleHookRegistry` no provider de cena. Uma segunda tentativa de registro gera log de erro e **reutiliza** a instância já registrada (ownership permanece com o bootstrapper).
-- **Consequences**: previne duplo-registro e mantém determinismo/telemetria estáveis. Consumidores obtêm sempre a mesma instância da cena atual via DI, e o orquestrador não precisa validar múltiplas origens.
-
-### ADR-NS-002 — Execução determinística e cache por ciclo (WorldLifecycleOrchestrator)
-- **Context**: resets com muitos atores e múltiplas fontes de hooks exigem ordenação estável e evitam custo duplicado de varrer hierarquias durante o mesmo ciclo (pré-despawn e pós-spawn).
-- **Decision**: o `WorldLifecycleOrchestrator` ordena **todos** os hooks por (`Order`, `Type.FullName`) com comparador ordinal e registra logs de início/fim/ordem. Introduz cache por ciclo para hooks de ator (validado por `transform.root`), limpando-o no `finally` do `ResetWorldAsync` e ignorando a sentinela `EmptyActorHookList` para não poluir o cache com coleções vazias.
-- **Consequences**: execução permanece determinística e instrumentada; custo/GC diminui em resets com muitos atores; nenhum cache persiste entre resets, evitando inconsistências entre ciclos ou cenas.
+Referências cruzadas:
+- Pipeline e troubleshooting: `../WorldLifecycle/WorldLifecycle.md`.
+- Decisão de fases/escopos: `ADR-ciclo-de-vida-jogo.md`.
+- Guardrails globais: `../DECISIONS.md`.

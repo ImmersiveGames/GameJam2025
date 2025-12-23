@@ -68,7 +68,7 @@
       "Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/NewScriptsInfraSmokeRunner.cs"
     ],
     "enablement": "Define NEWSCRIPTS_SCENEFLOW_NATIVE para registrar SceneTransitionService no DI; sem flag, apenas bridge legado é mantido.",
-    "bridgeRemovalCriteria": "Flag ativa + QAs verdes + nenhum consumidor dependente do legado (Docs/Migrations/LegacyBridges.md)."
+    "bridgeRemovalCriteria": "Flag ativa + QAs verdes + nenhum consumidor dependente do legado (Docs/ADR/ADR-0001-NewScripts-Migracao-Legado.md#bridges-temporários-legacysceneflowbridge)."
   },
   "worldLifecycle": {
     "controller": "Assets/_ImmersiveGames/NewScripts/Infrastructure/World/WorldLifecycleController.cs",
