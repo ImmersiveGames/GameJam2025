@@ -21,3 +21,7 @@ Bridge temporário localizado em `Assets/_ImmersiveGames/NewScripts/Bridges/Lega
 ### Remoção planejada
 - Gatilho: assim que o `SceneTransitionService` legado passar a publicar eventos NewScripts diretamente, remover este bridge.
 - Passos: remover o registro no `GlobalBootstrap`, apagar `Assets/_ImmersiveGames/NewScripts/Bridges/LegacySceneFlow/` e revalidar consumidores.
+
+### QA associado
+- `LegacySceneFlowBridgeSmokeQATester` valida que eventos de Scene Flow do legado são refletidos no EventBus do NewScripts.
+- O bridge é temporário; remover quando o SceneTransitionService NewScripts for a fonte primária dos eventos (sem dependência do fade/loadscene legado).

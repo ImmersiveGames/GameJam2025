@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private MonoBehaviour eventBusTester;
         [SerializeField] private MonoBehaviour gameLoopEventBridgeTester;
         [SerializeField] private MonoBehaviour filteredEventBusTester;
+        [SerializeField] private MonoBehaviour legacySceneFlowBridgeTester;
         [SerializeField] private bool verbose = true;
 
         private int _passes;
@@ -96,6 +97,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             ExecuteTester(filteredEventBusTester, "FilteredEventBusSmokeQATester");
+
+            legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
+                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQATester>()
+                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+
+            ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
 
             Complete();
         }
