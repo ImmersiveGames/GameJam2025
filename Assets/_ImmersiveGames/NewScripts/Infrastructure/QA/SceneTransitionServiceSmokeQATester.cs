@@ -24,8 +24,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             int fails = 0;
 
             var provider = DependencyManager.Provider;
-            var readiness = ResolveReadiness(provider);
-            var gateService = ResolveGate(provider);
+            provider.TryGetGlobal<ISimulationGateService>(out var previousGate);
+            provider.TryGetGlobal<GameReadinessService>(out var previousReadiness);
+
+            var gateService = ResolveOrInstallGate(provider);
+            var readiness = ResolveOrInstallReadiness(provider, gateService);
             var previousService = ResolveExistingService(provider);
 
             var stubLoader = new StubSceneFlowLoaderAdapter();
@@ -102,6 +105,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 EventBus<SceneTransitionScenesReadyEvent>.Unregister(scenesReadyBinding);
                 EventBus<SceneTransitionCompletedEvent>.Unregister(completedBinding);
                 RestoreService(provider, previousService);
+                RestoreReadinessAndGate(provider, previousGate, previousReadiness);
             }
 
             DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester),
@@ -114,31 +118,43 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
         }
 
-        private static GameReadinessService ResolveReadiness(IDependencyProvider provider)
-        {
-            if (provider.TryGetGlobal<GameReadinessService>(out var readiness) && readiness != null)
-            {
-                return readiness;
-            }
-
-            DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQATester),
-                "[QA][SceneFlow] GameReadinessService indisponível. Asserções de readiness serão ignoradas.");
-            return null;
-        }
-
-        private static ISimulationGateService ResolveGate(IDependencyProvider provider)
+        private static ISimulationGateService ResolveOrInstallGate(IDependencyProvider provider)
         {
             if (provider.TryGetGlobal<ISimulationGateService>(out var gate) && gate != null)
             {
                 return gate;
             }
 
-            DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQATester),
-                "[QA][SceneFlow] ISimulationGateService indisponível. Asserções de gate serão ignoradas.");
-            return null;
+            var newGate = new SimulationGateService();
+            provider.RegisterGlobal<ISimulationGateService>(newGate, allowOverride: true);
+
+            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQATester),
+                "[QA][SceneFlow] ISimulationGateService não encontrado. SimulationGateService de teste registrado.");
+            return newGate;
         }
 
-        private static ISceneTransitionService ResolveSceneTransitionService(IDependencyProvider provider)
+        private static GameReadinessService ResolveOrInstallReadiness(IDependencyProvider provider, ISimulationGateService gate)
+        {
+            if (provider.TryGetGlobal<GameReadinessService>(out var readiness) && readiness != null)
+            {
+                return readiness;
+            }
+
+            if (gate == null)
+            {
+                DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQATester),
+                    "[QA][SceneFlow] Gate indisponível; GameReadinessService não será inicializado para o teste.");
+                return null;
+            }
+
+            var readinessService = new GameReadinessService(gate);
+            provider.RegisterGlobal(readinessService, allowOverride: true);
+
+            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQATester),
+                "[QA][SceneFlow] GameReadinessService não encontrado. Instância de teste registrada.");
+            return readinessService;
+        }
+
         private static ISceneTransitionService ResolveExistingService(IDependencyProvider provider)
         {
             if (provider.TryGetGlobal<ISceneTransitionService>(out var registered) && registered != null)
@@ -176,6 +192,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var fade = LegacySceneFlowAdapters.CreateFadeAdapter(provider);
             var service = new SceneTransitionService(loader, fade);
             provider.RegisterGlobal<ISceneTransitionService>(service, allowOverride: true);
+        }
+
+        private static void RestoreReadinessAndGate(
+            IDependencyProvider provider,
+            ISimulationGateService previousGate,
+            GameReadinessService previousReadiness)
+        {
+            if (previousGate != null)
+            {
+                provider.RegisterGlobal(previousGate, allowOverride: true);
+            }
+
+            if (previousReadiness != null)
+            {
+                provider.RegisterGlobal(previousReadiness, allowOverride: true);
+            }
         }
 
         private sealed class StubSceneFlowLoaderAdapter : ISceneFlowLoaderAdapter

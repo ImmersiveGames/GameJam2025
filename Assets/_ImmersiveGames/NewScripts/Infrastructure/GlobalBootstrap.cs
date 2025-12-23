@@ -30,7 +30,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
         private static LegacySceneFlowBridge _legacySceneFlowBridge;
-        private const bool DefaultSceneFlowNativeEnabled = true;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -173,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!IsSceneFlowNativeEnabled())
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] SceneTransitionService nativo desativado pela flag. Mantendo apenas o bridge legado.");
+                    "[SceneFlow] SceneTransitionService nativo desativado (NEWSCRIPTS_SCENEFLOW_NATIVE não definido). Mantendo apenas o bridge legado.");
                 return;
             }
 
@@ -201,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 #if NEWSCRIPTS_SCENEFLOW_NATIVE
             return true;
 #else
-            return DefaultSceneFlowNativeEnabled;
+            return false;
 #endif
         }
 

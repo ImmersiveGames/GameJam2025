@@ -80,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
+        private int _transitionInProgress;
 
         public SceneTransitionService(
             ISceneFlowLoaderAdapter loaderAdapter,
@@ -96,10 +97,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 throw new ArgumentNullException(nameof(request));
             }
 
+            if (Interlocked.CompareExchange(ref _transitionInProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning<SceneTransitionService>(
+                    "[SceneFlow] Uma transição já está em andamento (_transitionInProgress ativo). Ignorando solicitação concorrente.");
+                return;
+            }
+
             if (!_transitionGate.Wait(0))
             {
                 DebugUtility.LogWarning<SceneTransitionService>(
                     "[SceneFlow] Uma transição já está em andamento. Ignorando solicitação concorrente.");
+                Interlocked.Exchange(ref _transitionInProgress, 0);
                 return;
             }
 
@@ -135,6 +144,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
             finally
             {
+                Interlocked.Exchange(ref _transitionInProgress, 0);
                 _transitionGate.Release();
             }
         }
