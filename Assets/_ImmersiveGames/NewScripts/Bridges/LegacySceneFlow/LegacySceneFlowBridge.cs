@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using LegacyEventBus = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus;
-using LegacyEventBinding = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding;
+using LegacyEventBus = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<>;
+using LegacyEventBinding = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<>;
 using LegacySceneTransitionContext = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionContext;
 using LegacyStarted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionStartedEvent;
 using LegacyScenesReady = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionScenesReadyEvent;
 using LegacyCompleted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionCompletedEvent;
+using NewEventBus = _ImmersiveGames.NewScripts.Infrastructure.Events.EventBus<>;
 using NewContext = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionContext;
 using NewStarted = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionStartedEvent;
 using NewScenesReady = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionScenesReadyEvent;
@@ -19,18 +19,18 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     /// <summary>
     /// Bridge temporária para refletir eventos do Scene Flow legado no pipeline NewScripts.
     /// Não altera o comportamento existente; apenas observa e republica os marcos de transição.
-    /// </summary>
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class LegacySceneFlowBridge : IDisposable
-    {
-        private readonly LegacyEventBinding<LegacyStarted> _transitionStartedBinding;
-        private readonly LegacyEventBinding<LegacyScenesReady> _transitionScenesReadyBinding;
-        private readonly LegacyEventBinding<LegacyCompleted> _transitionCompletedBinding;
+        /// </summary>
+        [DebugLevel(DebugLevel.Verbose)]
+        public sealed class LegacySceneFlowBridge : IDisposable
+        {
+            private readonly LegacyEventBinding<LegacyStarted> _transitionStartedBinding;
+            private readonly LegacyEventBinding<LegacyScenesReady> _transitionScenesReadyBinding;
+            private readonly LegacyEventBinding<LegacyCompleted> _transitionCompletedBinding;
 
-        private bool _bindingsRegistered;
-        private bool _disposed;
+            private bool _bindingsRegistered;
+            private bool _disposed;
 
-        public LegacySceneFlowBridge()
+            public LegacySceneFlowBridge()
         {
             _transitionStartedBinding =
                 new LegacyEventBinding<LegacyStarted>(OnLegacySceneTransitionStarted);
@@ -94,80 +94,79 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
                 "[SceneBridge] Bridge do Scene Flow legado desregistrada.");
         }
 
-        private void OnLegacySceneTransitionStarted(LegacyStarted evt)
-        {
-            var context = BuildContext(evt.Context);
-            EventBus<NewStarted>.Raise(new NewStarted(context));
+            private void OnLegacySceneTransitionStarted(LegacyStarted evt)
+            {
+                var context = BuildContext(evt.Context);
+                NewEventBus<NewStarted>.Raise(new NewStarted(context));
 
-            DebugUtility.LogVerbose<LegacySceneFlowBridge>(
-                $"[SceneBridge] SceneTransitionStarted (legado) publicado no EventBus do NewScripts. Context={context}");
-        }
+                DebugUtility.LogVerbose<LegacySceneFlowBridge>(
+                    $"[SceneBridge] SceneTransitionStarted (legado) publicado no EventBus do NewScripts. Context={context}");
+            }
 
-        private void OnLegacySceneTransitionScenesReady(LegacyScenesReady evt)
-        {
-            var context = BuildContext(evt.Context);
-            EventBus<NewScenesReady>.Raise(new NewScenesReady(context));
+            private void OnLegacySceneTransitionScenesReady(LegacyScenesReady evt)
+            {
+                var context = BuildContext(evt.Context);
+                NewEventBus<NewScenesReady>.Raise(new NewScenesReady(context));
 
-            DebugUtility.LogVerbose<LegacySceneFlowBridge>(
-                $"[SceneBridge] SceneTransitionScenesReady (legado) publicado no EventBus do NewScripts. Context={context}");
-        }
+                DebugUtility.LogVerbose<LegacySceneFlowBridge>(
+                    $"[SceneBridge] SceneTransitionScenesReady (legado) publicado no EventBus do NewScripts. Context={context}");
+            }
 
-        private void OnLegacySceneTransitionCompleted(LegacyCompleted evt)
-        {
-            var context = BuildContext(evt.Context);
-            EventBus<NewCompleted>.Raise(new NewCompleted(context));
+            private void OnLegacySceneTransitionCompleted(LegacyCompleted evt)
+            {
+                var context = BuildContext(evt.Context);
+                NewEventBus<NewCompleted>.Raise(new NewCompleted(context));
 
-            DebugUtility.LogVerbose<LegacySceneFlowBridge>(
-                $"[SceneBridge] SceneTransitionCompleted (legado) publicado no EventBus do NewScripts. Context={context}");
-        }
+                DebugUtility.LogVerbose<LegacySceneFlowBridge>(
+                    $"[SceneBridge] SceneTransitionCompleted (legado) publicado no EventBus do NewScripts. Context={context}");
+            }
 
-        private static NewContext BuildContext(LegacySceneTransitionContext legacyContext)
-        {
-            var scenesToLoad = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
-                legacyContext,
-                Array.Empty<string>(),
-                "scenesToLoad",
-                "ScenesToLoad",
-                "ScenesToLoadList"));
-
-            var scenesToUnload = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
-                legacyContext,
-                Array.Empty<string>(),
-                "scenesToUnload",
-                "ScenesToUnload"));
-
-            var targetActiveScene = GetMemberOrDefault(
-                legacyContext,
-                defaultValue: (string)null,
-                "targetActiveScene",
-                "TargetActiveScene",
-                "activeScene",
-                "ActiveScene");
-
-            var useFade = GetMemberOrDefault(
-                legacyContext,
-                defaultValue: false,
-                "useFade",
-                "UseFade",
-                "fade",
-                "Fade");
-
-            var profileName = TryResolveProfileName(legacyContext);
-
-            return new NewContext(
-                scenesToLoad,
-                scenesToUnload,
-                targetActiveScene,
-                useFade,
-                profileName);
-        }
-
-        private static string TryResolveProfileName(LegacySceneTransitionContext legacyContext)
-        {
-            if (!TryGetMember<object>(
+            private static NewContext BuildContext(object legacyContext)
+            {
+                var scenesToLoad = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
                     legacyContext,
-                    out var profile,
-                    "transitionProfile",
+                    Array.Empty<string>(),
+                    "scenesToLoad",
+                    "ScenesToLoad"));
+
+                var scenesToUnload = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
+                    legacyContext,
+                    Array.Empty<string>(),
+                    "scenesToUnload",
+                    "ScenesToUnload"));
+
+                var targetActiveScene = GetMemberOrDefault(
+                    legacyContext,
+                    defaultValue: (string)null,
+                    "targetActiveScene",
+                    "TargetActiveScene",
+                    "activeScene",
+                    "ActiveScene");
+
+                var useFade = GetMemberOrDefault(
+                    legacyContext,
+                    defaultValue: false,
+                    "useFade",
+                    "UseFade",
+                    "fade",
+                    "Fade");
+
+                var profileName = TryResolveProfileName(legacyContext);
+
+                return new NewContext(
+                    scenesToLoad,
+                    scenesToUnload,
+                    targetActiveScene,
+                    useFade,
+                    profileName);
+            }
+
+            private static string TryResolveProfileName(object legacyContext)
+            {
+                if (!TryGetMember<object>(
+                        legacyContext,
+                        out var profile,
+                        "transitionProfile",
                     "TransitionProfile",
                     "profile",
                     "Profile"))
