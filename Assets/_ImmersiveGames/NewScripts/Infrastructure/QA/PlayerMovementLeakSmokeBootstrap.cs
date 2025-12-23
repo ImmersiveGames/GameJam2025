@@ -46,7 +46,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private string _testCFailure = string.Empty;
         private bool _timeout;
         private bool _inconclusive;
-        private bool _autoSpawned;
         private float _initialSpeed;
         private float _speedAfterGate;
         private float _speedAfterReset;
@@ -72,13 +71,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
+            if (UnityEngine.Object.FindFirstObjectByType<PlayerMovementLeakSmokeBootstrap>(FindObjectsInactive.Include) != null)
+            {
+                return;
+            }
+
             var go = new GameObject(nameof(PlayerMovementLeakSmokeBootstrap))
             {
                 hideFlags = HideFlags.DontSave
             };
 
             DontDestroyOnLoad(go);
-            go.AddComponent<PlayerMovementLeakSmokeBootstrap>()._autoSpawned = true;
+            go.AddComponent<PlayerMovementLeakSmokeBootstrap>();
             _created = true;
         }
 
@@ -95,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             Application.logMessageReceived += OnLogMessage;
 
             DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
-                $"{LogTag} Runner iniciado (scene='{_sceneName}', autoSpawned={_autoSpawned}).");
+                $"{LogTag} Runner iniciado (scene='{_sceneName}').");
 
             yield return null; // permite spawn/boot inicial concluir
 
@@ -110,6 +114,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             _initialGateOpen = gateService.IsOpen;
 
             var player = DiscoverPlayer(provider);
+            if (player == null)
+            {
+                yield return EnsureInitialPlayer(provider, startTime, ctx => player = ctx);
+            }
+
             if (!ValidatePlayer(player, "Player não encontrado (spawn serviço ou fallback).", startTime))
             {
                 yield break;
@@ -392,6 +401,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             MarkTimeout();
         }
 
+        private System.Collections.IEnumerator WaitForInitialSpawn(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        {
+            float waitStart = Time.realtimeSinceStartup;
+            while (!HasTimedOut(startTime) && Time.realtimeSinceStartup - waitStart < TimeoutSeconds)
+            {
+                var candidate = DiscoverPlayer(provider, suppressLog: true);
+                if (candidate != null && candidate.GameObject != null && candidate.Rigidbody != null)
+                {
+                    DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
+                        $"{LogTag} Player encontrado após spawn inicial (path='{candidate.Path}').");
+                    onFound?.Invoke(candidate);
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            MarkTimeout();
+        }
+
         private bool TryTriggerReset(out System.Collections.IEnumerator coroutine, out string apiLabel)
         {
             apiLabel = string.Empty;
@@ -433,6 +462,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 yield return null;
             }
+        }
+
+        private System.Collections.IEnumerator EnsureInitialPlayer(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        {
+            var controller = UnityEngine.Object.FindFirstObjectByType<WorldLifecycleController>(FindObjectsInactive.Include);
+            if (controller == null)
+            {
+                DebugUtility.LogError(typeof(PlayerMovementLeakSmokeBootstrap),
+                    $"{LogTag} INCONCLUSIVE - WorldLifecycleController não encontrado para spawn inicial.");
+                yield break;
+            }
+
+            DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
+                $"{LogTag} Disparando ResetWorldAsync para spawn inicial.");
+
+            var task = controller.ResetWorldAsync("QA/PlayerMovementLeakSmokeBootstrap.InitialSpawn");
+            yield return AwaitResetTask(task);
+
+            yield return WaitForInitialSpawn(provider, startTime, onFound);
         }
 
         private PlayerContext DiscoverPlayer(IDependencyProvider provider, bool suppressLog = false)
