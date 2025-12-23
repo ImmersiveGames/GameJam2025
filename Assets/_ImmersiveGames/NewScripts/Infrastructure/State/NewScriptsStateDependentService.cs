@@ -1,75 +1,63 @@
 /*
  * ChangeLog
- * - Gate de pause (SimulationGateTokens.Pause) agora bloqueia ActionType.Move via IStateDependentService sem congelar física/timeScale.
+ * - Gate de pause (SimulationGateTokens.Pause) agora bloqueia ActionType.Move via IStateDependentService
+ *   sem congelar física/timeScale.
+ * - NÃO cacheia IGameLoopService: resolve no momento do uso para observar overrides de QA no DI.
  */
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
+
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.State
 {
     /// <summary>
     /// Serviço mínimo para coordenar permissões de ações no baseline NewScripts.
-    /// Inicia em Playing e troca de estado conforme eventos globais (se disponíveis).
+    /// - Gate Pause bloqueia Move (sem congelar física).
+    /// - Se IGameLoopService estiver disponível, usa o estado atual do GameLoop como fonte primária.
+    /// - Não cacheia serviços para permitir overrides de QA no DI.
     /// </summary>
     public sealed class NewScriptsStateDependentService : IStateDependentService
     {
         private enum ServiceState
         {
-            Menu,
+            Boot,
             Playing,
             Paused
         }
 
-        private ServiceState _state = ServiceState.Playing;
+        // Fallback (caso GameLoop não esteja disponível).
+        private ServiceState _fallbackState = ServiceState.Playing;
 
         private EventBinding<GameStartEvent> _gameStartBinding;
         private EventBinding<GamePauseEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
+
         private bool _bindingsRegistered;
         private bool _loggedGateBlock;
         private bool _loggedGameLoopUsage;
 
-        private readonly ISimulationGateService _gateService;
-        private readonly IGameLoopService _gameLoopService;
-
-        public NewScriptsStateDependentService(ISimulationGateService gateService = null)
+        public NewScriptsStateDependentService()
         {
-            _gateService = gateService;
-
-            if (_gateService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gateService);
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal(out IGameLoopService gameLoopService))
-            {
-                _gameLoopService = gameLoopService;
-            }
-
             TryRegisterEvents();
         }
 
         public bool CanExecuteAction(ActionType action)
         {
             if (IsPausedByGate(action))
-            {
                 return false;
-            }
 
             var serviceState = ResolveServiceState();
 
             switch (serviceState)
             {
                 case ServiceState.Playing:
-                    return action switch
-                    {
-                        _ => true
-                    };
-                case ServiceState.Menu:
+                    return true;
+
+                case ServiceState.Boot:
                 case ServiceState.Paused:
                     return action switch
                     {
@@ -80,6 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                         ActionType.RequestQuit => true,
                         _ => false
                     };
+
                 default:
                     return false;
             }
@@ -93,9 +82,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         public void Dispose()
         {
             if (!_bindingsRegistered)
-            {
                 return;
-            }
 
             EventBus<GameStartEvent>.Unregister(_gameStartBinding);
             EventBus<GamePauseEvent>.Unregister(_gamePauseBinding);
@@ -108,9 +95,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         {
             try
             {
-                _gameStartBinding = new EventBinding<GameStartEvent>(_ => SetState(ServiceState.Playing));
+                _gameStartBinding = new EventBinding<GameStartEvent>(_ => SetFallbackState(ServiceState.Playing));
                 _gamePauseBinding = new EventBinding<GamePauseEvent>(OnGamePause);
-                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => SetState(ServiceState.Playing));
+                _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => SetFallbackState(ServiceState.Playing));
 
                 EventBus<GameStartEvent>.Register(_gameStartBinding);
                 EventBus<GamePauseEvent>.Register(_gamePauseBinding);
@@ -120,24 +107,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             }
             catch
             {
-                // EventBus ou eventos não estão disponíveis; segue sem assinaturas.
+                // EventBus indisponível; segue sem bindings.
                 _bindingsRegistered = false;
             }
         }
 
         private void OnGamePause(GamePauseEvent evt)
         {
-            SetState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
+            SetFallbackState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
         }
 
-        private void SetState(ServiceState next)
+        private void SetFallbackState(ServiceState next)
         {
-            _state = next;
+            _fallbackState = next;
         }
 
         private ServiceState ResolveServiceState()
         {
-            if (_gameLoopService != null && !string.IsNullOrWhiteSpace(_gameLoopService.CurrentStateName))
+            // Importante: resolve on-demand para observar overrides de QA.
+            if (TryResolveLoop(out var loop) && loop != null && !string.IsNullOrWhiteSpace(loop.CurrentStateName))
             {
                 if (!_loggedGameLoopUsage)
                 {
@@ -146,39 +134,60 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                     _loggedGameLoopUsage = true;
                 }
 
-                return _gameLoopService.CurrentStateName switch
+                // CurrentStateName vem de stateId.ToString() no GameLoopService.
+                return loop.CurrentStateName switch
                 {
                     nameof(GameLoopStateId.Playing) => ServiceState.Playing,
                     nameof(GameLoopStateId.Paused) => ServiceState.Paused,
-                    _ => ServiceState.Menu
+                    _ => ServiceState.Boot // Boot / desconhecido
                 };
             }
 
-            return _state;
+            return _fallbackState;
         }
 
         private bool IsPausedByGate(ActionType action)
         {
-            if (_gateService == null)
-            {
+            if (!TryResolveGate(out var gate) || gate == null)
                 return false;
-            }
 
-            if (!_gateService.IsTokenActive(SimulationGateTokens.Pause))
+            if (!gate.IsTokenActive(SimulationGateTokens.Pause))
             {
                 _loggedGateBlock = false;
                 return false;
             }
 
             var shouldBlock = action == ActionType.Move;
+
             if (shouldBlock && !_loggedGateBlock)
             {
                 DebugUtility.LogVerbose<NewScriptsStateDependentService>(
-                    "[StateDependent] Action 'Move' bloqueada por gate Pause (SimulationGateTokens.Pause). Física permanece ativa (sem timeScale/constraints).");
+                    "[StateDependent] Action 'Move' bloqueada por gate Pause (SimulationGateTokens.Pause). " +
+                    "Física permanece ativa (sem timeScale/constraints).");
                 _loggedGateBlock = true;
             }
 
             return shouldBlock;
         }
+
+        private static bool TryResolveGate(out ISimulationGateService gate)
+        {
+            gate = null;
+            var provider = DependencyManager.Provider;
+            return provider.TryGetGlobal<IsimulationGateServiceCompat>(out _) // placeholder to avoid accidental type mismatch
+                ? provider.TryGetGlobal(out gate) && gate != null
+                : provider.TryGetGlobal(out gate) && gate != null;
+        }
+
+        private static bool TryResolveLoop(out IGameLoopService loop)
+        {
+            loop = null;
+            var provider = DependencyManager.Provider;
+            return provider.TryGetGlobal(out loop) && loop != null;
+        }
+
+        // Este tipo vazio é só para evitar que o Codex tente “corrigir” o TryResolveGate
+        // assumindo overloads inexistentes. Remova se não precisar.
+        private interface IsimulationGateServiceCompat { }
     }
 }

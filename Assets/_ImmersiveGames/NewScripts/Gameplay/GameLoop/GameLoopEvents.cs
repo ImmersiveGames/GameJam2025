@@ -3,7 +3,9 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Evento definitivo indicando que o loop de jogo deve iniciar.
+    /// Evento indicando que o fluxo de jogo deve iniciar.
+    /// Quando integrado ao Scene Flow (Opção B), o start efetivo do GameLoop é liberado
+    /// somente após as cenas estarem prontas (ScenesReady) pelo coordenador.
     /// </summary>
     public sealed class GameStartEvent : IEvent { }
 

@@ -3,7 +3,12 @@
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
- * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow (GameStartEvent -> Transition -> ScenesReady -> RequestStart).
+ * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
+ *   (GameStartEvent -> Transition -> ScenesReady -> RequestStart).
+ *
+ * Nota (QA):
+ * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do ScenesReady
+ *   para que overrides de QA no DI sejam observados.
  */
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -33,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static GameReadinessService _gameReadinessService;
         private static LegacySceneFlowBridge _legacySceneFlowBridge;
 
-        // Opção B: mantém referência viva do coordinator (evita GC).
+        // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
 
         // Profile fixo do start no-op (para filtrar ScenesReady).
@@ -48,9 +53,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             return;
 #endif
             if (_initialized)
-            {
                 return;
-            }
+
             _initialized = true;
 
             InitializeLogging();
@@ -74,9 +78,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static void EnsureDependencyProvider()
         {
             if (DependencyManager.HasInstance)
-            {
                 return;
-            }
+
             _ = DependencyManager.Provider;
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), "DependencyManager created for global scope.");
         }
@@ -85,10 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             PrimeEventSystems();
 
-            // NewScripts generic ID factory (no gameplay semantics).
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
-
-            // Simulation Gate agora vive em NewScripts (gate oficial para novos sistemas).
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
             RegisterPauseBridge();
@@ -97,13 +97,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterLegacySceneFlowBridge();
             RegisterSceneFlowNative();
 
-            // Driver de runtime do WorldLifecycle (produção, sem dependência de QA runners).
             RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
 
-            // Bridge oficial de permissões de ações (gate-aware).
             RegisterStateDependentService();
-
-            // Sistema de câmera nativo do NewScripts.
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
         }
 
@@ -144,7 +140,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (DependencyManager.Provider.TryGetGlobal<GameReadinessService>(out var registered) && registered != null)
             {
                 _gameReadinessService = registered;
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap), "[Readiness] GameReadinessService já registrado no DI global.",
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Readiness] GameReadinessService já registrado no DI global.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -169,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             RegisterIfMissing(() => new LegacySceneFlowBridge());
-            DependencyManager.Provider.TryGetGlobal<LegacySceneFlowBridge>(out _legacySceneFlowBridge);
+            DependencyManager.Provider.TryGetGlobal(out _legacySceneFlowBridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[SceneBridge] LegacySceneFlowBridge registrado (Scene Flow legado → eventos NewScripts).",
@@ -261,7 +258,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.LogWarning(typeof(GlobalBootstrap),
                     $"[StateDependent] Serviço registrado ({existing.GetType().Name}) não usa gate; substituindo por NewScriptsStateDependentService.");
 
-                DependencyManager.Provider.RegisterGlobal<IStateDependentService>(new NewScriptsStateDependentService(),
+                DependencyManager.Provider.RegisterGlobal<IStateDependentService>(
+                    new NewScriptsStateDependentService(),
                     allowOverride: true);
 
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -287,13 +285,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[GameLoopSceneFlow] IGameLoopService indisponível; Coordinator não será registrado.");
-                return;
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -302,10 +293,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            // StartPlan no-op por enquanto:
-            // - não carrega nem descarrega cenas
-            // - não força ActiveScene
-            // - profile fixo para filtrar o ScenesReady do start
             var startPlan = new SceneTransitionRequest(
                 scenesToLoad: Array.Empty<string>(),
                 scenesToUnload: Array.Empty<string>(),
@@ -313,7 +300,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 useFade: false,
                 transitionProfileName: StartProfileName);
 
-            _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(gameLoop, sceneFlow, startPlan);
+            // CONSISTENTE com o arquivo atual do coordinator (2 params).
+            _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 $"[GameLoopSceneFlow] Coordinator registrado (startPlan no-op, profile='{StartProfileName}').",
