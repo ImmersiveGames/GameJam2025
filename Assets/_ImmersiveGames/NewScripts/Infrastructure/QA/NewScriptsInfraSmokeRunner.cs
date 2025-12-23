@@ -13,8 +13,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     [DisallowMultipleComponent]
     public sealed class NewScriptsInfraSmokeRunner : MonoBehaviour
     {
+        private const string SceneFlowLogTag = "[SceneFlowTest][Runner]";
+
         [SerializeField] private bool runOnStart = true;
         [SerializeField] private bool stopOnFirstFail = false;
+        [SerializeField] private bool sceneFlowOnly = false;
         [SerializeField] private MonoBehaviour debugLogTester;
         [SerializeField] private MonoBehaviour diTester;
         [SerializeField] private MonoBehaviour fsmTester;
@@ -42,6 +45,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             _passes = 0;
             _fails = 0;
+
+            if (sceneFlowOnly)
+            {
+                RunSceneFlowOnly();
+                return;
+            }
 
             if (verbose)
             {
@@ -125,6 +134,55 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             Complete();
         }
 
+        /// <summary>
+        /// Configuração específica para habilitar apenas os testers de Scene Flow (nativo + bridge).
+        /// Mantém a execução determinística para cenários de CI/PlayMode.
+        /// </summary>
+        public void ConfigureSceneFlowOnly(
+            MonoBehaviour sceneTransitionTester,
+            MonoBehaviour legacyBridgeTester,
+            bool enableVerbose = true)
+        {
+            runOnStart = false;
+            stopOnFirstFail = true;
+            sceneFlowOnly = true;
+            verbose = enableVerbose;
+            runSceneTransitionServiceTester = true;
+            sceneTransitionServiceTester = sceneTransitionTester;
+            legacySceneFlowBridgeTester = legacyBridgeTester;
+        }
+
+        public bool LastRunHadFailures => _fails > 0;
+        public int LastRunPasses => _passes;
+        public int LastRunFails => _fails;
+
+        private void RunSceneFlowOnly()
+        {
+            DebugUtility.Log(typeof(NewScriptsInfraSmokeRunner),
+                $"{SceneFlowLogTag} Iniciando execução exclusiva de Scene Flow.");
+
+            sceneTransitionServiceTester = sceneTransitionServiceTester
+                                            ?? GetComponent<SceneTransitionServiceSmokeQATester>()
+                                            ?? gameObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+
+            ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
+            if (stopOnFirstFail && _fails > 0)
+            {
+                DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
+                    $"{SceneFlowLogTag} stopOnFirstFail ativo; interrompendo após falha.");
+                Complete();
+                return;
+            }
+
+            legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
+                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQATester>()
+                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+
+            ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
+
+            Complete();
+        }
+
         private void ExecuteTester(MonoBehaviour tester, string testerLabel)
         {
             if (tester == null)
@@ -166,6 +224,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             _fails++;
             DebugUtility.LogError(typeof(NewScriptsInfraSmokeRunner), $"[QA][Infra] {message}");
+            DebugUtility.Log(typeof(NewScriptsInfraSmokeRunner), $"{SceneFlowLogTag} FAIL - {message}");
         }
 
         private void Complete()
@@ -175,6 +234,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 $"[QA][Infra] Resultado => Passes: {_passes} | Fails: {_fails} | Status={status}",
                 _fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
             DebugUtility.Log(typeof(NewScriptsInfraSmokeRunner), "[QA][Infra] QA complete.");
+
+            DebugUtility.Log(typeof(NewScriptsInfraSmokeRunner),
+                $"{SceneFlowLogTag} {status} (Passes={_passes} Fails={_fails})");
         }
     }
 }

@@ -17,16 +17,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// </summary>
     public sealed class SceneTransitionServiceSmokeQATester : MonoBehaviour
     {
+        private const string SceneFlowLogTag = "[SceneFlowTest][Native]";
+
         [ContextMenu("QA/SceneFlow/SceneTransitionService/Run")]
         public void Run()
         {
             int passes = 0;
             int fails = 0;
 
+            LogTag("Started");
+
             var provider = DependencyManager.Provider;
 
-            var readiness = ResolveReadiness(provider);
-            var gateService = ResolveGate(provider);
+            var gateService = ResolveGate(provider, out var previousGate);
+            var readiness = ResolveReadiness(provider, gateService, out var previousReadiness);
             var previousService = ResolveExistingService(provider);
 
             var stubLoader = new StubSceneFlowLoaderAdapter();
@@ -45,11 +49,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 eventOrder.Add("Started");
                 gameplayReadyAfterStart = readiness?.IsGameplayReady ?? true;
                 gateOpenAfterStart = gateService?.IsOpen ?? true;
+                LogTag("Started");
             });
 
             var scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(_ =>
             {
                 eventOrder.Add("ScenesReady");
+                LogTag("ScenesReady");
             });
 
             var completedBinding = new EventBinding<SceneTransitionCompletedEvent>(_ =>
@@ -57,6 +63,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 eventOrder.Add("Completed");
                 gameplayReadyAfterCompleted = readiness?.IsGameplayReady ?? false;
                 gateOpenAfterCompleted = gateService?.IsOpen ?? false;
+                LogTag("Completed");
             });
 
             EventBus<SceneTransitionStartedEvent>.Register(startedBinding);
@@ -112,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 fails++;
                 DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQATester),
                     $"[QA][SceneFlow] FAIL - Exceção inesperada: {ex}");
+                LogTag($"FAIL - Exceção inesperada: {ex.GetType().Name}");
             }
             finally
             {
@@ -127,10 +135,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 $"[QA][SceneFlow] QA complete. Passes={passes} Fails={fails}",
                 fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
+            if (fails == 0)
+            {
+                LogTag("PASS");
+            }
+            else
+            {
+                LogTag("FAIL");
+            }
+
             if (fails > 0)
             {
                 throw new InvalidOperationException($"SceneTransitionServiceSmokeQATester detected {fails} failures.");
             }
+        }
+
+        private static void LogTag(string message)
+        {
+            DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester), $"{SceneFlowLogTag} {message}");
         }
 
         private static ISimulationGateService ResolveOrInstallGate(IDependencyProvider provider)
@@ -177,6 +199,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return registered;
             }
             return null;
+        }
+
+        private static ISimulationGateService ResolveGate(
+            IDependencyProvider provider,
+            out ISimulationGateService previousGate)
+        {
+            if (provider.TryGetGlobal<ISimulationGateService>(out var gate) && gate != null)
+            {
+                previousGate = gate;
+                return gate;
+            }
+
+            previousGate = null;
+            return ResolveOrInstallGate(provider);
+        }
+
+        private static GameReadinessService ResolveReadiness(
+            IDependencyProvider provider,
+            ISimulationGateService gate,
+            out GameReadinessService previousReadiness)
+        {
+            if (provider.TryGetGlobal<GameReadinessService>(out var readiness) && readiness != null)
+            {
+                previousReadiness = readiness;
+                return readiness;
+            }
+
+            previousReadiness = null;
+            return ResolveOrInstallReadiness(provider, gate);
         }
 
         private static void Evaluate(bool condition, string message, ref int passes, ref int fails)
