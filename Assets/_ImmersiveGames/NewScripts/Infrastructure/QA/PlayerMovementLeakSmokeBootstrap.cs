@@ -230,6 +230,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             yield return ApplyInputFrames(currentPlayer.Controller, new Vector2(0f, 1f), InputFrames, startTime);
             Vector3 positionPreReset = currentPlayer.Rigidbody.position;
+            Vector3 positionAfterInput = currentPlayer.Rigidbody.position;
+            float preResetDelta = HorizontalDistance(positionPreReset, positionAfterInput);
             float speedPreReset = HorizontalSpeed(currentPlayer.Rigidbody);
 
             bool resetTriggered = TryTriggerReset(out var resetCoroutine, out string apiLabel);
@@ -251,7 +253,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             PlayerContext newPlayerContext = null;
-            yield return WaitForRespawn(currentPlayer, provider, startTime, context =>
+            int oldInstanceId = currentPlayer.GameObject != null ? currentPlayer.GameObject.GetInstanceID() : -1;
+            yield return WaitForRespawn(oldInstanceId, provider, startTime, context =>
             {
                 newPlayerContext = context;
             });
@@ -283,7 +286,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             else
             {
                 DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
-                    $"{LogTag} Teste B PASS - speed={_speedAfterReset:F3}, drift={_driftAfterReset:F3}, preResetSpeed={speedPreReset:F3}, preResetDelta={HorizontalDistance(positionPreReset, currentPlayer.Rigidbody.position):F3}");
+                    $"{LogTag} Teste B PASS - speed={_speedAfterReset:F3}, drift={_driftAfterReset:F3}, preResetSpeed={speedPreReset:F3}, preResetDelta={preResetDelta:F3}");
             }
         }
 
@@ -380,14 +383,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             onDrift?.Invoke(HorizontalDistance(start, rb.position));
         }
 
-        private System.Collections.IEnumerator WaitForRespawn(PlayerContext oldPlayer, IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        private System.Collections.IEnumerator WaitForRespawn(int oldInstanceId, IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
         {
             float waitStart = Time.realtimeSinceStartup;
             while (!HasTimedOut(startTime) && Time.realtimeSinceStartup - waitStart < TimeoutSeconds)
             {
                 var candidate = DiscoverPlayer(provider, suppressLog: true);
-                if (candidate != null && candidate.GameObject != null && oldPlayer != null &&
-                    !ReferenceEquals(candidate.GameObject, oldPlayer.GameObject) && candidate.Rigidbody != null)
+                if (candidate != null &&
+                    candidate.GameObject != null &&
+                    candidate.GameObject.GetInstanceID() != oldInstanceId &&
+                    candidate.Rigidbody != null)
                 {
                     DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
                         $"{LogTag} Player reapareceu após reset (path='{candidate.Path}').");
