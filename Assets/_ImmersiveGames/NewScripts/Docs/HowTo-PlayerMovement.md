@@ -40,3 +40,9 @@ No prefab **Player_NewScripts** ou no objeto instanciado:
 ## Notas
 - Projeto alvo: **Unity 6**, multiplayer local. Nenhum estado estático é persistido entre spawns/resets.
 - Logs verbosos usam tags `[Movement]`/`[Gate]`/`[StateDependent]` e respeitam o `DebugLevel` configurado.
+
+## Como rodar o smoke test de vazamento
+- Runner: `PlayerMovementLeakSmokeBootstrap` (PlayMode, sem NUnit/Test Runner).
+- Execução no Editor: pressione **Play** em uma cena com o fluxo padrão (`NewBootstrap`/`WorldLifecycle`) e aguarde o término; o relatório é salvo em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/PlayerMovement-Leak.md`.
+- Execução em CI/Batchmode: `-executeMethod _ImmersiveGames.NewScripts.Infrastructure.QA.PlayerMovementLeakSmokeBootstrapCI.Run` (encerra com exit code `0` para PASS, `2` para FAIL, `3` para INCONCLUSIVE).
+- Logs marcados com `[PlayerMoveTest][Leak]` são coletados automaticamente no relatório.
