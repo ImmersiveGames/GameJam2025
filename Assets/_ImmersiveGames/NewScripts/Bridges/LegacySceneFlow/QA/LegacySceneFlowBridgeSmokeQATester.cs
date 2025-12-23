@@ -12,7 +12,7 @@ using LegacyScenesReady = _ImmersiveGames.Scripts.SceneManagement.Transition.Sce
 using LegacyStarted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionStartedEvent;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
 {
     /// <summary>
     /// Smoke test para garantir que o LegacySceneFlowBridge está refletindo eventos do fluxo de cenas legado
@@ -20,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// </summary>
     public sealed class LegacySceneFlowBridgeSmokeQATester : MonoBehaviour
     {
+        private const string SceneFlowLogTag = "[SceneFlowTest][Bridge]";
+
         private bool _startedReceived;
         private bool _readyReceived;
         private bool _completedReceived;
@@ -35,6 +37,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             ResetState();
             RegisterBindings();
+
+            LogTag("Started");
 
             try
             {
@@ -98,6 +102,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             _startedReceived = true;
             _startedContext = evt.Context;
+            LogTag("StartedReflected");
         }
 
         private bool TryPublishLegacyEvents()
@@ -116,9 +121,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
                 _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<LegacyScenesReady>.Raise(
                     new LegacyScenesReady(legacyContext));
+                LogTag("ScenesReadyReflected");
 
                 _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<LegacyCompleted>.Raise(
                     new LegacyCompleted(legacyContext));
+                LogTag("CompletedReflected");
             }
             catch (Exception ex)
             {
@@ -163,6 +170,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 {
                     DebugUtility.LogWarning(typeof(LegacySceneFlowBridgeSmokeQATester),
                         "[QA][SceneBridge] SKIP - eventos não recebidos (bridge legado possivelmente ausente).");
+                    LogTag("SKIP - eventos não recebidos");
                     return;
                 }
 
@@ -191,6 +199,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQATester),
                 "[QA][SceneBridge] PASS - bridge refletiu eventos do legado para NewScripts.",
                 DebugUtility.Colors.Success);
+            LogTag("PASS");
         }
 
         private static bool ContainsEntry(IReadOnlyList<string> list, string expected)
@@ -209,6 +218,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             return false;
+        }
+
+        private static void LogTag(string message)
+        {
+            DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQATester), $"{SceneFlowLogTag} {message}");
         }
     }
 }
