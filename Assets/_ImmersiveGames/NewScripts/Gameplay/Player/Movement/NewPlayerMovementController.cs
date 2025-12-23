@@ -1,81 +1,65 @@
-/*
- * ChangeLog
- * - Adicionados hooks de QA (Set/Clear inputs) para validação determinística do Gate sem alterar comportamento de runtime.
- * - Padronizado para Unity 6+: uso exclusivo de Rigidbody.linearVelocity (movimento e resets); removido qualquer conceito de Rigidbody.velocity.
- * - Pointer look usa Pointer.current (fallback para Mouse.current), sem tratar _lookInput como ScreenPoint em LookMode.Auto.
- * - Raycast do look usa plano no Y do player (transform.position.y) para evitar drift quando o chão não é y=0.
- * - Auto LookMode mais resiliente: se o modo escolhido não tiver dados disponíveis, tenta o outro modo.
- * - Mantido ciclo de reset idempotente e fallbacks de câmera (resolver -> fallback -> Camera.main).
- * - Gate/StateDependentService agora bloqueia apenas ação (movimento/look), sem congelar física (gravidade/rigidbody).
- */
-using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
-using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.World.Reset;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 {
     /// <summary>
-    /// Controlador de movimento do player no padrão NewScripts.
-    /// Mantém o comportamento legado (movimento + look + ciclo de reset) com pequenas melhorias de robustez.
+    /// Controlador mínimo de movimento do Player no padrão NewScripts.
+    /// Gate-aware, reset-safe e com fallbacks para CharacterController, Rigidbody ou Transform.
     /// </summary>
-    [RequireComponent(typeof(Rigidbody), typeof(PlayerInput))]
+    [DisallowMultipleComponent]
+    [DebugLevel(DebugLevel.Verbose)]
     public sealed class NewPlayerMovementController : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
     {
-        #region Serialized Fields
+        [Header("Movement")]
+        [SerializeField]
+        [Tooltip("Velocidade de deslocamento (unidades por segundo).")]
+        private float moveSpeed = 5f;
 
-        [SerializeField] private Camera fallbackCamera;
-        [SerializeField] private float moveSpeed = 5f;
-        [SerializeField] private float rotationSpeed = 10f;
-        [SerializeField] private LookMode lookMode = LookMode.Auto;
-        [SerializeField] private float stickDeadzone = 0.2f;
+        [SerializeField]
+        [Tooltip("Velocidade angular para alinhar a rotação ao movimento (graus/segundo).")]
+        private float rotationSpeed = 360f;
 
-        #endregion
+        [SerializeField]
+        [Tooltip("Deadzone aplicada como fallback adicional além do leitor de input.")]
+        private float inputDeadzone = 0.1f;
 
-        #region Private Fields
+        [SerializeField]
+        [Tooltip("Quando verdadeiro, aplica movimento físico no FixedUpdate ao usar Rigidbody.")]
+        private bool useFixedUpdateForPhysics = true;
 
-        private Rigidbody _rb;
-        private PlayerInput _playerInput;
-        private PlayerInputActions _actions;
+        [SerializeField]
+        [Tooltip("Leitor de input baseado em Input.GetAxis/Raw.")]
+        private NewPlayerInputReader inputReader;
 
-        private Vector2 _moveInput;
-        private Vector2 _lookInput;
+        [Header("Debug")]
+        [SerializeField]
+        [Tooltip("Emite logs verbosos quando o gate abre/fecha.")]
+        private bool logGateChanges;
 
-        private Camera _camera;
+        private CharacterController _characterController;
+        private Rigidbody _rigidbody;
+        private PlayerActor _actor;
+        private ISimulationGateService _gateService;
+        private IStateDependentService _stateService;
 
-        private IActor _actor;
-        private ICameraResolver _cameraResolver;
+        private bool _gateSubscribed;
+        private bool _gateOpen = true;
+        private bool _stateBlockedLogged;
+
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
         private bool _hasInitialPose;
         private string _sceneName;
 
-        private IStateDependentService _stateService;
-
-        private bool _inputBound;
-        private bool _cameraBound;
-
-        #endregion
-
-        #region Look Mode
-
-        private enum LookMode
-        {
-            Auto,
-            PointerScreen,
-            StickDirection
-        }
-
-        #endregion
-
-        #region Reset Order / Scope
+        #region Reset Contracts
 
         public int ResetOrder => -50;
 
@@ -92,356 +76,340 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void Awake()
         {
-            _sceneName = gameObject.scene.name;
-            _initialPosition = transform.position;
-            _initialRotation = transform.rotation;
-            _hasInitialPose = true;
-
-            _rb = GetComponent<Rigidbody>();
-            _playerInput = GetComponent<PlayerInput>();
-            _actor = GetComponent<IActor>();
-
-            _actions = new PlayerInputActions();
-
-            DependencyManager.Provider.InjectDependencies(this);
-
-            DependencyManager.Provider.TryGetGlobal(out _stateService);
-
-            if (!DependencyManager.Provider.TryGetGlobal(out _cameraResolver))
-            {
-                DebugUtility.LogVerbose<NewPlayerMovementController>("CameraResolverService não encontrado.");
-            }
-        }
-
-        private void Start()
-        {
-            BindCameraEvents();
-            ResolveAndSetCamera();
+            CacheComponents();
+            CacheInitialPose();
+            EnsureInputReader();
+            ResolveServices();
+            ApplyGateState(_gateService?.IsOpen ?? true, false);
         }
 
         private void OnEnable()
         {
-            BindInput();
+            EnsureInputReader();
+            ResolveServices();
+            TryBindGateEvents();
+            EnableInputIfAllowed();
         }
 
         private void OnDisable()
         {
-            UnbindInput();
+            DisableInput();
+            UnbindGateEvents();
         }
 
         private void OnDestroy()
         {
-            UnbindInput();
-            UnbindCameraEvents();
+            UnbindGateEvents();
+        }
+
+        private void Update()
+        {
+            if (ShouldUseFixedUpdate())
+            {
+                return;
+            }
+
+            TickMovement(Time.deltaTime);
         }
 
         private void FixedUpdate()
         {
-            var canMove = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
-            var isActorActive = _actor == null || _actor.IsActive;
-
-            // Importante: gate/pause aqui apenas bloqueia AÇÕES (movimento/look).
-            // Não congelamos física (gravidade/rigidbody). Isso é responsabilidade do GameLoop/FSM/timeScale, etc.
-            if (!isActorActive || !canMove)
+            if (!ShouldUseFixedUpdate())
             {
                 return;
             }
 
-            PerformMovement();
-            PerformLook(canMove);
+            TickMovement(Time.fixedDeltaTime);
         }
 
         #endregion
 
-        #region Input Binding
+        #region Movement
 
-        private void BindInput()
+        private void TickMovement(float deltaTime)
         {
-            _actions ??= new PlayerInputActions();
+            EnsureServicesResolved();
+            RefreshInputState();
 
-            if (_inputBound)
+            if (!CanSimulate())
+            {
+                HaltHorizontalVelocity();
+                return;
+            }
+
+            var input = ReadMoveInput();
+            if (input.sqrMagnitude <= float.Epsilon)
+            {
+                HaltHorizontalVelocity();
+                return;
+            }
+
+            Vector3 direction = new Vector3(input.x, 0f, input.y);
+            if (direction.sqrMagnitude > 1f)
+            {
+                direction.Normalize();
+            }
+
+            Move(direction, deltaTime);
+            RotateTowards(direction, deltaTime);
+        }
+
+        private Vector2 ReadMoveInput()
+        {
+            if (inputReader != null)
+            {
+                var sampled = inputReader.MoveInput;
+                return sampled.sqrMagnitude < inputDeadzone * inputDeadzone ? Vector2.zero : sampled;
+            }
+
+            float x = Input.GetAxisRaw("Horizontal");
+            float y = Input.GetAxisRaw("Vertical");
+            var fallback = new Vector2(x, y);
+            return fallback.sqrMagnitude < inputDeadzone * inputDeadzone ? Vector2.zero : fallback;
+        }
+
+        private void Move(Vector3 direction, float deltaTime)
+        {
+            if (_characterController != null)
+            {
+                var displacement = direction * moveSpeed * deltaTime;
+                _characterController.Move(displacement);
+                return;
+            }
+
+            if (_rigidbody != null)
+            {
+                var current = _rigidbody.linearVelocity;
+                var target = direction * moveSpeed;
+                _rigidbody.linearVelocity = new Vector3(target.x, current.y, target.z);
+                return;
+            }
+
+            transform.Translate(direction * moveSpeed * deltaTime, Space.World);
+        }
+
+        private void RotateTowards(Vector3 direction, float deltaTime)
+        {
+            if (rotationSpeed <= 0f || direction.sqrMagnitude <= float.Epsilon)
             {
                 return;
             }
 
-            _actions.Player.Enable();
-
-            _actions.Player.Move.performed += OnMovePerformed;
-            _actions.Player.Move.canceled += OnMoveCanceled;
-
-            _actions.Player.Look.performed += OnLookPerformed;
-            _actions.Player.Look.canceled += OnLookCanceled;
-
-            _inputBound = true;
+            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
         }
 
-        private void UnbindInput()
+        private void HaltHorizontalVelocity()
         {
-            if (_actions == null)
-            {
-                _inputBound = false;
-                _moveInput = Vector2.zero;
-                _lookInput = Vector2.zero;
-                return;
-            }
-
-            _actions.Player.Move.performed -= OnMovePerformed;
-            _actions.Player.Move.canceled -= OnMoveCanceled;
-
-            _actions.Player.Look.performed -= OnLookPerformed;
-            _actions.Player.Look.canceled -= OnLookCanceled;
-
-            _actions.Player.Disable();
-
-            _inputBound = false;
-            _moveInput = Vector2.zero;
-            _lookInput = Vector2.zero;
-        }
-
-        private void OnMovePerformed(InputAction.CallbackContext ctx) => _moveInput = ctx.ReadValue<Vector2>();
-        private void OnMoveCanceled(InputAction.CallbackContext ctx) => _moveInput = Vector2.zero;
-
-        private void OnLookPerformed(InputAction.CallbackContext ctx) => _lookInput = ctx.ReadValue<Vector2>();
-        private void OnLookCanceled(InputAction.CallbackContext ctx) => _lookInput = Vector2.zero;
-
-        #endregion
-
-        #region Camera Binding
-
-        private void BindCameraEvents()
-        {
-            if (_cameraBound)
+            if (_rigidbody == null)
             {
                 return;
             }
 
-            if (_cameraResolver != null)
-            {
-                _cameraResolver.OnDefaultCameraChanged += SetCamera;
-                _cameraBound = true;
-            }
+            var current = _rigidbody.linearVelocity;
+            _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
+            _rigidbody.angularVelocity = Vector3.zero;
         }
 
-        private void UnbindCameraEvents()
+        private bool CanSimulate()
         {
-            if (!_cameraBound)
-            {
-                return;
-            }
-
-            if (_cameraResolver != null)
-            {
-                _cameraResolver.OnDefaultCameraChanged -= SetCamera;
-            }
-
-            _cameraBound = false;
-        }
-
-        private void ResolveAndSetCamera()
-        {
-            _camera = _cameraResolver?.GetDefaultCamera() ?? fallbackCamera ?? Camera.main;
-        }
-
-        private void SetCamera(Camera cam)
-        {
-            _camera = cam ?? fallbackCamera ?? Camera.main;
-        }
-
-        #endregion
-
-        #region Movement / Look
-
-        private void PerformMovement()
-        {
-            if (_rb == null)
-            {
-                return;
-            }
-
-            var dir = new Vector3(_moveInput.x, 0f, _moveInput.y).normalized;
-            _rb.linearVelocity = dir * moveSpeed;
-        }
-
-        private void PerformLook(bool canExecuteLook)
-        {
-            if (!canExecuteLook)
-            {
-                return;
-            }
-
-            if (_camera == null)
-            {
-                return;
-            }
-
-            var resolved = ResolveLookMode();
-
-            // Resiliência: se o modo escolhido não tiver dados, tenta o outro.
-            if (resolved == LookMode.PointerScreen)
-            {
-                if (!PerformPointerLook())
-                {
-                    PerformStickLook();
-                }
-            }
-            else if (resolved == LookMode.StickDirection)
-            {
-                if (!PerformStickLook())
-                {
-                    PerformPointerLook();
-                }
-            }
-        }
-
-        private LookMode ResolveLookMode()
-        {
-            if (lookMode != LookMode.Auto)
-            {
-                return lookMode;
-            }
-
-            var scheme = _playerInput?.currentControlScheme;
-            if (!string.IsNullOrWhiteSpace(scheme))
-            {
-                return scheme.IndexOf("gamepad", StringComparison.OrdinalIgnoreCase) >= 0
-                    ? LookMode.StickDirection
-                    : LookMode.PointerScreen;
-            }
-
-            if (_lookInput.sqrMagnitude >= stickDeadzone * stickDeadzone && Gamepad.current != null)
-            {
-                return LookMode.StickDirection;
-            }
-
-            if (Pointer.current != null || Mouse.current != null)
-            {
-                return LookMode.PointerScreen;
-            }
-
-            if (Gamepad.current != null)
-            {
-                return LookMode.StickDirection;
-            }
-
-            return LookMode.PointerScreen;
-        }
-
-        private bool PerformPointerLook()
-        {
-            if (!TryGetPointerScreenPosition(out var screenPos))
+            if (!isActiveAndEnabled)
             {
                 return false;
             }
 
-            var ray = _camera.ScreenPointToRay(screenPos);
-
-            // Usa o plano no Y do player para evitar drift quando "chão" não é y=0.
-            var plane = new Plane(Vector3.up, transform.position);
-
-            if (!plane.Raycast(ray, out var dist))
+            if (_actor != null && !_actor.IsActive)
             {
                 return false;
             }
 
-            var point = ray.GetPoint(dist);
-            var dir = point - transform.position;
-            dir.y = 0f;
-
-            if (dir.sqrMagnitude <= float.Epsilon)
+            if (_stateService != null && !_stateService.CanExecuteAction(ActionType.Move))
             {
+                LogStateBlockedOnce();
                 return false;
             }
 
-            var targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
-
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRot,
-                rotationSpeed * Time.fixedDeltaTime);
+            if (!_gateOpen)
+            {
+                return false;
+            }
 
             return true;
         }
 
-        private bool TryGetPointerScreenPosition(out Vector2 screenPos)
+        private bool ShouldUseFixedUpdate()
         {
-            // Preferência: Pointer.current (cobre mouse como pointer em muitas plataformas)
-            if (Pointer.current != null)
-            {
-                screenPos = Pointer.current.position.ReadValue();
-                return true;
-            }
-
-            if (Mouse.current != null)
-            {
-                screenPos = Mouse.current.position.ReadValue();
-                return true;
-            }
-
-            screenPos = Vector2.zero;
-            return false;
+            return _rigidbody != null && useFixedUpdateForPhysics;
         }
 
-        private bool PerformStickLook()
+        #endregion
+
+        #region Gate / Services
+
+        private void ResolveServices()
         {
-            var magnitude = _lookInput.magnitude;
-            if (magnitude < stickDeadzone)
+            if (_gateService == null)
             {
-                return false;
+                DependencyManager.Provider.TryGetGlobal(out _gateService);
             }
 
-            Vector3 dir;
-
-            var camTransform = _camera != null ? _camera.transform : null;
-            if (camTransform != null)
+            if (_stateService == null)
             {
-                var camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
-                var camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
+                DependencyManager.Provider.TryGetGlobal(out _stateService);
+            }
 
-                if (camForward.sqrMagnitude <= float.Epsilon || camRight.sqrMagnitude <= float.Epsilon)
-                {
-                    dir = new Vector3(_lookInput.x, 0f, _lookInput.y);
-                }
-                else
-                {
-                    dir = camRight * _lookInput.x + camForward * _lookInput.y;
-                }
+            TryBindGateEvents();
+            ApplyGateState(_gateService?.IsOpen ?? true, false);
+        }
+
+        private void EnsureServicesResolved()
+        {
+            if (_gateService == null || _stateService == null)
+            {
+                ResolveServices();
+            }
+        }
+
+        private void TryBindGateEvents()
+        {
+            if (_gateService == null || _gateSubscribed)
+            {
+                return;
+            }
+
+            _gateService.GateChanged += OnGateChanged;
+            _gateSubscribed = true;
+        }
+
+        private void UnbindGateEvents()
+        {
+            if (_gateService == null || !_gateSubscribed)
+            {
+                return;
+            }
+
+            _gateService.GateChanged -= OnGateChanged;
+            _gateSubscribed = false;
+        }
+
+        private void OnGateChanged(bool isOpen)
+        {
+            ApplyGateState(isOpen, true);
+        }
+
+        private void ApplyGateState(bool isOpen, bool verbose)
+        {
+            _gateOpen = isOpen;
+
+            if (logGateChanges || verbose)
+            {
+                DebugUtility.LogVerbose<NewPlayerMovementController>($"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}'.");
+            }
+
+            if (!isOpen)
+            {
+                HaltHorizontalVelocity();
+            }
+
+            RefreshInputState();
+        }
+
+        private void RefreshInputState()
+        {
+            if (inputReader == null)
+            {
+                return;
+            }
+
+            bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
+            inputReader.SetInputEnabled(allow);
+
+            if (allow)
+            {
+                _stateBlockedLogged = false;
             }
             else
             {
-                dir = new Vector3(_lookInput.x, 0f, _lookInput.y);
+                inputReader.ClearInput();
             }
+        }
 
-            dir.y = 0f;
-            if (dir.sqrMagnitude <= float.Epsilon)
+        private void LogStateBlockedOnce()
+        {
+            if (_stateBlockedLogged)
             {
-                return false;
+                return;
             }
 
-            var targetRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
-
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRot,
-                rotationSpeed * Time.fixedDeltaTime);
-
-            return true;
+            DebugUtility.LogVerbose<NewPlayerMovementController>("[Movement][StateDependent] Movimento bloqueado por IStateDependentService.");
+            _stateBlockedLogged = true;
         }
 
         #endregion
 
-        #region Reset (IResetInterfaces)
+        #region Setup Helpers
+
+        private void CacheComponents()
+        {
+            _characterController = GetComponent<CharacterController>();
+            _rigidbody = GetComponent<Rigidbody>();
+            _actor = GetComponent<PlayerActor>();
+            _sceneName = gameObject.scene.name;
+        }
+
+        private void CacheInitialPose()
+        {
+            _initialPosition = transform.position;
+            _initialRotation = transform.rotation;
+            _hasInitialPose = true;
+        }
+
+        private void EnsureInputReader()
+        {
+            if (inputReader != null)
+            {
+                return;
+            }
+
+            inputReader = GetComponent<NewPlayerInputReader>();
+
+            if (inputReader == null)
+            {
+                inputReader = gameObject.AddComponent<NewPlayerInputReader>();
+            }
+        }
+
+        public void SetInputReader(NewPlayerInputReader reader)
+        {
+            inputReader = reader;
+            RefreshInputState();
+        }
+
+        private void EnableInputIfAllowed()
+        {
+            if (inputReader == null)
+            {
+                return;
+            }
+
+            bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
+            inputReader.SetInputEnabled(allow);
+        }
+
+        private void DisableInput()
+        {
+            inputReader?.SetInputEnabled(false);
+        }
+
+        #endregion
+
+        #region Resets
 
         public Task Reset_CleanupAsync(GameplayResetContext ctx)
         {
-            _moveInput = Vector2.zero;
-            _lookInput = Vector2.zero;
-
-            StopRigidbodyMotion();
-
-            UnbindInput();
-            UnbindCameraEvents();
-            _camera = null;
-
+            HaltHorizontalVelocity();
+            inputReader?.ClearInput();
+            DisableInput();
             return Task.CompletedTask;
         }
 
@@ -449,14 +417,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         {
             if (_hasInitialPose)
             {
-                if (_rb != null)
+                if (_rigidbody != null)
                 {
-                    StopRigidbodyMotion();
-
-                    _rb.position = _initialPosition;
-                    _rb.rotation = _initialRotation;
-
-                    StopRigidbodyMotion();
+                    _rigidbody.position = _initialPosition;
+                    _rigidbody.rotation = _initialRotation;
+                    HaltHorizontalVelocity();
                 }
                 else
                 {
@@ -464,65 +429,40 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 }
             }
 
-            BindInput();
-            ResolveAndSetCamera();
-
+            EnableInputIfAllowed();
             return Task.CompletedTask;
         }
 
         public Task Reset_RebindAsync(GameplayResetContext ctx)
         {
-            if (_cameraResolver == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _cameraResolver);
-            }
-            if (_stateService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _stateService);
-            }
-
-            UnbindCameraEvents();
-            BindCameraEvents();
-            ResolveAndSetCamera();
-
+            ResolveServices();
+            ApplyGateState(_gateService?.IsOpen ?? true, false);
+            EnableInputIfAllowed();
             return Task.CompletedTask;
         }
 
         #endregion
 
-        #region Helpers
+        #region QA Hooks
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        /// <summary>
-        /// QA-only: injeta diretamente o input de movimento, bypassando sistemas de input.
-        /// </summary>
-        public void QA_SetMoveInput(Vector2 move) => _moveInput = move;
+        public void QA_SetMoveInput(Vector2 move)
+        {
+            EnsureInputReader();
+            inputReader.QA_SetMoveInput(move);
+        }
 
-        /// <summary>
-        /// QA-only: injeta diretamente o input de look, bypassando sistemas de input.
-        /// </summary>
-        public void QA_SetLookInput(Vector2 look) => _lookInput = look;
+        public void QA_SetLookInput(Vector2 look)
+        {
+            // Mantido para compatibilidade com cenários de QA existentes; o stack atual não usa look.
+        }
 
-        /// <summary>
-        /// QA-only: limpa todos os inputs sintéticos.
-        /// </summary>
         public void QA_ClearInputs()
         {
-            _moveInput = Vector2.zero;
-            _lookInput = Vector2.zero;
+            EnsureInputReader();
+            inputReader.QA_ClearInputs();
         }
 #endif
-
-        private void StopRigidbodyMotion()
-        {
-            if (_rb == null)
-            {
-                return;
-            }
-
-            _rb.linearVelocity = Vector3.zero;
-            _rb.angularVelocity = Vector3.zero;
-        }
 
         #endregion
     }

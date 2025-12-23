@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 100004}
   - component: {fileID: 1401694685376812566}
   - component: {fileID: -8274252057799639255}
+  - component: {fileID: 240041504808191800}
   - component: {fileID: 8906509120750850877}
   m_Layer: 0
   m_Name: Player_NewScripts
@@ -49,8 +50,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0c3f028f6c34b489b52b01f0c1abfa2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _actorId: 
-  _displayName: 
+  actorId: 
+  displayName: 
 --- !u!114 &100004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,6 +122,23 @@ MonoBehaviour:
   m_DefaultActionMap: 
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
+--- !u!114 &240041504808191800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 064fa093f9e84b56a0ffad7350ee0f48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  horizontalAxis: Horizontal
+  verticalAxis: Vertical
+  useRawAxes: 1
+  deadzone: 0.1
+  clampMagnitude: 1
 --- !u!114 &8906509120750850877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,11 +151,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7da9dbc6881c0a04db87c9d02dea5b58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fallbackCamera: {fileID: 0}
   moveSpeed: 5
-  rotationSpeed: 10
-  lookMode: 0
-  stickDeadzone: 0.2
+  rotationSpeed: 360
+  inputDeadzone: 0.1
+  useFixedUpdateForPhysics: 1
+  inputReader: {fileID: 240041504808191800}
+  logGateChanges: 1
 --- !u!1 &1139985382372278592
 GameObject:
   m_ObjectHideFlags: 0
