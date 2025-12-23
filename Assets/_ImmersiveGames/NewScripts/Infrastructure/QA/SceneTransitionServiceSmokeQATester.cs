@@ -24,11 +24,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             int fails = 0;
 
             var provider = DependencyManager.Provider;
-            provider.TryGetGlobal<ISimulationGateService>(out var previousGate);
-            provider.TryGetGlobal<GameReadinessService>(out var previousReadiness);
 
-            var gateService = ResolveOrInstallGate(provider);
-            var readiness = ResolveOrInstallReadiness(provider, gateService);
+            var readiness = ResolveReadiness(provider);
+            var gateService = ResolveGate(provider);
             var previousService = ResolveExistingService(provider);
 
             var stubLoader = new StubSceneFlowLoaderAdapter();
@@ -48,10 +46,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 gameplayReadyAfterStart = readiness?.IsGameplayReady ?? true;
                 gateOpenAfterStart = gateService?.IsOpen ?? true;
             });
+
             var scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(_ =>
             {
                 eventOrder.Add("ScenesReady");
             });
+
             var completedBinding = new EventBinding<SceneTransitionCompletedEvent>(_ =>
             {
                 eventOrder.Add("Completed");
@@ -79,19 +79,33 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 Evaluate(eventOrder.Count >= 2 && eventOrder[1] == "ScenesReady", "Segundo evento é ScenesReady.", ref passes, ref fails);
                 Evaluate(eventOrder.Count >= 3 && eventOrder[2] == "Completed", "Terceiro evento é Completed.", ref passes, ref fails);
 
-                Evaluate(stubLoader.LoadCalls.Contains("QA_Load_A"), "Loader adapter recebeu LoadSceneAsync para QA_Load_A.", ref passes, ref fails);
-                Evaluate(stubLoader.UnloadCalls.Contains("QA_Unload_B"), "Loader adapter recebeu UnloadSceneAsync para QA_Unload_B.", ref passes, ref fails);
+                Evaluate(stubLoader.LoadCalls.Contains("QA_Load_A"),
+                    "Loader adapter recebeu LoadSceneAsync para QA_Load_A.", ref passes, ref fails);
+
+                Evaluate(stubLoader.UnloadCalls.Contains("QA_Unload_B"),
+                    "Loader adapter recebeu UnloadSceneAsync para QA_Unload_B.", ref passes, ref fails);
+
                 Evaluate(string.Equals(stubLoader.ActiveScene, "QA_TargetActive", StringComparison.Ordinal),
                     "Loader adapter recebeu TrySetActiveSceneAsync para QA_TargetActive.", ref passes, ref fails);
+
                 Evaluate(string.Equals(stubFade.ConfiguredProfileName, "QA_Profile", StringComparison.Ordinal),
                     "Fade adapter configurado com TransitionProfileName.", ref passes, ref fails);
+
                 Evaluate(stubFade.FadeInCount == 1 && stubFade.FadeOutCount == 1,
                     "Fade adapter executou FadeIn e FadeOut exatamente uma vez.", ref passes, ref fails);
 
-                Evaluate(!gameplayReadyAfterStart, "GameReadinessService marca gameplay como NOT READY após Started.", ref passes, ref fails);
-                Evaluate(gateOpenAfterStart == false, "SimulationGate fecha durante transição (após Started).", ref passes, ref fails);
-                Evaluate(gameplayReadyAfterCompleted, "GameReadinessService marca gameplay como READY após Completed.", ref passes, ref fails);
-                Evaluate(gateOpenAfterCompleted, "SimulationGate reabre após Completed.", ref passes, ref fails);
+                // Integração com readiness/gate (se existirem no runtime atual)
+                Evaluate(!gameplayReadyAfterStart,
+                    "GameReadinessService marca gameplay como NOT READY após Started.", ref passes, ref fails);
+
+                Evaluate(gateOpenAfterStart == false,
+                    "SimulationGate fecha durante transição (após Started).", ref passes, ref fails);
+
+                Evaluate(gameplayReadyAfterCompleted,
+                    "GameReadinessService marca gameplay como READY após Completed.", ref passes, ref fails);
+
+                Evaluate(gateOpenAfterCompleted,
+                    "SimulationGate reabre após Completed.", ref passes, ref fails);
             }
             catch (Exception ex)
             {
@@ -104,6 +118,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 EventBus<SceneTransitionStartedEvent>.Unregister(startedBinding);
                 EventBus<SceneTransitionScenesReadyEvent>.Unregister(scenesReadyBinding);
                 EventBus<SceneTransitionCompletedEvent>.Unregister(completedBinding);
+
                 RestoreService(provider, previousService);
                 RestoreReadinessAndGate(provider, previousGate, previousReadiness);
             }
@@ -215,6 +230,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             public List<string> LoadCalls { get; } = new();
             public List<string> UnloadCalls { get; } = new();
             public string ActiveScene { get; private set; }
+
             private readonly HashSet<string> _loadedScenes = new(StringComparer.Ordinal);
 
             public StubSceneFlowLoaderAdapter()
