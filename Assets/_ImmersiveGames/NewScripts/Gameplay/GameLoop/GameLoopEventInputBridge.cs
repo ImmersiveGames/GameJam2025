@@ -7,16 +7,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
     /// Bridge de entrada que escuta eventos globais e sinaliza o GameLoopService.
-    /// Não publica eventos de volta para evitar loops.
+    /// Importante (Opção B):
+    /// - NÃO consome GameStartEvent. O start é coordenado por GameLoopSceneFlowCoordinator
+    ///   (GameStartEvent -> SceneFlow -> ScenesReady -> GameLoop.RequestStart()).
     /// </summary>
     public sealed class GameLoopEventInputBridge : IDisposable
     {
         private readonly IGameLoopService _gameLoopService;
 
-        private EventBinding<GameStartEvent> _startBinding;
         private EventBinding<GamePauseEvent> _pauseBinding;
         private EventBinding<GameResumeRequestedEvent> _resumeBinding;
         private EventBinding<GameResetRequestedEvent> _resetBinding;
+
         private bool _bindingsRegistered;
         private bool _disposed;
 
@@ -45,7 +47,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            EventBus<GameStartEvent>.Unregister(_startBinding);
             EventBus<GamePauseEvent>.Unregister(_pauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_resumeBinding);
             EventBus<GameResetRequestedEvent>.Unregister(_resetBinding);
@@ -56,18 +57,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             try
             {
-                _startBinding = new EventBinding<GameStartEvent>(_ => _gameLoopService.RequestStart());
                 _pauseBinding = new EventBinding<GamePauseEvent>(OnGamePause);
                 _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => _gameLoopService.RequestResume());
                 _resetBinding = new EventBinding<GameResetRequestedEvent>(_ => _gameLoopService.RequestReset());
 
-                EventBus<GameStartEvent>.Register(_startBinding);
                 EventBus<GamePauseEvent>.Register(_pauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_resumeBinding);
                 EventBus<GameResetRequestedEvent>.Register(_resetBinding);
 
                 _bindingsRegistered = true;
-                DebugUtility.LogVerbose<GameLoopEventInputBridge>("[GameLoop] Bridge de entrada registrado no EventBus.");
+
+                DebugUtility.LogVerbose<GameLoopEventInputBridge>(
+                    "[GameLoop] Bridge de entrada registrado (Pause/Resume/Reset). Start é coordenado por GameLoopSceneFlowCoordinator.");
             }
             catch (Exception ex)
             {

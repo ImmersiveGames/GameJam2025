@@ -3,6 +3,7 @@
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
+ * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow (GameStartEvent -> Transition -> ScenesReady -> RequestStart).
  */
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -17,6 +18,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.GameLoop;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
@@ -30,6 +32,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
         private static LegacySceneFlowBridge _legacySceneFlowBridge;
+
+        // Opção B: mantém referência viva do coordinator (evita GC).
+        private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
+
+        // Profile fixo do start no-op (para filtrar ScenesReady).
+        private const string StartProfileName = "startup";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -49,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EnsureDependencyProvider();
             RegisterEssentialServicesOnly();
             InitializeReadinessGate();
+            RegisterGameLoopSceneFlowCoordinatorIfAvailable();
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
@@ -265,6 +274,49 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
+        {
+            if (_sceneFlowCoordinator != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoopSceneFlow] Coordinator já está registrado (static reference).",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[GameLoopSceneFlow] IGameLoopService indisponível; Coordinator não será registrado.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoopSceneFlow] ISceneTransitionService indisponível (provável native desativado). Coordinator não será registrado.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            // StartPlan no-op por enquanto:
+            // - não carrega nem descarrega cenas
+            // - não força ActiveScene
+            // - profile fixo para filtrar o ScenesReady do start
+            var startPlan = new SceneTransitionRequest(
+                scenesToLoad: Array.Empty<string>(),
+                scenesToUnload: Array.Empty<string>(),
+                targetActiveScene: null,
+                useFade: false,
+                transitionProfileName: StartProfileName);
+
+            _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(gameLoop, sceneFlow, startPlan);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                $"[GameLoopSceneFlow] Coordinator registrado (startPlan no-op, profile='{StartProfileName}').",
                 DebugUtility.Colors.Info);
         }
     }

@@ -1,40 +1,63 @@
 # GameLoop (NewScripts)
 
-## O que é o GameLoop
-- FSM leve que controla estados **Boot → Playing → Paused** no baseline NewScripts.
-- Autoridade primária para saber se o jogo está jogável ou pausado.
-- Mantém sinais transitórios (start/pause/resume/reset) e atualiza o estado corrente.
+## Objetivo
+O GameLoop define o estado “macro” do jogo (ex.: Menu, Playing, Paused) de forma determinística e desacoplada de MonoBehaviours.
+Ele não executa loading de cenas nem reset do mundo diretamente: isso é responsabilidade do pipeline de Scene Flow + WorldLifecycle.
 
-## Como Pause funciona (sem congelar física)
-- Pausa **não usa `Time.timeScale`** nem congela física/`Rigidbody`.
-- Tokens de gate (`SimulationGateTokens.Pause`) continuam sendo a proteção para entradas de movimento.
-- Resultado: inputs de movimentação são bloqueados, mas simulação física/gravity continuam ativas.
+## Componentes
 
-## Bootstrap (NEWSCRIPTS_MODE)
-- O boot do NewScripts acontece via `GlobalBootstrap` (BeforeSceneLoad).
-- `GlobalBootstrap` registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e o pipeline de câmera do NewScripts.
-- O mesmo bootstrap agora inicializa os `EventBus` dos eventos do GameLoop e chama `GameLoopBootstrap.EnsureRegistered()` para registrar o serviço e a ponte de entrada no escopo global (sem depender do legado).
-- O bootstrap do legado **não** inicializa nem referencia serviços do NewScripts; a separação de bootstraps é obrigatória.
+### IGameLoopService / GameLoopService
+- FSM em C# puro (sem MonoBehaviour).
+- Recebe sinais via `RequestStart / RequestPause / RequestResume / RequestReset`.
+- É tickado por um driver (ex.: `GameLoopDriver`), tipicamente atrelado ao update do Unity.
 
-## De onde vêm os sinais (eventos → bridge → GameLoop)
-- Eventos globais existentes entram via **GameLoopEventInputBridge** (eventos definidos em `Gameplay/GameLoop/GameLoopEvents.cs`):
-  - `GameStartEvent` → `RequestStart()`
-  - `GamePauseEvent(IsPaused=true)` → `RequestPause()`
-  - `GamePauseEvent(IsPaused=false)` ou `GameResumeRequestedEvent` → `RequestResume()`
-  - `GameResetRequestedEvent` → `RequestReset()` (quando usado)
-- O bridge apenas **ouve** eventos e sinaliza o GameLoop; não republica eventos.
-- Se o EventBus não estiver disponível, o bridge loga e continua sem travar boot.
+### GameLoopBootstrap
+Registra o `IGameLoopService` no DI global e registra bridges de entrada que convertem eventos globais em sinais para o serviço.
 
-## Como o StateDependentService decide o que pode fazer
-- `NewScriptsStateDependentService` consulta o **GameLoop** como fonte primária:
-  - `Playing`: ações liberadas (exceto bloqueio de gate).
-  - `Paused` ou `Boot`: apenas `Navigate`, `UiSubmit`, `UiCancel`, `RequestReset`, `RequestQuit`.
-- Gate de pause continua vigente:
-  - `SimulationGateTokens.Pause` ativo → bloqueia `ActionType.Move` e loga uma vez.
-  - Não altera física/timeScale; apenas evita comandos de movimento.
-- Se o GameLoop não estiver disponível (ex.: ordem de boot), o serviço faz **fallback** para o estado interno baseado em eventos legados.
+### GameLoopEventInputBridge (Entrada)
+Bridge de entrada que **consome eventos definitivos** e sinaliza o `IGameLoopService`.
+Importante: ela não deve reagir a “intenções” que ainda dependem de Scene Flow / reset de mundo.
 
-## Troubleshooting
-- **GameLoop não registrado**: verificará estado interno; registre via `GameLoopBootstrap.EnsureRegistered()` ou `GameLoopDriver` em cena.
-- **Sem logs de integração**: o log verbose `[StateDependent] Integrado ao GameLoop...` aparece apenas na primeira resolução bem-sucedida do GameLoop.
-- **Pausa não bloqueia movimento**: confirme se o token `SimulationGateTokens.Pause` está ativo (via `ISimulationGateService`) e se o bridge está ouvindo `GamePauseEvent`.
+### GameLoopSceneFlowCoordinator (Coordenação com Scene Flow)
+Coordena a intenção de start com o pipeline de Scene Flow (e, por consequência, WorldLifecycle).
+É ele quem garante que “start” só vira “definitivo” quando as cenas estiverem prontas e o reset tiver sido disparado.
+
+## Eventos (contratos)
+
+### Eventos de intenção (REQUEST)
+Esses eventos representam “o usuário pediu”, mas ainda podem exigir:
+- transição de cenas,
+- reset determinístico do mundo,
+- aquisição/liberação de gates.
+
+- **GameStartRequestedEvent**: intenção de iniciar o jogo (Menu → Playing), pode disparar Scene Flow.
+
+### Eventos definitivos (COMMAND)
+Esses eventos representam “agora pode” e devem ser consumidos por bridges que sinalizam serviços.
+
+- **GameStartEvent**: comando definitivo para iniciar o loop (consumido pelo `GameLoopEventInputBridge` → `RequestStart()`).
+- **GamePauseEvent**: comando definitivo informando pausa atual (`IsPaused=true/false`).
+- **GameResumeRequestedEvent**: pedido de retomar (pode ser tratado como comando no runtime atual).
+- **GameResetRequestedEvent**: pedido de reset do GameLoop (FSM volta ao estado inicial).
+
+## Fluxo Opção B (Start sincronizado com Scene Flow)
+
+1) UI/menus/publicador emite:
+    - `GameStartRequestedEvent`
+
+2) `GameLoopSceneFlowCoordinator` recebe `GameStartRequestedEvent` e:
+    - chama `ISceneTransitionService.TransitionAsync(startPlan)`
+    - aguarda `SceneTransitionScenesReadyEvent` do profile/plano esperado
+    - (WorldLifecycleRuntimeDriver reage a `SceneTransitionScenesReadyEvent` e dispara reset determinístico)
+
+3) Quando o coordinator considera “liberado para iniciar”, ele emite:
+    - `GameStartEvent` (definitivo)
+
+4) `GameLoopEventInputBridge` consome `GameStartEvent` e chama:
+    - `_gameLoopService.RequestStart()`
+
+Observação: essa separação evita “start duplo” e garante que o GameLoop não inicia antes do pipeline de cenas/reset ser disparado.
+
+## Notas de integração com ADR (WorldLifecycle/Gates)
+- O GameLoop deve ser liberado apenas quando a transição de cenas estiver pronta e o reset determinístico tiver sido disparado.
+- Gates (SimulationGate) controlam permissões de execução e evitam input/ação durante transições e resets.
