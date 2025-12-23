@@ -52,6 +52,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private bool _gateSubscribed;
         private bool _gateOpen = true;
+        private bool _hasGateState;
+        private bool _lastGateOpen = true;
         private bool _stateBlockedLogged;
 
         private Vector3 _initialPosition;
@@ -294,12 +296,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void OnGateChanged(bool isOpen)
         {
-            ApplyGateState(isOpen, true);
+            ApplyGateState(isOpen, false);
         }
 
         private void ApplyGateState(bool isOpen, bool verbose)
         {
+            bool isSameState = _hasGateState && isOpen == _lastGateOpen;
             _gateOpen = isOpen;
+
+            if (isSameState)
+            {
+                RefreshInputState();
+                return;
+            }
+
+            _hasGateState = true;
+            _lastGateOpen = isOpen;
 
             if (logGateChanges || verbose)
             {
