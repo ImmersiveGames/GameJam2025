@@ -228,8 +228,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
                 $"{LogTag} Teste B iniciado - reset deve limpar física.");
 
-            yield return ApplyInputFrames(currentPlayer.Controller, new Vector2(0f, 1f), InputFrames, startTime);
             Vector3 positionPreReset = currentPlayer.Rigidbody.position;
+            yield return ApplyInputFrames(currentPlayer.Controller, new Vector2(0f, 1f), InputFrames, startTime);
             Vector3 positionAfterInput = currentPlayer.Rigidbody.position;
             float preResetDelta = HorizontalDistance(positionPreReset, positionAfterInput);
             float speedPreReset = HorizontalSpeed(currentPlayer.Rigidbody);
@@ -671,7 +671,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (Application.isBatchMode)
             {
+#if UNITY_EDITOR
+                EditorApplication.Exit(Environment.ExitCode);
+#else
                 Application.Quit(Environment.ExitCode);
+#endif
             }
         }
 
@@ -771,19 +775,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     }
 #endif
 
-#if UNITY_EDITOR
-    /// <summary>
-    /// Entry point para batchmode via -executeMethod.
-    /// </summary>
-    public static class PlayerMovementLeakSmokeBootstrapCI
-    {
-        public static void Run()
-        {
-            if (!EditorApplication.isPlaying)
-            {
-                EditorApplication.isPlaying = true;
-            }
-        }
-    }
-#endif
 }
