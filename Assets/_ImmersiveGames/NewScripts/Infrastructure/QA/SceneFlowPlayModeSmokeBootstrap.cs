@@ -1,0 +1,225 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using UnityEngine;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+{
+    /// <summary>
+    /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo + bridge legado) sem NUnit.
+    /// </summary>
+    public sealed class SceneFlowPlayModeSmokeBootstrap : MonoBehaviour
+    {
+        private const string LogTag = "[SceneFlowTest][Smoke]";
+        private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Smoke-Result.md";
+        private const float TimeoutSeconds = 30f;
+
+#if NEWSCRIPTS_SCENEFLOW_NATIVE
+        private const bool NativeEnabled = true;
+#else
+        private const bool NativeEnabled = false;
+#endif
+
+        private readonly List<string> _sceneFlowLogs = new();
+        private bool _hasFailureHint;
+        private bool _hasPassHint;
+
+        private void Start()
+        {
+            StartCoroutine(RunSmoke());
+        }
+
+        private System.Collections.IEnumerator RunSmoke()
+        {
+            Application.logMessageReceived += OnLogMessage;
+
+            if (!NativeEnabled)
+            {
+                DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} INCONCLUSIVE - NEWSCRIPTS_SCENEFLOW_NATIVE ausente.");
+                WriteReport("INCONCLUSIVE");
+                SetExit(3);
+                Application.logMessageReceived -= OnLogMessage;
+                if (Application.isBatchMode)
+                {
+                    Application.Quit(Environment.ExitCode);
+                }
+                yield break;
+            }
+
+            var runnerObject = new GameObject("SceneFlowSmokeRunner");
+            var runner = runnerObject.AddComponent<NewScriptsInfraSmokeRunner>();
+            var nativeTester = runnerObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+            var legacyTester = runnerObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+
+            runner.ConfigureSceneFlowOnly(nativeTester, legacyTester, enableVerbose: true);
+
+            Exception executionException = null;
+            try
+            {
+                runner.RunAll();
+            }
+            catch (Exception ex)
+            {
+                executionException = ex;
+                _hasFailureHint = true;
+                _sceneFlowLogs.Add($"{LogTag} Exception: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            float start = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - start < TimeoutSeconds)
+            {
+                if (_hasFailureHint)
+                {
+                    break;
+                }
+
+                if (_hasPassHint && !runner.LastRunHadFailures)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Application.logMessageReceived -= OnLogMessage;
+
+            bool fail = executionException != null || runner.LastRunHadFailures || _hasFailureHint;
+            string result = fail ? "FAIL" : _hasPassHint ? "PASS" : "FAIL";
+
+            if (result == "PASS")
+            {
+                _sceneFlowLogs.Add($"{LogTag} PASS");
+            }
+            else
+            {
+                _sceneFlowLogs.Add($"{LogTag} FAIL");
+            }
+
+            WriteReport(result);
+
+            SetExit(result == "PASS" ? 0 : 2);
+
+            Destroy(runnerObject);
+
+            if (Application.isBatchMode)
+            {
+                Application.Quit(Environment.ExitCode);
+            }
+        }
+
+        private void OnLogMessage(string condition, string stackTrace, LogType type)
+        {
+            if (string.IsNullOrEmpty(condition))
+            {
+                return;
+            }
+
+            if (condition.Contains("[SceneFlowTest]", StringComparison.Ordinal))
+            {
+                _sceneFlowLogs.Add(condition);
+
+                if (condition.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    condition.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    _hasFailureHint = true;
+                }
+
+                if (condition.IndexOf("PASS", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    condition.IndexOf("Completed", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    _hasPassHint = true;
+                }
+            }
+        }
+
+        private void WriteReport(string result)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(ReportPath);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                var builder = new StringBuilder();
+                builder.AppendLine("# Scene Flow Smoke Result");
+                builder.AppendLine($"- Timestamp: {DateTime.UtcNow:O}");
+                builder.AppendLine($"- Defines: {GetDefines()}");
+                builder.AppendLine($"- Result: {result}");
+                builder.AppendLine();
+                builder.AppendLine("## Logs (até 30 entradas)");
+
+                if (_sceneFlowLogs.Count == 0)
+                {
+                    builder.AppendLine("- (sem logs marcados por [SceneFlowTest])");
+                }
+                else
+                {
+                    int count = 0;
+                    foreach (var entry in _sceneFlowLogs)
+                    {
+                        builder.AppendLine($"- {entry}");
+                        count++;
+                        if (count >= 30)
+                        {
+                            builder.AppendLine("- (truncado)");
+                            break;
+                        }
+                    }
+                }
+
+                File.WriteAllText(ReportPath, builder.ToString(), Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(SceneFlowPlayModeSmokeBootstrap),
+                    $"{LogTag} Falha ao escrever relatório: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private static string GetDefines()
+        {
+            var defines = new List<string>();
+#if NEWSCRIPTS_SCENEFLOW_NATIVE
+            defines.Add("NEWSCRIPTS_SCENEFLOW_NATIVE");
+#endif
+#if UNITY_EDITOR
+            defines.Add("UNITY_EDITOR");
+#endif
+#if UNITY_INCLUDE_TESTS
+            defines.Add("UNITY_INCLUDE_TESTS");
+#endif
+            return string.Join(", ", defines);
+        }
+
+        private static void SetExit(int code)
+        {
+            Environment.ExitCode = code;
+            DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} ExitCode={code}");
+        }
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Entry point para batchmode via -executeMethod.
+    /// </summary>
+    public static class SceneFlowPlayModeSmokeBootstrapCI
+    {
+        public static void Run()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                EditorApplication.isPlaying = true;
+            }
+        }
+    }
+#endif
+}

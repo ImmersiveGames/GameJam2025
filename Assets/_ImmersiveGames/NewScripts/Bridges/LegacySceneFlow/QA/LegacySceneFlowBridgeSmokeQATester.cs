@@ -12,7 +12,7 @@ using LegacyScenesReady = _ImmersiveGames.Scripts.SceneManagement.Transition.Sce
 using LegacyStarted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionStartedEvent;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
 {
     /// <summary>
     /// Smoke test para garantir que o LegacySceneFlowBridge está refletindo eventos do fluxo de cenas legado

@@ -1,32 +1,28 @@
-# Como rodar o PlayMode test de Scene Flow (nativo + bridge)
+# Como rodar o Smoke de Scene Flow (nativo + bridge) sem NUnit
 
-Este teste valida o fluxo Started → ScenesReady → Completed do Scene Flow nativo e confirma que o bridge legado continua refletindo os eventos. Ele é automatizado, não exige interação manual e grava um relatório em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-PlayMode-Result.md`.
+O smoke `SceneFlowPlayModeSmokeBootstrap` valida o fluxo Started → ScenesReady → Completed do Scene Flow nativo e confirma que o bridge legado continua refletindo os eventos. Ele roda em PlayMode/CI sem NUnit e grava relatório em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Smoke-Result.md`.
 
 ## Pré-requisitos
-- Definir o símbolo `NEWSCRIPTS_SCENEFLOW_NATIVE` no Player Settings ou via linha de comando. Sem esse define, o teste marca o resultado como **Inconclusive**.
-- Garantir que as dependências padrão do projeto estejam presentes (Scenes, EventBus, DI).
+- Definir o símbolo `NEWSCRIPTS_SCENEFLOW_NATIVE` no Player Settings ou via linha de comando. Sem esse define, o resultado fica **INCONCLUSIVE**.
+- Garantir que a cena carregada contenha (ou instancie) `SceneFlowPlayModeSmokeBootstrap`.
 
-## Executando no Editor (UI)
-1. Abrir o Unity e o projeto.
-2. Menu **Window → General → Test Runner** (ou **Test Framework**).
-3. Selecionar a aba **PlayMode**.
-4. Localizar `SceneFlowNativePlayModeTests.SceneFlowNative_ShouldExecuteSmokeAndReport`.
-5. Executar o teste. O relatório Markdown será atualizado ao fim da execução.
+## Executando no Editor (PlayMode)
+1. Abra o projeto no Unity.
+2. Em uma cena de QA, adicione o componente `SceneFlowPlayModeSmokeBootstrap` (ou use uma cena que já o possua).
+3. Entre em PlayMode. O bootstrap executará automaticamente, aguardará até 30s e escreverá o relatório Markdown.
 
 ## Executando em batchmode/CI
-Exemplo de comando (ajuste caminhos conforme o agente de build):
+Exemplo de comando (ajuste paths conforme o agente):
 
 ```bash
 /path/to/Unity -batchmode -nographics \
   -projectPath /workspace/GameJam2025 \
-  -runTests -testPlatform PlayMode \
-  -testResults ./SceneFlowPlayMode-results.xml \
-  -testFilter SceneFlowNative_ShouldExecuteSmokeAndReport \
-  -logFile ./SceneFlowPlayMode.log \
+  -executeMethod _ImmersiveGames.NewScripts.Infrastructure.QA.SceneFlowPlayModeSmokeBootstrapCI.Run \
+  -logFile ./SceneFlowSmoke.log \
   -defineSymbols "NEWSCRIPTS_SCENEFLOW_NATIVE"
 ```
 
-Observações:
-- `-defineSymbols` garante que o Scene Flow nativo esteja ativo durante o teste.
-- O relatório Markdown é escrito dentro do projeto em `Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-PlayMode-Result.md` contendo defines detectados, testers executados, resultado e trechos dos logs marcados com `[SceneFlowTest]`.
-- Use `-nographics` em ambientes headless para evitar dependência de display.
+Notas:
+- Certifique-se de que a cena aberta no batch possui o `SceneFlowPlayModeSmokeBootstrap` na hierarquia (pode ser via cena dedicada de QA).
+- O bootstrap define `Environment.ExitCode` (0=PASS, 2=FAIL, 3=INCONCLUSIVE) e chama `Application.Quit` em batchmode.
+- O relatório contém defines detectados, resultado e até 30 logs marcados com `[SceneFlowTest]`.
