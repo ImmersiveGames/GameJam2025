@@ -52,6 +52,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private bool _gateSubscribed;
         private bool _gateOpen = true;
+        private bool _hasGateState;
+        private bool _lastGateOpen = true;
         private bool _stateBlockedLogged;
 
         private Vector3 _initialPosition;
@@ -299,7 +301,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void ApplyGateState(bool isOpen, bool verbose)
         {
+            // Evita spam de logs e warnings de "chamada repetida" quando múltiplos listeners
+            // aplicam o mesmo estado de gate no mesmo frame.
+            var isSameState = _hasGateState && isOpen == _lastGateOpen;
+
             _gateOpen = isOpen;
+
+            if (isSameState)
+            {
+                // Ainda assim, garante que o input reflita o estado atual (ex.: override do IStateDependentService).
+                RefreshInputState();
+                return;
+            }
+
+            _hasGateState = true;
+            _lastGateOpen = isOpen;
 
             if (logGateChanges || verbose)
             {

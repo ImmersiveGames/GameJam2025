@@ -13,24 +13,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public string CurrentStateName { get; private set; } = string.Empty;
 
-        /// <summary>
-        /// Marca a intenção de iniciar o jogo.
-        /// </summary>
         public void RequestStart() => _signals.MarkStart();
-
-        /// <summary>
-        /// Marca a intenção de pausar o jogo.
-        /// </summary>
         public void RequestPause() => _signals.MarkPause();
-
-        /// <summary>
-        /// Marca a intenção de retomar o jogo.
-        /// </summary>
         public void RequestResume() => _signals.MarkResume();
-
-        /// <summary>
-        /// Marca a intenção de resetar o loop.
-        /// </summary>
         public void RequestReset() => _signals.MarkReset();
 
         public void Initialize()

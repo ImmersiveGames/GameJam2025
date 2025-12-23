@@ -1,7 +1,24 @@
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Contrato mínimo para sinalização de transições do GameLoop.
+    /// IDs dos estados da GameLoop.
+    ///
+    /// Nota:
+    /// - Mantemos os valores existentes para evitar quebra de possíveis usos que dependam do int do enum.
+    /// - O fluxo alvo deste projeto é Boot -> Menu -> Playing -> Paused (mas pode ser estendido).
+    /// </summary>
+    public enum GameLoopStateId
+    {
+        Boot = 0,
+        Playing = 1,
+        Paused = 2,
+
+        // Adicionado depois para preservar os ints anteriores.
+        Menu = 3
+    }
+
+    /// <summary>
+    /// Sinais lidos pela FSM para decidir transições (inputs "transientes" do loop).
     /// </summary>
     public interface IGameLoopSignals
     {
@@ -11,9 +28,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         bool ResetRequested { get; }
     }
 
-    /// <summary>
-    /// Observador opcional para receber callbacks de mudança de estado.
-    /// </summary>
     public interface IGameLoopStateObserver
     {
         void OnStateEntered(GameLoopStateId stateId, bool isActive);
@@ -21,13 +35,5 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void OnGameActivityChanged(bool isActive);
     }
 
-    /// <summary>
-    /// Identificadores de estado utilizados pela FSM concreta.
-    /// </summary>
-    public enum GameLoopStateId
-    {
-        Boot = 0,
-        Playing = 1,
-        Paused = 2
-    }
+
 }

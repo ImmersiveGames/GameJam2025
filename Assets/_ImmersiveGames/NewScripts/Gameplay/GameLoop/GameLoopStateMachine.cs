@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
-
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
     /// FSM concreta do GameLoop usando a infraestrutura modular criada em NewScripts.
-    /// Mantém transições básicas de Boot → Playing → Paused e resets genéricos.
+    /// Fluxo padrão do projeto:
+    /// Boot -> Menu -> Playing -> Paused
+    /// (mantém resets genéricos e extensibilidade para outros projetos).
     /// </summary>
     public class GameLoopStateMachine
     {
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private readonly StateMachine _stateMachine;
 
         private BootState _bootState;
+        private MenuState _menuState;
         private PlayingState _playingState;
         private PausedState _pausedState;
 
@@ -50,19 +52,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private StateMachine BuildStateMachine()
         {
             _bootState = new BootState(_observer);
+            _menuState = new MenuState(_observer);
             _playingState = new PlayingState(_observer);
             _pausedState = new PausedState(_observer);
 
             var builder = new StateMachineBuilder();
 
             builder.AddState(_bootState, out var boot);
+            builder.AddState(_menuState, out var menu);
             builder.AddState(_playingState, out var playing);
             builder.AddState(_pausedState, out var paused);
 
-            builder.At(boot, playing, new FuncPredicate(() => _signals.StartRequested));
+            // Boot -> Menu (por padrão: avança automaticamente após entrar no Boot)
+            builder.At(boot, menu, new FuncPredicate(() => _bootState.IsCompleted));
+
+            // Menu -> Playing
+            builder.At(menu, playing, new FuncPredicate(() => _signals.StartRequested));
+
+            // Playing <-> Paused
             builder.At(playing, paused, new FuncPredicate(() => _signals.PauseRequested));
             builder.At(paused, playing, new FuncPredicate(() => _signals.ResumeRequested));
 
+            // Reset global: qualquer estado volta para Boot
             builder.Any(boot, new FuncPredicate(() => _signals.ResetRequested));
 
             builder.StateInitial(boot);
@@ -89,9 +100,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         protected void AllowActions(params ActionType[] actions)
         {
             foreach (var action in actions)
-            {
                 _allowedActions.Add(action);
-            }
         }
 
         public virtual void OnEnter()
@@ -116,12 +125,37 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
     /// <summary>
     /// Estado inicial responsável por carregar e sincronizar a simulação.
+    /// Por padrão, avança automaticamente para Menu após entrar.
     /// </summary>
     internal sealed class BootState : GameLoopStateBase
     {
+        public bool IsCompleted { get; private set; }
+
         public BootState(IGameLoopStateObserver observer) : base(GameLoopStateId.Boot, observer)
         {
             AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel);
+        }
+
+        public override void OnEnter()
+        {
+            base.OnEnter();
+            // Padrão simples e extensível:
+            // - hoje: Boot é “instantâneo” e vira Menu no próximo tick
+            // - amanhã: se você precisar, troque IsCompleted para depender de um sinal/serviço
+            IsCompleted = true;
+        }
+
+        public override bool IsGameActive() => false;
+    }
+
+    /// <summary>
+    /// Estado de menu onde navegação/UI é liberada e gameplay ainda não está ativo.
+    /// </summary>
+    internal sealed class MenuState : GameLoopStateBase
+    {
+        public MenuState(IGameLoopStateObserver observer) : base(GameLoopStateId.Menu, observer)
+        {
+            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel, ActionType.RequestQuit);
         }
 
         public override bool IsGameActive() => false;
