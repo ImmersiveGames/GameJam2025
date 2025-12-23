@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-
-using LegacyRoot = global::_ImmersiveGames;
-using LegacyScripts = LegacyRoot.Scripts;
-using LegacySceneTransitionContext = LegacyScripts.SceneManagement.Transition.SceneTransitionContext;
-using LegacySceneTransitionStartedEvent = LegacyScripts.SceneManagement.Transition.SceneTransitionStartedEvent;
-using LegacySceneTransitionScenesReadyEvent = LegacyScripts.SceneManagement.Transition.SceneTransitionScenesReadyEvent;
-using LegacySceneTransitionCompletedEvent = LegacyScripts.SceneManagement.Transition.SceneTransitionCompletedEvent;
+using LegacyEventBus = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus;
+using LegacyEventBinding = _ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding;
+using LegacySceneTransitionContext = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionContext;
+using LegacyStarted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionStartedEvent;
+using LegacyScenesReady = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionScenesReadyEvent;
+using LegacyCompleted = _ImmersiveGames.Scripts.SceneManagement.Transition.SceneTransitionCompletedEvent;
+using NewContext = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionContext;
+using NewStarted = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionStartedEvent;
+using NewScenesReady = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionScenesReadyEvent;
+using NewCompleted = _ImmersiveGames.NewScripts.Infrastructure.Scene.SceneTransitionCompletedEvent;
 
 namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 {
@@ -21,12 +23,9 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LegacySceneFlowBridge : IDisposable
     {
-        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionStartedEvent>
-            _transitionStartedBinding;
-        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionScenesReadyEvent>
-            _transitionScenesReadyBinding;
-        private readonly global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionCompletedEvent>
-            _transitionCompletedBinding;
+        private readonly LegacyEventBinding<LegacyStarted> _transitionStartedBinding;
+        private readonly LegacyEventBinding<LegacyScenesReady> _transitionScenesReadyBinding;
+        private readonly LegacyEventBinding<LegacyCompleted> _transitionCompletedBinding;
 
         private bool _bindingsRegistered;
         private bool _disposed;
@@ -34,14 +33,11 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
         public LegacySceneFlowBridge()
         {
             _transitionStartedBinding =
-                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionStartedEvent>(
-                    OnLegacySceneTransitionStarted);
+                new LegacyEventBinding<LegacyStarted>(OnLegacySceneTransitionStarted);
             _transitionScenesReadyBinding =
-                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionScenesReadyEvent>(
-                    OnLegacySceneTransitionScenesReady);
+                new LegacyEventBinding<LegacyScenesReady>(OnLegacySceneTransitionScenesReady);
             _transitionCompletedBinding =
-                new global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBinding<LegacySceneTransitionCompletedEvent>(
-                    OnLegacySceneTransitionCompleted);
+                new LegacyEventBinding<LegacyCompleted>(OnLegacySceneTransitionCompleted);
 
             TryRegisterBindings();
         }
@@ -66,12 +62,9 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 
             try
             {
-                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                    LegacySceneTransitionStartedEvent>.Register(_transitionStartedBinding);
-                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                    LegacySceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
-                global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                    LegacySceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+                LegacyEventBus<LegacyStarted>.Register(_transitionStartedBinding);
+                LegacyEventBus<LegacyScenesReady>.Register(_transitionScenesReadyBinding);
+                LegacyEventBus<LegacyCompleted>.Register(_transitionCompletedBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<LegacySceneFlowBridge>(
@@ -92,46 +85,43 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
                 return;
             }
 
-            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                LegacySceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
-            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                LegacySceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
-            global::_ImmersiveGames.Scripts.Utils.BusEventSystems.EventBus<
-                LegacySceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
+            LegacyEventBus<LegacyStarted>.Unregister(_transitionStartedBinding);
+            LegacyEventBus<LegacyScenesReady>.Unregister(_transitionScenesReadyBinding);
+            LegacyEventBus<LegacyCompleted>.Unregister(_transitionCompletedBinding);
             _bindingsRegistered = false;
 
             DebugUtility.LogVerbose<LegacySceneFlowBridge>(
                 "[SceneBridge] Bridge do Scene Flow legado desregistrada.");
         }
 
-        private void OnLegacySceneTransitionStarted(LegacySceneTransitionStartedEvent evt)
+        private void OnLegacySceneTransitionStarted(LegacyStarted evt)
         {
             var context = BuildContext(evt.Context);
-            EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
+            EventBus<NewStarted>.Raise(new NewStarted(context));
 
             DebugUtility.LogVerbose<LegacySceneFlowBridge>(
                 $"[SceneBridge] SceneTransitionStarted (legado) publicado no EventBus do NewScripts. Context={context}");
         }
 
-        private void OnLegacySceneTransitionScenesReady(LegacySceneTransitionScenesReadyEvent evt)
+        private void OnLegacySceneTransitionScenesReady(LegacyScenesReady evt)
         {
             var context = BuildContext(evt.Context);
-            EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
+            EventBus<NewScenesReady>.Raise(new NewScenesReady(context));
 
             DebugUtility.LogVerbose<LegacySceneFlowBridge>(
                 $"[SceneBridge] SceneTransitionScenesReady (legado) publicado no EventBus do NewScripts. Context={context}");
         }
 
-        private void OnLegacySceneTransitionCompleted(LegacySceneTransitionCompletedEvent evt)
+        private void OnLegacySceneTransitionCompleted(LegacyCompleted evt)
         {
             var context = BuildContext(evt.Context);
-            EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
+            EventBus<NewCompleted>.Raise(new NewCompleted(context));
 
             DebugUtility.LogVerbose<LegacySceneFlowBridge>(
                 $"[SceneBridge] SceneTransitionCompleted (legado) publicado no EventBus do NewScripts. Context={context}");
         }
 
-        private static SceneTransitionContext BuildContext(LegacySceneTransitionContext legacyContext)
+        private static NewContext BuildContext(LegacySceneTransitionContext legacyContext)
         {
             var scenesToLoad = ToStringList(GetMemberOrDefault<IEnumerable<string>>(
                 legacyContext,
@@ -164,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
 
             var profileName = TryResolveProfileName(legacyContext);
 
-            return new SceneTransitionContext(
+            return new NewContext(
                 scenesToLoad,
                 scenesToUnload,
                 targetActiveScene,
