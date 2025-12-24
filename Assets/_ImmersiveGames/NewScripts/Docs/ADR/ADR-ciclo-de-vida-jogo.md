@@ -1,62 +1,290 @@
-Doc update: Reset-In-Place semantics clarified
-
 # ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas
 
-> Owner deste ADR: decisão arquitetural sobre **fases, escopos e reset-in-place**.  
-> Owner operacional (pipeline, ordem e troubleshooting): `../WorldLifecycle/WorldLifecycle.md`.
+> **Owner deste ADR**: decisões arquiteturais sobre **fases, escopos e reset-in-place**
+> **Owner operacional (pipeline, ordem, edge cases e troubleshooting)**:
+> `../WorldLifecycle/WorldLifecycle.md`
+
+---
 
 ## Contexto
-- **Ordem**: a ausência de fases formais para readiness, spawn e bind gera corridas entre cenas, serviços e UI, dificultando resets determinísticos.
-- **Spawn**: pipelines de spawn variam por cena, com pouca previsibilidade sobre pools, atores e dependências de UI.
-- **Bind**: bindings de UI entre cenas (HUD, overlays compartilhados) acontecem cedo demais ou tardiamente, causando referências nulas.
-- **Reset**: não há contrato único para resets parciais (soft) ou completos (hard), forçando duplicação de lógica em controladores.
+
+A evolução incremental do projeto revelou problemas estruturais recorrentes:
+
+### Ordem e Readiness
+
+* Ausência de fases formais de readiness causa corridas entre:
+
+    * boot de cena
+    * spawn de atores
+    * binds de UI
+    * liberação de gameplay
+* Sistemas iniciam comportamento antes de o mundo estar consistente.
+
+### Spawn
+
+* Pipelines de spawn variam por cena.
+* Não há previsibilidade sobre:
+
+    * quando pools estão aquecidos
+    * quando atores existem
+    * quando serviços dependentes podem agir.
+
+### Bind (UI cross-scene)
+
+* HUDs e overlays compartilham dados entre cenas.
+* Binds ocorrem cedo demais (referências nulas) ou tarde demais (perda de eventos).
+
+### Reset
+
+* Não existe contrato único para:
+
+    * reset completo
+    * reset parcial
+* Controladores duplicam lógica, muitas vezes violando determinismo.
+
+---
 
 ## Objetivos
-- Estabelecer fases oficiais de readiness do jogo (da cena até gameplay) com ordem determinística.
-- Padronizar pipeline de spawn em passes explícitos, permitindo inspeção e telemetria.
-- Permitir late bind de UI cross-scene sem acoplamento temporal.
-- Introduzir resets por escopo (soft/hard) com contratos claros e reutilizáveis.
-- Integrar o ciclo de vida com **Scene Flow** e **WorldLifecycle** sem alterar APIs existentes.
+
+Este ADR estabelece decisões para:
+
+1. Definir **fases oficiais de readiness** do jogo.
+2. Padronizar **spawn determinístico em passes explícitos**.
+3. Permitir **late bind de UI cross-scene** sem heurísticas.
+4. Introduzir **resets por escopo** (soft / hard) com semântica clara.
+5. Integrar Scene Flow, WorldLifecycle e GameLoop **sem alterar APIs existentes**.
+
+---
 
 ## Decisões Arquiteturais
-- **FSM (Game Flow Controller)**: permanece simples, limitado a sinais de alto nível (`EnterLobby`, `StartMatch`, `EndMatch`) e delega execução detalhada para Scene Flow + WorldLifecycle.
-- **Scene Flow**: responsável por readiness de cena e binds cross-scene. Fornece estados `SceneScopeReady` e `SceneScopeBound` antes de liberar gameplay.
-- **WorldLifecycle**: permanece encarregado de reset determinístico de atores/serviços, agora acionado por escopo (soft/hard) e alinhado às fases de Scene Flow.
-- **Coordenação**: Scene Flow coordena gates de readiness; WorldLifecycle executa despawn/spawn/reset; FSM apenas navega entre cenas/partidas.
-- **Detalhamento operacional**: pipeline, ordenação determinística, contratos de escopo e troubleshooting estão em `../WorldLifecycle/WorldLifecycle.md` (owner operacional).
+
+### Separação clara de responsabilidades
+
+| Sistema            | Responsabilidade                           |
+| ------------------ | ------------------------------------------ |
+| **GameLoop**       | Estado macro da **simulação**              |
+| **Scene Flow**     | Readiness de cena + binds cross-scene      |
+| **WorldLifecycle** | Reset determinístico (spawn/despawn/reset) |
+| **SimulationGate** | Serialização e bloqueio operacional        |
+
+---
+
+### FSM / Game Flow Controller
+
+* Permanece **simples**
+* Opera apenas com sinais de alto nível:
+
+    * `EnterFrontend`
+    * `StartSimulation`
+    * `ExitSimulation`
+* **Não executa** spawn, reset ou bind.
+* Delegação explícita para Scene Flow + WorldLifecycle.
+
+---
+
+### Scene Flow
+
+* Responsável por:
+
+    * readiness da cena
+    * coordenação de binds cross-scene
+* Introduz fases formais:
+
+    * `SceneScopeReady`
+    * `SceneScopeBound`
+* Atua como **gatekeeper** antes do gameplay.
+
+---
+
+### WorldLifecycle
+
+* Único responsável por:
+
+    * despawn
+    * spawn
+    * reset
+* Executa pipelines **determinísticos**
+* Passa a suportar:
+
+    * **Hard Reset**
+    * **Soft Reset por escopo (Reset-In-Place)**
+
+---
+
+### Coordenação entre sistemas
+
+* Scene Flow **adquire e libera** o gate de readiness.
+* WorldLifecycle **executa reset** respeitando o gate.
+* GameLoop **apenas reflete o estado da simulação**.
+
+---
 
 ## Definição de Fases (linha do tempo)
-`SceneScopeReady → WorldServicesReady → SpawnPrewarm → SceneScopeBound → GameplayReady`  
-Owner do detalhamento e âncoras: `../WorldLifecycle/WorldLifecycle.md#fases-de-readiness`.
-- Scene Flow prepara e adquire o gate em `SceneScopeReady`, configura serviços em `WorldServicesReady`, realiza prewarm em `SpawnPrewarm`, libera binds em `SceneScopeBound` e autoriza gameplay apenas em `GameplayReady`.
+
+Fases oficiais do ciclo de vida:
+
+```
+SceneScopeReady
+→ WorldServicesReady
+→ SpawnPrewarm
+→ SceneScopeBound
+→ GameplayReady
+```
+
+**Owner do detalhamento operacional**:
+`../WorldLifecycle/WorldLifecycle.md#fases-de-readiness`
+
+### Semântica das fases
+
+* **SceneScopeReady**
+
+    * Gate adquirido
+    * Registries de cena disponíveis
+* **WorldServicesReady**
+
+    * Serviços de mundo configurados
+* **SpawnPrewarm**
+
+    * Aquecimento de pools e recursos
+* **SceneScopeBound**
+
+    * Late bind liberado (HUD, overlays)
+* **GameplayReady**
+
+    * Gate liberado
+    * Simulação autorizada
+
+---
 
 ## Reset Scopes
-- **Owner das semânticas**: `../WorldLifecycle/WorldLifecycle.md#resets-por-escopo` e `../WorldLifecycle/WorldLifecycle.md#reset-por-escopo--soft-reset-players-reset-in-place`.
-- **Resumo da decisão**: soft reset é opt-in por escopo (`ResetContext.Scopes`), preserva instâncias/identidades (reset-in-place) e mantém binds/registries de cena; hard reset recompõe mundo, bindings e registries com novo acquire do gate.
 
-### Soft Reset Semantics — Reset-In-Place (decisão)
-- **Soft Reset Players = reset-in-place** (sem despawn/spawn, instâncias e `ActorId` preservados).
-- Gate utilizado: `flow.soft_reset`.
-- Participam apenas `IResetScopeParticipant` do escopo solicitado (ex.: `Players`).
-- Justificativa: reduzir churn/GC, manter referências externas estáveis e preservar baseline funcional.  
-Detalhe operacional: `../WorldLifecycle/WorldLifecycle.md#reset-por-escopo--soft-reset-players-reset-in-place`.
+### Owner das semânticas
 
-## Spawn Passes
-- Owner do pipeline: `../WorldLifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
-- Decisão: pipeline determinístico em passes (prewarm, serviços de mundo, atores, late bindables) com binds liberados apenas após `SceneScopeBound`.
+* `../WorldLifecycle/WorldLifecycle.md#resets-por-escopo`
+* `../WorldLifecycle/WorldLifecycle.md#reset-por-escopo--soft-reset-players-reset-in-place`
+
+---
+
+## Soft Reset Semantics — Reset-In-Place (DECISÃO FORMAL)
+
+### Decisão Arquitetural
+
+> **Soft Reset Players é, por definição, Reset-In-Place**
+
+Isso significa:
+
+* ❌ **Sem despawn**
+* ❌ **Sem spawn**
+* ❌ **Sem recriação de GameObjects**
+* ❌ **Sem mudança de ActorId**
+
+✔️ Instâncias e identidades são preservadas
+✔️ Apenas estado lógico é resetado
+✔️ Referências externas permanecem válidas
+
+---
+
+### Contrato do Soft Reset
+
+* Gate utilizado: `flow.soft_reset`
+* Participantes:
+
+    * apenas `IResetScopeParticipant` cujo `Scope` esteja presente em `ResetContext.Scopes`
+* Escopos são **opt-in**
+* Não afeta:
+
+    * registries de cena
+    * binds de UI
+    * pools
+    * hierarquia de objetos
+
+---
+
+### Justificativa da decisão
+
+* Reduz churn e GC
+* Mantém referências externas estáveis (UI, câmera, serviços)
+* Permite retries rápidos
+* Evita reconstrução desnecessária do mundo
+* Fornece baseline funcional previsível
+
+➡️ **Soft Reset não é “mini hard reset”**
+➡️ É um **reset lógico controlado por contrato**
+
+---
+
+## Hard Reset (Contraponto)
+
+* Despawn + Spawn completos
+* Registries recompostos
+* Binds refeitos
+* Gate reacquirido
+* Mundo reconstruído
+
+➡️ Usado para:
+
+* troca de cena
+* reload estrutural
+* transições de mundo
+
+---
+
+## Spawn Passes (Decisão)
+
+Pipeline determinístico em passes explícitos:
+
+1. SpawnPrewarm
+2. World Services
+3. Actors
+4. Late Bindables
+5. UI Bind (após SceneScopeBound)
+
+**Owner operacional**:
+`../WorldLifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`
+
+---
 
 ## Late Bind (UI cross-scene)
-- Owner das regras: `../WorldLifecycle/WorldLifecycle.md#spawn-determinístico-e-late-bind`.
-- Decisão: binds de HUD/overlay são liberados somente após `SceneScopeBound`.
+
+### Decisão
+
+* Binds de HUD e overlays:
+
+    * **somente após `SceneScopeBound`**
+* Nunca durante spawn ou reset.
+
+Isso elimina:
+
+* referências nulas
+* corrida de binds
+* heurísticas de retry em UI
+
+---
 
 ## Uso do SimulationGateService
-- `SimulationGateService` é obrigatório para serializar readiness e resets.
-- Scene Flow adquire o gate em `SceneScopeReady` e libera em `GameplayReady`.
-- Hard resets reabrem o gate.
-- Soft resets reutilizam o gate existente, bloqueando apenas durante o reset.
 
-## Linha do tempo oficial
-````
+* Obrigatório para:
+
+    * readiness
+    * resets
+    * transições
+* Scene Flow:
+
+    * adquire gate em `SceneScopeReady`
+    * libera em `GameplayReady`
+* Hard Reset:
+
+    * reabre gate
+* Soft Reset:
+
+    * reutiliza gate existente
+    * bloqueia apenas durante o reset-in-place
+
+---
+
+## Linha do Tempo Oficial (Consolidada)
+
+```
 SceneTransitionStarted
 ↓
 SceneScopeReady (Gate Acquired, registries prontos)
@@ -73,24 +301,42 @@ SceneTransitionCompleted
 ↓
 GameplayReady (Gate liberado)
 ↓
-[Soft Reset → WorldLifecycle reset scoped]
+[Soft Reset → WorldLifecycle reset scoped (Reset-In-Place)]
 [Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
-````
+```
+
+---
 
 ## Consequências
-- Determinismo forte entre cenas.
-- Observabilidade clara por logs.
-- UI resiliente a reloads e resets.
-- Escopos explícitos eliminam heurísticas em controladores.
+
+* Determinismo forte entre cenas
+* Observabilidade clara via logs
+* UI resiliente a reloads e resets
+* Reset previsível e reutilizável
+* Eliminação de heurísticas em controladores
+
+---
 
 ## Não-objetivos
-- Alterar APIs públicas existentes.
-- Introduzir multiplayer online.
-- Implementar QA automatizado neste ADR.
+
+* Alterar APIs públicas existentes
+* Implementar multiplayer online
+* Definir UX de menus
+* Criar testes automatizados neste ADR
+
+---
 
 ## Plano de Implementação (fases)
-1. **Contratos e sinais**
-2. **Scene Flow**
-3. **WorldLifecycle**
-4. **UI Late Bind**
-5. **Telemetria e QA manual**
+
+1. Contratos e sinais
+2. Scene Flow
+3. WorldLifecycle
+4. UI Late Bind
+5. Telemetria e QA manual
+
+---
+
+### Estado do ADR
+
+**Status**: ✅ **Decisão consolidada**
+**Implementação**: parcialmente concluída (ver baseline no `WorldLifecycle.md`)

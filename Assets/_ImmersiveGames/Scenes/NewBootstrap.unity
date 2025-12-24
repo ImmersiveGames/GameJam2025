@@ -160,13 +160,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 553573022}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b707c60868d4319a1523d450afb3f2e, type: 3}
+  m_Script: {fileID: 11500000, guid: 9fd63242b8654ef3b556373068b85309, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  expectedProfileName: default
-  installCountingDecorator: 1
-  framesBetweenSteps: 1
+  label: GameLoopStateFlowQATester
   runOnStart: 1
+  warmupFrames: 2
+  timeoutSeconds: 6
+  expectedStartProfile: startup
+  expectedInitialState: Boot
+  expectedPlayingState: Playing
+  expectedPausedState: Paused
+  expectedPostResetState: Boot
+  verboseLogs: 1
 --- !u!1 &925051305
 GameObject:
   m_ObjectHideFlags: 0

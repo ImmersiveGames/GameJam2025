@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -11,7 +13,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -58,17 +60,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private static bool _created;
 
+        #if UNITY_EDITOR && NEWSCRIPTS_QA_AUTORUN
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoCreate()
         {
             if (_created)
+            {
                 return;
+            }
 
             if (!Application.isPlaying && !Application.isBatchMode)
+            {
                 return;
+            }
 
-            if (UnityEngine.Object.FindFirstObjectByType<PlayerMovementLeakSmokeBootstrap>(FindObjectsInactive.Include) != null)
+            if (FindFirstObjectByType<PlayerMovementLeakSmokeBootstrap>(FindObjectsInactive.Include) != null)
+            {
                 return;
+            }
 
             var go = new GameObject(nameof(PlayerMovementLeakSmokeBootstrap))
             {
@@ -79,13 +88,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             go.AddComponent<PlayerMovementLeakSmokeBootstrap>();
             _created = true;
         }
-
+#endif
         private void Start()
         {
             StartCoroutine(RunSmoke());
         }
 
-        private System.Collections.IEnumerator RunSmoke()
+        private IEnumerator RunSmoke()
         {
             float startTime = Time.realtimeSinceStartup;
             _sceneName = gameObject.scene.name;
@@ -114,21 +123,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             if (!ValidatePlayer(player, "Player não encontrado (spawn serviço ou fallback).", startTime))
+            {
                 yield break;
+            }
 
             _initialSpeed = HorizontalSpeed(player.Rigidbody);
 
             yield return RunTestA(player, gateService, startTime);
             if (StopEarly(startTime))
+            {
                 yield break;
+            }
 
             yield return RunTestB(player, provider, startTime);
             if (StopEarly(startTime))
+            {
                 yield break;
+            }
 
             player = DiscoverPlayer(provider);
             if (!ValidatePlayer(player, "Player não encontrado após reset.", startTime))
+            {
                 yield break;
+            }
 
             yield return RunTestC(player, gateService, startTime);
 
@@ -153,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             return false;
         }
 
-        private System.Collections.IEnumerator RunTestA(PlayerContext player, ISimulationGateService gateService, float startTime)
+        private IEnumerator RunTestA(PlayerContext player, ISimulationGateService gateService, float startTime)
         {
             if (HasTimedOut(startTime))
             {
@@ -165,9 +182,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 $"{LogTag} Teste A iniciado - gate deve bloquear movimento.");
 
             yield return ApplyInputFrames(() => DiscoverPlayer(DependencyManager.Provider), player, new Vector2(0f, 1f), InputFrames, startTime);
-            Vector3 positionBeforeClose = player.Rigidbody.position;
+            var positionBeforeClose = player.Rigidbody.position;
 
-            IDisposable gateHandle = null;
+            IDisposable gateHandle;
             try
             {
                 gateHandle = gateService.Acquire(GateToken);
@@ -203,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
         }
 
-        private System.Collections.IEnumerator RunTestB(PlayerContext currentPlayer, IDependencyProvider provider, float startTime)
+        private IEnumerator RunTestB(PlayerContext currentPlayer, IDependencyProvider provider, float startTime)
         {
             if (HasTimedOut(startTime))
             {
@@ -236,7 +253,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             if (resetCoroutine != null)
+            {
                 yield return resetCoroutine;
+            }
 
             PlayerContext newPlayerContext = null;
             int oldInstanceId = currentPlayer.GameObject != null ? currentPlayer.GameObject.GetInstanceID() : -1;
@@ -274,7 +293,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
         }
 
-        private System.Collections.IEnumerator RunTestC(PlayerContext player, ISimulationGateService gateService, float startTime)
+        private IEnumerator RunTestC(PlayerContext player, ISimulationGateService gateService, float startTime)
         {
             if (HasTimedOut(startTime))
             {
@@ -285,7 +304,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             DebugUtility.Log(typeof(PlayerMovementLeakSmokeBootstrap),
                 $"{LogTag} Teste C iniciado - reabertura do gate não deve gerar input fantasma.");
 
-            IDisposable gateHandle = null;
+            IDisposable gateHandle;
             try
             {
                 gateHandle = gateService.Acquire(GateToken);
@@ -327,7 +346,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         /// <summary>
         /// Aplica input por N frames FIXED, mas revalida referências (evita MissingReference após reset/despawn).
         /// </summary>
-        private System.Collections.IEnumerator ApplyInputFrames(Func<PlayerContext> rediscover, PlayerContext player, Vector2 input, int frames, float startTime)
+        private IEnumerator ApplyInputFrames(Func<PlayerContext> rediscover, PlayerContext player, Vector2 input, int frames, float startTime)
         {
             for (int i = 0; i < frames; i++)
             {
@@ -361,10 +380,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
         }
 
-        private System.Collections.IEnumerator CaptureDrift(Rigidbody rb, int frames, float startTime, Action<float> onDrift)
+        private IEnumerator CaptureDrift(Rigidbody rb, int frames, float startTime, Action<float> onDrift)
         {
             if (rb == null)
+            {
                 yield break;
+            }
 
             Vector3 start = rb.position;
 
@@ -382,7 +403,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             onDrift?.Invoke(HorizontalDistance(start, rb.position));
         }
 
-        private System.Collections.IEnumerator WaitForRespawn(int oldInstanceId, IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        private IEnumerator WaitForRespawn(int oldInstanceId, IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
         {
             float waitStart = Time.realtimeSinceStartup;
             while (!HasTimedOut(startTime) && Time.realtimeSinceStartup - waitStart < TimeoutSeconds)
@@ -405,7 +426,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             MarkTimeout();
         }
 
-        private System.Collections.IEnumerator WaitForInitialSpawn(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        private IEnumerator WaitForInitialSpawn(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
         {
             float waitStart = Time.realtimeSinceStartup;
             while (!HasTimedOut(startTime) && Time.realtimeSinceStartup - waitStart < TimeoutSeconds)
@@ -425,14 +446,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             MarkTimeout();
         }
 
-        private bool TryTriggerReset(out System.Collections.IEnumerator coroutine, out string apiLabel)
+        private bool TryTriggerReset(out IEnumerator coroutine, out string apiLabel)
         {
             apiLabel = string.Empty;
             coroutine = null;
 
             try
             {
-                var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                var scene = SceneManager.GetActiveScene().name;
                 var context = new SceneTransitionContext(new[] { scene }, Array.Empty<string>(), scene, false, "qa.player_move_leak_reset");
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
                 apiLabel = "SceneTransitionScenesReadyEvent";
@@ -447,9 +468,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     $"{LogTag} Falha ao publicar SceneTransitionScenesReadyEvent: {ex.Message}");
             }
 
-            var controller = UnityEngine.Object.FindFirstObjectByType<WorldLifecycleController>(FindObjectsInactive.Include);
+            var controller = FindFirstObjectByType<WorldLifecycleController>(FindObjectsInactive.Include);
             if (controller == null)
+            {
                 return false;
+            }
 
             apiLabel = "WorldLifecycleController.ResetWorldAsync";
             coroutine = AwaitResetTask(controller.ResetWorldAsync("PlayerMovementLeakSmoke"));
@@ -458,15 +481,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             return true;
         }
 
-        private static System.Collections.IEnumerator AwaitResetTask(System.Threading.Tasks.Task task)
+        private static IEnumerator AwaitResetTask(Task task)
         {
-            while (task != null && !task.IsCompleted)
+            while (task is { IsCompleted: false })
+            {
                 yield return null;
+            }
         }
 
-        private System.Collections.IEnumerator EnsureInitialPlayer(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
+        private IEnumerator EnsureInitialPlayer(IDependencyProvider provider, float startTime, Action<PlayerContext> onFound)
         {
-            var controller = UnityEngine.Object.FindFirstObjectByType<WorldLifecycleController>(FindObjectsInactive.Include);
+            var controller = FindFirstObjectByType<WorldLifecycleController>(FindObjectsInactive.Include);
             if (controller == null)
             {
                 DebugUtility.LogError(typeof(PlayerMovementLeakSmokeBootstrap),
@@ -491,7 +516,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return context;
             }
 
-            var actor = UnityEngine.Object.FindFirstObjectByType<PlayerActor>(FindObjectsInactive.Include);
+            var actor = FindFirstObjectByType<PlayerActor>(FindObjectsInactive.Include);
             if (actor != null)
             {
                 var rb = actor.GetComponentInChildren<Rigidbody>();
@@ -501,7 +526,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return context;
             }
 
-            var movement = UnityEngine.Object.FindFirstObjectByType<NewPlayerMovementController>(FindObjectsInactive.Include);
+            var movement = FindFirstObjectByType<NewPlayerMovementController>(FindObjectsInactive.Include);
             if (movement != null)
             {
                 var rb = movement.GetComponentInChildren<Rigidbody>();
@@ -534,7 +559,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private bool TryFindSpawnedPlayer(IDependencyProvider provider, out PlayerContext context)
         {
             context = null;
-            var sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var sceneName = SceneManager.GetActiveScene().name;
 
             if (provider.TryGetForScene<IWorldSpawnContext>(sceneName, out var spawnContext) && spawnContext?.WorldRoot != null)
             {
@@ -556,7 +581,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private void OnLogMessage(string condition, string stackTrace, LogType type)
         {
             if (string.IsNullOrEmpty(condition))
+            {
                 return;
+            }
 
             if (condition.IndexOf("[PlayerMoveTest]", StringComparison.Ordinal) >= 0)
             {
@@ -577,7 +604,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             {
                 var dir = Path.GetDirectoryName(ReportPath);
                 if (!string.IsNullOrEmpty(dir))
+                {
                     Directory.CreateDirectory(dir);
+                }
 
                 var builder = new StringBuilder();
                 builder.AppendLine("# Player Movement Leak Smoke Result");
@@ -627,13 +656,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private string ComputeFinalResult()
         {
             if (_timeout)
+            {
                 return "FAIL";
+            }
 
             if (_inconclusive || !_testAResult.HasValue || !_testBResult.HasValue || !_testCResult.HasValue)
+            {
                 return "INCONCLUSIVE";
+            }
 
             if (_testAResult.Value && _testBResult.Value && _testCResult.Value && !_hasFailMarker)
+            {
                 return "PASS";
+            }
 
             return "FAIL";
         }
@@ -682,7 +717,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static string FormatStatus(bool? status)
         {
             if (!status.HasValue)
+            {
                 return "N/A";
+            }
             return status.Value ? "PASS" : "FAIL";
         }
 
@@ -694,7 +731,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static float HorizontalSpeed(Rigidbody rb)
         {
             if (rb == null)
+            {
                 return 0f;
+            }
 
 #if UNITY_6000_0_OR_NEWER
             var v = rb.linearVelocity;
@@ -713,7 +752,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private static string BuildTransformPath(Transform t)
         {
             if (t == null)
+            {
                 return "<null>";
+            }
 
             var stack = new Stack<string>();
             var cursor = t;

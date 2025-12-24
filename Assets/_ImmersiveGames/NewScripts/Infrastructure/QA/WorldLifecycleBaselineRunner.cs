@@ -3,20 +3,20 @@
  * - Gate Validation agora força spawn do player via ResetWorldAsync se necessário e aguarda warmup determinístico.
  * - Adicionado validador automatizado do Gate (ações) com ContextMenu/Hotkey e logs determinísticos para QA.
  */
+
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using UnityEngine.SceneManagement;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>

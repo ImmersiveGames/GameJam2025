@@ -1,13 +1,12 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Smoke test para o FilteredEventBus no NewScripts.
     /// </summary>
-    public sealed class FilteredEventBusSmokeQATester : MonoBehaviour
+    public sealed class FilteredEventBusSmokeQaTester : MonoBehaviour
     {
         private const string ScopeA = "SCOPE_A";
 
@@ -16,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             TestFilteredDelivery();
             TestFilteredIsolation();
-            DebugUtility.Log(typeof(FilteredEventBusSmokeQATester), "[QA][EventBus][Filtered] QA complete.");
+            DebugUtility.Log(typeof(FilteredEventBusSmokeQaTester), "[QA][EventBus][Filtered] QA complete.");
         }
 
         private static void TestFilteredDelivery()
@@ -29,13 +28,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (received)
             {
-                DebugUtility.Log(typeof(FilteredEventBusSmokeQATester),
+                DebugUtility.Log(typeof(FilteredEventBusSmokeQaTester),
                     "[QA][EventBus][Filtered][A] PASS - Scoped subscriber received event.",
                     DebugUtility.Colors.Success);
             }
             else
             {
-                DebugUtility.LogError(typeof(FilteredEventBusSmokeQATester),
+                DebugUtility.LogError(typeof(FilteredEventBusSmokeQaTester),
                     "[QA][EventBus][Filtered][A] FAIL - Scoped subscriber did not receive event.");
             }
         }
@@ -50,13 +49,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (!received)
             {
-                DebugUtility.Log(typeof(FilteredEventBusSmokeQATester),
+                DebugUtility.Log(typeof(FilteredEventBusSmokeQaTester),
                     "[QA][EventBus][Filtered][B] PASS - Other scope did not receive event.",
                     DebugUtility.Colors.Success);
             }
             else
             {
-                DebugUtility.LogError(typeof(FilteredEventBusSmokeQATester),
+                DebugUtility.LogError(typeof(FilteredEventBusSmokeQaTester),
                     "[QA][EventBus][Filtered][B] FAIL - Other scope received event.");
             }
 

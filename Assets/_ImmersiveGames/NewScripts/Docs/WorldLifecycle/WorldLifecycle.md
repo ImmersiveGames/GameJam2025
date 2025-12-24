@@ -1,307 +1,376 @@
-Doc update:
-- Reset-In-Place semantics clarified
-- Pause: GamePauseGateBridge ativa token SimulationGateTokens.Pause e NewScriptsStateDependentService bloqueia Move via gate (sem congelar física/timeScale)
-- Infra FSM: assets e GameLoop FSM documentados
-- Bootstrap NewScripts isolado do legado: GlobalBootstrap registra gate/bridge/StateDependentService sem depender do DependencyBootstrapper legado
-- GlobalBootstrap também registra o driver de runtime do WorldLifecycle para orquestrar resets em produção
 # World Lifecycle (NewScripts)
 
-> Este documento descreve **operacionalmente** o comportamento do WorldLifecycle e implementa as decisões descritas no
-> **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas** (`../ADR/ADR-ciclo-de-vida-jogo.md`).
+> Este documento descreve **operacionalmente** o comportamento do **WorldLifecycle** no **domínio da simulação**
+> e implementa as decisões descritas no
+> **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**
+> (`../ADR/ADR-ciclo-de-vida-jogo.md`).
+
+> **Escopo explícito deste documento**
+> Este documento **não descreve navegação de App / Frontend / Menus visuais**.
+> Ele descreve **exclusivamente o ciclo de vida da simulação** executada **dentro de uma cena de Gameplay**.
 
 ---
 
-## Visão geral
+## 1. Visão Geral
 
-O **WorldLifecycle** é responsável por executar resets de forma **determinística** e **serializada** via `ISimulationGateService`.
-Há dois contratos principais:
+O **WorldLifecycle** é responsável por:
 
-- **Hard Reset (Full Reset)**: reconstrói o mundo de forma completa (despawn + spawn).
-- **Soft Reset Players (Reset-In-Place)**: reset lógico por escopo, **sem despawn/spawn** (instâncias e identidades preservadas).
+* Construir a simulação
+* Resetar a simulação
+* Garantir determinismo entre execuções
+* Serializar operações críticas via `ISimulationGateService`
 
-### Notas rápidas de infraestrutura
-- Infra genérica de FSM: `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
-- FSM concreta do GameLoop: `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
-- Pause usa gate para bloquear ações (ex.: Move) e **não congela física/timeScale**.
-- Fronteira de boot: **o legado não inicializa o NewScripts**. O `DependencyBootstrapper` do legado não registra serviços do NewScripts. Em `NEWSCRIPTS_MODE`, o `GlobalBootstrap` do NewScripts registra `ISimulationGateService`, `GamePauseGateBridge`, `NewScriptsStateDependentService` e demais serviços próprios antes das cenas (sem depender do bootstrap legado).
-- O `GlobalBootstrap` registra o `WorldLifecycleRuntimeDriver` para acionar resets determinísticos após o Scene Flow.
+Ele **não**:
 
-### Pause (Gate não congela física)
-- O pause é propagado via `GamePauseEvent(paused=true)` → `GamePauseGateBridge` → token `SimulationGateTokens.Pause` no `SimulationGateService`.
-- O resume é liberado via `GamePauseEvent(paused=false)` ou `GameResumeRequestedEvent` (mesma ponte libera o token).
-- **Efeito**: o `NewScriptsStateDependentService` consulta o gate e bloqueia `ActionType.Move` (ações) enquanto o token de pause estiver ativo; **não mexe em `Time.timeScale` nem congela `Rigidbody`**.
-- Gravidade e física continuam rodando; apenas os controladores deixam de aplicar inputs/velocidade.
-- O serviço de permissões oficial no baseline NewScripts é `NewScriptsStateDependentService`, registrado pelo `GlobalBootstrap` (nenhuma ponte legacy de StateDependent permanece).
-- Para detalhes do estado global (Playing/Paused/Boot) e como os eventos entram no loop, veja `../GameLoop/GameLoop.md`.
+* controla telas de menu
+* navega entre cenas
+* define UX de App
 
----
+Essas responsabilidades pertencem ao **App Frontend / Scene Flow**.
 
-## Reset determinístico — Hard Reset (Full Reset)
+### Contratos principais
 
-O hard reset segue a ordem garantida pelo `WorldLifecycleOrchestrator`:
+* **Hard Reset (Full Reset)**
+  Reconstrói completamente o mundo da simulação
+  (despawn + spawn)
 
-**Acquire Gate**
-→ Hooks de mundo `OnBeforeDespawn`
-→ Hooks de ator `OnBeforeActorDespawn`
-→ `DespawnAsync`
-→ Hooks de mundo `OnAfterDespawn`
-→ (opcional) `IResetScopeParticipant` (quando houver `ResetContext`)
-→ Hooks de mundo `OnBeforeSpawn`
-→ `SpawnAsync`
-→ Hooks de ator `OnAfterActorSpawn`
-→ Hooks de mundo `OnAfterSpawn`
-→ **Release Gate**
-
-### Detalhe por etapa
-- **Acquire**: tenta adquirir `ISimulationGateService` com token `WorldLifecycle.WorldReset` para serializar resets.
-- **Hooks (pré-despawn)**: executa hooks registrados por cena/registry na ordem determinística estabelecida.
-- **Actor hooks (pré-despawn)**: percorre atores registrados e executa `OnBeforeActorDespawnAsync()` para cada `IActorLifecycleHook`.
-- **Despawn**: chama `DespawnAsync()` de cada `IWorldSpawnService` registrado (com logs de duração).
-- **Hooks (pós-despawn)**: executa `OnAfterDespawnAsync()` na mesma ordem determinística.
-- **Scoped participants (opt-in)**: se existir `ResetContext`, executa `IResetScopeParticipant.ResetAsync()` filtrado por escopo **antes** do spawn.
-- **Hooks (pré-spawn)**: executa `OnBeforeSpawnAsync()`.
-- **Spawn**: chama `SpawnAsync()` dos serviços, então finaliza com hooks de ator/mundo.
-- **Release**: libera o gate adquirido e finaliza com logs de duração.
-
-### Logs de *skip*
-Se não houver hooks em uma fase, o sistema emite log verbose no formato:
-`"<PhaseName> phase skipped (hooks=0)"`.
+* **Soft Reset Players (Reset-In-Place)**
+  Reset **lógico por escopo**, preservando instâncias, identidades e hierarquia física
 
 ---
 
-## Reset por Escopo — Soft Reset Players (Reset-In-Place)
+## 2. Notas de Infraestrutura (Fronteiras Arquiteturais)
 
-### Contrato
-`Soft Reset Players` é **reset-in-place** por decisão arquitetural.
+### FSMs
+
+* Infra genérica de FSM:
+  `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
+* FSM concreta do GameLoop (controle de simulação):
+  `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
+
+### Bootstrap (fronteira com legado)
+
+* O **legado não inicializa o NewScripts**
+* O `DependencyBootstrapper` legado **não registra serviços do NewScripts**
+* Em `NEWSCRIPTS_MODE`:
+
+    * `GlobalBootstrap` registra:
+
+        * `ISimulationGateService`
+        * `GamePauseGateBridge`
+        * `NewScriptsStateDependentService`
+        * `WorldLifecycleRuntimeDriver`
+    * Tudo ocorre **antes das cenas**
+    * Sem dependência do bootstrap legado
+
+➡️ Essa separação é **intencional e não negociável**.
+
+---
+
+## 3. Pause — Gate sem congelar física
+
+### Semântica correta de Pause
+
+Pause **não é**:
+
+* `Time.timeScale = 0`
+* congelar `Rigidbody`
+* interromper física
+
+Pause **é**:
+
+* bloqueio lógico de ações
+
+### Pipeline de Pause
+
+```
+GamePauseEvent(paused=true)
+→ GamePauseGateBridge
+→ SimulationGateTokens.Pause
+→ ISimulationGateService
+→ NewScriptsStateDependentService
+→ ActionType.Move bloqueado
+```
+
+### Efeito prático
+
+* Física continua rodando
+* Gravidade continua atuando
+* Controladores deixam de aplicar input/velocidade
+* Nenhuma mutação em `timeScale`
+
+➡️ O **serviço oficial de permissões** é
+`NewScriptsStateDependentService` (registrado pelo `GlobalBootstrap`)
+
+Para estados globais (Boot / Playing / Paused) veja:
+`../GameLoop/GameLoop.md`
+
+---
+
+## 4. Reset Determinístico — Hard Reset (Full Reset)
+
+Pipeline garantido pelo `WorldLifecycleOrchestrator`:
+
+```
+Acquire Gate (WorldLifecycle.WorldReset)
+→ OnBeforeDespawn (World)
+→ OnBeforeActorDespawn
+→ DespawnAsync
+→ OnAfterDespawn
+→ IResetScopeParticipant (se houver)
+→ OnBeforeSpawn
+→ SpawnAsync
+→ OnAfterActorSpawn
+→ OnAfterSpawn
+→ Release Gate
+```
+
+### Propriedades garantidas
+
+* Ordem estável
+* Fail-fast
+* Logs de duração
+* Serialização via gate
+
+### Logs de skip
+
+Se uma fase não tiver hooks:
+
+```
+<PhaseName> phase skipped (hooks=0)
+```
+
+➡️ Isso **é esperado**, não erro.
+
+---
+
+## 5. Reset por Escopo — Soft Reset Players (Reset-In-Place)
+
+### Contrato arquitetural
+
+Soft Reset Players **não reconstrói o mundo**.
 
 Durante este fluxo:
-- `IWorldSpawnService.DespawnAsync` **não é chamado**.
-- `IWorldSpawnService.SpawnAsync` **não é chamado**.
-- Nenhuma instância é destruída/recriada.
-- `ActorId` é preservado.
-- `ActorRegistry` mantém a contagem (não diminui e não recompõe).
+
+* ❌ `DespawnAsync` não é chamado
+* ❌ `SpawnAsync` não é chamado
+* ✅ Instâncias preservadas
+* ✅ `ActorId` preservado
+* ✅ `ActorRegistry` permanece estável
 
 ### Gate
-- Token utilizado: `flow.soft_reset` (`SimulationGateTokens.SoftReset`).
 
-### Ordem operacional (Soft Reset Players)
-O soft reset executa um pipeline determinístico **específico para reset-in-place**:
+* Token: `SimulationGateTokens.SoftReset` (`flow.soft_reset`)
 
-**Acquire Gate (flow.soft_reset)**
-→ (opcional) Hooks de mundo (se existirem para este fluxo)
-→ Hooks de ator `OnBeforeActorDespawn` (atores existentes, se hooks existirem)
-→ `IResetScopeParticipant` filtrado por `ResetContext.Scopes = [Players]` (ex.: `PlayersResetParticipant`)
-→ Hooks de ator `OnAfterActorSpawn` (atores existentes, se hooks existirem)
-→ (opcional) Hooks de mundo finais
-→ **Release Gate (flow.soft_reset)**
+### Pipeline Soft Reset Players
 
-> Observação: em soft reset, é **esperado** aparecer nos logs:
-> `Despawn service skipped by scope filter` e `Spawn service skipped by scope filter`
-> Isso é evidência positiva de conformidade com reset-in-place.
+```
+Acquire Gate (flow.soft_reset)
+→ (opcional) World Hooks
+→ OnBeforeActorDespawn (atores existentes)
+→ IResetScopeParticipant (Players)
+→ OnAfterActorSpawn (atores existentes)
+→ (opcional) World Hooks finais
+→ Release Gate
+```
 
-### Regras de execução por escopo
-- Soft reset é **opt-in**: somente participantes `IResetScopeParticipant` cujo `Scope` esteja em `ResetContext.Scopes` executam.
-- Soft reset **sem escopos** não executa participantes.
-- Soft reset não deve desregistrar/recriar binds de UI/canvas por padrão.
+Logs esperados:
 
----
+```
+Despawn service skipped by scope filter
+Spawn service skipped by scope filter
+```
 
-## Hard Reset vs Soft Reset Players (Resumo)
-
-| Aspecto | Hard Reset | Soft Reset Players (Reset-In-Place) |
-|---|---|---|
-| Despawn | Sim | Não (skipped by scope filter) |
-| Spawn | Sim | Não (skipped by scope filter) |
-| ActorId | Recriado | Preservado |
-| GameObject | Reinstanciado | Mantido |
-| ActorRegistry | Recomposto | Mantido (contagem estável) |
-| Gate | `WorldLifecycle.WorldReset` | `flow.soft_reset` |
-| Semântica | Reconstrução total | Reset lógico in-place |
+➡️ Evidência positiva de reset-in-place correto.
 
 ---
 
-## Otimização: cache de Actor hooks por ciclo
+## 6. Hard Reset vs Soft Reset (Resumo)
 
-Durante `ResetWorldAsync`, hooks de ator (`IActorLifecycleHook`) podem ser cacheados por `Transform` **dentro do ciclo** para evitar varreduras duplicadas.
-
-- Cache é limpo no `finally` do reset (inclusive em falha).
-- Não há cache entre resets.
+| Aspecto       | Hard Reset    | Soft Reset Players |
+| ------------- | ------------- | ------------------ |
+| Despawn       | Sim           | Não                |
+| Spawn         | Sim           | Não                |
+| ActorId       | Recriado      | Preservado         |
+| GameObject    | Reinstanciado | Mantido            |
+| ActorRegistry | Recomposto    | Mantido            |
+| Gate          | WorldReset    | SoftReset          |
+| Semântica     | Reconstrução  | Reset lógico       |
 
 ---
 
-## Ciclo de Vida do Jogo (Scene Flow + WorldLifecycle)
+## 7. Cache de Hooks de Ator
 
-O **Scene Flow** orquestra readiness e binds cross-scene; o **WorldLifecycle** executa despawn/spawn/reset.
-As fases oficiais foram decididas no ADR:
-`../ADR/ADR-ciclo-de-vida-jogo.md`.
+* Hooks (`IActorLifecycleHook`) podem ser cacheados por `Transform`
+* Cache:
+
+    * válido apenas durante o reset
+    * limpo no `finally`
+* Nenhum cache entre resets
+
+---
+
+## 8. Scene Flow × WorldLifecycle (Separação de Domínios)
+
+* **Scene Flow**:
+
+    * troca de cenas
+    * readiness
+    * binds cross-scene
+* **WorldLifecycle**:
+
+    * reset
+    * spawn/despawn
+    * simulação
 
 ### Linha do tempo oficial
-````
+
+```
 SceneTransitionStarted
 ↓
-SceneScopeReady (gate adquirido, registries de cena prontos)
+SceneScopeReady
 ↓
 SceneTransitionScenesReady
 ↓
-WorldLoaded (WorldLifecycle configurado; registries de actor/spawn ativos)
+WorldLoaded
 ↓
-SpawnPrewarm (Passo 0 — aquecimento de pools)
+SpawnPrewarm
 ↓
-SceneScopeBound (late bind liberado; HUD/overlays conectados)
+SceneScopeBound
 ↓
 SceneTransitionCompleted
 ↓
-GameplayReady (gate liberado; gameplay habilitado)
+GameplayReady
 ↓
-[Soft Reset → WorldLifecycle reset scoped (Reset-In-Place)]
-[Hard Reset → Desbind + WorldLifecycle full reset + reacquire gate]
-````
+[Soft Reset] ou [Hard Reset]
+```
 
-Origem da decisão de fases:
-`../ADR/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`.
-
----
-
-## Fases de Readiness (Resumo)
-
-Fases formais que controlam quem pode agir e quando, garantindo que spawn/bind e gameplay sigam uma ordem previsível.
-
-- **SceneScopeReady**: cena configurada e gate adquirido; registries disponíveis; gameplay ainda bloqueado.
-- **WorldLoaded**: WorldLifecycle configurado; registries ativos; serviços de mundo podem preparar dados.
-- **SceneScopeBound**: late bind liberado; HUD/overlays conectam em providers.
-- **GameplayReady**: gate liberado; gameplay pode rodar.
-
-Regra explícita:
-- gameplay e lógica de atores só iniciam após `GameplayReady`.
-- resets devem respeitar o gate; no soft reset, o gate bloqueia enquanto o reset-in-place roda.
+Fonte:
+`../ADR/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`
 
 ---
 
-## Spawn determinístico e Late Bind
+## 9. Readiness (Contrato Funcional)
 
-Define como spawn acontece em passes ordenados e como binds tardios evitam inconsistências de UI/canvas cross-scene.
-Decisão de passes descrita no ADR:
-`../ADR/ADR-ciclo-de-vida-jogo.md#spawn-passes`.
+* **SceneScopeReady**
+  Registries prontos, gameplay bloqueado
+* **WorldLoaded**
+  Serviços de mundo podem preparar dados
+* **SceneScopeBound**
+  UI / HUD podem bindar
+* **GameplayReady**
+  Gate liberado, simulação ativa
 
-### Por que spawn ocorre em passes
-O WorldLifecycle executa passos previsíveis (pré-warm, serviços, atores, late bindables) para manter determinismo e reduzir corrida de dependências.
-
-### Regra de binds tardios
-HUD/overlays e outros cross-scene binds só conectam após `SceneScopeBound` (e antes de `GameplayReady`).
-
-### Quando spawn e bind acontecem (passes)
-- **SpawnPrewarm (Passo 0)**: aquecimento de pools e recursos.
-- **World Services Spawn (Passo 1)**: serviços dependentes de mundo.
-- **Actors Spawn (Passo 2)**: atores jogáveis e NPCs em ordem determinística.
-- **Late Bindables (Passo 3)**: componentes que precisam existir para UI, mas sem bind imediato.
-- **Binds de UI**: conectam após `SceneScopeBound`.
+➡️ Gameplay **nunca** roda antes de `GameplayReady`.
 
 ---
 
-## Resets por escopo (semântica funcional)
+## 10. Spawn Determinístico e Late Bind
 
-### Escopos são domínios de gameplay
-`ResetScope.Players` representa o baseline funcional de gameplay do jogador (input, câmera, HUD/UI, caches, timers relevantes),
-não a hierarquia física do prefab.
+Passes oficiais:
 
-### Participantes podem atuar fora do GameObject
-Um `IResetScopeParticipant` de `Scope=Players` pode resetar serviços/managers/caches/timers/UI que impactem o baseline do player,
-mesmo fora do prefab.
+1. SpawnPrewarm
+2. World Services
+3. Actors
+4. Late Bindables
+5. UI Bind
 
-### Anti-pattern explícito
-Interpretar `ResetScope.Players` como “reset apenas dos componentes dentro do GameObject Player” é incorreto.
+Regra:
+
+* UI conecta **após SceneScopeBound**
+* antes de `GameplayReady`
 
 ---
 
-## Baseline Audit — ResetScope.Players (2025-12-19)
+## 11. ResetScope.Players — Semântica Correta
 
-### Contexto
-Foi realizada uma auditoria técnica para verificar o estado real da implementação de `ResetScope.Players`
-em relação ao contrato de **Soft Reset Players (Reset-In-Place)**.
+### Escopo é funcional, não estrutural
 
-O objetivo foi identificar:
-- quais mecanismos já existem,
-- quais subsistemas efetivamente participam do reset,
-- e quais lacunas impedem o uso do soft reset como mecânica de gameplay (retry / restart).
+`ResetScope.Players` representa:
 
-### Estado encontrado (As-Is)
+* baseline de gameplay do jogador
+* input, câmera, HUD, timers, caches
 
-**Infraestrutura**
-- `ResetScope`, `ResetContext`, `IResetScopeParticipant` e filtros por escopo existem em `ResetScopeTypes.cs`.
-- `WorldLifecycleController` expõe `ResetPlayersAsync` para soft reset Players.
-- `WorldLifecycleOrchestrator` executa reset por escopo via `ResetScopesAsync` com gate `SimulationGateTokens.SoftReset`.
-- O filtro por escopo impede despawn/spawn e ignora hooks de mundo e de ator (comportamento consistente com reset-in-place).
+❌ **Não** significa:
 
-**Participantes**
-- Existe apenas um participante registrado para `ResetScope.Players`: `PlayersResetParticipant`.
-- O participante atual executa apenas logs e **não reseta subsistemas**.
+> “reset apenas dos componentes do prefab Player”
 
-**Efeito prático**
-- O Soft Reset Players executa gate + pipeline, mas **não restaura baseline de gameplay**.
-- Nenhum estado de player, input, câmera, UI, cooldowns ou caches é resetado.
+### Participantes podem ser externos
 
-### Baseline funcional identificado (fora do NewScripts)
+* UI
+* câmera
+* domínios
+* serviços
+* timers
 
-Foram identificados subsistemas com APIs explícitas de reset-in-place já existentes:
+---
 
-**Dentro do prefab do Player**
-- `PlayerMovementController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
-- `PlayerShootController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
-- `PlayerInteractController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
-- `PlayerDetectionController` — possui `Reset_CleanupAsync`, `Reset_RestoreAsync`, `Reset_RebindAsync`.
+## 12. Baseline Audit — ResetScope.Players (2025-12-19)
 
-**Fora do prefab (cross-object)**
-- `CanvasCameraBinder` — rebind de câmera em UI world-space.
-- `RuntimeAttributeControllers / bridges` — UI/atributos ligados a atores.
+### Estado atual (As-Is)
 
-Esses sistemas **não estão atualmente conectados** ao `ResetScope.Players`.
+* Infra de reset por escopo existe e funciona
+* Pipeline correto
+* Gate correto
+* **Payload funcional inexistente**
 
-### Lacunas principais
-1. `ResetScope.Players` não executa reset funcional de gameplay.
-2. Hooks de mundo e de ator não participam do soft reset (por filtro de escopo).
-3. Nenhum participante externo (UI, câmera, domínios/managers/timers) está registrado.
-4. Serviços de domínio/registries e pools podem reter estado entre retries.
+### Participantes
+
+* Apenas `PlayersResetParticipant`
+* Executa apenas logs
 
 ### Conclusão
-O contrato de Soft Reset Players está corretamente definido e protegido (reset-in-place, sem despawn/spawn),
-porém **carece de payload funcional**.
 
-Próximos passos devem focar em acionar o baseline existente via `IResetScopeParticipant`, sem alterar o pipeline
-nem o contrato do WorldLifecycle.
+Soft Reset Players está **arquiteturalmente correto**, mas **funcionalmente vazio**.
 
----
-
-## Onde o registry é criado e como injetar
-
-- `WorldLifecycleHookRegistry` é criado e registrado apenas pelo `NewSceneBootstrapper`.
-- Consumidores obtêm via DI e devem tolerar boot order:
-    - preferir `Start()` ou
-    - lazy injection + retry curto + timeout com mensagem acionável.
+➡️ Próximo passo:
+Conectar resets reais via `IResetScopeParticipant`, **sem alterar o pipeline**.
 
 ---
 
-## Troubleshooting: QA/Testers e Boot Order
+## 13. Registry, Injeção e Boot Order
 
-Sintomas típicos:
-- tester não encontra registries
-- falha em `Awake`
-- logs iniciais “de erro” antes do bootstrap
+* `WorldLifecycleHookRegistry` criado apenas no `NewSceneBootstrapper`
+* Consumidores devem:
 
-Ações:
-1. Garantir `NewSceneBootstrapper` presente e ativo.
-2. Usar lazy injection + retry curto + timeout.
-3. Falhar com mensagem acionável se bootstrapper não rodou.
+    * usar `Start()` ou
+    * lazy injection com retry curto
 
 ---
 
-## Migration Strategy (Legacy → NewScripts)
+## 14. Troubleshooting QA / Boot
 
-- Consulte: **ADR-0001 — Migração incremental do Legado para o NewScripts**
-- Guardrails: NewScripts não referencia concretos do legado fora de adaptadores; pipeline determinístico com gate sempre ativo.
+Checklist:
+
+1. `NewSceneBootstrapper` presente
+2. Lazy injection
+3. Mensagem acionável em falha
 
 ---
 
-## Baseline Validation Contract
+## 15. Migração Legado → NewScripts
 
-Checklist detalhado:
+* Ver ADR-0001
+* Guardrails:
+
+    * sem referência direta ao legado
+    * bridges explícitas
+    * gate sempre ativo
+
+---
+
+## 16. Baseline Validation
+
+Checklist:
 `../QA/WorldLifecycle-Baseline-Checklist.md`
+
+---
+
+## Nota Final de Semântica
+
+Este documento descreve **o ciclo de vida da simulação**
+executada **dentro de GameplayScene**.
+
+Menus de App, splash screens e navegação pertencem a outro domínio.
+
+Essa separação é **intencional** e **fundamental** para escalar o projeto.

@@ -5,13 +5,12 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Smoke test manual para validar registro, resolução e injeção do DI do NewScripts.
     /// </summary>
-    public sealed class DependencyDISmokeQATester : MonoBehaviour
+    public sealed class DependencyDiSmokeQaTester : MonoBehaviour
     {
         private const string QaScene = "__QA_DI__";
 
@@ -31,20 +30,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             string activeSceneName = SceneManager.GetActiveScene().name;
-            DebugUtility.Log(typeof(DependencyDISmokeQATester), $"[QA][DI][A] Scene: {activeSceneName}");
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester), $"[QA][DI][A] Scene: {activeSceneName}");
             passes++;
 
             // B) Registrar serviços dummy
-            provider.RegisterGlobal(new DummyGlobalService { Id = "G1" }, allowOverride: true);
-            provider.RegisterForScene(QaScene, new DummySceneService { Id = "S_QA" }, allowOverride: true);
-            provider.RegisterForScene(activeSceneName, new DummySceneService { Id = "S_ACTIVE" }, allowOverride: true);
+            provider.RegisterGlobal(new DummyGlobalService { id = "G1" }, allowOverride: true);
+            provider.RegisterForScene(QaScene, new DummySceneService { id = "S_QA" }, allowOverride: true);
+            provider.RegisterForScene(activeSceneName, new DummySceneService { id = "S_ACTIVE" }, allowOverride: true);
 
             bool hasGlobal = provider.TryGetGlobal(out DummyGlobalService globalService);
             bool hasScene = provider.TryGetForScene(QaScene, out DummySceneService sceneService);
 
             if (hasGlobal && globalService != null)
             {
-                LogPass("B", $"Global resolved: {globalService.Id}");
+                LogPass("B", $"Global resolved: {globalService.id}");
                 passes++;
             }
             else
@@ -55,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (hasScene && sceneService != null)
             {
-                LogPass("B", $"Scene resolved ({QaScene}): {sceneService.Id}");
+                LogPass("B", $"Scene resolved ({QaScene}): {sceneService.id}");
                 passes++;
             }
             else
@@ -67,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             // C) Validar InjectDependencies
             var consumer = new DummyConsumer();
             provider.InjectDependencies(consumer);
-            DebugUtility.Log(typeof(DependencyDISmokeQATester), $"[QA][DI][C] {consumer.Report()}");
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester), $"[QA][DI][C] {consumer.Report()}");
             if (consumer.HasGlobal && consumer.HasScene)
             {
                 LogPass("C", "InjectDependencies filled all fields.");
@@ -82,9 +81,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             // D) Listagem (opcional)
             List<Type> globals = provider.ListGlobalServices();
             List<Type> scenes = provider.ListServicesForScene(QaScene);
-            DebugUtility.Log(typeof(DependencyDISmokeQATester),
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester),
                 $"[QA][DI][D] Global services: {globals.Count} [{string.Join(", ", globals.Select(t => t.Name))}]");
-            DebugUtility.Log(typeof(DependencyDISmokeQATester),
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester),
                 $"[QA][DI][D] Scene services ({QaScene}): {scenes.Count} [{string.Join(", ", scenes.Select(t => t.Name))}]");
             passes += 2;
 
@@ -101,30 +100,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 fails++;
             }
 
-            DebugUtility.Log(typeof(DependencyDISmokeQATester),
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester),
                 $"[QA][DI] QA complete. Passes={passes} Fails={fails}",
                 fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
         }
 
         private static void LogPass(string step, string message)
         {
-            DebugUtility.Log(typeof(DependencyDISmokeQATester), $"[QA][DI][{step}] PASS - {message}",
+            DebugUtility.Log(typeof(DependencyDiSmokeQaTester), $"[QA][DI][{step}] PASS - {message}",
                 DebugUtility.Colors.Success);
         }
 
         private static void LogFail(string step, string message)
         {
-            DebugUtility.LogError(typeof(DependencyDISmokeQATester), $"[QA][DI][{step}] FAIL - {message}");
+            DebugUtility.LogError(typeof(DependencyDiSmokeQaTester), $"[QA][DI][{step}] FAIL - {message}");
         }
 
         private sealed class DummyGlobalService
         {
-            public string Id;
+            public string id;
         }
 
         private sealed class DummySceneService
         {
-            public string Id;
+            public string id;
         }
 
         private sealed class DummyConsumer
@@ -134,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             public bool HasGlobal => _global != null;
             public bool HasScene => _scene != null;
-            public string Report() => $"HasGlobal={HasGlobal} HasScene={HasScene} G={_global?.Id} S={_scene?.Id}";
+            public string Report() => $"HasGlobal={HasGlobal} HasScene={HasScene} G={_global?.id} S={_scene?.id}";
         }
 
         /// <summary>

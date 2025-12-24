@@ -1,50 +1,122 @@
 # QA — GameLoop + StateDependent
 
 ## Objetivo
-Validar o fluxo principal do GameLoop (Boot → Menu → Playing → Paused → Playing → Reset) e o bloqueio de ações pelo `IStateDependentService`.
-Este QA cobre os riscos A/B/C/D definidos para o NewScripts, focando em start único, estados e gates.
+
+Validar o **comportamento funcional do gameplay** no NewScripts, especificamente:
+
+* FSM do **GameLoop** (estado macro).
+* Fluxo de **start sincronizado com Scene Flow (Opção B)**.
+* Pausa, retomada e reset do loop.
+* Bloqueio/liberação de ações via `IStateDependentService`.
+* Integração correta com `SimulationGateService`.
+
+> **Escopo explícito**
+> Este QA **não valida** spawn, despawn, ordem de hooks ou determinismo do WorldLifecycle.
+> Ele **assume** que a infraestrutura já está correta.
 
 ---
 
-## QAs ativos
+## Mapa Rápido — Quando rodar este QA
+
+| Situação                              | Rodar este QA?   | Motivo                      |
+| ------------------------------------- | ---------------- | --------------------------- |
+| Alteração no GameLoop (FSM, estados)  | ✅ Obrigatório    | Garante transições corretas |
+| Mudança em pausa / resume             | ✅ Obrigatório    | Valida gates e bloqueios    |
+| Alteração em `IStateDependentService` | ✅ Obrigatório    | Evita input indevido        |
+| Mudança em Scene Flow (start)         | ✅ Obrigatório    | Evita start duplo           |
+| Alteração em WorldLifecycle           | ❌ Não suficiente | Use o Baseline              |
+| Investigação de bug de gameplay       | ✅ Recomendado    | Foco funcional              |
+
+---
+
+## QAs Ativos
 
 ### 1) GameLoopStateFlowQATester
-**Arquivo:** `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/GameLoopStateFlowQATester.cs`
 
-**O que cobre**
-- Boot → Menu após `Initialize` + ticks.
-- Fluxo Opção B: `GameStartEvent` → aguarda `SceneTransitionScenesReadyEvent` (profile `startup`) → `RequestStart()` **exatamente 1x**.
-- Estados: Menu → Playing → Paused → Playing → Reset → Boot → Menu.
-- `IStateDependentService`:
-  - `ActionType.Move` bloqueado em Menu/Paused.
-  - `ActionType.Move` liberado em Playing.
-  - Gate `SimulationGateTokens.Pause` bloqueia Move mesmo em Playing.
+**Arquivo**
+`Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/GameLoopStateFlowQATester.cs`
 
-**Como executar**
-1. Adicione o componente `GameLoopStateFlowQATester` em uma cena que use o `GlobalBootstrap` + Scene Flow nativo.
-2. Garanta que o fluxo Opção B esteja ativo (coordinator registrado, profile `startup`).
-3. Em PlayMode, use o ContextMenu `QA/GameLoop/State Flow/Run` **ou** habilite `runOnStart=true`.
-4. Verifique os logs `[QA][GameLoopStateFlow]` para PASS/FAIL.
+#### O que cobre
+
+**FSM do GameLoop**
+
+* Boot → Menu
+* Menu → Playing
+* Playing → Paused
+* Paused → Playing
+* Reset → Boot → Menu
+
+**Start (Opção B — Scene Flow)**
+
+* `GameStartEvent` não inicia o jogo imediatamente.
+* Start só ocorre após `SceneTransitionScenesReadyEvent` (profile `startup`).
+* `RequestStart()` é chamado **exatamente uma vez**.
+
+**StateDependent / Gates**
+
+* `ActionType.Move`:
+
+    * Bloqueado em `Menu`
+    * Bloqueado em `Paused`
+    * Liberado em `Playing`
+* Gate `SimulationGateTokens.Pause` bloqueia Move mesmo em `Playing`.
+
+#### Como executar
+
+1. Cena com:
+
+    * `GlobalBootstrap`
+    * Scene Flow nativo
+    * GameLoop registrado
+2. Garantir fluxo **Opção B** (coordinator ativo).
+3. Executar:
+
+    * ContextMenu: `QA/GameLoop/State Flow/Run`
+      **ou**
+    * `runOnStart = true`
+4. Validar logs:
+
+   ```
+   [QA][GameLoopStateFlow] PASS
+   ```
+
+#### Critério de aprovação
+
+* Nenhum FAIL.
+* Nenhum start duplo.
+* Bloqueios e liberações coerentes com estado.
 
 ---
 
 ### 2) PlayerMovementLeakSmokeBootstrap
-**Arquivo:** `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
 
-**O que cobre**
-- Gate bloqueia movimento sem congelar física (velocidade/drift zerados).
-- Reset limpa física/movimento.
-- Reabertura do gate não gera “input fantasma”.
+**Arquivo**
+`Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
 
-**Como executar**
-- PlayMode: abrir uma cena com o fluxo padrão (`NewBootstrap`/`WorldLifecycle`).
-- O runner é auto-criado e gera relatório em `Docs/Reports/PlayerMovement-Leak.md`.
+#### O que cobre
+
+* Gate bloqueia movimento **sem congelar física**.
+* Reset limpa estado de movimento.
+* Reabertura do gate **não gera input fantasma**.
+* Integração real com `PlayerMovementController`.
+
+#### Como executar
+
+* Entrar em Play Mode com cena padrão (`NewBootstrap`).
+* Runner é automático.
+* Relatório gerado em:
+
+  ```
+  Docs/Reports/PlayerMovement-Leak.md
+  ```
 
 ---
 
-## QAs removidos (resumo)
+## O que este QA NÃO garante
 
-| QA removido | Motivo |
-| --- | --- |
-| `GameLoopStartDoubleGuardQATester` | Redundante: agora o `GameLoopStateFlowQATester` valida start único + estados + mapeamento do `IStateDependentService` no mesmo fluxo. |
-| `GameLoopEventInputBridgeSmokeQATester` | Redundante para o objetivo atual: o fluxo Opção B já valida o start via coordinator e mantém pausas/resets via EventBus, reduzindo scripts de QA com sobreposição. |
+* Ordem de hooks do WorldLifecycle.
+* Determinismo de spawn/despawn.
+* Reset-In-Place correto.
+* Integridade de registries.
+
+👉 Para isso, **use o checklist de baseline**.

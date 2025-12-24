@@ -3,14 +3,13 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.Predicates;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Valida o comportamento de predicates e FSM de forma manual via ContextMenu.
     /// Garantia: transições com IPredicate e Func, precedência de AnyTransition e estabilidade de estados.
     /// </summary>
-    public sealed class FsmPredicateQATester : MonoBehaviour
+    public sealed class FsmPredicateQaTester : MonoBehaviour
     {
         private int _passes;
         private int _fails;
@@ -21,16 +20,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             _passes = 0;
             _fails = 0;
 
-            DebugUtility.Log(typeof(FsmPredicateQATester), "[QA][FSM] Iniciando validação de predicates e state machine.");
+            DebugUtility.Log(typeof(FsmPredicateQaTester), "[QA][FSM] Iniciando validação de predicates e state machine.");
 
             ExecuteCoreFlowTests();
             ExecuteStabilityTest();
             ExecutePreconditionsGuardTest();
 
-            DebugUtility.Log(typeof(FsmPredicateQATester),
+            DebugUtility.Log(typeof(FsmPredicateQaTester),
                 $"[QA][FSM] Resultado => Passes: {_passes} | Fails: {_fails}",
                 _fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
-            DebugUtility.Log(typeof(FsmPredicateQATester), "[QA][FSM] QA complete.");
+            DebugUtility.Log(typeof(FsmPredicateQaTester), "[QA][FSM] QA complete.");
         }
 
         private void ExecuteCoreFlowTests()
@@ -114,13 +113,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private void LogPass(string message)
         {
             _passes++;
-            DebugUtility.Log(typeof(FsmPredicateQATester), $"[PASS] {message}", DebugUtility.Colors.Success);
+            DebugUtility.Log(typeof(FsmPredicateQaTester), $"[PASS] {message}", DebugUtility.Colors.Success);
         }
 
         private void LogFail(string message)
         {
             _fails++;
-            DebugUtility.LogError(typeof(FsmPredicateQATester), $"[FAIL] {message}");
+            DebugUtility.LogError(typeof(FsmPredicateQaTester), $"[FAIL] {message}");
         }
 
         private sealed class StateA : IState

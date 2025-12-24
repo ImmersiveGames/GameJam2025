@@ -1,11 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
-
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             StartCoroutine(RunSmoke());
         }
 
-        private System.Collections.IEnumerator RunSmoke()
+        private IEnumerator RunSmoke()
         {
             Application.logMessageReceived += OnLogMessage;
 
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             var runnerObject = new GameObject("SceneFlowSmokeRunner");
             var runner = runnerObject.AddComponent<NewScriptsInfraSmokeRunner>();
-            var nativeTester = runnerObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+            var nativeTester = runnerObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
             var legacyTester = runnerObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
 
             runner.ConfigureSceneFlowOnly(nativeTester, legacyTester, enableVerbose: true);
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// <summary>
     /// Entry point para batchmode via -executeMethod.
     /// </summary>
-    public static class SceneFlowPlayModeSmokeBootstrapCI
+    public static class SceneFlowPlayModeSmokeBootstrapCi
     {
         public static void Run()
         {

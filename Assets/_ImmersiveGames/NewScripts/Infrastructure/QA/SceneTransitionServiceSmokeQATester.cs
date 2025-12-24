@@ -8,14 +8,13 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Smoke QA para o pipeline nativo de Scene Flow (NewScripts).
     /// Valida ordem dos eventos e integração com GameReadinessService/SimulationGate.
     /// </summary>
-    public sealed class SceneTransitionServiceSmokeQATester : MonoBehaviour
+    public sealed class SceneTransitionServiceSmokeQaTester : MonoBehaviour
     {
         private const string SceneFlowLogTag = "[SceneFlowTest][Native]";
 
@@ -105,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 Evaluate(!gameplayReadyAfterStart,
                     "GameReadinessService marca gameplay como NOT READY após Started.", ref passes, ref fails);
 
-                Evaluate(gateOpenAfterStart == false,
+                Evaluate(!gateOpenAfterStart,
                     "SimulationGate fecha durante transição (após Started).", ref passes, ref fails);
 
                 Evaluate(gameplayReadyAfterCompleted,
@@ -117,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             catch (Exception ex)
             {
                 fails++;
-                DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQATester),
+                DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQaTester),
                     $"[QA][SceneFlow] FAIL - Exceção inesperada: {ex}");
                 LogTag($"FAIL - Exceção inesperada: {ex.GetType().Name}");
             }
@@ -131,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 RestoreReadinessAndGate(provider, previousGate, previousReadiness);
             }
 
-            DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester),
+            DebugUtility.Log(typeof(SceneTransitionServiceSmokeQaTester),
                 $"[QA][SceneFlow] QA complete. Passes={passes} Fails={fails}",
                 fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
@@ -152,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private static void LogTag(string message)
         {
-            DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester), $"{SceneFlowLogTag} {message}");
+            DebugUtility.Log(typeof(SceneTransitionServiceSmokeQaTester), $"{SceneFlowLogTag} {message}");
         }
 
         private static ISimulationGateService ResolveOrInstallGate(IDependencyProvider provider)
@@ -165,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var newGate = new SimulationGateService();
             provider.RegisterGlobal<ISimulationGateService>(newGate, allowOverride: true);
 
-            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQATester),
+            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQaTester),
                 "[QA][SceneFlow] ISimulationGateService não encontrado. SimulationGateService de teste registrado.");
             return newGate;
         }
@@ -179,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (gate == null)
             {
-                DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQATester),
+                DebugUtility.LogWarning(typeof(SceneTransitionServiceSmokeQaTester),
                     "[QA][SceneFlow] Gate indisponível; GameReadinessService não será inicializado para o teste.");
                 return null;
             }
@@ -187,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var readinessService = new GameReadinessService(gate);
             provider.RegisterGlobal(readinessService, allowOverride: true);
 
-            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQATester),
+            DebugUtility.LogVerbose(typeof(SceneTransitionServiceSmokeQaTester),
                 "[QA][SceneFlow] GameReadinessService não encontrado. Instância de teste registrada.");
             return readinessService;
         }
@@ -234,13 +233,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             if (condition)
             {
-                DebugUtility.Log(typeof(SceneTransitionServiceSmokeQATester),
+                DebugUtility.Log(typeof(SceneTransitionServiceSmokeQaTester),
                     $"[QA][SceneFlow] PASS - {message}", DebugUtility.Colors.Success);
                 passes++;
             }
             else
             {
-                DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQATester),
+                DebugUtility.LogError(typeof(SceneTransitionServiceSmokeQaTester),
                     $"[QA][SceneFlow] FAIL - {message}");
                 fails++;
             }

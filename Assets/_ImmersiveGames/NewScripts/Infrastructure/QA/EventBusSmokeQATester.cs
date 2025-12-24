@@ -2,14 +2,13 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Smoke test mínimo para o EventBus em modo NewScripts.
     /// Verifica subscribe/publish/unsubscribe com logs de PASS/FAIL.
     /// </summary>
-    public sealed class EventBusSmokeQATester : MonoBehaviour
+    public sealed class EventBusSmokeQaTester : MonoBehaviour
     {
         [ContextMenu("QA/EventBus/Run")]
         public void Run()
@@ -20,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             TestSubscribeAndPublish(ref passes, ref fails);
             TestUnsubscribe(ref passes, ref fails);
 
-            DebugUtility.Log(typeof(EventBusSmokeQATester),
+            DebugUtility.Log(typeof(EventBusSmokeQaTester),
                 $"[QA][EventBus] QA complete. Passes={passes} Fails={fails}",
                 fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
@@ -41,12 +40,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (received)
             {
-                DebugUtility.Log(typeof(EventBusSmokeQATester), "[QA][EventBus][A] PASS - Subscriber received event.", DebugUtility.Colors.Success);
+                DebugUtility.Log(typeof(EventBusSmokeQaTester), "[QA][EventBus][A] PASS - Subscriber received event.", DebugUtility.Colors.Success);
                 passes++;
             }
             else
             {
-                DebugUtility.LogError(typeof(EventBusSmokeQATester), "[QA][EventBus][A] FAIL - Subscriber did not receive event.");
+                DebugUtility.LogError(typeof(EventBusSmokeQaTester), "[QA][EventBus][A] FAIL - Subscriber did not receive event.");
                 fails++;
             }
         }
@@ -62,12 +61,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (!received)
             {
-                DebugUtility.Log(typeof(EventBusSmokeQATester), "[QA][EventBus][B] PASS - Unsubscribed listener did not receive event.", DebugUtility.Colors.Success);
+                DebugUtility.Log(typeof(EventBusSmokeQaTester), "[QA][EventBus][B] PASS - Unsubscribed listener did not receive event.", DebugUtility.Colors.Success);
                 passes++;
             }
             else
             {
-                DebugUtility.LogError(typeof(EventBusSmokeQATester), "[QA][EventBus][B] FAIL - Unsubscribed listener received event.");
+                DebugUtility.LogError(typeof(EventBusSmokeQaTester), "[QA][EventBus][B] FAIL - Unsubscribed listener received event.");
                 fails++;
             }
         }

@@ -1,4 +1,42 @@
+# CHANGELOG-docs.md — NewScripts Docs
+
+> Escopo: mudanças de documentação e consolidações de semântica/contratos do NewScripts.
+> Implementações (código) podem ser referenciadas aqui, mas o “source of truth” de código continua sendo o histórico do Git.
+
 ## [2025-12-24]
+### Consolidated (Semântica / nomenclatura)
+- Clarified: **dois domínios** distintos e não-intercambiáveis:
+    - **App FrontEnd (AppFlow / macro SceneFlow):** Bootstrap → FrontEnd → Gameplay → FrontEnd.
+    - **Simulação (SimulationFlow dentro de GameplayScene):** Warmup/Preparation → GameplayReady → Simulating → PausedSim → ExitSim.
+- Clarified: o rótulo **“Menu”** é ambíguo:
+    - “MenuScene / FrontEnd” (App) ≠ “Menu” como etapa interna de simulação (GameplayScene).
+    - A documentação deve tratar “Menu” no GameLoop como **estado/etapa de simulação** (ex.: splash/prep), e nunca como FrontEnd.
+
+### Validated (por evidência de log)
+- Validated: **Opção B (Start sincronizado)** funcionando:
+    - `GameStartEvent` é coordenado pelo `GameLoopSceneFlowCoordinator`,
+    - `SceneTransitionScenesReadyEvent` dispara reset determinístico via `WorldLifecycleRuntimeDriver`,
+    - e `RequestStart()` ocorre **exatamente 1x após ScenesReady** (evita start duplo).
+- Validated: uso coerente de gates:
+    - `flow.scene_transition` durante a transição,
+    - `flow.loading` durante o reset,
+    - `WorldLifecycle.WorldReset` no reset hard,
+    - `state.pause` no pause (bloqueio de ação sem timeScale).
+
+### QA / Smoke (governança)
+- Noted: risco prático de “QA paralelo” quando existirem scripts com `RuntimeInitializeOnLoadMethod`.
+- Identified: scripts com maior potencial de auto-execução em Editor/DevBuild:
+    - `BaselineDebugBootstrap.cs`
+    - `PlayerMovementLeakSmokeBootstrap.cs`
+- Action: documentação de QA deve ter **mapa rápido** e instruções claras de ativação/desativação.
+
+### Docs process
+- Decision: não substituir arquivos originais por versões “updated.md” simplificadas; revisão passa a ser **arquivo por arquivo**, preservando conteúdo e ajustando termos/links/owners.
+- Planned: incluir **Glossário** e **Validação Cruzada** (páginas apontando explicitamente para contrato operacional vs decisão vs QA).
+
+---
+
+## [2025-12-24] (doc updates já registrados)
 - Added: `QA/GameLoop-StateFlow-QA.md` com execução do GameLoop/StateDependent QA e resumo de QAs removidos.
 - Updated: `GameLoop/GameLoop.md` alinhado ao fluxo real (GameStartEvent + coordinator + ScenesReady → RequestStart).
 - Updated: `README.md` listando QA do GameLoop na ordem recomendada e na tabela de owners.
@@ -28,7 +66,6 @@
 - Added: Baseline Audit for `ResetScope.Players` documenting As-Is state, identified subsystems, and gaps prior to gameplay integration.
 
 ## Documentação — Changelog de Normalização
-
 - Moved: referência de pipeline/ordenção de hooks de `ARCHITECTURE.md` (resumo) → `WorldLifecycle/WorldLifecycle.md` (owner operacional já existente; arquitetura mantém o link de resumo)
 - Moved: semântica detalhada de fases/passos/reset de `ADR/ADR-ciclo-de-vida-jogo.md` → `WorldLifecycle/WorldLifecycle.md` (referenciado com links explícitos)
 - Moved: explicações do pipeline na checklist de QA `QA/WorldLifecycle-Baseline-Checklist.md` → referências diretas para `WorldLifecycle/WorldLifecycle.md`

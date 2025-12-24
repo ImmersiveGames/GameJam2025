@@ -3,7 +3,6 @@ using System.Reflection;
 using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
@@ -16,9 +15,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     {
         private const string SceneFlowLogTag = "[SceneFlowTest][Runner]";
 
-        [SerializeField] private bool runOnStart = true;
-        [SerializeField] private bool stopOnFirstFail = false;
-        [SerializeField] private bool sceneFlowOnly = false;
+        [SerializeField] private bool runOnStart;
+        [SerializeField] private bool stopOnFirstFail;
+        [SerializeField] private bool sceneFlowOnly;
         [SerializeField] private MonoBehaviour debugLogTester;
         [SerializeField] private MonoBehaviour diTester;
         [SerializeField] private MonoBehaviour fsmTester;
@@ -99,8 +98,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             if (runSceneTransitionServiceTester)
             {
                 sceneTransitionServiceTester = sceneTransitionServiceTester
-                                                ?? GetComponent<SceneTransitionServiceSmokeQATester>()
-                                                ?? gameObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+                                                ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
+                                                ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
 
                 ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
                 if (stopOnFirstFail && _fails > 0)
@@ -149,8 +148,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 $"{SceneFlowLogTag} Iniciando execução exclusiva de Scene Flow.");
 
             sceneTransitionServiceTester = sceneTransitionServiceTester
-                                            ?? GetComponent<SceneTransitionServiceSmokeQATester>()
-                                            ?? gameObject.AddComponent<SceneTransitionServiceSmokeQATester>();
+                                            ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
+                                            ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
 
             ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
             if (stopOnFirstFail && _fails > 0)
@@ -199,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
             catch (Exception ex)
             {
-                Exception rootException = ex is TargetInvocationException tie && tie.InnerException != null
+                Exception rootException = ex is TargetInvocationException { InnerException: not null } tie
                     ? tie.InnerException
                     : ex;
 

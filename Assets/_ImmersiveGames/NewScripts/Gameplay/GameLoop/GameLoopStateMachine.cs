@@ -1,13 +1,14 @@
+// (arquivo completo no download)
+
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
     /// FSM concreta do GameLoop usando a infraestrutura modular criada em NewScripts.
-    /// Fluxo padrão do projeto:
-    /// Boot -> Menu -> Playing -> Paused
-    /// (mantém resets genéricos e extensibilidade para outros projetos).
+    /// Mantém transições básicas de Boot → Menu → Playing → Paused e resets genéricos.
     /// </summary>
     public class GameLoopStateMachine
     {
@@ -29,24 +30,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public IState CurrentState => _stateMachine.CurrentState;
 
-        /// <summary>
-        /// Atualiza a FSM principal (chamado pelo host em Update).
-        /// </summary>
         public void Update() => _stateMachine.Update();
-
-        /// <summary>
-        /// Atualiza a FSM principal em FixedUpdate do host.
-        /// </summary>
         public void FixedUpdate() => _stateMachine.FixedUpdate();
 
-        /// <summary>
-        /// Consulta de conveniência para ações permitidas no estado atual.
-        /// </summary>
         public bool CanPerform(ActionType action) => _stateMachine.CurrentState?.CanPerformAction(action) ?? false;
-
-        /// <summary>
-        /// Indica se a simulação está ativa no estado corrente.
-        /// </summary>
         public bool IsGameActive() => _stateMachine.CurrentState?.IsGameActive() ?? false;
 
         private StateMachine BuildStateMachine()
@@ -63,17 +50,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             builder.AddState(_playingState, out var playing);
             builder.AddState(_pausedState, out var paused);
 
-            // Boot -> Menu (por padrão: avança automaticamente após entrar no Boot)
-            builder.At(boot, menu, new FuncPredicate(() => _bootState.IsCompleted));
+            // Boot é um estado transitório: avança automaticamente para Menu no primeiro tick.
+            builder.At(boot, menu, new FuncPredicate(() => true));
 
-            // Menu -> Playing
+            // Menu → Playing quando o usuário inicia o jogo.
             builder.At(menu, playing, new FuncPredicate(() => _signals.StartRequested));
 
-            // Playing <-> Paused
+            // Playing ↔ Paused
             builder.At(playing, paused, new FuncPredicate(() => _signals.PauseRequested));
             builder.At(paused, playing, new FuncPredicate(() => _signals.ResumeRequested));
 
-            // Reset global: qualquer estado volta para Boot
+            // Reset global para Boot.
             builder.Any(boot, new FuncPredicate(() => _signals.ResetRequested));
 
             builder.StateInitial(boot);
@@ -81,9 +68,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         }
     }
 
-    /// <summary>
-    /// Classe base para estados do GameLoop garantindo checagens consistentes e isoladas.
-    /// </summary>
     internal abstract class GameLoopStateBase : IState
     {
         private readonly HashSet<ActionType> _allowedActions = new();
@@ -100,7 +84,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         protected void AllowActions(params ActionType[] actions)
         {
             foreach (var action in actions)
+            {
                 _allowedActions.Add(action);
+            }
         }
 
         public virtual void OnEnter()
@@ -115,7 +101,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         }
 
         public virtual void Update() { }
-
         public virtual void FixedUpdate() { }
 
         public virtual bool CanPerformAction(ActionType action) => _allowedActions.Contains(action);
@@ -123,47 +108,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public abstract bool IsGameActive();
     }
 
-    /// <summary>
-    /// Estado inicial responsável por carregar e sincronizar a simulação.
-    /// Por padrão, avança automaticamente para Menu após entrar.
-    /// </summary>
     internal sealed class BootState : GameLoopStateBase
     {
-        public bool IsCompleted { get; private set; }
-
         public BootState(IGameLoopStateObserver observer) : base(GameLoopStateId.Boot, observer)
         {
             AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel);
         }
 
-        public override void OnEnter()
-        {
-            base.OnEnter();
-            // Padrão simples e extensível:
-            // - hoje: Boot é “instantâneo” e vira Menu no próximo tick
-            // - amanhã: se você precisar, troque IsCompleted para depender de um sinal/serviço
-            IsCompleted = true;
-        }
-
         public override bool IsGameActive() => false;
     }
 
     /// <summary>
-    /// Estado de menu onde navegação/UI é liberada e gameplay ainda não está ativo.
+    /// Estado de menu onde a simulação ainda não está ativa e apenas ações de UI/navegação são liberadas.
     /// </summary>
     internal sealed class MenuState : GameLoopStateBase
     {
         public MenuState(IGameLoopStateObserver observer) : base(GameLoopStateId.Menu, observer)
         {
-            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel, ActionType.RequestQuit);
+            AllowActions(
+                ActionType.Navigate,
+                ActionType.UiSubmit,
+                ActionType.UiCancel,
+                ActionType.RequestReset,
+                ActionType.RequestQuit);
         }
 
         public override bool IsGameActive() => false;
     }
 
-    /// <summary>
-    /// Estado de gameplay ativo onde as ações principais são liberadas.
-    /// </summary>
     internal sealed class PlayingState : GameLoopStateBase
     {
         public PlayingState(IGameLoopStateObserver observer) : base(GameLoopStateId.Playing, observer)
@@ -174,9 +146,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public override bool IsGameActive() => true;
     }
 
-    /// <summary>
-    /// Estado de pausa responsável por bloquear interações críticas.
-    /// </summary>
     internal sealed class PausedState : GameLoopStateBase
     {
         public PausedState(IGameLoopStateObserver observer) : base(GameLoopStateId.Paused, observer)

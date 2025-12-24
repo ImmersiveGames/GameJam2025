@@ -13,6 +13,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
     /// <summary>
     /// Controlador mínimo de movimento do Player no padrão NewScripts.
     /// Gate-aware, reset-safe e com fallbacks para CharacterController, Rigidbody ou Transform.
+    ///
+    /// Ajuste:
+    /// - Cacheia o último estado do gate aplicado para evitar logs duplicados e re-aplicações redundantes.
+    /// - Ainda atualiza input state mesmo quando o estado do gate não muda.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -52,8 +56,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private bool _gateSubscribed;
         private bool _gateOpen = true;
+
+        // Cache do último gate aplicado (para evitar logs repetidos e re-aplicação redundante).
         private bool _hasGateState;
         private bool _lastGateOpen = true;
+
         private bool _stateBlockedLogged;
 
         private Vector3 _initialPosition;
@@ -82,7 +89,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             CacheInitialPose();
             EnsureInputReader();
             ResolveServices();
-            ApplyGateState(_gateService?.IsOpen ?? true, false);
+
+            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
         }
 
         private void OnEnable()
@@ -107,9 +115,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void Update()
         {
             if (ShouldUseFixedUpdate())
-            {
                 return;
-            }
 
             TickMovement(Time.deltaTime);
         }
@@ -117,9 +123,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void FixedUpdate()
         {
             if (!ShouldUseFixedUpdate())
-            {
                 return;
-            }
 
             TickMovement(Time.fixedDeltaTime);
         }
@@ -148,9 +152,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
             Vector3 direction = new Vector3(input.x, 0f, input.y);
             if (direction.sqrMagnitude > 1f)
-            {
                 direction.Normalize();
-            }
 
             Move(direction, deltaTime);
             RotateTowards(direction, deltaTime);
@@ -193,9 +195,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void RotateTowards(Vector3 direction, float deltaTime)
         {
             if (rotationSpeed <= 0f || direction.sqrMagnitude <= float.Epsilon)
-            {
                 return;
-            }
 
             var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
@@ -204,9 +204,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void HaltHorizontalVelocity()
         {
             if (_rigidbody == null)
-            {
                 return;
-            }
 
             var current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
@@ -216,14 +214,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private bool CanSimulate()
         {
             if (!isActiveAndEnabled)
-            {
                 return false;
-            }
 
             if (_actor != null && !_actor.IsActive)
-            {
                 return false;
-            }
 
             if (_stateService != null && !_stateService.CanExecuteAction(ActionType.Move))
             {
@@ -232,9 +226,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             }
 
             if (!_gateOpen)
-            {
                 return false;
-            }
 
             return true;
         }
@@ -251,33 +243,27 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void ResolveServices()
         {
             if (_gateService == null)
-            {
                 DependencyManager.Provider.TryGetGlobal(out _gateService);
-            }
 
             if (_stateService == null)
-            {
                 DependencyManager.Provider.TryGetGlobal(out _stateService);
-            }
 
             TryBindGateEvents();
-            ApplyGateState(_gateService?.IsOpen ?? true, false);
+
+            // Reaplica o estado atual do gate sem forçar log.
+            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
         }
 
         private void EnsureServicesResolved()
         {
             if (_gateService == null || _stateService == null)
-            {
                 ResolveServices();
-            }
         }
 
         private void TryBindGateEvents()
         {
             if (_gateService == null || _gateSubscribed)
-            {
                 return;
-            }
 
             _gateService.GateChanged += OnGateChanged;
             _gateSubscribed = true;
@@ -286,9 +272,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void UnbindGateEvents()
         {
             if (_gateService == null || !_gateSubscribed)
-            {
                 return;
-            }
 
             _gateService.GateChanged -= OnGateChanged;
             _gateSubscribed = false;
@@ -296,20 +280,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void OnGateChanged(bool isOpen)
         {
-            ApplyGateState(isOpen, true);
+            // Evento real do gate: aplicar e logar somente se mudou.
+            ApplyGateState(isOpen, verbose: false);
         }
 
         private void ApplyGateState(bool isOpen, bool verbose)
         {
-            // Evita spam de logs e warnings de "chamada repetida" quando múltiplos listeners
-            // aplicam o mesmo estado de gate no mesmo frame.
-            var isSameState = _hasGateState && isOpen == _lastGateOpen;
-
             _gateOpen = isOpen;
 
-            if (isSameState)
+            // Se nada mudou, não loga e não “reaplica” comportamentos custosos,
+            // mas ainda atualiza input state (para refletir mudanças no StateDependent).
+            if (_hasGateState && isOpen == _lastGateOpen)
             {
-                // Ainda assim, garante que o input reflita o estado atual (ex.: override do IStateDependentService).
                 RefreshInputState();
                 return;
             }
@@ -319,13 +301,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
             if (logGateChanges || verbose)
             {
-                DebugUtility.LogVerbose<NewPlayerMovementController>($"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}'.");
+                DebugUtility.LogVerbose<NewPlayerMovementController>(
+                    $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}'.");
             }
 
             if (!isOpen)
-            {
                 HaltHorizontalVelocity();
-            }
 
             RefreshInputState();
         }
@@ -333,9 +314,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void RefreshInputState()
         {
             if (inputReader == null)
-            {
                 return;
-            }
 
             bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
             inputReader.SetInputEnabled(allow);
@@ -353,11 +332,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void LogStateBlockedOnce()
         {
             if (_stateBlockedLogged)
-            {
                 return;
-            }
 
-            DebugUtility.LogVerbose<NewPlayerMovementController>("[Movement][StateDependent] Movimento bloqueado por IStateDependentService.");
+            DebugUtility.LogVerbose<NewPlayerMovementController>(
+                "[Movement][StateDependent] Movimento bloqueado por IStateDependentService.");
             _stateBlockedLogged = true;
         }
 
@@ -383,16 +361,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void EnsureInputReader()
         {
             if (inputReader != null)
-            {
                 return;
-            }
 
             inputReader = GetComponent<NewPlayerInputReader>();
 
             if (inputReader == null)
-            {
                 inputReader = gameObject.AddComponent<NewPlayerInputReader>();
-            }
         }
 
         public void SetInputReader(NewPlayerInputReader reader)
@@ -404,9 +378,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void EnableInputIfAllowed()
         {
             if (inputReader == null)
-            {
                 return;
-            }
 
             bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
             inputReader.SetInputEnabled(allow);
@@ -452,7 +424,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         public Task Reset_RebindAsync(GameplayResetContext ctx)
         {
             ResolveServices();
-            ApplyGateState(_gateService?.IsOpen ?? true, false);
+            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
             EnableInputIfAllowed();
             return Task.CompletedTask;
         }
