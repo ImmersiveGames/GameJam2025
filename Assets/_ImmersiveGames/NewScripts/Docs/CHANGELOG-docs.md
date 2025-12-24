@@ -16,7 +16,7 @@
 - Validated: **Opção B (Start sincronizado)** funcionando:
     - `GameStartEvent` é coordenado pelo `GameLoopSceneFlowCoordinator`,
     - `SceneTransitionScenesReadyEvent` dispara reset determinístico via `WorldLifecycleRuntimeDriver`,
-    - e `RequestStart()` ocorre **exatamente 1x após ScenesReady** (evita start duplo).
+    - e `RequestStart()` ocorre **exatamente 1x** após **TransitionCompleted + WorldLifecycleResetCompleted** (correlacionados pela mesma assinatura) — evita start duplo.
 - Validated: uso coerente de gates:
     - `flow.scene_transition` durante a transição,
     - `flow.loading` durante o reset,
@@ -83,8 +83,3 @@
 - Removed (duplicate): detalhes operacionais em ADR-0001 substituídos por referência ao contrato em `WorldLifecycle/WorldLifecycle.md`
 - Updated links: `DECISIONS.md`, `ARCHITECTURE.md`, `Guides/UTILS-SYSTEMS-GUIDE.md`, `ADR/ADR.md`, `README.md`, `ADR/ADR-0001-NewScripts-Migracao-Legado.md`, `QA/WorldLifecycle-Baseline-Checklist.md`, `ADR/ADR-ciclo-de-vida-jogo.md`
 - No functional change (documentação apenas)
-
-## [2025-12-24]
-- Updated: documentação de Readiness/SceneFlow → adicionados snapshots via `ReadinessChangedEvent` para consumidores (StateDependent).
-- Updated: integração do `NewScriptsStateDependentService` para evitar bloqueio indevido de `Move` quando o GameLoop ainda não tickou.
-- Added: `ReadinessSnapshot` e `ReadinessChangedEvent` (NewScripts Infrastructure).

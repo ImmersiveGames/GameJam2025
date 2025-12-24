@@ -147,3 +147,19 @@ Esses arquivos são:
 
     * Devem atualizar o documento afetado
     * Devem ser registradas em `CHANGELOG-docs.md`
+
+---
+
+## Atualizações (2025-12-24)
+
+## Atualizações recentes (2025-12-24)
+
+### SceneFlow + WorldLifecycle (produção)
+- O pipeline de transição de cena emite `SceneTransitionStartedEvent` → `SceneTransitionScenesReadyEvent` → `SceneTransitionCompletedEvent`.
+- `WorldLifecycleRuntimeDriver` reage a `ScenesReady` para disparar `ResetWorldAsync()` em Gameplay (e skip em `startup`/Menu).
+- O `GameLoopSceneFlowCoordinator` destrava o GameLoop (`RequestStart`) somente quando `TransitionCompleted` **e** `WorldLifecycleResetCompleted` ocorreram para a mesma transição.
+
+Veja também:
+- `SceneFlow-GameLoop-Coordination.md`
+- `GameLoop.md`
+- `ADR-ciclo-de-vida-jogo.md`

@@ -1,6 +1,6 @@
 # ADR-0001 — Migração incremental do Legado para o NewScripts
 
-> Owner deste ADR: decisão/guardrails de migração e bridges.  
+> Owner deste ADR: decisão/guardrails de migração e bridges.
 > Owner operacional de pipeline/ordem/gates: `../WorldLifecycle/WorldLifecycle.md`.
 
 ## Contexto
@@ -11,13 +11,13 @@
 ## Decisão
 - Adotar estratégia de **Portas e Adaptadores** para incorporar partes do legado sob controle do NewScripts, mantendo determinismo.
 - Para cada componente legado, escolher explicitamente uma opção:
-  - **Refazer (New)**: reimplementar no NewScripts quando custo de adaptação for alto ou quando o legado conflitar com as novas regras.
-  - **Integrar (Direct)**: consumir diretamente um serviço legado somente se ele já respeitar as regras de determinismo e não exigir dependências cruzadas.
-  - **Adaptar (Adapter/Bridge)**: encapsular o legado em adaptadores isolados para controlar side effects e alinhar com o pipeline.
-  - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
-  - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
-  - Avaliar responsabilidades funcionais, não só componentes: um reset de `Players` pode atravessar fronteiras de sistemas legados (managers, caches, serviços compartilhados) para garantir o baseline do player, desde que cada participação seja explícita.
-  - Guardrail conceitual: `ResetScope.Players` (e futuros `Boss/Stage`) é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate. Escopo é resultado de gameplay, não hierarquia de GameObject.
+    - **Refazer (New)**: reimplementar no NewScripts quando custo de adaptação for alto ou quando o legado conflitar com as novas regras.
+    - **Integrar (Direct)**: consumir diretamente um serviço legado somente se ele já respeitar as regras de determinismo e não exigir dependências cruzadas.
+    - **Adaptar (Adapter/Bridge)**: encapsular o legado em adaptadores isolados para controlar side effects e alinhar com o pipeline.
+    - Durante a migração (ex.: Player legado), mapear quais managers/caches/UI/serviços precisam participar de `ResetScope.Players` e decidir se cada um será refatorado, adaptado ou integrado.
+    - Usar soft reset por escopo como rede de segurança: o baseline do player deve voltar ao estado correto mesmo quando parte do estado vive fora do prefab, então participantes externos precisam declarar `Scope=Players` até a migração completa.
+    - Avaliar responsabilidades funcionais, não só componentes: um reset de `Players` pode atravessar fronteiras de sistemas legados (managers, caches, serviços compartilhados) para garantir o baseline do player, desde que cada participação seja explícita.
+    - Guardrail conceitual: `ResetScope.Players` (e futuros `Boss/Stage`) é um contrato funcional de baseline (experiência/estado do player), não estrutural de prefab. Participações externas são válidas via adaptadores ou `IResetScopeParticipant`, mantendo o pipeline determinístico e o gate. Escopo é resultado de gameplay, não hierarquia de GameObject.
 
 ## Guardrails (não negociáveis)
 - Código em `_ImmersiveGames.NewScripts.*` não referencia diretamente classes concretas do legado, exceto dentro de adaptadores dedicados.
@@ -51,10 +51,10 @@ SceneBootstrapper -> registries/context -> Controller -> Orchestrator -> SpawnSe
 - **O que faz**: `Bridges/LegacySceneFlow/LegacySceneFlowBridge.cs` observa eventos de transição do pipeline legado e publica os equivalentes no EventBus do NewScripts, convertendo o contexto legado via reflexão para `SceneTransitionContext` (com idempotência de registro e descarte via `IDisposable`).
 - **Por que existe**: consumidores do NewScripts (ex.: `GameReadinessService`, `WorldLifecycleRuntimeDriver`) já usam eventos novos, mas o fluxo de transição ainda é legado; o bridge permite evolução incremental sem alterar o `SceneTransitionService` legado.
 - **Checklist de remoção**:
-  - SceneTransitionService publica eventos NewScripts nativamente (flag `NEWSCRIPTS_SCENEFLOW_NATIVE` ou config equivalente).
-  - QAs do `SceneTransitionServiceSmokeQATester` passam em produção (com `NEWSCRIPTS_SCENEFLOW_NATIVE` ativo).
-  - Nenhum consumidor depende de eventos legados.
-  - Registro do bridge removido do `GlobalBootstrap` e pasta `Bridges/LegacySceneFlow` deletada.
+    - SceneTransitionService publica eventos NewScripts nativamente (flag `NEWSCRIPTS_SCENEFLOW_NATIVE` ou config equivalente).
+    - QAs do `SceneTransitionServiceSmokeQATester` passam em produção (com `NEWSCRIPTS_SCENEFLOW_NATIVE` ativo).
+    - Nenhum consumidor depende de eventos legados.
+    - Registro do bridge removido do `GlobalBootstrap` e pasta `Bridges/LegacySceneFlow` deletada.
 - **QA associado**: `LegacySceneFlowBridgeSmokeQATester` valida que os eventos do legado são refletidos corretamente no EventBus do NewScripts enquanto o bridge existir.
 
 ## Critérios de validação
@@ -69,3 +69,16 @@ SceneBootstrapper -> registries/context -> Controller -> Orchestrator -> SpawnSe
 ## Validation / Exit Criteria
 - O contrato de validação do ciclo está descrito em `../WorldLifecycle/WorldLifecycle.md` (seção **Validation Contract (Baseline)**).
 - Cada passo incremental de migração do legado deve passar por **Hard Reset** e **Soft Reset (Players)** sem regressão de ordem ou logs.
+
+---
+
+## Addendum (2025-12-24) — SceneFlow bridges
+
+### Bridge de SceneFlow legado (compatibilidade)
+Durante a migração, a infraestrutura NewScripts pode “escutar” transições do fluxo legado e refletir no EventBus NewScripts via um bridge (ex.: `LegacySceneFlowBridge`).
+
+No modo fallback:
+- Se `ISceneLoader` legado não estiver disponível, usa `SceneManagerLoaderAdapter`.
+- Se `IFadeService` legado não estiver disponível, usa `NullFadeAdapter` (o fluxo continua sem fade).
+
+Isto permite evoluir o pipeline NewScripts sem bloquear o restante do projeto legado.

@@ -1,158 +1,230 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
+﻿/*
+ * Nota (QA):
+ * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do "ready"
+ *   para que overrides de QA no DI sejam observados.
+ *
+ * Responsabilidade:
+ * - Ouve um REQUEST de start (QA/UI) e dispara o SceneFlow startPlan.
+ * - Captura a assinatura real do contexto a partir do PRIMEIRO evento da transição (Started),
+ *   evitando reconstruir/“supor” assinatura via startPlan.
+ * - Aguarda TransitionCompleted (gate já abriu) + WorldLifecycleResetCompleted para então pedir start do GameLoop.
+ */
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
+namespace _ImmersiveGames.NewScripts.GameLoop.SceneFlow
 {
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameLoopSceneFlowCoordinator : IDisposable
+    public sealed class GameLoopSceneFlowCoordinator
     {
-        private static int _installed; // 0/1
-        public static bool IsInstalled => Volatile.Read(ref _installed) == 1;
-
-        private readonly ISceneTransitionService _sceneTransitionService;
+        private readonly ISceneTransitionService _sceneFlow;
         private readonly SceneTransitionRequest _startPlan;
 
-        private readonly EventBinding<GameStartRequestedEvent> _onStartRequest;
-        private readonly EventBinding<SceneTransitionScenesReadyEvent> _onScenesReady;
-        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _onWorldResetCompleted;
+        private bool _startRequested;
+        private bool _transitionCompleted;
+        private bool _worldResetCompleted;
+        private bool _startIssued;
 
-        private int _pendingStart; // 0/1
-        private string _pendingProfileName;
+        // Assinatura “real” capturada do primeiro evento da transição (Started).
+        private string _expectedContextSignature;
 
-        public GameLoopSceneFlowCoordinator(
-            ISceneTransitionService sceneTransitionService,
-            SceneTransitionRequest startPlan)
+        private readonly EventBinding<GameStartRequestedEvent> _startRequestedBinding;
+        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
+        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _worldResetCompletedBinding;
+
+        public GameLoopSceneFlowCoordinator(ISceneTransitionService sceneFlow, SceneTransitionRequest startPlan)
         {
-            _sceneTransitionService = sceneTransitionService ?? throw new ArgumentNullException(nameof(sceneTransitionService));
-            _startPlan = startPlan ?? throw new ArgumentNullException(nameof(startPlan));
+            _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
+            _startPlan = startPlan;
 
-            Interlocked.Exchange(ref _installed, 1);
+            _startRequestedBinding = new EventBinding<GameStartRequestedEvent>(OnStartRequested);
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
+            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            _worldResetCompletedBinding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnWorldResetCompleted);
 
-            _onStartRequest = new EventBinding<GameStartRequestedEvent>(OnStartRequested);
-            _onScenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
-            _onWorldResetCompleted = new EventBinding<WorldLifecycleResetCompletedEvent>(OnWorldResetCompleted);
+            EventBus<GameStartRequestedEvent>.Register(_startRequestedBinding);
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+            EventBus<WorldLifecycleResetCompletedEvent>.Register(_worldResetCompletedBinding);
 
-            EventBus<GameStartRequestedEvent>.Register(_onStartRequest);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(_onScenesReady);
-            EventBus<WorldLifecycleResetCompletedEvent>.Register(_onWorldResetCompleted);
+            if (_startPlan == null)
+            {
+                DebugUtility.LogWarning(typeof(GameLoopSceneFlowCoordinator),
+                    "[GameLoopSceneFlow] Coordinator registrado com startPlan NULL. Start será ignorado até corrigir o GlobalBootstrap.");
+                return;
+            }
 
-            DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad ?? Array.Empty<string>())}], " +
-                $"Unload=[{string.Join(", ", _startPlan.ScenesToUnload ?? Array.Empty<string>())}], Active='{_startPlan.TargetActiveScene}', " +
-                $"UseFade={_startPlan.UseFade}, Profile='{_startPlan.TransitionProfileName}'.");
-        }
-
-        public void Dispose()
-        {
-            EventBus<GameStartRequestedEvent>.Unregister(_onStartRequest);
-            EventBus<SceneTransitionScenesReadyEvent>.Unregister(_onScenesReady);
-            EventBus<WorldLifecycleResetCompletedEvent>.Unregister(_onWorldResetCompleted);
-            Interlocked.Exchange(ref _installed, 0);
+            DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
+                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: " +
+                $"Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], " +
+                $"Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], " +
+                $"Active='{_startPlan.TargetActiveScene}', " +
+                $"UseFade={_startPlan.UseFade}, " +
+                $"Profile='{_startPlan.TransitionProfileName}'.");
         }
 
         private void OnStartRequested(GameStartRequestedEvent evt)
         {
-            if (Interlocked.CompareExchange(ref _pendingStart, 1, 0) == 1)
+            if (_startPlan == null)
             {
-                DebugUtility.LogWarning<GameLoopSceneFlowCoordinator>(
-                    "[GameLoopSceneFlow] Start já está pendente. Ignorando novo REQUEST.");
+                DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
+                    "[GameLoopSceneFlow] Start REQUEST recebido, mas startPlan é NULL. Abortando.");
                 return;
             }
 
-            _pendingProfileName = _startPlan.TransitionProfileName;
+            if (_startRequested)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                    "[GameLoopSceneFlow] Start REQUEST ignorado (já recebido).");
+                return;
+            }
 
-            DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...",
-                DebugUtility.Colors.Info);
+            _startRequested = true;
+            _transitionCompleted = false;
+            _worldResetCompleted = false;
+            _startIssued = false;
+            _expectedContextSignature = null;
 
-            _ = RunStartTransitionAsync();
+            DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
+                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...");
+
+            _ = StartTransitionAsync();
         }
 
-        private async Task RunStartTransitionAsync()
+        private async Task StartTransitionAsync()
         {
             try
             {
-                await _sceneTransitionService.TransitionAsync(_startPlan);
+                await _sceneFlow.TransitionAsync(_startPlan);
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] Falha na transição de start: {ex}");
-
-                _pendingProfileName = null;
-                Interlocked.Exchange(ref _pendingStart, 0);
+                DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
+                    $"[GameLoopSceneFlow] Falha ao executar TransitionAsync(startPlan). ex={ex}");
             }
         }
 
-        private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
+        private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            if (Volatile.Read(ref _pendingStart) != 1)
+            if (!_startRequested)
                 return;
 
-            var expectedProfile = _pendingProfileName;
-            var actualProfile = evt.Context.TransitionProfileName;
+            // Filtra por profile (quando definido) para evitar cross-talk.
+            if (!IsMatchingProfile(evt.Context.TransitionProfileName))
+                return;
 
-            if (!string.IsNullOrWhiteSpace(expectedProfile) &&
-                !string.Equals(expectedProfile, actualProfile, StringComparison.Ordinal))
+            EnsureExpectedSignatureFromContext(evt.Context);
+
+            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                $"[GameLoopSceneFlow] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
+        }
+
+        private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
+        {
+            if (!_startRequested)
+                return;
+
+            if (!IsMatchingProfile(evt.Context.TransitionProfileName))
+                return;
+
+            // Garante assinatura baseada no evento real (não no plan).
+            EnsureExpectedSignatureFromContext(evt.Context);
+
+            // Se já temos expectedSignature e a do evento diverge, ignora.
+            var ctxSig = evt.Context.ToString();
+            if (!string.IsNullOrEmpty(_expectedContextSignature) &&
+                !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
             {
-                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] ScenesReady ignorado (profile diferente). expected='{expectedProfile}', actual='{actualProfile}'.");
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                    $"[GameLoopSceneFlow] TransitionCompleted ignorado (signature mismatch). " +
+                    $"expected='{_expectedContextSignature}', got='{ctxSig}'.");
                 return;
             }
 
-            // IMPORTANTÍSSIMO:
-            // Aqui NÃO iniciamos o GameLoop. Apenas aguardamos o reset do WorldLifecycle.
-            DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                "[GameLoopSceneFlow] ScenesReady recebido. Aguardando WorldLifecycle concluir reset para emitir COMMAND start...",
-                DebugUtility.Colors.Info);
+            _transitionCompleted = true;
+
+            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                $"[GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
+
+            TryIssueGameLoopStart();
         }
 
         private void OnWorldResetCompleted(WorldLifecycleResetCompletedEvent evt)
         {
-            if (Volatile.Read(ref _pendingStart) != 1)
+            if (!_startRequested)
                 return;
 
-            var expectedProfile = _pendingProfileName;
-            var actualProfile = evt.SceneTransitionProfileName;
-
-            if (!string.IsNullOrWhiteSpace(expectedProfile) &&
-                !string.Equals(expectedProfile, actualProfile, StringComparison.Ordinal))
+            // Se o evento de reset veio com assinatura, usamos para filtrar / capturar.
+            if (!string.IsNullOrEmpty(evt.ContextSignature))
             {
-                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
-                    $"[GameLoopSceneFlow] WorldResetCompleted ignorado (profile diferente). expected='{expectedProfile}', actual='{actualProfile}'.");
+                if (string.IsNullOrEmpty(_expectedContextSignature))
+                {
+                    _expectedContextSignature = evt.ContextSignature;
+                }
+                else if (!string.Equals(evt.ContextSignature, _expectedContextSignature, StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                        $"[GameLoopSceneFlow] WorldLifecycleResetCompleted ignorado (signature mismatch). " +
+                        $"expected='{_expectedContextSignature}', got='{evt.ContextSignature}', reason='{evt.Reason ?? "<null>"}'.");
+                    return;
+                }
+            }
+
+            _worldResetCompleted = true;
+
+            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
+                $"[GameLoopSceneFlow] WorldLifecycle reset concluído (ou skip). reason='{evt.Reason ?? "<null>"}'.");
+
+            TryIssueGameLoopStart();
+        }
+
+        private bool IsMatchingProfile(string transitionProfileName)
+        {
+            // Se o startPlan não definiu profile, não filtra.
+            var expected = _startPlan?.TransitionProfileName;
+            if (string.IsNullOrWhiteSpace(expected))
+                return true;
+
+            return string.Equals(transitionProfileName ?? string.Empty, expected, StringComparison.Ordinal);
+        }
+
+        private void EnsureExpectedSignatureFromContext(SceneTransitionContext context)
+        {
+            if (!string.IsNullOrEmpty(_expectedContextSignature))
+                return;
+
+            _expectedContextSignature = context.ToString();
+        }
+
+        private void TryIssueGameLoopStart()
+        {
+            if (_startIssued)
+                return;
+
+            // Ready “seguro”: gate já abriu (TransitionCompleted) + world reset (ou skip) finalizado.
+            if (!_startRequested || !_transitionCompleted || !_worldResetCompleted)
+                return;
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
+            {
+                DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
+                    "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível RequestStart().");
                 return;
             }
 
-            DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                "[GameLoopSceneFlow] Reset concluído. Emitindo GameStartEvent (COMMAND) para iniciar o GameLoop.",
+            _startIssued = true;
+
+            DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
+                "[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. Chamando GameLoop.RequestStart().",
                 DebugUtility.Colors.Success);
 
-            EventBus<GameStartEvent>.Raise(new GameStartEvent());
-
-            _pendingProfileName = null;
-            Interlocked.Exchange(ref _pendingStart, 0);
+            gameLoop.RequestStart();
         }
-    }
-
-    /// <summary>
-    /// Evento infra (COMMAND) emitido quando o WorldLifecycle terminou o hard reset após ScenesReady.
-    /// Isso permite que o coordinator não dependa de polling ou de acoplamento direto ao controller.
-    /// </summary>
-    public readonly struct WorldLifecycleResetCompletedEvent : _ImmersiveGames.NewScripts.Infrastructure.Events.IEvent
-    {
-        public WorldLifecycleResetCompletedEvent(string sceneTransitionProfileName, string reason)
-        {
-            SceneTransitionProfileName = sceneTransitionProfileName;
-            Reason = reason;
-        }
-
-        public string SceneTransitionProfileName { get; }
-        public string Reason { get; }
     }
 }

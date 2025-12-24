@@ -307,7 +307,39 @@ Essa distinção é **fundamental** para:
 
 Se quiser, seguimos exatamente nessa ordem.
 
+---
 
-> Nota de integração:
-> - `IGameLoopService.CurrentStateName` é um sinal *auxiliar* e pode estar vazio/defasado até o primeiro tick.
-> - Para gating de ações (ex.: bloquear `Move` durante transição/reset e liberar após o mundo estar pronto), use `GameReadinessService` + `ReadinessChangedEvent` como sinal macro, e mantenha o GameLoop apenas como reforço quando estiver em estados conclusivos (`Playing`/`Paused`).
+## Addendum (2025-12-24) — SceneFlow em produção
+
+### Integração com SceneFlow (versão atual)
+O GameLoop não “carrega cenas” diretamente. Em produção, ele delega o bootstrap/scene switching para o pipeline SceneFlow.
+
+Fluxo consolidado:
+1. UI / QA / código emite `GameStartRequestedEvent (REQUEST)`.
+2. `GameLoopSceneFlowCoordinator` recebe o request e chama `ISceneTransitionService.TransitionAsync(context)`.
+3. `SceneTransitionService` emite:
+    - `SceneTransitionStartedEvent`
+    - `SceneTransitionScenesReadyEvent`
+    - `SceneTransitionCompletedEvent`
+4. `WorldLifecycleRuntimeDriver` reage a `SceneTransitionScenesReadyEvent` e decide:
+    - SKIP no `startup`/Menu,
+    - ou `ResetWorldAsync()` no Gameplay.
+5. O Coordinator só chama `GameLoop.RequestStart()` quando:
+    - `SceneTransitionCompletedEvent` foi recebido, e
+    - `WorldLifecycleResetCompletedEvent` foi recebido (mesma assinatura).
+
+### Como disparar uma transição em jogo (uso real)
+No runtime (Menu → Gameplay, por exemplo), o disparo **não deve** depender de `[Inject] private void Inject(...)` em métodos privados.
+O caminho recomendado é resolver o serviço no escopo global e chamar explicitamente:
+
+- Resolver `ISceneTransitionService` via `DependencyManager.Provider.ResolveGlobal<ISceneTransitionService>()`.
+- Construir um `SceneTransitionContext` e chamar `TransitionAsync(context)`.
+
+Exemplo de contexto típico:
+- `Load`: `GameplayScene`, `UIGlobalScene`
+- `Unload`: `MenuScene` (e qualquer “bootstrap scene” se aplicável)
+- `TargetActiveScene`: `GameplayScene`
+- `UseFade`: `true` (se houver adapter)
+- `TransitionProfileName`: `gameplay`
+
+Em cenas de FrontEnd (`startup`/Menu), o reset do WorldLifecycle é intencionalmente **ignorado**.

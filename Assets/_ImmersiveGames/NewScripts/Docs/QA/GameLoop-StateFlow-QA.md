@@ -121,8 +121,30 @@ Validar o **comportamento funcional do gameplay** no NewScripts, especificamente
 
 👉 Para isso, **use o checklist de baseline**.
 
+---
 
-### QA adicional: Readiness x StateDependent
+## Atualização (2025-12-24) — critérios de liberação do gameplay (Gate + Readiness)
 
-- Após `SceneTransitionCompletedEvent` e emissão de `GameStartEvent (COMMAND)`, o `ReadinessSnapshot.GameplayReady` deve estar `true`.
-- `ActionType.Move` deve ficar bloqueada apenas enquanto o `ISimulationGateService.IsOpen == false` (ex.: transição/reset). Se o gate estiver aberto e o gameplay estiver ready, `Move` não deve ser bloqueado por state.
+### O que o QA deve validar no log
+
+1. **Ao iniciar transição** (após `GameStartRequestedEvent (REQUEST)`):
+    - existe `Acquire token='flow.scene_transition'`
+    - `gameplayReady=False`
+    - ações (ex.: Move) ficam bloqueadas por `GateClosed` e/ou `GameplayNotReady`
+
+2. **Ao receber ScenesReady**:
+    - `WorldLifecycleRuntimeDriver` dispara hard reset (`ScenesReady/<SceneName>`)
+    - `Acquire token='WorldLifecycle.WorldReset'` (pode elevar `Active` para 2)
+
+3. **Após reset concluído**:
+    - coordinator emite `GameStartEvent (COMMAND)`
+    - bridge chama `IGameLoopService.RequestStart()`
+
+4. **Somente em SceneTransitionCompleted**:
+    - `Release token='flow.scene_transition'` e `Active=0`
+    - snapshot final: `gameplayReady=True` e `gateOpen=True`
+    - ações ficam **liberadas**
+    - `GameLoopService` entra em `Playing (isActive=True)` em seguida
+
+### Resultado esperado
+O gameplay **não** deve ser liberado em `ScenesReady` nem imediatamente após `World Reset Completed`, mas sim após `SceneTransitionCompleted`.

@@ -2,6 +2,12 @@
  * ChangeLog
  * - Gate Validation agora força spawn do player via ResetWorldAsync se necessário e aguarda warmup determinístico.
  * - Adicionado validador automatizado do Gate (ações) com ContextMenu/Hotkey e logs determinísticos para QA.
+ *
+ * Ajustes (Readiness):
+ * - Baseline/QA não depende de Scene Flow; portanto, sinaliza GameReadinessService manualmente:
+ *   - SetGameplayReady(false) ao iniciar um run
+ *   - SetGameplayReady(true) ao concluir com sucesso (ou ao final best-effort)
+ * - Gate Validation aborta se o jogo não estiver ativo (IsGameActive == false) para evitar falsos negativos em Menu.
  */
 
 using System;
@@ -13,10 +19,12 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
@@ -180,6 +188,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 }
 
                 DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+                MarkReadiness(false, $"baseline_started/{runId}");
 
                 LogInfo(runId, $"START Hard Reset (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
                 try
@@ -190,6 +199,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 catch (Exception ex)
                 {
                     LogError(runId, $"Exception during Hard Reset: {ex}");
+                }
+                finally
+                {
+                    // Baseline não tem Scene Flow; ao final, libera readiness para evitar ficar preso em GameplayNotReady.
+                    MarkReadiness(true, $"baseline_completed_hard_reset/{runId}");
                 }
             }
             finally
@@ -218,6 +232,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 }
 
                 DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+                MarkReadiness(false, $"baseline_started/{runId}");
 
                 LogInfo(runId, $"START Soft Reset Players (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
                 try
@@ -228,6 +243,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 catch (Exception ex)
                 {
                     LogError(runId, $"Exception during Soft Reset Players: {ex}");
+                }
+                finally
+                {
+                    MarkReadiness(true, $"baseline_completed_soft_reset_players/{runId}");
                 }
             }
             finally
@@ -259,6 +278,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 }
 
                 DisableControllerAutoInitializeOnStartIfNeeded(runId, controller);
+                MarkReadiness(false, $"baseline_started/{runId}");
 
                 LogInfo(runId, $"START Full Baseline (trigger='{trigger}', {BuildSceneTimeScaleInfo()})");
                 try
@@ -283,11 +303,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             finally
             {
                 stopwatch.Stop();
+
                 LogInfo(runId,
                     $"Baseline Summary — activeScene='{SceneManager.GetActiveScene().name}', runId='{runId}', Hard Reset={(hardResetSucceeded ? "SUCCESS" : "FAILED")}, Soft Reset Players={(softResetSucceeded ? "SUCCESS" : "FAILED")}, totalTimeMs={stopwatch.ElapsedMilliseconds}");
+
+                // Best-effort: se o baseline concluiu, normaliza readiness para não travar o Move em GameplayNotReady.
+                // Se falhou, ainda assim preferimos não deixar o jogo permanentemente NOT READY por causa de QA.
+                MarkReadiness(true, $"baseline_completed/{runId}");
+
                 _isRunning = false;
                 RestoreRepeatedWarningSuppressionIfNeeded();
             }
+        }
+
+        private void MarkReadiness(bool gameplayReady, string reason)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal(out GameReadinessService readiness) || readiness == null)
+            {
+                return;
+            }
+
+            readiness.SetGameplayReady(gameplayReady, reason);
         }
 
         private bool CanStartBaseline()
@@ -494,16 +530,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     return;
                 }
 
+                if (!DependencyManager.Provider.TryGetGlobal(out IStateDependentService stateService) || stateService == null)
+                {
+                    LogError(runId, "FAIL Gate Validation — IStateDependentService não foi resolvido.");
+                    return;
+                }
+
+                // Evita falso negativo: Gate Validation de movimento faz sentido apenas em Playing.
+                if (!stateService.IsGameActive())
+                {
+                    LogError(runId, "FAIL Gate Validation — jogo não está ativo (IsGameActive=false). Inicie o jogo (GameStart) antes de validar Gate/Move.");
+                    return;
+                }
+
+                // Garante readiness para evitar bloqueio por GameplayNotReady em QA.
+                MarkReadiness(true, $"gate_validation_setup/{runId}");
+
                 var rb = controller.GetComponent<Rigidbody>();
                 if (rb == null)
                 {
                     LogError(runId, "FAIL Gate Validation — Rigidbody não encontrado no player.");
-                    return;
-                }
-
-                if (!DependencyManager.Provider.TryGetGlobal(out IStateDependentService stateService) || stateService == null)
-                {
-                    LogError(runId, "FAIL Gate Validation — IStateDependentService não foi resolvido.");
                     return;
                 }
 
@@ -513,9 +559,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 var initialAngular = rb.angularVelocity;
 
                 ResetHorizontalMotion(rb);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 controller.QA_ClearInputs();
-#endif
 
                 var unpausedBefore = await RunGatePhaseAsync(controller, rb, stateService, 10, new Vector2(0f, 1f), runId, pausedExpected: false, phase: "Phase-A/PrePause");
                 var pausePublished = TryApplyPauseState(true, runId);
@@ -540,9 +584,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 ResetHorizontalMotion(rb);
                 var unpausedAfter = await RunGatePhaseAsync(controller, rb, stateService, 10, new Vector2(0f, 1f), runId, pausedExpected: false, phase: "Phase-C/PostResume");
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 controller.QA_ClearInputs();
-#endif
                 RestoreInitialState(controller, rb, initialPos, initialRot, initialLinear, initialAngular);
 
                 var allPassed = unpausedBefore.Passed && paused.Passed && unpausedAfter.Passed;
@@ -617,9 +659,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private static void RestoreInitialState(NewPlayerMovementController controller, Rigidbody rb, Vector3 pos, Quaternion rot, Vector3 linear, Vector3 angular)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             controller.QA_ClearInputs();
-#endif
             rb.position = pos;
             rb.rotation = rot;
             rb.linearVelocity = linear;
@@ -650,6 +690,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var horizontalDelta = HorizontalMagnitude(delta);
             var moveAllowed = stateService.CanExecuteAction(ActionType.Move);
             var navigateAllowed = stateService.CanExecuteAction(ActionType.Navigate);
+
             var passed = pausedExpected
                 ? maxSpeed <= GateVelocityEpsilon && horizontalDelta <= GatePositionEpsilon && !moveAllowed
                 : (maxSpeed > GateVelocityEpsilon || horizontalDelta > GatePositionEpsilon) && moveAllowed;
@@ -657,7 +698,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var stateLabel = pausedExpected ? "PAUSED" : "UNPAUSED";
             var message = passed
                 ? $"PASS {phase} — state={stateLabel}, maxSpeedXZ={maxSpeed:F4}, deltaPosXZ={horizontalDelta:F4}, canMove={moveAllowed}, canNavigate={navigateAllowed}."
-                : $"FAIL {phase} — state={stateLabel}, maxSpeedXZ={maxSpeed:F4}, deltaPosXZ={horizontalDelta:F4}, canMove={moveAllowed}, canNavigate={navigateAllowed}. Esperado {(pausedExpected ? "sem movimento" : "movimento detectável") } (Gate não congela gravidade).";
+                : $"FAIL {phase} — state={stateLabel}, maxSpeedXZ={maxSpeed:F4}, deltaPosXZ={horizontalDelta:F4}, canMove={moveAllowed}, canNavigate={navigateAllowed}. Esperado {(pausedExpected ? "sem movimento" : "movimento detectável")} (Gate não congela gravidade).";
 
             if (passed)
             {

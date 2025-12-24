@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
     ///
     /// Regras:
     /// - Só consome COMMAND (GameStartEvent). REQUEST é responsabilidade do coordinator.
-    /// - Se o coordinator estiver instalado, o bridge NÃO deve “improvisar” start.
+    /// - O coordinator decide quando emitir COMMAND; o bridge apenas executa.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopEventInputBridge : IDisposable
@@ -20,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private readonly EventBinding<GamePauseEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
         private readonly EventBinding<GameResetRequestedEvent> _onResetRequested;
+
+        private bool _disposed;
 
         public GameLoopEventInputBridge()
         {
@@ -39,6 +41,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 
         public void Dispose()
         {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
             EventBus<GameStartEvent>.Unregister(_onStartCommand);
             EventBus<GamePauseEvent>.Unregister(_onPause);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
@@ -48,19 +55,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private static bool TryResolveLoop(out IGameLoopService loop)
         {
             loop = null;
-            var provider = DependencyManager.Provider;
-            return provider.TryGetGlobal<IGameLoopService>(out loop) && loop != null;
+            return DependencyManager.Provider.TryGetGlobal(out loop) && loop != null;
         }
 
         private void OnGameStartCommand(GameStartEvent evt)
         {
-            if (GameLoopSceneFlowCoordinator.IsInstalled)
-            {
-                // Mesmo que este seja um COMMAND, manter o guard evita regressões
-                // onde alguém tenta usar o bridge como “modo alternativo”.
-                // O coordinator é quem decide quando COMMAND é emitido.
-            }
-
             if (!TryResolveLoop(out var loop))
             {
                 DebugUtility.LogError<GameLoopEventInputBridge>(
@@ -72,6 +71,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 "[GameLoop] GameStartEvent (COMMAND) recebido. Liberando GameLoop.RequestStart().",
                 DebugUtility.Colors.Info);
 
+            // Initialize é idempotente; mantido como proteção contra regressões.
             loop.Initialize();
             loop.RequestStart();
         }

@@ -1,20 +1,22 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 {
-    
     public class DependencyInjector
     {
         private readonly ObjectServiceRegistry _objectRegistry;
         private readonly SceneServiceRegistry _sceneRegistry;
         private readonly GlobalServiceRegistry _globalRegistry;
+
+        // Dedupe por frame (não depende de coroutine / MonoBehaviour).
         private readonly HashSet<object> _injectedObjectsThisFrame = new();
+        private int _lastInjectionFrame = -1;
 
         public DependencyInjector(ObjectServiceRegistry objectRegistry, SceneServiceRegistry sceneRegistry, GlobalServiceRegistry globalRegistry)
         {
@@ -28,31 +30,38 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
-            if (!CanInject(target))
+            if (!CanInjectThisFrame(target))
                 return;
 
-            List<FieldInfo> injectableFields = GetInjectableFields(target.GetType());
+            var injectableFields = GetInjectableFields(target.GetType());
             InjectFields(target, injectableFields, objectId);
-
-            ScheduleClearInjectedObjects(target);
         }
 
-        private bool CanInject(object target)
+        private bool CanInjectThisFrame(object target)
         {
-            if (_injectedObjectsThisFrame.Add(target)) return true;
-            DebugUtility.LogVerbose(typeof(DependencyInjector), 
+            var frame = Time.frameCount;
+            if (frame != _lastInjectionFrame)
+            {
+                _lastInjectionFrame = frame;
+                _injectedObjectsThisFrame.Clear();
+            }
+
+            if (_injectedObjectsThisFrame.Add(target))
+                return true;
+
+            DebugUtility.LogVerbose(typeof(DependencyInjector),
                 $"Injeção ignorada para {target.GetType().Name}: já injetado neste frame.");
             return false;
         }
 
-        private List<FieldInfo> GetInjectableFields(Type type)
+        private static List<FieldInfo> GetInjectableFields(Type type)
         {
             var fields = new List<FieldInfo>();
             var currentType = type;
 
             while (currentType != null && currentType != typeof(object))
             {
-                FieldInfo[] currentFields = currentType.GetFields(
+                var currentFields = currentType.GetFields(
                     BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
 
                 fields.AddRange(currentFields.Where(field => field.IsDefined(typeof(InjectAttribute), false)));
@@ -68,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             foreach (var field in fields)
             {
                 var fieldType = field.FieldType;
-                object service = ResolveService(fieldType, objectId, target.GetType());
+                var service = ResolveService(fieldType, objectId, target);
 
                 if (service != null)
                 {
@@ -82,44 +91,64 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             }
         }
 
-        private object ResolveService(Type serviceType, string objectId, Type targetType)
+        private object ResolveService(Type serviceType, string objectId, object target)
         {
-            // Tenta resolver na ordem: Objeto → Cena → Global
-            return ResolveFromObjectScope(serviceType, objectId, targetType) 
-                ?? ResolveFromSceneScope(serviceType, targetType) 
-                ?? ResolveFromGlobalScope(serviceType, targetType);
+            // Ordem: Objeto → Cena (da instância) → Global
+            return ResolveFromObjectScope(serviceType, objectId, target.GetType())
+                   ?? ResolveFromSceneScope(serviceType, target)
+                   ?? ResolveFromGlobalScope(serviceType, target.GetType());
         }
 
         private object ResolveFromObjectScope(Type serviceType, string objectId, Type targetType)
         {
-            if (objectId == null) return null;
+            if (string.IsNullOrWhiteSpace(objectId))
+                return null;
 
-            object service = _objectRegistry.TryGet(serviceType, objectId);
+            var service = _objectRegistry.TryGet(serviceType, objectId);
             if (service != null)
             {
                 DebugUtility.LogVerbose(typeof(DependencyInjector),
-                    $"Injetando {serviceType.Name} do escopo objeto {objectId} para {targetType.Name}.");
+                    $"Injetando {serviceType.Name} do escopo objeto '{objectId}' para {targetType.Name}.");
             }
             return service;
         }
 
-        private object ResolveFromSceneScope(Type serviceType, Type targetType)
+        private object ResolveFromSceneScope(Type serviceType, object target)
         {
-            string activeScene = SceneManager.GetActiveScene().name;
-            object service = _sceneRegistry.TryGet(serviceType, activeScene);
-            
+            var sceneName = GetTargetSceneName(target);
+            if (string.IsNullOrWhiteSpace(sceneName))
+                return null;
+
+            var service = _sceneRegistry.TryGet(serviceType, sceneName);
             if (service != null)
             {
                 DebugUtility.LogVerbose(typeof(DependencyInjector),
-                    $"Injetando {serviceType.Name} do escopo cena {activeScene} para {targetType.Name}.");
+                    $"Injetando {serviceType.Name} do escopo cena '{sceneName}' para {target.GetType().Name}.");
             }
             return service;
+        }
+
+        private static string GetTargetSceneName(object target)
+        {
+            // Regra correta para aditivo:
+            // - Se for MonoBehaviour: usar a cena do próprio GameObject.
+            // - Senão: fallback para a active scene.
+            if (target is MonoBehaviour mb && mb != null)
+            {
+                var s = mb.gameObject.scene;
+                if (s.IsValid() && s.isLoaded)
+                    return s.name;
+
+                // Se estiver em DontDestroyOnLoad / inválido, cai para active scene.
+            }
+
+            return SceneManager.GetActiveScene().name;
         }
 
         private object ResolveFromGlobalScope(Type serviceType, Type targetType)
         {
-            object service = _globalRegistry.TryGet(serviceType);
-            
+            var service = _globalRegistry.TryGet(serviceType);
+
             if (service != null)
             {
                 DebugUtility.LogVerbose(typeof(DependencyInjector),
@@ -128,35 +157,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             return service;
         }
 
-        private void LogInjectionSuccess(Type fieldType, Type targetType, Type serviceType)
+        private static void LogInjectionSuccess(Type fieldType, Type targetType, Type serviceType)
         {
             DebugUtility.LogVerbose(typeof(DependencyInjector),
                 $"Injeção bem-sucedida: {fieldType.Name} -> {targetType.Name} (implementação: {serviceType.Name})");
         }
 
-        private void LogInjectionError(Type fieldType, Type targetType)
+        private static void LogInjectionError(Type fieldType, Type targetType)
         {
-            DebugUtility.LogError(typeof(DependencyInjector), 
+            DebugUtility.LogError(typeof(DependencyInjector),
                 $"Falha ao injetar {fieldType.Name} para {targetType.Name}: serviço não encontrado. " +
                 "Certifique-se de registrar o serviço no DependencyManager no escopo apropriado (objeto, cena ou global).");
         }
-
-        private void ScheduleClearInjectedObjects(object target)
-        {
-            if (target is MonoBehaviour mb)
-            {
-                mb.StartCoroutine(ClearInjectedObjectsNextFrame());
-            }
-        }
-
-        private IEnumerator ClearInjectedObjectsNextFrame()
-        {
-            yield return null;
-            _injectedObjectsThisFrame.Clear();
-        }
     }
 
-    // Extensões para simplificar o TryGet genérico
+    // Extensões para simplificar o TryGet genérico via Type
     public static class ServiceRegistryExtensions
     {
         public static object TryGet(this ObjectServiceRegistry registry, Type serviceType, string objectId)
@@ -164,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             var method = typeof(ObjectServiceRegistry).GetMethod("TryGet", BindingFlags.Instance | BindingFlags.Public);
             var genericMethod = method?.MakeGenericMethod(serviceType);
             object[] parameters = { objectId, null };
-            bool success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
+            var success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
             return success ? parameters[1] : null;
         }
 
@@ -173,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             var method = typeof(SceneServiceRegistry).GetMethod("TryGet", BindingFlags.Instance | BindingFlags.Public);
             var genericMethod = method?.MakeGenericMethod(serviceType);
             object[] parameters = { sceneName, null };
-            bool success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
+            var success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
             return success ? parameters[1] : null;
         }
 
@@ -182,10 +197,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             var method = typeof(GlobalServiceRegistry).GetMethod("TryGet", BindingFlags.Instance | BindingFlags.Public);
             var genericMethod = method?.MakeGenericMethod(serviceType);
             object[] parameters = { null, null };
-            bool success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
+            var success = genericMethod != null && (bool)genericMethod.Invoke(registry, parameters);
             return success ? parameters[1] : null;
         }
     }
+
     [AttributeUsage(AttributeTargets.Field)]
     public class InjectAttribute : Attribute { }
 }

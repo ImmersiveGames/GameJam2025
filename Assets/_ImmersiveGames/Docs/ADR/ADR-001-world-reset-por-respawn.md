@@ -443,3 +443,15 @@ Neste ponto:
 * ou **Mapa de Pastas + Naming Convention alinhado aos ADRs**
 
 Quando quiser continuar, basta dizer qual deles.
+
+---
+
+## Addendum (2025-12-24) — Gatilho via SceneFlow
+
+### Gatilho em produção (SceneFlow)
+Em produção, o “hard reset por respawn” não é disparado pelo GameLoop diretamente.
+O gatilho padrão é:
+
+1. `SceneTransitionService` conclui load/unload e emite `SceneTransitionScenesReadyEvent`.
+2. `WorldLifecycleRuntimeDriver` decide se executa o reset (perfís de gameplay) ou se faz skip (startup/Menu).
+3. O `WorldLifecycleController` executa `ResetWorldAsync()` e o sistema emite `WorldLifecycleResetCompletedEvent` para coordenação.

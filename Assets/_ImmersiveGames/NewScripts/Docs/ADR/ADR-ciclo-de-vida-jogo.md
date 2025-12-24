@@ -340,3 +340,28 @@ GameplayReady (Gate liberado)
 
 **Status**: ✅ **Decisão consolidada**
 **Implementação**: parcialmente concluída (ver baseline no `WorldLifecycle.md`)
+
+---
+
+## Addendum (2025-12-24) — SceneFlow/Coordenação
+
+### Integração SceneFlow → WorldLifecycle
+A transição de cenas (SceneFlow) define o “momento determinístico” para iniciar o reset do mundo:
+
+- **Trigger:** `SceneTransitionScenesReadyEvent`
+- **Responsável:** `WorldLifecycleRuntimeDriver`
+- **Ação:** `WorldLifecycleController.ResetWorldAsync(reason="ScenesReady/<ActiveScene>")` para perfis de gameplay.
+
+No perfil `startup` (MenuScene), o driver deve **skippar** o reset. Isto mantém MenuScene como uma cena “sem infra/spawn”.
+
+### Correlação de transições (assinatura)
+Quando o GameLoop aguarda a conclusão, ele precisa correlacionar:
+- `SceneTransitionCompletedEvent` e
+- `WorldLifecycleResetCompletedEvent`
+
+pela mesma assinatura do contexto. Recomendação: utilizar `SceneTransitionContext.ToString()` (ou um ID equivalente gerado no disparo).
+
+### Nota de implementação: structs e nullability
+`SceneTransitionContext` é um `readonly struct`. Portanto:
+- não existe “context == null”.
+- checks de nulidade devem ser aplicados apenas às **propriedades** (`ScenesToLoad`, `ScenesToUnload`, `TargetActiveScene`, etc.).

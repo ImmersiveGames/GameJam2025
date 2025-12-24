@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
     /// Ajuste:
     /// - Cacheia o último estado do gate aplicado para evitar logs duplicados e re-aplicações redundantes.
     /// - Ainda atualiza input state mesmo quando o estado do gate não muda.
+    /// - Evita consultar CanExecuteAction(Move) de forma redundante no mesmo tick.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -67,6 +68,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private Quaternion _initialRotation;
         private bool _hasInitialPose;
         private string _sceneName;
+
+        // Cache por-tick para evitar chamadas redundantes ao StateDependent.
+        private bool _hasMovePermissionCached;
+        private bool _cachedMoveAllowed;
 
         #region Reset Contracts
 
@@ -134,6 +139,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void TickMovement(float deltaTime)
         {
+            _hasMovePermissionCached = false;
+
             EnsureServicesResolved();
             RefreshInputState();
 
@@ -219,16 +226,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             if (_actor != null && !_actor.IsActive)
                 return false;
 
-            if (_stateService != null && !_stateService.CanExecuteAction(ActionType.Move))
+            if (!_gateOpen)
+                return false;
+
+            if (_stateService != null && !GetCachedMoveAllowed())
             {
                 LogStateBlockedOnce();
                 return false;
             }
 
-            if (!_gateOpen)
-                return false;
-
             return true;
+        }
+
+        private bool GetCachedMoveAllowed()
+        {
+            if (_hasMovePermissionCached)
+                return _cachedMoveAllowed;
+
+            _hasMovePermissionCached = true;
+            _cachedMoveAllowed = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
+            return _cachedMoveAllowed;
         }
 
         private bool ShouldUseFixedUpdate()
@@ -280,7 +297,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         private void OnGateChanged(bool isOpen)
         {
-            // Evento real do gate: aplicar e logar somente se mudou.
             ApplyGateState(isOpen, verbose: false);
         }
 
@@ -316,7 +332,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             if (inputReader == null)
                 return;
 
-            bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
+            // Não recalcula spam: usa cache por tick (se já estivermos dentro do TickMovement).
+            bool allowByState = _stateService == null || GetCachedMoveAllowed();
+            bool allow = _gateOpen && allowByState;
+
             inputReader.SetInputEnabled(allow);
 
             if (allow)
@@ -380,7 +399,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             if (inputReader == null)
                 return;
 
-            bool allow = _gateOpen && (_stateService?.CanExecuteAction(ActionType.Move) ?? true);
+            bool allowByState = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
+            bool allow = _gateOpen && allowByState;
             inputReader.SetInputEnabled(allow);
         }
 

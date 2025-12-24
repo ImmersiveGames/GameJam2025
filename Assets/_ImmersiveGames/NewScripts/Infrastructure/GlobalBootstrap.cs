@@ -17,6 +17,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
+using _ImmersiveGames.NewScripts.GameLoop.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
@@ -41,8 +42,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
 
-        // Profile fixo do start no-op (para filtrar ScenesReady).
+        // Profile fixo do start (para filtrar ScenesReady/ResetCompleted).
         private const string StartProfileName = "startup";
+
+        // Scene names (Unity: SceneManager.GetActiveScene().name)
+        private const string SceneNewBootstrap = "NewBootstrap";
+        private const string SceneMenu = "MenuScene";
+        private const string SceneUIGlobal = "UIGlobalScene";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -293,18 +299,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
+            // Plano de produção:
+            // NewBootstrap -> (Fade) -> Load(Menu + UIGlobal) -> Active=Menu -> Unload(NewBootstrap) -> (FadeOut) -> Completed
             var startPlan = new SceneTransitionRequest(
-                scenesToLoad: Array.Empty<string>(),
-                scenesToUnload: Array.Empty<string>(),
-                targetActiveScene: null,
-                useFade: false,
+                scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
+                scenesToUnload: new[] { SceneNewBootstrap },
+                targetActiveScene: SceneMenu,
+                useFade: true,
                 transitionProfileName: StartProfileName);
 
-            // CONSISTENTE com o arquivo atual do coordinator (2 params).
             _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                $"[GameLoopSceneFlow] Coordinator registrado (startPlan no-op, profile='{StartProfileName}').",
+                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, profile='{StartProfileName}').",
                 DebugUtility.Colors.Info);
         }
     }

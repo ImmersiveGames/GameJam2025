@@ -1,9 +1,9 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using System.Linq;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -24,7 +24,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private void Awake()
         {
-            _sceneName = gameObject.scene.name;
+            // A cena correta para o escopo é a cena do GameObject, não a ActiveScene (especialmente em Additive).
+            var scene = gameObject.scene;
+            _sceneName = scene.name;
 
             if (_registered)
             {
@@ -40,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 new NewSceneScopeMarker(),
                 allowOverride: false);
 
-            var worldRoot = EnsureWorldRoot();
+            var worldRoot = EnsureWorldRoot(scene);
             _worldSpawnContext = new WorldSpawnContext(_sceneName, worldRoot);
 
             provider.RegisterForScene(
@@ -62,6 +64,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 _sceneName,
                 spawnRegistry,
                 allowOverride: false);
+
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
             // Nunca criar o WorldLifecycleHookRegistry no controller/orchestrator.
             WorldLifecycleHookRegistry hookRegistry;
@@ -125,8 +128,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (worldDefinition == null)
             {
-                DebugUtility.LogError(typeof(NewSceneBootstrapper),
-                    "WorldDefinition não atribuída. Serviços de spawn não serão registrados.");
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    $"WorldDefinition não atribuída. Isto é permitido em cenas sem spawn (ex.: Menu). " +
+                    $"Serviços de spawn não serão registrados. (scene='{_sceneName}')");
+
                 DebugUtility.Log(typeof(NewSceneBootstrapper),
                     "Spawn services registered from definition: 0");
                 return;
@@ -140,6 +145,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             int createdCount = 0;
             int skippedDisabledCount = 0;
             int failedCreateCount = 0;
+
             var entries = worldDefinition.Entries;
             var totalEntries = entries?.Count ?? 0;
 
@@ -166,6 +172,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     }
 
                     enabledCount++;
+
                     var service = _spawnServiceFactory.Create(entry, provider, actorRegistry, context);
                     if (service == null)
                     {
@@ -178,21 +185,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     createdCount++;
                     registry.Register(service);
                     registeredCount++;
+
                     DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                         $"Spawn entry #{index} REGISTERED: {service.Name} (Kind={entryKind}, Prefab={entryPrefabName})");
                 }
+
                 DebugUtility.Log(typeof(NewSceneBootstrapper),
                     $"Spawn services registered from definition: {registeredCount}");
             }
 
             DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
-                $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, Created={createdCount}, FailedCreate={failedCreateCount}");
+                $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, " +
+                $"Created={createdCount}, FailedCreate={failedCreateCount}");
         }
 
-        private Transform EnsureWorldRoot()
+        private Transform EnsureWorldRoot(UnityEngine.SceneManagement.Scene scene)
         {
-            var activeScene = SceneManager.GetActiveScene();
-            var rootObjects = activeScene.GetRootGameObjects();
+            if (!scene.IsValid())
+            {
+                // Fallback defensivo.
+                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                    $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
+
+                scene = SceneManager.GetActiveScene();
+            }
+
+            var rootObjects = scene.GetRootGameObjects();
             GameObject selectedRoot = null;
             var foundCount = 0;
 
@@ -213,14 +231,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             if (foundCount == 0)
             {
                 var worldRootGo = new GameObject("WorldRoot");
-                SceneManager.MoveGameObjectToScene(worldRootGo, activeScene);
+                SceneManager.MoveGameObjectToScene(worldRootGo, scene);
                 return worldRootGo.transform;
             }
 
             if (foundCount > 1)
             {
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    $"Multiple WorldRoot objects found: {foundCount}");
+                    $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");
 
                 foreach (var root in rootObjects)
                 {
@@ -235,9 +253,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     $"WorldRoot selected: {BuildTransformPath(selectedRoot.transform)}");
             }
 
-            if (selectedRoot.scene != activeScene)
+            if (selectedRoot.scene != scene)
             {
-                SceneManager.MoveGameObjectToScene(selectedRoot, activeScene);
+                SceneManager.MoveGameObjectToScene(selectedRoot, scene);
             }
 
             return selectedRoot.transform;

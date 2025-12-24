@@ -9,6 +9,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
     /// Bloqueia simulação durante transições de cena usando ISimulationGateService
     /// e emite snapshots de readiness via EventBus para consumidores (ex.: StateDependentService).
+    ///
+    /// Nota: baseline/QA pode não disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalização manual.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameReadinessService : IDisposable
@@ -49,6 +51,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         public bool IsGameplayReady => _gameplayReady;
 
+        /// <summary>
+        /// API explícita para QA/baseline quando não há Scene Flow.
+        /// </summary>
+        public void SetGameplayReady(bool gameplayReady, string reason)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _gameplayReady = gameplayReady;
+            PublishSnapshot(reason);
+        }
+
         public void Dispose()
         {
             if (_disposed)
@@ -75,7 +91,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             ReleaseGateHandle();
-            PublishSnapshot("dispose");
+
+            // Evita publicar snapshot após disposed em cenários onde EventBus pode não estar estável.
+            // (Se você quiser manter esse snapshot, remova o if abaixo.)
+            // PublishSnapshot("dispose");
         }
 
         private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
@@ -154,6 +173,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private void PublishSnapshot(string reason)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             // Gate pode estar indisponível em cenários de bootstrap.
             var snapshot = new ReadinessSnapshot(
                 gameplayReady: _gameplayReady,

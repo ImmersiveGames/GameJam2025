@@ -148,17 +148,6 @@ Se uma fase não tiver hooks:
 
 ### Contrato arquitetural
 
-
-### Estado atual (MVP / Smoke Test)
-
-Neste estágio do projeto, o **Soft Reset Players** existe principalmente para **validar a infraestrutura de reset por escopo**
-(gate + filtro de spawn/despawn + execução de participantes) sem obrigar migração imediata de controllers legados.
-
-Por isso, o `PlayersResetParticipant` pode ser mantido **intencionalmente mínimo** (ex.: 1 único componente resetável),
-até que a migração dos controllers para o novo formato de reset-in-place seja priorizada.
-
-➡️ Regra prática: **não** usar Soft Reset como “reconstrução parcial”. Se precisar reconstruir, use **Hard Reset**.
-
 Soft Reset Players **não reconstrói o mundo**.
 
 Durante este fluxo:
@@ -193,15 +182,6 @@ Spawn service skipped by scope filter
 ```
 
 ➡️ Evidência positiva de reset-in-place correto.
-
-### Nota sobre hooks no Soft Reset
-
-O pipeline acima pode mencionar fases como `OnBeforeActorDespawn` / `OnAfterActorSpawn` por compatibilidade de estrutura,
-mas em **Soft Reset (reset-in-place)** essas fases devem ser tratadas como **NO-OP**, a menos que exista uma justificativa
-muito clara e documentada.
-
-➡️ Diretriz: qualquer lógica de “reset por escopo” deve ficar em **`IResetScopeParticipant`**, evitando introduzir semântica
-de despawn/spawn no Soft Reset.
 
 ---
 
@@ -271,17 +251,6 @@ Fonte:
 ---
 
 ## 9. Readiness (Contrato Funcional)
-
-### Sinal de Readiness para consumidores (macro)
-
-Além de logs verbosos, o `GameReadinessService` passa a publicar snapshots via `EventBus<ReadinessChangedEvent>`:
-
-- `ReadinessSnapshot.GameplayReady`: `true` apenas após `SceneTransitionCompletedEvent` (fim do pipeline de Scene Flow).
-- `ReadinessSnapshot.GateOpen` / `ActiveTokens`: espelha o `ISimulationGateService` (útil para bloquear ações durante transição/reset).
-- Consumidores (ex.: `NewScriptsStateDependentService`) podem liberar/bloquear ações sem depender de `Time.timeScale`.
-
-Isso resolve o caso comum onde o `GameStartEvent` já ocorreu, mas o `IGameLoopService.CurrentStateName` ainda não foi atualizado (GameLoop não tickou), evitando bloqueio indevido de `Move`.
-
 
 * **SceneScopeReady**
   Registries prontos, gameplay bloqueado
@@ -405,3 +374,46 @@ executada **dentro de GameplayScene**.
 Menus de App, splash screens e navegação pertencem a outro domínio.
 
 Essa separação é **intencional** e **fundamental** para escalar o projeto.
+
+---
+
+## Validação por log (2025-12-24) — Gate/tokens e integração com SceneTransitionScenesReady
+
+Esta seção registra comportamentos observados no log real.
+
+### Tokens (SimulationGate) observados
+
+Durante uma transição de cena com reset automático no `ScenesReady`, há **tokens aninhados**:
+
+- `flow.scene_transition` (adquirido pelo `GameReadinessService` ao receber `SceneTransitionStarted`)
+- `WorldLifecycle.WorldReset` (adquirido pelo `WorldLifecycleOrchestrator` ao iniciar o hard reset)
+
+No log, isso aparece como:
+- `Acquire token='flow.scene_transition'. Active=1. IsOpen=False`
+- `Acquire token='WorldLifecycle.WorldReset'. Active=2. IsOpen=False`
+
+O gate só reabre quando **todos** os tokens são liberados:
+- `Release token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False` (ainda fechado)
+- `Release token='flow.scene_transition'. Active=0. IsOpen=True` (abre)
+
+### Implicação operacional
+Mesmo que o `WorldReset` termine, o gameplay continua bloqueado enquanto a transição de cenas estiver em progresso. Isso permite suportar corretamente a camada de **fade/loading** (quando habilitada) sem liberar input/simulação antes do momento correto.
+
+### Ordem de fases (confirmada no log)
+No hard reset disparado por `ScenesReady`, a ordem completa executada foi:
+
+1. `OnBeforeDespawn` (hooks de cena, ordenados)
+2. `OnBeforeActorDespawn` (hooks por ator, se existir)
+3. `Despawn` (por serviço de spawn)
+4. `OnAfterDespawn` (hooks de cena)
+5. `OnBeforeSpawn` (hooks de cena)
+6. `Spawn` (por serviço de spawn)
+7. `OnAfterActorSpawn` (hooks por ator)
+8. `OnAfterSpawn` (hooks de cena)
+
+### Nota sobre baseline runner
+O `WorldLifecycleBaselineRunner` desabilita `AutoInitializeOnStart` e executa:
+- Hard Reset
+- Soft Reset Players
+
+com snapshots do `GameReadinessService` marcando `gameplayReady` conforme o momento do teste (ex.: `baseline_started/*` e `baseline_completed/*`).

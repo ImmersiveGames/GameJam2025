@@ -5,25 +5,28 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Driver MonoBehaviour simples para garantir bootstrap e ticking do GameLoopService em cena.
+    /// Driver MonoBehaviour para garantir bootstrap e ticking do GameLoopService em cena.
+    /// Importante: não cria instância local do GameLoop (evita dois loops em paralelo).
     /// </summary>
-    public class GameLoopDriver : MonoBehaviour
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class GameLoopDriver : MonoBehaviour
     {
+        [Header("Lifetime")]
+        [SerializeField] private bool dontDestroyOnLoad = true;
+
         private IGameLoopService _service;
-        private bool _ownsService;
+        private bool _loggedMissingOnce;
 
         private void Awake()
         {
             GameLoopBootstrap.EnsureRegistered();
-            ResolveService();
-        }
 
-        private void Start()
-        {
-            if (_service == null)
+            if (dontDestroyOnLoad)
             {
-                ResolveService();
+                DontDestroyOnLoad(gameObject);
             }
+
+            ResolveService();
         }
 
         private void Update()
@@ -31,36 +34,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (_service == null)
             {
                 ResolveService();
+                return;
             }
 
-            _service?.Tick(Time.deltaTime);
+            _service.Tick(Time.deltaTime);
         }
 
         private void OnDestroy()
         {
-            if (_ownsService && _service != null)
-            {
-                _service.Dispose();
-            }
-
             _service = null;
-            _ownsService = false;
         }
 
         private void ResolveService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service))
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) && service != null)
             {
                 _service = service;
-                _ownsService = false;
+                _loggedMissingOnce = false;
                 return;
             }
 
-            DebugUtility.Log<GameLoopDriver>("IGameLoopService não encontrado. Registrando localmente para este driver.");
-            var localService = new GameLoopService();
-            localService.Initialize();
-            _service = localService;
-            _ownsService = true;
+            _service = null;
+
+            if (!_loggedMissingOnce)
+            {
+                DebugUtility.LogWarning<GameLoopDriver>(
+                    "[GameLoopDriver] IGameLoopService ainda não disponível no DI global. Driver aguardará até resolver.");
+                _loggedMissingOnce = true;
+            }
         }
     }
 }
