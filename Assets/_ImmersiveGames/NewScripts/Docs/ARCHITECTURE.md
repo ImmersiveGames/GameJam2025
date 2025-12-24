@@ -1,4 +1,13 @@
-# Arquitetura Base
+## ADRs (referência)
+
+Decisões fundacionais e diretrizes derivadas:
+- Índice: `ADR.md`
+- ADR-001: `ADR-001-world-reset-por-respawn.md`
+- ADR-002: `ADR-002-spawn-pipeline.md`
+- ADR-003: `ADR-003-escopos-servico.md`
+- ADR-005: `ADR-005-gate-nao-e-reset.md`
+- ADR-006: `ADR-006-ui-reage-ao-mundo.md`
+- ADR-007: `ADR-007-testes-estado-final.md`
 
 ## Implemented (As-Is)
 

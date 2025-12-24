@@ -1,6 +1,6 @@
 # GameJam2025
 
-## Atualizações 02/2026 — Defesa Planetária v2.2
+## Atualizações 02/12/2025 — Defesa Planetária v2.2
 
 - Política global: ver `../DECISIONS.md` (seção “Política de Uso do Legado”); NewScripts é fonte de verdade e qualquer reaproveitamento do legado exige autorização explícita.
 
@@ -41,11 +41,11 @@
 ### Passo 1 — Avaliação e Preparação (Pré-Refatoração)
 - **Escopo analisado:** `PlanetDefenseController`, `PlanetDefenseDetectable`, `PlanetDefenseEventService`, `PlanetDefenseOrchestrationService`, `RealPlanetDefensePoolRunner`, `RealPlanetDefenseWaveRunner` e o fluxo de ScriptableObjects (`DefenseEntryConfigSO`, `WavePresetSo`). Referências externas observadas: `PlanetsMaster`, `PlanetsManager`, `EventBus`, `DetectionSystems`, `PoolSystem`.
 - **Fluxo atual mapeado:**
-  1. Sensores (`IDetector`) entram em alcance do planeta via `PlanetDefenseDetectable`, que registra a entrada para evitar chamadas duplicadas e aciona `PlanetDefenseController.EngageDefense` com o `DetectionType`.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseDetectable.cs†L32-L78】
-  2. `PlanetDefenseController` resolve o papel (`DefenseRole`) do detector, mantém contagem local de detectores ativos e publica `PlanetDefenseEngagedEvent` com flag de primeira ativação e total de detectores. Desengates removem da tabela e publicam `PlanetDefenseDisengagedEvent`; ao desabilitar o objeto, emite `PlanetDefenseDisabledEvent` e limpa estado.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L13-L115】
-  3. `PlanetDefenseEventService` escuta os três eventos para rastrear estado de defesa por planeta, delegando aquecimento de pool/waves para o orquestrador e registrando contadores. Logs verbosos auxiliam na depuração e o cache de contexto é limpo no disable.
-  4. `RealPlanetDefensePoolRunner` registra pools reais no `PoolManager` a partir do `WavePresetSo`, e `RealPlanetDefenseWaveRunner` roda o loop de waves com `CountdownTimer`, fazendo spawn e publicando `PlanetDefenseMinionSpawnedEvent` por planeta.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefensePoolRunner.cs†L1-L94】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefenseWaveRunner.cs†L1-L120】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseEvents.cs†L51-L71】
-  5. Configuração de minions agora ocorre apenas via `WavePresetSo` (pool e padrão de spawn) e `DefenseMinionBehaviorProfileSO` (comportamento por role/wave); o antigo `DefenseMinionConfigSO` foi removido.
+    1. Sensores (`IDetector`) entram em alcance do planeta via `PlanetDefenseDetectable`, que registra a entrada para evitar chamadas duplicadas e aciona `PlanetDefenseController.EngageDefense` com o `DetectionType`.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseDetectable.cs†L32-L78】
+    2. `PlanetDefenseController` resolve o papel (`DefenseRole`) do detector, mantém contagem local de detectores ativos e publica `PlanetDefenseEngagedEvent` com flag de primeira ativação e total de detectores. Desengates removem da tabela e publicam `PlanetDefenseDisengagedEvent`; ao desabilitar o objeto, emite `PlanetDefenseDisabledEvent` e limpa estado.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L13-L115】
+    3. `PlanetDefenseEventService` escuta os três eventos para rastrear estado de defesa por planeta, delegando aquecimento de pool/waves para o orquestrador e registrando contadores. Logs verbosos auxiliam na depuração e o cache de contexto é limpo no disable.
+    4. `RealPlanetDefensePoolRunner` registra pools reais no `PoolManager` a partir do `WavePresetSo`, e `RealPlanetDefenseWaveRunner` roda o loop de waves com `CountdownTimer`, fazendo spawn e publicando `PlanetDefenseMinionSpawnedEvent` por planeta.【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefensePoolRunner.cs†L1-L94】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/RealPlanetDefenseWaveRunner.cs†L1-L120】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Defense/PlanetDefenseEvents.cs†L51-L71】
+    5. Configuração de minions agora ocorre apenas via `WavePresetSo` (pool e padrão de spawn) e `DefenseMinionBehaviorProfileSO` (comportamento por role/wave); o antigo `DefenseMinionConfigSO` foi removido.
 
 ### Dependências identificadas
 - **PlanetsMaster**: usado como chave de estado em controlador/spawn service; fornece `ActorName` para logs. Integração com `PlanetsManager` via eventos de morte (potencial ponto de integração futuro).【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/Detectable/PlanetDefenseController.cs†L13-L115】【F:Assets/_ImmersiveGames/Scripts/PlanetSystems/PlanetsMaster.cs†L1-L74】
@@ -114,3 +114,16 @@ Referências cruzadas:
 - Pipeline e troubleshooting: `../WorldLifecycle/WorldLifecycle.md`.
 - Decisão de fases/escopos: `ADR-ciclo-de-vida-jogo.md`.
 - Guardrails globais: `../DECISIONS.md`.
+
+## ADRs (núcleo NewScripts)
+
+| ADR | Tema | Arquivo |
+| --- | --- | --- |
+| 001 | World Reset por Despawn + Respawn | `ADR-001-world-reset-por-respawn.md` |
+| 002 | Spawn como Pipeline Explícito e Orquestrado | `ADR-002-spawn-pipeline.md` |
+| 003 | Escopos de Serviço e Ciclo de Vida | `ADR-003-escopos-servico.md` |
+| 004 | Domínios não controlam ciclo de vida | `ADR-004-dominios-nao-controlam-ciclo-de-vida.md` |
+| 005 | Gate de simulação ≠ Reset | `ADR-005-gate-nao-e-reset.md` |
+| 006 | UI reage ao mundo | `ADR-006-ui-reage-ao-mundo.md` |
+| 007 | Testes validam estado final | `ADR-007-testes-estado-final.md` |
+

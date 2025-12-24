@@ -1,177 +1,84 @@
-﻿Perfeito. Abaixo está um **plano executável (Commit 0 → Commit 6)** para iniciar o repositório novo, totalmente alinhado aos ADRs consolidados que você anexou.
+﻿# Plano WorldGame (NewScripts) — Status e Próximos Passos
 
-A ideia é que **cada commit seja “shippable”**, com *Definition of Done* clara e sem heranças acidentais.
+Este plano é um “mapa de commits” com entregas shippable. Ele foi escrito para evitar herança acidental do legado.
 
 ---
 
-## Commit 0 — Fundação do Repositório
+## Status atual (por evidência de execução)
 
-**Objetivo:** criar o “esqueleto” do projeto e travar as regras de governança.
+### Já validado
+- Infra global (DI, EventBus, Gate, GameLoop service/bridge, SceneFlow bridge) inicializa antes das cenas.
+- `NewSceneBootstrapper` cria escopo de cena e registra:
+    - `IActorRegistry`
+    - `IWorldSpawnServiceRegistry`
+    - `WorldLifecycleHookRegistry`
+    - `IResetScopeParticipant` (Players)
+- `WorldLifecycleBaselineRunner` passa:
+    - Hard Reset (despawn + respawn) — gate + hooks + spawn services
+    - Soft Reset Players (reset-in-place) — **MVP/Smoke test intencionalmente mínimo**
+
+## Diretriz atual (foco)
+
+- **Foco imediato:** consolidar a **estrutura global** (coordenação Scene Flow ↔ WorldLifecycle ↔ GameLoop, eventos REQUEST/COMMAND, prontidão e QA funcional do loop).
+- **Adiado:** migração de controllers legados para reset local (`IResetInterfaces`) e ampliação do `Soft Reset Players` além do MVP/Smoke Test.
+
+
+
+---
+
+## Commit 6 — Start sincronizado (Opção B) “sem buracos”
+
+**Objetivo:** endurecer o fluxo de start para que ele seja:
+- único (1x)
+- correlacionado por profile
+- dependente de ScenesReady + World Reset Completed
 
 **Entregas**
-
-* `/docs/adr/ADR.md` (arquivo único com todos os ADRs, exatamente como você consolidou).
-* `/docs/ARCHITECTURE.md` com o texto-base (contrato do projeto).
-* `/docs/DECISIONS.md` (índice curto: links/âncoras para ADRs + “não fazemos”).
-* `.editorconfig` + `README.md` mínimo (como rodar, versão Unity, padrões).
+1. **Semântica REQUEST/COMMAND documentada e aplicada**
+    - UI emite `GameStartRequestedEvent(profile)`
+    - Sistema de coordenação emite `GameStartEvent` somente após prontidão
+2. **Coordinator com StartPlan mínimo**
+    - `profile='startup'` carrega `{GameplayScene, UIScene}`, ativa Gameplay
+    - logs do startPlan (load/unload/active/profile)
+3. **Sequência garantida**
+    - ScenesReady → ResetWorldAsync → GameStartEvent → RequestStart()
 
 **Definition of Done**
-
-* Qualquer pessoa nova entende: *reset = despawn/respawn*, *spawn é pipeline*, *escopos*, *UI reativa*, *gate ≠ reset*.
+- `RequestStart()` aparece **1x** e apenas após reset do mundo.
+- Start não ocorre em cenas de QA com startPlan no-op (exceto explicitamente configurado).
 
 ---
 
-## Commit 1 — Infra Global “Pura” (sem mundo)
+## Commit 7 — QA funcional do GameLoop + StateDependent
 
-**Objetivo:** construir apenas o que pode existir no escopo **Global**.
-
-**Entregas (módulos)**
-
-* **Logging**: política de logs e níveis (QA-friendly).
-* **Event Bus (Global)**: eventos de infraestrutura e de fase (não gameplay).
-* **DI / Service Provider** com escopos:
-
-    * Global
-    * Scene
-    * ActorId (Object)
-* **Simulation Gate** (infra): mecanismo de Acquire/Release e contrato “cooperativo”.
-
-**Eventos mínimos (infra)**
-
-* `WorldBootstrapStarted/Completed`
-* `WorldResetStarted/Completed`
-* `WorldSpawnPhaseStarted/Completed` (por fase)
-
-**Definition of Done**
-
-* Nenhum sistema global depende de cena, GameObjects de gameplay, ou `Start()` para “funcionar”.
-* Gate está pronto, mas **não reseta nada** (só bloqueia execução cooperativa).
-
----
-
-## Commit 2 — Pipeline de Cena (World Spawn Orchestrator)
-
-**Objetivo:** implementar o “mecanismo” do mundo (ainda sem conteúdos específicos).
-
-**Entregas (conceitos centrais)**
-
-* **WorldSpawnOrchestrator (Scene scope)**:
-
-    * lista ordenada de fases
-    * executa `Spawn()`/`Despawn()` em ordem explícita
-    * gera logs e eventos por fase
-* **Contrato de Spawn Service** (Scene scope):
-
-    * estado `NotSpawned/Spawning/Spawned`
-    * `Spawn()` / `Despawn()`
-    * eventos Started/Completed
-* **WorldResetPipeline (Scene scope)**:
-
-    1. Acquire Gate
-    2. Despawn World
-    3. Spawn World
-    4. Release Gate
-       (sem “Reset() em componentes”)
-
-**Definition of Done**
-
-* Existe um *“World Reset”* que reconstrói o mundo usando **o mesmo pipeline** do spawn.
-* Não há dependência de `Start()`/coroutines para ordem.
-
----
-
-## Commit 3 — Registries e Domínios (sem ciclo de vida)
-
-**Objetivo:** separar “quem existe” (registries) de “o que faço com isso” (domínios).
+**Objetivo:** validar funcionalmente start/pause/resume/reset do loop.
 
 **Entregas**
-
-* `IActor` + `IActorRegistry` (Scene scope)
-
-    * registrar/desregistrar atores no spawn/despawn
-    * queries (ativos, por tags/capabilities, etc.)
-* **Domínios** (Scene scope) com regra rígida:
-
-    * escutam spawn/despawn
-    * expõem queries
-    * **não instanciam nem destroem GameObjects**
+- Documento QA completo (sem reticências), com passos e critérios por log.
+- Um probe/runner simples (preferencialmente log-driven) para detectar:
+    - start precoce
+    - start duplo
+    - inconsistência gate × state-dependent
 
 **Definition of Done**
-
-* Um domínio pode ser removido do projeto sem quebrar spawn/reset (ele não é dono do ciclo de vida).
+- QA passa em pelo menos 2 execuções consecutivas sem flakiness.
+- Falhas são diagnosticáveis por logs.
 
 ---
 
-## Commit 4 — UI Reativa (sem suposições)
+## Commit 8 — Preparação para migração de controllers (sem migrar ainda)
 
-**Objetivo:** provar o ADR de UI reativa com um caso mínimo.
+**Objetivo:** preparar contratos para migrar controllers legados com risco mínimo.
 
 **Entregas**
-
-* Infra de “bind” reativo:
-
-    * UI reage a eventos de spawn/despawn
-    * UI não assume existência prévia
-* Um HUD mínimo (ex.: lista de atores ativos) que:
-
-    * aparece quando spawn completa
-    * zera corretamente no despawn
-    * volta no respawn
+- Interface(s) de reset local (ex.: `IResettable`/`IResettable<TContext>`) com ordem determinística.
+- Adapter opcional para controllers legados (ponte explícita, sem acoplamento oculto).
+- `PlayersResetParticipant` continua MVP até a migração começar.
 
 **Definition of Done**
-
-* Ordem forçada: **Spawn ator → criar contexto runtime → bind UI**.
-* Reset global não quebra UI nem gera bindings órfãos.
+- Existe um caminho claro para “plugar” resets locais sem alterar o pipeline.
 
 ---
 
-## Commit 5 — QA / Smoke Tests por Fase
-
-**Objetivo:** testes que validam **estado final**, não transições frágeis.
-
-**Entregas**
-
-* Um “QA Runner” simples (não “tester gigante”):
-
-    * comando: Spawn World
-    * comando: Despawn World
-    * comando: Reset World
-* Asserções de estado final:
-
-    * registry vazio após despawn
-    * registry populado após spawn
-    * idempotência (rodar 3 resets seguidos)
-
-**Definition of Done**
-
-* Testes não dependem de frame timing e não inspecionam passos internos não-contratuais.
-
----
-
-## Commit 6 — Cenário “Conteúdo Dummy” (prova de conceito)
-
-**Objetivo:** validar arquitetura com conteúdo mínimo, sem reintroduzir “Player/Eater/Planet” como core.
-
-**Entregas**
-
-* 2–3 Spawn Services de exemplo com nomes neutros:
-
-    * `StaticWorldActorsSpawnService` (ex.: “planetas”, sem chamar de planeta)
-    * `ControllableActorsSpawnService` (ex.: “players”, sem chamar de player)
-    * `DynamicActorsSpawnService` (ex.: “npcs”)
-* Domínio que consulta “controllable actors” e emite um log.
-
-**Definition of Done**
-
-* Infra não conhece tipos concretos (não existe “PlayerManager” no core).
-* Reset reconstrói tudo sem estado residual.
-
----
-
-Se você quiser, eu já complemento este plano com:
-
-* **estrutura de pastas recomendada** (Core/Infrastructure/World/Presentation/QA),
-* **política de eventos** (quais são Global vs Scene vs Actor),
-* e um **mapa de cenas** (Bootstrap / Gameplay / UI) que evita herança acidental.
-
-Mas, mesmo sem isso, o plano acima já é suficiente para começar a implementar com segurança.
+## Nota
+Os commits 6–8 não exigem refatorar o legado; eles tornam o fluxo de ciclo e start robusto antes da migração de gameplay.

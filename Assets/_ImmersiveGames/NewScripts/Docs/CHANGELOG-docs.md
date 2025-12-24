@@ -3,7 +3,16 @@
 > Escopo: mudanças de documentação e consolidações de semântica/contratos do NewScripts.
 > Implementações (código) podem ser referenciadas aqui, mas o “source of truth” de código continua sendo o histórico do Git.
 
-## [2025-12-24]
+- Added: `ADR-002-spawn-pipeline.md` (Spawn como Pipeline explícito).
+- Added: `ADR-003-escopos-servico.md` (Escopos de serviço: Global/Scene/ActorId).
+- Added: `ADR-004-dominios-nao-controlam-ciclo-de-vida.md` (rascunho; consolidação posterior).
+- Added: `ADR-005-gate-nao-e-reset.md` (Gate ≠ Reset).
+- Added: `ADR-006-ui-reage-ao-mundo.md` (UI reativa).
+- Added: `ADR-007-testes-estado-final.md` (Testes por estado final).
+- Updated: `ADR.md` com índice de ADRs do núcleo NewScripts.
+- Updated: `SceneFlow-GameLoop-Coordination.md` alinhado ao contrato REQUEST/COMMAND e ao timing ScenesReady → World Reset → Start.
+- Updated: `ARCHITECTURE.md` com referência ao índice de ADRs.
+- Updated: `WorldLifecycle.md` documentado o contrato de reset local (Gameplay Reset) como **Camada B** já existente, e explicitado que a migração local do legado está **adiada** (foco atual: estrutura global).
 ### Consolidated (Semântica / nomenclatura)
 - Clarified: **dois domínios** distintos e não-intercambiáveis:
     - **App FrontEnd (AppFlow / macro SceneFlow):** Bootstrap → FrontEnd → Gameplay → FrontEnd.
@@ -22,6 +31,17 @@
     - `flow.loading` durante o reset,
     - `WorldLifecycle.WorldReset` no reset hard,
     - `state.pause` no pause (bloqueio de ação sem timeScale).
+
+
+### Validated (WorldLifecycle Baseline — por evidência de log)
+- Validated: `WorldLifecycleBaselineRunner` **Full Baseline** (Hard Reset + Soft Reset Players) executando com sucesso na cena de boot (`NewBootstrap`):
+    - Hard Reset: pipeline completo com gate `WorldLifecycle.WorldReset`, hooks de cena, spawn/despawn e hooks de ator.
+    - Soft Reset Players: **reset-in-place** com `Despawn/Spawn` explicitamente **skipped by scope filter** e execução do `PlayersResetParticipant`.
+
+### Clarified (Soft Reset Players — escopo intencionalmente mínimo)
+- Clarified: durante a fase atual (foco em ciclo global), o `ResetScope.Players` pode permanecer como **smoke test** com um conjunto mínimo de resetáveis,
+  até a migração dos controllers legados para o novo formato de reset-in-place.
+
 
 ### QA / Smoke (governança)
 - Noted: risco prático de “QA paralelo” quando existirem scripts com `RuntimeInitializeOnLoadMethod`.

@@ -148,6 +148,17 @@ Se uma fase não tiver hooks:
 
 ### Contrato arquitetural
 
+
+### Estado atual (MVP / Smoke Test)
+
+Neste estágio do projeto, o **Soft Reset Players** existe principalmente para **validar a infraestrutura de reset por escopo**
+(gate + filtro de spawn/despawn + execução de participantes) sem obrigar migração imediata de controllers legados.
+
+Por isso, o `PlayersResetParticipant` pode ser mantido **intencionalmente mínimo** (ex.: 1 único componente resetável),
+até que a migração dos controllers para o novo formato de reset-in-place seja priorizada.
+
+➡️ Regra prática: **não** usar Soft Reset como “reconstrução parcial”. Se precisar reconstruir, use **Hard Reset**.
+
 Soft Reset Players **não reconstrói o mundo**.
 
 Durante este fluxo:
@@ -182,6 +193,15 @@ Spawn service skipped by scope filter
 ```
 
 ➡️ Evidência positiva de reset-in-place correto.
+
+### Nota sobre hooks no Soft Reset
+
+O pipeline acima pode mencionar fases como `OnBeforeActorDespawn` / `OnAfterActorSpawn` por compatibilidade de estrutura,
+mas em **Soft Reset (reset-in-place)** essas fases devem ser tratadas como **NO-OP**, a menos que exista uma justificativa
+muito clara e documentada.
+
+➡️ Diretriz: qualquer lógica de “reset por escopo” deve ficar em **`IResetScopeParticipant`**, evitando introduzir semântica
+de despawn/spawn no Soft Reset.
 
 ---
 
@@ -374,3 +394,30 @@ executada **dentro de GameplayScene**.
 Menus de App, splash screens e navegação pertencem a outro domínio.
 
 Essa separação é **intencional** e **fundamental** para escalar o projeto.
+
+## Contratos de Reset Local (Gameplay Reset) — Camada B (Migração mínima)
+
+O projeto já possui um contrato de **reset local** para componentes de gameplay, separado do fluxo de **WorldLifecycle**:
+
+- `GameplayResetStructs`: fases determinísticas **Cleanup → Restore → Rebind**
+- `GameplayResetRequest` / `GameplayResetContext`: contexto padronizado para logs/telemetria/ordenação
+- Interfaces:
+    - `IResetInterfaces` (assíncrono, recomendado)
+    - `IResetParticipantSync` (síncrono, fallback)
+    - `IResetOrder` (ordem determinística: menor primeiro)
+    - `IResetScopeFilter` (participação por escopo)
+
+### Intenção e limites (importante)
+
+1. O contrato de reset local existe para **habilitar migração incremental** de controllers e sistemas (legado → NewScripts) **sem refatorar gameplay imediatamente**.
+2. Neste momento, a migração local **não é objetivo**: o foco permanece na **estrutura global** (GameLoop / Scene Flow / coordenação / bootstrap / prontidão).
+3. O reset local deve ser usado como **mecanismo opt-in** por componente (`IResetInterfaces`), evitando acoplamento implícito com o legado.
+
+### Ponto de integração atual
+
+O `PlayersResetParticipant` é o participante do escopo `ResetScope.Players` responsável por:
+- coletar componentes opt-in (`IResetInterfaces`) sob o root do Player,
+- aplicar `IResetScopeFilter` / `IResetOrder`,
+- executar as fases `Cleanup/Restore/Rebind` de forma determinística.
+
+> Nota: o `Soft Reset Players` permanece **MVP/Smoke Test** por decisão de projeto, até que a migração local seja iniciada.
