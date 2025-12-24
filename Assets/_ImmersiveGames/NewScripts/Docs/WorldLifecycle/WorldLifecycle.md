@@ -272,6 +272,17 @@ Fonte:
 
 ## 9. Readiness (Contrato Funcional)
 
+### Sinal de Readiness para consumidores (macro)
+
+Além de logs verbosos, o `GameReadinessService` passa a publicar snapshots via `EventBus<ReadinessChangedEvent>`:
+
+- `ReadinessSnapshot.GameplayReady`: `true` apenas após `SceneTransitionCompletedEvent` (fim do pipeline de Scene Flow).
+- `ReadinessSnapshot.GateOpen` / `ActiveTokens`: espelha o `ISimulationGateService` (útil para bloquear ações durante transição/reset).
+- Consumidores (ex.: `NewScriptsStateDependentService`) podem liberar/bloquear ações sem depender de `Time.timeScale`.
+
+Isso resolve o caso comum onde o `GameStartEvent` já ocorreu, mas o `IGameLoopService.CurrentStateName` ainda não foi atualizado (GameLoop não tickou), evitando bloqueio indevido de `Move`.
+
+
 * **SceneScopeReady**
   Registries prontos, gameplay bloqueado
 * **WorldLoaded**
@@ -394,30 +405,3 @@ executada **dentro de GameplayScene**.
 Menus de App, splash screens e navegação pertencem a outro domínio.
 
 Essa separação é **intencional** e **fundamental** para escalar o projeto.
-
-## Contratos de Reset Local (Gameplay Reset) — Camada B (Migração mínima)
-
-O projeto já possui um contrato de **reset local** para componentes de gameplay, separado do fluxo de **WorldLifecycle**:
-
-- `GameplayResetStructs`: fases determinísticas **Cleanup → Restore → Rebind**
-- `GameplayResetRequest` / `GameplayResetContext`: contexto padronizado para logs/telemetria/ordenação
-- Interfaces:
-    - `IResetInterfaces` (assíncrono, recomendado)
-    - `IResetParticipantSync` (síncrono, fallback)
-    - `IResetOrder` (ordem determinística: menor primeiro)
-    - `IResetScopeFilter` (participação por escopo)
-
-### Intenção e limites (importante)
-
-1. O contrato de reset local existe para **habilitar migração incremental** de controllers e sistemas (legado → NewScripts) **sem refatorar gameplay imediatamente**.
-2. Neste momento, a migração local **não é objetivo**: o foco permanece na **estrutura global** (GameLoop / Scene Flow / coordenação / bootstrap / prontidão).
-3. O reset local deve ser usado como **mecanismo opt-in** por componente (`IResetInterfaces`), evitando acoplamento implícito com o legado.
-
-### Ponto de integração atual
-
-O `PlayersResetParticipant` é o participante do escopo `ResetScope.Players` responsável por:
-- coletar componentes opt-in (`IResetInterfaces`) sob o root do Player,
-- aplicar `IResetScopeFilter` / `IResetOrder`,
-- executar as fases `Cleanup/Restore/Rebind` de forma determinística.
-
-> Nota: o `Soft Reset Players` permanece **MVP/Smoke Test** por decisão de projeto, até que a migração local seja iniciada.

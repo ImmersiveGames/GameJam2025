@@ -3,16 +3,7 @@
 > Escopo: mudanças de documentação e consolidações de semântica/contratos do NewScripts.
 > Implementações (código) podem ser referenciadas aqui, mas o “source of truth” de código continua sendo o histórico do Git.
 
-- Added: `ADR-002-spawn-pipeline.md` (Spawn como Pipeline explícito).
-- Added: `ADR-003-escopos-servico.md` (Escopos de serviço: Global/Scene/ActorId).
-- Added: `ADR-004-dominios-nao-controlam-ciclo-de-vida.md` (rascunho; consolidação posterior).
-- Added: `ADR-005-gate-nao-e-reset.md` (Gate ≠ Reset).
-- Added: `ADR-006-ui-reage-ao-mundo.md` (UI reativa).
-- Added: `ADR-007-testes-estado-final.md` (Testes por estado final).
-- Updated: `ADR.md` com índice de ADRs do núcleo NewScripts.
-- Updated: `SceneFlow-GameLoop-Coordination.md` alinhado ao contrato REQUEST/COMMAND e ao timing ScenesReady → World Reset → Start.
-- Updated: `ARCHITECTURE.md` com referência ao índice de ADRs.
-- Updated: `WorldLifecycle.md` documentado o contrato de reset local (Gameplay Reset) como **Camada B** já existente, e explicitado que a migração local do legado está **adiada** (foco atual: estrutura global).
+## [2025-12-24]
 ### Consolidated (Semântica / nomenclatura)
 - Clarified: **dois domínios** distintos e não-intercambiáveis:
     - **App FrontEnd (AppFlow / macro SceneFlow):** Bootstrap → FrontEnd → Gameplay → FrontEnd.
@@ -92,3 +83,8 @@
 - Removed (duplicate): detalhes operacionais em ADR-0001 substituídos por referência ao contrato em `WorldLifecycle/WorldLifecycle.md`
 - Updated links: `DECISIONS.md`, `ARCHITECTURE.md`, `Guides/UTILS-SYSTEMS-GUIDE.md`, `ADR/ADR.md`, `README.md`, `ADR/ADR-0001-NewScripts-Migracao-Legado.md`, `QA/WorldLifecycle-Baseline-Checklist.md`, `ADR/ADR-ciclo-de-vida-jogo.md`
 - No functional change (documentação apenas)
+
+## [2025-12-24]
+- Updated: documentação de Readiness/SceneFlow → adicionados snapshots via `ReadinessChangedEvent` para consumidores (StateDependent).
+- Updated: integração do `NewScriptsStateDependentService` para evitar bloqueio indevido de `Move` quando o GameLoop ainda não tickou.
+- Added: `ReadinessSnapshot` e `ReadinessChangedEvent` (NewScripts Infrastructure).

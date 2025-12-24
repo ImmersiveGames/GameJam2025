@@ -120,3 +120,9 @@ Validar o **comportamento funcional do gameplay** no NewScripts, especificamente
 * Integridade de registries.
 
 👉 Para isso, **use o checklist de baseline**.
+
+
+### QA adicional: Readiness x StateDependent
+
+- Após `SceneTransitionCompletedEvent` e emissão de `GameStartEvent (COMMAND)`, o `ReadinessSnapshot.GameplayReady` deve estar `true`.
+- `ActionType.Move` deve ficar bloqueada apenas enquanto o `ISimulationGateService.IsOpen == false` (ex.: transição/reset). Se o gate estiver aberto e o gameplay estiver ready, `Move` não deve ser bloqueado por state.

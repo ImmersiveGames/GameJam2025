@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 553573024}
   - component: {fileID: 553573025}
+  - component: {fileID: 553573026}
   m_Layer: 0
   m_Name: QA
   m_TagString: Untagged
@@ -160,19 +161,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 553573022}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9fd63242b8654ef3b556373068b85309, type: 3}
+  m_Script: {fileID: 11500000, guid: 9cf24e917f9749aa96460129ba842028, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  label: GameLoopStateFlowQATester
-  runOnStart: 1
-  warmupFrames: 2
-  timeoutSeconds: 6
-  expectedStartProfile: startup
-  expectedInitialState: Boot
-  expectedPlayingState: Playing
-  expectedPausedState: Paused
-  expectedPostResetState: Boot
-  verboseLogs: 1
+  disableControllerAutoInitializeOnStart: 1
+  suppressRepeatedCallWarningsDuringBaseline: 1
+  restoreDebugSettingsAfterBaseline: 1
+--- !u!114 &553573026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 553573022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 783a15fbdc3443a0aaa2318149dd3581, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &925051305
 GameObject:
   m_ObjectHideFlags: 0

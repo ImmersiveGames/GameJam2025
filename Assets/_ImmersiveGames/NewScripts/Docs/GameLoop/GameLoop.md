@@ -306,3 +306,8 @@ Essa distinção é **fundamental** para:
 3. Consolidar o diagrama **App Frontend × Simulation Lifecycle**
 
 Se quiser, seguimos exatamente nessa ordem.
+
+
+> Nota de integração:
+> - `IGameLoopService.CurrentStateName` é um sinal *auxiliar* e pode estar vazio/defasado até o primeiro tick.
+> - Para gating de ações (ex.: bloquear `Move` durante transição/reset e liberar após o mundo estar pronto), use `GameReadinessService` + `ReadinessChangedEvent` como sinal macro, e mantenha o GameLoop apenas como reforço quando estiver em estados conclusivos (`Playing`/`Paused`).

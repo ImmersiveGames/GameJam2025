@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
@@ -18,8 +18,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         private readonly ISceneTransitionService _sceneTransitionService;
         private readonly SceneTransitionRequest _startPlan;
 
-        private readonly EventBinding<GameStartEvent> _onGameStartRequested;
+        private readonly EventBinding<GameStartRequestedEvent> _onStartRequest;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _onScenesReady;
+        private readonly EventBinding<WorldLifecycleResetCompletedEvent> _onWorldResetCompleted;
 
         private int _pendingStart; // 0/1
         private string _pendingProfileName;
@@ -33,38 +34,41 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 
             Interlocked.Exchange(ref _installed, 1);
 
-            _onGameStartRequested = new EventBinding<GameStartEvent>(OnGameStartRequested);
+            _onStartRequest = new EventBinding<GameStartRequestedEvent>(OnStartRequested);
             _onScenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
+            _onWorldResetCompleted = new EventBinding<WorldLifecycleResetCompletedEvent>(OnWorldResetCompleted);
 
-            EventBus<GameStartEvent>.Register(_onGameStartRequested);
+            EventBus<GameStartRequestedEvent>.Register(_onStartRequest);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_onScenesReady);
+            EventBus<WorldLifecycleResetCompletedEvent>.Register(_onWorldResetCompleted);
 
             DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], " +
-                $"Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', " +
+                $"[GameLoopSceneFlow] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad ?? Array.Empty<string>())}], " +
+                $"Unload=[{string.Join(", ", _startPlan.ScenesToUnload ?? Array.Empty<string>())}], Active='{_startPlan.TargetActiveScene}', " +
                 $"UseFade={_startPlan.UseFade}, Profile='{_startPlan.TransitionProfileName}'.");
         }
 
         public void Dispose()
         {
-            EventBus<GameStartEvent>.Unregister(_onGameStartRequested);
+            EventBus<GameStartRequestedEvent>.Unregister(_onStartRequest);
             EventBus<SceneTransitionScenesReadyEvent>.Unregister(_onScenesReady);
+            EventBus<WorldLifecycleResetCompletedEvent>.Unregister(_onWorldResetCompleted);
             Interlocked.Exchange(ref _installed, 0);
         }
 
-        private void OnGameStartRequested(GameStartEvent evt)
+        private void OnStartRequested(GameStartRequestedEvent evt)
         {
             if (Interlocked.CompareExchange(ref _pendingStart, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<GameLoopSceneFlowCoordinator>(
-                    "[GameLoopSceneFlow] Start já está pendente. Ignorando novo pedido.");
+                    "[GameLoopSceneFlow] Start já está pendente. Ignorando novo REQUEST.");
                 return;
             }
 
             _pendingProfileName = _startPlan.TransitionProfileName;
 
             DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                "[GameLoopSceneFlow] Start solicitado. Disparando transição de cenas...",
+                "[GameLoopSceneFlow] Start REQUEST recebido. Disparando transição de cenas...",
                 DebugUtility.Colors.Info);
 
             _ = RunStartTransitionAsync();
@@ -102,33 +106,53 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 return;
             }
 
-            if (!TryResolveLoop(out var loop))
-            {
-                DebugUtility.LogError<GameLoopSceneFlowCoordinator>(
-                    "[GameLoopSceneFlow] IGameLoopService não encontrado no DI global ao liberar start em ScenesReady.");
+            // IMPORTANTÍSSIMO:
+            // Aqui NÃO iniciamos o GameLoop. Apenas aguardamos o reset do WorldLifecycle.
+            DebugUtility.Log<GameLoopSceneFlowCoordinator>(
+                "[GameLoopSceneFlow] ScenesReady recebido. Aguardando WorldLifecycle concluir reset para emitir COMMAND start...",
+                DebugUtility.Colors.Info);
+        }
 
-                // IMPORTANTE: não deixar pendente para sempre.
-                _pendingProfileName = null;
-                Interlocked.Exchange(ref _pendingStart, 0);
+        private void OnWorldResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        {
+            if (Volatile.Read(ref _pendingStart) != 1)
+                return;
+
+            var expectedProfile = _pendingProfileName;
+            var actualProfile = evt.SceneTransitionProfileName;
+
+            if (!string.IsNullOrWhiteSpace(expectedProfile) &&
+                !string.Equals(expectedProfile, actualProfile, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
+                    $"[GameLoopSceneFlow] WorldResetCompleted ignorado (profile diferente). expected='{expectedProfile}', actual='{actualProfile}'.");
                 return;
             }
 
             DebugUtility.Log<GameLoopSceneFlowCoordinator>(
-                "[GameLoopSceneFlow] ScenesReady recebido para o start. Liberando GameLoop.RequestStart().",
+                "[GameLoopSceneFlow] Reset concluído. Emitindo GameStartEvent (COMMAND) para iniciar o GameLoop.",
                 DebugUtility.Colors.Success);
 
-            loop.Initialize();
-            loop.RequestStart();
+            EventBus<GameStartEvent>.Raise(new GameStartEvent());
 
             _pendingProfileName = null;
             Interlocked.Exchange(ref _pendingStart, 0);
         }
+    }
 
-        private static bool TryResolveLoop(out IGameLoopService loop)
+    /// <summary>
+    /// Evento infra (COMMAND) emitido quando o WorldLifecycle terminou o hard reset após ScenesReady.
+    /// Isso permite que o coordinator não dependa de polling ou de acoplamento direto ao controller.
+    /// </summary>
+    public readonly struct WorldLifecycleResetCompletedEvent : _ImmersiveGames.NewScripts.Infrastructure.Events.IEvent
+    {
+        public WorldLifecycleResetCompletedEvent(string sceneTransitionProfileName, string reason)
         {
-            loop = null;
-            var provider = DependencyManager.Provider;
-            return provider.TryGetGlobal<IGameLoopService>(out loop) && loop != null;
+            SceneTransitionProfileName = sceneTransitionProfileName;
+            Reason = reason;
         }
+
+        public string SceneTransitionProfileName { get; }
+        public string Reason { get; }
     }
 }

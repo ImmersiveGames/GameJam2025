@@ -3,9 +3,14 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Evento indicando que o fluxo de jogo deve iniciar.
-    /// Quando integrado ao Scene Flow (Opção B), o start efetivo do GameLoop é liberado
-    /// somente após as cenas estarem prontas (ScenesReady) pelo coordenador.
+    /// REQUEST: intenção de iniciar o jogo (UI, menus, QA, etc.).
+    /// Nunca deve iniciar o GameLoop diretamente; é convertido em COMMAND por um coordinator.
+    /// </summary>
+    public sealed class GameStartRequestedEvent : IEvent { }
+
+    /// <summary>
+    /// COMMAND: ordem definitiva para iniciar o GameLoop.
+    /// Consumido pelo GameLoopEventInputBridge.
     /// </summary>
     public sealed class GameStartEvent : IEvent { }
 

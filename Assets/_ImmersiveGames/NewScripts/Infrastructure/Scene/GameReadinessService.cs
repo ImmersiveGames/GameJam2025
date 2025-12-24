@@ -7,33 +7,76 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 {
     /// <summary>
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
-    /// Bloqueia simulação durante transições de cena usando SimulationGateService
-    /// e emite logs verbosos para QA manual.
+    /// Bloqueia simulação durante transições de cena usando ISimulationGateService
+    /// e emite snapshots de readiness via EventBus para consumidores (ex.: StateDependentService).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameReadinessService
+    public sealed class GameReadinessService : IDisposable
     {
         private readonly ISimulationGateService _gateService;
 
         private IDisposable _activeGateHandle;
         private bool _gameplayReady;
 
+        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
+
+        private bool _disposed;
+
         public GameReadinessService(ISimulationGateService gateService)
         {
             _gateService = gateService;
 
-            var transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
-            var transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
-            var transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
+            _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnSceneTransitionScenesReady);
+            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
 
-            EventBus<SceneTransitionStartedEvent>.Register(transitionStartedBinding);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(transitionScenesReadyBinding);
-            EventBus<SceneTransitionCompletedEvent>.Register(transitionCompletedBinding);
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+
+            if (_gateService != null)
+            {
+                _gateService.GateChanged += OnGateChanged;
+            }
 
             DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
+
+            // Snapshot inicial (útil em bootstrap/QA).
+            PublishSnapshot("bootstrap");
         }
 
         public bool IsGameplayReady => _gameplayReady;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            try
+            {
+                EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+                EventBus<SceneTransitionScenesReadyEvent>.Unregister(_transitionScenesReadyBinding);
+                EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
+            }
+            catch
+            {
+                // best-effort
+            }
+
+            if (_gateService != null)
+            {
+                _gateService.GateChanged -= OnGateChanged;
+            }
+
+            ReleaseGateHandle();
+            PublishSnapshot("dispose");
+        }
 
         private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
         {
@@ -42,12 +85,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context={evt.Context}");
+
+            PublishSnapshot("scene_transition_started");
         }
 
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context={evt.Context}");
+
+            // Ainda não marca gameplayReady, apenas sinaliza fase intermediária.
+            PublishSnapshot("scene_transition_scenes_ready");
         }
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
@@ -57,6 +105,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. Context={evt.Context}");
+
+            PublishSnapshot("scene_transition_completed");
+        }
+
+        private void OnGateChanged(bool isOpen)
+        {
+            // Re-emite snapshot para consumidores que dependem do gate (ex.: bloquear Move enquanto gate fechado).
+            PublishSnapshot(isOpen ? "gate_opened" : "gate_closed");
         }
 
         private void AcquireGate()
@@ -94,6 +150,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             {
                 _activeGateHandle = null;
             }
+        }
+
+        private void PublishSnapshot(string reason)
+        {
+            // Gate pode estar indisponível em cenários de bootstrap.
+            var snapshot = new ReadinessSnapshot(
+                gameplayReady: _gameplayReady,
+                gateOpen: _gateService?.IsOpen ?? true,
+                activeTokens: _gateService?.ActiveTokenCount ?? 0,
+                reason: reason
+            );
+
+            EventBus<ReadinessChangedEvent>.Raise(new ReadinessChangedEvent(snapshot));
+
+            DebugUtility.LogVerbose<GameReadinessService>(
+                $"[Readiness] Snapshot publicado. gameplayReady={snapshot.GameplayReady}, gateOpen={snapshot.GateOpen}, activeTokens={snapshot.ActiveTokens}, reason='{snapshot.Reason}'.");
         }
     }
 }

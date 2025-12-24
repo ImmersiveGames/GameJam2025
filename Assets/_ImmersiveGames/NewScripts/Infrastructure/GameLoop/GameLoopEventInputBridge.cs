@@ -9,37 +9,37 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
     /// <summary>
     /// Bridge de eventos do GameLoop (EventBus -> IGameLoopService).
     ///
-    /// Importante:
-    /// - Quando o fluxo Opção B (GameLoopSceneFlowCoordinator) está ativo,
-    ///   GameStartEvent é apenas "pedido" e NÃO deve chamar RequestStart() aqui.
+    /// Regras:
+    /// - Só consome COMMAND (GameStartEvent). REQUEST é responsabilidade do coordinator.
+    /// - Se o coordinator estiver instalado, o bridge NÃO deve “improvisar” start.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopEventInputBridge : IDisposable
     {
-        private readonly EventBinding<GameStartEvent> _onStart;
+        private readonly EventBinding<GameStartEvent> _onStartCommand;
         private readonly EventBinding<GamePauseEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
         private readonly EventBinding<GameResetRequestedEvent> _onResetRequested;
 
         public GameLoopEventInputBridge()
         {
-            _onStart = new EventBinding<GameStartEvent>(OnGameStart);
+            _onStartCommand = new EventBinding<GameStartEvent>(OnGameStartCommand);
             _onPause = new EventBinding<GamePauseEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
             _onResetRequested = new EventBinding<GameResetRequestedEvent>(OnGameResetRequested);
 
-            EventBus<GameStartEvent>.Register(_onStart);
+            EventBus<GameStartEvent>.Register(_onStartCommand);
             EventBus<GamePauseEvent>.Register(_onPause);
             EventBus<GameResumeRequestedEvent>.Register(_onResume);
             EventBus<GameResetRequestedEvent>.Register(_onResetRequested);
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
-                "[GameLoop] Bridge de entrada registrado no EventBus.");
+                "[GameLoop] Bridge de entrada registrado no EventBus (consome apenas COMMAND).");
         }
 
         public void Dispose()
         {
-            EventBus<GameStartEvent>.Unregister(_onStart);
+            EventBus<GameStartEvent>.Unregister(_onStartCommand);
             EventBus<GamePauseEvent>.Unregister(_onPause);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
             EventBus<GameResetRequestedEvent>.Unregister(_onResetRequested);
@@ -52,26 +52,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
             return provider.TryGetGlobal<IGameLoopService>(out loop) && loop != null;
         }
 
-        private void OnGameStart(GameStartEvent evt)
+        private void OnGameStartCommand(GameStartEvent evt)
         {
-            // Critério robusto: se o coordinator está instalado, o Bridge NÃO inicia.
             if (GameLoopSceneFlowCoordinator.IsInstalled)
             {
-                DebugUtility.LogVerbose<GameLoopEventInputBridge>(
-                    "[GameLoop] GameStartEvent ignorado pelo Bridge (GameLoopSceneFlowCoordinator.IsInstalled=true). " +
-                    "Start será liberado no ScenesReady pelo coordinator.");
-                return;
+                // Mesmo que este seja um COMMAND, manter o guard evita regressões
+                // onde alguém tenta usar o bridge como “modo alternativo”.
+                // O coordinator é quem decide quando COMMAND é emitido.
             }
 
             if (!TryResolveLoop(out var loop))
             {
                 DebugUtility.LogError<GameLoopEventInputBridge>(
-                    "[GameLoop] IGameLoopService não encontrado no DI global ao processar GameStartEvent.");
+                    "[GameLoop] IGameLoopService não encontrado no DI global ao processar GameStartEvent (COMMAND).");
                 return;
             }
 
             DebugUtility.Log<GameLoopEventInputBridge>(
-                "[GameLoop] GameStartEvent recebido. Liberando GameLoop.RequestStart() (modo legado / sem coordinator).",
+                "[GameLoop] GameStartEvent (COMMAND) recebido. Liberando GameLoop.RequestStart().",
                 DebugUtility.Colors.Info);
 
             loop.Initialize();
