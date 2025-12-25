@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
     /// Driver runtime que reage a SceneTransitionScenesReadyEvent e, quando aplicável,

@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.NewScripts.Infrastructure.World.Reset;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement

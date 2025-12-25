@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Serviço de spawn que cria um único DummyActor para validar o pipeline.

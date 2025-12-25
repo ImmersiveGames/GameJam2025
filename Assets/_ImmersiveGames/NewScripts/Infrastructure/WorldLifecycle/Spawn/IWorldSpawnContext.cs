@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Contexto de spawn para agrupar o WorldRoot e o nome da cena corrente.

@@ -21,7 +21,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

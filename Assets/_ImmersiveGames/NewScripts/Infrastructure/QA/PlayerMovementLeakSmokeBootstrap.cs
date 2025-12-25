@@ -11,7 +11,8 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR

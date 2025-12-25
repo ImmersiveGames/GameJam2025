@@ -5,12 +5,11 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.World.Reset;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.World.Scopes.Players
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 {
     public sealed class PlayersResetParticipant : IResetScopeParticipant
     {

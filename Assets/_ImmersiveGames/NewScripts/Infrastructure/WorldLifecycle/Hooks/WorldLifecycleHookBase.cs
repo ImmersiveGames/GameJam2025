@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
 {
     /// <summary>
     /// Implementação base com no-op para facilitar adoção incremental.

@@ -7,9 +7,11 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     [DisallowMultipleComponent]
     public sealed class WorldLifecycleController : MonoBehaviour

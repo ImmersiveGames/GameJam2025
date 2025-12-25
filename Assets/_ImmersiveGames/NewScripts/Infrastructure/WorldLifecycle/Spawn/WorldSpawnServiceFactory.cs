@@ -1,9 +1,8 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Factory explícita para criação de serviços de spawn baseados em definições.

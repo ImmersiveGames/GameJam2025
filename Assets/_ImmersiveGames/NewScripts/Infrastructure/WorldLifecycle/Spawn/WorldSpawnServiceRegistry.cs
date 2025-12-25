@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Registro simples de serviços de spawn para o escopo da cena atual.

@@ -10,13 +10,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     public sealed class GameStartRequestedEvent : IEvent { }
 
     /// <summary>
-    /// Compatibilidade: nome legado que alguns chamadores adotaram.
-    /// Apesar do nome "Command", este evento é tratado como REQUEST (intenção).
-    /// </summary>
-    [Obsolete("Use GameStartRequestedEvent. Este evento é um alias legado tratado como REQUEST.")]
-    public sealed class GameStartCommandEvent : IEvent { }
-
-    /// <summary>
     /// Evento definitivo para pausa / despausa.
     /// </summary>
     public sealed class GamePauseCommandEvent : IEvent

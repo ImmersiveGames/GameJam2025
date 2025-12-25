@@ -1,11 +1,10 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Actors;
-using _ImmersiveGames.NewScripts.Infrastructure.Ids;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Serviço de spawn para instanciar o Player real no baseline, substituindo o DummyActor.

@@ -20,10 +20,10 @@ using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure

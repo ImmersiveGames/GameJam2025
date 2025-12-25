@@ -1,207 +1,70 @@
 ﻿# GameLoop (NewScripts)
 
-## Escopo e Responsabilidade
-O **GameLoop** define o **estado macro da simulação** dentro de uma **GameplayScene**. Ele **não representa**: navegação de App, menus de frontend, telas de splash ou UX. Esses pertencem ao **App Frontend / Scene Flow**.
+## Escopo e responsabilidade
+O **GameLoop** define o **estado macro da simulação** (ativo/inativo/pausado) e expõe isso como uma **fonte de verdade operacional** para sistemas que precisam saber se a simulação está jogável.
+
+Ele **não** representa navegação de app, telas de frontend, menus de UI ou carregamento de cenas. Esses temas pertencem ao **SceneFlow / App Frontend**.
 
 ### O que o GameLoop controla
-- Ativação ou bloqueio da **simulação** (estado macro).
-- Sinalização de “atividade” (ex.: `IsGameActive`) consumida por sistemas externos.
-- Regras de **capabilidade por estado** (helper) para ações (ex.: `IsActionAllowedByLoopState`).
-- Fonte de verdade de estado macro para integração com `IStateDependentService`.
+- Estado macro: **Boot / Ready / Playing / Paused**
+- “Game activity” (simulação ativa ou não)
+- Sinalização do estado para observadores (ex.: UI reativa, HUD, debug)
 
-➡️ O GameLoop **não carrega semântica de UI**, apenas **estado operacional da simulação**.
+### O que o GameLoop NÃO faz
+- Carregar/descarregar cenas
+- Executar spawn/despawn / reset de mundo
+- Controlar Fade/Loading
+- Orquestrar readiness/gates (isso é **infra externa**)
 
 ---
 
-## Estados do GameLoop (Semântica Corrigida)
+## Estados do GameLoop (semântica corrigida)
 Os estados **não representam telas**, mas **fases da simulação**:
 
-| Estado   | Significado |
-|---------|-------------|
-| **Boot**  | Simulação ainda não inicializada (pré-reset / pré-start) |
-| **Ready** *(antes “Menu”)* | Simulação construída, mas **não ativa** (idle/ready) |
-| **Playing** | Simulação ativa |
-| **Paused**  | Simulação pausada (ações bloqueadas via gate) |
+| Estado    | Significado |
+|----------|-------------|
+| **Boot** | Simulação ainda não iniciada (pré-start). |
+| **Ready** | Simulação em modo “idle” (não ativa). **Substitui o legado “Menu”.** |
+| **Playing** | Simulação ativa (jogável). |
+| **Paused** | Simulação pausada (jogável, mas ações bloqueadas via gate/pause). |
 
-> Nota: o nome `Menu` era legado conceitual. No NewScripts, ele representa **“Simulation Ready / Idle”**, não um menu visual.
-
----
-
-## Objetivo
-O GameLoop:
-- mantém uma FSM **determinística**;
-- é **desacoplado de MonoBehaviours**;
-- atua como **fonte de verdade** do estado macro e do status de atividade da simulação.
-
-O GameLoop **não**:
-- carrega cenas;
-- dispara spawn/despawn;
-- executa reset do mundo;
-- consulta Gate/Readiness diretamente.
+> Nota: **Ready não é UI/Menu**. O nome “Menu” era legado conceitual e deve ser removido do macro estado.
 
 ---
 
-## Componentes e papéis
-
-### `GameLoopStateMachine`
-- FSM de estado macro (Boot/Ready/Playing/Paused).
-- Processa sinais **transientes** (start/pause/resume/reset).
-- Permite **encadear transições no mesmo tick** (ex.: Boot → Ready → Playing após um único start), com guarda `MaxTransitionsPerTick`.
-
-### `GameLoopService`
-- Fachada do GameLoop exposta via DI (`IGameLoopService`).
-- Recebe requests (`RequestStart/Pause/Resume/Reset`), seta sinais e executa `Update()` por tick.
-- Faz `ResetTransientSignals()` ao final do tick para garantir determinismo.
-
-### `GameLoopSceneFlowCoordinator`
-- Coordena start “de produção” via **Scene Flow + WorldLifecycle**.
-- Converte intenção (REQUEST) em execução (COMMAND) somente quando o runtime está “ready”.
-
-### `GameLoopEventInputBridge`
-- Bridge de **eventos definitivos** (EventBus → `IGameLoopService`).
-- **Não consome start**.
-- Consome apenas pause/resume/reset.
+## Arquitetura (papéis)
+- **GameLoopService**: façade do GameLoop (API de start/pause/resume/reset) + logs + observer.
+- **GameLoopStateMachine**: FSM pura, determinística, sem MonoBehaviour.
+- **GameLoopSceneFlowCoordinator**: coordena **REQUEST de start** com SceneFlow + WorldLifecycle e só então chama `GameLoopService.RequestStart()`.
+- **Bridges**:
+    - *Entrada de eventos definitivos* (pause/resume/reset) → `IGameLoopService`
+    - *Pause → SimulationGate* (opcional) via `GamePauseGateBridge`
 
 ---
 
-## Eventos: REQUEST vs COMMAND (contrato oficial)
+## Eventos (REQUEST vs COMMAND)
+### Start
+- **`GameStartRequestedEvent` (REQUEST)**: intenção de iniciar.
+- Start efetivo: **Coordinator** → SceneFlow → WorldLifecycle → `IGameLoopService.RequestStart()`.
 
-### REQUEST (intenção)
-- `GameStartRequestedEvent` é **REQUEST**: sinaliza “quero iniciar”.
-- (Opcional/legado) `GameStartCommandEvent` pode existir como **alias legado**, mas é tratado como REQUEST.
-  Recomendação: **não usar** em código novo.
+> Regra: sistemas não devem “dar start” no GameLoop diretamente ao receber REQUEST.
 
-> REQUEST não garante execução imediata. Ele apenas inicia a coordenação do fluxo.
-
-### COMMAND (execução definitiva)
-- O **COMMAND** de start do GameLoop **não é um evento**.
-- O start definitivo ocorre quando o Coordinator chama:
-  - `IGameLoopService.Initialize()` (idempotente, opcional como proteção), e
-  - `IGameLoopService.RequestStart()`
-  após:
-  - `SceneTransitionCompletedEvent` **e**
-  - `WorldLifecycleResetCompletedEvent` (ou SKIP).
+### Pause/Resume/Reset (definitivos)
+- `GamePauseCommandEvent` (COMMAND)
+- `GameResumeRequestedEvent` (REQUEST simples, tratado como comando no bridge)
+- `GameResetRequestedEvent` (REQUEST, vira `RequestReset()` no service)
 
 ---
 
-## Gate/Readiness e determinismo
-
-### Separação de responsabilidades
-- O GameLoop **não é gate-aware** (não consulta `ISimulationGateService` ou `GameReadinessService`).
-- A autorização final de ações (gate + readiness + estado) é responsabilidade do:
-  - `IStateDependentService` (gate-aware).
-
-### `IsActionAllowedByLoopState`
-- É um **helper** (capability map) por estado macro.
-- **Não é** autorização final de gameplay.
-- Use-o para filtros iniciais/telemetria/UI, mas **sempre** valide com `IStateDependentService` antes de executar ações no gameplay.
+## Diretrizes SOLID
+- **SRP**: FSM só faz macro estado; Coordinator faz sincronia com SceneFlow; Bridges só traduzem eventos.
+- **DIP**: dependências via DI (ex.: resolver `IGameLoopService` no bridge).
+- **Determinismo**: FSM processa sinais transitórios por tick e limita transições por tick.
+- **Semântica limpa**: Ready substitui “Menu” e evita poluição conceitual de UI no GameLoop.
 
 ---
 
-## Boas práticas e princípios SOLID
-- **SRP**:
-  - FSM (GameLoopStateMachine) gerencia estados;
-  - Coordinator sincroniza com SceneFlow/WorldLifecycle;
-  - Bridge converte eventos definitivos.
-- **DIP**: dependências via DI e interfaces (`IGameLoopService`).
-- **Determinismo**: sinais transientes + encadeamento com guarda (`MaxTransitionsPerTick`) + reset por tick.
-- **Idempotência**: `Initialize()` e `Dispose()` devem ser seguras para chamadas repetidas.
-- **Sem UI coupling**: use observers (`IGameLoopStateObserver`) para reagir a estados, não para controlar fluxo de start.
-
----
-
-## Dicas de uso
-
-### Registro
-- Use `GameLoopBootstrap.Ensure()` no bootstrap global para registrar:
-  - `IGameLoopService`
-  - `GameLoopEventInputBridge`
-  - (se aplicável) runtime driver/coordinator
-
-### Start (produção)
-- Emita **REQUEST**:
-  - `EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());`
-- O Coordinator faz:
-  - `TransitionAsync(startPlan)`
-  - aguarda `TransitionCompleted` + `WorldLifecycleResetCompleted`
-  - chama `RequestStart()`.
-
-### Pausa
-- Use `GamePauseCommandEvent(isPaused: true/false)`; o bridge traduz para `RequestPause/RequestResume`.
-
-### Reset
-- Use `GameResetRequestedEvent`; o bridge traduz para `RequestReset()`.
-
----
-
-## Exemplos de uso
-
-### Inicialização (bootstrap)
-```csharp
-using UnityEngine;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-
-public class MyBootstrap : MonoBehaviour
-{
-    private void Awake()
-    {
-        GameLoopBootstrap.Ensure();
-    }
-}
-````
-
-### REQUEST de start via evento (UI/QA)
-
-```csharp
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
-
-EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
-```
-
-### Observer custom (reagir a estados)
-
-```csharp
-public class MyObserver : IGameLoopStateObserver
-{
-    public void OnStateEntered(GameLoopStateId stateId, bool isActive) { /* log/UI */ }
-    public void OnStateExited(GameLoopStateId stateId) { /* cleanup */ }
-    public void OnGameActivityChanged(bool isActive) { /* habilitar simulação */ }
-}
-
-// Exemplo: injetar no construtor da FSM
-// new GameLoopStateMachine(signals, new MyObserver());
-```
-
-### Integração com gate (externa)
-
-* Não acople gate na FSM.
-* Use `IStateDependentService.CanPerform(action)` para checar:
-
-    * gate
-    * readiness
-    * estado do GameLoop (macro)
-    * e outros critérios centralizados.
-
----
-
-## Anti-patterns (evitar)
-
-* Tratar `IsActionAllowedByLoopState(...)` como autorização final de gameplay.
-* Chamar `IGameLoopService.RequestStart()` diretamente no REQUEST (pular Coordinator) em produção.
-* Suportar transições concorrentes esperando determinismo sem correlação extra (o runtime assume 1 transição em voo).
-
----
-
-## Atualizações (2025-12-25)
-
-* **Renomeações aplicadas**:
-
-    * Estado `Menu` → `Ready` (semântica “Simulation Ready/Idle”).
-    * `CanPerform` → `IsActionAllowedByLoopState` (deixa explícito que é helper por estado, não gate-aware).
-    * Start: `GameStartRequestedEvent` como REQUEST (preferencial); `GameStartCommandEvent` apenas como alias legado (tratado como REQUEST).
-    * Pause: `GamePauseEvent` → `GamePauseCommandEvent` (evento definitivo).
-* **Contrato consolidado**:
-
-    * Start definitivo é **COMMAND via chamada** `RequestStart()` pelo Coordinator quando “ready”.
-    * Gate/Readiness seguem fora do GameLoop; enforcement final é `IStateDependentService`.
+## Atualização (2025-12-25)
+- Padronizado: **GameLoopStateId.Ready** (removendo “Menu” como estado macro).
+- `GameStartRequestedEvent` definido como REQUEST canônico; `GameStartCommandEvent` mantido apenas como legado (obsoleto).
+- Coordinator trata start como REQUEST e executa start efetivo somente após readiness + reset/skip.

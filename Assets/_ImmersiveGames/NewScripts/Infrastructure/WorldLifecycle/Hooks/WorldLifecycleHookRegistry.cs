@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
 {
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.

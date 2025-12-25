@@ -1,43 +1,43 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset.QA
 {
     /// <summary>
-    /// Hook de lifecycle de cena para QA/dev com prioridade maior para validar ordenação determinística.
+    /// Hook de lifecycle de cena para QA/dev que loga execução com menor prioridade.
     /// </summary>
-    public sealed class SceneLifecycleHookLoggerB : MonoBehaviour, IWorldLifecycleHook, IOrderedLifecycleHook
+    public sealed class SceneLifecycleHookLoggerA : MonoBehaviour, IWorldLifecycleHook, IOrderedLifecycleHook
     {
         [SerializeField]
-        private string label = "SceneLifecycleHookLoggerB";
+        private string label = "SceneLifecycleHookLoggerA";
 
-        public int Order => 10;
+        public int Order => 0;
 
         public Task OnBeforeDespawnAsync()
         {
-            DebugUtility.Log(typeof(SceneLifecycleHookLoggerB),
+            DebugUtility.Log(typeof(SceneLifecycleHookLoggerA),
                 $"[QA] {label} -> OnBeforeDespawnAsync");
             return Task.CompletedTask;
         }
 
         public Task OnAfterDespawnAsync()
         {
-            DebugUtility.LogVerbose(typeof(SceneLifecycleHookLoggerB),
+            DebugUtility.LogVerbose(typeof(SceneLifecycleHookLoggerA),
                 $"[QA] {label} -> OnAfterDespawnAsync");
             return Task.CompletedTask;
         }
 
         public Task OnBeforeSpawnAsync()
         {
-            DebugUtility.LogVerbose(typeof(SceneLifecycleHookLoggerB),
+            DebugUtility.LogVerbose(typeof(SceneLifecycleHookLoggerA),
                 $"[QA] {label} -> OnBeforeSpawnAsync");
             return Task.CompletedTask;
         }
 
         public Task OnAfterSpawnAsync()
         {
-            DebugUtility.Log(typeof(SceneLifecycleHookLoggerB),
+            DebugUtility.Log(typeof(SceneLifecycleHookLoggerA),
                 $"[QA] {label} -> OnAfterSpawnAsync");
             return Task.CompletedTask;
         }

@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Serviço responsável por spawn/despawn dos elementos que compõem o mundo atual.

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
 {
     /// <summary>
     /// Define prioridade de execução para hooks de lifecycle; menor valor roda primeiro.

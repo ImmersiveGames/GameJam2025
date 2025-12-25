@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.NewScripts.Infrastructure.Events;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
     /// COMMAND/Signal: indica que o reset determinístico do WorldLifecycle concluiu.

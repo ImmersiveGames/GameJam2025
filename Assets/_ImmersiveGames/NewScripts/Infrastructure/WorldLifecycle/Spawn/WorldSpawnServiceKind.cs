@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Tipos conhecidos de serviços de spawn do mundo.

@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks
 {
     /// <summary>
     /// Hooks opcionais para observar o ciclo de vida do reset do mundo.

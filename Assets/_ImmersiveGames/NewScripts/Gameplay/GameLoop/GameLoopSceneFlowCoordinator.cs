@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.World;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {

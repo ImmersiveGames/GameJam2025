@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
     /// Define a ordem de spawn do mundo, utilizada pelo bootstrap de cena para registrar serviços.

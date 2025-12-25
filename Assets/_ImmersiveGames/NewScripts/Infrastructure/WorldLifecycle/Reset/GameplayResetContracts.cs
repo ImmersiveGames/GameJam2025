@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.World.Reset
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 {
     /// <summary>
     /// Fases assíncronas de reset para componentes de gameplay.
