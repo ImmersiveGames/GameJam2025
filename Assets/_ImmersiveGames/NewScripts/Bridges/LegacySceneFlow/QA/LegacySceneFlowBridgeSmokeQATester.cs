@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
     /// Smoke test para garantir que o LegacySceneFlowBridge está refletindo eventos do fluxo de cenas legado
     /// para o EventBus do NewScripts.
     /// </summary>
-    public sealed class LegacySceneFlowBridgeSmokeQATester : MonoBehaviour
+    public sealed class LegacySceneFlowBridgeSmokeQaTester : MonoBehaviour
     {
         private const string SceneFlowLogTag = "[SceneFlowTest][Bridge]";
 
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
             }
             catch (Exception ex)
             {
-                DebugUtility.LogWarning(typeof(LegacySceneFlowBridgeSmokeQATester),
+                DebugUtility.LogWarning(typeof(LegacySceneFlowBridgeSmokeQaTester),
                     $"[QA][SceneBridge] SKIP - legacy scene flow not available. ({ex.GetType().Name}: {ex.Message})");
                 _skipExecution = true;
                 return false;
@@ -168,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
             {
                 if (_skipExecution)
                 {
-                    DebugUtility.LogWarning(typeof(LegacySceneFlowBridgeSmokeQATester),
+                    DebugUtility.LogWarning(typeof(LegacySceneFlowBridgeSmokeQaTester),
                         "[QA][SceneBridge] SKIP - eventos não recebidos (bridge legado possivelmente ausente).");
                     LogTag("SKIP - eventos não recebidos");
                     return;
@@ -196,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
                     "[QA][SceneBridge] FAIL - contexto mapeado com valores incorretos.");
             }
 
-            DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQATester),
+            DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQaTester),
                 "[QA][SceneBridge] PASS - bridge refletiu eventos do legado para NewScripts.",
                 DebugUtility.Colors.Success);
             LogTag("PASS");
@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA
 
         private static void LogTag(string message)
         {
-            DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQATester), $"{SceneFlowLogTag} {message}");
+            DebugUtility.Log(typeof(LegacySceneFlowBridgeSmokeQaTester), $"{SceneFlowLogTag} {message}");
         }
     }
 }

@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene

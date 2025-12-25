@@ -1,0 +1,85 @@
+﻿# World Lifecycle — Reset determinístico por escopos (NewScripts)
+
+Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
+
+> Nota de consolidação: versões anteriores mais extensas podem existir (ex.: `WorldLifecycle.md`). O conteúdo canônico e mantido é este arquivo.
+
+## Objetivo
+Garantir que o “mundo” possa ser reinicializado de forma previsível, para:
+- transições de cena,
+- reinício de partida,
+- retorno ao menu,
+- e testes determinísticos.
+
+## Conceitos
+- **Escopo (scope):** unidade lógica do reset (ex.: Players, Enemies, WorldUI).
+- **Participante (participant):** registra-se para executar reset em um escopo específico.
+- **Hook:** callbacks ordenados (OnBefore/OnAfter Despawn/Spawn) para inspeção e integrações.
+
+## Fases de reset (ordem determinística)
+A execução pode variar por implementação, mas o contrato do NewScripts é:
+
+1. **Acquire gate** (bloquear simulação/gameplay)
+2. **OnBeforeDespawn hooks**
+3. **Despawn / limpeza de entidades do escopo**
+4. **OnAfterDespawn hooks**
+5. **OnBeforeSpawn hooks**
+6. **Spawn / reconstrução de entidades do escopo**
+7. **OnAfterSpawn hooks**
+8. **Release gate** (liberar simulação/gameplay)
+
+A ordem dos escopos deve ser estável e explícita (ex.: World → Players → NPCs), evitando dependências cíclicas.
+
+## Integração com Scene Flow
+Durante transições de cena, o reset é coordenado por eventos:
+
+- `SceneTransitionStarted`:
+    - `GameReadinessService` adquire token do `ISimulationGateService` (ex.: `flow.scene_transition`)
+    - jogo fica “NOT READY” durante load/unload
+
+- `SceneTransitionScenesReadyEvent`:
+    - `WorldLifecycleRuntimeDriver` é acionado
+    - decide executar reset ou SKIP
+
+- `SceneTransitionCompleted`:
+    - `GameReadinessService` libera token
+    - jogo pode voltar a “READY” (sujeito ao estado do GameLoop e outras condições)
+
+### SKIP (startup/menu)
+Para estabilizar o pipeline sem contaminar testes com Gameplay, o driver faz SKIP quando:
+- `profile == 'startup'` **ou**
+- `activeScene == 'MenuScene'`
+
+Mesmo no SKIP, o driver deve emitir:
+- `WorldLifecycleResetCompletedEvent(contextSignature, reason)`
+
+Isso é necessário porque o `GameLoopSceneFlowCoordinator` aguarda esse sinal para chamar `GameLoop.RequestStart()`.
+
+## Participantes e registros de cena
+Em uma cena NewScripts típica, o `NewSceneBootstrapper` cria e registra:
+- `INewSceneScopeMarker`
+- `IWorldSpawnContext`
+- `IActorRegistry`
+- `IWorldSpawnServiceRegistry`
+- `WorldLifecycleHookRegistry`
+- `IResetScopeParticipant` (ex.: PlayersResetParticipant)
+
+Quando `WorldDefinition` está ausente (ex.: `MenuScene`), é válido ter:
+- zero spawn services registrados,
+- mas manter registries e hooks para consistência do pipeline.
+
+## Operação em bootstrap
+`WorldLifecycleController` pode existir na cena de bootstrap para debug e/ou integração futura, mas:
+- quando `AutoInitializeOnStart` está desabilitado, ele não executa reset automaticamente,
+- e aguarda um acionamento externo (ex.: pipeline de gameplay).
+
+## Critérios mínimos de “saúde” (logs)
+Ao validar o pipeline, busque no log:
+- `SceneTransitionScenesReady recebido`
+- `Reset SKIPPED (profile/menu)` **ou** reset executado
+- `Emitting WorldLifecycleResetCompletedEvent`
+- `SceneTransitionCompleted → gate liberado`
+
+Se o Coordinator não “destrava”, quase sempre faltou:
+- `WorldLifecycleResetCompletedEvent` ou
+- assinatura `contextSignature` incompatível com a esperada.

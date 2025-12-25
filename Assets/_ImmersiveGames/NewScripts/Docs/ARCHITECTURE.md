@@ -1,213 +1,77 @@
-## ADRs (referência)
-
-Decisões fundacionais e diretrizes derivadas:
-- Índice: `ADR.md`
-- ADR-001: `ADR-001-world-reset-por-respawn.md`
-- ADR-002: `ADR-002-spawn-pipeline.md`
-- ADR-003: `ADR-003-escopos-servico.md`
-- ADR-005: `ADR-005-gate-nao-e-reset.md`
-- ADR-006: `ADR-006-ui-reage-ao-mundo.md`
-- ADR-007: `ADR-007-testes-estado-final.md`
-
-## Implemented (As-Is)
-
-### Princípios Fundamentais
-
-* **World-Driven**
-  Cenas representam **mundos autocontidos** que dirigem o ciclo de vida da simulação.
-  Uma cena é responsável por montar, executar e descartar completamente seu estado de mundo.
-
-* **Actor-Centric**
-  Atores são a **unidade primária de comportamento e interação**.
-  Toda lógica de gameplay deve estar ancorada em atores e seus contratos explícitos com serviços e eventos.
-
-* **Reset por Despawn/Respawn**
-  Reset significa **descartar instâncias vivas** (atores e estado acoplado) e recriar a partir de definições/configurações.
-  Isso evita:
-
-    * mutação global persistente
-    * estados “fantasma”
-    * dependência implícita de ordem de execução
-
-* **Multiplayer local**
-  Fluxos devem suportar múltiplos jogadores no mesmo dispositivo, com:
-
-    * identidade explícita
-    * ausência de singletons de gameplay
-    * serviços preparados para múltiplos atores do mesmo tipo
-
-* **SOLID e baixo acoplamento**
-
-    * Contratos em inglês
-    * Comentários e documentação em português
-    * Responsabilidade única
-    * Inversão de dependência como regra, não exceção
-
----
-
-### Escopos
-
-A arquitetura se organiza por **escopos de vida bem definidos**:
-
-* **Global**
-  Serviços de infraestrutura:
-
-    * logging
-    * configuração
-    * pooling
-    * gates
-    * event bus
-
-  ➜ **Nunca carregam estado de gameplay**
-  ➜ Vivem apenas enquanto necessários
-
-* **Scene**
-  Cada cena monta **seu próprio grafo de serviços e registries**, incluindo (exemplos):
-
-    * `WorldLifecycleHookRegistry`
-    * `IActorRegistry`
-    * `IWorldSpawnServiceRegistry`
-
-  ➜ Não pressupõe persistência entre cenas
-  ➜ Unload da cena descarta todo o escopo
-
-* **Actor**
-  Componentes e serviços específicos do ator:
-
-    * resetados via despawn/respawn
-    * nunca sobrevivem ao reset do mundo
-
----
-
-### Fluxo de Vida Atual
-
-*(Resumo — detalhes operacionais em `WorldLifecycle/WorldLifecycle.md`)*
-
-* **Bootstrap de Cena**
-  `NewSceneBootstrapper`:
-
-    * registra serviços e registries de cena
-    * inclui `WorldLifecycleHookRegistry`, `IActorRegistry`, `IWorldSpawnServiceRegistry`
-    * **não utiliza `allowOverride`**
-    * falhas de duplo registro são consideradas erro arquitetural
-
-* **WorldLifecycle**
-  `WorldLifecycleController`:
-
-    * orquestra o reset determinístico
-    * controla gates
-    * executa hooks
-    * suporta hard reset ou reset-in-place por escopo
-
-  ➜ Pipeline completo descrito no documento operacional
-
-* **Gameplay**
-  O gameplay emerge exclusivamente:
-
-    * de eventos
-    * de contratos entre atores
-    * de serviços registrados no escopo da cena
-
-  ➜ Não há lógica centralizadora de gameplay
-
-* **Unload**
-  O unload da cena:
-
-    * descarta completamente o grafo de serviços
-    * invalida registries
-    * força reconstrução total na próxima cena
-
-* **QA / Testers**
-
-    * São **consumidores de scene-scope**
-    * Devem usar **lazy injection** ou `Start()`
-    * Devem tolerar ordem variável de boot
-
-  ➜ Detalhes e armadilhas documentados em
-  `WorldLifecycle/WorldLifecycle.md#troubleshooting-qatesters-e-boot-order`
-
----
-
-### World Lifecycle — Reset & Hooks
-
-*(Referência cruzada)*
-
-* **Owner operacional**
-  `WorldLifecycle/WorldLifecycle.md`
-
-* **Guardrails arquiteturais**
-
-    * `WorldLifecycleHookRegistry` nasce **exclusivamente** no `NewSceneBootstrapper`
-    * Segundo registro:
-
-        * reutiliza a instância existente
-        * loga erro explícito
-    * Hooks são:
-
-        * opt-in
-        * ordenados por `(Order, Type.FullName)`
-        * sem heurísticas implícitas
-
-* **Fontes de hooks**
-
-    * Spawn services
-    * Serviços de cena via DI
-    * Hooks registrados explicitamente no registry
-    * `IActorLifecycleHook` em atores
-
-  ➜ Todos executados pelo `WorldLifecycleOrchestrator` conforme o pipeline oficial
-
-* **Otimização**
-
-    * Cache de hooks de ator:
-
-        * válido apenas por ciclo de reset
-        * limpo no `finally`
-    * Evita múltiplas varreduras de hierarquia
-
-* **Determinismo**
-
-    * Falhas interrompem o reset (*fail-fast*)
-    * Ordem de execução:
-
-        * estável
-        * reprodutível
-        * idêntica entre cenas e resets
-
----
-
-## Planned (To-Be / Roadmap)
-
-* Bootstrap global adicional para serviços compartilhados entre cenas, **sem violar separação de estado**
-* Ampliação dos contratos de eventos e telemetria:
-
-    * suporte completo a multiplayer local
-    * rastreamento explícito de identidade
-* Expansão dos testes automatizados e utilitários:
-
-    * documentados em `Guides/UTILS-SYSTEMS-GUIDE.md`
-* Evolução dos guias de DI e EventBus:
-
-    * cenários mais complexos
-    * mantendo registro explícito e previsível
-
----
-
-## Nota de Consolidação Semântica (2025)
-
-Este documento descreve **a arquitetura de simulação e world lifecycle**.
-
-Fluxos de:
-
-* menus visuais
-* navegação de UI
-* App Frontend
-
-são **domínios distintos** e não devem ser inferidos a partir deste arquivo.
-
-A separação formal entre:
-
-* **App / Frontend**
-* **Simulation Runtime**
-
-é intencional e será detalhada em documentos complementares, sem invalidar este.
+# Arquitetura — NewScripts (visão geral)
+
+## Objetivo
+O NewScripts busca um pipeline previsível e testável para:
+- inicialização global (infra),
+- transições de cena (Scene Flow),
+- controle de prontidão do jogo (Readiness/Gate),
+- e reset determinístico do mundo (World Lifecycle) por escopos.
+
+## Componentes principais
+
+### 1) Global Bootstrap (infra)
+- Configura logging (níveis e formatação).
+- Inicializa DI global (`DependencyManager` / `GlobalServiceRegistry`).
+- Registra serviços globais essenciais:
+    - `ISimulationGateService`
+    - `IGameLoopService` (+ runtime driver para tick)
+    - `ISceneTransitionService` (SceneFlow)
+    - `INewScriptsFadeService` (Fade)
+    - `IStateDependentService` (bloqueio de ações por estado/prontidão)
+
+### 2) GameLoop
+Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Playing) e por aceitar comandos (via bridge de input) que resultam em:
+- pedidos de start,
+- pedidos de navegação/transição (quando a camada de navigation estiver ativa),
+- e controle de “atividade” (isActive).
+
+### 3) Scene Flow (SceneTransitionService)
+Orquestra a transição de cenas (load/unload/active) com:
+- evento `SceneTransitionStarted`
+- evento `SceneTransitionScenesReady`
+- evento `SceneTransitionCompleted`
+
+Durante a transição:
+- `GameReadinessService` adquire o gate (`flow.scene_transition`) para bloquear gameplay.
+- O Fade (NewScripts) pode ser executado antes e depois do carregamento.
+
+### 4) Fade (ADR-0009)
+- `INewScriptsFadeService` controla `FadeScene` (Additive) e o `NewScriptsFadeController` (CanvasGroup).
+- `NewScriptsSceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
+- Resolução por Resources:
+    - `Resources/SceneFlow/Profiles/<profileName>`
+
+### 5) World Lifecycle
+- Executa reset determinístico por escopos e fases (despawn/spawn/hook).
+- Integrado ao Scene Flow via `WorldLifecycleRuntimeDriver`:
+    - reage ao `SceneTransitionScenesReadyEvent`,
+    - executa reset (ou SKIP em Menu/Startup),
+    - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
+
+Detalhes em: `WORLD_LIFECYCLE.md`.
+
+## Fluxo macro (startup/menu)
+Diagrama simplificado:
+
+1. Bootstrap global inicializa infra/serviços
+2. GameLoop entra em `Menu`
+3. Coordinator dispara `SceneTransitionService` com:
+    - Load: `MenuScene`, `UIGlobalScene`
+    - Unload: cena bootstrap
+    - Profile: `startup`
+4. Readiness fecha gate durante transição
+5. Fade executa (FadeScene)
+6. Scenes carregadas → `SceneTransitionScenesReadyEvent`
+7. WorldLifecycleRuntimeDriver: SKIP (startup/menu) e emite “reset completed”
+8. Transição completa → gate reabre → Coordinator chama `GameLoop.RequestStart()`
+
+## Documentos relacionados
+- `WORLD_LIFECYCLE.md`
+- `ADR-0009-FadeSceneFlow.md`
+- `ARCHITECTURE_TECHNICAL.md`
+- `DECISIONS.md`
+- `EXAMPLES_BEST_PRACTICES.md`
+- `GLOSSARY.md`
+- `CHANGELOG-docs.md`
+
+> Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).

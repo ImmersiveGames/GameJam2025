@@ -112,8 +112,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
-                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQATester>()
-                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQaTester>()
+                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
 
             ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
 
@@ -161,8 +161,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             }
 
             legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
-                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQATester>()
-                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQaTester>()
+                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
 
             ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
 

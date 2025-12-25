@@ -1,11 +1,7 @@
-using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
-    /// <summary>
-    /// Serviço runtime que encapsula a GameLoopStateMachine sem dependências de DI ou MonoBehaviours.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopService : IGameLoopService, IGameLoopStateObserver
     {
@@ -13,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private GameLoopStateMachine _stateMachine;
         private bool _initialized;
 
-        public string CurrentStateName { get; private set; } = string.Empty;
+        public string CurrentStateIdName { get; private set; } = string.Empty;
 
         public void RequestStart() => _signals.MarkStart();
         public void RequestPause() => _signals.MarkPause();
@@ -23,22 +19,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void Initialize()
         {
             if (_initialized)
+            {
                 return;
+            }
 
             _stateMachine = new GameLoopStateMachine(_signals, this);
             _initialized = true;
 
-            DebugUtility.LogVerbose<GameLoopService>("[GameLoop] Initialize() concluído.");
+            DebugUtility.LogVerbose<GameLoopService>("[GameLoop] Initialized.");
         }
 
         public void Tick(float dt)
         {
             if (!_initialized || _stateMachine == null)
+            {
                 return;
+            }
 
             _stateMachine.Update();
-            _stateMachine.FixedUpdate();
-
             _signals.ResetTransientSignals();
         }
 
@@ -46,31 +44,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             _initialized = false;
             _stateMachine = null;
-            CurrentStateName = string.Empty;
+            CurrentStateIdName = string.Empty;
             _signals.ResetTransientSignals();
-
-            DebugUtility.LogVerbose<GameLoopService>("[GameLoop] Dispose() concluído.");
         }
 
         public void OnStateEntered(GameLoopStateId stateId, bool isActive)
         {
-            CurrentStateName = stateId.ToString();
-
-            DebugUtility.LogVerbose<GameLoopService>(
-                $"[GameLoop] State ENTER: {stateId} (isActive={isActive})");
+            CurrentStateIdName = stateId.ToString();
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
         }
 
-        public void OnStateExited(GameLoopStateId stateId)
-        {
-            DebugUtility.LogVerbose<GameLoopService>(
-                $"[GameLoop] State EXIT: {stateId}");
-        }
+        public void OnStateExited(GameLoopStateId stateId) =>
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {stateId}");
 
-        public void OnGameActivityChanged(bool isActive)
-        {
-            DebugUtility.LogVerbose<GameLoopService>(
-                $"[GameLoop] ActivityChanged: isActive={isActive}");
-        }
+        public void OnGameActivityChanged(bool isActive) =>
+            DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] Activity: {isActive}");
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {

@@ -4,7 +4,7 @@
  * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
- *   (GameStartEvent -> Transition -> ScenesReady -> RequestStart).
+ *   (GameStartCommandEvent -> Transition -> ScenesReady -> RequestStart).
  *
  * Nota (QA):
  * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do ScenesReady
@@ -17,14 +17,12 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
-using _ImmersiveGames.NewScripts.GameLoop.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
@@ -38,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
     {
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
-        private static LegacySceneFlowBridge _legacySceneFlowBridge;
 
         // Opção B: mantém referência viva do coordinator (evita GC / descarte prematuro).
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
@@ -138,8 +135,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void PrimeEventSystems()
         {
-            EventBus<GameStartEvent>.Clear();
-            EventBus<GamePauseEvent>.Clear();
+            EventBus<GameStartRequestedEvent>.Clear();
+            EventBus<GamePauseCommandEvent>.Clear();
             EventBus<GameResumeRequestedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
 
@@ -178,7 +175,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         {
             if (DependencyManager.Provider.TryGetGlobal<LegacySceneFlowBridge>(out var existing) && existing != null)
             {
-                _legacySceneFlowBridge = existing;
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                     "[SceneBridge] LegacySceneFlowBridge já registrado no DI global.",
                     DebugUtility.Colors.Info);
@@ -186,7 +182,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             RegisterIfMissing(() => new LegacySceneFlowBridge());
-            DependencyManager.Provider.TryGetGlobal(out _legacySceneFlowBridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[SceneBridge] LegacySceneFlowBridge registrado (Scene Flow legado → eventos NewScripts).",
@@ -257,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterGameLoop()
         {
-            GameLoopBootstrap.EnsureRegistered();
+            GameLoopBootstrap.Ensure();
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global).",
                 DebugUtility.Colors.Info);
@@ -314,7 +309,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             }
 
             // Plano de produção:
-            // NewBootstrap -> (Fade) -> Load(Menu + UIGlobal) -> Active=Menu -> Unload(NewBootstrap) -> (FadeOut) -> Completed
+            // NewBootstrap -> (Fade) -> Load(Ready + UIGlobal) -> Active=Ready -> Unload(NewBootstrap) -> (FadeOut) -> Completed
             var startPlan = new SceneTransitionRequest(
                 scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
                 scenesToUnload: new[] { SceneNewBootstrap },

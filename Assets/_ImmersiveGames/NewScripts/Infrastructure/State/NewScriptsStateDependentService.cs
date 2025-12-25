@@ -11,19 +11,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 {
     /// <summary>
     /// Gate de ações baseado em:
-    /// - SimulationGate (bloqueia Move quando gate fechado, ex.: transição/reset)
+    /// - SimulationGate (bloqueia quando gate fechado, ex.: transição/reset)
     /// - Pausa (token Pause e eventos de pausa)
-    /// - Readiness (GameplayReady) para liberar Move quando o mundo + fluxo estão prontos
-    /// - GameLoop (opcional): usado apenas quando expõe um estado "conclusivo" (Playing/Paused)
+    /// - Readiness (GameplayReady) para liberar ações quando o mundo + fluxo estão prontos
+    /// - GameLoop (opcional): usado apenas quando expõe um estado conclusivo (Playing/Paused)
     ///
     /// Ajuste importante:
-    /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando o status muda, evitando spam.
+    /// - Logs de "Move bloqueado/liberado" são emitidos SOMENTE quando a situação muda, evitando spam.
     /// </summary>
-    public sealed class NewScriptsStateDependentService : IStateDependentService, IDisposable
+    public sealed class NewScriptsStateDependentService : IStateDependentService
     {
         private enum ServiceState
         {
-            Menu,
+            Ready,
             Playing,
             Paused
         }
@@ -37,10 +37,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             NotPlaying
         }
 
-        private ServiceState _state = ServiceState.Menu;
+        private ServiceState _state = ServiceState.Ready;
 
-        private EventBinding<GameStartEvent> _gameStartBinding;
-        private EventBinding<GamePauseEvent> _gamePauseBinding;
+        private EventBinding<GameStartRequestedEvent> _gameStartRequestedBinding;
+        private EventBinding<GamePauseCommandEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
         private EventBinding<ReadinessChangedEvent> _readinessBinding;
 
@@ -52,12 +52,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         // Readiness snapshot
         private bool _hasReadinessSnapshot;
         private bool _gameplayReady;
-        private bool _gateOpen = true;
+
 
         // Move logging (only on transitions)
         private bool _hasMoveDecision;
         private MoveDecision _lastMoveDecision = MoveDecision.Allowed;
-        private ServiceState _lastResolvedState = ServiceState.Menu;
+        private ServiceState _lastResolvedState = ServiceState.Ready;
         private string _lastLoopStateName = string.Empty;
 
         public NewScriptsStateDependentService(ISimulationGateService gateService = null)
@@ -77,23 +77,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             TryResolveGateService();
             TryResolveGameLoopService();
 
+            // Move tem logging de transição.
             if (action == ActionType.Move)
             {
-                var allowed = EvaluateMoveAllowed(out var decision, out var resolvedState, out var loopStateName);
-
-                // Loga apenas quando o status mudar (ou na primeira decisão, se desejado).
+                bool allowed = EvaluateMoveAllowed(out var decision, out var resolvedState, out string loopStateName);
                 MaybeLogMoveDecisionTransition(decision, resolvedState, loopStateName);
-
                 return allowed;
             }
 
-            var serviceState = ResolveServiceState();
+            // Para ações gerais, aplica as mesmas “travas infra” (gate/readiness/paused),
+            // e então aplica o estado macro (Ready/Playing/Paused) como filtro final.
+            bool infraAllows = EvaluateInfraAllowsAction(action);
+            if (!infraAllows)
+            {
+                return false;
+            }
 
-            return serviceState switch
+            var state = ResolveServiceState();
+
+            return state switch
             {
                 ServiceState.Playing => true,
 
-                ServiceState.Menu or ServiceState.Paused => action switch
+                // Em Ready/Paused permitimos apenas UI/Navegação/Reset/Quit.
+                ServiceState.Ready or ServiceState.Paused => action switch
                 {
                     ActionType.Navigate => true,
                     ActionType.UiSubmit => true,
@@ -111,16 +118,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         {
             TryResolveGateService();
             TryResolveGameLoopService();
+
+            // “Ativo” precisa respeitar as travas infra e o estado macro.
+            if (!EvaluateInfraAllowsAction(ActionType.Move))
+            {
+                return false;
+            }
+
             return ResolveServiceState() == ServiceState.Playing;
         }
 
         public void Dispose()
         {
             if (!_bindingsRegistered)
+            {
                 return;
+            }
 
-            EventBus<GameStartEvent>.Unregister(_gameStartBinding);
-            EventBus<GamePauseEvent>.Unregister(_gamePauseBinding);
+            EventBus<GameStartRequestedEvent>.Unregister(_gameStartRequestedBinding);
+            EventBus<GamePauseCommandEvent>.Unregister(_gamePauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_gameResumeBinding);
             EventBus<ReadinessChangedEvent>.Unregister(_readinessBinding);
 
@@ -130,7 +146,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private void TryResolveGateService()
         {
             if (_gateService != null)
+            {
                 return;
+            }
 
             DependencyManager.Provider.TryGetGlobal(out _gateService);
         }
@@ -138,7 +156,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private void TryResolveGameLoopService()
         {
             if (_gameLoopService != null)
+            {
                 return;
+            }
 
             DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
         }
@@ -147,13 +167,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         {
             try
             {
-                _gameStartBinding = new EventBinding<GameStartEvent>(_ =>
+                // Start é REQUEST. Não marca "Playing" aqui — isso é responsabilidade do Coordinator + GameLoop.
+                _gameStartRequestedBinding = new EventBinding<GameStartRequestedEvent>(_ =>
                 {
-                    SetState(ServiceState.Playing);
+                    SetState(ServiceState.Ready);
                     SyncMoveDecisionLogIfChanged(forceLog: false);
                 });
 
-                _gamePauseBinding = new EventBinding<GamePauseEvent>(evt =>
+                _gamePauseBinding = new EventBinding<GamePauseCommandEvent>(evt =>
                 {
                     OnGamePause(evt);
                     SyncMoveDecisionLogIfChanged(forceLog: false);
@@ -161,6 +182,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
                 _gameResumeBinding = new EventBinding<GameResumeRequestedEvent>(_ =>
                 {
+                    // Resume é intenção; o estado efetivo é resolvido por Gate + GameLoop.
                     SetState(ServiceState.Playing);
                     SyncMoveDecisionLogIfChanged(forceLog: false);
                 });
@@ -171,8 +193,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                     SyncMoveDecisionLogIfChanged(forceLog: false);
                 });
 
-                EventBus<GameStartEvent>.Register(_gameStartBinding);
-                EventBus<GamePauseEvent>.Register(_gamePauseBinding);
+                EventBus<GameStartRequestedEvent>.Register(_gameStartRequestedBinding);
+                EventBus<GamePauseCommandEvent>.Register(_gamePauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_gameResumeBinding);
                 EventBus<ReadinessChangedEvent>.Register(_readinessBinding);
 
@@ -184,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             }
         }
 
-        private void OnGamePause(GamePauseEvent evt)
+        private void OnGamePause(GamePauseCommandEvent evt)
         {
             SetState(evt is { IsPaused: true } ? ServiceState.Paused : ServiceState.Playing);
         }
@@ -193,7 +215,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         {
             _hasReadinessSnapshot = true;
             _gameplayReady = evt.Snapshot.GameplayReady;
-            _gateOpen = evt.Snapshot.GateOpen;
         }
 
         private void SetState(ServiceState next)
@@ -203,19 +224,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
         private ServiceState ResolveServiceState()
         {
-            // 1) Se pausa explícita (via token/evento), prioriza Paused.
+            // 1) Pausa explícita sempre ganha.
             if (IsPausedByGate())
+            {
                 return ServiceState.Paused;
+            }
 
-            // 2) Readiness + eventos determinam Playing.
-            // Evita ficar preso em "Menu" quando o GameLoop ainda não tickou para atualizar CurrentStateName.
-            if (_state == ServiceState.Playing && (_hasReadinessSnapshot ? _gameplayReady : true))
-                return ServiceState.Playing;
+            // 2) Travamentos infra (gate fechado ou gameplay não pronto) impedem "Playing" efetivo.
+            if (!IsInfraReady())
+            {
+                return ServiceState.Ready;
+            }
 
-            // 3) GameLoop é um sinal adicional, mas só quando expõe estados conclusivos.
-            var loopState = ResolveFromGameLoop();
+            // 3) GameLoop é sinal adicional quando expõe estados conclusivos.
+            ServiceState? loopState = ResolveFromGameLoop();
             if (loopState.HasValue)
+            {
                 return loopState.Value;
+            }
 
             // 4) Fallback: estado interno.
             return _state;
@@ -224,17 +250,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private ServiceState? ResolveFromGameLoop()
         {
             if (_gameLoopService == null)
+            {
                 return null;
+            }
 
-            var name = _gameLoopService.CurrentStateName;
+            string name = _gameLoopService.CurrentStateIdName;
             if (string.IsNullOrWhiteSpace(name))
+            {
                 return null;
+            }
 
             // Usa GameLoop apenas para estados que já significam "jogável" ou "pausado".
             return name switch
             {
                 nameof(GameLoopStateId.Playing) => ServiceState.Playing,
                 nameof(GameLoopStateId.Paused) => ServiceState.Paused,
+                nameof(GameLoopStateId.Ready) => ServiceState.Ready,
                 _ => null
             };
         }
@@ -244,9 +275,52 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             TryResolveGateService();
 
             if (_gateService == null)
+            {
                 return false;
+            }
 
             return _gateService.IsTokenActive(SimulationGateTokens.Pause);
+        }
+
+        private bool IsInfraReady()
+        {
+            // Gate fechado: infra bloqueando (transição/reset/loading/etc).
+            if (_gateService is { IsOpen: false })
+            {
+                return false;
+            }
+
+            // Readiness: se temos snapshot e diz "não pronto", bloqueia.
+            if (_hasReadinessSnapshot && !_gameplayReady)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool EvaluateInfraAllowsAction(ActionType action)
+        {
+            // 1) Gate fechado: em geral, bloqueia gameplay, mas pode permitir UI/navegação.
+            if (_gateService is { IsOpen: false })
+            {
+                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
+            }
+
+            // 2) Pausa: bloqueia gameplay, permite UI/navegação/reset/quit.
+            if (IsPausedByGate())
+            {
+                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel
+                    or ActionType.RequestReset or ActionType.RequestQuit;
+            }
+
+            // 3) Readiness: se não pronto, permite apenas UI/navegação (não gameplay).
+            if (_hasReadinessSnapshot && !_gameplayReady)
+            {
+                return action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel;
+            }
+
+            return true;
         }
 
         private bool EvaluateMoveAllowed(out MoveDecision decision, out ServiceState resolvedState, out string loopStateName)
@@ -255,10 +329,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             TryResolveGameLoopService();
 
             resolvedState = ResolveServiceState();
-            loopStateName = _gameLoopService?.CurrentStateName ?? string.Empty;
+            loopStateName = _gameLoopService?.CurrentStateIdName ?? string.Empty;
 
             // 1) Gate sempre bloqueia Move quando fechado.
-            if (_gateService != null && !_gateService.IsOpen)
+            if (_gateService is { IsOpen: false })
             {
                 decision = MoveDecision.GateClosed;
                 return false;
@@ -278,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                 return false;
             }
 
-            // 4) Precisa estar em Playing (Menu/Paused bloqueiam Move).
+            // 4) Precisa estar em Playing (Ready/Paused bloqueiam Move).
             if (resolvedState != ServiceState.Playing)
             {
                 decision = MoveDecision.NotPlaying;
@@ -291,12 +365,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
 
         private void SyncMoveDecisionLogIfChanged(bool forceLog)
         {
-            // Avalia e loga se mudou; usado em callbacks para reduzir spam.
-            _ = EvaluateMoveAllowed(out var decision, out var resolvedState, out var loopStateName);
+            _ = EvaluateMoveAllowed(out var decision, out var resolvedState, out string loopStateName);
 
             if (forceLog)
             {
-                // Força log do estado atual (normalmente desnecessário).
                 MaybeLogMoveDecisionTransition(decision, resolvedState, loopStateName, force: true);
                 return;
             }
@@ -323,21 +395,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             _lastResolvedState = resolvedState;
             _lastLoopStateName = loopStateName ?? string.Empty;
 
-            var gateIsOpen = _gateService?.IsOpen ?? true;
-            var activeTokens = _gateService?.ActiveTokenCount ?? 0;
-            var paused = _gateService != null && _gateService.IsTokenActive(SimulationGateTokens.Pause);
+            bool gateIsOpen = _gateService?.IsOpen ?? true;
+            int activeTokens = _gateService?.ActiveTokenCount ?? 0;
+            bool paused = _gateService != null && _gateService.IsTokenActive(SimulationGateTokens.Pause);
 
-            // Mantém o texto estável e informativo para você bater com log facilmente.
-            if (decision == MoveDecision.Allowed)
-            {
-                DebugUtility.LogVerbose<NewScriptsStateDependentService>(
-                    $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, gameplayReady={(_hasReadinessSnapshot ? _gameplayReady : true)}, paused={paused}, serviceState={resolvedState}, gameLoopState='{loopStateName}', activeTokens={activeTokens}).");
-            }
-            else
-            {
-                DebugUtility.LogVerbose<NewScriptsStateDependentService>(
-                    $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, gameplayReady={(_hasReadinessSnapshot ? _gameplayReady : true)}, paused={paused}, serviceState={resolvedState}, gameLoopState='{loopStateName}', activeTokens={activeTokens}).");
-            }
+            DebugUtility.LogVerbose<NewScriptsStateDependentService>(
+                decision == MoveDecision.Allowed ? $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, gameplayReady={(!_hasReadinessSnapshot || _gameplayReady)}, paused={paused}, serviceState={resolvedState}, gameLoopState='{loopStateName}', activeTokens={activeTokens})."
+                    : $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, gameplayReady={(!_hasReadinessSnapshot || _gameplayReady)}, paused={paused}, serviceState={resolvedState}, gameLoopState='{loopStateName}', activeTokens={activeTokens}).");
         }
     }
 }

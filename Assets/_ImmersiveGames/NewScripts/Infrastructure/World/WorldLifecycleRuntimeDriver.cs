@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -6,6 +7,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.World
 {
@@ -14,12 +16,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
     /// dispara hard reset do WorldLifecycle.
     ///
     /// Regra recomendada:
-    /// - Profile "startup" (Menu) NÃO roda reset de world/spawn (MenuScene é "sem infra").
+    /// - Profile "startup" (Frontend/Ready) NÃO roda reset de world/spawn.
     /// - Para gameplay profiles, executa ResetWorldAsync no controller da cena alvo.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleRuntimeDriver : IDisposable
     {
+        private const string StartupProfileName = "startup";
+
+        // Observação: mantemos MenuScene como "cena frontend" por regra atual do projeto,
+        // mas evitamos usar "menu" na nomenclatura (conceito é NonGameplay/Frontend).
+        private const string FrontendSceneName = "MenuScene";
+
+        private const string CompletedReasonSkipped = "Skipped_StartupOrFrontend";
+        private const string CompletedReasonNoController = "Failed_NoController";
+
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _onScenesReady;
         private int _resetInFlight; // 0/1
 
@@ -55,26 +66,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
 
         private async Task HandleScenesReadyAsync(SceneTransitionScenesReadyEvent evt)
         {
-            var profile = evt.Context.TransitionProfileName ?? string.Empty;
+            string profile = evt.Context.TransitionProfileName ?? string.Empty;
 
-            var activeSceneName =
+            string activeSceneName =
                 !string.IsNullOrWhiteSpace(evt.Context.TargetActiveScene)
                     ? evt.Context.TargetActiveScene
                     : SceneManager.GetActiveScene().name;
 
-            var reason = $"ScenesReady/{activeSceneName}";
+            string reason = $"ScenesReady/{activeSceneName}";
 
             try
             {
-                // Regra: Menu/startup não faz reset de world.
-                if (string.Equals(profile, "startup", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(activeSceneName, "MenuScene", StringComparison.Ordinal))
+                // Regra: startup/frontend não faz reset de world.
+                if (IsFrontendProfile(profile) || IsFrontendScene(activeSceneName))
                 {
                     DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeDriver),
-                        $"[WorldLifecycle] Reset SKIPPED (profile/menu). profile='{profile}', activeScene='{activeSceneName}'.",
+                        $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile}', activeScene='{activeSceneName}'.",
                         DebugUtility.Colors.Info);
 
-                    RaiseCompleted(evt.Context, "Skipped_StartupOrMenu");
+                    RaiseCompleted(evt.Context, CompletedReasonSkipped);
                     return;
                 }
 
@@ -90,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
                     DebugUtility.LogError(typeof(WorldLifecycleRuntimeDriver),
                         $"[WorldLifecycle] WorldLifecycleController não encontrado na cena '{activeSceneName}'. Reset abortado.");
 
-                    RaiseCompleted(evt.Context, "Failed_NoController");
+                    RaiseCompleted(evt.Context, CompletedReasonNoController);
                     return;
                 }
 
@@ -111,26 +121,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
             }
         }
 
+        private static bool IsFrontendProfile(string profile)
+        {
+            return string.Equals(profile, StartupProfileName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsFrontendScene(string sceneName)
+        {
+            return string.Equals(sceneName, FrontendSceneName, StringComparison.Ordinal);
+        }
+
         private static WorldLifecycleController FindControllerInScene(string sceneName)
         {
-            var controllers = UnityEngine.Object.FindObjectsByType<WorldLifecycleController>(FindObjectsSortMode.None);
+            WorldLifecycleController[] controllers = Object.FindObjectsByType<WorldLifecycleController>(FindObjectsSortMode.None);
 
-            foreach (var c in controllers)
-            {
-                if (c == null) continue;
+            return (from c in controllers where c != null let s = c.gameObject.scene where s.IsValid() && s.isLoaded && string.Equals(s.name, sceneName, StringComparison.Ordinal) select c).FirstOrDefault();
 
-                var s = c.gameObject.scene;
-                if (s.IsValid() && s.isLoaded && string.Equals(s.name, sceneName, StringComparison.Ordinal))
-                    return c;
-            }
-
-            return null;
         }
 
         private static void RaiseCompleted(SceneTransitionContext context, string reason)
         {
-            var signature = context.ToString();
-            var profile = context.TransitionProfileName ?? string.Empty;
+            string signature = context.ToString();
+            string profile = context.TransitionProfileName ?? string.Empty;
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeDriver),
                 $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{profile}', signature='{signature}', reason='{reason}'.",

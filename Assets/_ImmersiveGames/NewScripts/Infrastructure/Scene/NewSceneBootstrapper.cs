@@ -129,10 +129,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (worldDefinition == null)
             {
-                // Esperado em cenas sem spawn (Menu). Evita WARNING no fluxo normal.
+                // Esperado em cenas sem spawn (Ready). Evita WARNING no fluxo normal.
                 DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                     $"WorldDefinition não atribuída (scene='{_sceneName}'). " +
-                    "Isto é permitido em cenas sem spawn (ex.: Menu). Serviços de spawn não serão registrados.");
+                    "Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados.");
 
                 DebugUtility.Log(typeof(NewSceneBootstrapper),
                     "Spawn services registered from definition: 0");

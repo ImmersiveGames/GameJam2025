@@ -44,23 +44,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         {
             Application.logMessageReceived += OnLogMessage;
 
-            if (!NativeEnabled)
-            {
-                DebugUtility.Log(typeof(SceneFlowPlayModeSmokeBootstrap), $"{LogTag} INCONCLUSIVE - NEWSCRIPTS_SCENEFLOW_NATIVE ausente.");
-                WriteReport("INCONCLUSIVE");
-                SetExit(3, "INCONCLUSIVE");
-                Application.logMessageReceived -= OnLogMessage;
-                if (Application.isBatchMode)
-                {
-                    Application.Quit(Environment.ExitCode);
-                }
-                yield break;
-            }
-
             var runnerObject = new GameObject("SceneFlowSmokeRunner");
             var runner = runnerObject.AddComponent<NewScriptsInfraSmokeRunner>();
             var nativeTester = runnerObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
-            var legacyTester = runnerObject.AddComponent<LegacySceneFlowBridgeSmokeQATester>();
+            var legacyTester = runnerObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
 
             runner.ConfigureSceneFlowOnly(nativeTester, legacyTester, enableVerbose: true);
 

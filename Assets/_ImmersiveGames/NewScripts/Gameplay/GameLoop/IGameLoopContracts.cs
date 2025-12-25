@@ -1,17 +1,8 @@
-// (arquivo completo no download)
-// Atualização: adiciona GameLoopStateId.Menu para suportar Boot → Menu → Playing → Paused.
-
 using System;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
-    public enum GameLoopStateId
-    {
-        Boot,
-        Menu,
-        Playing,
-        Paused
-    }
+    public enum GameLoopStateId { Boot, Ready, Playing, Paused }
 
     public interface IGameLoopSignals
     {
@@ -26,5 +17,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void OnStateEntered(GameLoopStateId stateId, bool isActive);
         void OnStateExited(GameLoopStateId stateId);
         void OnGameActivityChanged(bool isActive);
+    }
+
+    public interface IGameLoopService : IDisposable
+    {
+        void Initialize();
+        void Tick(float dt);
+        void RequestStart();
+        void RequestPause();
+        void RequestResume();
+        void RequestReset();
+        string CurrentStateIdName { get; }
     }
 }

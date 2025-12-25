@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         [SerializeField] private bool verboseLogs = true;
 
         [Header("QA/SceneFlow ContextMenu")]
-        [Tooltip("Nome da cena de Menu (usado pelos context menus de transição).")]
+        [Tooltip("Nome da cena de Ready (usado pelos context menus de transição).")]
         [SerializeField] private string menuSceneName = "MenuScene";
 
         [Tooltip("Nome da cena UI global (usado pelos context menus de transição).")]
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         [Tooltip("Nome da cena de Gameplay (ajuste para o nome real do seu projeto).")]
         [SerializeField] private string gameplaySceneName = "GameplayScene";
 
-        [Tooltip("Profile do SceneFlow para Menu/startup (deve casar com as regras do WorldLifecycleRuntimeDriver).")]
+        [Tooltip("Profile do SceneFlow para Ready/startup (deve casar com as regras do WorldLifecycleRuntimeDriver).")]
         [SerializeField] private string menuProfileName = "startup";
 
         [Tooltip("Profile do SceneFlow para gameplay (deve ser diferente de 'startup').")]
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.World
         // QA: SceneFlow Context Menus
         // ----------------------------
 
-        [ContextMenu("QA/SceneFlow/Transition -> Menu (startup)")]
+        [ContextMenu("QA/SceneFlow/Transition -> Ready (startup)")]
         public async void SceneFlowToMenuNow()
         {
             var request = new SceneTransitionRequest(

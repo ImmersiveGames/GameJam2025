@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.GameLoop;
 using UnityEngine;
@@ -6,92 +5,75 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Bootstrap estático para registrar e iniciar o serviço de GameLoop em NewScripts.
+    /// Responsável por garantir que o GameLoop esteja registrado e pronto no DI global:
+    /// - IGameLoopService (GameLoopService)
+    /// - GameLoopEventInputBridge (entrada de eventos definitivos)
+    /// - GameLoopRuntimeDriver (ticker do serviço)
+    ///
+    /// Importante:
+    /// - O bootstrap NÃO tick o serviço. Quem tick é o GameLoopRuntimeDriver.
     /// </summary>
-    public static class GameLoopBootstrap
+    [DefaultExecutionOrder(-900)]
+    public sealed class GameLoopBootstrap : MonoBehaviour
     {
-        private const string RuntimeDriverObjectName = "[NewScripts] GameLoopRuntimeDriver";
+        private const string DriverObjectName = "[NewScripts] GameLoopRuntimeDriver";
 
         private static bool _initialized;
 
-        /// <summary>
-        /// Garante o registro e inicialização do IGameLoopService no escopo global.
-        /// Idempotente: múltiplas chamadas não recriam o serviço.
-        /// </summary>
-        public static void EnsureRegistered()
+        public static void Ensure()
         {
             if (_initialized)
+            {
                 return;
+            }
 
-            EnsureServiceRegisteredAndInitialized();
-            RegisterEventBridge();
-            EnsureRuntimeDriver();
+            EnsureService();
+            EnsureBridge();
+            EnsureDriver();
 
             _initialized = true;
         }
 
-        private static void EnsureServiceRegisteredAndInitialized()
+        private static void EnsureService()
         {
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var existing) || existing == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var svc) || svc == null)
             {
-                var service = new GameLoopService();
-                DependencyManager.Provider.RegisterGlobal<IGameLoopService>(service);
-
-                service.Initialize();
-
-                DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                    "IGameLoopService registrado e inicializado.");
+                svc = new GameLoopService();
+                DependencyManager.Provider.RegisterGlobal(svc);
             }
-            else
-            {
-                // Garantia defensiva: mesmo se já existir, assegura que está inicializado.
-                existing.Initialize();
 
-                DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                    "IGameLoopService já estava registrado (Initialize() garantido).");
-            }
+            // Initialize deve ser idempotente.
+            svc.Initialize();
         }
 
-        private static void RegisterEventBridge()
+        private static void EnsureBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<GameLoopEventInputBridge>(out var bridge) && bridge != null)
+            if (DependencyManager.Provider.TryGetGlobal<GameLoopEventInputBridge>(out _))
             {
-                DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                    "[GameLoop] Bridge de entrada já estava registrado.");
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var service) || service == null)
-            {
-                DebugUtility.LogWarning(typeof(GameLoopBootstrap),
-                    "[GameLoop] IGameLoopService indisponível; Bridge de entrada não será registrado.");
-                return;
-            }
-
-            bridge = new GameLoopEventInputBridge();
+            var bridge = new GameLoopEventInputBridge();
             DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                "[GameLoop] Bridge de entrada registrado após IGameLoopService.");
         }
 
-        private static void EnsureRuntimeDriver()
+        private static void EnsureDriver()
         {
-            // Se já existir na cena/hierarquia (incluindo DontDestroyOnLoad), não cria outro.
-            var existing = Object.FindFirstObjectByType<GameLoopRuntimeDriver>();
-            if (existing != null)
+            if (FindFirstObjectByType<GameLoopRuntimeDriver>() != null)
             {
-                DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                    "[GameLoop] GameLoopRuntimeDriver já existe; não será recriado.");
                 return;
             }
 
-            var go = new GameObject(RuntimeDriverObjectName);
+            var go = new GameObject(DriverObjectName);
             go.AddComponent<GameLoopRuntimeDriver>();
-            Object.DontDestroyOnLoad(go);
+            DontDestroyOnLoad(go);
+        }
 
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                "[GameLoop] GameLoopRuntimeDriver criado (DontDestroyOnLoad) para tickar o GameLoop.");
+        private void Awake()
+        {
+            // Permite usar o bootstrap em uma cena (por prefab), mas sem criar duplicatas.
+            Ensure();
+            DontDestroyOnLoad(gameObject);
         }
     }
 }

@@ -1,6 +1,7 @@
 /*
  * ChangeLog
- * - Nova ponte de pause: converte GamePauseEvent/GameResumeRequestedEvent em gate SimulationGateTokens.Pause sem congelar física.
+ * - Ponte de pause: converte GamePauseCommandEvent/GameResumeRequestedEvent em gate SimulationGateTokens.Pause sem congelar física.
+ * - Improvement: resolve gate sob demanda (lazy) para cenários em que DI global ainda não está pronto no ctor.
  */
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -17,10 +18,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GamePauseGateBridge : IDisposable
     {
-        private const string Token = SimulationGateTokens.Pause;
+        private const string PauseToken = SimulationGateTokens.Pause;
 
-        private readonly ISimulationGateService _gateService;
-        private readonly EventBinding<GamePauseEvent> _pauseBinding;
+        private ISimulationGateService _gateService;
+
+        private readonly EventBinding<GamePauseCommandEvent> _pauseBinding;
         private readonly EventBinding<GameResumeRequestedEvent> _resumeBinding;
 
         private IDisposable _activeHandle;
@@ -30,27 +32,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
         public GamePauseGateBridge(ISimulationGateService gateService)
         {
-            _gateService = gateService ?? ResolveGateService();
+            _gateService = gateService;
 
-            _pauseBinding = new EventBinding<GamePauseEvent>(OnGamePause);
+            _pauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate("GameResumeRequestedEvent"));
 
             TryRegisterBindings();
-        }
-
-        private ISimulationGateService ResolveGateService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
-            {
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] ISimulationGateService resolvido via DependencyManager.");
-                return resolved;
-            }
-
-            DebugUtility.LogWarning<GamePauseGateBridge>(
-                "[PauseBridge] ISimulationGateService indisponível; bridge ficará inativo até que um gate seja registrado.");
-            _loggedMissingGate = true;
-            return null;
         }
 
         public void Dispose()
@@ -63,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
             if (_bindingsRegistered)
             {
-                EventBus<GamePauseEvent>.Unregister(_pauseBinding);
+                EventBus<GamePauseCommandEvent>.Unregister(_pauseBinding);
                 EventBus<GameResumeRequestedEvent>.Unregister(_resumeBinding);
                 _bindingsRegistered = false;
             }
@@ -75,12 +62,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
         {
             try
             {
-                EventBus<GamePauseEvent>.Register(_pauseBinding);
+                EventBus<GamePauseCommandEvent>.Register(_pauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_resumeBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] Registrado nos eventos GamePauseEvent/GameResumeRequestedEvent → SimulationGate.");
+                    "[PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent → SimulationGate.");
             }
             catch (Exception ex)
             {
@@ -90,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
         }
 
-        private void OnGamePause(GamePauseEvent evt)
+        private void OnGamePause(GamePauseCommandEvent evt)
         {
             var shouldPause = evt is { IsPaused: true };
             if (shouldPause)
@@ -99,44 +86,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
             else
             {
-                ReleasePauseGate("GamePauseEvent(paused=false)");
+                ReleasePauseGate("GamePauseCommandEvent(paused=false)");
             }
         }
 
         private void AcquirePauseGate()
         {
-            if (_gateService == null)
+            if (!EnsureGateResolved())
             {
                 LogGateUnavailable();
                 return;
             }
 
-            if (_gateService.IsTokenActive(Token))
+            if (_gateService.IsTokenActive(PauseToken))
             {
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[PauseBridge] Gate já bloqueado com token='{Token}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                    $"[PauseBridge] Gate já bloqueado com token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
                 return;
             }
 
             ReleaseHandle();
-            _activeHandle = _gateService.Acquire(Token);
+            _activeHandle = _gateService.Acquire(PauseToken);
 
             DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[PauseBridge] Gate adquirido com token='{Token}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                $"[PauseBridge] Gate adquirido com token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
         }
 
         private void ReleasePauseGate(string reason)
         {
-            if (_gateService == null)
+            if (!EnsureGateResolved())
             {
                 LogGateUnavailable();
                 return;
             }
 
-            if (!_gateService.IsTokenActive(Token))
+            if (!_gateService.IsTokenActive(PauseToken))
             {
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[PauseBridge] Release ignorado ({reason}) — token '{Token}' não está ativo. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                    $"[PauseBridge] Release ignorado ({reason}) — token '{PauseToken}' não está ativo. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
                 ReleaseHandle();
                 return;
             }
@@ -147,13 +134,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
             else
             {
-                _gateService.Release(Token);
+                _gateService.Release(PauseToken);
             }
 
             _activeHandle = null;
 
             DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[PauseBridge] Gate liberado ({reason}) token='{Token}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+        }
+
+        private bool EnsureGateResolved()
+        {
+            if (_gateService != null)
+            {
+                return true;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
+            {
+                _gateService = resolved;
+                _loggedMissingGate = false;
+
+                DebugUtility.LogVerbose<GamePauseGateBridge>(
+                    "[PauseBridge] ISimulationGateService resolvido via DependencyManager (lazy).");
+
+                return true;
+            }
+
+            return false;
         }
 
         private void ReleaseHandle()

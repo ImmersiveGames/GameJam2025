@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.QA
 
         private void ApplyPauseState(bool paused)
         {
-            // Publica GamePauseEvent(IsPaused=paused). Para “resume”, também tenta GameResumeRequestedEvent / GameStartEvent.
+            // Publica GamePauseCommandEvent(IsPaused=paused). Para “resume”, também tenta GameResumeRequestedEvent / GameStartCommandEvent.
             try
             {
                 PublishGamePauseEvent(paused);
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.QA
                 {
                     // Ordem proposital: resume-request primeiro; fallback para start.
                     PublishSimpleEvent<GameResumeRequestedEvent>();
-                    PublishSimpleEvent<GameStartEvent>();
+                    PublishSimpleEvent<GameStartRequestedEvent>();
                 }
 
                 DebugUtility.LogVerbose(
@@ -261,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.QA
         private void PublishGamePauseEvent(bool paused)
         {
             // Não assume construtor/propriedade; tenta setar IsPaused via reflection se existir.
-            var evt = CreateEventInstance<GamePauseEvent>();
+            var evt = CreateEventInstance<GamePauseCommandEvent>();
             TrySetPausedFlag(evt, paused);
             PublishEvent(evt);
         }

@@ -1,158 +1,128 @@
-// (arquivo completo no download)
-
-using System;
-using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
-    /// <summary>
-    /// FSM concreta do GameLoop usando a infraestrutura modular criada em NewScripts.
-    /// Mantém transições básicas de Boot → Menu → Playing → Paused e resets genéricos.
-    /// </summary>
-    public class GameLoopStateMachine
+    public sealed class GameLoopStateMachine
     {
         private readonly IGameLoopSignals _signals;
         private readonly IGameLoopStateObserver _observer;
-        private readonly StateMachine _stateMachine;
 
-        private BootState _bootState;
-        private MenuState _menuState;
-        private PlayingState _playingState;
-        private PausedState _pausedState;
+        public GameLoopStateId Current { get; private set; } = GameLoopStateId.Boot;
+        public bool IsGameActive => Current == GameLoopStateId.Playing;
+
+        // Guard para evitar loops inesperados se sinais forem mantidos indevidamente.
+        private const int MaxTransitionsPerTick = 4;
 
         public GameLoopStateMachine(IGameLoopSignals signals, IGameLoopStateObserver observer = null)
         {
-            _signals = signals ?? throw new ArgumentNullException(nameof(signals));
+            _signals = signals;
             _observer = observer;
-            _stateMachine = BuildStateMachine();
+            NotifyEnter(Current, IsGameActive);
         }
 
-        public IState CurrentState => _stateMachine.CurrentState;
-
-        public void Update() => _stateMachine.Update();
-        public void FixedUpdate() => _stateMachine.FixedUpdate();
-
-        public bool CanPerform(ActionType action) => _stateMachine.CurrentState?.CanPerformAction(action) ?? false;
-        public bool IsGameActive() => _stateMachine.CurrentState?.IsGameActive() ?? false;
-
-        private StateMachine BuildStateMachine()
+        public void Update()
         {
-            _bootState = new BootState(_observer);
-            _menuState = new MenuState(_observer);
-            _playingState = new PlayingState(_observer);
-            _pausedState = new PausedState(_observer);
-
-            var builder = new StateMachineBuilder();
-
-            builder.AddState(_bootState, out var boot);
-            builder.AddState(_menuState, out var menu);
-            builder.AddState(_playingState, out var playing);
-            builder.AddState(_pausedState, out var paused);
-
-            // Boot é um estado transitório: avança automaticamente para Menu no primeiro tick.
-            builder.At(boot, menu, new FuncPredicate(() => true));
-
-            // Menu → Playing quando o usuário inicia o jogo.
-            builder.At(menu, playing, new FuncPredicate(() => _signals.StartRequested));
-
-            // Playing ↔ Paused
-            builder.At(playing, paused, new FuncPredicate(() => _signals.PauseRequested));
-            builder.At(paused, playing, new FuncPredicate(() => _signals.ResumeRequested));
-
-            // Reset global para Boot.
-            builder.Any(boot, new FuncPredicate(() => _signals.ResetRequested));
-
-            builder.StateInitial(boot);
-            return builder.Build();
-        }
-    }
-
-    internal abstract class GameLoopStateBase : IState
-    {
-        private readonly HashSet<ActionType> _allowedActions = new();
-        private readonly IGameLoopStateObserver _observer;
-
-        protected GameLoopStateBase(GameLoopStateId stateId, IGameLoopStateObserver observer)
-        {
-            StateId = stateId;
-            _observer = observer;
-        }
-
-        protected GameLoopStateId StateId { get; }
-
-        protected void AllowActions(params ActionType[] actions)
-        {
-            foreach (var action in actions)
+            // Permite encadear Boot -> Ready -> Playing no mesmo tick quando StartRequested é transient (limpo no fim do Tick).
+            var transitions = 0;
+            while (transitions < MaxTransitionsPerTick && TryTransitionOnce())
             {
-                _allowedActions.Add(action);
+                transitions++;
             }
         }
 
-        public virtual void OnEnter()
+        private bool TryTransitionOnce()
         {
-            _observer?.OnStateEntered(StateId, IsGameActive());
-            _observer?.OnGameActivityChanged(IsGameActive());
+            // Reset tem prioridade máxima (determinístico).
+            if (_signals.ResetRequested)
+            {
+                return TransitionTo(GameLoopStateId.Boot);
+            }
+
+            var next = Current;
+
+            switch (Current)
+            {
+                case GameLoopStateId.Boot:
+                    if (_signals.StartRequested)
+                    {
+                        next = GameLoopStateId.Ready;
+                    }
+                    break;
+
+                case GameLoopStateId.Ready:
+                    if (_signals.StartRequested)
+                    {
+                        next = GameLoopStateId.Playing;
+                    }
+                    break;
+
+                case GameLoopStateId.Playing:
+                    if (_signals.PauseRequested)
+                    {
+                        next = GameLoopStateId.Paused;
+                    }
+                    break;
+
+                case GameLoopStateId.Paused:
+                    if (_signals.ResumeRequested)
+                    {
+                        next = GameLoopStateId.Playing;
+                    }
+                    break;
+            }
+
+            if (next == Current)
+            {
+                return false;
+            }
+
+            return TransitionTo(next);
         }
 
-        public virtual void OnExit()
+        private bool TransitionTo(GameLoopStateId next)
         {
-            _observer?.OnStateExited(StateId);
+            if (next == Current)
+            {
+                return false;
+            }
+
+            NotifyExit(Current);
+            Current = next;
+            NotifyEnter(Current, IsGameActive);
+            return true;
         }
 
-        public virtual void Update() { }
-        public virtual void FixedUpdate() { }
-
-        public virtual bool CanPerformAction(ActionType action) => _allowedActions.Contains(action);
-
-        public abstract bool IsGameActive();
-    }
-
-    internal sealed class BootState : GameLoopStateBase
-    {
-        public BootState(IGameLoopStateObserver observer) : base(GameLoopStateId.Boot, observer)
+        /// <summary>
+        /// Capability map por estado macro do GameLoop.
+        ///
+        /// Importante:
+        /// - Este método NÃO é gate-aware (não consulta SimulationGate/Readiness).
+        /// - Não deve ser usado como autorização final de gameplay.
+        /// - A decisão final deve ocorrer em IStateDependentService (gate-aware).
+        /// </summary>
+        public bool IsActionAllowedByLoopState(ActionType action) => Current switch
         {
-            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel);
+            GameLoopStateId.Boot =>
+                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel,
+
+            GameLoopStateId.Ready =>
+                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
+
+            GameLoopStateId.Playing =>
+                action is ActionType.Move or ActionType.Shoot or ActionType.Interact or ActionType.Spawn,
+
+            GameLoopStateId.Paused =>
+                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
+
+            _ => false
+        };
+
+        private void NotifyEnter(GameLoopStateId id, bool active)
+        {
+            _observer?.OnStateEntered(id, active);
+            _observer?.OnGameActivityChanged(active);
         }
 
-        public override bool IsGameActive() => false;
-    }
-
-    /// <summary>
-    /// Estado de menu onde a simulação ainda não está ativa e apenas ações de UI/navegação são liberadas.
-    /// </summary>
-    internal sealed class MenuState : GameLoopStateBase
-    {
-        public MenuState(IGameLoopStateObserver observer) : base(GameLoopStateId.Menu, observer)
-        {
-            AllowActions(
-                ActionType.Navigate,
-                ActionType.UiSubmit,
-                ActionType.UiCancel,
-                ActionType.RequestReset,
-                ActionType.RequestQuit);
-        }
-
-        public override bool IsGameActive() => false;
-    }
-
-    internal sealed class PlayingState : GameLoopStateBase
-    {
-        public PlayingState(IGameLoopStateObserver observer) : base(GameLoopStateId.Playing, observer)
-        {
-            AllowActions(ActionType.Move, ActionType.Shoot, ActionType.Interact, ActionType.Spawn);
-        }
-
-        public override bool IsGameActive() => true;
-    }
-
-    internal sealed class PausedState : GameLoopStateBase
-    {
-        public PausedState(IGameLoopStateObserver observer) : base(GameLoopStateId.Paused, observer)
-        {
-            AllowActions(ActionType.Navigate, ActionType.UiSubmit, ActionType.UiCancel, ActionType.RequestReset, ActionType.RequestQuit);
-        }
-
-        public override bool IsGameActive() => false;
+        private void NotifyExit(GameLoopStateId id) => _observer?.OnStateExited(id);
     }
 }

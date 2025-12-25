@@ -7,17 +7,16 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 {
     /// <summary>
-    /// Bridge de eventos do GameLoop (EventBus -> IGameLoopService).
+    /// Bridge de eventos definitivos do GameLoop (EventBus -> IGameLoopService).
     ///
-    /// Regras:
-    /// - Só consome COMMAND (GameStartEvent). REQUEST é responsabilidade do coordinator.
-    /// - O coordinator decide quando emitir COMMAND; o bridge apenas executa.
+    /// Regras (alinhadas ao GameLoop.md):
+    /// - NÃO consome eventos de intenção de start (GameStartCommandEvent). Start é coordenado via SceneFlow.
+    /// - Consome apenas eventos definitivos: pause/resume/reset.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopEventInputBridge : IDisposable
     {
-        private readonly EventBinding<GameStartEvent> _onStartCommand;
-        private readonly EventBinding<GamePauseEvent> _onPause;
+        private readonly EventBinding<GamePauseCommandEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
         private readonly EventBinding<GameResetRequestedEvent> _onResetRequested;
 
@@ -25,18 +24,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 
         public GameLoopEventInputBridge()
         {
-            _onStartCommand = new EventBinding<GameStartEvent>(OnGameStartCommand);
-            _onPause = new EventBinding<GamePauseEvent>(OnGamePause);
+            _onPause = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
             _onResetRequested = new EventBinding<GameResetRequestedEvent>(OnGameResetRequested);
 
-            EventBus<GameStartEvent>.Register(_onStartCommand);
-            EventBus<GamePauseEvent>.Register(_onPause);
+            EventBus<GamePauseCommandEvent>.Register(_onPause);
             EventBus<GameResumeRequestedEvent>.Register(_onResume);
             EventBus<GameResetRequestedEvent>.Register(_onResetRequested);
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
-                "[GameLoop] Bridge de entrada registrado no EventBus (consome apenas COMMAND).");
+                "[GameLoop] Bridge de entrada registrado no EventBus (pause/resume/reset).");
         }
 
         public void Dispose()
@@ -46,8 +43,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 
             _disposed = true;
 
-            EventBus<GameStartEvent>.Unregister(_onStartCommand);
-            EventBus<GamePauseEvent>.Unregister(_onPause);
+            EventBus<GamePauseCommandEvent>.Unregister(_onPause);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
             EventBus<GameResetRequestedEvent>.Unregister(_onResetRequested);
         }
@@ -58,25 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
             return DependencyManager.Provider.TryGetGlobal(out loop) && loop != null;
         }
 
-        private void OnGameStartCommand(GameStartEvent evt)
-        {
-            if (!TryResolveLoop(out var loop))
-            {
-                DebugUtility.LogError<GameLoopEventInputBridge>(
-                    "[GameLoop] IGameLoopService não encontrado no DI global ao processar GameStartEvent (COMMAND).");
-                return;
-            }
-
-            DebugUtility.Log<GameLoopEventInputBridge>(
-                "[GameLoop] GameStartEvent (COMMAND) recebido. Liberando GameLoop.RequestStart().",
-                DebugUtility.Colors.Info);
-
-            // Initialize é idempotente; mantido como proteção contra regressões.
-            loop.Initialize();
-            loop.RequestStart();
-        }
-
-        private void OnGamePause(GamePauseEvent evt)
+        private void OnGamePause(GamePauseCommandEvent evt)
         {
             if (!TryResolveLoop(out var loop))
                 return;

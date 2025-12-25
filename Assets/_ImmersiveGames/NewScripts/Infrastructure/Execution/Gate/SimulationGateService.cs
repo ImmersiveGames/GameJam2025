@@ -4,11 +4,19 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 {
+    /// <summary>
+    /// Implementação thread-safe do gate baseada em tokens com ref-count.
+    /// - Suporta múltiplos Acquire do mesmo token (não libera prematuramente).
+    /// - Mantém GateChanged somente quando o estado aberto/fechado muda.
+    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SimulationGateService : ISimulationGateService
     {
-        private readonly HashSet<string> _tokens = new();
+        private readonly Dictionary<string, int> _tokenCounts = new(StringComparer.Ordinal);
         private readonly object _lock = new();
+
+        // Mantemos um contador de "tokens distintos ativos" por performance e clareza.
+        private int _activeTokenTypes;
 
         public bool IsOpen
         {
@@ -16,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             {
                 lock (_lock)
                 {
-                    return _tokens.Count == 0;
+                    return _activeTokenTypes == 0;
                 }
             }
         }
@@ -27,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             {
                 lock (_lock)
                 {
-                    return _tokens.Count;
+                    return _activeTokenTypes;
                 }
             }
         }
@@ -43,20 +51,36 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
 
             bool changed;
+            bool wasOpen;
+            bool isOpenNow;
+
             lock (_lock)
             {
-                var wasOpen = _tokens.Count == 0;
-                _tokens.Add(token);
-                var isOpenNow = _tokens.Count == 0;
-                changed = (wasOpen != isOpenNow);
+                wasOpen = _activeTokenTypes == 0;
+
+                if (_tokenCounts.TryGetValue(token, out var count))
+                {
+                    _tokenCounts[token] = count + 1;
+                }
+                else
+                {
+                    _tokenCounts[token] = 1;
+                    _activeTokenTypes++;
+                }
+
+                isOpenNow = _activeTokenTypes == 0;
+                changed = wasOpen != isOpenNow;
             }
 
             if (changed)
             {
-                RaiseGateChanged();
+                RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogVerbose<SimulationGateService>($"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+            DebugUtility.LogVerbose<SimulationGateService>(
+                $"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+
+            // Handle libera "uma aquisição" (ref-count).
             return new ReleaseHandle(this, token, shouldRelease: true);
         }
 
@@ -68,28 +92,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
 
             bool changed;
-            bool removed;
+            bool wasOpen;
+            bool isOpenNow;
+            bool removedAny;
 
             lock (_lock)
             {
-                bool wasOpen = _tokens.Count == 0;
-                removed = _tokens.Remove(token);
-                bool isOpenNow = _tokens.Count == 0;
-                changed = (wasOpen != isOpenNow);
+                wasOpen = _activeTokenTypes == 0;
+
+                // Release direto = remove TOTAL do token (fallback/manual).
+                removedAny = _tokenCounts.Remove(token);
+                if (removedAny)
+                {
+                    _activeTokenTypes = _tokenCounts.Count;
+                }
+
+                isOpenNow = _activeTokenTypes == 0;
+                changed = removedAny && (wasOpen != isOpenNow);
             }
 
-            if (!removed)
+            if (!removedAny)
             {
-                DebugUtility.LogVerbose<SimulationGateService>($"[Gate] Release token='{token}' ignorado (token não estava ativo).");
+                DebugUtility.LogVerbose<SimulationGateService>(
+                    $"[Gate] Release token='{token}' ignorado (token não estava ativo).");
                 return;
             }
 
             if (changed)
             {
-                RaiseGateChanged();
+                RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogVerbose<SimulationGateService>($"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+            DebugUtility.LogVerbose<SimulationGateService>(
+                $"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
         }
 
         public bool IsTokenActive(string token)
@@ -101,13 +136,71 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
             lock (_lock)
             {
-                return _tokens.Contains(token);
+                return _tokenCounts.ContainsKey(token);
             }
         }
 
-        private void RaiseGateChanged()
+        // Libera exatamente "uma aquisição" (ref-count) — usado pelo handle.
+        private void ReleaseOne(string token)
         {
-            bool isOpen = IsOpen;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            bool changed;
+            bool wasOpen;
+            bool isOpenNow;
+            bool removed;
+
+            lock (_lock)
+            {
+                wasOpen = _activeTokenTypes == 0;
+
+                if (!_tokenCounts.TryGetValue(token, out var count))
+                {
+                    removed = false;
+                    isOpenNow = _activeTokenTypes == 0;
+                    changed = false;
+                }
+                else
+                {
+                    removed = true;
+
+                    if (count <= 1)
+                    {
+                        _tokenCounts.Remove(token);
+                    }
+                    else
+                    {
+                        _tokenCounts[token] = count - 1;
+                    }
+
+                    _activeTokenTypes = _tokenCounts.Count;
+
+                    isOpenNow = _activeTokenTypes == 0;
+                    changed = wasOpen != isOpenNow;
+                }
+            }
+
+            if (!removed)
+            {
+                DebugUtility.LogVerbose<SimulationGateService>(
+                    $"[Gate] ReleaseOne token='{token}' ignorado (token não estava ativo).");
+                return;
+            }
+
+            if (changed)
+            {
+                RaiseGateChanged(isOpenNow);
+            }
+
+            DebugUtility.LogVerbose<SimulationGateService>(
+                $"[Gate] ReleaseOne token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+        }
+
+        private void RaiseGateChanged(bool isOpen)
+        {
             try
             {
                 GateChanged?.Invoke(isOpen);
@@ -143,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
                 if (_shouldRelease)
                 {
-                    _service.Release(_token);
+                    _service.ReleaseOne(_token);
                 }
             }
         }

@@ -7,7 +7,7 @@
  * - Baseline/QA não depende de Scene Flow; portanto, sinaliza GameReadinessService manualmente:
  *   - SetGameplayReady(false) ao iniciar um run
  *   - SetGameplayReady(true) ao concluir com sucesso (ou ao final best-effort)
- * - Gate Validation aborta se o jogo não estiver ativo (IsGameActive == false) para evitar falsos negativos em Menu.
+ * - Gate Validation aborta se o jogo não estiver ativo (IsGameActive == false) para evitar falsos negativos em Ready.
  */
 
 using System;
@@ -469,12 +469,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             try
             {
-                EventBus<GamePauseEvent>.Raise(new GamePauseEvent(paused));
+                EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(paused));
                 var prefix = runId != null ? $"[{runId}] " : string.Empty;
                 DebugUtility.LogVerbose(typeof(WorldLifecycleBaselineRunner),
                     paused
-                        ? $"{prefix}[QA Gate Toggle] Ações bloqueadas; física NÃO congelada (GamePauseEvent)."
-                        : $"{prefix}[QA Gate Toggle] Ações liberadas; física continua normal (GamePauseEvent).");
+                        ? $"{prefix}[QA Gate Toggle] Ações bloqueadas; física NÃO congelada (GamePauseCommandEvent)."
+                        : $"{prefix}[QA Gate Toggle] Ações liberadas; física continua normal (GamePauseCommandEvent).");
 
                 if (!paused)
                 {

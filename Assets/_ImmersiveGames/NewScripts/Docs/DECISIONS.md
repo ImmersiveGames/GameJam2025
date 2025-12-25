@@ -1,27 +1,114 @@
-# DECISIONS — Limites atuais
+# Decisões e ADRs (resumo)
 
-- Não inclui gameplay neste estágio; foco em infraestrutura mínima e ciclo de vida do mundo.
-- Não mantém singletons globais de gameplay; persistência é explícita por cena ou ator.
-- Não presume cenas/prefabs padrão; cada equipe monta a cena seguindo a arquitetura base e o bootstrapper de cena.
-- Inicialização ocorre via `NewSceneBootstrapper`; nada cria registries ou serviços de ciclo de vida fora dele.
-- Dependências são resolvidas explicitamente (DI/EventBus); nada é obtido por reflection ou heurística.
-- Não assume rede online; foco exclusivo em multiplayer local.
-- Não utiliza heurísticas por nome para identificar atores/jogadores.
-- WorldLifecycleHookRegistry ownership: Bootstrapper-only.
-- Controller/Orchestrator são consumidores; guardrails e logs para flagrar duplo-registro ou resolução fora de ordem.
-- QA/Testers não garantem execução em `Awake`; devem tolerar boot order com lazy injection + retry/timeout e falhar com mensagem acionável se o bootstrapper não rodou.
-- Fluxo operacional detalhado do WorldLifecycle vive em `WorldLifecycle/WorldLifecycle.md`; este arquivo mantém apenas normas/guardrails.
+Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
-## Política de Uso do Legado
-- NewScripts define a arquitetura e os contratos ideais como fonte de verdade; o legado não é baseline.
-- Não assumir integração com legado (código, interfaces, serviços, adaptadores/bridges) por padrão.
-- Qualquer proposta de reaproveitamento do legado deve vir como sugestão explícita, com: (a) motivo, (b) benefício, (c) riscos, (d) alternativas.
-- Implementação só acontece após autorização explícita do usuário para cada caso.
-- Enquanto não autorizado, evitar dependências e referências diretas ao namespace/infra do legado.
-- O legado pode ser usado apenas como linhas gerais e comportamento histórico, nunca como padrão arquitetural.
+## Convenções
+- Cada decisão possui: **ID**, **Status**, **Decisão**, **Motivação** e **Consequências**.
+- ADRs completos podem existir na pasta `Docs/ADR/` do repositório.
 
-### Checklist para PR/Commit
-- Existe alguma referência ao legado?
-- Foi explicitamente autorizado?
-- Foi documentado o motivo e a alternativa considerada?
-- A migração mantém NewScripts como source of truth?
+---
+
+## ADR-0001 — Migração do legado (bridges temporários)
+**Status:** Ativo (migração incremental)
+
+**Decisão:** manter “bridges” para conectar sistemas legados ao pipeline NewScripts durante a transição, minimizando reescrita e permitindo validar infraestrutura antes do gameplay completo.
+
+**Motivação:** reduzir risco e permitir evolução por commits pequenos, mantendo o jogo executável.
+
+**Consequências:**
+- haverá código de adaptação (ex.: loader fallback),
+- logs devem deixar explícito quando o fluxo está em “fallback”,
+- bridges são temporárias e devem ser removidas quando serviços nativos NewScripts estiverem prontos.
+
+---
+
+## ADR-000X — Ciclo de Vida do Jogo e Reset por Escopos
+**Status:** Ativo (base operacional)
+
+**Decisão:** reset determinístico por escopos e fases, com hooks e participantes registrados por cena.
+
+**Motivação:** permitir resets previsíveis e testáveis, evitando “estado invisível” residual.
+
+**Consequências:**
+- cenas NewScripts devem registrar registries (actor/spawn/hooks/participants),
+- reset deve ser acionado de forma centralizada (driver/orchestrator),
+- gameplay deve respeitar gate/readiness.
+
+Referência operacional: `WORLD_LIFECYCLE.md`.
+
+---
+
+## ADR-0009 — Fade + SceneFlow (NewScripts)
+**Status:** Implementado e validado
+
+**Decisão:** implementar Fade no pipeline de SceneFlow usando:
+- `INewScriptsFadeService` com `FadeScene` (Additive)
+- `NewScriptsSceneTransitionProfile` resolvido via Resources
+- sem fallback para fade legado
+
+**Motivação:** garantir transições visuais padronizadas sem depender de UI/DI legados.
+
+**Consequências:**
+- o asset de profile deve estar em `Resources/SceneFlow/Profiles/`
+- o adapter de fade deve aplicar profile (durations/curves) antes do FadeIn/FadeOut
+- falha de resolução de profile deve degradar para defaults (não travar o fluxo)
+
+Referência: `ADR-0009-FadeSceneFlow.md`.
+
+---
+
+## ADR-00XX — Readiness/Gate como fonte de verdade para “pronto para jogar”
+**Status:** Ativo
+
+**Decisão:** consolidar “prontidão” em `GameReadinessService` com tokens do `ISimulationGateService`, alimentado por eventos de SceneFlow.
+
+**Motivação:** evitar “if espalhado” e conditions divergentes (transição, pausa, carregamento).
+
+**Consequências:**
+- ações de gameplay devem consultar `IStateDependentService` (gate-aware)
+- transição de cena sempre deve adquirir/liberar token de gate
+- logs devem publicar snapshots para depuração.
+
+---
+
+## ADR-00XX — SKIP de WorldLifecycle em startup/menu
+**Status:** Temporário (para estabilização e testes)
+
+**Decisão:** o `WorldLifecycleRuntimeDriver` emite `WorldLifecycleResetCompletedEvent` e não executa reset em:
+- `profile == 'startup'`, ou
+- `activeScene == 'MenuScene'`.
+
+**Motivação:** evitar contaminar testes de Fade/SceneFlow com dependências da GameplayScene.
+
+**Consequências:**
+- gameplay real ainda precisa integrar reset/spawn em cena de gameplay,
+- o Coordinator continua destravando corretamente após transições em menu.
+
+## Decisão — Eventos do GameLoop permanecem context-free
+- O GameLoop não transporta `ContextSignature` em eventos de start/pause/resume/reset.
+- A correlação por assinatura é feita pelo Coordinator via eventos do Scene Flow (`SceneTransitionContext`) e World Lifecycle (`WorldLifecycleResetCompletedEvent`).
+- Se transições concorrentes se tornarem um requisito, introduzir `GameStartCommandEvent` com `ContextSignature` como extensão (não padrão).
+
+## ADR-0010 — GameLoop events são context-free; correlação é do Coordinator
+**Status:** Ativo
+
+**Decisão:** Eventos do GameLoop (ex.: `GameStartEvent`) permanecem **context-free**. A correlação de transição/reset é feita exclusivamente por `GameLoopSceneFlowCoordinator` usando:
+- `SceneTransitionContext` (events Started/Completed) e
+- `WorldLifecycleResetCompletedEvent.ContextSignature`.
+
+**Motivação:** evitar acoplamento do domínio do GameLoop ao domínio de SceneFlow/WorldLifecycle, mantendo testabilidade e SRP.
+
+**Consequências:**
+- O sistema assume **uma transição em voo por vez**.
+- Multi-transições concorrentes não são cenário suportado sem evolução explícita do contrato.
+
+## ADR-0011 — `CanPerform` não autoriza gameplay; enforcement é gate-aware via IStateDependentService
+**Status:** Ativo
+
+**Decisão:** `CanPerform(...)` no GameLoop expressa apenas “capacidade por estado macro” e não consulta gate/readiness. A autorização final de ações é feita por `IStateDependentService` (gate-aware).
+
+**Motivação:** separar “estado do loop” de “estado de infraestrutura” (gate/readiness), evitando acoplamento e mantendo determinismo do pipeline.
+
+**Consequências:**
+- Código de gameplay não deve usar `CanPerform` como única condição de execução.
+- Logs e bloqueios devem sempre refletir `IStateDependentService` como fonte de verdade.

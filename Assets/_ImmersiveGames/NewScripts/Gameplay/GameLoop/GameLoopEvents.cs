@@ -1,41 +1,30 @@
+using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// REQUEST: intenção de iniciar o jogo (UI, menus, QA, etc.).
-    /// Nunca deve iniciar o GameLoop diretamente; é convertido em COMMAND por um coordinator.
+    /// REQUEST (intenção): "quero iniciar a simulação".
+    /// O start definitivo é o COMMAND executado pelo Coordinator via IGameLoopService.RequestStart() quando ready.
     /// </summary>
     public sealed class GameStartRequestedEvent : IEvent { }
 
     /// <summary>
-    /// COMMAND: ordem definitiva para iniciar o GameLoop.
-    /// Consumido pelo GameLoopEventInputBridge.
+    /// Compatibilidade: nome legado que alguns chamadores adotaram.
+    /// Apesar do nome "Command", este evento é tratado como REQUEST (intenção).
     /// </summary>
-    public sealed class GameStartEvent : IEvent { }
+    [Obsolete("Use GameStartRequestedEvent. Este evento é um alias legado tratado como REQUEST.")]
+    public sealed class GameStartCommandEvent : IEvent { }
 
     /// <summary>
-    /// Evento definitivo indicando o estado atual de pausa.
+    /// Evento definitivo para pausa / despausa.
     /// </summary>
-    public sealed class GamePauseEvent : IEvent
+    public sealed class GamePauseCommandEvent : IEvent
     {
-        public bool IsPaused { get; set; }
-
-        public GamePauseEvent() { }
-
-        public GamePauseEvent(bool isPaused)
-        {
-            IsPaused = isPaused;
-        }
+        public GamePauseCommandEvent(bool isPaused) => IsPaused = isPaused;
+        public bool IsPaused { get; }
     }
 
-    /// <summary>
-    /// Evento solicitando que o jogo seja retomado após um pause.
-    /// </summary>
     public sealed class GameResumeRequestedEvent : IEvent { }
-
-    /// <summary>
-    /// Evento solicitando reset completo do loop de jogo.
-    /// </summary>
     public sealed class GameResetRequestedEvent : IEvent { }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
-    /// Runner global (DontDestroyOnLoad) responsável por tickar o IGameLoopService.
+    /// Runner global (DontDestroyOnLoad) responsável por ticker o IGameLoopService.
     /// Criado automaticamente pelo GameLoopBootstrap.
     /// </summary>
     [DefaultExecutionOrder(-900)]
@@ -25,7 +25,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             {
                 ResolveService(logIfMissing: false);
                 if (_service == null)
+                {
                     return;
+                }
             }
 
             _service.Tick(Time.deltaTime);
