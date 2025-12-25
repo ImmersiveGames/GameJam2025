@@ -1,419 +1,154 @@
 # World Lifecycle (NewScripts)
 
-> Este documento descreve **operacionalmente** o comportamento do **WorldLifecycle** no **domínio da simulação**
-> e implementa as decisões descritas no
-> **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**
-> (`../ADR/ADR-ciclo-de-vida-jogo.md`).
-
-> **Escopo explícito deste documento**
-> Este documento **não descreve navegação de App / Frontend / Menus visuais**.
-> Ele descreve **exclusivamente o ciclo de vida da simulação** executada **dentro de uma cena de Gameplay**.
+> Este documento descreve o comportamento do **World Lifecycle** no NewScripts e como ele se integra ao **Scene Flow** (transições de cena), **GameLoop** e **Readiness/Gate**.
+>
+> Escopo: **comportamento validado** no pipeline atual (startup/menu) e pontos de extensão para gameplay.
 
 ---
 
-## 1. Visão Geral
+## Conceitos principais
 
-O **WorldLifecycle** é responsável por:
+**WorldLifecycleController**
+- Responsável por executar resets (ex.: `ResetWorldAsync`, `ResetPlayersAsync`) quando acionado.
+- Pode estar com `AutoInitializeOnStart` desabilitado para evitar spawn/reset automático em cenários de menu/startup.
 
-* Construir a simulação
-* Resetar a simulação
-* Garantir determinismo entre execuções
-* Serializar operações críticas via `ISimulationGateService`
+**WorldLifecycleRuntimeDriver**
+- Driver global que reage a eventos do Scene Flow (ex.: `SceneTransitionScenesReadyEvent`).
+- Decide se deve rodar reset ou **pular** (skip) com base no **profile** da transição e no **contexto** (ex.: Menu).
 
-Ele **não**:
+**Reset por escopos**
+- Além do reset completo, existe reset direcionado por escopo (ex.: Players).
+- Participantes são registrados no escopo de cena (ex.: `PlayersResetParticipant` via `NewSceneBootstrapper`).
 
-* controla telas de menu
-* navega entre cenas
-* define UX de App
+**Readiness / Gate**
+- Durante transições, o sistema fecha o gate e marca `gameplayReady=false`.
+- Ao concluir a transição, o gate é liberado e `gameplayReady=true` (fluxo de produção).
 
-Essas responsabilidades pertencem ao **App Frontend / Scene Flow**.
-
-### Contratos principais
-
-* **Hard Reset (Full Reset)**
-  Reconstrói completamente o mundo da simulação
-  (despawn + spawn)
-
-* **Soft Reset Players (Reset-In-Place)**
-  Reset **lógico por escopo**, preservando instâncias, identidades e hierarquia física
+> Importante: o Gate **não congela física automaticamente**. Ele bloqueia *ações* (inputs/execução lógica),
+> mas rigidbodies podem continuar com gravidade se isso não for tratado separadamente.
 
 ---
 
-## 2. Notas de Infraestrutura (Fronteiras Arquiteturais)
+## Integração com Scene Flow e GameLoop (fluxo de produção)
 
-### FSMs
+O fluxo validado para startup/menu hoje é:
 
-* Infra genérica de FSM:
-  `_ImmersiveGames/NewScripts/Infrastructure/Fsm`
-* FSM concreta do GameLoop (controle de simulação):
-  `_ImmersiveGames/NewScripts/Gameplay/GameLoop`
+1. **GameLoop recebe Start REQUEST**
+    - O Start REQUEST (por produção ou QA) leva o coordenador a disparar uma transição de cena.
 
-### Bootstrap (fronteira com legado)
+2. **GameLoopSceneFlowCoordinator monta o plano**
+    - Exemplo validado (startup):
+        - Load = `[MenuScene, UIGlobalScene]`
+        - Unload = `[NewBootstrap]`
+        - Active = `MenuScene`
+        - UseFade = `true`
+        - Profile = `startup`
 
-* O **legado não inicializa o NewScripts**
-* O `DependencyBootstrapper` legado **não registra serviços do NewScripts**
-* Em `NEWSCRIPTS_MODE`:
+3. **SceneTransitionService executa a transição**
+    - Publica eventos (ordem relevante):
+        - `SceneTransitionStarted`
+        - `SceneTransitionScenesReady`
+        - `SceneTransitionCompleted`
 
-    * `GlobalBootstrap` registra:
+4. **GameReadinessService fecha/abre o Gate durante a transição**
+    - Em `Started`: adquire token (ex.: `flow.scene_transition`), `gameplayReady=false`
+    - Em `Completed`: libera token, `gameplayReady=true`
 
-        * `ISimulationGateService`
-        * `GamePauseGateBridge`
-        * `NewScriptsStateDependentService`
-        * `WorldLifecycleRuntimeDriver`
-    * Tudo ocorre **antes das cenas**
-    * Sem dependência do bootstrap legado
+5. **WorldLifecycleRuntimeDriver reage a `ScenesReady`**
+    - Emite `WorldLifecycleResetCompletedEvent(...)` quando:
+        - executa reset, ou
+        - **SKIP** (startup/menu) para não contaminar testes com spawn/reset de gameplay.
 
-➡️ Essa separação é **intencional e não negociável**.
-
----
-
-## 3. Pause — Gate sem congelar física
-
-### Semântica correta de Pause
-
-Pause **não é**:
-
-* `Time.timeScale = 0`
-* congelar `Rigidbody`
-* interromper física
-
-Pause **é**:
-
-* bloqueio lógico de ações
-
-### Pipeline de Pause
-
-```
-GamePauseEvent(paused=true)
-→ GamePauseGateBridge
-→ SimulationGateTokens.Pause
-→ ISimulationGateService
-→ NewScriptsStateDependentService
-→ ActionType.Move bloqueado
-```
-
-### Efeito prático
-
-* Física continua rodando
-* Gravidade continua atuando
-* Controladores deixam de aplicar input/velocidade
-* Nenhuma mutação em `timeScale`
-
-➡️ O **serviço oficial de permissões** é
-`NewScriptsStateDependentService` (registrado pelo `GlobalBootstrap`)
-
-Para estados globais (Boot / Playing / Paused) veja:
-`../GameLoop/GameLoop.md`
+6. **Coordinator finaliza**
+    - Quando receber `TransitionCompleted` + `WorldLifecycleResetCompletedEvent`, chama `GameLoop.RequestStart()`
+    - GameLoop transita para `Playing` (no fluxo atual, `Playing` significa “jogo ativo”, mesmo ainda estando em MenuScene, dependendo do design do seu loop).
 
 ---
 
-## 4. Reset Determinístico — Hard Reset (Full Reset)
+## Skip no Menu/Startup (comportamento validado)
 
-Pipeline garantido pelo `WorldLifecycleOrchestrator`:
+No profile `startup` com `activeScene='MenuScene'`, o runtime driver do WorldLifecycle **não roda reset**.
 
-```
-Acquire Gate (WorldLifecycle.WorldReset)
-→ OnBeforeDespawn (World)
-→ OnBeforeActorDespawn
-→ DespawnAsync
-→ OnAfterDespawn
-→ IResetScopeParticipant (se houver)
-→ OnBeforeSpawn
-→ SpawnAsync
-→ OnAfterActorSpawn
-→ OnAfterSpawn
-→ Release Gate
-```
+- Isso evita:
+    - spawn de gameplay
+    - dependências de GameplayScene
+    - “contaminação” do baseline de menu/startup
 
-### Propriedades garantidas
+O driver ainda emite:
+- `WorldLifecycleResetCompletedEvent(..., reason='Skipped_StartupOrMenu')`
 
-* Ordem estável
-* Fail-fast
-* Logs de duração
-* Serialização via gate
-
-### Logs de skip
-
-Se uma fase não tiver hooks:
-
-```
-<PhaseName> phase skipped (hooks=0)
-```
-
-➡️ Isso **é esperado**, não erro.
+Isso é necessário para o `GameLoopSceneFlowCoordinator` completar a barreira (ScenesReady + WorldLifecycleResetCompleted) e seguir o fluxo.
 
 ---
 
-## 5. Reset por Escopo — Soft Reset Players (Reset-In-Place)
+## Cenas e componentes obrigatórios (baseline de startup/menu)
 
-### Contrato arquitetural
+Para o fluxo de startup/menu, o pipeline assume:
 
-Soft Reset Players **não reconstrói o mundo**.
+**Cenas**
+- `MenuScene` (Additive)
+- `UIGlobalScene` (Additive)
+- `FadeScene` (Additive, apenas durante a transição)
+- `NewBootstrap` (cena inicial que é descarregada ao final da transição)
 
-Durante este fluxo:
+**Componentes esperados**
+- `NewSceneBootstrapper` nas cenas NewScripts que precisam criar escopo de cena (ex.: NewBootstrap, MenuScene)
+- `SceneLoadingHudController` em `UIGlobalScene` (HUD/indicador de loading no fluxo atual)
+- `WorldLifecycleController` onde você quiser reset/spawn (normalmente no bootstrap/escopo relevante)
 
-* ❌ `DespawnAsync` não é chamado
-* ❌ `SpawnAsync` não é chamado
-* ✅ Instâncias preservadas
-* ✅ `ActorId` preservado
-* ✅ `ActorRegistry` permanece estável
-
-### Gate
-
-* Token: `SimulationGateTokens.SoftReset` (`flow.soft_reset`)
-
-### Pipeline Soft Reset Players
-
-```
-Acquire Gate (flow.soft_reset)
-→ (opcional) World Hooks
-→ OnBeforeActorDespawn (atores existentes)
-→ IResetScopeParticipant (Players)
-→ OnAfterActorSpawn (atores existentes)
-→ (opcional) World Hooks finais
-→ Release Gate
-```
-
-Logs esperados:
-
-```
-Despawn service skipped by scope filter
-Spawn service skipped by scope filter
-```
-
-➡️ Evidência positiva de reset-in-place correto.
+Observação:
+- `MenuScene` pode (corretamente) não ter `WorldDefinition` atribuída — e então **não registra spawn services**.
 
 ---
 
-## 6. Hard Reset vs Soft Reset (Resumo)
+## QA: o que é necessário hoje
 
-| Aspecto       | Hard Reset    | Soft Reset Players |
-| ------------- | ------------- | ------------------ |
-| Despawn       | Sim           | Não                |
-| Spawn         | Sim           | Não                |
-| ActorId       | Recriado      | Preservado         |
-| GameObject    | Reinstanciado | Mantido            |
-| ActorRegistry | Recomposto    | Mantido            |
-| Gate          | WorldReset    | SoftReset          |
-| Semântica     | Reconstrução  | Reset lógico       |
+Você comentou que, no fluxo atual de validação, está usando apenas:
 
----
+- `GameLoopStartRequestQAMenu` (ContextMenu) para emitir `GameStartRequestedEvent` e gerar logs determinísticos do fluxo.
 
-## 7. Cache de Hooks de Ator
+Isso é suficiente para:
+- validar SceneFlow startup
+- validar Fade (FadeScene + controller)
+- validar load/unload de cenas
+- validar Readiness/Gate e transição de estado do GameLoop
 
-* Hooks (`IActorLifecycleHook`) podem ser cacheados por `Transform`
-* Cache:
-
-    * válido apenas durante o reset
-    * limpo no `finally`
-* Nenhum cache entre resets
+**WorldLifecycleBaselineRunner (opcional)**
+- Serve para acionar `ResetWorldAsync/ResetPlayersAsync` sem depender do fluxo de produção.
+- Pode ser mantido como ferramenta de QA/dev, mas **não é necessário** para o “baseline startup/menu” quando o objetivo é evitar GameplayScene.
 
 ---
 
-## 8. Scene Flow × WorldLifecycle (Separação de Domínios)
+## Reset por escopos (ex.: Players)
 
-* **Scene Flow**:
+Além do reset completo (`ResetWorldAsync`), existe reset direcionado por escopo (`ResetPlayersAsync`).
 
-    * troca de cenas
-    * readiness
-    * binds cross-scene
-* **WorldLifecycle**:
+Regra prática:
+- Um reset de escopo só mexe no que pertence àquele escopo.
+- O resto do mundo permanece.
 
-    * reset
-    * spawn/despawn
-    * simulação
-
-### Linha do tempo oficial
-
-```
-SceneTransitionStarted
-↓
-SceneScopeReady
-↓
-SceneTransitionScenesReady
-↓
-WorldLoaded
-↓
-SpawnPrewarm
-↓
-SceneScopeBound
-↓
-SceneTransitionCompleted
-↓
-GameplayReady
-↓
-[Soft Reset] ou [Hard Reset]
-```
-
-Fonte:
-`../ADR/ADR-ciclo-de-vida-jogo.md#definição-de-fases-linha-do-tempo`
+No setup atual, existe pelo menos:
+- `PlayersResetParticipant` (registrado pelo `NewSceneBootstrapper`)
 
 ---
 
-## 9. Readiness (Contrato Funcional)
+## Checklist rápido de troubleshooting
 
-* **SceneScopeReady**
-  Registries prontos, gameplay bloqueado
-* **WorldLoaded**
-  Serviços de mundo podem preparar dados
-* **SceneScopeBound**
-  UI / HUD podem bindar
-* **GameplayReady**
-  Gate liberado, simulação ativa
+Se algo “não acontece” durante o fluxo:
 
-➡️ Gameplay **nunca** roda antes de `GameplayReady`.
-
----
-
-## 10. Spawn Determinístico e Late Bind
-
-Passes oficiais:
-
-1. SpawnPrewarm
-2. World Services
-3. Actors
-4. Late Bindables
-5. UI Bind
-
-Regra:
-
-* UI conecta **após SceneScopeBound**
-* antes de `GameplayReady`
+- O `GameLoopSceneFlowCoordinator` registrou o start plan esperado?
+    - Log típico: `StartPlan: Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap] ... Profile='startup'`
+- O `SceneTransitionService` está disparando `Started/ScenesReady/Completed`?
+- O `GameReadinessService` está adquirindo e liberando o token `flow.scene_transition`?
+- O `NewScriptsFadeService` localizou o `NewScriptsFadeController`?
+- `MenuScene` realmente não tem `WorldDefinition`? (ok para menu)
+- O runtime driver está emitindo `WorldLifecycleResetCompletedEvent` (mesmo quando skip)?
 
 ---
 
-## 11. ResetScope.Players — Semântica Correta
+## Changelog (deste documento)
 
-### Escopo é funcional, não estrutural
-
-`ResetScope.Players` representa:
-
-* baseline de gameplay do jogador
-* input, câmera, HUD, timers, caches
-
-❌ **Não** significa:
-
-> “reset apenas dos componentes do prefab Player”
-
-### Participantes podem ser externos
-
-* UI
-* câmera
-* domínios
-* serviços
-* timers
-
----
-
-## 12. Baseline Audit — ResetScope.Players (2025-12-19)
-
-### Estado atual (As-Is)
-
-* Infra de reset por escopo existe e funciona
-* Pipeline correto
-* Gate correto
-* **Payload funcional inexistente**
-
-### Participantes
-
-* Apenas `PlayersResetParticipant`
-* Executa apenas logs
-
-### Conclusão
-
-Soft Reset Players está **arquiteturalmente correto**, mas **funcionalmente vazio**.
-
-➡️ Próximo passo:
-Conectar resets reais via `IResetScopeParticipant`, **sem alterar o pipeline**.
-
----
-
-## 13. Registry, Injeção e Boot Order
-
-* `WorldLifecycleHookRegistry` criado apenas no `NewSceneBootstrapper`
-* Consumidores devem:
-
-    * usar `Start()` ou
-    * lazy injection com retry curto
-
----
-
-## 14. Troubleshooting QA / Boot
-
-Checklist:
-
-1. `NewSceneBootstrapper` presente
-2. Lazy injection
-3. Mensagem acionável em falha
-
----
-
-## 15. Migração Legado → NewScripts
-
-* Ver ADR-0001
-* Guardrails:
-
-    * sem referência direta ao legado
-    * bridges explícitas
-    * gate sempre ativo
-
----
-
-## 16. Baseline Validation
-
-Checklist:
-`../QA/WorldLifecycle-Baseline-Checklist.md`
-
----
-
-## Nota Final de Semântica
-
-Este documento descreve **o ciclo de vida da simulação**
-executada **dentro de GameplayScene**.
-
-Menus de App, splash screens e navegação pertencem a outro domínio.
-
-Essa separação é **intencional** e **fundamental** para escalar o projeto.
-
----
-
-## Validação por log (2025-12-24) — Gate/tokens e integração com SceneTransitionScenesReady
-
-Esta seção registra comportamentos observados no log real.
-
-### Tokens (SimulationGate) observados
-
-Durante uma transição de cena com reset automático no `ScenesReady`, há **tokens aninhados**:
-
-- `flow.scene_transition` (adquirido pelo `GameReadinessService` ao receber `SceneTransitionStarted`)
-- `WorldLifecycle.WorldReset` (adquirido pelo `WorldLifecycleOrchestrator` ao iniciar o hard reset)
-
-No log, isso aparece como:
-- `Acquire token='flow.scene_transition'. Active=1. IsOpen=False`
-- `Acquire token='WorldLifecycle.WorldReset'. Active=2. IsOpen=False`
-
-O gate só reabre quando **todos** os tokens são liberados:
-- `Release token='WorldLifecycle.WorldReset'. Active=1. IsOpen=False` (ainda fechado)
-- `Release token='flow.scene_transition'. Active=0. IsOpen=True` (abre)
-
-### Implicação operacional
-Mesmo que o `WorldReset` termine, o gameplay continua bloqueado enquanto a transição de cenas estiver em progresso. Isso permite suportar corretamente a camada de **fade/loading** (quando habilitada) sem liberar input/simulação antes do momento correto.
-
-### Ordem de fases (confirmada no log)
-No hard reset disparado por `ScenesReady`, a ordem completa executada foi:
-
-1. `OnBeforeDespawn` (hooks de cena, ordenados)
-2. `OnBeforeActorDespawn` (hooks por ator, se existir)
-3. `Despawn` (por serviço de spawn)
-4. `OnAfterDespawn` (hooks de cena)
-5. `OnBeforeSpawn` (hooks de cena)
-6. `Spawn` (por serviço de spawn)
-7. `OnAfterActorSpawn` (hooks por ator)
-8. `OnAfterSpawn` (hooks de cena)
-
-### Nota sobre baseline runner
-O `WorldLifecycleBaselineRunner` desabilita `AutoInitializeOnStart` e executa:
-- Hard Reset
-- Soft Reset Players
-
-com snapshots do `GameReadinessService` marcando `gameplayReady` conforme o momento do teste (ex.: `baseline_started/*` e `baseline_completed/*`).
+- 2025-12-25:
+    - Normalizado o documento para refletir o **fluxo de produção validado** (GameLoop → SceneFlow → Readiness/Gate → WorldLifecycleRuntimeDriver).
+    - Documentado o **SKIP** no profile `startup` quando `activeScene=MenuScene`.
+    - Clarificado que `WorldLifecycleBaselineRunner` é **opcional** no baseline startup/menu e que o QA pode usar apenas o `GameLoopStartRequestQAMenu`.

@@ -2195,7 +2195,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1480128420}
-  - component: {fileID: 1480128419}
+  - component: {fileID: 1480128421}
   m_Layer: 0
   m_Name: '[NewScripts] WorldLifecycle'
   m_TagString: Untagged
@@ -2203,20 +2203,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1480128419
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1480128418}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b0c953711b2951049b48a179e552fd34, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  autoInitializeOnStart: 0
-  verboseLogs: 1
 --- !u!4 &1480128420
 Transform:
   m_ObjectHideFlags: 0
@@ -2232,6 +2218,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1480128421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480128418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23d2a4de2804acfbf6127934bee98d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuScene: MenuScene
+  gameplayScene: GameplayScene
+  uiGlobalScene: UIGlobalScene
+  useFade: 1
+  verboseLogs: 1
 --- !u!1 &1503871948 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7318082970934494044, guid: b64f9f317c065a1449187cf8305c5e9e, type: 3}

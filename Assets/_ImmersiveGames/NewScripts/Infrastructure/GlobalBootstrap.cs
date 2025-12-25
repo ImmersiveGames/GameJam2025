@@ -25,6 +25,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.World;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
@@ -97,6 +98,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
+            // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
+            RegisterSceneFlowFadeModule();
+
             RegisterPauseBridge();
             RegisterGameLoop();
 
@@ -107,6 +111,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
+        }
+
+        private static void RegisterSceneFlowFadeModule()
+        {
+            // Registra o serviço de fade NewScripts no DI global.
+            RegisterIfMissing<INewScriptsFadeService>(() => new NewScriptsFadeService());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Fade] INewScriptsFadeService registrado no DI global (ADR-0009).",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory) where T : class

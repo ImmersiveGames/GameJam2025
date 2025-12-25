@@ -252,6 +252,122 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   logStateChanges: 1
   autoDiscoverParticipants: 1
+--- !u!1 &749720896
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 749720898}
+  - component: {fileID: 749720897}
+  m_Layer: 0
+  m_Name: '[NewScripts] WorldLifecycle'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &749720897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749720896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23d2a4de2804acfbf6127934bee98d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuScene: MenuScene
+  gameplayScene: GameplayScene
+  uiGlobalScene: UIGlobalScene
+  useFade: 1
+  verboseLogs: 1
+--- !u!4 &749720898
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 749720896}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &772402748
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 772402750}
+  - component: {fileID: 772402749}
+  - component: {fileID: 772402751}
+  m_Layer: 0
+  m_Name: '[NewScripts] SceneScope'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &772402749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772402748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 385c45de56804d3d8e6b205b1a710c6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  worldDefinition: {fileID: 11400000, guid: 72a1a5ad8348bd54d8da4cf5d30538f1, type: 2}
+--- !u!4 &772402750
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772402748}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &772402751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772402748}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0c953711b2951049b48a179e552fd34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoInitializeOnStart: 1
+  verboseLogs: 1
+  menuSceneName: MenuScene
+  uiGlobalSceneName: UIGlobalScene
+  bootstrapSceneName: NewBootstrap
+  gameplaySceneName: GameplayScene
+  menuProfileName: startup
+  gameplayProfileName: gameplay
+  sceneFlowUseFade: 1
 --- !u!1 &885771671
 GameObject:
   m_ObjectHideFlags: 0
@@ -1729,6 +1845,8 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 772402750}
+  - {fileID: 749720898}
   - {fileID: 1555126170}
   - {fileID: 2013597643}
   - {fileID: 1171078547}

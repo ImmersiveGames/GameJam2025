@@ -30,7 +30,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             if (_registered)
             {
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
+                // Não é um problema em fluxo additive; reduzimos ruído (warning) para verbose.
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
                     $"Scene scope already created (ignored): {_sceneName}");
                 return;
             }
@@ -128,9 +129,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (worldDefinition == null)
             {
-                DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    $"WorldDefinition não atribuída. Isto é permitido em cenas sem spawn (ex.: Menu). " +
-                    $"Serviços de spawn não serão registrados. (scene='{_sceneName}')");
+                // Esperado em cenas sem spawn (Menu). Evita WARNING no fluxo normal.
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    $"WorldDefinition não atribuída (scene='{_sceneName}'). " +
+                    "Isto é permitido em cenas sem spawn (ex.: Menu). Serviços de spawn não serão registrados.");
 
                 DebugUtility.Log(typeof(NewSceneBootstrapper),
                     "Spawn services registered from definition: 0");
@@ -177,6 +179,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     if (service == null)
                     {
                         failedCreateCount++;
+                        // Mantém WARNING: aqui já é indicação real de configuração/entrada problemática.
                         DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                             $"Spawn entry #{index} FAILED_CREATE: Kind={entryKind}, Prefab={entryPrefabName}");
                         continue;
@@ -203,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (!scene.IsValid())
             {
-                // Fallback defensivo.
+                // Isso não deveria acontecer no fluxo normal; mantemos WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
 
@@ -237,6 +240,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             if (foundCount > 1)
             {
+                // Situação anômala; mantém WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     $"Multiple WorldRoot objects found in scene '{scene.name}': {foundCount}");
 
@@ -250,15 +254,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 }
 
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
-                    $"WorldRoot selected: {BuildTransformPath(selectedRoot.transform)}");
+                    $"WorldRoot selected: {BuildTransformPath(selectedRoot?.transform)}");
             }
 
-            if (selectedRoot.scene != scene)
+            if (selectedRoot != null && selectedRoot.scene != scene)
             {
                 SceneManager.MoveGameObjectToScene(selectedRoot, scene);
             }
 
-            return selectedRoot.transform;
+            return selectedRoot?.transform;
         }
 
         private void RegisterSceneLifecycleHooks(
@@ -267,6 +271,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (hookRegistry == null)
             {
+                // Anômalo; mantém WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     "WorldLifecycleHookRegistry ausente; hooks de cena não serão registrados.");
                 return;
@@ -274,6 +279,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             if (worldRoot == null)
             {
+                // Anômalo; mantém WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     "WorldRoot ausente; hooks de cena não serão adicionados.");
                 return;
@@ -304,6 +310,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         {
             if (hook == null)
             {
+                // Anômalo; mantém WARNING.
                 DebugUtility.LogWarning(typeof(NewSceneBootstrapper),
                     "Hook de cena nulo; registro ignorado.");
                 return;

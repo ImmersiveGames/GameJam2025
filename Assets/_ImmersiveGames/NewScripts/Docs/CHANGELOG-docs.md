@@ -3,6 +3,22 @@
 > Escopo: mudanças de documentação e consolidações de semântica/contratos do NewScripts.
 > Implementações (código) podem ser referenciadas aqui, mas o “source of truth” de código continua sendo o histórico do Git.
 
+
+
+## [2025-12-25]
+### Validated (Fade / SceneFlow — por evidência de log)
+- Validated: módulo de Fade do NewScripts integrado ao SceneFlow:
+    - `INewScriptsFadeService` registrado no DI global.
+    - `ISceneTransitionService` executa **Fade-in → operações de cena → Fade-out** quando `UseFade=True`.
+    - Fade implementado via **FadeScene aditiva** com controlador por `CanvasGroup`, sem dependência do legado.
+- Validated: suporte a **perfis de transição** influenciando o Fade (ex.: `startup`):
+    - Perfil resolvido por nome (path `SceneFlow/Profiles/startup`) e aplicado no adapter do SceneFlow (fadeIn/fadeOut).
+    - Evidência em log: resolução do tipo `_ImmersiveGames.NewScripts.Infrastructure.SceneFlow.NewScriptsSceneTransitionProfile` e aplicação de `fadeIn=0,5`, `fadeOut=0,5`.
+
+### Docs
+- Updated: `ADR-0009-FadeSceneFlow.md` marcado como **Implementado e validado**, com seção de evidência mínima (MenuScene + UIGlobalScene, profile `startup`).
+- Updated: `WorldLifecycle.md` adicionada nota de troubleshooting e referência cruzada para o ADR do Fade (fade é parte do SceneFlow, não do WorldLifecycle).
+
 ## [2025-12-24]
 ### Consolidated (Semântica / nomenclatura)
 - Clarified: **dois domínios** distintos e não-intercambiáveis:
