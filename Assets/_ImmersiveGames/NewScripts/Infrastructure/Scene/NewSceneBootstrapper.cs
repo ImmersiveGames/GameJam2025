@@ -2,9 +2,10 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -68,6 +69,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 spawnRegistry,
                 allowOverride: false);
 
+            // ----------------------------
+            // Gameplay Reset (Groups/Targets)
+            // ----------------------------
+            // Classificador de alvos (Players/Eater/ActorIdSet/All) para reset de gameplay.
+            if (!provider.TryGetForScene<IGameplayResetTargetClassifier>(_sceneName, out var classifier) || classifier == null)
+            {
+                classifier = new DefaultGameplayResetTargetClassifier();
+                provider.RegisterForScene(_sceneName, classifier, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    $"IGameplayResetTargetClassifier registrado para a cena '{_sceneName}'.");
+            }
+
+            // Orquestrador de reset de gameplay (por fases) acionável por participantes do WorldLifecycle.
+            if (!provider.TryGetForScene<IGameplayResetOrchestrator>(_sceneName, out var gameplayReset) || gameplayReset == null)
+            {
+                gameplayReset = new GameplayResetOrchestrator(_sceneName);
+                provider.RegisterForScene(_sceneName, gameplayReset, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    $"IGameplayResetOrchestrator registrado para a cena '{_sceneName}'.");
+            }
+
             // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
             // Nunca criar o WorldLifecycleHookRegistry no controller/orchestrator.
             WorldLifecycleHookRegistry hookRegistry;
@@ -88,6 +112,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                     $"WorldLifecycleHookRegistry registrado para a cena '{_sceneName}'.");
             }
 
+            // Ponte WorldLifecycle soft reset -> Gameplay reset
             var playersResetParticipant = new PlayersResetParticipant();
             provider.RegisterForScene<IResetScopeParticipant>(
                 _sceneName,
@@ -288,10 +313,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             var hookA = EnsureHookComponent<SceneLifecycleHookLoggerA>(worldRoot);
-            var hookB = EnsureHookComponent<SceneLifecycleHookLoggerB>(worldRoot);
 
             RegisterHookIfMissing(hookRegistry, hookA);
-            RegisterHookIfMissing(hookRegistry, hookB);
         }
 
         private static T EnsureHookComponent<T>(Transform worldRoot)

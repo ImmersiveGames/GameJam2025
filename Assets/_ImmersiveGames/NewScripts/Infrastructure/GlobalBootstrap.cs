@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterLegacySceneFlowBridge();
             RegisterSceneFlowNative();
 
-            RegisterIfMissing(() => new WorldLifecycleRuntimeDriver());
+            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());

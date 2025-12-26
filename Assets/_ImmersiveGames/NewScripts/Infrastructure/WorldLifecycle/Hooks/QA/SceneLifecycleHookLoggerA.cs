@@ -1,8 +1,7 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset.QA
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks.QA
 {
     /// <summary>
     /// Hook de lifecycle de cena para QA/dev que loga execução com menor prioridade.

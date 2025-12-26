@@ -42,8 +42,13 @@ Durante a transição:
     - `Resources/SceneFlow/Profiles/<profileName>`
 
 ### 5) World Lifecycle
+#### Reset por escopos vs Reset de gameplay
+
+- **WorldLifecycle (infra)**: reset determinístico do mundo (gate + hooks + spawn/despawn) e **soft reset por escopos** via `ResetScope` e `IResetScopeParticipant`.
+- **Gameplay Reset (gameplay)**: módulo em `Gameplay/Reset/` que define **alvos** (`GameplayResetTarget`) e **fases** (`GameplayResetPhase`) para resets de componentes (`IGameplayResettable`). Pode ser acionado via QA (direto) ou via bridges (ex.: `PlayersResetParticipant`).
+
 - Executa reset determinístico por escopos e fases (despawn/spawn/hook).
-- Integrado ao Scene Flow via `WorldLifecycleRuntimeDriver`:
+- Integrado ao Scene Flow via `WorldLifecycleRuntimeCoordinator`:
     - reage ao `SceneTransitionScenesReadyEvent`,
     - executa reset (ou SKIP em Menu/Startup),
     - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
@@ -62,7 +67,7 @@ Diagrama simplificado:
 4. Readiness fecha gate durante transição
 5. Fade executa (FadeScene)
 6. Scenes carregadas → `SceneTransitionScenesReadyEvent`
-7. WorldLifecycleRuntimeDriver: SKIP (startup/menu) e emite “reset completed”
+7. WorldLifecycleRuntimeCoordinator: SKIP (startup/menu) e emite “reset completed”
 8. Transição completa → gate reabre → Coordinator chama `GameLoop.RequestStart()`
 
 ## Documentos relacionados

@@ -23,6 +23,24 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 ---
 
 ## ADR-000X — Ciclo de Vida do Jogo e Reset por Escopos
+
+## ADR-00XX — Gameplay Reset por grupos (fases Cleanup/Restore/Rebind)
+
+**Motivação:** Enquanto o spawn ainda está sendo consolidado, precisamos de um mecanismo **testável** e local ao escopo da cena para validar “reset de gameplay” (ex.: players) sem depender do pipeline completo de spawn.
+
+Decisões:
+- O reset de gameplay fica em **Gameplay** (`Gameplay/Reset/`), não em infra, para evitar que o WorldLifecycle assuma regras de componentes de gameplay.
+- Usamos **`GameplayResetTarget`** (e não “Scope”) para evitar conflito semântico com `ResetScope` do WorldLifecycle.
+- O pipeline de gameplay tem 3 fases fixas: **`Cleanup → Restore → Rebind`** (`GameplayResetPhase`), com ordenação opcional via `IGameplayResetOrder`.
+- A integração com WorldLifecycle é feita por **bridges** via `IResetScopeParticipant` (ex.: `PlayersResetParticipant` → `IGameplayResetOrchestrator`).
+
+Renames (consolidação de nomes no reset de gameplay):
+| Antes | Depois | Motivo |
+|---|---|---|
+| `IGameplayResetParticipant` | `IGameplayResettable` | “Participant” conflita com `IResetScopeParticipant` do WorldLifecycle; “Resettable” é mais direto para componentes. |
+| `GameplayResetScope` | `GameplayResetTarget` | Evitar colisão conceitual com `ResetScope` (WorldLifecycle). |
+| `Reset_CleanupAsync / Reset_RestoreAsync / Reset_RebindAsync` (em componentes) | `ResetCleanupAsync / ResetRestoreAsync / ResetRebindAsync` | Normalização para remover underscores e alinhar com o contrato de interface. |
+
 **Status:** Ativo (base operacional)
 
 **Decisão:** reset determinístico por escopos e fases, com hooks e participantes registrados por cena.
@@ -74,7 +92,7 @@ Referência: `ADR-0009-FadeSceneFlow.md`.
 ## ADR-00XX — SKIP de WorldLifecycle em startup/menu
 **Status:** Temporário (para estabilização e testes)
 
-**Decisão:** o `WorldLifecycleRuntimeDriver` emite `WorldLifecycleResetCompletedEvent` e não executa reset em:
+**Decisão:** o `WorldLifecycleRuntimeCoordinator` emite `WorldLifecycleResetCompletedEvent` e não executa reset em:
 - `profile == 'startup'`, ou
 - `activeScene == 'MenuScene'`.
 

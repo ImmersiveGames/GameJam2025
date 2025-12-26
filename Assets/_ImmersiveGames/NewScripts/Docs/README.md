@@ -15,12 +15,23 @@ Arquivos canônicos (este pacote):
 - `ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
 
 ## Status atual (resumo)
+- Added: **Gameplay Reset module** (`Gameplay/Reset/`) com contratos e semântica estável:
+    - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet).
+    - `GameplayResetRequest` + `GameplayResetContext`.
+    - `IGameplayResettable` (+ `IGameplayResettableSync`), `IGameplayResetOrder`, `IGameplayResetTargetFilter`.
+    - `IGameplayResetOrchestrator` + `IGameplayResetTargetClassifier` (serviços por cena).
+- Added: **QA isolado para validar reset por grupos** (sem depender de Spawn 100%):
+    - `GameplayResetQaSpawner` cria atores de teste (ex.: Players) e registra `IGameplayResettable` de prova.
+    - `GameplayResetQaProbe` confirma execução das fases via logs (Cleanup/Restore/Rebind).
+- Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
+- Updated: padronização de nomes para reduzir ambiguidade com o reset por escopos do WorldLifecycle (ex.: “Target” no gameplay vs “Scope” no WorldLifecycle).
+
 Em 2025-12-25:
 - Pipeline **GameLoop → SceneTransitionService → Fade (FadeScene)** está funcional no perfil `startup` para carregar:
     - `MenuScene` + `UIGlobalScene` (Additive), definindo `MenuScene` como cena ativa.
 - `NewScriptsSceneTransitionProfile` é resolvido via **Resources** em:
     - `Resources/SceneFlow/Profiles/<profileName>`
-- `WorldLifecycleRuntimeDriver` recebe `SceneTransitionScenesReadyEvent` e:
+- `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e:
     - **SKIP** de reset quando `profile='startup'` ou `activeScene='MenuScene'`
     - Emite `WorldLifecycleResetCompletedEvent` mesmo no SKIP (mantém o Coordinator destravando).
 

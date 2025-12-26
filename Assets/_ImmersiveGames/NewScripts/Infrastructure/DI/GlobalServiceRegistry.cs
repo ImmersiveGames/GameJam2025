@@ -38,7 +38,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             foreach (object svc in _services.Values)
             {
                 if (svc is T typedService)
+                {
                     yield return typedService;
+                }
             }
         }
 

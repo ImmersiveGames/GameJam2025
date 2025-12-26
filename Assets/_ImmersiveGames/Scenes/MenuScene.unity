@@ -900,7 +900,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 385c45de56804d3d8e6b205b1a710c6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  worldDefinition: {fileID: 0}
+  worldDefinition: {fileID: 11400000, guid: 72a1a5ad8348bd54d8da4cf5d30538f1, type: 2}
 --- !u!4 &700441316
 Transform:
   m_ObjectHideFlags: 0
@@ -2195,6 +2195,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1480128420}
+  - component: {fileID: 1480128422}
   - component: {fileID: 1480128421}
   m_Layer: 0
   m_Name: '[NewScripts] WorldLifecycle'
@@ -2227,13 +2228,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 1480128418}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e23d2a4de2804acfbf6127934bee98d0, type: 3}
+  m_Script: {fileID: 11500000, guid: a5b1d16c7a6673f46aa437d665d42c34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  menuScene: MenuScene
-  gameplayScene: GameplayScene
-  uiGlobalScene: UIGlobalScene
-  useFade: 1
+  controller: {fileID: 1480128422}
+  resetReason: ContextMenu/ResetWorldNow
+  softResetPlayersReason: ContextMenu/SoftResetPlayers
+  menuSceneName: MenuScene
+  uiGlobalSceneName: UIGlobalScene
+  bootstrapSceneName: NewBootstrap
+  gameplaySceneName: GameplayScene
+  menuProfileName: startup
+  gameplayProfileName: gameplay
+  sceneFlowUseFade: 1
+--- !u!114 &1480128422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1480128418}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0c953711b2951049b48a179e552fd34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoInitializeOnStart: 0
   verboseLogs: 1
 --- !u!1 &1503871948 stripped
 GameObject:

@@ -38,6 +38,51 @@ Checklist típico de cena NewScripts:
 - registrar participantes de reset (ex.: PlayersResetParticipant)
 - **se for MenuScene**, `WorldDefinition` pode ser `null` (sem spawn)
 
+## 2.1) Exemplo: Componente de gameplay resettable (Cleanup/Restore/Rebind)
+
+```csharp
+using System.Threading.Tasks;
+using UnityEngine;
+using _ImmersiveGames.NewScripts.Gameplay.Reset;
+
+public sealed class ExampleResourceBar : MonoBehaviour,
+    IGameplayResettable,
+    IGameplayResetOrder,
+    IGameplayResetTargetFilter
+{
+    [SerializeField] private int max = 100;
+    private int _value;
+
+    public int ResetOrder => -10; // executa antes de componentes default (0)
+
+    public bool ShouldParticipate(GameplayResetTarget target)
+        => target == GameplayResetTarget.PlayersOnly || target == GameplayResetTarget.AllActorsInScene;
+
+    public Task ResetCleanupAsync(GameplayResetContext ctx)
+    {
+        // Desfaz assinaturas/eventos transitórios e zera caches.
+        return Task.CompletedTask;
+    }
+
+    public Task ResetRestoreAsync(GameplayResetContext ctx)
+    {
+        // Restaura estado base (sem rebind de dependências).
+        _value = max;
+        return Task.CompletedTask;
+    }
+
+    public Task ResetRebindAsync(GameplayResetContext ctx)
+    {
+        // Re-resolve serviços e re-assina eventos.
+        return Task.CompletedTask;
+    }
+}
+```
+
+Notas:
+- Use `IGameplayResetOrder` apenas quando houver dependências reais entre componentes.
+- Use `IGameplayResetTargetFilter` para evitar participar em targets que não fazem sentido para o componente.
+
 ## 3) Exemplo: Transição de cena com profile (PSEUDOCÓDIGO)
 
 Importante: `SceneTransitionContext` é `readonly struct`. Evite object initializer e `null`.

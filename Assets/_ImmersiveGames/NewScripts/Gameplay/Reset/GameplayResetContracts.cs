@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
+
+namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
     /// <summary>
     /// Fases assíncronas de reset para componentes de gameplay.
     /// </summary>
-    public enum GameplayResetStructs
+    public enum GameplayResetPhase
     {
         Cleanup = 0,
         Restore = 1,
@@ -13,9 +14,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
     }
 
     /// <summary>
-    /// Escopos suportados para reset de gameplay.
+    /// Alvo/escopo suportado para reset de gameplay.
     /// </summary>
-    public enum GameplayResetScope
+    public enum GameplayResetTarget
     {
         AllActorsInScene = 0,
         PlayersOnly = 1,
@@ -24,18 +25,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
     }
 
     /// <summary>
-    /// Pedido de reset contextualizado com escopo e actorIds (quando aplicável).
+    /// Pedido de reset contextualizado com alvo e actorIds (quando aplicável).
     /// </summary>
     public readonly struct GameplayResetRequest
     {
-        public GameplayResetRequest(GameplayResetScope scope, string reason = null, IReadOnlyList<string> actorIds = null)
+        public GameplayResetRequest(GameplayResetTarget target, string reason = null, IReadOnlyList<string> actorIds = null)
         {
-            Scope = scope;
+            Target = target;
             Reason = reason;
             ActorIds = actorIds;
         }
 
-        public GameplayResetScope Scope { get; }
+        public GameplayResetTarget Target { get; }
 
         public string Reason { get; }
 
@@ -43,8 +44,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 
         public override string ToString()
         {
-            int count = ActorIds != null ? ActorIds.Count : 0;
-            return $"ResetRequest(Scope={Scope}, Reason='{Reason ?? "null"}', ActorIds={count})";
+            int count = ActorIds?.Count ?? 0;
+            return $"GameplayResetRequest(Target={Target}, Reason='{Reason ?? "null"}', ActorIds={count})";
         }
     }
 
@@ -58,13 +59,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
             GameplayResetRequest request,
             int requestSerial,
             int frameStarted,
-            GameplayResetStructs currentStructs)
+            GameplayResetPhase currentPhase)
         {
             SceneName = sceneName;
             Request = request;
             RequestSerial = requestSerial;
             FrameStarted = frameStarted;
-            CurrentStructs = currentStructs;
+            CurrentPhase = currentPhase;
         }
 
         public string SceneName { get; }
@@ -75,57 +76,56 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 
         public int FrameStarted { get; }
 
-        public GameplayResetStructs CurrentStructs { get; }
+        public GameplayResetPhase CurrentPhase { get; }
 
-        public GameplayResetContext WithPhase(GameplayResetStructs structs)
+        public GameplayResetContext WithPhase(GameplayResetPhase phase)
         {
-            return new GameplayResetContext(SceneName, Request, RequestSerial, FrameStarted, structs);
+            return new GameplayResetContext(SceneName, Request, RequestSerial, FrameStarted, phase);
         }
 
         public override string ToString()
         {
-            return $"ResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Phase={CurrentStructs}, {Request})";
+            return $"GameplayResetContext(Scene='{SceneName}', Serial={RequestSerial}, Frame={FrameStarted}, Phase={CurrentPhase}, {Request})";
         }
     }
 
     /// <summary>
-    /// Participante assíncrono de reset (recomendado).
+    /// Participante assíncrono de reset de gameplay (recomendado).
     /// </summary>
-    public interface IResetInterfaces
+    public interface IGameplayResettable
     {
-        Task Reset_CleanupAsync(GameplayResetContext ctx);
-        Task Reset_RestoreAsync(GameplayResetContext ctx);
-        Task Reset_RebindAsync(GameplayResetContext ctx);
+        Task ResetCleanupAsync(GameplayResetContext ctx);
+        Task ResetRestoreAsync(GameplayResetContext ctx);
+        Task ResetRebindAsync(GameplayResetContext ctx);
     }
 
     /// <summary>
-    /// Participante síncrono (fallback). O orchestrator adapta para Task.
+    /// Participante síncrono (fallback). Um orchestrator pode adaptar para Task.
     /// </summary>
-    public interface IResetParticipantSync
+    public interface IGameplayResettableSync
     {
-        void Reset_Cleanup(GameplayResetContext ctx);
-        void Reset_Restore(GameplayResetContext ctx);
-        void Reset_Rebind(GameplayResetContext ctx);
+        void ResetCleanup(GameplayResetContext ctx);
+        void ResetRestore(GameplayResetContext ctx);
+        void ResetRebind(GameplayResetContext ctx);
     }
 
     /// <summary>
-    /// Opcional: controla a ordem de execução dentro de cada fase.
-    /// Menor primeiro.
+    /// Opcional: controla a ordem de execução dentro de cada fase. Menor primeiro.
     /// </summary>
-    public interface IResetOrder
+    public interface IGameplayResetOrder
     {
         int ResetOrder { get; }
     }
 
     /// <summary>
-    /// Opcional: permite que o participante ignore certos escopos.
+    /// Opcional: permite que o participante ignore certos alvos/escopos.
     /// </summary>
-    public interface IResetScopeFilter
+    public interface IGameplayResetTargetFilter
     {
-        bool ShouldParticipate(GameplayResetScope scope);
+        bool ShouldParticipate(GameplayResetTarget target);
     }
 
-    public interface IResetOrchestrator
+    public interface IGameplayResetOrchestrator
     {
         bool IsResetInProgress { get; }
 

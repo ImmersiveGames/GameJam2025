@@ -24,7 +24,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         protected override void InitializeSingleton()
         {
             base.InitializeSingleton();
-            if (instance != this) return;
+            if (instance != this)
+            {
+                return;
+            }
 
             _objectRegistry = new ObjectServiceRegistry();
             _sceneRegistry = new SceneServiceRegistry(maxSceneServices);
@@ -45,7 +48,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         public void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class
         {
             if (string.IsNullOrEmpty(objectId))
+            {
                 throw new ArgumentNullException(nameof(objectId), "objectId é nulo ou vazio.");
+            }
             _objectRegistry.Register(objectId, service, allowOverride);
         }
 
@@ -92,14 +97,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             foreach (string objectId in _objectRegistry.GetAllObjectIds())
             {
                 if (_objectRegistry.TryGet(objectId, out T service))
+                {
                     services.Add(service);
+                }
             }
             DebugUtility.LogVerbose(typeof(DependencyManager), $"Recuperados {services.Count} serviços do tipo {typeof(T).Name}.");
         }
 
         public void InjectDependencies(object target, string objectId = null)
         {
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
             _injector.InjectDependencies(target, objectId);
         }
 
@@ -115,7 +125,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
         protected void OnDestroy()
         {
-            if (instance != this) return;
+            if (instance != this)
+            {
+                return;
+            }
             _sceneRegistry?.Dispose();
             ClearAllObjectServices();
             ClearAllSceneServices();
@@ -129,7 +142,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
 
         private void OnApplicationQuit()
         {
-            if (instance != this) return;
+            if (instance != this)
+            {
+                return;
+            }
             _sceneRegistry?.Dispose();
             ClearAllObjectServices();
             ClearAllSceneServices();

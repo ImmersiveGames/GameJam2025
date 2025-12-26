@@ -71,14 +71,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
-            for (int i = 0; i < scopes.Count; i++)
+            if (scopes.Any(t => t == ResetScope.World))
             {
-                if (scopes[i] == ResetScope.World)
-                {
-                    DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
-                        "ResetScope.World não é suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
-                    return;
-                }
+                DebugUtility.LogError(typeof(WorldLifecycleOrchestrator),
+                    "ResetScope.World não é suportado em soft reset. Utilize ResetWorldAsync para hard reset.");
+                return;
             }
 
             var context = new ResetContext(reason, scopes, ResetFlags.SoftReset);
@@ -863,19 +860,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 var sceneParticipants = new List<IResetScopeParticipant>();
                 _provider.GetAllForScene(_sceneName, sceneParticipants);
 
-                for (int i = 0; i < sceneParticipants.Count; i++)
-                {
-                    var participant = sceneParticipants[i];
-                    if (participant == null)
-                    {
-                        continue;
-                    }
-
-                    if (uniques.Add(participant))
-                    {
-                        participants.Add(participant);
-                    }
-                }
+                participants.AddRange(sceneParticipants.Where(participant => participant != null).Where(participant => uniques.Add(participant)));
             }
 
             IReadOnlyList<IWorldLifecycleHook> sceneHooks = ResolveSceneHooks();
@@ -891,9 +876,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             IReadOnlyList<IWorldLifecycleHook> registryHooks = ResolveRegistryHooks();
-            for (int i = 0; i < registryHooks.Count; i++)
+            foreach (var t in registryHooks)
             {
-                if (registryHooks[i] is IResetScopeParticipant participant)
+                if (t is IResetScopeParticipant participant)
                 {
                     if (uniques.Add(participant))
                     {

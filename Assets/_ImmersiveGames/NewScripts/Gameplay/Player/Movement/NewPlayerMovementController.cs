@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
@@ -13,15 +13,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
     /// <summary>
     /// Controlador mínimo de movimento do Player no padrão NewScripts.
     /// Gate-aware, reset-safe e com fallbacks para CharacterController, Rigidbody ou Transform.
-    ///
-    /// Ajuste:
-    /// - Cacheia o último estado do gate aplicado para evitar logs duplicados e re-aplicações redundantes.
-    /// - Ainda atualiza input state mesmo quando o estado do gate não muda.
-    /// - Evita consultar CanExecuteAction(Move) de forma redundante no mesmo tick.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class NewPlayerMovementController : MonoBehaviour, IResetInterfaces, IResetScopeFilter, IResetOrder
+    public sealed class NewPlayerMovementController : MonoBehaviour, IGameplayResettable, IGameplayResetTargetFilter, IGameplayResetOrder
     {
         [Header("Movement")]
         [SerializeField]
@@ -58,7 +53,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private bool _gateSubscribed;
         private bool _gateOpen = true;
 
-        // Cache do último gate aplicado (para evitar logs repetidos e re-aplicação redundante).
         private bool _hasGateState;
         private bool _lastGateOpen = true;
 
@@ -69,7 +63,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private bool _hasInitialPose;
         private string _sceneName;
 
-        // Cache por-tick para evitar chamadas redundantes ao StateDependent.
         private bool _hasMovePermissionCached;
         private bool _cachedMoveAllowed;
 
@@ -77,11 +70,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         public int ResetOrder => -50;
 
-        public bool ShouldParticipate(GameplayResetScope scope)
+        public bool ShouldParticipate(GameplayResetTarget target)
         {
-            return scope == GameplayResetScope.AllActorsInScene ||
-                   scope == GameplayResetScope.PlayersOnly ||
-                   scope == GameplayResetScope.ActorIdSet;
+            return target == GameplayResetTarget.AllActorsInScene ||
+                   target == GameplayResetTarget.PlayersOnly ||
+                   target == GameplayResetTarget.ActorIdSet;
         }
 
         #endregion
@@ -120,7 +113,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void Update()
         {
             if (ShouldUseFixedUpdate())
+            {
                 return;
+            }
 
             TickMovement(Time.deltaTime);
         }
@@ -128,7 +123,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void FixedUpdate()
         {
             if (!ShouldUseFixedUpdate())
+            {
                 return;
+            }
 
             TickMovement(Time.fixedDeltaTime);
         }
@@ -159,7 +156,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
             Vector3 direction = new Vector3(input.x, 0f, input.y);
             if (direction.sqrMagnitude > 1f)
+            {
                 direction.Normalize();
+            }
 
             Move(direction, deltaTime);
             RotateTowards(direction, deltaTime);
@@ -183,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         {
             if (_characterController != null)
             {
-                var displacement = direction * moveSpeed * deltaTime;
+                var displacement = direction * (moveSpeed * deltaTime);
                 _characterController.Move(displacement);
                 return;
             }
@@ -196,13 +195,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
                 return;
             }
 
-            transform.Translate(direction * moveSpeed * deltaTime, Space.World);
+            transform.Translate(direction * (moveSpeed * deltaTime), Space.World);
         }
 
         private void RotateTowards(Vector3 direction, float deltaTime)
         {
             if (rotationSpeed <= 0f || direction.sqrMagnitude <= float.Epsilon)
+            {
                 return;
+            }
 
             var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
@@ -211,7 +212,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void HaltHorizontalVelocity()
         {
             if (_rigidbody == null)
+            {
                 return;
+            }
 
             var current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
@@ -221,13 +224,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private bool CanSimulate()
         {
             if (!isActiveAndEnabled)
+            {
                 return false;
+            }
 
             if (_actor != null && !_actor.IsActive)
+            {
                 return false;
+            }
 
             if (!_gateOpen)
+            {
                 return false;
+            }
 
             if (_stateService != null && !GetCachedMoveAllowed())
             {
@@ -241,7 +250,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private bool GetCachedMoveAllowed()
         {
             if (_hasMovePermissionCached)
+            {
                 return _cachedMoveAllowed;
+            }
 
             _hasMovePermissionCached = true;
             _cachedMoveAllowed = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
@@ -260,27 +271,34 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void ResolveServices()
         {
             if (_gateService == null)
+            {
                 DependencyManager.Provider.TryGetGlobal(out _gateService);
+            }
 
             if (_stateService == null)
+            {
                 DependencyManager.Provider.TryGetGlobal(out _stateService);
+            }
 
             TryBindGateEvents();
 
-            // Reaplica o estado atual do gate sem forçar log.
             ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
         }
 
         private void EnsureServicesResolved()
         {
             if (_gateService == null || _stateService == null)
+            {
                 ResolveServices();
+            }
         }
 
         private void TryBindGateEvents()
         {
             if (_gateService == null || _gateSubscribed)
+            {
                 return;
+            }
 
             _gateService.GateChanged += OnGateChanged;
             _gateSubscribed = true;
@@ -289,7 +307,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void UnbindGateEvents()
         {
             if (_gateService == null || !_gateSubscribed)
+            {
                 return;
+            }
 
             _gateService.GateChanged -= OnGateChanged;
             _gateSubscribed = false;
@@ -304,8 +324,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         {
             _gateOpen = isOpen;
 
-            // Se nada mudou, não loga e não “reaplica” comportamentos custosos,
-            // mas ainda atualiza input state (para refletir mudanças no StateDependent).
             if (_hasGateState && isOpen == _lastGateOpen)
             {
                 RefreshInputState();
@@ -322,7 +340,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             }
 
             if (!isOpen)
+            {
                 HaltHorizontalVelocity();
+            }
 
             RefreshInputState();
         }
@@ -330,9 +350,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void RefreshInputState()
         {
             if (inputReader == null)
+            {
                 return;
+            }
 
-            // Não recalcula spam: usa cache por tick (se já estivermos dentro do TickMovement).
             bool allowByState = _stateService == null || GetCachedMoveAllowed();
             bool allow = _gateOpen && allowByState;
 
@@ -351,7 +372,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void LogStateBlockedOnce()
         {
             if (_stateBlockedLogged)
+            {
                 return;
+            }
 
             DebugUtility.LogVerbose<NewPlayerMovementController>(
                 "[Movement][StateDependent] Movimento bloqueado por IStateDependentService.");
@@ -380,12 +403,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void EnsureInputReader()
         {
             if (inputReader != null)
+            {
                 return;
+            }
 
             inputReader = GetComponent<NewPlayerInputReader>();
 
             if (inputReader == null)
+            {
                 inputReader = gameObject.AddComponent<NewPlayerInputReader>();
+            }
         }
 
         public void SetInputReader(NewPlayerInputReader reader)
@@ -397,7 +424,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
         private void EnableInputIfAllowed()
         {
             if (inputReader == null)
+            {
                 return;
+            }
 
             bool allowByState = _stateService == null || _stateService.CanExecuteAction(ActionType.Move);
             bool allow = _gateOpen && allowByState;
@@ -411,9 +440,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
 
         #endregion
 
-        #region Resets
+        #region Resets (IGameplayResettable)
 
-        public Task Reset_CleanupAsync(GameplayResetContext ctx)
+        public Task ResetCleanupAsync(GameplayResetContext ctx)
         {
             HaltHorizontalVelocity();
             inputReader?.ClearInput();
@@ -421,7 +450,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task Reset_RestoreAsync(GameplayResetContext ctx)
+        public Task ResetRestoreAsync(GameplayResetContext ctx)
         {
             if (_hasInitialPose)
             {
@@ -441,7 +470,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             return Task.CompletedTask;
         }
 
-        public Task Reset_RebindAsync(GameplayResetContext ctx)
+        public Task ResetRebindAsync(GameplayResetContext ctx)
         {
             ResolveServices();
             ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);

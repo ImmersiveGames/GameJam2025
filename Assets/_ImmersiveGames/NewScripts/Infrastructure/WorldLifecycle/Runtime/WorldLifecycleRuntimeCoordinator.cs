@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     /// - Para gameplay profiles, executa ResetWorldAsync no controller da cena alvo.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class WorldLifecycleRuntimeDriver : IDisposable
+    public sealed class WorldLifecycleRuntimeCoordinator : IDisposable
     {
         private const string StartupProfileName = "startup";
 
@@ -34,12 +34,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _onScenesReady;
         private int _resetInFlight; // 0/1
 
-        public WorldLifecycleRuntimeDriver()
+        public WorldLifecycleRuntimeCoordinator()
         {
             _onScenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_onScenesReady);
 
-            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeDriver),
+            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
                 "[WorldLifecycle] Runtime driver registrado para SceneTransitionScenesReadyEvent.",
                 DebugUtility.Colors.Info);
         }
@@ -53,12 +53,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         {
             if (Interlocked.CompareExchange(ref _resetInFlight, 1, 0) == 1)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeDriver),
+                DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
                     "[WorldLifecycle] Reset já está em execução. Ignorando novo ScenesReady.");
                 return;
             }
 
-            DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
+            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={evt.Context}");
 
             _ = HandleScenesReadyAsync(evt);
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 // Regra: startup/frontend não faz reset de world.
                 if (IsFrontendProfile(profile) || IsFrontendScene(activeSceneName))
                 {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeDriver),
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
                         $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile}', activeScene='{activeSceneName}'.",
                         DebugUtility.Colors.Info);
 
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     return;
                 }
 
-                DebugUtility.Log(typeof(WorldLifecycleRuntimeDriver),
+                DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                     $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='{reason}', profile='{profile}'",
                     DebugUtility.Colors.Info);
 
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 // Para gameplay scenes, controller é esperado.
                 if (controller == null)
                 {
-                    DebugUtility.LogError(typeof(WorldLifecycleRuntimeDriver),
+                    DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                         $"[WorldLifecycle] WorldLifecycleController não encontrado na cena '{activeSceneName}'. Reset abortado.");
 
                     RaiseCompleted(evt.Context, CompletedReasonNoController);
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError(typeof(WorldLifecycleRuntimeDriver),
+                DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                     $"[WorldLifecycle] Falha ao executar reset após ScenesReady. reason='{reason}', profile='{profile}', ex={ex}");
 
                 RaiseCompleted(evt.Context, $"Failed_Reset:{ex.GetType().Name}");
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             string signature = context.ToString();
             string profile = context.TransitionProfileName ?? string.Empty;
 
-            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeDriver),
+            DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{profile}', signature='{signature}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 

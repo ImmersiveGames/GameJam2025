@@ -38,7 +38,7 @@ Durante transições de cena, o reset é coordenado por eventos:
     - jogo fica “NOT READY” durante load/unload
 
 - `SceneTransitionScenesReadyEvent`:
-    - `WorldLifecycleRuntimeDriver` é acionado
+    - `WorldLifecycleRuntimeCoordinator` é acionado
     - decide executar reset ou SKIP
 
 - `SceneTransitionCompleted`:
@@ -56,6 +56,21 @@ Mesmo no SKIP, o driver deve emitir:
 Isso é necessário porque o `GameLoopSceneFlowCoordinator` aguarda esse sinal para chamar `GameLoop.RequestStart()`.
 
 ## Participantes e registros de cena
+### Gameplay Reset por grupos (cleanup/restore/rebind)
+
+Além do **reset por escopos** do WorldLifecycle (`ResetScope` + `IResetScopeParticipant`), existe um módulo de reset **de gameplay** em `Gameplay/Reset/` para validar e executar resets por **alvos** (targets) com fases fixas:
+
+- **Alvos (`GameplayResetTarget`)**: `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`.
+- **Fases (`GameplayResetPhase`)**: `Cleanup`, `Restore`, `Rebind`.
+- **Participantes**: componentes de gameplay implementam `IGameplayResettable` (e opcionais `IGameplayResetOrder` / `IGameplayResetTargetFilter`).
+
+Integração:
+- Participantes de escopo do WorldLifecycle podem atuar como **bridge** para o gameplay. Ex.: `PlayersResetParticipant` (gameplay) implementa `IResetScopeParticipant` (escopo `Players`) e, ao executar, solicita `IGameplayResetOrchestrator.RequestResetAsync(...)` para `PlayersOnly`.
+- `IGameplayResetOrchestrator` e `IGameplayResetTargetClassifier` são serviços **por cena** (registrados no `NewSceneBootstrapper`) para manter o reset local ao escopo additive correto.
+
+QA:
+- Quando o spawn ainda não é a fonte de verdade, o `GameplayResetQaSpawner` cria alvos de teste e o `GameplayResetQaProbe` valida via log a execução das três fases.
+
 Em uma cena NewScripts típica, o `NewSceneBootstrapper` cria e registra:
 - `INewSceneScopeMarker`
 - `IWorldSpawnContext`

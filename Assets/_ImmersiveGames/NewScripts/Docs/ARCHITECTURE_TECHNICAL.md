@@ -61,7 +61,26 @@ Este documento detalha responsabilidades e fronteiras entre módulos, com foco e
         - `<profileName>`
 
 ### World Lifecycle (integração)
-- `WorldLifecycleRuntimeDriver`:
+#### Gameplay Reset (grupos) — módulo de gameplay, acionável por QA
+
+Para reduzir acoplamento com spawn enquanto ele evolui, o baseline introduz um reset de gameplay em `Gameplay/Reset/` com contratos estáveis e fases explícitas:
+
+- **Serviços por cena** (registrados no `NewSceneBootstrapper`):
+    - `IGameplayResetOrchestrator`: resolve targets, aplica ordenação e executa `Cleanup → Restore → Rebind`.
+    - `IGameplayResetTargetClassifier`: mapeia `GameplayResetTarget` para os GameObjects/atores participantes no escopo da cena (ex.: players).
+- **Participantes**:
+    - `IGameplayResettable` (async) é o contrato recomendado.
+    - `IGameplayResetOrder` define ordenação dentro de cada fase (menor primeiro).
+    - `IGameplayResetTargetFilter` permite ignorar targets específicos (ex.: um componente que só participa em `PlayersOnly`).
+
+Integração com WorldLifecycle:
+- `PlayersResetParticipant` (gameplay) é registrado como `IResetScopeParticipant` e funciona como bridge: ao receber `ResetScope.Players`, emite uma requisição `GameplayResetRequest(Target=PlayersOnly, ...)` para o `IGameplayResetOrchestrator` da cena.
+
+Validação (QA):
+- `GameplayResetQaSpawner` cria instâncias de teste (ex.: `QA_Player_00/01`) e dispara `IGameplayResetOrchestrator.RequestResetAsync(...)`.
+- `GameplayResetQaProbe` registra logs por fase para confirmar que o pipeline está completo, independentemente do spawn.
+
+- `WorldLifecycleRuntimeCoordinator`:
     - consome `SceneTransitionScenesReadyEvent`,
     - decide executar reset ou SKIP,
     - emite `WorldLifecycleResetCompletedEvent(contextSignature, reason)`.

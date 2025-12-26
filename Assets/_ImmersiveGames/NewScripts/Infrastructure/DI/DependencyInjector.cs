@@ -28,10 +28,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         public void InjectDependencies(object target, string objectId = null)
         {
             if (target == null)
+            {
                 throw new ArgumentNullException(nameof(target));
+            }
 
             if (!CanInjectThisFrame(target))
+            {
                 return;
+            }
 
             var injectableFields = GetInjectableFields(target.GetType());
             InjectFields(target, injectableFields, objectId);
@@ -47,7 +51,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             }
 
             if (_injectedObjectsThisFrame.Add(target))
+            {
                 return true;
+            }
 
             DebugUtility.LogVerbose(typeof(DependencyInjector),
                 $"Injeção ignorada para {target.GetType().Name}: já injetado neste frame.");
@@ -102,7 +108,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         private object ResolveFromObjectScope(Type serviceType, string objectId, Type targetType)
         {
             if (string.IsNullOrWhiteSpace(objectId))
+            {
                 return null;
+            }
 
             var service = _objectRegistry.TryGet(serviceType, objectId);
             if (service != null)
@@ -117,7 +125,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         {
             var sceneName = GetTargetSceneName(target);
             if (string.IsNullOrWhiteSpace(sceneName))
+            {
                 return null;
+            }
 
             var service = _sceneRegistry.TryGet(serviceType, sceneName);
             if (service != null)
@@ -137,7 +147,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
             {
                 var s = mb.gameObject.scene;
                 if (s.IsValid() && s.isLoaded)
+                {
                     return s.name;
+                }
 
                 // Se estiver em DontDestroyOnLoad / inválido, cai para active scene.
             }

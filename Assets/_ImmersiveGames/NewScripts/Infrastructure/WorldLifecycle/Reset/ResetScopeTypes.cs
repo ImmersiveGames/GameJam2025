@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
 {
     /// <summary>
     /// Escopos suportados para reset parcial (soft reset) do WorldLifecycle.
-    /// Novos escopos podem ser adicionados conforme grupos de gameplay forem habilitados.
     /// </summary>
     public enum ResetScope
     {
@@ -16,10 +16,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
         Custom = 99
     }
 
-    /// <summary>
-    /// Flags opcionais para contextualizar o reset.
-    /// Permite distinguir soft reset de outras estratégias sem proliferar overloads.
-    /// </summary>
     [Flags]
     public enum ResetFlags
     {
@@ -28,10 +24,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
         HardReset = 1 << 1
     }
 
-    /// <summary>
-    /// Contexto compartilhado entre participantes de reset por escopo.
-    /// Transporta metadados para telemetria, logs e filtros.
-    /// </summary>
     public readonly struct ResetContext
     {
         public ResetContext(string reason, IReadOnlyList<ResetScope> scopes, ResetFlags flags = ResetFlags.None)
@@ -57,7 +49,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
             }
 
             return Scopes.Any(t => t == scope);
-
         }
 
         public override string ToString()
@@ -67,10 +58,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset
         }
     }
 
-    /// <summary>
-    /// Participante opt-in para reset por escopo.
-    /// Respeita ordenação determinística por escopo + ordem.
-    /// </summary>
     public interface IResetScopeParticipant
     {
         ResetScope Scope { get; }

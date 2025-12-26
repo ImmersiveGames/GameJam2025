@@ -123,7 +123,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         public override List<Type> ListServices(string key)
         {
             if (_objectServices.TryGetValue(key, out Dictionary<Type, object> services))
+            {
                 return new List<Type>(services.Keys);
+            }
             return new List<Type>();
         }
     }

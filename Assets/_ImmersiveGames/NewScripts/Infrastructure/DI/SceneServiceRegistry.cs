@@ -28,7 +28,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 throw new ArgumentNullException(nameof(key));
             }
             if (!ValidateSceneName(key))
+            {
                 DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Cena '{key}' não encontrada na build.");
+            }
 
             if (!ValidateService(typeof(T), service, "RegisterForScene", key))
             {
@@ -102,7 +104,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 foreach (object svc in sceneServices.Values)
                 {
                     if (svc is T typedService)
+                    {
                         yield return typedService;
+                    }
                 }
             }
         }
@@ -156,7 +160,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
         public override List<Type> ListServices(string key)
         {
             if (_sceneServices.TryGetValue(key, out Dictionary<Type, object> services))
+            {
                 return new List<Type>(services.Keys);
+            }
             return new List<Type>();
         }
 
@@ -167,7 +173,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
                 string path = SceneUtility.GetScenePathByBuildIndex(i);
                 string name = Path.GetFileNameWithoutExtension(path);
                 if (name == sceneName)
+                {
                     return true;
+                }
             }
             return false;
         }

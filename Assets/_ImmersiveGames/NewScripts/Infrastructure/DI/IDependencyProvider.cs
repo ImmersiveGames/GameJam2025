@@ -1,5 +1,4 @@
-﻿// Arquivo: IDependencyProvider.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.DI
