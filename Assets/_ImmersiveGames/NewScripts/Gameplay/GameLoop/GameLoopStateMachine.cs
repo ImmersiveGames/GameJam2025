@@ -10,9 +10,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public GameLoopStateId Current { get; private set; } = GameLoopStateId.Boot;
         public bool IsGameActive => Current == GameLoopStateId.Playing;
 
-        // Guard para evitar loops inesperados se sinais forem mantidos indevidamente.
-        private const int MaxTransitionsPerTick = 4;
-
         public GameLoopStateMachine(IGameLoopSignals signals, IGameLoopStateObserver observer = null)
         {
             _signals = signals;
@@ -22,12 +19,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public void Update()
         {
-            // Permite encadear Boot -> Ready -> Playing no mesmo tick quando StartRequested é transient (limpo no fim do Tick).
-            var transitions = 0;
-            while (transitions < MaxTransitionsPerTick && TryTransitionOnce())
-            {
-                transitions++;
-            }
+            // Executa no máximo uma transição por tick.
+            // StartRequested pode permanecer true até o fim do Tick; evitar encadear Boot -> Ready -> Playing no mesmo frame.
+            TryTransitionOnce();
         }
 
         private bool TryTransitionOnce()
