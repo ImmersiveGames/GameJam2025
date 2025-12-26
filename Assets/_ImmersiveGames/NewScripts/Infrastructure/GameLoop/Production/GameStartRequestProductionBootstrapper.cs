@@ -3,17 +3,23 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.Production
 {
     /// <summary>
-    /// QA:
-    /// Emite uma única solicitação de start (REQUEST) para disparar o StartPlan real.
+    /// PRODUÇÃO:
+    /// Emite GameStartRequestedEvent (REQUEST) uma única vez ao iniciar a cena.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class GameStartRequestQaBootstrapper : MonoBehaviour
+    public sealed class GameStartRequestProductionBootstrapper : MonoBehaviour
     {
         private static bool _hasRequested;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ResetGuard()
+        {
+            _hasRequested = false;
+        }
 
         private void Start()
         {
@@ -24,8 +30,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             _hasRequested = true;
 
-            DebugUtility.Log(typeof(GameStartRequestQaBootstrapper),
-                "[QA][StartRequest] Start solicitado (GameStartRequestedEvent).",
+            DebugUtility.Log(typeof(GameStartRequestProductionBootstrapper),
+                "[Production][StartRequest] Start solicitado (GameStartRequestedEvent).",
                 DebugUtility.Colors.Info);
 
             EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
