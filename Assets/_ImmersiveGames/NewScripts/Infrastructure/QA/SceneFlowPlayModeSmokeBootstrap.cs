@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -13,7 +12,7 @@ using UnityEditor;
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
-    /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo + bridge legado) sem NUnit.
+    /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo) sem NUnit.
     /// </summary>
     public sealed class SceneFlowPlayModeSmokeBootstrap : MonoBehaviour
     {
@@ -21,16 +20,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Smoke-Result.md";
         private const float TimeoutSeconds = 30f;
 
-#if NEWSCRIPTS_SCENEFLOW_NATIVE
-        private const bool NativeEnabled = true;
-#else
-        private const bool NativeEnabled = false;
-#endif
-
         private readonly List<string> _sceneFlowLogs = new();
         private int _capturedLogCount;
         private bool _nativePassMarkerFound;
-        private bool _bridgePassMarkerFound;
         private bool _hasFailMarker;
         private int _runnerLastPasses;
         private int _runnerLastFails;
@@ -47,9 +39,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var runnerObject = new GameObject("SceneFlowSmokeRunner");
             var runner = runnerObject.AddComponent<NewScriptsInfraSmokeRunner>();
             var nativeTester = runnerObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
-            var legacyTester = runnerObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
 
-            runner.ConfigureSceneFlowOnly(nativeTester, legacyTester, enableVerbose: true);
+            runner.ConfigureSceneFlowOnly(nativeTester, enableVerbose: true);
 
             Exception executionException = null;
             try
@@ -71,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     break;
                 }
 
-                if (_nativePassMarkerFound && _bridgePassMarkerFound)
+                if (_nativePassMarkerFound)
                 {
                     break;
                 }
@@ -84,21 +75,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             _runnerLastPasses = runner.LastRunPasses;
             _runnerLastFails = runner.LastRunFails;
 
-            bool fail = executionException != null
-                        || runner.LastRunHadFailures
-                        || _hasFailMarker
-                        || !_nativePassMarkerFound
-                        || !_bridgePassMarkerFound;
+            bool fail =
+                executionException != null ||
+                runner.LastRunHadFailures ||
+                _hasFailMarker ||
+                !_nativePassMarkerFound;
+
             string result = fail ? "FAIL" : "PASS";
 
-            if (result == "PASS")
-            {
-                _sceneFlowLogs.Add($"{LogTag} PASS");
-            }
-            else
-            {
-                _sceneFlowLogs.Add($"{LogTag} FAIL");
-            }
+            _sceneFlowLogs.Add(result == "PASS" ? $"{LogTag} PASS" : $"{LogTag} FAIL");
 
             WriteReport(result);
 
@@ -120,27 +105,60 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            if (condition.Contains("[SceneFlowTest]", StringComparison.Ordinal))
+            // Captura apenas logs marcados com [SceneFlowTest] (escopo do smoke).
+            if (!condition.Contains("[SceneFlowTest]", StringComparison.Ordinal))
             {
-                _capturedLogCount++;
-                _sceneFlowLogs.Add(condition);
-
-                if (condition.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    condition.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    _hasFailMarker = true;
-                }
-
-                if (condition.IndexOf("[SceneFlowTest][Native] PASS", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    _nativePassMarkerFound = true;
-                }
-
-                if (condition.IndexOf("[SceneFlowTest][Bridge] PASS", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    _bridgePassMarkerFound = true;
-                }
+                return;
             }
+
+            _capturedLogCount++;
+            _sceneFlowLogs.Add(condition);
+
+            // Verifica PASS do tester nativo.
+            // Importante: não depende de "Fails=0" ou de strings similares.
+            if (condition.IndexOf("[SceneFlowTest][Native] PASS", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                _nativePassMarkerFound = true;
+            }
+
+            // Detecta FAIL com padrões específicos, evitando falso-positivo em "Fails=0" / "Failures", etc.
+            if (ContainsHardFailMarker(condition))
+            {
+                _hasFailMarker = true;
+            }
+        }
+
+        /// <summary>
+        /// FAIL marker deve ser inequívoco. Não pode ser substring de "Fails=0".
+        /// </summary>
+        private static bool ContainsHardFailMarker(string condition)
+        {
+            // Normaliza.
+            var upper = condition.ToUpperInvariant();
+
+            // Casos inequívocos no próprio smoke/runner.
+            if (upper.Contains(" RESULT=FAIL", StringComparison.Ordinal) ||
+                upper.Contains(" STATUS=FAIL", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (upper.Contains("] FAIL ", StringComparison.Ordinal) ||
+                upper.Contains("] FAIL-", StringComparison.Ordinal) ||
+                upper.Contains("] FAIL:", StringComparison.Ordinal) ||
+                upper.Contains("] FAIL.", StringComparison.Ordinal) ||
+                upper.EndsWith("] FAIL", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            // Padrão comum de exceção registrada no log marcado.
+            if (upper.Contains(" EXCEPTION", StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private void WriteReport(string result)
@@ -161,7 +179,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 builder.AppendLine($"- RunnerPasses: {_runnerLastPasses}");
                 builder.AppendLine($"- RunnerFails: {_runnerLastFails}");
                 builder.AppendLine($"- NativePassMarkerFound: {_nativePassMarkerFound}");
-                builder.AppendLine($"- BridgePassMarkerFound: {_bridgePassMarkerFound}");
                 builder.AppendLine($"- TotalMarkedLogsCaptured: {_capturedLogCount}");
                 builder.AppendLine();
                 builder.AppendLine("## Logs (até 30 entradas)");

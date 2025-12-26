@@ -15,15 +15,15 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using UnityEngine;
-using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
-using _ImmersiveGames.NewScripts.Infrastructure.State;
-using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterPauseBridge();
             RegisterGameLoop();
 
-            RegisterLegacySceneFlowBridge();
+            // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
 
             RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
@@ -171,32 +171,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLegacySceneFlowBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<LegacySceneFlowBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneBridge] LegacySceneFlowBridge já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            RegisterIfMissing(() => new LegacySceneFlowBridge());
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[SceneBridge] LegacySceneFlowBridge registrado (Scene Flow legado → eventos NewScripts).",
-                DebugUtility.Colors.Info);
-        }
-
         private static void RegisterSceneFlowNative()
         {
-            if (!IsSceneFlowNativeEnabled())
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] SceneTransitionService nativo desativado (NEWSCRIPTS_SCENEFLOW_NATIVE não definido). Mantendo apenas o bridge legado.");
-                return;
-            }
-
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -205,24 +181,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            var loaderAdapter = LegacySceneFlowAdapters.CreateLoaderAdapter(DependencyManager.Provider);
-            var fadeAdapter = LegacySceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
+            // Loader/Fade (NewScripts standalone)
+            var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
+            var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
 
-            var service = new SceneTransitionService(loaderAdapter, fadeAdapter);
+            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
+            {
+                completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
+                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
+                    DebugUtility.Colors.Info);
+            }
+
+            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}).",
+                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static bool IsSceneFlowNativeEnabled()
-        {
-#if NEWSCRIPTS_SCENEFLOW_NATIVE
-            return true;
-#else
-            return false;
-#endif
         }
 
         private static void RegisterPauseBridge()
@@ -303,13 +282,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[GameLoopSceneFlow] ISceneTransitionService indisponível (provável native desativado). Coordinator não será registrado.",
+                    "[GameLoopSceneFlow] ISceneTransitionService indisponível. Coordinator não será registrado.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             // Plano de produção:
-            // NewBootstrap -> (Fade) -> Load(Ready + UIGlobal) -> Active=Ready -> Unload(NewBootstrap) -> (FadeOut) -> Completed
+            // NewBootstrap -> (Fade) -> Load(Menu + UIGlobal) -> Active=Menu -> Unload(NewBootstrap) -> (FadeOut) -> Completed
             var startPlan = new SceneTransitionRequest(
                 scenesToLoad: new[] { SceneMenu, SceneUIGlobal },
                 scenesToUnload: new[] { SceneNewBootstrap },

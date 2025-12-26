@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
@@ -253,8 +254,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 return;
             }
 
-            var loader = LegacySceneFlowAdapters.CreateLoaderAdapter(provider);
-            var fade = LegacySceneFlowAdapters.CreateFadeAdapter(provider);
+            var loader = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
+            var fade = NewScriptsSceneFlowAdapters.CreateFadeAdapter(provider);
             var service = new SceneTransitionService(loader, fade);
             provider.RegisterGlobal<ISceneTransitionService>(service, allowOverride: true);
         }

@@ -44,7 +44,7 @@ Este documento detalha responsabilidades e fronteiras entre módulos, com foco e
     - set active scene,
     - emissão de eventos (started/scenesReady/completed).
 - Enquanto o loader nativo NewScripts não está migrado:
-    - `LegacySceneFlowAdapters` podem usar `SceneManagerLoaderAdapter` como fallback.
+    - `NewScriptsSceneFlowAdapters` podem usar `SceneManagerLoaderAdapter` como fallback.
 
 ### Fade (NewScripts)
 - `INewScriptsFadeService`:

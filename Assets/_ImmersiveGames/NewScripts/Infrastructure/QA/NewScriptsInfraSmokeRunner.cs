@@ -1,8 +1,8 @@
 using System;
 using System.Reflection;
-using _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow.QA;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
@@ -25,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         [SerializeField] private MonoBehaviour filteredEventBusTester;
         [SerializeField] private MonoBehaviour sceneTransitionServiceTester;
         [SerializeField] private bool runSceneTransitionServiceTester = true;
-        [SerializeField] private MonoBehaviour legacySceneFlowBridgeTester;
         [SerializeField] private bool verbose = true;
 
         private int _passes;
@@ -98,8 +97,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             if (runSceneTransitionServiceTester)
             {
                 sceneTransitionServiceTester = sceneTransitionServiceTester
-                                                ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
-                                                ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
+                                              ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
+                                              ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
 
                 ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
                 if (stopOnFirstFail && _fails > 0)
@@ -111,22 +110,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 }
             }
 
-            legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
-                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQaTester>()
-                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
-
-            ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
-
             Complete();
         }
 
         /// <summary>
-        /// Configuração específica para habilitar apenas os testers de Scene Flow (nativo + bridge).
+        /// Configuração específica para habilitar apenas o tester de Scene Flow nativo.
         /// Mantém a execução determinística para cenários de CI/PlayMode.
         /// </summary>
         public void ConfigureSceneFlowOnly(
             MonoBehaviour sceneTransitionTester,
-            MonoBehaviour legacyBridgeTester,
             bool enableVerbose = true)
         {
             runOnStart = false;
@@ -135,7 +127,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             verbose = enableVerbose;
             runSceneTransitionServiceTester = true;
             sceneTransitionServiceTester = sceneTransitionTester;
-            legacySceneFlowBridgeTester = legacyBridgeTester;
         }
 
         public bool LastRunHadFailures => _fails > 0;
@@ -145,26 +136,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private void RunSceneFlowOnly()
         {
             DebugUtility.Log(typeof(NewScriptsInfraSmokeRunner),
-                $"{SceneFlowLogTag} Iniciando execução exclusiva de Scene Flow.");
+                $"{SceneFlowLogTag} Iniciando execução exclusiva de Scene Flow (nativo).");
 
             sceneTransitionServiceTester = sceneTransitionServiceTester
-                                            ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
-                                            ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
+                                          ?? GetComponent<SceneTransitionServiceSmokeQaTester>()
+                                          ?? gameObject.AddComponent<SceneTransitionServiceSmokeQaTester>();
 
             ExecuteTester(sceneTransitionServiceTester, "SceneTransitionServiceSmokeQATester");
             if (stopOnFirstFail && _fails > 0)
             {
                 DebugUtility.LogWarning(typeof(NewScriptsInfraSmokeRunner),
                     $"{SceneFlowLogTag} stopOnFirstFail ativo; interrompendo após falha.");
-                Complete();
-                return;
             }
-
-            legacySceneFlowBridgeTester = legacySceneFlowBridgeTester
-                                          ?? GetComponent<LegacySceneFlowBridgeSmokeQaTester>()
-                                          ?? gameObject.AddComponent<LegacySceneFlowBridgeSmokeQaTester>();
-
-            ExecuteTester(legacySceneFlowBridgeTester, "LegacySceneFlowBridgeSmokeQATester");
 
             Complete();
         }

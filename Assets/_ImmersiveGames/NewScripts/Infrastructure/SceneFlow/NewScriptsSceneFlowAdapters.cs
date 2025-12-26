@@ -1,15 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
-using _ImmersiveGames.Scripts.SceneManagement.Core;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
+namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 {
     /// <summary>
     /// Adapters para integrar Scene Flow no pipeline NewScripts sem depender de tipos/DI legados.
@@ -19,22 +17,14 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
     /// - Loader: enquanto não migra, usa SceneManagerLoaderAdapter como fallback.
     /// - Profile: usa NewScriptsSceneTransitionProfile (ScriptableObject) em Resources.
     /// </summary>
-    public static class LegacySceneFlowAdapters
+    public static class NewScriptsSceneFlowAdapters
     {
         private static readonly NewScriptsSceneTransitionProfileResolver SharedProfileResolver = new();
 
-        public static ISceneFlowLoaderAdapter CreateLoaderAdapter(IDependencyProvider provider)
+        public static ISceneFlowLoaderAdapter CreateLoaderAdapter()
         {
-            // Se existir um loader no DI NewScripts, use-o. Caso contrário, fallback SceneManager.
-            if (provider != null && provider.TryGetGlobal<ISceneLoader>(out var loader) && loader != null)
-            {
-                DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
-                    "[SceneFlow] Usando ISceneLoader resolvido do DI NewScripts via adapter.");
-                return new LegacySceneFlowLoaderAdapter(loader);
-            }
-
-            DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
-                "[SceneFlow] ISceneLoader indisponível no DI NewScripts. Usando SceneManagerLoaderAdapter (fallback).");
+            DebugUtility.LogVerbose(typeof(NewScriptsSceneFlowAdapters),
+                "[SceneFlow] Usando SceneManagerLoaderAdapter (loader nativo).");
             return new SceneManagerLoaderAdapter();
         }
 
@@ -43,62 +33,15 @@ namespace _ImmersiveGames.NewScripts.Bridges.LegacySceneFlow
             // Fade: sem legado, sem fallback. Se não houver serviço, é erro e voltamos NullFadeAdapter.
             if (provider != null && provider.TryGetGlobal<INewScriptsFadeService>(out var newFade) && newFade != null)
             {
-                DebugUtility.LogVerbose(typeof(LegacySceneFlowAdapters),
+                DebugUtility.LogVerbose(typeof(NewScriptsSceneFlowAdapters),
                     "[SceneFlow] Usando INewScriptsFadeService via adapter (NewScripts).");
                 return new NewScriptsSceneFlowFadeAdapter(newFade, SharedProfileResolver);
             }
 
-            DebugUtility.LogError(typeof(LegacySceneFlowAdapters),
+            DebugUtility.LogError(typeof(NewScriptsSceneFlowAdapters),
                 "[SceneFlow] INewScriptsFadeService NÃO encontrado no DI NewScripts. " +
                 "Fade não será executado (NullFadeAdapter). Não há fallback para legado.");
             return new NullFadeAdapter();
-        }
-    }
-
-    /// <summary>
-    /// Adapter para reutilizar ISceneLoader no pipeline NewScripts.
-    /// (Mantém assinatura existente do adapter: Load/Unload/Additive)
-    /// </summary>
-    public sealed class LegacySceneFlowLoaderAdapter : ISceneFlowLoaderAdapter
-    {
-        private readonly ISceneLoader _loader;
-
-        public LegacySceneFlowLoaderAdapter(ISceneLoader loader)
-        {
-            _loader = loader ?? throw new ArgumentNullException(nameof(loader));
-        }
-
-        public Task LoadSceneAsync(string sceneName)
-        {
-            return _loader.LoadSceneAsync(sceneName, UnityEngine.SceneManagement.LoadSceneMode.Additive);
-        }
-
-        public Task UnloadSceneAsync(string sceneName)
-        {
-            return _loader.UnloadSceneAsync(sceneName);
-        }
-
-        public bool IsSceneLoaded(string sceneName)
-        {
-            return _loader.IsSceneLoaded(sceneName);
-        }
-
-        public async Task<bool> TrySetActiveSceneAsync(string sceneName)
-        {
-            var scene = _loader.GetSceneByName(sceneName);
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                return false;
-            }
-
-            UnityEngine.SceneManagement.SceneManager.SetActiveScene(scene);
-            await Task.Yield();
-            return true;
-        }
-
-        public string GetActiveSceneName()
-        {
-            return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         }
     }
 

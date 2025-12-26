@@ -29,13 +29,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         }
 
         public IReadOnlyList<string> ScenesToLoad { get; }
-
         public IReadOnlyList<string> ScenesToUnload { get; }
-
         public string TargetActiveScene { get; }
-
         public bool UseFade { get; }
-
         public string TransitionProfileName { get; }
     }
 
@@ -71,6 +67,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     }
 
     /// <summary>
+    /// Gate opcional para "segurar" o final da transição (FadeOut/Completed) até que
+    /// tarefas externas associadas ao mesmo context (ex: WorldLifecycle reset) concluam.
+    /// </summary>
+    public interface ISceneTransitionCompletionGate
+    {
+        Task AwaitBeforeFadeOutAsync(SceneTransitionContext context);
+    }
+
+    public sealed class NoOpSceneTransitionCompletionGate : ISceneTransitionCompletionGate
+    {
+        public Task AwaitBeforeFadeOutAsync(SceneTransitionContext context) => Task.CompletedTask;
+    }
+
+    /// <summary>
     /// Implementação nativa do pipeline de Scene Flow emitindo eventos do NewScripts.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
@@ -78,15 +88,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     {
         private readonly ISceneFlowLoaderAdapter _loaderAdapter;
         private readonly ISceneFlowFadeAdapter _fadeAdapter;
+        private readonly ISceneTransitionCompletionGate _completionGate;
+
         private readonly SemaphoreSlim _transitionGate = new(1, 1);
         private int _transitionInProgress;
 
         public SceneTransitionService(
             ISceneFlowLoaderAdapter loaderAdapter,
-            ISceneFlowFadeAdapter fadeAdapter)
+            ISceneFlowFadeAdapter fadeAdapter,
+            ISceneTransitionCompletionGate completionGate = null)
         {
             _loaderAdapter = loaderAdapter ?? new SceneManagerLoaderAdapter();
             _fadeAdapter = fadeAdapter ?? new NullFadeAdapter();
+            _completionGate = completionGate ?? new NoOpSceneTransitionCompletionGate();
         }
 
         public async Task TransitionAsync(SceneTransitionRequest request)
@@ -125,7 +139,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 await RunSceneOperationsAsync(context);
 
+                // 1) Momento em que "cenas estão prontas" (load/unload/active done).
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
+
+                // 2) Novo: aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
+                await AwaitCompletionGateAsync(context);
 
                 await RunFadeOutIfNeeded(context);
 
@@ -145,6 +163,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             {
                 Interlocked.Exchange(ref _transitionInProgress, 0);
                 _transitionGate.Release();
+            }
+        }
+
+        private async Task AwaitCompletionGateAsync(SceneTransitionContext context)
+        {
+            try
+            {
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{context}'.");
+
+                await _completionGate.AwaitBeforeFadeOutAsync(context);
+
+                DebugUtility.LogVerbose<SceneTransitionService>(
+                    $"[SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='{context}'.");
+            }
+            catch (Exception ex)
+            {
+                // Gate é "best effort": não deve travar a transição.
+                DebugUtility.LogWarning<SceneTransitionService>(
+                    $"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
             }
         }
 
