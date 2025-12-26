@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -20,6 +21,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private const string ReportPath = "Assets/_ImmersiveGames/NewScripts/Docs/Reports/SceneFlow-Smoke-Result.md";
         private const float TimeoutSeconds = 30f;
 
+        [SerializeField] private bool enabledInThisScene = false;
+        [SerializeField] private bool requireQaScenePrefix = true;
+        [SerializeField] private string[] allowedSceneNames;
+
         private readonly List<string> _sceneFlowLogs = new();
         private int _capturedLogCount;
         private bool _nativePassMarkerFound;
@@ -29,7 +34,46 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private void Start()
         {
+            if (!ShouldRunInThisScene())
+            {
+                return;
+            }
+
             StartCoroutine(RunSmoke());
+        }
+
+        private bool ShouldRunInThisScene()
+        {
+#if !UNITY_EDITOR
+            return false;
+#else
+            if (!enabledInThisScene)
+            {
+                return false;
+            }
+
+            string sceneName = SceneManager.GetActiveScene().name;
+
+            if (allowedSceneNames != null && allowedSceneNames.Length > 0)
+            {
+                foreach (string allowed in allowedSceneNames)
+                {
+                    if (!string.IsNullOrWhiteSpace(allowed) &&
+                        string.Equals(sceneName, allowed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (requireQaScenePrefix &&
+                !sceneName.StartsWith("QA_", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return true;
+#endif
         }
 
         private IEnumerator RunSmoke()
