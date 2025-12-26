@@ -10,29 +10,33 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     /// <summary>
     /// Gate de conclusão para SceneFlow:
     /// aguarda WorldLifecycleResetCompletedEvent cuja assinatura (ContextSignature) corresponda
-    /// ao context.ToString() da transição atual.
+    /// à assinatura do contexto da transição atual.
     ///
     /// Objetivo: garantir que FadeOut/Completed só aconteçam após o reset terminar (ou ser skipped).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleResetCompletionGate : ISceneTransitionCompletionGate, IDisposable
     {
-        private readonly Dictionary<string, TaskCompletionSource<string>> _pending = new();
-        private readonly Dictionary<string, string> _completedReasons = new();
-
         private readonly EventBinding<WorldLifecycleResetCompletedEvent> _binding;
+
+        private readonly Dictionary<string, TaskCompletionSource<string>> _pending =
+            new Dictionary<string, TaskCompletionSource<string>>(StringComparer.Ordinal);
+
+        private readonly Dictionary<string, string> _completedReasons =
+            new Dictionary<string, string>(StringComparer.Ordinal);
 
         private readonly int _timeoutMs;
 
         public WorldLifecycleResetCompletionGate(int timeoutMs = 20000)
         {
-            _timeoutMs = Math.Max(0, timeoutMs);
+            _timeoutMs = timeoutMs;
 
-            _binding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnResetCompleted);
+            _binding = new EventBinding<WorldLifecycleResetCompletedEvent>(OnCompleted);
             EventBus<WorldLifecycleResetCompletedEvent>.Register(_binding);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
-                $"[SceneFlowGate] WorldLifecycleResetCompletionGate registrado. timeoutMs={_timeoutMs}.");
+                $"[SceneFlowGate] WorldLifecycleResetCompletionGate registrado. timeoutMs={_timeoutMs}.",
+                DebugUtility.Colors.Info);
         }
 
         public void Dispose()
@@ -42,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            string signature = context.ToString();
+            string signature = SceneTransitionSignatureUtil.Compute(context);
 
             // Se já chegou antes (caso raro), retorna imediatamente.
             lock (_pending)
@@ -63,33 +67,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 {
                     tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                     _pending[signature] = tcs;
-
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
-                        $"[SceneFlowGate] Aguardando WorldLifecycleResetCompletedEvent. signature='{signature}'.");
                 }
             }
 
-            if (_timeoutMs <= 0)
-            {
-                await tcs.Task;
-                return;
-            }
-
-            var completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
+            // Timeout defensivo para não travar o flow.
+            Task completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
             if (completed != tcs.Task)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
-                    $"[SceneFlowGate] Timeout aguardando WorldLifecycleResetCompletedEvent. signature='{signature}'. Prosseguindo.");
+                    $"[SceneFlowGate] Timeout aguardando WorldLifecycleResetCompletedEvent. signature='{signature}', timeoutMs={_timeoutMs}.");
                 return;
             }
 
-            // Observação: motivo é útil para logs, mas não é necessário para fluxo.
             string reason = await tcs.Task;
+
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
-                $"[SceneFlowGate] Reset concluído/skip recebido. signature='{signature}', reason='{reason ?? "<null>"}'.");
+                $"[SceneFlowGate] Concluído. signature='{signature}', reason='{reason ?? "<null>"}'.");
         }
 
-        private void OnResetCompleted(WorldLifecycleResetCompletedEvent evt)
+        private void OnCompleted(WorldLifecycleResetCompletedEvent evt)
         {
             string signature = evt.ContextSignature ?? string.Empty;
             string reason = evt.Reason;

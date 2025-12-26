@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
 
         // Profile fixo do start (para filtrar ScenesReady/ResetCompleted).
-        private const string StartProfileName = "startup";
+        private const string StartProfileName = SceneFlowProfileNames.Startup;
 
         // Scene names (Unity: SceneManager.GetActiveScene().name)
         private const string SceneNewBootstrap = "NewBootstrap";

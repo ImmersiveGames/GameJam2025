@@ -1,151 +1,140 @@
 using System;
-using System.Linq;
-using System.Threading;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
-    /// Driver runtime que reage a SceneTransitionScenesReadyEvent e, quando aplicável,
-    /// dispara hard reset do WorldLifecycle.
-    ///
-    /// Regra recomendada:
-    /// - Profile "startup" (Frontend/Ready) NÃO roda reset de world/spawn.
-    /// - Para gameplay profiles, executa ResetWorldAsync no controller da cena alvo.
+    /// Runtime driver do WorldLifecycle:
+    /// - Observa SceneTransitionScenesReadyEvent
+    /// - Dispara ResetWorldAsync no controller da cena ativa (quando aplicável)
+    /// - Emite WorldLifecycleResetCompletedEvent para liberar o completion gate do SceneFlow
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class WorldLifecycleRuntimeCoordinator : IDisposable
+    public sealed class WorldLifecycleRuntimeCoordinator
     {
-        private const string StartupProfileName = "startup";
+        private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
 
-        // Observação: mantemos MenuScene como "cena frontend" por regra atual do projeto,
-        // mas evitamos usar "menu" na nomenclatura (conceito é NonGameplay/Frontend).
+        // Profiles que NÃO disparam reset (ex.: boot e frontend/menu).
+        private static readonly HashSet<string> SkipProfiles = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "startup",
+            "frontend"
+        };
+
+        // Fallback: enquanto nem toda transição para Menu carrega o profile "frontend",
+        // mantemos o check por nome de cena para evitar erro/ruído (controller ausente no Menu).
         private const string FrontendSceneName = "MenuScene";
-
-        private const string CompletedReasonSkipped = "Skipped_StartupOrFrontend";
-        private const string CompletedReasonNoController = "Failed_NoController";
-
-        private readonly EventBinding<SceneTransitionScenesReadyEvent> _onScenesReady;
-        private int _resetInFlight; // 0/1
 
         public WorldLifecycleRuntimeCoordinator()
         {
-            _onScenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
-            EventBus<SceneTransitionScenesReadyEvent>.Register(_onScenesReady);
+            _scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
+            EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
                 "[WorldLifecycle] Runtime driver registrado para SceneTransitionScenesReadyEvent.",
                 DebugUtility.Colors.Info);
         }
 
-        public void Dispose()
-        {
-            EventBus<SceneTransitionScenesReadyEvent>.Unregister(_onScenesReady);
-        }
-
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            if (Interlocked.CompareExchange(ref _resetInFlight, 1, 0) == 1)
+            if (evt.Context.Equals(default(SceneTransitionContext)))
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
-                    "[WorldLifecycle] Reset já está em execução. Ignorando novo ScenesReady.");
+                    "[WorldLifecycle] SceneTransitionScenesReady recebido com Context default. Ignorando.");
                 return;
             }
 
+            var context = evt.Context;
+            var activeSceneName = context.TargetActiveScene;
+            var profile = context.TransitionProfileName;
+
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={evt.Context}");
+                $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
-            _ = HandleScenesReadyAsync(evt);
-        }
+            // SKIP em startup/frontend (e fallback por cena Menu).
+            var skipByProfile = !string.IsNullOrEmpty(profile) && SkipProfiles.Contains(profile);
+            var skipByScene = string.Equals(activeSceneName, FrontendSceneName, StringComparison.Ordinal);
 
-        private async Task HandleScenesReadyAsync(SceneTransitionScenesReadyEvent evt)
-        {
-            string profile = evt.Context.TransitionProfileName ?? string.Empty;
-
-            string activeSceneName =
-                !string.IsNullOrWhiteSpace(evt.Context.TargetActiveScene)
-                    ? evt.Context.TargetActiveScene
-                    : SceneManager.GetActiveScene().name;
-
-            string reason = $"ScenesReady/{activeSceneName}";
-
-            try
+            if (skipByProfile || skipByScene)
             {
-                // Regra: startup/frontend não faz reset de world.
-                if (IsFrontendProfile(profile) || IsFrontendScene(activeSceneName))
-                {
-                    DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                        $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile}', activeScene='{activeSceneName}'.",
-                        DebugUtility.Colors.Info);
-
-                    RaiseCompleted(evt.Context, CompletedReasonSkipped);
-                    return;
-                }
-
-                DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='{reason}', profile='{profile}'",
+                DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
+                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile ?? "<null>"}', activeScene='{activeSceneName}'.",
                     DebugUtility.Colors.Info);
 
-                var controller = FindControllerInScene(activeSceneName);
+                EmitResetCompleted(context, reason: "Skipped_StartupOrFrontend");
+                return;
+            }
 
-                // Para gameplay scenes, controller é esperado.
+            _ = RunResetAsync(context, activeSceneName, profile);
+        }
+
+        private async Task RunResetAsync(SceneTransitionContext context, string activeSceneName, string profile)
+        {
+            try
+            {
+                var controller = FindControllerInScene(activeSceneName);
                 if (controller == null)
                 {
                     DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                         $"[WorldLifecycle] WorldLifecycleController não encontrado na cena '{activeSceneName}'. Reset abortado.");
 
-                    RaiseCompleted(evt.Context, CompletedReasonNoController);
+                    EmitResetCompleted(context, reason: "Failed_NoController");
                     return;
                 }
 
-                await controller.ResetWorldAsync(reason);
+                DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/{activeSceneName}', profile='{profile ?? "<null>"}'",
+                    DebugUtility.Colors.Info);
 
-                RaiseCompleted(evt.Context, reason);
+                // IMPORTANTE: no seu projeto atual, ResetWorldAsync recebe apenas 'reason'.
+                await controller.ResetWorldAsync(reason: $"ScenesReady/{activeSceneName}");
+
+                EmitResetCompleted(context, reason: "Ok");
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Falha ao executar reset após ScenesReady. reason='{reason}', profile='{profile}', ex={ex}");
+                    $"[WorldLifecycle] Exceção ao executar reset: {ex.Message}");
 
-                RaiseCompleted(evt.Context, $"Failed_Reset:{ex.GetType().Name}");
+                EmitResetCompleted(context, reason: "Failed_Exception");
             }
-            finally
-            {
-                Interlocked.Exchange(ref _resetInFlight, 0);
-            }
-        }
-
-        private static bool IsFrontendProfile(string profile)
-        {
-            return string.Equals(profile, StartupProfileName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool IsFrontendScene(string sceneName)
-        {
-            return string.Equals(sceneName, FrontendSceneName, StringComparison.Ordinal);
         }
 
         private static WorldLifecycleController FindControllerInScene(string sceneName)
         {
-            WorldLifecycleController[] controllers = Object.FindObjectsByType<WorldLifecycleController>(FindObjectsSortMode.None);
+            if (string.IsNullOrEmpty(sceneName))
+                return null;
 
-            return (from c in controllers where c != null let s = c.gameObject.scene where s.IsValid() && s.isLoaded && string.Equals(s.name, sceneName, StringComparison.Ordinal) select c).FirstOrDefault();
+            var scene = SceneManager.GetSceneByName(sceneName);
+            if (!scene.IsValid() || !scene.isLoaded)
+                return null;
 
+            var roots = scene.GetRootGameObjects();
+            for (var i = 0; i < roots.Length; i++)
+            {
+                var go = roots[i];
+                if (go == null) continue;
+
+                var controller = go.GetComponentInChildren<WorldLifecycleController>(includeInactive: true);
+                if (controller != null)
+                    return controller;
+            }
+
+            return null;
         }
 
-        private static void RaiseCompleted(SceneTransitionContext context, string reason)
+        private static void EmitResetCompleted(SceneTransitionContext context, string reason)
         {
-            string signature = context.ToString();
-            string profile = context.TransitionProfileName ?? string.Empty;
+            // Deve casar com o gate: WorldLifecycleResetCompletionGate usa SceneTransitionSignatureUtil.Compute(context).
+            var signature = SceneTransitionSignatureUtil.Compute(context);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{profile}', signature='{signature}', reason='{reason}'.",
+                $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{context.TransitionProfileName}', signature='{signature}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<WorldLifecycleResetCompletedEvent>.Raise(

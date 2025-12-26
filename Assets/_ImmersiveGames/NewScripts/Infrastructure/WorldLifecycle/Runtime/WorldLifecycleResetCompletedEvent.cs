@@ -1,4 +1,5 @@
 ﻿using _ImmersiveGames.NewScripts.Infrastructure.Events;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>

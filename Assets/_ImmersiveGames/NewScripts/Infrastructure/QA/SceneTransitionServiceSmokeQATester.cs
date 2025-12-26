@@ -14,10 +14,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// <summary>
     /// Smoke QA para o pipeline nativo de Scene Flow (NewScripts).
     /// Valida ordem dos eventos e integração com GameReadinessService/SimulationGate.
+    ///
+    /// Observação importante (log "verde"):
+    /// - Este QA usa o profile "startup" para garantir SKIP do WorldLifecycleRuntimeCoordinator,
+    ///   evitando erro "WorldLifecycleController não encontrado" em cenas stub do teste.
     /// </summary>
     public sealed class SceneTransitionServiceSmokeQaTester : MonoBehaviour
     {
         private const string SceneFlowLogTag = "[SceneFlowTest][Native]";
+        private const string SmokeProfileName = "startup";
 
         [ContextMenu("QA/SceneFlow/SceneTransitionService/Run")]
         public void Run()
@@ -77,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     new[] { "QA_Unload_B" },
                     targetActiveScene: "QA_TargetActive",
                     useFade: true,
-                    transitionProfileName: "QA_Profile");
+                    transitionProfileName: SmokeProfileName);
 
                 service.TransitionAsync(request).GetAwaiter().GetResult();
 
@@ -95,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 Evaluate(string.Equals(stubLoader.ActiveScene, "QA_TargetActive", StringComparison.Ordinal),
                     "Loader adapter recebeu TrySetActiveSceneAsync para QA_TargetActive.", ref passes, ref fails);
 
-                Evaluate(string.Equals(stubFade.ConfiguredProfileName, "QA_Profile", StringComparison.Ordinal),
+                Evaluate(string.Equals(stubFade.ConfiguredProfileName, SmokeProfileName, StringComparison.Ordinal),
                     "Fade adapter configurado com TransitionProfileName.", ref passes, ref fails);
 
                 Evaluate(stubFade.FadeInCount == 1 && stubFade.FadeOutCount == 1,
@@ -146,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
             if (fails > 0)
             {
-                throw new InvalidOperationException($"SceneTransitionServiceSmokeQATester detected {fails} failures.");
+                throw new InvalidOperationException($"SceneTransitionServiceSmokeQaTester detected {fails} failures.");
             }
         }
 
