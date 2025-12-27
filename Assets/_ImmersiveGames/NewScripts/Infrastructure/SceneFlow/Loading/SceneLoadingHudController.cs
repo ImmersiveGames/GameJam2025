@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,8 +15,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     {
         [Header("References")]
         [SerializeField] private CanvasGroup rootGroup;
-        [SerializeField] private Text titleText;
-        [SerializeField] private Text detailsText;
+        [SerializeField] private TMP_Text titleText;
+        [SerializeField] private TMP_Text detailsText;
         [SerializeField] private Slider progressSlider;
 
         [Header("Sorting")]

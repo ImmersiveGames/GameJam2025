@@ -18,6 +18,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
@@ -111,6 +112,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowLoadingIfAvailable();
 
             RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
+
+            RegisterInputModeSceneFlowBridge();
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
@@ -249,6 +252,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Navigation] GameNavigationService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterInputModeSceneFlowBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<InputModeSceneFlowBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[InputMode] InputModeSceneFlowBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new InputModeSceneFlowBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[InputMode] InputModeSceneFlowBridge registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 
@@ -98,6 +100,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 DebugUtility.Log<GameNavigationService>(
                     $"[Navigation] TransitionAsync concluído. reason='{reason}', targetActive='{request.TargetActiveScene}'.",
                     DebugUtility.Colors.Success);
+
+                // Produção: ao entrar em Gameplay, avançar GameLoop para Playing.
+                if (string.Equals(request.TargetActiveScene, SceneGameplay, StringComparison.Ordinal))
+                {
+                    TryRequestStartAfterGameplayTransition(reason);
+                }
             }
             catch (Exception ex)
             {
@@ -108,6 +116,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
             {
                 Interlocked.Exchange(ref _transitionInFlight, 0);
             }
+        }
+
+        private static void TryRequestStartAfterGameplayTransition(string reason)
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                DebugUtility.LogWarning<GameNavigationService>(
+                    $"[Navigation] DependencyManager indisponível; não foi possível RequestStart. reason='{reason}'.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
+            {
+                DebugUtility.LogWarning<GameNavigationService>(
+                    $"[Navigation] IGameLoopService não encontrado no DI global; não foi possível RequestStart. reason='{reason}'.");
+                return;
+            }
+
+            DebugUtility.Log<GameNavigationService>(
+                $"[Navigation] Entrando em Gameplay → chamando GameLoop.RequestStart(). reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            gameLoop.RequestStart();
         }
     }
 }
