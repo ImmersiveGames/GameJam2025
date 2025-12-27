@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestStart() => _signals.MarkStart();
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
+        public void RequestReady() => _signals.MarkReady();
         public void RequestReset() => _signals.MarkReset();
 
         public void Initialize()
@@ -65,11 +66,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public bool StartRequested { get; private set; }
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
+            public bool ReadyRequested { get; private set; }
             public bool ResetRequested { get; private set; }
 
             public void MarkStart() => StartRequested = true;
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
+            public void MarkReady() => ReadyRequested = true;
             public void MarkReset() => ResetRequested = true;
 
             public void ResetTransientSignals()
@@ -77,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 StartRequested = false;
                 PauseRequested = false;
                 ResumeRequested = false;
+                ReadyRequested = false;
                 ResetRequested = false;
             }
         }

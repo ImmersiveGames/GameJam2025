@@ -32,6 +32,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
+            if (_signals.ReadyRequested)
+            {
+                return TransitionTo(GameLoopStateId.Ready);
+            }
+
             var next = Current;
 
             switch (Current)

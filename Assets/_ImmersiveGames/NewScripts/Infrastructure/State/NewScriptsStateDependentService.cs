@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
         private EventBinding<GameStartRequestedEvent> _gameStartRequestedBinding;
         private EventBinding<GamePauseCommandEvent> _gamePauseBinding;
         private EventBinding<GameResumeRequestedEvent> _gameResumeBinding;
+        private EventBinding<GameExitToMenuRequestedEvent> _gameExitToMenuBinding;
         private EventBinding<ReadinessChangedEvent> _readinessBinding;
 
         private bool _bindingsRegistered;
@@ -138,6 +139,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
             EventBus<GameStartRequestedEvent>.Unregister(_gameStartRequestedBinding);
             EventBus<GamePauseCommandEvent>.Unregister(_gamePauseBinding);
             EventBus<GameResumeRequestedEvent>.Unregister(_gameResumeBinding);
+            EventBus<GameExitToMenuRequestedEvent>.Unregister(_gameExitToMenuBinding);
             EventBus<ReadinessChangedEvent>.Unregister(_readinessBinding);
 
             _bindingsRegistered = false;
@@ -187,6 +189,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                     SyncMoveDecisionLogIfChanged(forceLog: false);
                 });
 
+                _gameExitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ =>
+                {
+                    SetState(ServiceState.Ready);
+                    SyncMoveDecisionLogIfChanged(forceLog: false);
+                });
+
                 _readinessBinding = new EventBinding<ReadinessChangedEvent>(evt =>
                 {
                     OnReadinessChanged(evt);
@@ -196,6 +204,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.State
                 EventBus<GameStartRequestedEvent>.Register(_gameStartRequestedBinding);
                 EventBus<GamePauseCommandEvent>.Register(_gamePauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_gameResumeBinding);
+                EventBus<GameExitToMenuRequestedEvent>.Register(_gameExitToMenuBinding);
                 EventBus<ReadinessChangedEvent>.Register(_readinessBinding);
 
                 _bindingsRegistered = true;
