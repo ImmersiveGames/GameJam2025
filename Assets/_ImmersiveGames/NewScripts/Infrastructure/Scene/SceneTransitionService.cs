@@ -145,6 +145,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 // 2) Novo: aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
                 await AwaitCompletionGateAsync(context);
 
+                EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));
+
                 await RunFadeOutIfNeeded(context);
 
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));

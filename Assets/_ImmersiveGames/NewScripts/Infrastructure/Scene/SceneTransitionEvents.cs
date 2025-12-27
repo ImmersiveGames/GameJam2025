@@ -69,6 +69,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     }
 
     /// <summary>
+    /// Disparado imediatamente antes do FadeOut (momento de revelar a cena).
+    /// </summary>
+    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent
+    {
+        public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context)
+        {
+            Context = context;
+        }
+
+        public SceneTransitionContext Context { get; }
+    }
+
+    /// <summary>
     /// Disparado ao final do fluxo de transição (após fade out quando houver).
     /// </summary>
     public readonly struct SceneTransitionCompletedEvent : IEvent

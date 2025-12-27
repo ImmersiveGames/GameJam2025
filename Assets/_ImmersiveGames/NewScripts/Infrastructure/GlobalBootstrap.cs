@@ -21,6 +21,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
@@ -104,6 +105,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
 
+            RegisterSceneFlowLoadingIfAvailable();
+
             RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
 
             RegisterStateDependentService();
@@ -117,6 +120,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Fade] INewScriptsFadeService registrado no DI global (ADR-0009).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterSceneFlowLoadingIfAvailable()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Loading] SceneFlowLoadingService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            RegisterIfMissing(() => new SceneFlowLoadingService());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Loading] SceneFlowLoadingService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

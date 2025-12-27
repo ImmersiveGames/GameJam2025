@@ -361,11 +361,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
 
         private NewPlayerMovementController FindAnyMovementController()
         {
-#if UNITY_2022_2_OR_NEWER
-            var all = FindObjectsByType<NewPlayerMovementController>(FindObjectsSortMode.None);
-#else
-            var all = FindObjectsOfType<NewPlayerMovementController>(true);
-#endif
+            var all = FindObjectsByType<NewPlayerMovementController>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
             if (all == null || all.Length == 0)
             {
                 return null;

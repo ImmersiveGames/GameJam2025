@@ -5,41 +5,39 @@ Remover qualquer dependência do legado (`Assets/_ImmersiveGames/Scripts` e name
 dentro de `Assets/_ImmersiveGames/NewScripts`, mantendo o pipeline operacional:
 SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 
-## Resultado
-- NewScripts standalone: nenhuma referência a `_ImmersiveGames.Scripts.*` dentro de `Assets/_ImmersiveGames/NewScripts`.
-- Smoke QA do SceneFlow: PASS (ExitCode=0).
-- Log “verde”: sem erro de WorldLifecycleController ausente em smoke (SKIP path ativado por profile).
+## Varredura executada (excluindo Docs)
+Termos pesquisados:
+- `_ImmersiveGames.Scripts`
+- `Legacy`
+- `Scripts.Scene` / `Scripts.Utils` / `Scripts.Game`
+- `using Legacy`
+- `FindObjectsOfType`
+- `Resources.FindObjects`
 
-## Mudanças principais (arquivos)
-### Remoções (Legacy bridges/adapters)
-- Removed: `NewScripts/Bridges/LegacySceneFlow/LegacySceneFlowBridge.cs`
-    - Dependência removida: `_ImmersiveGames.Scripts.SceneManagement.Transition.*`
-    - Substituição: pipeline nativo NewScripts (eventos/contextos próprios)
+## Resultado da varredura
+- **0 ocorrências** de `_ImmersiveGames.Scripts` (codebase NewScripts, excluindo Docs).
+- **0 ocorrências** de `Legacy` em runtime/QA.
+- **0 ocorrências** de `using Legacy`.
+- **0 ocorrências** de `Resources.FindObjects`.
+- **0 ocorrências** de `FindObjectsOfType` (após ajuste em QA).
 
-- Removed: `NewScripts/Bridges/LegacySceneFlow/LegacySceneFlowAdapters.cs`
-    - Dependência removida: `_ImmersiveGames.Scripts.SceneManagement.Core.*` (loader legado)
-    - Substituição: `NewScriptsSceneFlowAdapters` + `SceneManagerLoaderAdapter`
+## Mudanças recentes aplicadas
+- Updated: `Infrastructure/WorldLifecycle/Spawn/QA/WorldMovementPermissionQaRunner.cs`
+    - Substituição de `FindObjectsOfType(..., true)` por `FindObjectsByType(..., FindObjectsInactive.Include, FindObjectsSortMode.None)`.
+    - Motivo: aderir à API moderna do Unity 6 e evitar uso obsoleto.
 
-- Removed: `NewScripts/Bridges/LegacySceneFlow/QA/LegacySceneFlowBridgeSmokeQATester.cs`
-    - Dependência removida: smoke via bridge de eventos legado
-    - Substituição: smoke QA nativo `SceneTransitionServiceSmokeQaTester`
-
-### Ajustes QA (log “verde”)
-- Updated: `Infrastructure/QA/SceneFlowPlayModeSmokeBootstrap.cs`
-    - Correção: evitar falso-positivo por substring “Fail” em “Fails=0”.
-    - Resultado: RESULT=PASS ExitCode=0 quando runner/tester passa.
-
-- Updated: `Infrastructure/QA/SceneTransitionServiceSmokeQaTester.cs`
-    - Mudança QA-only: usar `transitionProfileName="startup"` no request do smoke.
-    - Resultado: `WorldLifecycleRuntimeCoordinator` executa SKIP e não tenta localizar controller em cena stub.
+- Updated: `Infrastructure/SceneFlow/Loading/SceneFlowLoadingService.cs`
+    - Log de HUD ausente rebaixado para **Verbose** (fluxo esperado quando o HUD nasce tarde).
+    - Motivo: reduzir warnings falsos durante transições normais.
 
 ## Evidência (logs esperados)
-- `[SceneFlowTest][Native] PASS`
-- `[SceneFlowTest][Runner] PASS`
-- `[SceneFlowTest][Smoke] RESULT=PASS ExitCode=0`
-- `[WorldLifecycle] Reset SKIPPED (startup/frontend)` durante smoke
+- Startup: HUD pode não existir no `Started` e **não** gera warning (apenas verbose).
+- Transição: `[Loading] Started → Show pending` → `[Loading] ScenesReady → Update pending` → `[Loading] BeforeFadeOut → Hide` → `[Loading] Completed → Safety hide`.
+
+## Mini changelog
+- QA: troca de API de busca de objetos para `FindObjectsByType`.
+- Loading HUD: ajuste de severidade de log para evitar warning em fluxo esperado.
 
 ## Verificações finais recomendadas
-1) Search: `_ImmersiveGames.Scripts` in `Assets/_ImmersiveGames/NewScripts` → 0 results.
-2) Search: `LegacySceneFlow` in `Assets/_ImmersiveGames/NewScripts` → 0 results in code.
-3) Run smoke: SceneFlowPlayModeSmokeBootstrap → PASS ExitCode=0.
+1) Search: `_ImmersiveGames.Scripts` em `Assets/_ImmersiveGames/NewScripts` (excluindo Docs) → 0 results.
+2) Search: `FindObjectsOfType` em `Assets/_ImmersiveGames/NewScripts` (excluindo Docs) → 0 results.
