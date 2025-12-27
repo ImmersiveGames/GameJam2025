@@ -6,6 +6,7 @@ Este changelog cobre **apenas** arquivos de documentação.
 - Added: `ADR-0010-LoadingHud-SceneFlow.md` (HUD de loading separado do Fade).
 - Added: módulo de Loading HUD (scripts em `Infrastructure/SceneFlow/Loading/`).
 - Updated: Scene Flow com evento `SceneTransitionBeforeFadeOutEvent` e emissão antes do FadeOut.
+- Updated: Loading HUD com ordenação acima do Fade e evento `SceneLoadingHudRegisteredEvent`.
 - Added: registro de evolução do **Gameplay Reset** (`Gameplay/Reset/`) nos docs (targets + fases + contracts + DI por cena).
 - Added: registro do **QA isolado** para validar reset por grupos (`GameplayResetQaSpawner` + `GameplayResetQaProbe`).
 - Updated: `WORLD_LIFECYCLE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `DECISIONS.md`, `EXAMPLES_BEST_PRACTICES.md`, `GLOSSARY.md`, `README.md` para refletir a integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant`.

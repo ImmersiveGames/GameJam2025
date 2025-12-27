@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
@@ -14,6 +15,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _transitionBeforeFadeOutBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
+        private readonly EventBinding<SceneLoadingHudRegisteredEvent> _hudRegisteredBinding;
+        private readonly EventBinding<SceneLoadingHudUnregisteredEvent> _hudUnregisteredBinding;
 
         private ISceneLoadingHud _hud;
         private bool _isLoading;
@@ -28,11 +31,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
             _transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
+            _hudRegisteredBinding = new EventBinding<SceneLoadingHudRegisteredEvent>(OnHudRegistered);
+            _hudUnregisteredBinding = new EventBinding<SceneLoadingHudUnregisteredEvent>(OnHudUnregistered);
 
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_transitionBeforeFadeOutBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+            EventBus<SceneLoadingHudRegisteredEvent>.Register(_hudRegisteredBinding);
+            EventBus<SceneLoadingHudUnregisteredEvent>.Register(_hudUnregisteredBinding);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 "[Loading] SceneFlowLoadingService registrado nos eventos de Scene Flow.");
@@ -118,6 +125,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 $"[Loading] SceneTransitionCompleted → HUD forçado a ocultar. signature='{_lastContextSignature}'.");
         }
 
+        private void OnHudRegistered(SceneLoadingHudRegisteredEvent evt)
+        {
+            TryResolveHud();
+        }
+
+        private void OnHudUnregistered(SceneLoadingHudUnregisteredEvent evt)
+        {
+            if (_hud == null)
+            {
+                return;
+            }
+
+            _hud = null;
+
+            DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                "[Loading] HUD desregistrado. Referência limpa no SceneFlowLoadingService.");
+        }
+
         private void UpdateHudState(string title, string details, float progress01)
         {
             _currentTitle = title;
@@ -146,6 +171,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             }
 
             _hud.Hide();
+        }
+
+        private void TryResolveHud()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var hud) || hud == null)
+            {
+                DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                    "[Loading] HUD pronto sinalizado, porém ISceneLoadingHud não encontrado no DI global.");
+                return;
+            }
+
+            if (_hud == hud)
+            {
+                return;
+            }
+
+            AttachHud(hud);
+
+            DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                "[Loading] ISceneLoadingHud resolvido via DI após HUD pronto.");
+
+            if (_isLoading)
+            {
+                ApplyHudState();
+
+                DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                    $"[Loading] HUD pronto durante loading ativo. Show aplicado imediatamente. signature='{_lastContextSignature}'.");
+            }
         }
 
         private static float Clamp01(float value)

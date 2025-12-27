@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,6 +18,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         [SerializeField] private Text detailsText;
         [SerializeField] private Slider progressSlider;
 
+        [Header("Sorting")]
+        [SerializeField] private int sortingOrder = 12050;
+
         public bool IsVisible => rootGroup != null && rootGroup.alpha > 0.001f;
 
         private void Awake()
@@ -27,19 +31,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             }
 
             SetVisible(false);
+            TryConfigureCanvasSorting();
+            RegisterHudInGlobalDi();
 
-            if (DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var service) && service != null)
-            {
-                service.AttachHud(this);
+            EventBus<SceneLoadingHudRegisteredEvent>.Raise(new SceneLoadingHudRegisteredEvent());
 
-                DebugUtility.LogVerbose<SceneLoadingHudController>(
-                    "[HUD] SceneLoadingHudController inicializado e anexado ao SceneFlowLoadingService.");
-            }
-            else
-            {
-                DebugUtility.LogWarning<SceneLoadingHudController>(
-                    "[HUD] SceneFlowLoadingService indisponível no DI global. HUD não será anexado.");
-            }
+            DebugUtility.LogVerbose<SceneLoadingHudController>(
+                "[HUD] SceneLoadingHudController inicializado, registrado no DI global e sinalizado como pronto.");
+        }
+
+        private void OnDestroy()
+        {
+            EventBus<SceneLoadingHudUnregisteredEvent>.Raise(new SceneLoadingHudUnregisteredEvent());
+
+            DebugUtility.LogVerbose<SceneLoadingHudController>(
+                "[HUD] SceneLoadingHudController destruído e sinalizado como desregistrado.");
         }
 
         public void Show(string title, string details = null)
@@ -84,6 +90,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             rootGroup.alpha = visible ? 1f : 0f;
             rootGroup.blocksRaycasts = visible;
             rootGroup.interactable = visible;
+        }
+
+        private void RegisterHudInGlobalDi()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null && existing != this)
+            {
+                DebugUtility.LogWarning<SceneLoadingHudController>(
+                    "[HUD] ISceneLoadingHud já registrado no DI global. Sobrescrevendo com instância atual.");
+            }
+
+            DependencyManager.Provider.RegisterGlobal<ISceneLoadingHud>(this, allowOverride: true);
+        }
+
+        private void TryConfigureCanvasSorting()
+        {
+            var canvas = GetComponentInParent<Canvas>(true);
+            if (canvas == null)
+            {
+                DebugUtility.LogWarning<SceneLoadingHudController>(
+                    "[HUD] Nenhum Canvas encontrado no HUD. Sorting não será configurado.");
+                return;
+            }
+
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = sortingOrder;
+
+            DebugUtility.LogVerbose<SceneLoadingHudController>(
+                $"[HUD] Canvas sorting configurado. overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}.");
         }
     }
 }

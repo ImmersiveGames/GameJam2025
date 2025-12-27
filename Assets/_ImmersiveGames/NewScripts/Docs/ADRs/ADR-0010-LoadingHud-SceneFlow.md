@@ -22,7 +22,12 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - Um novo evento `SceneTransitionBeforeFadeOutEvent` é emitido antes do FadeOut.
 - O HUD é ocultado nesse evento para evitar piscar no momento de revelar a cena.
 
-4) **Host no UIGlobalScene**
+4) **HUD pronto + ordenação acima do Fade**
+- O `SceneLoadingHudController` registra `ISceneLoadingHud` no DI global e emite `SceneLoadingHudRegisteredEvent`.
+- O serviço escuta esse evento para aplicar o estado atual imediatamente.
+- O Canvas do HUD deve usar `overrideSorting=true` e `sortingOrder` maior que o Fade (ex.: 12050).
+
+5) **Host no UIGlobalScene**
 - O `SceneLoadingHudController` vive no `UIGlobalScene` e se anexa ao serviço global.
 - Caso o HUD nasça tarde, o serviço aplica o estado atual imediatamente.
 
