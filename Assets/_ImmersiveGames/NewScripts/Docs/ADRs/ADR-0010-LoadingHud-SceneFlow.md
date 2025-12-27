@@ -6,7 +6,7 @@
 ## Contexto
 O Scene Flow do NewScripts já possui Fade (ADR-0009), porém o HUD de loading precisa ser um módulo separado,
 sem depender de legados e sem acoplar ao Fade. Além disso, a transição pode aguardar o completion gate
-(WorldLifecycle reset), o que exige manter o HUD visível até o momento correto.
+(WorldLifecycle reset), o que exige manter o HUD visível até o momento correto, mesmo quando o HUD nasce tarde.
 
 ## Decisão
 Implementar um módulo de Loading HUD separado do Fade, com as regras:
@@ -27,7 +27,11 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - O serviço escuta esse evento para aplicar o estado atual imediatamente.
 - O Canvas do HUD deve usar `overrideSorting=true` e `sortingOrder` maior que o Fade (ex.: 12050).
 
-5) **Host no UIGlobalScene**
+5) **Pending quando HUD nasce tarde**
+- Se o HUD ainda não existir no `Started`/`ScenesReady`, o serviço guarda pendências por assinatura da transição.
+- Ao receber `SceneLoadingHudRegisteredEvent`, aplica o último estado pendente imediatamente.
+
+6) **Host no UIGlobalScene**
 - O `SceneLoadingHudController` vive no `UIGlobalScene` e se anexa ao serviço global.
 - Caso o HUD nasça tarde, o serviço aplica o estado atual imediatamente.
 

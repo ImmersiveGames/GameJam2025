@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             EventBus<SceneLoadingHudRegisteredEvent>.Raise(new SceneLoadingHudRegisteredEvent());
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD] SceneLoadingHudController inicializado, registrado no DI global e sinalizado como pronto.");
+                "[HUD CTRL] HUD inicializado, registrado no DI global e sinalizado como pronto.");
         }
 
         private void OnDestroy()
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             EventBus<SceneLoadingHudUnregisteredEvent>.Raise(new SceneLoadingHudUnregisteredEvent());
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD] SceneLoadingHudController destruído e sinalizado como desregistrado.");
+                "[HUD CTRL] HUD destruído. Sinalizado como desregistrado (DI global não possui remoção).");
         }
 
         public void Show(string title, string details = null)
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null && existing != this)
             {
                 DebugUtility.LogWarning<SceneLoadingHudController>(
-                    "[HUD] ISceneLoadingHud já registrado no DI global. Sobrescrevendo com instância atual.");
+                    "[HUD CTRL] ISceneLoadingHud já registrado no DI global. Sobrescrevendo com instância atual.");
             }
 
             DependencyManager.Provider.RegisterGlobal<ISceneLoadingHud>(this, allowOverride: true);
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             if (canvas == null)
             {
                 DebugUtility.LogWarning<SceneLoadingHudController>(
-                    "[HUD] Nenhum Canvas encontrado no HUD. Sorting não será configurado.");
+                    "[HUD CTRL] Nenhum Canvas encontrado no HUD. Sorting não será configurado.");
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             canvas.sortingOrder = sortingOrder;
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
-                $"[HUD] Canvas sorting configurado. overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}.");
+                $"[HUD CTRL] Canvas sorting configurado. overrideSorting={canvas.overrideSorting}, sortingOrder={canvas.sortingOrder}.");
         }
     }
 }
