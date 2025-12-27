@@ -7,7 +7,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
     /// Implementações típicas vão reagir aos eventos de SceneTransitionService,
     /// mas a interface permite que outros sistemas também controlem o overlay se necessário.
     /// </summary>
-    public interface ISceneLoadingHudService
+    public interface ISceneLoadingHudServiceOLD
     {
         void ShowLoading(SceneTransitionContext context);
         void MarkScenesReady(SceneTransitionContext context);

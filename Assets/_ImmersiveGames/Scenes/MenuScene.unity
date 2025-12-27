@@ -900,7 +900,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 385c45de56804d3d8e6b205b1a710c6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  worldDefinition: {fileID: 11400000, guid: 72a1a5ad8348bd54d8da4cf5d30538f1, type: 2}
+  worldDefinition: {fileID: 0}
 --- !u!4 &700441316
 Transform:
   m_ObjectHideFlags: 0

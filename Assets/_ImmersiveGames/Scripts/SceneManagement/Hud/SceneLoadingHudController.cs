@@ -9,14 +9,14 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
     /// <summary>
     /// Controlador da HUD de loading.
     /// - Ponte entre SceneTransitionService e SceneLoadingHudView.
-    /// - API síncrona (ISceneLoadingHudService) e assíncrona (ISceneLoadingHudTaskService).
+    /// - API síncrona (ISceneLoadingHudServiceOLD) e assíncrona (ISceneLoadingHudTaskService).
     ///
     /// Não usa corrotinas diretamente; coordenação via Tasks.
     /// </summary>
     [DefaultExecutionOrder(-50)]
     public sealed class SceneLoadingHudController :
         MonoBehaviour,
-        ISceneLoadingHudService,
+        ISceneLoadingHudServiceOLD,
         ISceneLoadingHudTaskService
     {
         [Header("Referências")]
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             {
                 var provider = DependencyManager.Provider;
 
-                provider.RegisterGlobal<ISceneLoadingHudService>(this, allowOverride: false);
+                provider.RegisterGlobal<ISceneLoadingHudServiceOLD>(this, allowOverride: false);
                 provider.RegisterGlobal<ISceneLoadingHudTaskService>(this, allowOverride: false);
 
                 DebugUtility.Log<SceneLoadingHudController>(
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Hud
             }
         }
 
-        #region ISceneLoadingHudService (API síncrona/legada)
+        #region ISceneLoadingHudServiceOLD (API síncrona/legada)
 
         public void ShowLoading(SceneTransitionContext context) => _ = ShowLoadingAsync(context);
         public void MarkScenesReady(SceneTransitionContext context) => _ = MarkScenesReadyAsync(context);
