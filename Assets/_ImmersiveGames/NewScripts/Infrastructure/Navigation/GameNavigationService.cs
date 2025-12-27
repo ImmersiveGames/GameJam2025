@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -102,6 +103,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                     DebugUtility.Log<GameNavigationService>(
                         $"[Navigation] Pedido duplicado (debounced). reason='{reason}', key='{requestKey}', elapsedMs={elapsedMs}.",
                         DebugUtility.Colors.Warning);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    LogShortStackTrace("debounce");
+#endif
                     return;
                 }
             }
@@ -115,6 +119,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 DebugUtility.Log<GameNavigationService>(
                     $"[Navigation] Transição já em andamento. Ignorando novo pedido. reason='{reason}', targetActive='{request.TargetActiveScene}', profile='{request.TransitionProfileName}'.",
                     DebugUtility.Colors.Warning);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                LogShortStackTrace("in-flight");
+#endif
                 return;
             }
 
@@ -169,5 +176,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
 
             gameLoop.RequestStart();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static void LogShortStackTrace(string reasonLabel)
+        {
+            var stackTrace = Environment.StackTrace;
+            if (string.IsNullOrWhiteSpace(stackTrace))
+            {
+                return;
+            }
+
+            var lines = stackTrace.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var maxLines = Math.Min(lines.Length, 10);
+            var builder = new StringBuilder(256);
+
+            for (var i = 0; i < maxLines; i++)
+            {
+                builder.AppendLine(lines[i]);
+            }
+
+            DebugUtility.Log<GameNavigationService>(
+                $"[Navigation] StackTrace curto ({reasonLabel}):\n{builder}",
+                DebugUtility.Colors.Warning);
+        }
+#endif
     }
 }
