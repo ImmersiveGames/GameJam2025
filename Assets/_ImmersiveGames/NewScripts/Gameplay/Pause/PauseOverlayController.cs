@@ -102,42 +102,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             Hide();
         }
 
-        public void Toggle()
+        public void ReturnToMenuFrontend()
         {
             EnsureDependenciesInjected();
 
-            bool isActive = overlayRoot != null && overlayRoot.activeSelf;
-            if (isActive)
+            if (!TrySetOverlayActive(false))
             {
-                Hide();
-            }
-            else
-            {
-                Show();
-            }
-        }
-
-        public void BackToMenu()
-        {
-            EnsureDependenciesInjected();
-
-            if (overlayRoot != null && !overlayRoot.activeSelf)
-            {
-                TrySetOverlayActive(true);
-                EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
-                DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                    "[PauseOverlay] BackToMenu -> Overlay ativado antes da navegacao.",
-                    DebugUtility.Colors.Info);
+                return;
             }
 
             EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                "[PauseOverlay] BackToMenu -> GameResumeRequestedEvent publicado (liberar gate).",
+                "[PauseOverlay] ReturnToMenuFrontend -> GameResumeRequestedEvent publicado.",
                 DebugUtility.Colors.Info);
 
             if (_inputModeService != null)
             {
-                _inputModeService.SetFrontendMenu("PauseOverlay/BackToMenu");
+                _inputModeService.SetFrontendMenu("PauseOverlay/ReturnToMenuFrontend");
             }
             else
             {
@@ -152,7 +133,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 return;
             }
 
-            _ = _navigationService.RequestToMenu("PauseOverlay/BackToMenu");
+            _ = _navigationService.RequestToMenu("PauseOverlay/ReturnToMenuFrontend");
+        }
+
+        public void Toggle()
+        {
+            EnsureDependenciesInjected();
+
+            bool isActive = overlayRoot != null && overlayRoot.activeSelf;
+            if (isActive)
+            {
+                Hide();
+            }
+            else
+            {
+                Show();
+            }
         }
 
         private void EnsureDependenciesInjected()

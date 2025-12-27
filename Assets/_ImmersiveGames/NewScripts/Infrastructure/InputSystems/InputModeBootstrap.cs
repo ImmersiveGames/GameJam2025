@@ -58,6 +58,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
         private void Awake()
         {
+            playerInput = EnsurePlayerInputConfigured();
             EnsureRegistered(playerInput, inputActionAsset, playerMapName, menuMapName);
             DontDestroyOnLoad(gameObject);
         }
@@ -68,6 +69,39 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             {
                 playerInput = GetComponent<PlayerInput>();
             }
+        }
+
+        private PlayerInput EnsurePlayerInputConfigured()
+        {
+            if (playerInput == null)
+            {
+                playerInput = GetComponent<PlayerInput>();
+            }
+
+            if (playerInput == null)
+            {
+                playerInput = FindFirstObjectByType<PlayerInput>();
+            }
+
+            if (playerInput == null)
+            {
+                playerInput = gameObject.AddComponent<PlayerInput>();
+                DebugUtility.LogVerbose(typeof(InputModeBootstrap),
+                    "[InputMode] PlayerInput criado dinamicamente no InputRoot.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (inputActionAsset != null && playerInput.actions != inputActionAsset)
+            {
+                playerInput.actions = inputActionAsset;
+            }
+
+            if (!string.IsNullOrWhiteSpace(playerMapName))
+            {
+                playerInput.defaultActionMap = playerMapName;
+            }
+
+            return playerInput;
         }
     }
 }
