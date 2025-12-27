@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -7,6 +8,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
 {
@@ -19,9 +21,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
         private const string SceneMenu = "MenuScene";
         private const string SceneGameplay = "GameplayScene";
         private const string SceneUIGlobal = "UIGlobalScene";
+        private const int DebounceFrameWindow = 0;
 
         private readonly ISceneTransitionService _sceneTransitionService;
         private int _transitionInFlight;
+        private int _lastRequestFrame = -1;
+        private long _lastRequestTimestampMs = -1;
 
         public GameNavigationService(ISceneTransitionService sceneTransitionService)
         {
@@ -82,10 +87,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 return;
             }
 
+            var nowMs = Environment.TickCount64;
+            var lastFrame = Volatile.Read(ref _lastRequestFrame);
+            var elapsedMs = lastFrame < 0 ? -1 : nowMs - Interlocked.Read(ref _lastRequestTimestampMs);
+            if (lastFrame >= 0 && Time.frameCount - lastFrame <= DebounceFrameWindow)
+            {
+                DebugUtility.LogWarning<GameNavigationService>(
+                    $"[Navigation] Pedido duplicado (debounced) elapsedMs={elapsedMs}.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                DebugUtility.LogWarning<GameNavigationService>(
+                    $"[Navigation] Debounce stack trace:\n{BuildShortStackTrace()}");
+#endif
+                return;
+            }
+
+            Interlocked.Exchange(ref _lastRequestFrame, Time.frameCount);
+            Interlocked.Exchange(ref _lastRequestTimestampMs, nowMs);
+
             if (Interlocked.CompareExchange(ref _transitionInFlight, 1, 0) == 1)
             {
                 DebugUtility.LogWarning<GameNavigationService>(
                     "[Navigation] Transição já em andamento. Ignorando novo pedido.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                DebugUtility.LogWarning<GameNavigationService>(
+                    $"[Navigation] TransitionInFlight stack trace:\n{BuildShortStackTrace()}");
+#endif
                 return;
             }
 
@@ -117,6 +143,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                 Interlocked.Exchange(ref _transitionInFlight, 0);
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static string BuildShortStackTrace()
+        {
+            var stack = Environment.StackTrace;
+            if (string.IsNullOrWhiteSpace(stack))
+            {
+                return "<stack trace indisponível>";
+            }
+
+            var lines = stack.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            const int maxLines = 10;
+            if (lines.Length <= maxLines)
+            {
+                return stack;
+            }
+
+            return string.Join("\n", lines.Take(maxLines));
+        }
+#endif
 
         private static void TryRequestStartAfterGameplayTransition(string reason)
         {
