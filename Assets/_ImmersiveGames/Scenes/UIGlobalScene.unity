@@ -598,6 +598,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1081313265}
   - component: {fileID: 1081313263}
+  - component: {fileID: 1081313266}
   m_Layer: 0
   m_Name: InputRoot
   m_TagString: Untagged
@@ -634,6 +635,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1081313266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081313262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9355303dd57a4afa920160ab0423b197, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  requiredActiveSceneName: GameplayScene
+  overlay: {fileID: 1769195221}
+  uiInputModule: {fileID: 594504070}
+  cancelActionName: PauseToggle
 --- !u!1 &1134008574
 GameObject:
   m_ObjectHideFlags: 0
@@ -1189,7 +1206,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1769195219}
   - component: {fileID: 1769195221}
-  - component: {fileID: 1769195220}
   m_Layer: 5
   m_Name: PauseOverlay
   m_TagString: Untagged
@@ -1212,19 +1228,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 128670550}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1769195220
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1769195218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e8d9cc8abb1a3b48ad2e552e4437f3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  controller: {fileID: 1769195221}
 --- !u!114 &1769195221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1644,13 +1647,14 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
+      - m_Target: {fileID: 1769195221}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Gameplay.Pause.PauseOverlayController,
+          Assembly-CSharp
+        m_MethodName: Resume
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
