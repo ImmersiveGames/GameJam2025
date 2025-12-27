@@ -2,6 +2,13 @@
 
 Este changelog cobre **apenas** arquivos de documentação.
 
+## [2025-12-27]
+- Updated: `README.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `WORLD_LIFECYCLE.md` com o fluxo real de produção
+  (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu), incluindo Navigation, completion gate e InputMode.
+- Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` com atualização do pipeline e evidências de log.
+- Added: seções “Evidências (log)” nos docs atualizados para rastrear Fade/Loading/WorldLifecycle/Navigation/PauseOverlay.
+- Testing: Validated via runtime log evidence: Menu → Gameplay → Pause → Resume → ExitToMenu → Menu.
+
 ## [2025-12-25]
 - Added: `ADR-0010-LoadingHud-SceneFlow.md` (HUD de loading separado do Fade).
 - Added: módulo de Loading HUD (scripts em `Infrastructure/SceneFlow/Loading/`).
@@ -28,3 +35,12 @@ Este changelog cobre **apenas** arquivos de documentação.
 ## [2025-12-23]
 - Added: resumo do pipeline de Scene Flow: `SceneTransitionService` → eventos Started/ScenesReady/Completed.
 - Added: nota de integração com `GameReadinessService` e `WorldLifecycleRuntimeCoordinator` (SKIP no startup/menu).
+
+## Evidências (log)
+- `GlobalBootstrap` registrou `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
+  `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`.
+- Startup profile `startup` com reset SKIPPED e emissão de `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+- `MenuPlayButtonBinder` desativou botão e disparou `RequestToGameplay`.
+- `SceneTransitionService` executou `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
+- `PauseOverlay` publicou `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
+  e o gate exibiu `state.pause` / `flow.scene_transition`.

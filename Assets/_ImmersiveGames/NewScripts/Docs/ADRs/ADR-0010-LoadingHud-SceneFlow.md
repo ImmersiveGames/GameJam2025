@@ -42,3 +42,11 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 
 ## Referências
 - ADR-0009 — Fade + SceneFlow (NewScripts)
+
+## Atualização (2025-12-27)
+- O pipeline atual mantém o gate de completion antes do `FadeOut`, garantindo janela segura para o HUD
+  permanecer visível até a conclusão do reset (quando aplicável).
+
+## Evidências (log)
+- `SceneTransitionService` executa `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
+- `SceneFlowLoadingService` aparece registrado no bootstrap global.

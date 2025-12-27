@@ -27,16 +27,16 @@ Arquivos canônicos (este pacote):
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
-Em 2025-12-25:
-- Pipeline **GameLoop → SceneTransitionService → Fade (FadeScene)** está funcional no perfil `startup` para carregar:
-    - `MenuScene` + `UIGlobalScene` (Additive), definindo `MenuScene` como cena ativa.
+Em 2025-12-27 (estado observado em runtime):
+- Pipeline **GameLoop → Navigation → SceneTransitionService → Fade/Loading → WorldLifecycle → Gate → Completed** está ativo.
 - `NewScriptsSceneTransitionProfile` é resolvido via **Resources** em:
     - `Resources/SceneFlow/Profiles/<profileName>`
 - `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e:
-    - **SKIP** de reset quando `profile='startup'` ou `activeScene='MenuScene'`
-    - Emite `WorldLifecycleResetCompletedEvent` mesmo no SKIP (mantém o Coordinator destravando).
-
-Observação: o `WorldLifecycleController` continua existente na cena de bootstrap (quando aplicável), com `AutoInitializeOnStart` desabilitado para evitar contaminação de testes. A execução real do reset em Gameplay será tratada na etapa de integração da cena de gameplay.
+    - **SKIP** quando `profile='startup'` ou `activeScene='MenuScene'`
+    - Executa reset em gameplay e emite `WorldLifecycleResetCompletedEvent`
+- `WorldLifecycleResetCompletionGate` segura o final da transição até o reset concluir.
+- `GameReadinessService` controla `SimulationGateTokens.SceneTransition` durante a transição.
+- `InputModeService` alterna `FrontendMenu`/`Gameplay`/`PauseOverlay` com base em SceneFlow e PauseOverlay.
 
 ## Como ler (ordem sugerida)
 1. `ARCHITECTURE.md`
@@ -53,3 +53,46 @@ Observação: o `WorldLifecycleController` continua existente na cena de bootstr
 - Não presumimos assinaturas inexistentes. Onde necessário, exemplos são explicitamente marcados como **PSEUDOCÓDIGO**.
 - `SceneTransitionContext` é um `readonly struct` (sem `null`, sem object-initializer).
 - “NewScripts” e “Legado” coexistem: bridges podem existir, mas o **Fade** do NewScripts não possui fallback para fade legado.
+
+## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
+1. **Menu → Gameplay (Navigation)**
+    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
+    - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
+2. **SceneTransitionService (pipeline)**
+    - Emite `SceneTransitionStartedEvent` → `FadeIn`.
+    - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
+    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
+    - `FadeOut` → `SceneTransitionCompletedEvent`.
+3. **WorldLifecycle**
+    - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
+        - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
+        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend`.
+4. **GameLoop**
+    - `GameLoopSceneFlowCoordinator` aguarda `TransitionCompleted` + `ResetCompleted` antes de chamar `GameLoop.RequestStart()`.
+    - `GameNavigationService` também chama `GameLoop.RequestStart()` ao concluir `TransitionAsync` para Gameplay (após gate).
+5. **Pause / Resume / ExitToMenu**
+    - `PauseOverlayController` publica:
+        - `GamePauseCommandEvent` (Show)
+        - `GameResumeRequestedEvent` (Hide)
+        - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
+    - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
+      `IGameNavigationService.RequestToMenu(...)` ao retornar ao menu.
+    - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
+
+## Gate / Readiness
+- `GameReadinessService` adquire o token `SimulationGateTokens.SceneTransition` em `SceneTransitionStartedEvent`
+  e libera em `SceneTransitionCompletedEvent`.
+- `WorldLifecycleOrchestrator` adquire o token `WorldLifecycleTokens.WorldResetToken` durante o reset e libera ao final.
+
+## Evidências (log)
+- `GlobalBootstrap` registrando serviços globais: `ISceneTransitionService`, `INewScriptsFadeService`,
+  `IGameNavigationService`, `GameLoop`, `InputModeService`, `GameReadinessService`,
+  `WorldLifecycleRuntimeCoordinator`, `SceneFlowLoadingService`.
+- Startup profile `startup` com reset **SKIPPED** e emissão de
+  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
+- Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
+- Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
+- `GameNavigationService` chama `GameLoop.RequestStart()` ao entrar em Gameplay.
+- `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
+  e tokens `state.pause` / `flow.scene_transition` aparecem no gate.
