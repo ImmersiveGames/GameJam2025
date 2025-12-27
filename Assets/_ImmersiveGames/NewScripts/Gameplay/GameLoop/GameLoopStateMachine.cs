@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Infrastructure.Actions;
 using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
@@ -30,6 +31,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (_signals.ResetRequested)
             {
                 return TransitionTo(GameLoopStateId.Boot);
+            }
+
+            if (_signals.ReadyRequested)
+            {
+                return TransitionTo(GameLoopStateId.Ready);
             }
 
             var next = Current;

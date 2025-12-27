@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
     {
         private readonly EventBinding<GamePauseCommandEvent> _onPause;
         private readonly EventBinding<GameResumeRequestedEvent> _onResume;
+        private readonly EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
         private readonly EventBinding<GameResetRequestedEvent> _onResetRequested;
 
         private bool _disposed;
@@ -26,10 +27,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
         {
             _onPause = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _onResume = new EventBinding<GameResumeRequestedEvent>(OnGameResumeRequested);
+            _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(OnExitToMenuRequested);
             _onResetRequested = new EventBinding<GameResetRequestedEvent>(OnGameResetRequested);
 
             EventBus<GamePauseCommandEvent>.Register(_onPause);
             EventBus<GameResumeRequestedEvent>.Register(_onResume);
+            EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
             EventBus<GameResetRequestedEvent>.Register(_onResetRequested);
 
             DebugUtility.LogVerbose<GameLoopEventInputBridge>(
@@ -45,6 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
 
             EventBus<GamePauseCommandEvent>.Unregister(_onPause);
             EventBus<GameResumeRequestedEvent>.Unregister(_onResume);
+            EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
             EventBus<GameResetRequestedEvent>.Unregister(_onResetRequested);
         }
 
@@ -71,6 +75,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop
                 return;
 
             loop.RequestResume();
+        }
+
+        private void OnExitToMenuRequested(GameExitToMenuRequestedEvent evt)
+        {
+            if (!TryResolveLoop(out var loop))
+                return;
+
+            DebugUtility.LogVerbose<GameLoopEventInputBridge>(
+                "[GameLoop] ExitToMenu recebido -> RequestReady (não voltar para Playing).");
+            loop.RequestReady();
         }
 
         private void OnGameResetRequested(GameResetRequestedEvent evt)

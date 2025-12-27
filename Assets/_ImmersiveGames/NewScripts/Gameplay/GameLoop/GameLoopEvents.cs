@@ -19,5 +19,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     public sealed class GameResumeRequestedEvent : IEvent { }
+    /// <summary>
+    /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".
+    /// </summary>
+    public sealed class GameExitToMenuRequestedEvent : IEvent { }
     public sealed class GameResetRequestedEvent : IEvent { }
 }

@@ -1,7 +1,6 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -11,7 +10,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,18 +24,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
         [Header("QA/Reset")]
         [SerializeField] private string resetReason = "ContextMenu/ResetWorldNow";
         [SerializeField] private string softResetPlayersReason = "ContextMenu/SoftResetPlayers";
-
-        [Header("QA/SceneFlow ContextMenu")]
-        [SerializeField] private string menuSceneName = "MenuScene";
-        [SerializeField] private string uiGlobalSceneName = "UIGlobalScene";
-        [SerializeField] private string bootstrapSceneName = "NewBootstrap";
-        [SerializeField] private string gameplaySceneName = "GameplayScene";
-        [SerializeField] private string menuProfileName = "startup";
-        [SerializeField] private string gameplayProfileName = "gameplay";
-        [SerializeField] private bool sceneFlowUseFade = true;
-
-        [Header("QA/GameLoop")]
-        [SerializeField] private bool enterPlayingAfterGameplayTransition = true;
 
         private string _sceneName = string.Empty;
 
@@ -55,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
         // QA: Diagnostics
         // ----------------------------
 
-        [ContextMenu("QA/Diagnostics/Snapshot (Scene/DI/HUD/GameLoop)")]
+        [ContextMenu("QA/WorldLifecycle/Diagnostics/Snapshot (Scene/DI/HUD/GameLoop)")]
         public void Snapshot()
         {
             var sb = new StringBuilder(1536);
@@ -66,10 +52,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             sb.Append("loaded=[");
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
-                if (i > 0)
-                {
-                    sb.Append(", ");
-                }
+                if (i > 0) sb.Append(", ");
                 sb.Append(SceneManager.GetSceneAt(i).name);
             }
             sb.AppendLine("]");
@@ -81,10 +64,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
                 : "hudCtrl=NOT_FOUND (SceneLoadingHudController)");
 
             // 2) Find any MonoBehaviour implementing ISceneLoadingHud
-            var hudIface = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).FirstOrDefault(mb => mb is ISceneLoadingHud) as ISceneLoadingHud;
+            var hudIface = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
+                .FirstOrDefault(mb => mb is ISceneLoadingHud) as ISceneLoadingHud;
+
             if (hudIface is Component hudComp)
             {
-                sb.AppendLine($"hudIface=FOUND (type='{hudIface.GetType().FullName}', go='{hudComp.gameObject.name}', scene='{hudComp.gameObject.scene.name}', active={hudComp.gameObject.activeInHierarchy})");
+                sb.AppendLine(
+                    $"hudIface=FOUND (type='{hudIface.GetType().FullName}', go='{hudComp.gameObject.name}', scene='{hudComp.gameObject.scene.name}', active={hudComp.gameObject.activeInHierarchy})");
             }
             else
             {
@@ -113,6 +99,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             AppendDiLine<IStateDependentService>(sb, "IStateDependentService");
             AppendDiLine<ICameraResolver>(sb, "ICameraResolver");
             AppendDiLine<IGameLoopService>(sb, "IGameLoopService");
+            // Se quiser, você pode adicionar IGameNavigationService aqui também,
+            // mas só se este arquivo já tiver acesso ao tipo sem inventar namespace.
 
             sb.AppendLine("------------------------------------------");
 
@@ -140,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             }
         }
 
-        [ContextMenu("QA/LoadingHud/Force Rebind ISceneLoadingHud (Global)")]
+        [ContextMenu("QA/WorldLifecycle/LoadingHud/Force Rebind ISceneLoadingHud (Global)")]
         public void ForceRebindLoadingHudToGlobal()
         {
             // Diagnóstico: encontra um HUD “real” na cena e tenta garantir que o DI global enxerga.
@@ -177,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
         // QA: Reset
         // ----------------------------
 
-        [ContextMenu("QA/Reset World Now")]
+        [ContextMenu("QA/WorldLifecycle/Reset/Reset World Now")]
         public async void ResetWorldNow()
         {
             if (!EnsureController())
@@ -188,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             await controller.ResetWorldAsync(resetReason);
         }
 
-        [ContextMenu("QA/Soft Reset Players Now")]
+        [ContextMenu("QA/WorldLifecycle/Reset/Soft Reset Players Now")]
         public async void ResetPlayersNow()
         {
             if (!EnsureController())
@@ -197,98 +185,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             }
 
             await controller.ResetPlayersAsync(softResetPlayersReason);
-        }
-
-        // ----------------------------
-        // QA: SceneFlow Context Menus
-        // ----------------------------
-
-        [ContextMenu("QA/SceneFlow/Transition -> Ready (startup)")]
-        public async void SceneFlowToMenuNow()
-        {
-            var request = new SceneTransitionRequest(
-                scenesToLoad: new[] { menuSceneName, uiGlobalSceneName }.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
-                scenesToUnload: new[] { bootstrapSceneName, gameplaySceneName }.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
-                targetActiveScene: menuSceneName,
-                useFade: sceneFlowUseFade,
-                transitionProfileName: menuProfileName);
-
-            await RunSceneFlowTransitionAsync(request, "ContextMenu/SceneFlowToMenu", afterTransition: null);
-        }
-
-        [ContextMenu("QA/SceneFlow/Transition -> Gameplay (gameplay)")]
-        public async void SceneFlowToGameplayNow()
-        {
-            var request = new SceneTransitionRequest(
-                scenesToLoad: new[] { gameplaySceneName, uiGlobalSceneName }.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
-                scenesToUnload: new[] { bootstrapSceneName, menuSceneName }.Where(s => !string.IsNullOrWhiteSpace(s)).ToArray(),
-                targetActiveScene: gameplaySceneName,
-                useFade: sceneFlowUseFade,
-                transitionProfileName: gameplayProfileName);
-
-            await RunSceneFlowTransitionAsync(
-                request,
-                "ContextMenu/SceneFlowToGameplay",
-                afterTransition: enterPlayingAfterGameplayTransition ? TryEnterPlayingAfterGameplay : null);
-        }
-
-        private async Task RunSceneFlowTransitionAsync(SceneTransitionRequest request, string reason, Func<Task> afterTransition)
-        {
-            if (request == null)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQaTools),
-                    $"[SceneFlow QA] Request nulo. reason='{reason}'.");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQaTools),
-                    $"[SceneFlow QA] ISceneTransitionService indisponível no DI global. reason='{reason}'.");
-                return;
-            }
-
-            try
-            {
-                DebugUtility.Log(typeof(WorldLifecycleQaTools),
-                    "[SceneFlow QA] Disparando TransitionAsync via ContextMenu. " +
-                    $"reason='{reason}', targetActive='{request.TargetActiveScene}', profile='{request.TransitionProfileName}'.",
-                    DebugUtility.Colors.Info);
-
-                await sceneFlow.TransitionAsync(request);
-
-                DebugUtility.Log(typeof(WorldLifecycleQaTools),
-                    $"[SceneFlow QA] TransitionAsync concluído. reason='{reason}'.",
-                    DebugUtility.Colors.Success);
-
-                if (afterTransition != null)
-                {
-                    await afterTransition();
-                }
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(WorldLifecycleQaTools),
-                    $"[SceneFlow QA] Falha ao executar TransitionAsync. reason='{reason}', ex={ex}",
-                    this);
-            }
-        }
-
-        private Task TryEnterPlayingAfterGameplay()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var loop) || loop == null)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQaTools),
-                    "[QA][GameLoop] IGameLoopService indisponível no DI global. Não foi possível tentar entrar em Playing.");
-                return Task.CompletedTask;
-            }
-
-            DebugUtility.Log(typeof(WorldLifecycleQaTools),
-                "[QA][GameLoop] Tentando avançar para Playing chamando IGameLoopService.RequestStart() após transição para Gameplay.",
-                DebugUtility.Colors.Info);
-
-            loop.RequestStart();
-            return Task.CompletedTask;
         }
 
         private bool EnsureController()

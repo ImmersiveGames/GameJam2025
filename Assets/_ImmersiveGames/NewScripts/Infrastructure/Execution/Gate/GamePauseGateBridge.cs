@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
         private readonly EventBinding<GamePauseCommandEvent> _pauseBinding;
         private readonly EventBinding<GameResumeRequestedEvent> _resumeBinding;
+        private readonly EventBinding<GameExitToMenuRequestedEvent> _exitToMenuBinding;
 
         private IDisposable _activeHandle;
         private bool _bindingsRegistered;
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
 
             _pauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePause);
             _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate("GameResumeRequestedEvent"));
+            _exitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenuRequested());
 
             TryRegisterBindings();
         }
@@ -52,6 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             {
                 EventBus<GamePauseCommandEvent>.Unregister(_pauseBinding);
                 EventBus<GameResumeRequestedEvent>.Unregister(_resumeBinding);
+                EventBus<GameExitToMenuRequestedEvent>.Unregister(_exitToMenuBinding);
                 _bindingsRegistered = false;
             }
 
@@ -64,10 +67,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             {
                 EventBus<GamePauseCommandEvent>.Register(_pauseBinding);
                 EventBus<GameResumeRequestedEvent>.Register(_resumeBinding);
+                EventBus<GameExitToMenuRequestedEvent>.Register(_exitToMenuBinding);
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent → SimulationGate.");
+                    "[PauseBridge] Registrado nos eventos GamePauseCommandEvent/GameResumeRequestedEvent/GameExitToMenuRequestedEvent → SimulationGate.");
             }
             catch (Exception ex)
             {
@@ -88,6 +92,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             {
                 ReleasePauseGate("GamePauseCommandEvent(paused=false)");
             }
+        }
+
+        private void OnExitToMenuRequested()
+        {
+            DebugUtility.LogVerbose<GamePauseGateBridge>(
+                "[PauseBridge] ExitToMenu recebido -> liberando gate Pause.");
+            ReleasePauseGate("GameExitToMenuRequestedEvent");
         }
 
         private void AcquirePauseGate()

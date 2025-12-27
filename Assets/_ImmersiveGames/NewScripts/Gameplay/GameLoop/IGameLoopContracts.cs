@@ -9,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         bool StartRequested { get; }
         bool PauseRequested { get; }
         bool ResumeRequested { get; }
+        bool ReadyRequested { get; }
         bool ResetRequested { get; }
     }
 
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void RequestStart();
         void RequestPause();
         void RequestResume();
+        void RequestReady();
         void RequestReset();
         string CurrentStateIdName { get; }
     }

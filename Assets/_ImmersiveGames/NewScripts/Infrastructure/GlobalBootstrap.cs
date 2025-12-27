@@ -164,6 +164,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameStartRequestedEvent>.Clear();
             EventBus<GamePauseCommandEvent>.Clear();
             EventBus<GameResumeRequestedEvent>.Clear();
+            EventBus<GameExitToMenuRequestedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),

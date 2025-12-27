@@ -111,9 +111,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 return;
             }
 
-            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+            EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent());
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                "[PauseOverlay] ReturnToMenuFrontend -> GameResumeRequestedEvent publicado.",
+                "[PauseOverlay] ReturnToMenuFrontend -> GameExitToMenuRequestedEvent publicado.",
                 DebugUtility.Colors.Info);
 
             if (_inputModeService != null)

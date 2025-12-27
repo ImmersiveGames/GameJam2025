@@ -1,5 +1,6 @@
 using System.Collections;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Actions;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -8,37 +9,51 @@ using _ImmersiveGames.NewScripts.Infrastructure.Fsm;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameLoopStateFlowQaTester : MonoBehaviour
     {
         private const string DefaultStartProfile = "startup";
-        private const float DefaultTimeoutSeconds = 6f;
+        private const float DefaultTimeoutSeconds = 8f;
 
         private const string StateBoot = "Boot";
-        private const string StateMenu = "Ready";
+        private const string StateReady = "Ready";
         private const string StatePlaying = "Playing";
         private const string StatePaused = "Paused";
+
+        private enum FlowMode
+        {
+            FrontendStartup = 0,
+            Gameplay = 1
+        }
 
         [Header("Runner")]
         [SerializeField] private string label = "GameLoopStateFlowQATester";
         [SerializeField] private bool runOnStart;
-        [SerializeField] private int warmupFrames = 2;
+        [SerializeField] private int warmupFrames = 3;
         [SerializeField] private float timeoutSeconds = DefaultTimeoutSeconds;
 
-        [Header("Expected Flow")]
-        [SerializeField] private string expectedInitialState = StateMenu;
-        [SerializeField] private string expectedPostResetState = StateMenu;
+        [Header("Mode")]
+        [SerializeField] private FlowMode mode = FlowMode.FrontendStartup;
 
-        [Header("Scene Flow")]
+        [Header("Frontend (Menu) Expectations")]
+        [SerializeField] private string expectedMenuSceneName = "MenuScene";
+        [SerializeField] private string expectedUiGlobalSceneName = "UIGlobalScene";
+        [SerializeField] private bool waitForMenuScenesLoaded = true;
+
+        [Tooltip("Em produção, o Start já é solicitado pelo bootstrap. Deixe false para não disparar Start duas vezes.")]
+        [SerializeField] private bool triggerStartRequestInTest = false;
+
+        [Header("Scene Flow Filter")]
         [SerializeField] private string expectedStartProfile = DefaultStartProfile;
 
         private int _passes;
         private int _fails;
 
-        private IGameLoopService _originalService;
-        private CountingGameLoopService _countingService;
+        private IGameLoopService _loop;
         private IStateDependentService _stateDependentService;
         private ISimulationGateService _gateService;
 
@@ -46,17 +61,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
         private bool _seenScenesReady;
         private string _scenesReadyProfile = string.Empty;
 
+        private bool _running;
+
         private void Awake()
         {
-
             _onScenesReady = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_onScenesReady);
         }
 
         private void OnDestroy()
         {
-            EventBus<SceneTransitionScenesReadyEvent>.Unregister(_onScenesReady);
-            RestoreServiceOverride();
+            if (_onScenesReady != null)
+            {
+                EventBus<SceneTransitionScenesReadyEvent>.Unregister(_onScenesReady);
+                _onScenesReady = null;
+            }
         }
 
         private void Start()
@@ -70,14 +89,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
         [ContextMenu("QA/GameLoop/State Flow/Run")]
         public void Run()
         {
-            if (_running)
-            {
-                return;
-            }
+            if (_running) return;
             StartCoroutine(RunFlow());
         }
-
-        private bool _running;
 
         private IEnumerator RunFlow()
         {
@@ -86,62 +100,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
 
             try
             {
-                // Não precisa mais de manualTick (driver sempre existe via Bootstrap)
                 if (!TryResolveDependencies())
                 {
                     Fail("Dependências críticas indisponíveis.");
                     yield break;
                 }
 
-                // Warmup
                 yield return WaitFrames(warmupFrames);
 
-                // Estado inicial
-                yield return WaitForStateName(expectedInitialState, "InitialState", StateBoot);
-                ValidateMovePermission(false, $"InitialState/{expectedInitialState}");
-
-                ResetScenesReadyTracking();
-
-                // Dispara COMMAND diretamente (QA não usa REQUEST → Coordinator)
-                EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
-
-                yield return WaitForScenesReady();
-                yield return WaitFrames(3);
-
-                if (_countingService.RequestStartCount != 1)
+                if (mode == FlowMode.FrontendStartup)
                 {
-                    Fail($"RequestStart count={_countingService.RequestStartCount} (esperado 1).");
+                    yield return RunFrontendStartupFlow();
                 }
                 else
                 {
-                    Pass("RequestStart chamado exatamente 1x.");
+                    yield return RunGameplayFlow();
                 }
-
-                yield return WaitForStateName(StatePlaying, "ToPlaying");
-                ValidateMovePermission(true, "ToPlaying/Playing");
-
-                yield return ValidatePauseGate();
-
-                // Pause
-                EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
-                yield return WaitForStateName(StatePaused, "ToPaused");
-                ValidateMovePermission(false, "ToPaused/Paused");
-
-                // Resume
-                EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(false));
-                EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
-                yield return WaitForStateName(StatePlaying, "BackToPlaying");
-                ValidateMovePermission(true, "BackToPlaying/Playing");
-
-                // Reset
-                EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
-                yield return WaitForStateName(expectedPostResetState, "PostReset", StateBoot);
-                ValidateMovePermission(false, $"PostReset/{expectedPostResetState}");
             }
             finally
             {
-                RestoreServiceOverride();
-
                 DebugUtility.Log(typeof(GameLoopStateFlowQaTester),
                     $"[QA] {label}: Completo. Passes={_passes} Fails={_fails}.",
                     _fails == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
@@ -154,19 +131,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
         {
             var provider = DependencyManager.Provider;
 
-            if (!provider.TryGetGlobal<IGameLoopService>(out var loop) || loop == null)
+            if (!provider.TryGetGlobal<IGameLoopService>(out _loop) || _loop == null)
             {
                 return LogFail("IGameLoopService indisponível.");
             }
-            _originalService = loop;
-            _countingService = new CountingGameLoopService(loop);
-            provider.RegisterGlobal<IGameLoopService>(_countingService, allowOverride: true);
 
-            if (!provider.TryGetGlobal(out _stateDependentService))
+            if (!provider.TryGetGlobal(out _stateDependentService) || _stateDependentService == null)
             {
                 return LogFail("IStateDependentService indisponível.");
             }
-            if (!provider.TryGetGlobal(out _gateService))
+
+            if (!provider.TryGetGlobal(out _gateService) || _gateService == null)
             {
                 return LogFail("ISimulationGateService indisponível.");
             }
@@ -180,34 +155,125 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
             }
         }
 
-        private void RestoreServiceOverride()
+        // ----------------------------
+        // Frontend (startup/menu)
+        // ----------------------------
+
+        private IEnumerator RunFrontendStartupFlow()
         {
-            if (_originalService != null)
+            if (waitForMenuScenesLoaded)
             {
-                DependencyManager.Provider.RegisterGlobal(_originalService, allowOverride: true);
-                _originalService = _countingService = null;
+                yield return WaitForMenuScenes();
             }
+
+            // Em Menu, esperamos Ready (ou Boot transitório, dependendo do tick).
+            yield return WaitForStateNameOneOf("InitialState", StateReady, StateBoot);
+
+            // Em Menu, Move deve estar bloqueado.
+            ValidateMovePermission(expected: false, "Frontend/Initial");
+
+            ResetScenesReadyTracking();
+
+            if (triggerStartRequestInTest)
+            {
+                // Atenção: isto dispara Start DE NOVO. Use somente se você desabilitar o bootstrap de Start.
+                DebugUtility.Log(typeof(GameLoopStateFlowQaTester),
+                    "[QA] Disparando GameStartRequestedEvent pelo teste (triggerStartRequestInTest=true).",
+                    DebugUtility.Colors.Warning);
+
+                EventBus<GameStartRequestedEvent>.Raise(new GameStartRequestedEvent());
+
+                yield return WaitForScenesReady();
+                yield return WaitFrames(2);
+
+                // Após startup no Menu, ainda é Ready.
+                yield return WaitForStateNameOneOf("AfterStartRequest", StateReady, StateBoot);
+                ValidateMovePermission(expected: false, "Frontend/AfterStartRequest");
+            }
+
+            // Pause gate: em Frontend, Move já está bloqueado.
+            yield return ValidatePauseGate(expectMoveBeforeGate: false, expectMoveAfterRelease: false);
+
+            // Reset: em Frontend, esperamos continuar bloqueando Move após reset.
+            EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+            yield return WaitForStateNameOneOf("PostReset", StateReady, StateBoot);
+
+            // Se isso falhar, é bug real no StateDependentService (ele está liberando Move em Boot/Ready).
+            ValidateMovePermission(expected: false, "Frontend/PostReset");
         }
 
-        private IEnumerator WaitForStateName(string expected, string step, string alternate = null)
+        private IEnumerator WaitForMenuScenes()
         {
             float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
             while (Time.realtimeSinceStartup < deadline)
             {
-                string current = _countingService.CurrentStateIdName;
-                if (current == expected || current == alternate)
+                var active = SceneManager.GetActiveScene().name;
+
+                bool menuOk = string.IsNullOrWhiteSpace(expectedMenuSceneName) || SceneManager.GetSceneByName(expectedMenuSceneName).isLoaded;
+                bool uiOk = string.IsNullOrWhiteSpace(expectedUiGlobalSceneName) || SceneManager.GetSceneByName(expectedUiGlobalSceneName).isLoaded;
+
+                if (active == expectedMenuSceneName && menuOk && uiOk)
                 {
-                    Pass($"{step}: estado '{current}'.");
+                    Pass($"MenuScenesLoaded: active='{active}', menuOk={menuOk}, uiOk={uiOk}.");
                     yield break;
                 }
+
                 yield return null;
             }
-            Fail($"{step}: timeout. atual='{_countingService.CurrentStateIdName}' esperado='{expected}'.");
+
+            Fail($"MenuScenesLoaded: timeout. active='{SceneManager.GetActiveScene().name}'.");
+        }
+
+        // ----------------------------
+        // Gameplay (futuro)
+        // ----------------------------
+
+        private IEnumerator RunGameplayFlow()
+        {
+            // Este fluxo só faz sentido quando a GameplayScene estiver pronta e o GameLoop realmente entrar em Playing.
+            // Mantemos aqui para não quebrar, mas ele é intencionalmente conservador.
+            yield return WaitForStateNameOneOf("InitialState", StateReady, StateBoot);
+
+            // Tentar ir para Playing sem gameplay pronta tende a falhar.
+            // Quando a gameplay estiver implementada, você pode:
+            // 1) disparar navegação (IGameNavigationService) para Gameplay
+            // 2) esperar ScenesReady/Completed do profile gameplay
+            // 3) esperar StatePlaying
+            Fail("Gameplay flow ainda não habilitado: requer GameplayScene pronta + navegação para gameplay.");
+        }
+
+        // ----------------------------
+        // Shared helpers
+        // ----------------------------
+
+        private IEnumerator WaitForStateNameOneOf(string step, params string[] acceptedStates)
+        {
+            float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                string current = _loop.CurrentStateIdName ?? string.Empty;
+
+                for (int i = 0; i < acceptedStates.Length; i++)
+                {
+                    if (current == acceptedStates[i])
+                    {
+                        Pass($"{step}: estado '{current}'.");
+                        yield break;
+                    }
+                }
+
+                yield return null;
+            }
+
+            Fail($"{step}: timeout. atual='{_loop.CurrentStateIdName}' aceitos=[{string.Join(", ", acceptedStates)}].");
         }
 
         private IEnumerator WaitForScenesReady()
         {
             float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
             while (Time.realtimeSinceStartup < deadline)
             {
                 if (_seenScenesReady)
@@ -215,106 +281,85 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
                     Pass($"ScenesReady (profile='{_scenesReadyProfile}').");
                     yield break;
                 }
+
                 yield return null;
             }
+
             Fail("Timeout ScenesReady.");
         }
 
-        private void ResetScenesReadyTracking() => _seenScenesReady = false;
+        private void ResetScenesReadyTracking()
+        {
+            _seenScenesReady = false;
+            _scenesReadyProfile = string.Empty;
+        }
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            if (_seenScenesReady)
-            {
-                return;
-            }
+            if (_seenScenesReady) return;
+
             string profile = evt.Context.TransitionProfileName ?? string.Empty;
-            if (profile != expectedStartProfile)
-            {
-                return;
-            }
+            if (profile != expectedStartProfile) return;
 
             _seenScenesReady = true;
             _scenesReadyProfile = profile;
         }
 
-        private IEnumerator ValidatePauseGate()
+        private IEnumerator ValidatePauseGate(bool expectMoveBeforeGate, bool expectMoveAfterRelease)
         {
             bool before = _stateDependentService.CanExecuteAction(ActionType.Move);
+
+            if (before == expectMoveBeforeGate)
+                Pass($"Move {(before ? "liberado" : "bloqueado")} antes do gate (ok).");
+            else
+                Fail($"Move {(before ? "liberado" : "bloqueado")} antes do gate (inesperado). esperado={(expectMoveBeforeGate ? "liberado" : "bloqueado")}.");
 
             using (_gateService.Acquire(SimulationGateTokens.Pause))
             {
                 yield return null;
+
                 if (_stateDependentService.CanExecuteAction(ActionType.Move))
-                {
                     Fail("Gate Pause não bloqueou Move.");
-                }
                 else
-                {
                     Pass("Gate Pause bloqueou Move.");
-                }
             }
 
             yield return null;
 
             bool after = _stateDependentService.CanExecuteAction(ActionType.Move);
-            if (before)
-            {
-                Pass("Move liberado antes/após gate.");
-            }
+
+            if (after == expectMoveAfterRelease)
+                Pass($"Move {(after ? "liberado" : "bloqueado")} após release (ok).");
             else
-            {
-                Fail("Move não estava liberado antes do gate.");
-            }
-            if (after)
-            {
-                Pass("Move liberado após release.");
-            }
-            else
-            {
-                Fail("Move ficou bloqueado após release.");
-            }
+                Fail($"Move {(after ? "liberado" : "bloqueado")} após release (inesperado). esperado={(expectMoveAfterRelease ? "liberado" : "bloqueado")}.");
         }
 
         private void ValidateMovePermission(bool expected, string contextInfo)
         {
             bool actual = _stateDependentService.CanExecuteAction(ActionType.Move);
+
             if (actual == expected)
-            {
                 Pass($"Move {(expected ? "liberado" : "bloqueado")} em {contextInfo}.");
-            }
             else
-            {
                 Fail($"Move {(expected ? "não liberado" : "liberado")} em {contextInfo}.");
-            }
         }
 
         private IEnumerator WaitFrames(int frames)
         {
             for (int i = 0; i < frames; i++)
-            {
                 yield return null;
-            }
         }
 
-        private void Pass(string msg) { _passes++; DebugUtility.Log(typeof(GameLoopStateFlowQaTester), $"[QA] PASS - {msg}", DebugUtility.Colors.Success); }
-        private void Fail(string msg) { _fails++; DebugUtility.LogError(typeof(GameLoopStateFlowQaTester), $"[QA] FAIL - {msg}"); }
-
-        private sealed class CountingGameLoopService : IGameLoopService
+        private void Pass(string msg)
         {
-            private readonly IGameLoopService _inner;
-            public int RequestStartCount { get; private set; }
-            public string CurrentStateIdName => _inner.CurrentStateIdName;
+            _passes++;
+            DebugUtility.Log(typeof(GameLoopStateFlowQaTester), $"[QA] PASS - {msg}", DebugUtility.Colors.Success);
+        }
 
-            public CountingGameLoopService(IGameLoopService inner) => _inner = inner;
-
-            public void Initialize() => _inner.Initialize();
-            public void Tick(float dt) => _inner.Tick(dt);
-            public void RequestStart() { RequestStartCount++; _inner.RequestStart(); }
-            public void RequestPause() => _inner.RequestPause();
-            public void RequestResume() => _inner.RequestResume();
-            public void RequestReset() => _inner.RequestReset();
-            public void Dispose() => _inner.Dispose();
+        private void Fail(string msg)
+        {
+            _fails++;
+            DebugUtility.LogError(typeof(GameLoopStateFlowQaTester), $"[QA] FAIL - {msg}");
         }
     }
 }
