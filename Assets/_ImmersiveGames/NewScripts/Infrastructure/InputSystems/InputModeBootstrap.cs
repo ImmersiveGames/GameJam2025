@@ -8,7 +8,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.Input
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 {
     /// <summary>
     /// Bootstrap para registrar IInputModeService no DI global.

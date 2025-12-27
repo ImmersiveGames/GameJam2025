@@ -7,7 +7,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.Input
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 {
     /// <summary>
     /// Controla action maps (Player/UI) para alternar entre gameplay, pause overlay e frontend menu.

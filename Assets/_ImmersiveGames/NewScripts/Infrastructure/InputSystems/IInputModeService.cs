@@ -3,7 +3,7 @@
  * - Criar PauseOverlayRoot desativado, adicionar PauseOverlayController e arrastar a referencia.
  * - Conectar botao Resume para PauseOverlayController.Resume().
  */
-namespace _ImmersiveGames.NewScripts.Infrastructure.Input
+namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 {
     /// <summary>
     /// Contrato para alternancia de modo de input entre gameplay, pause overlay e frontend.
