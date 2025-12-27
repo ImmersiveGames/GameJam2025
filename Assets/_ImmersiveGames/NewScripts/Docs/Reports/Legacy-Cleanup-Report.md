@@ -86,20 +86,14 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 **Nota:** Sem `.asmdef`, não há enforcement de boundaries por assembly. Regressões devem ser evitadas via CI/search ou pela criação futura de `.asmdef` (não aplicada nesta rodada).
 
 ## Observação (non-blocker): readiness/snapshot ordem
-- **Ordem no código (bootstrap):** `InitializeReadinessGate()` ocorre antes de `RegisterStateDependentService()`.
-  - Evidência: `GlobalBootstrap.Initialize()` chama `InitializeReadinessGate();` antes de `RegisterStateDependentService();`.
-  - Trecho (GlobalBootstrap.Initialize):
-    - `InitializeReadinessGate();`
-    - `RegisterGameLoopSceneFlowCoordinatorIfAvailable();`
-    - `...`
-    - `RegisterStateDependentService();`
-- **Snapshot inicial publicado no construtor do GameReadinessService.**
-  - Trecho (GameReadinessService..ctor): `PublishSnapshot("bootstrap");`
-- **StateDependent guarda snapshot antes de bloquear por readiness.**
-  - Trecho (NewScriptsStateDependentService.OnReadinessChanged):
-    - `_hasReadinessSnapshot = true;`
-    - `_gameplayReady = evt.Snapshot.GameplayReady;`
-- **Observação sobre runtime:** logs de PlayMode não foram capturados nesta rodada; portanto, a seção descreve apenas a ordem no código.
+- **Runtime observado:** `IStateDependentService` registrado antes do `GameReadinessService`.
+  - Evidência do log:
+    - `IStateDependentService registrado no escopo global. (@ 4,90s)`
+    - `GameReadinessService registrado no escopo global. (@ 4,91s)`
+    - `GameReadinessService Snapshot publicado... reason='bootstrap'. (@ 4,91s)`
+- **Tolerância à ordem:** o `StateDependent` atualiza seu estado no primeiro snapshot do `GameReadinessService`, portanto a ordem é tolerada.
+  - Evidência do log:
+    - `NewScriptsStateDependentService bloqueia por NotPlaying em Boot antes do snapshot, e por GameplayNotReady após snapshot gameplayReady=False.`
 
 ## Resultado (Tarefas B e C)
 - **Nenhuma referência real ao legado foi encontrada** dentro de `Assets/_ImmersiveGames/NewScripts`.
@@ -107,15 +101,14 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 - **Tarefa C (ajuste de bootstrap/readiness):** não aplicável — sem evidência de ordem incorreta nesta varredura.
 
 ## Mudanças realizadas nesta rodada
-- Ajuste da seção de readiness para refletir apenas a ordem no código (sem logs de runtime).
-- Registro de que não houve captura de logs de runtime para validação cruzada.
+- Correção da observação de readiness/snapshot com base em evidência do log de runtime.
 
 ## Arquivos alterados/criados
 - Atualizado:
   - `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Legacy-Cleanup-Report.md`
 
 ## Mini changelog
-- docs(reports): alinhar observação de readiness à ordem no código (sem logs runtime)
+- docs(reports): ajustar observação de readiness com evidência de log runtime
 
 ## Verificações finais recomendadas
 1) Search: `_ImmersiveGames.Scripts` em `Assets/_ImmersiveGames/NewScripts` → 0 results.
