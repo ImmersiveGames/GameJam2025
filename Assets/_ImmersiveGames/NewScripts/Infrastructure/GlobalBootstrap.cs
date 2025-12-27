@@ -18,6 +18,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
@@ -104,6 +105,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
+
+            RegisterGameNavigationService();
 
             RegisterSceneFlowLoadingIfAvailable();
 
@@ -221,6 +224,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameNavigationService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] IGameNavigationService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Navigation] ISceneTransitionService indisponível. IGameNavigationService não será registrado.");
+                return;
+            }
+
+            var service = new GameNavigationService(sceneFlow);
+            DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] GameNavigationService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
