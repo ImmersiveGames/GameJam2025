@@ -41,6 +41,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 
         private void ApplyMode(InputMode mode, string reason)
         {
+            if (mode == InputMode.Gameplay || mode == InputMode.PauseOverlay)
+            {
+                TryResolvePlayerInputForGameplay(mode);
+            }
+
             EnsureReferences();
 
             var resolvedReason = string.IsNullOrWhiteSpace(reason) ? "InputMode/Unknown" : reason;
@@ -100,6 +105,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                     "[InputMode] InputActionAsset resolvido via PlayerInput.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private void TryResolvePlayerInputForGameplay(InputMode mode)
+        {
+            if (_playerInput != null && _playerInput.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            var found = Object.FindFirstObjectByType<PlayerInput>();
+            if (found == null)
+            {
+                DebugUtility.LogWarning<InputModeService>(
+                    $"[InputMode] PlayerInput nao encontrado na cena ao entrar em '{mode}'.");
+                return;
+            }
+
+            _playerInput = found;
+            DebugUtility.LogVerbose<InputModeService>(
+                $"[InputMode] PlayerInput encontrado e cacheado para '{mode}'.",
+                DebugUtility.Colors.Info);
         }
 
         private bool TrySwitchPlayerInput(InputMode mode, string reason)

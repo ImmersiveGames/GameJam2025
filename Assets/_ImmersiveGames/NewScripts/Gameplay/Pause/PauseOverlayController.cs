@@ -117,6 +117,44 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             }
         }
 
+        public void BackToMenu()
+        {
+            EnsureDependenciesInjected();
+
+            if (overlayRoot != null && !overlayRoot.activeSelf)
+            {
+                TrySetOverlayActive(true);
+                EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
+                DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                    "[PauseOverlay] BackToMenu -> Overlay ativado antes da navegacao.",
+                    DebugUtility.Colors.Info);
+            }
+
+            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                "[PauseOverlay] BackToMenu -> GameResumeRequestedEvent publicado (liberar gate).",
+                DebugUtility.Colors.Info);
+
+            if (_inputModeService != null)
+            {
+                _inputModeService.SetFrontendMenu("PauseOverlay/BackToMenu");
+            }
+            else
+            {
+                DebugUtility.LogWarning(typeof(PauseOverlayController),
+                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
+            }
+
+            if (_navigationService == null)
+            {
+                DebugUtility.LogWarning(typeof(PauseOverlayController),
+                    "[PauseOverlay] IGameNavigationService indisponivel. Nao foi possivel navegar para o menu.");
+                return;
+            }
+
+            _ = _navigationService.RequestToMenu("PauseOverlay/BackToMenu");
+        }
+
         private void EnsureDependenciesInjected()
         {
             if (_dependenciesInjected)
