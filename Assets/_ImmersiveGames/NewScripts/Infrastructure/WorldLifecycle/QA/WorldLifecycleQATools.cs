@@ -66,7 +66,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             sb.Append("loaded=[");
             for (var i = 0; i < SceneManager.sceneCount; i++)
             {
-                if (i > 0) sb.Append(", ");
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
                 sb.Append(SceneManager.GetSceneAt(i).name);
             }
             sb.AppendLine("]");
@@ -78,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
                 : "hudCtrl=NOT_FOUND (SceneLoadingHudController)");
 
             // 2) Find any MonoBehaviour implementing ISceneLoadingHud
-            var hudIface = FindObjectsOfType<MonoBehaviour>(true).FirstOrDefault(mb => mb is ISceneLoadingHud) as ISceneLoadingHud;
+            var hudIface = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).FirstOrDefault(mb => mb is ISceneLoadingHud) as ISceneLoadingHud;
             if (hudIface is Component hudComp)
             {
                 sb.AppendLine($"hudIface=FOUND (type='{hudIface.GetType().FullName}', go='{hudComp.gameObject.name}', scene='{hudComp.gameObject.scene.name}', active={hudComp.gameObject.activeInHierarchy})");
@@ -89,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             }
 
             // 3) WorldLifecycleControllers
-            var wlCtrl = FindObjectsOfType<WorldLifecycleController>(true);
+            var wlCtrl = FindObjectsByType<WorldLifecycleController>(FindObjectsSortMode.None);
             sb.AppendLine($"worldLifecycleControllers={wlCtrl.Length}");
             foreach (var c in wlCtrl.Take(5))
             {
@@ -141,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
         public void ForceRebindLoadingHudToGlobal()
         {
             // Diagnóstico: encontra um HUD “real” na cena e tenta garantir que o DI global enxerga.
-            var hudCtrl = FindObjectOfType<SceneLoadingHudController>(true);
+            var hudCtrl = FindFirstObjectByType<SceneLoadingHudController>(FindObjectsInactive.Include);
             if (hudCtrl == null)
             {
                 DebugUtility.LogWarning(typeof(WorldLifecycleQaTools),

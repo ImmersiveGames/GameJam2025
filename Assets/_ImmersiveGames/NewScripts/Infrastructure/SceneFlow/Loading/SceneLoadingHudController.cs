@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
     {
         [Header("References")]
         [SerializeField] private CanvasGroup rootGroup;
-        [SerializeField] private TMP_Text titleText;
-        [SerializeField] private TMP_Text detailsText;
+        [SerializeField] private Text titleText;
+        [SerializeField] private Text detailsText;
         [SerializeField] private Slider progressSlider;
 
         [Header("Sorting")]
@@ -111,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void RegisterHudInGlobalDi()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null && (SceneLoadingHudController)existing != this)
+            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null && !ReferenceEquals(existing, this))
             {
                 DebugUtility.LogWarning<SceneLoadingHudController>(
                     "[HUD CTRL] ISceneLoadingHud já registrado no DI global. Sobrescrevendo com instância atual.");

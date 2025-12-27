@@ -7,7 +7,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 {
     /// <summary>
-    /// Serviço global para orquestrar HUD de loading durante o Scene Flow.
+    /// Serviço global para orquestrar HUD de loading durante o Scene Flow.asd
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneFlowLoadingService
@@ -384,7 +384,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
             _warnedHudMissingThisTransition = true;
 
-            DebugUtility.LogWarning<SceneFlowLoadingService>(
+            DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] HUD indisponível nesta transição. {context}.");
         }
 
