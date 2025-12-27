@@ -32,12 +32,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
             SetVisible(false);
             TryConfigureCanvasSorting();
+            AttachToLoadingService();
             RegisterHudInGlobalDi();
 
             EventBus<SceneLoadingHudRegisteredEvent>.Raise(new SceneLoadingHudRegisteredEvent());
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] HUD inicializado, registrado no DI global e sinalizado como pronto.");
+                "[HUD CTRL] HUD inicializado, anexado ao serviço e sinalizado como pronto.");
         }
 
         private void OnDestroy()
@@ -90,6 +91,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             rootGroup.alpha = visible ? 1f : 0f;
             rootGroup.blocksRaycasts = visible;
             rootGroup.interactable = visible;
+        }
+
+        private void AttachToLoadingService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var service) || service == null)
+            {
+                DebugUtility.LogWarning<SceneLoadingHudController>(
+                    "[HUD CTRL] SceneFlowLoadingService indisponível. HUD não será anexado.");
+                return;
+            }
+
+            service.AttachHud(this);
+
+            DebugUtility.LogVerbose<SceneLoadingHudController>(
+                "[HUD CTRL] HUD anexado ao SceneFlowLoadingService.");
         }
 
         private void RegisterHudInGlobalDi()

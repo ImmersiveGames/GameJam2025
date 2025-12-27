@@ -23,16 +23,16 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - O HUD é ocultado nesse evento para evitar piscar no momento de revelar a cena.
 
 4) **HUD pronto + ordenação acima do Fade**
-- O `SceneLoadingHudController` registra `ISceneLoadingHud` no DI global e emite `SceneLoadingHudRegisteredEvent`.
-- O serviço escuta esse evento para aplicar o estado atual imediatamente.
+- O `SceneLoadingHudController` registra `ISceneLoadingHud` no DI global e se anexa explicitamente ao serviço.
+- O serviço aplica o estado pendente imediatamente após o attach.
 - O Canvas do HUD deve usar `overrideSorting=true` e `sortingOrder` maior que o Fade (ex.: 12050).
 
 5) **Pending quando HUD nasce tarde**
 - Se o HUD ainda não existir no `Started`/`ScenesReady`, o serviço guarda pendências por assinatura da transição.
-- Ao receber `SceneLoadingHudRegisteredEvent`, aplica o último estado pendente imediatamente.
+- Ao anexar o HUD ou receber `SceneLoadingHudRegisteredEvent`, aplica o último estado pendente imediatamente.
 
 6) **Host no UIGlobalScene**
-- O `SceneLoadingHudController` vive no `UIGlobalScene` e se anexa ao serviço global.
+- O `SceneLoadingHudController` vive no `UIGlobalScene`.
 - Caso o HUD nasça tarde, o serviço aplica o estado atual imediatamente.
 
 ## Consequências

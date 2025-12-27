@@ -27,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private string _currentTitle;
         private string _currentDetails;
         private float _currentProgress01;
+        private bool _warnedHudMissingThisTransition;
 
         public SceneFlowLoadingService()
         {
@@ -67,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _hud = hud;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                "[Loading] HUD anexado ao SceneFlowLoadingService.");
+                "[Loading] HUD attached ao SceneFlowLoadingService.");
 
             ApplyPendingState("attach");
         }
@@ -75,6 +76,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
             var signature = evt.Context.ToString();
+
+            ResetWarnings();
 
             if (IsSignatureMismatch(signature))
             {
@@ -93,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 progress01: 0.1f);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] SceneTransitionStarted → HUD loading ativo. signature='{signature}'.");
+                $"[Loading] Started → Show pending. signature='{signature}'.");
 
             ApplyPendingState("started");
         }
@@ -101,12 +104,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
             var signature = evt.Context.ToString();
-
-            if (!_isLoading)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] SceneTransitionScenesReady recebido sem loading ativo. signature='{signature}'.");
-            }
 
             if (IsSignatureMismatch(signature))
             {
@@ -125,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 progress01: 0.8f);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] SceneTransitionScenesReady → HUD atualizado. signature='{signature}'.");
+                $"[Loading] ScenesReady → Update pending. signature='{signature}'.");
 
             ApplyPendingState("scenes_ready");
         }
@@ -133,29 +130,27 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
             var signature = evt.Context.ToString();
-            if (!IsActiveSignatureMatch(signature))
+
+            if (!EnsureActiveSignature(signature))
             {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] BeforeFadeOut ignorado (assinatura não corresponde). active='{_activeSignature}', incoming='{signature}'.");
                 return;
             }
 
             _isLoading = false;
-            ClearPending();
+            _pendingStage = PendingStage.None;
 
             SafeHide("before_fade_out");
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] SceneTransitionBeforeFadeOut → HUD oculto. signature='{signature}'.");
+                $"[Loading] BeforeFadeOut → Hide. signature='{signature}'.");
         }
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
             var signature = evt.Context.ToString();
-            if (!IsActiveSignatureMatch(signature))
+
+            if (!EnsureActiveSignature(signature, allowEmptyActive: true))
             {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] Completed ignorado (assinatura não corresponde). active='{_activeSignature}', incoming='{signature}'.");
                 return;
             }
 
@@ -165,12 +160,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             SafeHide("completed");
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] SceneTransitionCompleted → HUD forçado a ocultar. signature='{signature}'.");
+                $"[Loading] Completed → Safety hide. signature='{signature}'.");
         }
 
         private void OnHudRegistered(SceneLoadingHudRegisteredEvent evt)
         {
-            TryResolveHud();
+            if (_hud == null)
+            {
+                TryResolveHud();
+            }
+
             ApplyPendingState("hud_registered");
         }
 
@@ -203,8 +202,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
             if (!TryEnsureHudAvailable())
             {
-                DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                    $"[Loading] HUD ainda não registrado. Mantendo pendência='{_pendingStage}' (reason='{reason}').");
+                WarnHudMissingOnce($"pending='{_pendingStage}', reason='{reason}'");
                 return;
             }
 
@@ -212,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             SafeSetProgress(reason);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] Pendência aplicada após '{reason}'. stage='{_pendingStage}', signature='{_pendingSignature}'.");
+                $"[Loading] Pending aplicado após '{reason}'. stage='{_pendingStage}', signature='{_pendingSignature}'.");
         }
 
         private void SafeShow(string reason)
@@ -257,8 +255,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         {
             if (!TryEnsureHudAvailable())
             {
-                DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                    $"[Loading] Hide ignorado: HUD indisponível (reason='{reason}').");
                 return;
             }
 
@@ -296,8 +292,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         {
             if (!DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var hud) || hud == null)
             {
-                DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                    "[Loading] HUD pronto sinalizado, porém ISceneLoadingHud não encontrado no DI global.");
                 return;
             }
 
@@ -316,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _hud = hud;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                "[Loading] ISceneLoadingHud resolvido via DI após HUD pronto.");
+                "[Loading] ISceneLoadingHud resolvido via DI como fallback.");
         }
 
         private static bool IsHudReferenceValid(ISceneLoadingHud hud)
@@ -344,14 +338,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             return !string.Equals(_pendingSignature, signature);
         }
 
-        private bool IsActiveSignatureMatch(string signature)
+        private bool EnsureActiveSignature(string signature, bool allowEmptyActive = false)
         {
             if (string.IsNullOrWhiteSpace(_activeSignature))
             {
+                if (allowEmptyActive)
+                {
+                    _activeSignature = signature;
+                    return true;
+                }
+
+                DebugUtility.LogWarning<SceneFlowLoadingService>(
+                    $"[Loading] Evento ignorado (assinatura ativa vazia). incoming='{signature}'.");
                 return false;
             }
 
-            return string.Equals(_activeSignature, signature);
+            if (!string.Equals(_activeSignature, signature))
+            {
+                DebugUtility.LogWarning<SceneFlowLoadingService>(
+                    $"[Loading] Evento ignorado (assinatura não corresponde). active='{_activeSignature}', incoming='{signature}'.");
+                return false;
+            }
+
+            return true;
         }
 
         private void ClearPending()
@@ -359,6 +368,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _pendingSignature = null;
             _pendingStage = PendingStage.None;
             _activeSignature = null;
+        }
+
+        private void ResetWarnings()
+        {
+            _warnedHudMissingThisTransition = false;
+        }
+
+        private void WarnHudMissingOnce(string context)
+        {
+            if (_warnedHudMissingThisTransition)
+            {
+                return;
+            }
+
+            _warnedHudMissingThisTransition = true;
+
+            DebugUtility.LogWarning<SceneFlowLoadingService>(
+                $"[Loading] HUD indisponível nesta transição. {context}.");
         }
 
         private static float Clamp01(float value)
