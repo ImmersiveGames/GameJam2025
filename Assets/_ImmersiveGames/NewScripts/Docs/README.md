@@ -13,6 +13,7 @@ Arquivos canônicos (este pacote):
 - `GLOSSARY.md` — glossário de termos.
 - `CHANGELOG-docs.md` — histórico de alterações desta documentação.
 - `ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
+- `ADR-0010-LoadingHud-SceneFlow.md` — ADR específico do Loading HUD integrado ao SceneFlow.
 
 ## Status atual (resumo)
 - Added: **Gameplay Reset module** (`Gameplay/Reset/`) com contratos e semântica estável:
@@ -23,8 +24,8 @@ Arquivos canônicos (este pacote):
 - Added: **QA isolado para validar reset por grupos** (sem depender de Spawn 100%):
     - `GameplayResetQaSpawner` cria atores de teste (ex.: Players) e registra `IGameplayResettable` de prova.
     - `GameplayResetQaProbe` confirma execução das fases via logs (Cleanup/Restore/Rebind).
+- Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
-- Updated: padronização de nomes para reduzir ambiguidade com o reset por escopos do WorldLifecycle (ex.: “Target” no gameplay vs “Scope” no WorldLifecycle).
 
 Em 2025-12-25:
 - Pipeline **GameLoop → SceneTransitionService → Fade (FadeScene)** está funcional no perfil `startup` para carregar:
@@ -41,11 +42,12 @@ Observação: o `WorldLifecycleController` continua existente na cena de bootstr
 1. `ARCHITECTURE.md`
 2. `WORLD_LIFECYCLE.md`
 3. `ADR-0009-FadeSceneFlow.md`
-4. `ARCHITECTURE_TECHNICAL.md`
-5. `DECISIONS.md`
-6. `EXAMPLES_BEST_PRACTICES.md`
-7. `GLOSSARY.md`
-8. `CHANGELOG-docs.md`
+4. `ADR-0010-LoadingHud-SceneFlow.md`
+5. `ARCHITECTURE_TECHNICAL.md`
+6. `DECISIONS.md`
+7. `EXAMPLES_BEST_PRACTICES.md`
+8. `GLOSSARY.md`
+9. `CHANGELOG-docs.md`
 
 ## Convenções usadas nesta documentação
 - Não presumimos assinaturas inexistentes. Onde necessário, exemplos são explicitamente marcados como **PSEUDOCÓDIGO**.
