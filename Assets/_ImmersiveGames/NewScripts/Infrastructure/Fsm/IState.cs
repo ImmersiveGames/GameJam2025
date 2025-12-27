@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Infrastructure.Actions;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
 {
     public interface IState
@@ -8,19 +9,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Fsm
         void OnExit() { }
         bool CanPerformAction(ActionType action);
         bool IsGameActive();
-    }
-
-    public enum ActionType
-    {
-        Spawn,
-        Move,
-        Shoot,
-        Interact,
-        Navigate,
-        None,
-        UiSubmit,
-        UiCancel,
-        RequestReset,
-        RequestQuit
     }
 }

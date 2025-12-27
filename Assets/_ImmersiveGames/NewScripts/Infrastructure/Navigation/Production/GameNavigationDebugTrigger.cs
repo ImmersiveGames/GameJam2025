@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation.Production
             _dependenciesInjected = true;
         }
 
-        [ContextMenu("Go To Gameplay")]
+        [ContextMenu("Debug/Navigation/Go To Gameplay")]
         public void GoToGameplay()
         {
             EnsureDependenciesInjected();
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation.Production
             _ = _navigationService.RequestToGameplay("ContextMenu/GoToGameplay");
         }
 
-        [ContextMenu("Go To Menu")]
+        [ContextMenu("Debug/Navigation/Go To Menu")]
         public void GoToMenu()
         {
             EnsureDependenciesInjected();
