@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System.Collections;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldMovementPermissionQaRunner : MonoBehaviour
     {
         [Header("Wait for Player (when needed)")]

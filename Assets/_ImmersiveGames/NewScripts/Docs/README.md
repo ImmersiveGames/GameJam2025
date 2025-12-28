@@ -27,6 +27,41 @@ Arquivos canônicos (este pacote):
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
+## QA (status)
+
+### ATIVOS
+- Smoke runner de infraestrutura:
+    - `Infrastructure/QA/NewScriptsInfraSmokeRunner.cs`
+    - `Infrastructure/QA/EventBusSmokeQATester.cs`
+    - `Infrastructure/QA/FilteredEventBusSmokeQATester.cs`
+    - `Infrastructure/QA/DebugLogSettingsQATester.cs`
+    - `Infrastructure/QA/DependencyDISmokeQATester.cs`
+    - `Infrastructure/QA/FsmPredicateQATester.cs`
+    - `Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs`
+- Hooks/boots ativos:
+    - `Infrastructure/QA/BaselineDebugBootstrap.cs`
+    - `Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
+    - `Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs`
+    - `Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs`
+    - `Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs`
+
+### DEPRECATED (tools manuais/legado)
+- `QA/Deprecated/WorldLifecycleQATester.cs`
+- `QA/ActorLifecycleHookLogger.cs` (mantido por referência em prefab)
+- `QA/Deprecated/WorldLifecycleAutoTestRunner.cs`
+- `QA/Deprecated/QAFaultySceneLifecycleHook.cs`
+- `QA/Deprecated/GameplayResetQaProbe.cs`
+- `QA/Deprecated/GameplayResetQaSpawner.cs`
+- `Infrastructure/QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs`
+- `Infrastructure/QA/SceneFlowTransitionQAFrontend.cs` (mantido por referência em cena)
+- `Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs`
+- `Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs` (mantido por referência em cenas)
+- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs`
+- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs`
+- `Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs`
+- `Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs`
+- `Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs` (mantido por referência em cena)
+
 Em 2025-12-27 (estado observado em runtime):
 - Pipeline **GameLoop → Navigation → SceneTransitionService → Fade/Loading → WorldLifecycle → Gate → Completed** está ativo.
 - `NewScriptsSceneTransitionProfile` é resolvido via **Resources** em:

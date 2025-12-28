@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System.Linq;
 using System.Text;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -16,6 +17,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
 {
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldLifecycleQaTools : MonoBehaviour
     {
         [Header("Dependencies")]

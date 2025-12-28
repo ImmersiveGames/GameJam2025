@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
     /// Objetivo: validar Target=PlayersOnly / AllActorsInScene / ActorIdSet e as fases Cleanup/Restore/Rebind.
     /// </summary>
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class GameplayResetQaSpawner : MonoBehaviour
     {
         [Header("QA Spawn")]

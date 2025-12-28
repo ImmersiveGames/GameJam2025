@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -5,6 +6,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.QA
 {
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class ActorLifecycleHookLogger : ActorLifecycleHookBase
     {
         [SerializeField] private string label = "ActorLifecycleHookLogger";

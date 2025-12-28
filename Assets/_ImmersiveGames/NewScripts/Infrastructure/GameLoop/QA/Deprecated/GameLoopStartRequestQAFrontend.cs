@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
     /// - Este script NÃO deve emitir COMMAND de start (isso é responsabilidade do Coordinator após readiness).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class GameLoopStartRequestQaFrontend : MonoBehaviour
     {
         [ContextMenu("QA/GameLoop/Emit Start REQUEST")]

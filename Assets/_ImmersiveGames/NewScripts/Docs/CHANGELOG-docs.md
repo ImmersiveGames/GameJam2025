@@ -3,6 +3,10 @@
 Este changelog cobre **apenas** arquivos de documentação.
 
 ## [2025-12-27]
+- Updated: seção de QA em `README.md` com divisão entre **ATIVOS** e **DEPRECATED**.
+- Updated: referência aos QA tools deprecated após reorganização para pastas `Deprecated/`.
+
+## [2025-12-27]
 - Updated: `README.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `WORLD_LIFECYCLE.md` com o fluxo real de produção
   (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu), incluindo Navigation, completion gate e InputMode.
 - Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` com atualização do pipeline e evidências de log.
