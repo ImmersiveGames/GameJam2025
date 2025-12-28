@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.QA
         AfterSpawn
     }
 
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class QaFaultySceneLifecycleHook : IWorldLifecycleHook
     {
         private readonly FaultyLifecyclePhase _faultyPhase;

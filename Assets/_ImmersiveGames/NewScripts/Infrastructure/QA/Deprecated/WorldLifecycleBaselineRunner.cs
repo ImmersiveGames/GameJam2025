@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 /*
  * ChangeLog
  * - Gate Validation agora força spawn do player via ResetWorldAsync se necessário e aguarda warmup determinístico.
@@ -33,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// </summary>
     [DefaultExecutionOrder(-500)]
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldLifecycleBaselineRunner : MonoBehaviour
     {
         private const string LogPrefix = "[Baseline]";

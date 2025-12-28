@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.QA
 {
     [DefaultExecutionOrder(-500)]
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldLifecycleAutoTestRunner : MonoBehaviour
     {
         [Header("Runner")]

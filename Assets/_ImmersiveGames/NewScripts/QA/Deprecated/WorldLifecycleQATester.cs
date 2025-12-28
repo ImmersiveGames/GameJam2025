@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.QA
     /// Usa injeção lazy com retry/timeout para evitar falso negativo quando o bootstrapper ainda não rodou.
     /// </summary>
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldLifecycleQaTester : MonoBehaviour
     {
         [Header("Configuração")]

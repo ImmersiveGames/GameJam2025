@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -10,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
     /// Útil para provar que a execução por alvo/fase está funcional.
     /// </summary>
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class GameplayResetQaProbe : MonoBehaviour, IGameplayResettable, IGameplayResetOrder, IGameplayResetTargetFilter
     {
         [SerializeField] private bool verboseLogs = true;

@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
@@ -9,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation.Production
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class GameNavigationDebugTrigger : MonoBehaviour
     {
         [Header("Debug")]

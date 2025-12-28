@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Linq;
@@ -20,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
     /// - Rodar: "QA/SpawnPipeline/Run Hard Reset (Spawn)" no menu de contexto deste componente.
     /// </summary>
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class WorldSpawnPipelineQaRunner : MonoBehaviour
     {
         [Header("References (optional)")]

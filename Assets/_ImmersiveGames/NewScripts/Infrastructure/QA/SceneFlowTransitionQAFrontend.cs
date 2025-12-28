@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class SceneFlowTransitionQaFrontend : MonoBehaviour
     {
         [Header("Default Scene Names (ajuste se necessário)")]

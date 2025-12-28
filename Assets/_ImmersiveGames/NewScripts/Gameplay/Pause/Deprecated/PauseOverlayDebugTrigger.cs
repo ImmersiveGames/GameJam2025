@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 /*
  * VALIDACAO / CHECKLIST (UIGlobalScene)
  * - Criar PauseOverlayRoot desativado, adicionar PauseOverlayController e arrastar a referencia.
@@ -12,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
     /// Trigger simples para depuracao via ContextMenu.
     /// </summary>
     [DisallowMultipleComponent]
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class PauseOverlayDebugTrigger : MonoBehaviour
     {
         [SerializeField] private PauseOverlayController controller;

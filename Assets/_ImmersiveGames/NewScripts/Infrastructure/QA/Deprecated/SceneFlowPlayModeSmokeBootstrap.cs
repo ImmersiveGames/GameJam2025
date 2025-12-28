@@ -1,3 +1,4 @@
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     /// <summary>
     /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo) sem NUnit.
     /// </summary>
+    [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]
     public sealed class SceneFlowPlayModeSmokeBootstrap : MonoBehaviour
     {
         private const string LogTag = "[SceneFlowTest][Smoke]";
