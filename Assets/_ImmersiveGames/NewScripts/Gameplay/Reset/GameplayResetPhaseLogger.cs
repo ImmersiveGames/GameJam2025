@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
@@ -5,11 +6,11 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
     /// <summary>
-    /// Marker seguro para tornar o Player observável no GameplayReset.
+    /// Instrumentação de QA para tornar o Player observável no GameplayReset.
     /// Não altera input/movimento; apenas loga as fases executadas.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerGameplayResetParticipant : MonoBehaviour, IGameplayResettable
+    public sealed class GameplayResetPhaseLogger : MonoBehaviour, IGameplayResettable
     {
         [SerializeField]
         [Tooltip("Se true, logs detalhados de cada fase.")]
@@ -41,8 +42,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
 
             string name = gameObject != null ? gameObject.name : "<null>";
-            DebugUtility.Log(typeof(PlayerGameplayResetParticipant),
+            DebugUtility.Log(typeof(GameplayResetPhaseLogger),
                 $"[GameplayReset][Player] {phase} (actor='{name}', target={ctx.Request.Target})");
         }
     }
 }
+#endif
