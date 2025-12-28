@@ -7,6 +7,10 @@ Este changelog cobre **apenas** arquivos de documentação.
 - Updated: referência aos QA tools deprecated após reorganização para pastas `Deprecated/`.
 
 ## [2025-12-27]
+- Updated: ADR-0010 para consolidar Loading HUD na `LoadingHudScene` (Additive), removendo referências ao HUD legado do `UIGlobalScene`.
+- Updated: registro da remoção dos scripts legados do HUD de loading (UIGlobalScene).
+
+## [2025-12-27]
 - Updated: `README.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `WORLD_LIFECYCLE.md` com o fluxo real de produção
   (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu), incluindo Navigation, completion gate e InputMode.
 - Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` com atualização do pipeline e evidências de log.

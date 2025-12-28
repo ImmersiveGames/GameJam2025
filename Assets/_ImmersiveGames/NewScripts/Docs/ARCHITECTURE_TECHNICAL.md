@@ -118,7 +118,7 @@ Validação (QA):
 ## Pontos de atenção
 - `WorldLifecycleController` em bootstrap pode existir com `AutoInitializeOnStart` desabilitado.
     - Isso evita executar reset/spawn em cenas que ainda não são o alvo de integração (ex.: evitar contaminar testes do Fade).
-- `UIGlobalScene` é carregada por SceneFlow quando estiver no plano de load; o HUD (`SceneLoadingHudController`) deve ser independente de lógica de gameplay.
+- `LoadingHudScene` é carregada por SceneFlow (Additive); o HUD (`NewScriptsLoadingHudController`) deve ser independente de lógica de gameplay.
 
 
 ## GameLoop

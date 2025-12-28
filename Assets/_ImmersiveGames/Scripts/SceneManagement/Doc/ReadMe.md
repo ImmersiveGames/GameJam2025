@@ -43,7 +43,7 @@ PIPELINE LAYER (Core)
 SYSTEM LAYER (Runtime Executors)
  ├── FadeService → FadeController
  ├── SceneLoader
- └── SceneLoadingHudService → SceneLoadingHudView
+ └── Loading HUD (módulo NewScripts via LoadingHudScene)
 ```
 
 ---
@@ -277,27 +277,6 @@ FadeService
 
 ---
 
-## **4.4 SceneLoadingHudController**
-
-Centraliza HUD de loading.
-
-### Em ShowLoadingAsync:
-
-* Lê perfil do contexto
-* Aplica:
-
-    * LoadingTitle
-    * LoadingDescriptionTemplate ("{Scenes}")
-
-### Em MarkScenesReadyAsync:
-
-* Aplica:
-
-    * FinishingTitle
-    * FinishingDescription
-
----
-
 # **5. Configuração Inicial — Passo a Passo (IMPORTANTE)**
 
 ## **Passo 1 — Criar grupos**
@@ -336,17 +315,7 @@ Crie uma cena **FadeScene** contendo:
 
 ---
 
-## **Passo 4 — Configurar HUD Global**
-
-Crie uma cena **UIGlobalScene**:
-
-* Canvas
-* SceneLoadingHudView
-* SceneLoadingHudController (registrado global via DI)
-
----
-
-## **Passo 5 — Registrar no GameManager**
+## **Passo 4 — Registrar no GameManager**
 
 O fluxo moderno já está implementado em:
 
@@ -492,11 +461,6 @@ Sempre deixar o Planner decidir.
 
 # **9. Debug Checklist**
 
-### HUD não aparece?
-
-* Verificar se `SceneLoadingHudController` está registrado global.
-* Verificar se UIGlobalScene está carregada no bootstrap.
-
 ### Fade não aparece?
 
 * Verificar TransitionProfile.UseFade.
@@ -531,10 +495,6 @@ Sempre deixar o Planner decidir.
         FadeScene.unity
         FadeController.cs
         FadeService.cs
-    /HUD
-        UIGlobalScene.unity
-        SceneLoadingHudView.cs
-        SceneLoadingHudController.cs
     /Core
         SceneTransitionService.cs
         SceneTransitionPlanner.cs

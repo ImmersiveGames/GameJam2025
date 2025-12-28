@@ -59,25 +59,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             }
             sb.AppendLine("]");
 
-            // 1) Find HUD controller
-            var hudCtrl = FindFirstObjectByType<SceneLoadingHudController>(FindObjectsInactive.Include);
+            // 1) Find HUD controller (LoadingHudScene)
+            var hudCtrl = FindFirstObjectByType<NewScriptsLoadingHudController>(FindObjectsInactive.Include);
             sb.AppendLine(hudCtrl != null
                 ? $"hudCtrl=FOUND (go='{hudCtrl.gameObject.name}', scene='{hudCtrl.gameObject.scene.name}', active={hudCtrl.gameObject.activeInHierarchy})"
-                : "hudCtrl=NOT_FOUND (SceneLoadingHudController)");
-
-            // 2) Find any MonoBehaviour implementing ISceneLoadingHud
-            var hudIface = FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None)
-                .FirstOrDefault(mb => mb is ISceneLoadingHud) as ISceneLoadingHud;
-
-            if (hudIface is Component hudComp)
-            {
-                sb.AppendLine(
-                    $"hudIface=FOUND (type='{hudIface.GetType().FullName}', go='{hudComp.gameObject.name}', scene='{hudComp.gameObject.scene.name}', active={hudComp.gameObject.activeInHierarchy})");
-            }
-            else
-            {
-                sb.AppendLine("hudIface=NOT_FOUND (no MonoBehaviour implements ISceneLoadingHud)");
-            }
+                : "hudCtrl=NOT_FOUND (NewScriptsLoadingHudController)");
 
             // 3) WorldLifecycleControllers
             var wlCtrl = FindObjectsByType<WorldLifecycleController>(FindObjectsSortMode.None);
@@ -95,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             AppendDiLine<ISceneTransitionService>(sb, "ISceneTransitionService");
             AppendDiLine<ISceneTransitionCompletionGate>(sb, "ISceneTransitionCompletionGate");
             AppendDiLine<INewScriptsFadeService>(sb, "INewScriptsFadeService");
-            AppendDiLine<ISceneLoadingHud>(sb, "ISceneLoadingHud");
+            AppendDiLine<INewScriptsLoadingHudService>(sb, "INewScriptsLoadingHudService");
             AppendDiLine<SceneFlowLoadingService>(sb, "SceneFlowLoadingService");
             AppendDiLine<ISimulationGateService>(sb, "ISimulationGateService");
             AppendDiLine<IStateDependentService>(sb, "IStateDependentService");
@@ -128,39 +114,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
             {
                 sb.AppendLine($"{label}=MISSING");
             }
-        }
-
-        [ContextMenu("QA/WorldLifecycle/LoadingHud/Force Rebind ISceneLoadingHud (Global)")]
-        public void ForceRebindLoadingHudToGlobal()
-        {
-            // Diagnóstico: encontra um HUD “real” na cena e tenta garantir que o DI global enxerga.
-            var hudCtrl = FindFirstObjectByType<SceneLoadingHudController>(FindObjectsInactive.Include);
-            if (hudCtrl == null)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleQaTools),
-                    "[QA][LoadingHud] SceneLoadingHudController NÃO encontrado. Não é possível rebind.",
-                    this);
-                return;
-            }
-
-            // Se já resolve globalmente, loga e sai.
-            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null)
-            {
-                DebugUtility.Log(typeof(WorldLifecycleQaTools),
-                    $"[QA][LoadingHud] ISceneLoadingHud já está registrado no DI global (type='{existing.GetType().FullName}'). Nenhuma ação necessária.",
-                    DebugUtility.Colors.Success);
-                return;
-            }
-
-            // Aqui a ação depende da API do seu Provider.
-            // Eu NÃO vou inventar assinatura. Então:
-            // - Se seu Provider expõe algum RegisterGlobal em runtime, substitua abaixo.
-            // - Caso contrário, este botão serve para confirmar que o problema é “registrar no global”.
-            DebugUtility.LogWarning(typeof(WorldLifecycleQaTools),
-                "[QA][LoadingHud] ISceneLoadingHud NÃO está no DI global. " +
-                "O HUD controller existe na cena, então a causa mais provável é registro em escopo diferente do global. " +
-                "Ajuste o bootstrap do HUD (UIGlobalScene) para registrar ISceneLoadingHud no DI GLOBAL, ou exponha uma API de registro global em runtime para este QA.",
-                this);
         }
 
         // ----------------------------
