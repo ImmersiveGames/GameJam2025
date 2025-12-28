@@ -41,7 +41,7 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - A experiência mantém consistência mesmo quando o HUD nasce após o `Started`.
 
 ## Referências
-- ADR-0009 — Fade + SceneFlow (NewScripts)
+- [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
 
 ## Atualização (2025-12-27)
 - O pipeline atual mantém o gate de completion antes do `FadeOut`, garantindo janela segura para o HUD
@@ -51,7 +51,7 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - `SceneTransitionService` executa `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
 - `SceneFlowLoadingService` aparece registrado no bootstrap global.
 - `NewScriptsLoadingHudService` garante o carregamento do HUD e aplica Show/Hide conforme fases.
-- Cena do HUD: `Assets/_ImmersiveGames/Scenes/LoadingHudScene.unity`.
+- Cena do HUD: [Assets/_ImmersiveGames/Scenes/LoadingHudScene.unity](../../../Scenes/LoadingHudScene.unity).
 
 ### Evidência (log) — exemplo
 - `[LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)...`
