@@ -14,6 +14,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
 - Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
 - Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
+- Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
 
 ## [2025-12-27]
 - Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.

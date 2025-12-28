@@ -29,5 +29,6 @@ Exercitar as variações de `GameplayResetRequest` disponíveis no NewScripts se
 - Em caso de erro: `[QA][GameplayResetRequest] Failed => ... ex=...`
 
 ## Observações
-- O driver usa `DefaultGameplayResetTargetClassifier` para resolver targets via `IActorRegistry` (sem scene scan).
+- O driver resolve `IGameplayResetTargetClassifier` via DI de cena; se ausente, usa `DefaultGameplayResetTargetClassifier`.
+- `verboseLogs` controla o preview detalhado de targets (`Resolved targets`).
 - Este QA não altera fluxo de gameplay; apenas dispara resets e logs.

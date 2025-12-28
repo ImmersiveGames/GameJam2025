@@ -30,9 +30,10 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         private string _sceneName;
         private IActorRegistry _actorRegistry;
         private IGameplayResetOrchestrator _orchestrator;
+        private IGameplayResetTargetClassifier _classifier;
         private readonly List<IActor> _actorBuffer = new(16);
         private readonly List<IActor> _resolvedTargets = new(16);
-        private readonly IGameplayResetTargetClassifier _classifier = new DefaultGameplayResetTargetClassifier();
+        private readonly IGameplayResetTargetClassifier _fallbackClassifier = new DefaultGameplayResetTargetClassifier();
 
         private void Awake()
         {
@@ -77,8 +78,16 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             actorIds = actorIds.Distinct(StringComparer.Ordinal).ToList();
             actorIds.Sort(StringComparer.Ordinal);
 
-            DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
-                $"[QA][GameplayResetRequest] ActorIds preenchidos (kind={fillKind}, count={actorIds.Count}).");
+            if (verboseLogs)
+            {
+                DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
+                    $"[QA][GameplayResetRequest] ActorIds preenchidos (kind={fillKind}, count={actorIds.Count}).");
+            }
+            else
+            {
+                DebugUtility.Log(typeof(GameplayResetRequestQaDriver),
+                    $"[QA][GameplayResetRequest] ActorIds preenchidos (count={actorIds.Count}).");
+            }
         }
 
         [ContextMenu("QA/GameplayResetRequest/Run AllActorsInScene")]
@@ -171,6 +180,11 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
                 return;
             }
 
+            if (!verboseLogs)
+            {
+                return;
+            }
+
             var labels = new List<string>(_resolvedTargets.Count);
             foreach (var actor in _resolvedTargets)
             {
@@ -199,6 +213,8 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             var provider = DependencyManager.Provider;
             provider.TryGetForScene(_sceneName, out _actorRegistry);
             provider.TryGetForScene(_sceneName, out _orchestrator);
+            provider.TryGetForScene(_sceneName, out _classifier);
+            _classifier ??= _fallbackClassifier;
         }
     }
 }
