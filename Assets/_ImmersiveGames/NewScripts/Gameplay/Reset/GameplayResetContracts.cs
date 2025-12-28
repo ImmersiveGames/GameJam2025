@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
@@ -21,7 +22,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         AllActorsInScene = 0,
         PlayersOnly = 1,
         EaterOnly = 2,
-        ActorIdSet = 3
+        ActorIdSet = 3,
+        ByActorKind = 4
     }
 
     /// <summary>
@@ -29,11 +31,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
     /// </summary>
     public readonly struct GameplayResetRequest
     {
-        public GameplayResetRequest(GameplayResetTarget target, string reason = null, IReadOnlyList<string> actorIds = null)
+        public GameplayResetRequest(
+            GameplayResetTarget target,
+            string reason = null,
+            IReadOnlyList<string> actorIds = null,
+            ActorKind actorKind = ActorKind.Unknown)
         {
             Target = target;
             Reason = reason;
             ActorIds = actorIds;
+            ActorKind = actorKind;
         }
 
         public GameplayResetTarget Target { get; }
@@ -42,10 +49,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
         public IReadOnlyList<string> ActorIds { get; }
 
+        public ActorKind ActorKind { get; }
+
+        public static GameplayResetRequest ByActorKind(ActorKind kind, string reason = null)
+        {
+            return new GameplayResetRequest(GameplayResetTarget.ByActorKind, reason, actorKind: kind);
+        }
+
         public override string ToString()
         {
             int count = ActorIds?.Count ?? 0;
-            return $"GameplayResetRequest(Target={Target}, Reason='{Reason ?? "null"}', ActorIds={count})";
+            string kindInfo = Target == GameplayResetTarget.ByActorKind || Target == GameplayResetTarget.PlayersOnly
+                ? $", ActorKind={ActorKind}"
+                : string.Empty;
+            return $"GameplayResetRequest(Target={Target}, Reason='{Reason ?? "null"}', ActorIds={count}{kindInfo})";
         }
     }
 

@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 int serial = Interlocked.Increment(ref _requestSerial);
                 string reason = string.IsNullOrWhiteSpace(request.Reason) ? "GameplayReset/Request" : request.Reason;
 
-                var normalized = new GameplayResetRequest(request.Target, reason, request.ActorIds);
+                var normalized = new GameplayResetRequest(request.Target, reason, request.ActorIds, request.ActorKind);
 
                 DebugUtility.Log(typeof(GameplayResetOrchestrator),
                     $"[GameplayReset] Start: {normalized} (scene='{GetEffectiveSceneName()}', serial={serial})");
@@ -170,6 +170,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     StringComparer.Ordinal);
             }
 
+            bool isKindTarget = request.Target == GameplayResetTarget.ByActorKind
+                || request.Target == GameplayResetTarget.PlayersOnly;
+            ActorKind requestedKind = request.Target == GameplayResetTarget.PlayersOnly
+                ? ActorKind.Player
+                : request.ActorKind;
+
             foreach (var mb in behaviours)
             {
                 if (mb is not IActor actor)
@@ -189,9 +195,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                         continue;
                     }
                 }
-                else if (request.Target == GameplayResetTarget.PlayersOnly)
+                else if (isKindTarget)
                 {
-                    if (mb.GetComponent<PlayerActor>() == null)
+                    if (!MatchesActorKind(actor, requestedKind))
                     {
                         continue;
                     }
@@ -357,6 +363,21 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 GameplayResetPhase.Rebind => component.ResetRebindAsync(ctx),
                 _ => Task.CompletedTask
             };
+        }
+
+        private static bool MatchesActorKind(IActor actor, ActorKind kind)
+        {
+            if (actor == null || kind == ActorKind.Unknown)
+            {
+                return false;
+            }
+
+            if (actor is not IActorKindProvider provider)
+            {
+                return false;
+            }
+
+            return provider.Kind == kind;
         }
 
         private static int CompareResetEntries(ResetEntry left, ResetEntry right)
