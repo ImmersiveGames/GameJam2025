@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 // DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System.Collections;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -396,3 +397,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
         }
     }
 }
+#endif

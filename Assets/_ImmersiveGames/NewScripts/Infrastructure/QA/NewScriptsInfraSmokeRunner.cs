@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Reflection;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -209,3 +210,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         }
     }
 }
+
+#endif

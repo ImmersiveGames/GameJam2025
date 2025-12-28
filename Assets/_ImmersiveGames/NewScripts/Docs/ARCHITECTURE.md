@@ -28,7 +28,7 @@ Responsável por um estado global macro (ex.: Boot → Menu (Ready/Idle) → Pla
 ### 3) Navigation (produção)
 - `IGameNavigationService` é a entrada de produção para ir **Menu ↔ Gameplay**.
 - `GameNavigationService` encapsula `SceneTransitionRequest` e executa `SceneTransitionService.TransitionAsync(...)`.
-- Ao concluir a transição para Gameplay (após gate), chama `GameLoop.RequestStart()`.
+- `GameNavigationService` **não** chama `GameLoop.RequestStart()`; o start é responsabilidade exclusiva do `GameLoopSceneFlowCoordinator`.
 
 ### 4) Scene Flow (SceneTransitionService)
 Orquestra a transição de cenas (load/unload/active) com:
@@ -114,6 +114,5 @@ Diagrama simplificado:
 - `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
 - Transição para `gameplay` executa reset e `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` antes do `FadeOut`.
-- `GameNavigationService` chama `GameLoop.RequestStart()` ao entrar em Gameplay.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
   e tokens `state.pause` / `flow.scene_transition` aparecem no gate.

@@ -4,6 +4,7 @@
  * - Criar PauseOverlayRoot desativado, adicionar PauseOverlayController e arrastar a referencia.
  * - Conectar botao Resume para PauseOverlayController.Resume().
  */
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
@@ -47,3 +48,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
         }
     }
 }
+#endif

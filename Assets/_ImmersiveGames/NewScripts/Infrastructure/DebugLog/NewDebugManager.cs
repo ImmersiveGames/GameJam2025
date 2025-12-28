@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
@@ -64,3 +65,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         }
     }
 }
+
+#endif

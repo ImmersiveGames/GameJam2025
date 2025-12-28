@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
@@ -65,3 +66,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
         private sealed class FilteredSmokeEvent : IEvent { }
     }
 }
+
+#endif

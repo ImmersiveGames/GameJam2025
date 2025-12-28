@@ -112,7 +112,7 @@ Validação (QA):
 - `GameNavigationService`:
     - constrói `SceneTransitionRequest` com profile `startup`/`gameplay`;
     - executa `SceneTransitionService.TransitionAsync(...)`;
-    - após concluir transição para Gameplay (já após gate), chama `GameLoop.RequestStart()`.
+    - **não** chama `GameLoop.RequestStart()` (responsabilidade exclusiva do `GameLoopSceneFlowCoordinator`).
 
 ### InputMode / PauseOverlay
 - `InputModeService` alterna os action maps (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
@@ -203,6 +203,5 @@ Validação (QA):
 - `WorldLifecycleRuntimeCoordinator`:
     - Startup: SKIP com `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`
     - Gameplay: reset executado antes do gate liberar.
-- `GameNavigationService` chama `GameLoop.RequestStart()` ao entrar em Gameplay.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`,
   `GameExitToMenuRequestedEvent` e o gate mostra `state.pause`/`flow.scene_transition`.

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 // DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
@@ -28,3 +29,5 @@ namespace _ImmersiveGames.NewScripts.QA
         // Mantemos os outros como no-op para evitar ruído.
     }
 }
+
+#endif
