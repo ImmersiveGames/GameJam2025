@@ -40,6 +40,28 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - O HUD pode existir sem exigir QA ou legados.
 - A experiência mantém consistência mesmo quando o HUD nasce após o `Started`.
 
+## Loading inclui Reset/Spawn
+O “loading real” não é apenas **load/unload** de cenas. Ele inclui:
+- **Reset do mundo**, com hooks e participantes por escopo.
+- **Spawn/Preparação** do mundo (quando aplicável).
+
+Na prática, o loading só é considerado **concluído** quando o
+`WorldLifecycleResetCompletedEvent` é emitido. O `FadeOut` deve acontecer **depois** disso,
+garantindo que o jogador só veja a cena quando o mundo já foi preparado.
+
+## Evolução futura: Addressables
+Diretriz para evolução (sem código por enquanto): tratar o loading como **tarefas agregadas**,
+para que o HUD reflita o estado de cada etapa.
+
+Exemplo **PSEUDOCÓDIGO / FUTURO** de vocabulário (nomes de tarefas):
+- `SceneLoadTask` (load/unload additive e active scene)
+- `WorldResetTask` (reset + spawn/preparação do mundo)
+- `AddressablesWarmupTask` (warmup/preload de assets)
+
+O HUD poderia exibir fases agregadas (“Carregando…”, “Preparando…”, “Aquecendo assets…”)
+com base na conclusão dessas tarefas. As implementações reais ainda **não existem** e devem
+seguir as regras já descritas para SceneFlow/WorldLifecycle.
+
 ## Referências
 - [ADR-0009 — Fade + SceneFlow (NewScripts)](ADR-0009-FadeSceneFlow.md)
 
@@ -55,5 +77,5 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 
 ### Evidência (log) — exemplo
 - `[LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)...`
-- `[LoadingHUD] Show aplicado. signature='...' phase='Started'.`
-- `[LoadingHUD] Hide aplicado. signature='...' phase='BeforeFadeOut'.`
+- `[LoadingHUD] Show aplicado. signature='<contextSignature>' phase='Started'.`
+- `[LoadingHUD] Hide aplicado. signature='<contextSignature>' phase='BeforeFadeOut'.`
