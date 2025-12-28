@@ -20,6 +20,7 @@ Status: evidências atualizadas em 2025-12-27.
 - [WORLDLIFECYCLE_RESET_STATUS.md](WORLDLIFECYCLE_RESET_STATUS.md)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
 - [QA-Audit-2025-12-27](Reports/QA-Audit-2025-12-27.md)
+- [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md)
 - [Legacy-Cleanup-Report](Reports/Legacy-Cleanup-Report.md)
 
 ## Status atual (resumo)

@@ -16,6 +16,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
 - Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
 - Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.
+- Added: `Reports/QA-GameplayReset-RequestMatrix.md` com evidências da validação da matriz GameplayResetRequest.
 
 ## [2025-12-27]
 - Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
