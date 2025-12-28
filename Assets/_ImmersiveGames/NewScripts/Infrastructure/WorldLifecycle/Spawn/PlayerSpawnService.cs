@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
@@ -147,23 +148,64 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
         private bool TryResolveActor(GameObject instance, out IActor actor)
         {
-            var player = instance.GetComponent<PlayerActor>();
-            actor = player;
+            actor = null;
 
-            if (player == null)
+            if (instance == null)
             {
-                DebugUtility.LogError(typeof(PlayerSpawnService),
-                    "Prefab não possui PlayerActor. Player não será instanciado.");
                 return false;
             }
 
-            if (!EnsureActorId(instance, player))
+            if (instance.TryGetComponent(out PlayerActor playerActor))
+            {
+                if (!EnsureActorId(instance, playerActor))
+                {
+                    DebugUtility.LogError(typeof(PlayerSpawnService),
+                        "ActorId inválido para PlayerActor. Instância será destruída.");
+                    return false;
+                }
+
+                actor = playerActor;
+                return true;
+            }
+
+            if (instance.TryGetComponent(out PlayerActorAdapter adapter))
+            {
+                if (!EnsureActorId(adapter, instance))
+                {
+                    DebugUtility.LogError(typeof(PlayerSpawnService),
+                        "ActorId inválido para PlayerActorAdapter. Instância será destruída.");
+                    return false;
+                }
+
+                actor = adapter;
+                return true;
+            }
+
+            if (instance.TryGetComponent(out IActor existingActor) && existingActor != null)
+            {
+                if (string.IsNullOrWhiteSpace(existingActor.ActorId))
+                {
+                    DebugUtility.LogError(typeof(PlayerSpawnService),
+                        "IActor encontrado no prefab, mas ActorId está vazio. Instância será destruída.");
+                    return false;
+                }
+
+                actor = existingActor;
+                return true;
+            }
+
+            DebugUtility.LogWarning(typeof(PlayerSpawnService),
+                "Prefab sem IActor. Adicionando PlayerActor como fallback.");
+
+            var fallbackActor = instance.AddComponent<PlayerActor>();
+            if (!EnsureActorId(instance, fallbackActor))
             {
                 DebugUtility.LogError(typeof(PlayerSpawnService),
-                    "ActorId inválido para Player. Instância será destruída.");
+                    "Falha ao criar ActorId para PlayerActor fallback. Instância será destruída.");
                 return false;
             }
 
+            actor = fallbackActor;
             return true;
         }
 
@@ -196,6 +238,38 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             }
 
             player.Initialize(actorId);
+            return true;
+        }
+
+        private bool EnsureActorId(PlayerActorAdapter adapter, GameObject instance)
+        {
+            if (adapter == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(adapter.ActorId))
+            {
+                return true;
+            }
+
+            if (_uniqueIdFactory == null)
+            {
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "IUniqueIdFactory ausente; não é possível gerar ActorId para PlayerActorAdapter.");
+                return false;
+            }
+
+            string actorId = _uniqueIdFactory.GenerateId(instance);
+
+            if (string.IsNullOrWhiteSpace(actorId))
+            {
+                DebugUtility.LogError(typeof(PlayerSpawnService),
+                    "IUniqueIdFactory retornou ActorId vazio; abortando spawn do PlayerActorAdapter.");
+                return false;
+            }
+
+            adapter.Initialize(actorId);
             return true;
         }
 

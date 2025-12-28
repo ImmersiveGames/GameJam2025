@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             EnsureExpectedSignatureFromContext(evt.Context);
 
-            string ctxSig = evt.Context.ToString();
+            string ctxSig = SceneTransitionSignatureUtil.Compute(evt.Context);
             if (!string.IsNullOrEmpty(_expectedContextSignature) &&
                 !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
             {
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            _expectedContextSignature = context.ToString();
+            _expectedContextSignature = SceneTransitionSignatureUtil.Compute(context);
         }
 
         private void TryIssueGameLoopStart()
@@ -243,6 +243,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
                     "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível RequestStart().");
+
+                _startInProgress = false;
                 return;
             }
 
