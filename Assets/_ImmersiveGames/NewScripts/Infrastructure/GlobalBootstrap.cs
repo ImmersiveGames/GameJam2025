@@ -109,6 +109,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterSceneFlowNative();
 
             RegisterGameNavigationService();
+            RegisterExitToMenuNavigationBridge();
 
             RegisterSceneFlowLoadingIfAvailable();
 
@@ -260,6 +261,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Navigation] GameNavigationService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterExitToMenuNavigationBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ExitToMenuNavigationBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new ExitToMenuNavigationBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
