@@ -6,13 +6,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.QA;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo) sem NUnit.

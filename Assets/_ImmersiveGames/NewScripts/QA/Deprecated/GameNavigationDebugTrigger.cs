@@ -2,9 +2,10 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation.Production
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// Trigger simples de produção para validar navegação sem QA tools.

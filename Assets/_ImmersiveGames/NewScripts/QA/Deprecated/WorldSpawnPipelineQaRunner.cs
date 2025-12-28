@@ -7,9 +7,10 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// QA harness para validar o pipeline "WorldDefinition -> SpawnRegistry -> WorldLifecycle -> ActorRegistry".

@@ -23,10 +23,10 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 - `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/GameplayResetQaSpawner.cs`
 - `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/WorldLifecycleAutoTestRunner.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/WorldLifecycleBaselineRunner.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/WorldLifecycleQATools.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/WorldMovementPermissionQaRunner.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/GameLoopStartRequestQAFrontend.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs`
 
 **Core service / runtime**

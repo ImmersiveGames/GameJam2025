@@ -15,7 +15,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     [DisallowMultipleComponent]
     [System.Obsolete("Deprecated QA tool; see QA-Audit-2025-12-27", false)]

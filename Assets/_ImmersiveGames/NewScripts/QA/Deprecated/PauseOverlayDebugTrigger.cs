@@ -5,10 +5,11 @@
  * - Conectar botao Resume para PauseOverlayController.Resume().
  */
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+using _ImmersiveGames.NewScripts.Gameplay.Pause;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Gameplay.Pause
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// Trigger simples para depuracao via ContextMenu.

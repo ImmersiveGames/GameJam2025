@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// QA ONLY:
