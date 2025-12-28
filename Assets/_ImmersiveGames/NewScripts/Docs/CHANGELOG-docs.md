@@ -17,6 +17,10 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
 
+## [2025-12-30]
+- Updated: caminhos de QA deprecated consolidados em `QA/Deprecated` e referências de documentação ajustadas.
+- Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.
+
 ## [2025-12-29]
 - Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
 - Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.

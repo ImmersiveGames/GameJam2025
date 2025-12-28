@@ -18,7 +18,7 @@ Consolidar o fluxo SceneFlow para produção: garantir **um único ponto de star
 - `Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs` → `gameLoop.RequestStart()` (apenas após `TransitionCompleted` + `WorldLifecycleResetCompleted`).
 
 **Permitido (teste/QA/dev-only)**
-- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs` → `RequestStart()` usado apenas em QA (agora sob `UNITY_EDITOR || DEVELOPMENT_BUILD`).
+- `QA/Deprecated/WorldMovementPermissionQaRunner.cs` → `RequestStart()` usado apenas em QA (agora sob `UNITY_EDITOR || DEVELOPMENT_BUILD`).
 
 **Não permitido**
 - Nenhum encontrado após a auditoria.

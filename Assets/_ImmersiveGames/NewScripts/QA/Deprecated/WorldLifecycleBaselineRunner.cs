@@ -28,7 +28,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// Runner minimalista para acionar o baseline do WorldLifecycle sem depender do fluxo de produção.

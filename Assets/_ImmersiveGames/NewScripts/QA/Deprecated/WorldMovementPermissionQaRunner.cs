@@ -13,7 +13,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// QA runner (ContextMenu): valida o gating de movimento do Player no NewScripts.

@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 using UnityEditor;
 #endif
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// Smoke runner em PlayMode/CI para validar Scene Flow (nativo) sem NUnit.

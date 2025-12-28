@@ -9,7 +9,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
 
-namespace _ImmersiveGames.NewScripts.Infrastructure.QA
+namespace _ImmersiveGames.NewScripts.QA
 {
     /// <summary>
     /// QA-only helper para disparar transições do SceneFlow via ContextMenu.
