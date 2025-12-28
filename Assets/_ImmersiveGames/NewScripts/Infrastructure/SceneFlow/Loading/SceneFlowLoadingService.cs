@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 {
@@ -16,18 +15,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _transitionBeforeFadeOutBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
-        private readonly EventBinding<SceneLoadingHudRegisteredEvent> _hudRegisteredBinding;
-        private readonly EventBinding<SceneLoadingHudUnregisteredEvent> _hudUnregisteredBinding;
 
-        private ISceneLoadingHud _hud;
-        private bool _isLoading;
+        private INewScriptsLoadingHudService _hudService;
         private string _activeSignature;
         private string _pendingSignature;
-        private PendingStage _pendingStage;
-        private string _currentTitle;
-        private string _currentDetails;
-        private float _currentProgress01;
-        private bool _warnedHudMissingThisTransition;
+        private string _pendingPhase;
+        private bool _warnedHudServiceMissingThisTransition;
 
         public SceneFlowLoadingService()
         {
@@ -35,47 +28,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
             _transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
-            _hudRegisteredBinding = new EventBinding<SceneLoadingHudRegisteredEvent>(OnHudRegistered);
-            _hudUnregisteredBinding = new EventBinding<SceneLoadingHudUnregisteredEvent>(OnHudUnregistered);
 
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_transitionBeforeFadeOutBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
-            EventBus<SceneLoadingHudRegisteredEvent>.Register(_hudRegisteredBinding);
-            EventBus<SceneLoadingHudUnregisteredEvent>.Register(_hudUnregisteredBinding);
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 "[Loading] SceneFlowLoadingService registrado nos eventos de Scene Flow.");
         }
 
-        public void AttachHud(ISceneLoadingHud hud)
-        {
-            if (hud == null)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    "[Loading] AttachHud chamado com referência nula. Ignorando.");
-                return;
-            }
-
-            if (!IsHudReferenceValid(hud))
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    "[Loading] AttachHud recebeu referência destruída. Ignorando.");
-                return;
-            }
-
-            _hud = hud;
-
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                "[Loading] HUD attached ao SceneFlowLoadingService.");
-
-            ApplyPendingState("attach");
-        }
-
         private void OnTransitionStarted(SceneTransitionStartedEvent evt)
         {
-            var signature = evt.Context.ToString();
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             ResetWarnings();
 
@@ -85,25 +50,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                     $"[Loading] Nova transição detectada. Substituindo pendências. old='{_pendingSignature}', new='{signature}'.");
             }
 
-            _isLoading = true;
             _activeSignature = signature;
             _pendingSignature = signature;
-            _pendingStage = PendingStage.Started;
-
-            UpdateHudState(
-                title: "Carregando...",
-                details: null,
-                progress01: 0.1f);
+            _pendingPhase = LoadingHudPhases.Started;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] Started → Show pending. signature='{signature}'.");
+                $"[Loading] Started → Ensure + Show. signature='{signature}'.");
 
-            ApplyPendingState("started");
+            _ = EnsureLoadedAndShowAsync(signature);
         }
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            var signature = evt.Context.ToString();
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (IsSignatureMismatch(signature))
             {
@@ -111,35 +70,28 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                     $"[Loading] ScenesReady com assinatura diferente. Substituindo pendências. old='{_pendingSignature}', new='{signature}'.");
             }
 
-            _isLoading = true;
             _activeSignature = signature;
             _pendingSignature = signature;
-            _pendingStage = PendingStage.ScenesReady;
-
-            UpdateHudState(
-                title: "Preparando...",
-                details: null,
-                progress01: 0.8f);
+            _pendingPhase = LoadingHudPhases.ScenesReady;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] ScenesReady → Update pending. signature='{signature}'.");
 
-            ApplyPendingState("scenes_ready");
+            TryShow(signature, _pendingPhase, "scenes_ready");
         }
 
         private void OnTransitionBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            var signature = evt.Context.ToString();
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (!EnsureActiveSignature(signature))
             {
                 return;
             }
 
-            _isLoading = false;
-            _pendingStage = PendingStage.None;
+            ClearPending();
 
-            SafeHide("before_fade_out");
+            TryHide(signature, LoadingHudPhases.BeforeFadeOut, "before_fade_out");
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] BeforeFadeOut → Hide. signature='{signature}'.");
@@ -147,185 +99,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
         private void OnTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            var signature = evt.Context.ToString();
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
 
             if (!EnsureActiveSignature(signature, allowEmptyActive: true))
             {
                 return;
             }
 
-            _isLoading = false;
             ClearPending();
 
-            SafeHide("completed");
+            TryHide(signature, LoadingHudPhases.Completed, "completed");
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] Completed → Safety hide. signature='{signature}'.");
-        }
-
-        private void OnHudRegistered(SceneLoadingHudRegisteredEvent evt)
-        {
-            if (_hud == null)
-            {
-                TryResolveHud();
-            }
-
-            ApplyPendingState("hud_registered");
-        }
-
-        private void OnHudUnregistered(SceneLoadingHudUnregisteredEvent evt)
-        {
-            if (_hud == null)
-            {
-                return;
-            }
-
-            _hud = null;
-
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                "[Loading] HUD desregistrado. Referência limpa no SceneFlowLoadingService.");
-        }
-
-        private void UpdateHudState(string title, string details, float progress01)
-        {
-            _currentTitle = title;
-            _currentDetails = details;
-            _currentProgress01 = Clamp01(progress01);
-        }
-
-        private void ApplyPendingState(string reason)
-        {
-            if (!_isLoading || _pendingStage == PendingStage.None)
-            {
-                return;
-            }
-
-            if (!TryEnsureHudAvailable())
-            {
-                WarnHudMissingOnce($"pending='{_pendingStage}', reason='{reason}'");
-                return;
-            }
-
-            SafeShow(reason);
-            SafeSetProgress(reason);
-
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] Pending aplicado após '{reason}'. stage='{_pendingStage}', signature='{_pendingSignature}'.");
-        }
-
-        private void SafeShow(string reason)
-        {
-            if (!TryEnsureHudAvailable())
-            {
-                return;
-            }
-
-            try
-            {
-                _hud.Show(_currentTitle, _currentDetails);
-            }
-            catch (MissingReferenceException)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] HUD destruído durante Show (reason='{reason}'). Limpando referência.");
-                _hud = null;
-            }
-        }
-
-        private void SafeSetProgress(string reason)
-        {
-            if (!TryEnsureHudAvailable())
-            {
-                return;
-            }
-
-            try
-            {
-                _hud.SetProgress01(_currentProgress01);
-            }
-            catch (MissingReferenceException)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] HUD destruído durante SetProgress (reason='{reason}'). Limpando referência.");
-                _hud = null;
-            }
-        }
-
-        private void SafeHide(string reason)
-        {
-            if (!TryEnsureHudAvailable())
-            {
-                return;
-            }
-
-            try
-            {
-                _hud.Hide();
-            }
-            catch (MissingReferenceException)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    $"[Loading] HUD destruído durante Hide (reason='{reason}'). Limpando referência.");
-                _hud = null;
-            }
-        }
-
-        private bool TryEnsureHudAvailable()
-        {
-            if (IsHudReferenceValid(_hud))
-            {
-                return true;
-            }
-
-            if (_hud != null)
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    "[Loading] Referência do HUD inválida (provável destruction). Limpando.");
-                _hud = null;
-            }
-
-            TryResolveHud();
-            return IsHudReferenceValid(_hud);
-        }
-
-        private void TryResolveHud()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var hud) || hud == null)
-            {
-                return;
-            }
-
-            if (!IsHudReferenceValid(hud))
-            {
-                DebugUtility.LogWarning<SceneFlowLoadingService>(
-                    "[Loading] DI retornou HUD destruído. Mantendo pendência até nova instância.");
-                return;
-            }
-
-            if (_hud == hud)
-            {
-                return;
-            }
-
-            _hud = hud;
-
-            DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                "[Loading] ISceneLoadingHud resolvido via DI como fallback.");
-        }
-
-        private static bool IsHudReferenceValid(ISceneLoadingHud hud)
-        {
-            if (hud == null)
-            {
-                return false;
-            }
-
-            if (hud is Object unityObject && unityObject == null)
-            {
-                return false;
-            }
-
-            return true;
         }
 
         private bool IsSignatureMismatch(string signature)
@@ -366,43 +152,101 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private void ClearPending()
         {
             _pendingSignature = null;
-            _pendingStage = PendingStage.None;
+            _pendingPhase = null;
             _activeSignature = null;
         }
 
         private void ResetWarnings()
         {
-            _warnedHudMissingThisTransition = false;
+            _warnedHudServiceMissingThisTransition = false;
         }
 
         private void WarnHudMissingOnce(string context)
         {
-            if (_warnedHudMissingThisTransition)
+            if (_warnedHudServiceMissingThisTransition)
             {
                 return;
             }
 
-            _warnedHudMissingThisTransition = true;
+            _warnedHudServiceMissingThisTransition = true;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] HUD indisponível nesta transição. {context}.");
         }
 
-        private static float Clamp01(float value)
+        private async System.Threading.Tasks.Task EnsureLoadedAndShowAsync(string signature)
         {
-            if (value < 0f)
+            if (!TryResolveHudService())
             {
-                return 0f;
+                WarnHudMissingOnce("EnsureLoadedAsync não executado (serviço indisponível).");
+                return;
             }
 
-            return value > 1f ? 1f : value;
+            await _hudService.EnsureLoadedAsync();
+
+            var phase = ResolvePendingPhase(signature, LoadingHudPhases.Started);
+            TryShow(signature, phase, "ensure_loaded");
         }
 
-        private enum PendingStage
+        private void TryShow(string signature, string phase, string reason)
         {
-            None,
-            Started,
-            ScenesReady
+            if (!TryResolveHudService())
+            {
+                WarnHudMissingOnce($"Show pendente ignorado. reason='{reason}', phase='{phase}'.");
+                return;
+            }
+
+            _hudService.Show(signature, phase);
+        }
+
+        private void TryHide(string signature, string phase, string reason)
+        {
+            if (!TryResolveHudService())
+            {
+                WarnHudMissingOnce($"Hide pendente ignorado. reason='{reason}', phase='{phase}'.");
+                return;
+            }
+
+            _hudService.Hide(signature, phase);
+        }
+
+        private bool TryResolveHudService()
+        {
+            if (_hudService != null)
+            {
+                return true;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<INewScriptsLoadingHudService>(out var service) || service == null)
+            {
+                return false;
+            }
+
+            _hudService = service;
+            return true;
+        }
+
+        private string ResolvePendingPhase(string signature, string fallback)
+        {
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return fallback;
+            }
+
+            if (string.Equals(signature, _pendingSignature))
+            {
+                return string.IsNullOrWhiteSpace(_pendingPhase) ? fallback : _pendingPhase;
+            }
+
+            return fallback;
+        }
+
+        private static class LoadingHudPhases
+        {
+            public const string Started = "Started";
+            public const string ScenesReady = "ScenesReady";
+            public const string BeforeFadeOut = "BeforeFadeOut";
+            public const string Completed = "Completed";
         }
     }
 }
