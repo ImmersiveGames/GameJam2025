@@ -55,6 +55,12 @@ Mesmo no SKIP, o driver deve emitir:
 
 Isso é necessário porque o `GameLoopSceneFlowCoordinator` aguarda esse sinal para chamar `GameLoop.RequestStart()`.
 
+### Completion gate (SceneFlow)
+O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do `FadeOut`) até que:
+- `WorldLifecycleRuntimeCoordinator` emita `WorldLifecycleResetCompletedEvent(signature, reason)`.
+
+Esse gate garante que o `SceneTransitionService` só siga para `FadeOut`/`Completed` quando o reset terminou (ou SKIP foi emitido).
+
 ## Participantes e registros de cena
 ### Gameplay Reset por grupos (cleanup/restore/rebind)
 
@@ -98,3 +104,28 @@ Ao validar o pipeline, busque no log:
 Se o Coordinator não “destrava”, quase sempre faltou:
 - `WorldLifecycleResetCompletedEvent` ou
 - assinatura `contextSignature` incompatível com a esperada.
+
+## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
+1. `MenuPlayButtonBinder` → `IGameNavigationService.RequestToGameplay(reason)`.
+2. `SceneTransitionService`:
+    - `Started` → `FadeIn`
+    - Load/Unload → `ScenesReady`
+    - completion gate (`WorldLifecycleResetCompletionGate`)
+    - `FadeOut` → `Completed`
+3. `WorldLifecycleRuntimeCoordinator`:
+    - **Gameplay**: executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
+    - **Startup/Frontend**: SKIP com reason `Skipped_StartupOrFrontend`.
+4. `GameReadinessService`:
+    - token `flow.scene_transition` no `Started`
+    - libera no `Completed`
+5. PauseOverlay:
+    - `GamePauseCommandEvent` / `GameResumeRequestedEvent` / `GameExitToMenuRequestedEvent`
+    - `SimulationGateTokens.Pause` controla pausa sem congelar física.
+
+## Evidências (log)
+- Startup profile `startup` com reset SKIPPED + `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+- Transição para profile `gameplay` executa reset após `ScenesReady` e antes do gate liberar.
+- Completion gate aguarda `WorldLifecycleResetCompletedEvent` para prosseguir ao `FadeOut`.
+- `GameReadinessService` usa token `flow.scene_transition` durante a transição.
+- `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
+  e o gate mostra `state.pause`.

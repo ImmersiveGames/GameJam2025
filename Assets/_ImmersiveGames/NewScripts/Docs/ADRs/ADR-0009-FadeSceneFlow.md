@@ -60,3 +60,13 @@ Exemplo (trecho):
 ## Próximos passos
 - Criar ADR separado para **Loading** (HUD, progress, “scene warmup”).
 - Introduzir uma camada de navegação (ex.: `IGameNavigationService`) para emitir transições como feature (não via QA), quando a integração de GameplayScene estiver pronta.
+
+## Atualização (2025-12-27)
+- A navegação de produção já existe via `IGameNavigationService` (registrado no `GlobalBootstrap`) e chama
+  `SceneTransitionService.TransitionAsync(...)` com profile `startup`/`gameplay`.
+- O Fade está integrado ao fluxo `Started → FadeIn → ScenesReady → gate → FadeOut → Completed`.
+
+## Evidências (log)
+- `GlobalBootstrap` registra `INewScriptsFadeService` e `ISceneTransitionService`.
+- Transição `startup` mostra `FadeIn`/`FadeOut` no pipeline do SceneFlow.
+- `SceneTransitionService` registra `Started → ScenesReady → Completed` em ordem, com gate antes do `FadeOut`.

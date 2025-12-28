@@ -37,6 +37,7 @@ Este documento detalha responsabilidades e fronteiras entre módulos, com foco e
     - adquire token na transição,
     - publica snapshots (gateOpen/gameplayReady/activeTokens),
     - libera token no `SceneTransitionCompleted`.
+- `WorldLifecycleOrchestrator` adquire `WorldLifecycleTokens.WorldResetToken` durante reset e libera ao final.
 
 ### Scene Flow (transições)
 - `ISceneTransitionService` (implementação: `SceneTransitionService`) é o orquestrador de:
@@ -86,6 +87,26 @@ Validação (QA):
     - emite `WorldLifecycleResetCompletedEvent(contextSignature, reason)`.
 - Regra atual (para estabilizar startup/menu):
     - SKIP quando `profile == 'startup'` **ou** `activeScene == 'MenuScene'`.
+
+### Navigation (produção)
+- `IGameNavigationService` encapsula pedidos **Menu ↔ Gameplay**.
+- `GameNavigationService`:
+    - constrói `SceneTransitionRequest` com profile `startup`/`gameplay`;
+    - executa `SceneTransitionService.TransitionAsync(...)`;
+    - após concluir transição para Gameplay (já após gate), chama `GameLoop.RequestStart()`.
+
+### InputMode / PauseOverlay
+- `InputModeService` alterna os action maps (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
+- `InputModeSceneFlowBridge` aplica modo com base em `SceneTransitionCompletedEvent`:
+    - `profile=gameplay` → `Gameplay`
+    - `profile=startup/frontend` → `FrontendMenu`
+- `PauseOverlayController` publica:
+    - `GamePauseCommandEvent` (Show)
+    - `GameResumeRequestedEvent` (Hide/Resume)
+    - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
+  e alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu`, além de chamar
+  `IGameNavigationService.RequestToMenu(...)` no retorno ao menu.
+- `GamePauseGateBridge` traduz pause/resume/exit para token `SimulationGateTokens.Pause`.
 
 ## Logging (diagnóstico)
 - Preferir logs com tags:
@@ -153,3 +174,16 @@ Validação (QA):
     - `ISimulationGateService` (tokens ativos),
     - e pausa.
 - Regra de engenharia: **input/gameplay deve consultar `IStateDependentService`**, não `CanPerform` diretamente.
+
+## Evidências (log)
+- `GlobalBootstrap` registra `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
+  `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`,
+  `SceneFlowLoadingService`.
+- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
+- `SceneTransitionService` executa `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
+- `WorldLifecycleRuntimeCoordinator`:
+    - Startup: SKIP com `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`
+    - Gameplay: reset executado antes do gate liberar.
+- `GameNavigationService` chama `GameLoop.RequestStart()` ao entrar em Gameplay.
+- `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`,
+  `GameExitToMenuRequestedEvent` e o gate mostra `state.pause`/`flow.scene_transition`.
