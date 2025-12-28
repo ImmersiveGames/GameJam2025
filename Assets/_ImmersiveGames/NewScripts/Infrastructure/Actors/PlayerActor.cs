@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
     /// Implementação simples de IActor para o baseline de NewScripts.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerActor : MonoBehaviour, IActor
+    public sealed class PlayerActor : MonoBehaviour, IActor, IActorKindProvider
     {
         [SerializeField]
         private string actorId = string.Empty;
@@ -28,6 +28,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
         public Transform Transform => transform;
 
         public bool IsActive => isActiveAndEnabled;
+
+        public ActorKind Kind => ActorKind.Player;
 
         private void Awake()
         {

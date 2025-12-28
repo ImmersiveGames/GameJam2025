@@ -119,6 +119,100 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &542428323
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 542428325}
+  - component: {fileID: 542428324}
+  - component: {fileID: 542428327}
+  - component: {fileID: 542428326}
+  - component: {fileID: 542428328}
+  m_Layer: 0
+  m_Name: QA_GameplayResetKind
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &542428324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542428323}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e200a831675442a589ffc40b3abd73fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  parentUnderWorldRoot: 1
+  parentOverride: {fileID: 0}
+  addProbeComponent: 1
+  probeVerboseLogs: 1
+--- !u!4 &542428325
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542428323}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &542428326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542428323}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d8a6d43219e43df921b94ba8dd48ec7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  label: QA GameplayResetKind Probe
+  verboseLogs: 1
+--- !u!114 &542428327
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542428323}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89285a6a2d004bb8b7ad532ce4451bc8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  actorId: 
+  displayName: QA Dummy
+--- !u!114 &542428328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542428323}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b5cea7fdfc2456b9286a8c1679b2844, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  actorIds: []
+  fillKind: 1
+  verboseLogs: 1
 --- !u!1 &772402748
 GameObject:
   m_ObjectHideFlags: 0
@@ -130,7 +224,6 @@ GameObject:
   - component: {fileID: 772402750}
   - component: {fileID: 772402749}
   - component: {fileID: 772402751}
-  - component: {fileID: 772402752}
   m_Layer: 0
   m_Name: '[NewScripts] SceneScope'
   m_TagString: Untagged
@@ -180,29 +273,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   autoInitializeOnStart: 0
   verboseLogs: 1
---- !u!114 &772402752
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 772402748}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5b1d16c7a6673f46aa437d665d42c34, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  controller: {fileID: 772402751}
-  resetReason: ContextMenu/ResetWorldNow
-  softResetPlayersReason: ContextMenu/SoftResetPlayers
-  menuSceneName: MenuScene
-  uiGlobalSceneName: UIGlobalScene
-  bootstrapSceneName: NewBootstrap
-  gameplaySceneName: GameplayScene
-  menuProfileName: startup
-  gameplayProfileName: gameplay
-  sceneFlowUseFade: 1
-  enterPlayingAfterGameplayTransition: 1
 --- !u!1 &1164878012
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,3 +722,4 @@ SceneRoots:
   - {fileID: 2013597643}
   - {fileID: 1171078547}
   - {fileID: 1164878014}
+  - {fileID: 542428325}

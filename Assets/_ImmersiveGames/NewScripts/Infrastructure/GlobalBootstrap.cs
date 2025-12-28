@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DebugUtility.Log(typeof(GlobalBootstrap),
                 "NEWSCRIPTS_MODE desativado: GlobalBootstrap ignorado.");
             return;
-#endif
+#else
             if (_initialized)
                 return;
 
@@ -74,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 typeof(GlobalBootstrap),
                 "✅ NewScripts global infrastructure initialized (Commit 1 minimal).",
                 DebugUtility.Colors.Success);
+#endif
         }
 
         private static void InitializeLogging()

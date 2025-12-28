@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: -8274252057799639255}
   - component: {fileID: 1401694685376812566}
   - component: {fileID: 100003}
-  - component: {fileID: 100004}
+  - component: {fileID: 4123456789012345678}
   - component: {fileID: 240041504808191800}
   - component: {fileID: 8906509120750850877}
   m_Layer: 0
@@ -109,7 +109,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   actorId: 
   displayName: 
---- !u!114 &100004
+--- !u!114 &4123456789012345678
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -118,10 +118,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c576cabd72f644ae8c375655649cdcc6, type: 3}
+  m_Script: {fileID: 11500000, guid: 9dba82400d444a83b8f051ba3d35bba3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  label: Player_NewScripts.ActorLifecycle
+  verboseLogs: 1
 --- !u!114 &240041504808191800
 MonoBehaviour:
   m_ObjectHideFlags: 0
