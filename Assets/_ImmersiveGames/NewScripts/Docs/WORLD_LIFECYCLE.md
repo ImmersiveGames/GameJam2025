@@ -2,7 +2,7 @@
 
 Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
 
-> Nota de consolidação: versões anteriores mais extensas podem existir (ex.: `WORLD_LIFECYCLE.md`). O conteúdo canônico e mantido é este arquivo.
+> Nota de consolidação: versões anteriores mais extensas podem existir no histórico do repositório, mas o conteúdo canônico e mantido é este arquivo.
 
 ## Objetivo
 Garantir que o “mundo” possa ser reinicializado de forma previsível, para:

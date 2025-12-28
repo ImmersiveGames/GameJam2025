@@ -4,26 +4,26 @@ Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o es
 
 ## Onde está a documentação
 Arquivos canônicos (este pacote):
-- `README.md` — índice e orientação rápida.
-- `ARCHITECTURE.md` — visão arquitetural de alto nível.
-- `ARCHITECTURE_TECHNICAL.md` — detalhes técnicos, módulos e responsabilidades.
-- `WORLD_LIFECYCLE.md` — semântica operacional do reset determinístico do mundo.
-- `DECISIONS.md` — decisões/ADRs resumidos (o “porquê”).
-- `EXAMPLES_BEST_PRACTICES.md` — exemplos e práticas recomendadas.
-- `GLOSSARY.md` — glossário de termos.
-- `CHANGELOG-docs.md` — histórico de alterações desta documentação.
-- `ADRs/ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
-- `ADRs/ADR-0010-LoadingHud-SceneFlow.md` — ADR específico do Loading HUD integrado ao SceneFlow.
+- [README.md](README.md) — índice e orientação rápida.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — visão arquitetural de alto nível.
+- [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md) — detalhes técnicos, módulos e responsabilidades.
+- [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md) — semântica operacional do reset determinístico do mundo.
+- [DECISIONS.md](DECISIONS.md) — decisões/ADRs resumidos (o “porquê”).
+- [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md) — exemplos e práticas recomendadas.
+- [GLOSSARY.md](GLOSSARY.md) — glossário de termos.
+- [CHANGELOG-docs.md](CHANGELOG-docs.md) — histórico de alterações desta documentação.
+- [ADR-0009-FadeSceneFlow](ADRs/ADR-0009-FadeSceneFlow.md) — ADR específico do Fade + SceneFlow (NewScripts).
+- [ADR-0010-LoadingHud-SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md) — ADR específico do Loading HUD integrado ao SceneFlow.
 
 ## Reports (evidências)
 Status: evidências atualizadas em 2025-12-27.
-- `WORLDLIFECYCLE_RESET_STATUS.md`
-- `Reports/SceneFlow-Smoke-Result.md`
-- `Reports/QA-Audit-2025-12-27.md`
-- `Reports/Legacy-Cleanup-Report.md`
+- [WORLDLIFECYCLE_RESET_STATUS.md](WORLDLIFECYCLE_RESET_STATUS.md)
+- [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
+- [QA-Audit-2025-12-27](Reports/QA-Audit-2025-12-27.md)
+- [Legacy-Cleanup-Report](Reports/Legacy-Cleanup-Report.md)
 
 ## Status atual (resumo)
-- Added: **Gameplay Reset module** (`Gameplay/Reset/`) com contratos e semântica estável:
+- Added: **Gameplay Reset module** ([Gameplay/Reset/](../Gameplay/Reset/)) com contratos e semântica estável:
     - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet).
     - `GameplayResetRequest` + `GameplayResetContext`.
     - `IGameplayResettable` (+ `IGameplayResettableSync`), `IGameplayResetOrder`, `IGameplayResetTargetFilter`.
@@ -38,36 +38,36 @@ Status: evidências atualizadas em 2025-12-27.
 
 ### ATIVOS
 - Smoke runner de infraestrutura:
-    - `Infrastructure/QA/NewScriptsInfraSmokeRunner.cs`
-    - `Infrastructure/QA/EventBusSmokeQATester.cs`
-    - `Infrastructure/QA/FilteredEventBusSmokeQATester.cs`
-    - `Infrastructure/QA/DebugLogSettingsQATester.cs`
-    - `Infrastructure/QA/DependencyDISmokeQATester.cs`
-    - `Infrastructure/QA/FsmPredicateQATester.cs`
-    - `Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs`
+    - [Infrastructure/QA/NewScriptsInfraSmokeRunner.cs](../Infrastructure/QA/NewScriptsInfraSmokeRunner.cs)
+    - [Infrastructure/QA/EventBusSmokeQATester.cs](../Infrastructure/QA/EventBusSmokeQATester.cs)
+    - [Infrastructure/QA/FilteredEventBusSmokeQATester.cs](../Infrastructure/QA/FilteredEventBusSmokeQATester.cs)
+    - [Infrastructure/QA/DebugLogSettingsQATester.cs](../Infrastructure/QA/DebugLogSettingsQATester.cs)
+    - [Infrastructure/QA/DependencyDISmokeQATester.cs](../Infrastructure/QA/DependencyDISmokeQATester.cs)
+    - [Infrastructure/QA/FsmPredicateQATester.cs](../Infrastructure/QA/FsmPredicateQATester.cs)
+    - [Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs](../Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs)
 - Hooks/boots ativos:
-    - `Infrastructure/QA/BaselineDebugBootstrap.cs`
-    - `Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
-    - `Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs`
-    - `Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs`
-    - `Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs`
+    - [Infrastructure/QA/BaselineDebugBootstrap.cs](../Infrastructure/QA/BaselineDebugBootstrap.cs)
+    - [Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs](../Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs)
+    - [Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs](../Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs)
+    - [Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs](../Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs)
+    - [Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs](../Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs)
 
 ### DEPRECATED (tools manuais/legado)
-- `QA/Deprecated/WorldLifecycleQATester.cs`
-- `QA/ActorLifecycleHookLogger.cs` (mantido por referência em prefab)
-- `QA/Deprecated/WorldLifecycleAutoTestRunner.cs`
-- `QA/Deprecated/QAFaultySceneLifecycleHook.cs`
-- `QA/Deprecated/GameplayResetQaProbe.cs`
-- `QA/Deprecated/GameplayResetQaSpawner.cs`
-- `Infrastructure/QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs`
-- `Infrastructure/QA/SceneFlowTransitionQAFrontend.cs` (mantido por referência em cena)
-- `Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs`
-- `Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs` (mantido por referência em cenas)
-- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs`
-- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs`
-- `Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs`
-- `Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs`
-- `Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs` (mantido por referência em cena)
+- [QA/Deprecated/WorldLifecycleQATester.cs](../QA/Deprecated/WorldLifecycleQATester.cs)
+- [QA/ActorLifecycleHookLogger.cs](../QA/ActorLifecycleHookLogger.cs) (mantido por referência em prefab)
+- [QA/Deprecated/WorldLifecycleAutoTestRunner.cs](../QA/Deprecated/WorldLifecycleAutoTestRunner.cs)
+- [QA/Deprecated/QAFaultySceneLifecycleHook.cs](../QA/Deprecated/QAFaultySceneLifecycleHook.cs)
+- [QA/Deprecated/GameplayResetQaProbe.cs](../QA/Deprecated/GameplayResetQaProbe.cs)
+- [QA/Deprecated/GameplayResetQaSpawner.cs](../QA/Deprecated/GameplayResetQaSpawner.cs)
+- [Infrastructure/QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs](../Infrastructure/QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs)
+- [Infrastructure/QA/SceneFlowTransitionQAFrontend.cs](../Infrastructure/QA/SceneFlowTransitionQAFrontend.cs) (mantido por referência em cena)
+- [Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs](../Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs)
+- [Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs](../Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs) (mantido por referência em cenas)
+- [Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs](../Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs)
+- [Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs](../Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs)
+- [Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs](../Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs)
+- [Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs](../Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs)
+- [Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs](../Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs) (mantido por referência em cena)
 
 Em 2025-12-27 (estado observado em runtime):
 - Pipeline **GameLoop → Navigation → SceneTransitionService → Fade/Loading → WorldLifecycle → Gate → Completed** está ativo.
@@ -81,15 +81,15 @@ Em 2025-12-27 (estado observado em runtime):
 - `InputModeService` alterna `FrontendMenu`/`Gameplay`/`PauseOverlay` com base em SceneFlow e PauseOverlay.
 
 ## Como ler (ordem sugerida)
-1. `ARCHITECTURE.md`
-2. `WORLD_LIFECYCLE.md`
-3. `ADRs/ADR-0009-FadeSceneFlow.md`
-4. `ADRs/ADR-0010-LoadingHud-SceneFlow.md`
-5. `ARCHITECTURE_TECHNICAL.md`
-6. `DECISIONS.md`
-7. `EXAMPLES_BEST_PRACTICES.md`
-8. `GLOSSARY.md`
-9. `CHANGELOG-docs.md`
+1. [ARCHITECTURE.md](ARCHITECTURE.md)
+2. [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
+3. [ADR-0009-FadeSceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
+4. [ADR-0010-LoadingHud-SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
+5. [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md)
+6. [DECISIONS.md](DECISIONS.md)
+7. [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md)
+8. [GLOSSARY.md](GLOSSARY.md)
+9. [CHANGELOG-docs.md](CHANGELOG-docs.md)
 
 ## Convenções usadas nesta documentação
 - Não presumimos assinaturas inexistentes. Onde necessário, exemplos são explicitamente marcados como **PSEUDOCÓDIGO**.

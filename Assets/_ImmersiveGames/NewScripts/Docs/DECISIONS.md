@@ -4,7 +4,7 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
 ## Convenções
 - Cada decisão possui: **ID**, **Status**, **Decisão**, **Motivação** e **Consequências**.
-- ADRs completos podem existir na pasta `Docs/ADRs/` do repositório.
+- ADRs completos podem existir na pasta [ADRs](ADRs/) do repositório.
 
 ---
 
@@ -52,7 +52,7 @@ Renames (consolidação de nomes no reset de gameplay):
 - reset deve ser acionado de forma centralizada (driver/orchestrator),
 - gameplay deve respeitar gate/readiness.
 
-Referência operacional: `WORLD_LIFECYCLE.md`.
+Referência operacional: [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md).
 
 ---
 
@@ -71,7 +71,7 @@ Referência operacional: `WORLD_LIFECYCLE.md`.
 - o adapter de fade deve aplicar profile (durations/curves) antes do FadeIn/FadeOut
 - falha de resolução de profile deve degradar para defaults (não travar o fluxo)
 
-Referência: `ADR-0009-FadeSceneFlow.md`.
+Referência: [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md).
 
 ---
 
@@ -90,7 +90,7 @@ Referência: `ADR-0009-FadeSceneFlow.md`.
 - O serviço deve aplicar “Started → Show”, “ScenesReady → Update”, “BeforeFadeOut → Hide”, “Completed → Safety Hide”.
 - A correlação é por `signature` do `SceneTransitionContext` (não por eventos do GameLoop).
 
-Referência: `ADR-0010-LoadingHud-SceneFlow.md`.
+Referência: [ADR-0010-LoadingHud-SceneFlow.md](ADRs/ADR-0010-LoadingHud-SceneFlow.md).
 
 ---
 

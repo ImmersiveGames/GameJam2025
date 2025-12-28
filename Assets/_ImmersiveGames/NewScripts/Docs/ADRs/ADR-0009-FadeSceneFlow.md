@@ -29,7 +29,7 @@ Implementar Fade no Scene Flow do NewScripts com as seguintes decisões:
     - `SceneFlow/Profiles/<profileName>`
     - `<profileName>`
 - Padrão recomendado:
-    - `Resources/SceneFlow/Profiles/<profileName>.asset`
+    - `Resources/SceneFlow/Profiles/<profileName>`
 
 4) **Sem fallback para fade legado**
 - Se `INewScriptsFadeService` não existir, o adapter retorna `NullFadeAdapter` e loga erro explícito.

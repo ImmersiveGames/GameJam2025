@@ -40,7 +40,7 @@ Durante a transição:
 - `GameReadinessService` adquire o gate (`flow.scene_transition`) para bloquear gameplay.
 - O Fade (NewScripts) pode ser executado antes e depois do carregamento.
 
-### 5) Fade (ADR-0009)
+### 5) Fade ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md))
 - `INewScriptsFadeService` controla `FadeScene` (Additive) e o `NewScriptsFadeController` (CanvasGroup).
 - `NewScriptsSceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
 - Resolução por Resources:
@@ -58,7 +58,7 @@ Durante a transição:
     - executa reset (ou SKIP em Menu/Startup),
     - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
 
-Detalhes em: `WORLD_LIFECYCLE.md`.
+Detalhes em: [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md).
 
 ## Fluxo macro (startup/menu)
 Diagrama simplificado:
@@ -96,13 +96,13 @@ Diagrama simplificado:
     - `GameLoopSceneFlowCoordinator` chama `GameLoop.RequestStart()` apenas após `TransitionCompleted + ResetCompleted`.
 
 ## Documentos relacionados
-- `WORLD_LIFECYCLE.md`
-- `ADR-0009-FadeSceneFlow.md`
-- `ARCHITECTURE_TECHNICAL.md`
-- `DECISIONS.md`
-- `EXAMPLES_BEST_PRACTICES.md`
-- `GLOSSARY.md`
-- `CHANGELOG-docs.md`
+- [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
+- [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md)
+- [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md)
+- [DECISIONS.md](DECISIONS.md)
+- [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md)
+- [GLOSSARY.md](GLOSSARY.md)
+- [CHANGELOG-docs.md](CHANGELOG-docs.md)
 
 > Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).
 
