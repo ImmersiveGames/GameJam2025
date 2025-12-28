@@ -7,10 +7,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 {
     /// <summary>
     /// Classificador padrão de alvos de reset.
-    /// - PlayersOnly: ator que tenha PlayerActor no mesmo GameObject.
+    /// - PlayersOnly: alias para ActorKind.Player.
     /// - EaterOnly: procura por componente chamado "EaterActor" (string-based), para não acoplar compile-time.
     /// - ActorIdSet: usa ActorRegistry.TryGetActor para os ids do request.
     /// - AllActorsInScene: usa todos do registry.
+    /// - ByActorKind: filtra via IActorKindProvider.
     /// </summary>
     public sealed class DefaultGameplayResetTargetClassifier : IGameplayResetTargetClassifier
     {
@@ -34,7 +35,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     return;
 
                 case GameplayResetTarget.PlayersOnly:
-                    AddByPredicate(actorRegistry, results, IsPlayerActor);
+                    AddByActorKind(actorRegistry, results, ActorKind.Player);
+                    return;
+
+                case GameplayResetTarget.ByActorKind:
+                    AddByActorKind(actorRegistry, results, request.ActorKind);
                     return;
 
                 case GameplayResetTarget.EaterOnly:
@@ -93,15 +98,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
         }
 
-        private static bool IsPlayerActor(IActor actor)
-        {
-            var t = actor.Transform;
-            if (t == null)
-                return false;
-
-            return t.GetComponent<PlayerActor>() != null;
-        }
-
         private static bool IsEaterActor(IActor actor)
         {
             var t = actor.Transform;
@@ -112,6 +108,39 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
             var eater = t.GetComponent("EaterActor");
             return eater != null;
+        }
+
+        private static void AddByActorKind(IActorRegistry actorRegistry, List<IActor> results, ActorKind kind)
+        {
+            if (actorRegistry.Actors == null)
+                return;
+
+            if (kind == ActorKind.Unknown)
+                return;
+
+            foreach (var actor in actorRegistry.Actors)
+            {
+                if (actor == null)
+                    continue;
+
+                if (TryGetActorKind(actor, out var actorKind) && actorKind == kind)
+                {
+                    results.Add(actor);
+                }
+            }
+        }
+
+        private static bool TryGetActorKind(IActor actor, out ActorKind kind)
+        {
+            kind = ActorKind.Unknown;
+
+            if (actor is not IActorKindProvider provider)
+            {
+                return false;
+            }
+
+            kind = provider.Kind;
+            return true;
         }
     }
 }

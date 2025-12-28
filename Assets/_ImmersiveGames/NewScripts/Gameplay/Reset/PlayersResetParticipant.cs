@@ -112,7 +112,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return result;
             }
 
-            result.AddRange(from actor in _actorBuffer where actor != null let t = actor.Transform where t != null where t.GetComponent<PlayerActor>() != null select actor.ActorId into id where !string.IsNullOrWhiteSpace(id) select id);
+            foreach (var actor in _actorBuffer)
+            {
+                if (actor == null)
+                {
+                    continue;
+                }
+
+                if (!IsPlayerActor(actor))
+                {
+                    continue;
+                }
+
+                var id = actor.ActorId;
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    result.Add(id);
+                }
+            }
 
             return result;
         }
@@ -139,8 +156,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     continue;
                 }
 
-                // PlayersOnly: precisa ter PlayerActor no mesmo GO do IActor, ou no próprio.
-                if (mb.GetComponent<PlayerActor>() == null)
+                // PlayersOnly: precisa expor Kind=Player via IActorKindProvider.
+                if (!IsPlayerActor(actor))
                 {
                     continue;
                 }
@@ -153,6 +170,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
 
             return result;
+        }
+
+        private static bool IsPlayerActor(IActor actor)
+        {
+            if (actor is IActorKindProvider provider)
+            {
+                return provider.Kind == ActorKind.Player;
+            }
+
+            return false;
         }
     }
 }
