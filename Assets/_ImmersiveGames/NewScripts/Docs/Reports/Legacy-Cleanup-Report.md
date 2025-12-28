@@ -19,14 +19,14 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 > Nenhum deles referencia o legado.
 
 **QA**
-- `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetQaProbe.cs`
-- `Assets/_ImmersiveGames/NewScripts/QA/GameplayReset/GameplayResetQaSpawner.cs`
-- `Assets/_ImmersiveGames/NewScripts/QA/WorldLifecycleAutoTestRunner.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/GameplayResetQaProbe.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/GameplayResetQaSpawner.cs`
+- `Assets/_ImmersiveGames/NewScripts/QA/Deprecated/WorldLifecycleAutoTestRunner.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/WorldLifecycleBaselineRunner.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/QA/Deprecated/WorldLifecycleBaselineRunner.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/QA/WorldLifecycleQATools.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Spawn/QA/WorldMovementPermissionQaRunner.cs`
-- `Assets/_ImmersiveGames/NewScripts/Infrastructure/GameLoop/QA/GameLoopStartRequestQAFrontend.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs`
+- `Assets/_ImmersiveGames/NewScripts/Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs`
 - `Assets/_ImmersiveGames/NewScripts/Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs`
 
 **Core service / runtime**
@@ -65,6 +65,7 @@ SceneFlow + Fade + WorldLifecycle + Gate + GameLoop.
 
 ## Mudanças realizadas nesta rodada
 - Atualização do relatório de limpeza (este arquivo).
+- Arquivos movidos para `Deprecated`; paths atualizados.
 
 ## Arquivos alterados/criados
 - Atualizado:

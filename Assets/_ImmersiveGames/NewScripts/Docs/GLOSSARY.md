@@ -24,8 +24,6 @@
 | Bridge/Adapter | Camada temporária que conecta legado ↔ NewScripts (ex.: loader fallback). |
 | CanPerform (GameLoop) | Função de “capacidade por estado” do GameLoop. Não é gate-aware; não deve ser usada como autorização final de gameplay. A decisão final deve vir de `IStateDependentService` (gate-aware). |
 | Eventos do GameLoop (context-free) | Eventos de intenção/controle do GameLoop (start/pause/resume/reset) não carregam `ContextSignature` por design. Correlação é feita no Coordinator com `SceneTransitionContext` e `WorldLifecycleResetCompletedEvent`. |
-| CanPerform (GameLoop) | Helper de “capacidade por estado macro” (capability map). **Não é** autorização final (não é gate-aware). Deve ser combinado com `IStateDependentService` para autorização real. |
-| Eventos context-free (GameLoop) | Eventos do GameLoop deliberadamente não carregam `ContextSignature`. A correlação do fluxo é feita no Coordinator via `SceneTransitionContext` e `WorldLifecycleResetCompletedEvent.ContextSignature`. |
 ## Gameplay Reset
 
 Módulo em `Gameplay/Reset/` para executar reset de componentes de gameplay por **alvos** (`GameplayResetTarget`) com fases fixas (`GameplayResetPhase`: Cleanup/Restore/Rebind). É independente do spawn e pode ser validado via QA.

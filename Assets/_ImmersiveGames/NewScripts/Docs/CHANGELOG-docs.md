@@ -3,9 +3,9 @@
 All notable documentation changes to **NewScripts** are documented in this file.
 
 ## [2025-12-27]
-- Added: `Docs/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
-- Added: `Docs/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
-- Added: `Docs/QA-Audit-2025-12-27.md` com auditoria dos QAs ativos/removidos e recomendações de baseline.
+- Added: `Docs/Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
+- Added: `Docs/Reports/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
+- Added: `Docs/Reports/QA-Audit-2025-12-27.md` com auditoria dos QAs ativos/removidos e recomendações de baseline.
 
 - Updated: `Docs/ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.
 - Updated: `Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md` (Opção A) — HUD de loading via cena aditiva (`LoadingHudScene`) integrada ao SceneFlow.

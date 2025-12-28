@@ -15,6 +15,13 @@ Arquivos canônicos (este pacote):
 - `ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
 - `ADR-0010-LoadingHud-SceneFlow.md` — ADR específico do Loading HUD integrado ao SceneFlow.
 
+## Reports (evidências)
+Status: evidências atualizadas em 2025-12-27.
+- `Docs/WORLDLIFECYCLE_RESET_STATUS.md`
+- `Docs/Reports/SceneFlow-Smoke-Result.md`
+- `Docs/Reports/QA-Audit-2025-12-27.md`
+- `Docs/Reports/Legacy-Cleanup-Report.md`
+
 ## Status atual (resumo)
 - Added: **Gameplay Reset module** (`Gameplay/Reset/`) com contratos e semântica estável:
     - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet).
