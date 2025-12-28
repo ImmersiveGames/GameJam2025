@@ -19,6 +19,26 @@ O bridge está estável e validado para **PlayersOnly**:
   - `GameplayResetOrchestrator` resolveu `targets=2`
   - `GameplayResetQaProbe` recebeu `Cleanup/Restore/Rebind` por target
 
+## Status macro (escala 0–100, aproximado)
+Estimativa **qualitativa** baseada nos logs e nos docs atuais (não é métrica de performance).
+
+- **Boot → Menu:** ~80  
+  Pipeline observado e estável, com SKIP no startup/menu.
+- **SceneFlow:** ~85  
+  Fluxo `Started → ScenesReady → gate → FadeOut → Completed` confirmado.
+- **Fade:** ~85  
+  Cena aditiva com ordenação e integração com SceneFlow.
+- **LoadingHud:** ~80  
+  HUD integrado ao SceneFlow e respeitando o gate.
+- **Gate/Readiness:** ~85  
+  Tokens de transição e pausa aparecem nos logs.
+- **WorldLifecycle:** ~80  
+  Reset por escopos com hooks/participants e emissão de `ResetCompleted`.
+- **GameplayScene:** ~70  
+  Reset e spawn funcional no gameplay, mas cobertura de targets ainda parcial.
+- **Addressables (planejado):** ~0  
+  Ainda não implementado; apenas diretrizes em documentação.
+
 ## O que ainda falta (provável parcial / não confirmado)
 A pendência principal não é “o pipeline”, e sim **cobertura de feature** para todos os targets/grupos.
 

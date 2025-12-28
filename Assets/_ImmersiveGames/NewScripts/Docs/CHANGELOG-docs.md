@@ -2,6 +2,13 @@
 
 All notable documentation changes to **NewScripts** are documented in this file.
 
+## [2025-12-28]
+- Updated: `README.md` e `WORLD_LIFECYCLE.md` com explicação simples do pipeline, definição de “loading real”
+  e critério para remover o SKIP (decisão registrada).
+- Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` e `ARCHITECTURE_TECHNICAL.md` com formalização de
+  reset/spawn como parte do loading e diretrizes futuras para Addressables (tarefas agregadas).
+- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
+
 ## [2025-12-27]
 - Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
 - Added: `Reports/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.

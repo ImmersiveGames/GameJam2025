@@ -11,6 +11,16 @@ Garantir que o “mundo” possa ser reinicializado de forma previsível, para:
 - retorno ao menu,
 - e testes determinísticos.
 
+## Explicação simples
+Pense no reset como a “faxina + reconstrução” do mundo. Durante o loading real, o jogo:
+1) carrega as cenas necessárias,
+2) limpa o que precisa ser limpo,
+3) respawna/prepara o que precisa existir.
+
+Esse loading **só termina** quando o reset finaliza e o `WorldLifecycleResetCompletedEvent`
+é emitido. Por isso, o `FadeOut` só deve acontecer **depois** do reset — o jogo só está pronto
+após o **ResetCompleted**.
+
 ## Conceitos
 - **Escopo (scope):** unidade lógica do reset (ex.: Players, Enemies, WorldUI).
 - **Participante (participant):** registra-se para executar reset em um escopo específico.
@@ -54,6 +64,14 @@ Mesmo no SKIP, o driver deve emitir:
 - `WorldLifecycleResetCompletedEvent(contextSignature, reason)`
 
 Isso é necessário porque o `GameLoopSceneFlowCoordinator` aguarda esse sinal para chamar `GameLoop.RequestStart()`.
+
+## Quando remover o SKIP e por quê
+O SKIP continua necessário enquanto o `MenuScene` não possui mundo a ser resetado e o boot precisa
+de um pipeline simples.
+
+**Decisão atual (usuário):** remover o SKIP apenas quando a `GameplayScene` estiver pronta para
+concluir **reset + spawn/preparação** antes do `FadeOut`. Remover antes muda o comportamento do
+pipeline e pode introduzir reset/spawn em cenas que não deveriam ter mundo.
 
 ### Completion gate (SceneFlow)
 O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do `FadeOut`) até que:
