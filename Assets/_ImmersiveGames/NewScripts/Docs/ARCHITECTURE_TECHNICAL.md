@@ -47,6 +47,25 @@ Este documento detalha responsabilidades e fronteiras entre módulos, com foco e
 - Enquanto o loader nativo NewScripts não está migrado:
     - `NewScriptsSceneFlowAdapters` podem usar `SceneManagerLoaderAdapter` como fallback.
 
+#### Loading inclui Reset/Spawn
+No pipeline atual, “loading real” **não termina** com `ScenesReady`. Ele só termina quando:
+- o **WorldLifecycle** conclui o reset (com hooks/participants), e
+- o mundo já passou por **spawn/preparação** quando aplicável.
+
+Isso é formalizado pelo `WorldLifecycleResetCompletedEvent`, que precisa ocorrer **antes**
+do `FadeOut`. O jogo só é considerado pronto após o ResetCompleted.
+
+#### Evolução futura: Addressables
+Diretriz (sem implementação): tratar o loading como um **conjunto de tarefas agregadas**
+para expor progresso/estado ao HUD e ao pipeline.
+
+Exemplo **PSEUDOCÓDIGO / FUTURO** de tarefas agregadas:
+- `SceneLoadTask` (load/unload/additive + active scene)
+- `WorldResetTask` (reset + spawn/preparação do mundo)
+- `AddressablesWarmupTask` (warmup/preload de assets)
+
+Esses nomes são apenas vocabulário de planejamento; não representam APIs existentes.
+
 ### Fade (NewScripts)
 - `INewScriptsFadeService`:
     - carrega `FadeScene` (Additive) on-demand,

@@ -34,6 +34,21 @@ Status: evidências atualizadas em 2025-12-27.
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
+## Explicação simples
+Quando o jogador sai do menu e entra no gameplay, o jogo passa por uma “esteira de preparação”.
+Essa preparação inclui **carregar cenas**, **resetar o mundo** e **spawnação/preparação de entidades**.
+O carregamento “real” só termina quando o reset conclui e o `WorldLifecycleResetCompletedEvent`
+é emitido — **antes do FadeOut**. Ou seja: o jogo só é considerado pronto depois do reset.
+
+## Quando remover o SKIP e por quê
+O SKIP existe hoje para **não rodar reset/spawn** no `MenuScene` e no profile `startup`,
+evitando comportamento diferente em cenas que não têm mundo de gameplay.
+
+**Decisão atual (usuário):** remover o SKIP **somente quando** a `GameplayScene` estiver pronta
+para concluir **reset + spawn/preparação** **antes do FadeOut**. Até lá, o SKIP permanece.
+Remover esse SKIP cedo demais muda o comportamento do pipeline (reset rodando em cenas
+sem mundo) e pode gerar efeitos colaterais em boot/menu.
+
 ## QA (status)
 
 ### ATIVOS
