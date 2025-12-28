@@ -2,6 +2,10 @@
 
 Este changelog cobre **apenas** arquivos de documentação.
 
+## [2025-12-29]
+- Updated: `ADR-0010-LoadingHud-SceneFlow.md` para consolidar a Opção A (HUD no LoadingHudScene) e remover referências ao HUD legado.
+- Updated: registros de documentação para remoção do HUD legado e consolidação do pipeline de loading.
+
 ## [2025-12-27]
 - Updated: seção de QA em `README.md` com divisão entre **ATIVOS** e **DEPRECATED**.
 - Updated: referência aos QA tools deprecated após reorganização para pastas `Deprecated/`.
