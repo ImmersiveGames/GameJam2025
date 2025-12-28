@@ -8,7 +8,10 @@ using UnityEngine.UI;
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 {
     /// <summary>
-    /// Controller MonoBehaviour para HUD de loading no UIGlobalScene.
+    /// Controller MonoBehaviour para HUD de loading no UIGlobalScene (alternativa ao LoadingHudScene).
+    /// Observação:
+    /// - Não depende de API específica do SceneFlowLoadingService (ex.: AttachHud).
+    /// - Registra-se no DI global como ISceneLoadingHud para consumo indireto.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneLoadingHudController : MonoBehaviour, ISceneLoadingHud
@@ -33,13 +36,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
             SetVisible(false);
             TryConfigureCanvasSorting();
-            AttachToLoadingService();
             RegisterHudInGlobalDi();
 
             EventBus<SceneLoadingHudRegisteredEvent>.Raise(new SceneLoadingHudRegisteredEvent());
 
             DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] HUD inicializado, anexado ao serviço e sinalizado como pronto.");
+                "[HUD CTRL] HUD inicializado e registrado no DI global (ISceneLoadingHud).");
         }
 
         private void OnDestroy()
@@ -94,24 +96,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             rootGroup.interactable = visible;
         }
 
-        private void AttachToLoadingService()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var service) || service == null)
-            {
-                DebugUtility.LogWarning<SceneLoadingHudController>(
-                    "[HUD CTRL] SceneFlowLoadingService indisponível. HUD não será anexado.");
-                return;
-            }
-
-            service.AttachHud(this);
-
-            DebugUtility.LogVerbose<SceneLoadingHudController>(
-                "[HUD CTRL] HUD anexado ao SceneFlowLoadingService.");
-        }
-
         private void RegisterHudInGlobalDi()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) && existing != null && !ReferenceEquals(existing, this))
+            if (DependencyManager.Provider.TryGetGlobal<ISceneLoadingHud>(out var existing) &&
+                existing != null &&
+                !ReferenceEquals(existing, this))
             {
                 DebugUtility.LogWarning<SceneLoadingHudController>(
                     "[HUD CTRL] ISceneLoadingHud já registrado no DI global. Sobrescrevendo com instância atual.");

@@ -31,8 +31,8 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - Se o HUD ainda não existir no `Started`/`ScenesReady`, o serviço guarda pendências por assinatura da transição.
 - Ao anexar o HUD ou receber `SceneLoadingHudRegisteredEvent`, aplica o último estado pendente imediatamente.
 
-6) **Host no UIGlobalScene**
-- O `SceneLoadingHudController` vive no `UIGlobalScene`.
+6) **Host no LoadingHudScene (Additive)**
+- O `NewScriptsLoadingHudController` vive no `LoadingHudScene`.
 - Caso o HUD nasça tarde, o serviço aplica o estado atual imediatamente.
 
 ## Consequências
@@ -50,3 +50,10 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 ## Evidências (log)
 - `SceneTransitionService` executa `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
 - `SceneFlowLoadingService` aparece registrado no bootstrap global.
+- `NewScriptsLoadingHudService` garante o carregamento do HUD e aplica Show/Hide conforme fases.
+- Cena do HUD: `Assets/_ImmersiveGames/Scenes/LoadingHudScene.unity`.
+
+### Evidência (log) — exemplo
+- `[LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)...`
+- `[LoadingHUD] Show aplicado. signature='...' phase='Started'.`
+- `[LoadingHUD] Hide aplicado. signature='...' phase='BeforeFadeOut'.`

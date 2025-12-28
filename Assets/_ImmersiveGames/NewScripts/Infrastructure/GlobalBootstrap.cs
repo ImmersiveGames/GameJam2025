@@ -131,6 +131,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterSceneFlowLoadingIfAvailable()
         {
+            RegisterIfMissing<INewScriptsLoadingHudService>(() => new NewScriptsLoadingHudService());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Loading] INewScriptsLoadingHudService registrado no DI global.",
+                DebugUtility.Colors.Info);
+
             if (DependencyManager.Provider.TryGetGlobal<SceneFlowLoadingService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
