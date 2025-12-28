@@ -129,7 +129,6 @@ GameObject:
   m_Component:
   - component: {fileID: 542428325}
   - component: {fileID: 542428324}
-  - component: {fileID: 542428327}
   - component: {fileID: 542428326}
   - component: {fileID: 542428328}
   m_Layer: 0
@@ -155,6 +154,8 @@ MonoBehaviour:
   parentOverride: {fileID: 0}
   addProbeComponent: 1
   probeVerboseLogs: 1
+  eaterActorPrefab: {fileID: 2090043031996690540, guid: 0744eef234e55034895662d2373a6d62, type: 3}
+  spawnEaterProbe: 1
 --- !u!4 &542428325
 Transform:
   m_ObjectHideFlags: 0
@@ -184,20 +185,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   label: QA GameplayResetKind Probe
   verboseLogs: 1
---- !u!114 &542428327
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 542428323}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 89285a6a2d004bb8b7ad532ce4451bc8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  actorId: 
-  displayName: QA Dummy
 --- !u!114 &542428328
 MonoBehaviour:
   m_ObjectHideFlags: 0

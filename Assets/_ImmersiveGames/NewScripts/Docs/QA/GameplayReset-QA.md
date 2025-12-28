@@ -31,4 +31,5 @@ Exercitar as variações de `GameplayResetRequest` disponíveis no NewScripts se
 ## Observações
 - O driver resolve `IGameplayResetTargetClassifier` via DI de cena; se ausente, usa `DefaultGameplayResetTargetClassifier`.
 - `verboseLogs` controla o preview detalhado de targets (`Resolved targets`).
+- `EaterOnly` depende do QA `GameplayResetKindQaEaterActor` (quando spawnado via spawner) para resolver targets.
 - Este QA não altera fluxo de gameplay; apenas dispara resets e logs.

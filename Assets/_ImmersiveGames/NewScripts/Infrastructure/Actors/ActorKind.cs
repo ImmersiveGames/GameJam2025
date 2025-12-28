@@ -8,6 +8,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Actors
         Unknown = 0,
         Player = 1,
         Dummy = 2,
-        Enemy = 3
+        Eater = 3
     }
 }

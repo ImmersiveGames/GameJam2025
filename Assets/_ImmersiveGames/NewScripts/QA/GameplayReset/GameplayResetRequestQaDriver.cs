@@ -110,9 +110,11 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [ContextMenu("QA/GameplayResetRequest/Run EaterOnly")]
         public void QA_RunEaterOnly()
         {
+            // IMPORTANT: explicitar ActorKind para não cair no default do enum (ex.: Player).
             _ = RunResetAsync(new GameplayResetRequest(
                 GameplayResetTarget.EaterOnly,
-                reason: "QA/GameplayResetRequestEaterOnly"));
+                reason: "QA/GameplayResetRequestEaterOnly",
+                actorKind: ActorKind.Eater));
         }
 
         [ContextMenu("QA/GameplayResetRequest/Run ActorIdSet")]

@@ -33,6 +33,13 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         [SerializeField]
         private bool probeVerboseLogs = true;
 
+        [Header("QA Eater")]
+        [SerializeField]
+        private GameplayResetKindQaEaterActor eaterActorPrefab;
+
+        [SerializeField]
+        private bool spawnEaterProbe = true;
+
         private readonly List<GameObject> _spawned = new(4);
         private readonly List<IActor> _actorBuffer = new(8);
 
@@ -57,9 +64,11 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
             var parent = ResolveParent();
             var player = SpawnPlayer(parent);
             var dummy = SpawnDummy(parent);
+            var eater = SpawnEater(parent);
 
+            int total = (player != null ? 1 : 0) + (dummy != null ? 1 : 0) + (eater != null ? 1 : 0);
             DebugUtility.Log(typeof(GameplayResetKindQaSpawner),
-                $"[QA][GameplayResetKind] Spawned actors: {(player != null ? 1 : 0) + (dummy != null ? 1 : 0)} (scene='{_sceneName}')");
+                $"[QA][GameplayResetKind] Spawned actors: {total} (scene='{_sceneName}')");
         }
 
         [ContextMenu("QA/GameplayResetKind/Clear Spawned Actors")]
@@ -123,6 +132,40 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
 
             RegisterActor(dummy);
             AddProbe(go, "Dummy Probe");
+
+            _spawned.Add(go);
+            return go;
+        }
+
+        private GameObject SpawnEater(Transform parent)
+        {
+            if (!spawnEaterProbe || eaterActorPrefab == null)
+            {
+                return null;
+            }
+
+            // IMPORTANT: instantiate unparented -> move to scene -> then parent.
+            var instance = Instantiate(eaterActorPrefab);
+            var go = instance.gameObject;
+
+            // Ensure it's a root before MoveGameObjectToScene.
+            go.transform.SetParent(null, worldPositionStays: false);
+            SceneManager.MoveGameObjectToScene(go, gameObject.scene);
+
+            if (parent != null)
+            {
+                go.transform.SetParent(parent, worldPositionStays: false);
+            }
+
+            go.name = "QA_Eater_Kind";
+
+            var actorId = GenerateActorId(go, "QA_Eater_Kind");
+            instance.Initialize(actorId);
+
+            _ = go.GetComponent<EaterActor>() ?? go.AddComponent<EaterActor>();
+
+            RegisterActor(instance);
+            AddProbe(go, "Eater Probe");
 
             _spawned.Add(go);
             return go;
