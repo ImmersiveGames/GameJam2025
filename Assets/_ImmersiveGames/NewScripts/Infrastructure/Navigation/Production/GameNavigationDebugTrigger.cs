@@ -1,4 +1,5 @@
 // DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using UnityEngine;
@@ -87,3 +88,4 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation.Production
         }
     }
 }
+#endif
