@@ -13,6 +13,16 @@ Consolidar o fluxo SceneFlow para produção: garantir **um único ponto de star
   - `GameplayExitToMenuDebugTrigger` já possui guarda por `UNITY_EDITOR || DEVELOPMENT_BUILD` + flag explícita.
 - [x] **Fluxo Menu → Gameplay** continua usando `IGameNavigationService` apenas para transição (sem `RequestStart()` duplicado).
 
+## Auditoria de RequestStart (resultado resumido)
+**Permitido (fonte da verdade)**
+- `Gameplay/GameLoop/GameLoopSceneFlowCoordinator.cs` → `gameLoop.RequestStart()` (apenas após `TransitionCompleted` + `WorldLifecycleResetCompleted`).
+
+**Permitido (teste/QA/dev-only)**
+- `Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs` → `RequestStart()` usado apenas em QA (agora sob `UNITY_EDITOR || DEVELOPMENT_BUILD`).
+
+**Não permitido**
+- Nenhum encontrado após a auditoria.
+
 ## Evidência (trecho mínimo de log esperado)
 ```
 [Production][StartRequest] Start solicitado (GameStartRequestedEvent).

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.Actions;
@@ -363,3 +364,5 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.GameLoop.QA
         }
     }
 }
+
+#endif

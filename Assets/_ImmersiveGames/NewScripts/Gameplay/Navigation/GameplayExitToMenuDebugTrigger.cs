@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -49,3 +50,4 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Navigation
         }
     }
 }
+#endif

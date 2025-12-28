@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 // DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
@@ -77,3 +78,5 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         }
     }
 }
+
+#endif

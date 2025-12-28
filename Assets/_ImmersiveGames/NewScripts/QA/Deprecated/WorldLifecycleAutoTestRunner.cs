@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 // DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 ﻿using System;
 using System.Reflection;
@@ -370,3 +371,5 @@ namespace _ImmersiveGames.NewScripts.QA
         }
     }
 }
+
+#endif

@@ -1,5 +1,5 @@
-// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+// DEPRECATED QA TOOL — ver Docs/Reports/QA-Audit-2025-12-27.md
 using System;
 using System.Linq;
 using System.Threading.Tasks;

@@ -111,7 +111,8 @@ Validação (QA):
 - `IGameNavigationService` encapsula pedidos **Menu ↔ Gameplay**.
 - `GameNavigationService`:
     - constrói `SceneTransitionRequest` com profile `startup`/`gameplay`;
-    - executa `SceneTransitionService.TransitionAsync(...)`.
+    - executa `SceneTransitionService.TransitionAsync(...)`;
+    - **não** chama `GameLoop.RequestStart()` (responsabilidade exclusiva do `GameLoopSceneFlowCoordinator`).
 
 ### InputMode / PauseOverlay
 - `InputModeService` alterna os action maps (`FrontendMenu`, `Gameplay`, `PauseOverlay`).

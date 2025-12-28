@@ -82,8 +82,8 @@ sem mundo) e pode gerar efeitos colaterais em boot/menu.
 - [Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs](../Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldSpawnPipelineQaRunner.cs)
 - [Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs](../Infrastructure/WorldLifecycle/Spawn/QA/Deprecated/WorldMovementPermissionQaRunner.cs)
 - [Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs](../Infrastructure/GameLoop/QA/Deprecated/GameLoopStartRequestQAFrontend.cs)
-- [Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs](../Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs)
-- [Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs](../Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs) (mantido por referência em cena)
+- [Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs](../Gameplay/Pause/Deprecated/PauseOverlayDebugTrigger.cs) (dev-only)
+- [Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs](../Infrastructure/Navigation/Production/GameNavigationDebugTrigger.cs) (dev-only, mantido por referência em cena)
 
 Em 2025-12-27 (estado observado em runtime):
 - Pipeline **GameLoop → Navigation → SceneTransitionService → Fade/Loading → WorldLifecycle → Gate → Completed** está ativo.
