@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
@@ -71,3 +72,4 @@ namespace _ImmersiveGames.NewScripts.QA.GameplayReset
         }
     }
 }
+#endif

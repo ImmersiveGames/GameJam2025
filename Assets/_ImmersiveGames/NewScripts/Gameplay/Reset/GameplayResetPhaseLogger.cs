@@ -1,5 +1,6 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
@@ -15,6 +16,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
         [SerializeField]
         [Tooltip("Se true, logs detalhados de cada fase.")]
         private bool verboseLogs = true;
+
+        private IActor _actor;
+
+        private void Awake()
+        {
+            _actor = GetComponent<IActor>();
+        }
 
         public Task ResetCleanupAsync(GameplayResetContext ctx)
         {
@@ -41,9 +49,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return;
             }
 
-            string name = gameObject != null ? gameObject.name : "<null>";
+            string name = _actor?.DisplayName ?? (gameObject != null ? gameObject.name : "<null>");
+            string actorId = _actor?.ActorId ?? "<unknown>";
             DebugUtility.Log(typeof(GameplayResetPhaseLogger),
-                $"[GameplayReset][Player] {phase} (actor='{name}', target={ctx.Request.Target})");
+                $"[GameplayReset][Player] {phase} (actor='{name}', id={actorId}, target={ctx.Request.Target})");
         }
     }
 }
