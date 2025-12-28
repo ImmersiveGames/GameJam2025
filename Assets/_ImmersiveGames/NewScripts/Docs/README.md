@@ -12,8 +12,15 @@ Arquivos canônicos (este pacote):
 - `EXAMPLES_BEST_PRACTICES.md` — exemplos e práticas recomendadas.
 - `GLOSSARY.md` — glossário de termos.
 - `CHANGELOG-docs.md` — histórico de alterações desta documentação.
-- `ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
-- `ADR-0010-LoadingHud-SceneFlow.md` — ADR específico do Loading HUD integrado ao SceneFlow.
+- `ADRs/ADR-0009-FadeSceneFlow.md` — ADR específico do Fade + SceneFlow (NewScripts).
+- `ADRs/ADR-0010-LoadingHud-SceneFlow.md` — ADR específico do Loading HUD integrado ao SceneFlow.
+
+## Reports (evidências)
+Status: evidências atualizadas em 2025-12-27.
+- `WORLDLIFECYCLE_RESET_STATUS.md`
+- `Reports/SceneFlow-Smoke-Result.md`
+- `Reports/QA-Audit-2025-12-27.md`
+- `Reports/Legacy-Cleanup-Report.md`
 
 ## Status atual (resumo)
 - Added: **Gameplay Reset module** (`Gameplay/Reset/`) com contratos e semântica estável:
@@ -76,8 +83,8 @@ Em 2025-12-27 (estado observado em runtime):
 ## Como ler (ordem sugerida)
 1. `ARCHITECTURE.md`
 2. `WORLD_LIFECYCLE.md`
-3. `ADR-0009-FadeSceneFlow.md`
-4. `ADR-0010-LoadingHud-SceneFlow.md`
+3. `ADRs/ADR-0009-FadeSceneFlow.md`
+4. `ADRs/ADR-0010-LoadingHud-SceneFlow.md`
 5. `ARCHITECTURE_TECHNICAL.md`
 6. `DECISIONS.md`
 7. `EXAMPLES_BEST_PRACTICES.md`

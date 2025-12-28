@@ -4,7 +4,7 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
 ## Convenções
 - Cada decisão possui: **ID**, **Status**, **Decisão**, **Motivação** e **Consequências**.
-- ADRs completos podem existir na pasta `Docs/ADR/` do repositório.
+- ADRs completos podem existir na pasta `Docs/ADRs/` do repositório.
 
 ---
 
