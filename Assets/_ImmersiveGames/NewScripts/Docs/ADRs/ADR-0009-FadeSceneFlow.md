@@ -46,8 +46,8 @@ Foi observado em runtime:
 - Adapter aplicou valores do profile antes do Fade:
 
 Exemplo (trecho):
-- `[SceneFlow] Profile resolvido: name='startup', path='SceneFlow/Profiles/startup', type='...NewScriptsSceneTransitionProfile'`
-- `[SceneFlow] Profile 'startup' aplicado (...) fadeIn=0,5, fadeOut=0,5`
+- `[SceneFlow] Profile resolvido: name='startup', path='SceneFlow/Profiles/startup', type='NewScriptsSceneTransitionProfile'`
+- `[SceneFlow] Profile 'startup' aplicado (fadeIn=0,5, fadeOut=0,5)`
 - Fade executou (FadeScene Additive) e a transição completou com sucesso.
 
 ## Alternativas consideradas

@@ -77,5 +77,5 @@ seguir as regras já descritas para SceneFlow/WorldLifecycle.
 
 ### Evidência (log) — exemplo
 - `[LoadingHUD] Carregando cena 'LoadingHudScene' (Additive)...`
-- `[LoadingHUD] Show aplicado. signature='...' phase='Started'.`
-- `[LoadingHUD] Hide aplicado. signature='...' phase='BeforeFadeOut'.`
+- `[LoadingHUD] Show aplicado. signature='<contextSignature>' phase='Started'.`
+- `[LoadingHUD] Hide aplicado. signature='<contextSignature>' phase='BeforeFadeOut'.`

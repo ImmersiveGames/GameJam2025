@@ -118,11 +118,10 @@ Boas práticas:
 - `[SceneFlow] Carregando cena 'UIGlobalScene'`
 - `[WorldLifecycle] SceneTransitionScenesReady recebido`
 - `Reset SKIPPED` (startup/menu) ou “reset executado”
-- `[Readiness] ... gate liberado`
+- `[Readiness] gate liberado`
 
 ## GameLoop: como evitar ambiguidades REQUEST/COMMAND
 
-...
 ## Anti-patterns (evitar)
 - Tratar `CanPerform(...)` como autorização final de gameplay (use `IStateDependentService`).
 - Emissão de start “definitivo” diretamente no REQUEST (iniciar GameLoop sem aguardar ready).
