@@ -1,54 +1,20 @@
-# Changelog — Documentação (NewScripts)
+# Changelog (Docs)
 
-Este changelog cobre **apenas** arquivos de documentação.
-
-## [2025-12-29]
-- Updated: `ADR-0010-LoadingHud-SceneFlow.md` para consolidar a Opção A (HUD no LoadingHudScene) e remover referências ao HUD legado.
-- Updated: registros de documentação para remoção do HUD legado e consolidação do pipeline de loading.
+All notable documentation changes to **NewScripts** are documented in this file.
 
 ## [2025-12-27]
-- Updated: seção de QA em `README.md` com divisão entre **ATIVOS** e **DEPRECATED**.
-- Updated: referência aos QA tools deprecated após reorganização para pastas `Deprecated/`.
+- Added: `Docs/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
+- Added: `Docs/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
+- Added: `Docs/QA-Audit-2025-12-27.md` com auditoria dos QAs ativos/removidos e recomendações de baseline.
 
-## [2025-12-27]
-- Updated: `README.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `WORLD_LIFECYCLE.md` com o fluxo real de produção
-  (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu), incluindo Navigation, completion gate e InputMode.
-- Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` com atualização do pipeline e evidências de log.
-- Added: seções “Evidências (log)” nos docs atualizados para rastrear Fade/Loading/WorldLifecycle/Navigation/PauseOverlay.
-- Testing: Validated via runtime log evidence: Menu → Gameplay → Pause → Resume → ExitToMenu → Menu.
+- Updated: `Docs/ADRs/ADR-0009-FadeSceneFlow.md` (Opção A) — Fade via cena aditiva (`FadeScene`) integrada ao SceneFlow.
+- Updated: `Docs/ADRs/ADR-0010-LoadingHud-SceneFlow.md` (Opção A) — HUD de loading via cena aditiva (`LoadingHudScene`) integrada ao SceneFlow.
+- Updated: `Docs/ARCHITECTURE_TECHNICAL.md` — consolidado o pipeline operacional (Fade + LoadingHUD) e os pontos de integração com SceneFlow/WorldLifecycle.
+- Updated: `Docs/DECISIONS.md` — corrigida a referência de ADR-0010 (agora Loading HUD) e promovida a decisão de GameLoop events como “decisão” (não ADR).
 
-## [2025-12-25]
-- Added: `ADR-0010-LoadingHud-SceneFlow.md` (HUD de loading separado do Fade).
-- Added: módulo de Loading HUD (scripts em `Infrastructure/SceneFlow/Loading/`).
-- Updated: Scene Flow com evento `SceneTransitionBeforeFadeOutEvent` e emissão antes do FadeOut.
-- Updated: Loading HUD com attach explícito, pendências por assinatura e logs reduzidos por transição.
-- Added: registro de evolução do **Gameplay Reset** (`Gameplay/Reset/`) nos docs (targets + fases + contracts + DI por cena).
-- Added: registro do **QA isolado** para validar reset por grupos (`GameplayResetQaSpawner` + `GameplayResetQaProbe`).
-- Updated: `WORLD_LIFECYCLE.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `DECISIONS.md`, `EXAMPLES_BEST_PRACTICES.md`, `GLOSSARY.md`, `README.md` para refletir a integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant`.
-
-- Clarified: invariantes de concorrência (1 transição em voo), eventos do GameLoop context-free e CanPerform como helper não gate-aware; enforcement via IStateDependentService.
-- Clarified: correlação por contexto é responsabilidade do Scene Flow/World Lifecycle + Coordinator; eventos do GameLoop permanecem context-free por design.
-- Clarified: `CanPerform` não é gate-aware e não deve ser usado como autorização final; usar `IStateDependentService` (gate-aware).
-- Updated: `ADR-0009-FadeSceneFlow.md` para refletir implementação validada do Fade + resolução de profile `startup` via `NewScriptsSceneTransitionProfile`.
-- Updated: `WORLD_LIFECYCLE.md` com integração real via `WorldLifecycleRuntimeCoordinator` e regra de SKIP em `startup/menu`.
-- Updated: `README.md`, `ARCHITECTURE.md`, `ARCHITECTURE_TECHNICAL.md`, `DECISIONS.md`, `EXAMPLES_BEST_PRACTICES.md`, `GLOSSARY.md` para:
-    - remover referências obsoletas/truncadas,
-    - alinhar nomenclatura (NewScriptsSceneTransitionProfile vs SceneTransitionProfile legado),
-    - corrigir exemplos para respeitar `SceneTransitionContext` como `readonly struct`.
-
-## [2025-12-24]
-- Added: `ADR-0009-FadeSceneFlow.md` (primeira versão).
-- Added: documentos consolidados em um pacote reduzido (README/ARCHITECTURE/TECHNICAL/WORLD_LIFECYCLE/DECISIONS/EXAMPLES/GLOSSARY).
-
-## [2025-12-23]
-- Added: resumo do pipeline de Scene Flow: `SceneTransitionService` → eventos Started/ScenesReady/Completed.
-- Added: nota de integração com `GameReadinessService` e `WorldLifecycleRuntimeCoordinator` (SKIP no startup/menu).
-
-## Evidências (log)
-- `GlobalBootstrap` registrou `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
-  `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`.
-- Startup profile `startup` com reset SKIPPED e emissão de `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
-- `MenuPlayButtonBinder` desativou botão e disparou `RequestToGameplay`.
-- `SceneTransitionService` executou `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
-- `PauseOverlay` publicou `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
-  e o gate exibiu `state.pause` / `flow.scene_transition`.
+## [2025-12-26]
+- Updated: `Docs/WORLD_LIFECYCLE.md` com semântica de Reset-in-Place clarificada.
+- Updated: `Docs/WORLDLIFECYCLE_RESET_STATUS.md` com status do progresso e pendências.
+- Updated: `Docs/ARCHITECTURE.md` reorganizado para diferenciar "Visão" e "Operacional".
+- Updated: `Docs/GLOSSARY.md` com termos do pipeline (SceneFlow, Gate, Reset, etc.).
+- Added: `Docs/EXAMPLES_BEST_PRACTICES.md` com exemplos mínimos (hooks, spawn, gating) e padrões recomendados.

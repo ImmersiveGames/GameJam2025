@@ -75,6 +75,25 @@ Referência: `ADR-0009-FadeSceneFlow.md`.
 
 ---
 
+## ADR-0010 — Loading HUD + SceneFlow (NewScripts)
+**Status:** Implementado e validado
+
+**Decisão:** implementar Loading HUD no pipeline de SceneFlow usando:
+- `INewScriptsLoadingHudService` com `LoadingHudScene` (Additive)
+- `NewScriptsLoadingHudController` como UI root (CanvasGroup + overlay simples)
+- `SceneFlowLoadingService` para reagir a `SceneTransitionStarted/ScenesReady/Completed` e aplicar `Show/Hide` correlacionando por `signature`
+
+**Motivação:** garantir feedback visual consistente em transições (startup/menu/gameplay) sem depender de HUD legada e sem acoplamento com cenas específicas (ex.: `UIGlobalScene`).
+
+**Consequências:**
+- `LoadingHudScene` é carregada aditivamente sob demanda e pode ser reutilizada em qualquer transição.
+- O serviço deve aplicar “Started → Show”, “ScenesReady → Update”, “BeforeFadeOut → Hide”, “Completed → Safety Hide”.
+- A correlação é por `signature` do `SceneTransitionContext` (não por eventos do GameLoop).
+
+Referência: `ADR-0010-LoadingHud-SceneFlow.md`.
+
+---
+
 ## ADR-00XX — Readiness/Gate como fonte de verdade para “pronto para jogar”
 **Status:** Ativo
 
@@ -106,19 +125,6 @@ Referência: `ADR-0009-FadeSceneFlow.md`.
 - O GameLoop não transporta `ContextSignature` em eventos de start/pause/resume/reset.
 - A correlação por assinatura é feita pelo Coordinator via eventos do Scene Flow (`SceneTransitionContext`) e World Lifecycle (`WorldLifecycleResetCompletedEvent`).
 - Se transições concorrentes se tornarem um requisito, introduzir `GameStartCommandEvent` com `ContextSignature` como extensão (não padrão).
-
-## ADR-0010 — GameLoop events são context-free; correlação é do Coordinator
-**Status:** Ativo
-
-**Decisão:** Eventos do GameLoop (ex.: `GameStartEvent`) permanecem **context-free**. A correlação de transição/reset é feita exclusivamente por `GameLoopSceneFlowCoordinator` usando:
-- `SceneTransitionContext` (events Started/Completed) e
-- `WorldLifecycleResetCompletedEvent.ContextSignature`.
-
-**Motivação:** evitar acoplamento do domínio do GameLoop ao domínio de SceneFlow/WorldLifecycle, mantendo testabilidade e SRP.
-
-**Consequências:**
-- O sistema assume **uma transição em voo por vez**.
-- Multi-transições concorrentes não são cenário suportado sem evolução explícita do contrato.
 
 ## ADR-0011 — `CanPerform` não autoriza gameplay; enforcement é gate-aware via IStateDependentService
 **Status:** Ativo
