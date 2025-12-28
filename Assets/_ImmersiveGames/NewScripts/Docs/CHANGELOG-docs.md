@@ -10,6 +10,13 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
 
+## [2025-12-29]
+- Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
+- Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
+- Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
+- Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
+- Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.
+
 ## [2025-12-27]
 - Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.
 - Added: `Reports/SceneFlow-Smoke-Result.md` com resultado do smoke test do SceneFlow (startup/menu → gameplay) incluindo logs essenciais.
