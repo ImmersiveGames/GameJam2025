@@ -1,5 +1,9 @@
 # SceneFlow — Gameplay Blockers Report
 
+> **Master:** [SceneFlow-Production-EndToEnd-Validation.md](SceneFlow-Production-EndToEnd-Validation.md)
+>  
+> **Nota:** usar este report apenas para investigação de blockers; validação final é no master.
+
 - Data: 2025-12-28
 - Fluxo analisado: Menu → Gameplay (Play button / navigation)
 - Objetivo: identificar e corrigir os 3 primeiros erros críticos que impediam a GameplayScene de funcionar em produção.

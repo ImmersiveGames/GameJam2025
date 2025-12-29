@@ -1,5 +1,10 @@
 # SceneFlow — Gameplay → Menu Report
 
+> **Status: HISTÓRICO (ver master)**
+> - **Master:** [SceneFlow-Production-EndToEnd-Validation.md](SceneFlow-Production-EndToEnd-Validation.md)
+> - **Assets checklist:** [SceneFlow-Assets-Checklist.md](SceneFlow-Assets-Checklist.md)
+> - **Propósito original:** checklist e logs esperados para validar o retorno Gameplay → Menu via `IGameNavigationService`.
+
 - Data: 2025-12-28
 - Objetivo: validar o caminho de produção **Gameplay → Menu** via `IGameNavigationService`, com Fade + LoadingHUD, unload da `GameplayScene` e `GameLoop` saindo de `Playing`.
 
