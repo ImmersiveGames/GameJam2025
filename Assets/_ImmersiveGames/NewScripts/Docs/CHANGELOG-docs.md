@@ -2,18 +2,28 @@
 
 All notable documentation changes to **NewScripts** are documented in this file.
 
-## [2026-01-02]
+## [2025-12-29]
+- Added: normalização de docs do NewScripts (migrando reports para `Docs/Reports`, consolidando `Docs/ADRs` e atualizando links).
+- Fixed: datas futuras ajustadas no changelog de documentação.
 - Updated: documentação integrada de SceneFlow + WorldLifecycle + GameLoop alinhada ao fluxo de produção (startup → Menu → Gameplay → Menu → Gameplay), incluindo:
   - registro operacional do `WorldLifecycleRuntimeCoordinator` e `WorldLifecycleResetCompletionGate` (skip vs hard reset),
-  - revisão do `GameLoop.md` para alinhar `GameLoopSceneFlowCoordinator` e `InputModeSceneFlowBridge`,
+  - revisão do `Reports/GameLoop.md` para alinhar `GameLoopSceneFlowCoordinator` e `InputModeSceneFlowBridge`,
   - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `INewScriptsFadeService` e `SceneFlowLoadingService`,
   - atualização do QA `GameLoop-StateFlow-QA` com cenário end-to-end (defeat/victory forçados via hotkeys).
-- Added: `Docs/ADR/ADR-ciclo-de-vida-jogo.md` com nota operacional sobre skip em frontend e reset completo em gameplay.
-
-## [2025-12-31]
-- Updated: `GameLoop.md` para documentar o estado `PostPlay`, os eventos `GameRunStartedEvent` / `GameRunEndedEvent` /
+- Added: `ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md` com nota operacional sobre skip em frontend e reset completo em gameplay.
+- Updated: `Reports/GameLoop.md` para documentar o estado `PostPlay`, os eventos `GameRunStartedEvent` / `GameRunEndedEvent` /
   `GameLoopActivityChangedEvent` e o serviço `IGameRunStatusService` no fluxo de pós-game.
 - Updated: `WORLD_LIFECYCLE.md` alinhado ao fluxo de run/resultados via GameLoop.
+- Updated: caminhos de QA deprecated consolidados em `QA/Deprecated` e referências de documentação ajustadas.
+- Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.
+- Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
+- Updated: `Reports/GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
+- Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
+- Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
+- Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
+- Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
+- Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.
+- Added: `Reports/QA-GameplayReset-RequestMatrix.md` com evidências da validação da matriz GameplayResetRequest.
 
 ## [2025-12-28]
 - Added: suporte a `ActorKind.Eater` na GameplayScene (EaterSpawnService + WorldDefinition) documentado como parte do reset hard de produção.
@@ -33,20 +43,6 @@ All notable documentation changes to **NewScripts** are documented in this file.
   reset/spawn como parte do loading e diretrizes futuras para Addressables (tarefas agregadas).
 - Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
-
-## [2025-12-30]
-- Updated: caminhos de QA deprecated consolidados em `QA/Deprecated` e referências de documentação ajustadas.
-- Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.
-
-## [2025-12-29]
-- Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
-- Updated: `GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
-- Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
-- Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
-- Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.
-- Updated: `Docs/QA/GameplayReset-QA.md` com notas sobre DI do classifier e `verboseLogs`.
-- Added: QA Eater (`GameplayResetKindQaEaterActor`) e spawn opcional no `GameplayResetKindQaSpawner` para validar `EaterOnly`.
-- Added: `Reports/QA-GameplayReset-RequestMatrix.md` com evidências da validação da matriz GameplayResetRequest.
 
 ## [2025-12-27]
 - Added: `Reports/Legacy-Cleanup-Report.md` com inventário de referências residuais ao legado e plano de remoção.

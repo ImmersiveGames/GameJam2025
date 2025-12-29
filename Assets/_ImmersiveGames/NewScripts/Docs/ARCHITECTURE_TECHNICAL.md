@@ -205,3 +205,8 @@ Validação (QA):
     - Gameplay: reset executado antes do gate liberar.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`,
   `GameExitToMenuRequestedEvent` e o gate mostra `state.pause`/`flow.scene_transition`.
+
+## Documentos relacionados
+- [Reports/GameLoop.md](Reports/GameLoop.md)
+- [Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
+- [Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md](Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md)

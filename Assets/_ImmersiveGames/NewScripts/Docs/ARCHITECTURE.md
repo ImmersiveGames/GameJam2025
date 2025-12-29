@@ -103,6 +103,9 @@ Diagrama simplificado:
 - [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md)
 - [GLOSSARY.md](GLOSSARY.md)
 - [CHANGELOG-docs.md](CHANGELOG-docs.md)
+- [Reports/GameLoop.md](Reports/GameLoop.md)
+- [Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
+- [Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md](Reports/WORLDLIFECYCLE_SPAWN_ANALYSIS.md)
 
 > Nota: no GameLoop, o “COMMAND” de start não é um evento separado; ele é a chamada `GameLoop.RequestStart()` feita pelo Coordinator somente quando o runtime está “ready” (TransitionCompleted + WorldLifecycleResetCompleted/SKIP).
 

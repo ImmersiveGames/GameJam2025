@@ -24,6 +24,8 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
 ## ADR-000X — Ciclo de Vida do Jogo e Reset por Escopos
 
+Referência: [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md).
+
 ## ADR-00XX — Gameplay Reset por grupos (fases Cleanup/Restore/Rebind)
 
 **Motivação:** Enquanto o spawn ainda está sendo consolidado, precisamos de um mecanismo **testável** e local ao escopo da cena para validar “reset de gameplay” (ex.: players) sem depender do pipeline completo de spawn.
