@@ -111,6 +111,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterGameNavigationService();
             RegisterExitToMenuNavigationBridge();
+            RegisterRestartNavigationBridge();
 
             RegisterSceneFlowLoadingIfAvailable();
 
@@ -282,6 +283,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[Navigation] ExitToMenuNavigationBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterRestartNavigationBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RestartNavigationBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] RestartNavigationBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new RestartNavigationBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] RestartNavigationBridge registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

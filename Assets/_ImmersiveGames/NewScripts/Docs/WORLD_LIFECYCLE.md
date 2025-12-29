@@ -64,6 +64,9 @@ Durante transições de cena, o reset é coordenado por eventos:
   - `GameLoopActivityChangedEvent` (telemetria de atividade).
 - UI e sistemas em cenas globais/gameplay podem consultar `IGameRunStatusService`
   para exibir o resultado da última run sem depender diretamente de gameplay específico.
+- **Restart pós-game** usa o fluxo oficial:
+  - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestToGameplay(...)`
+  - `SceneTransitionScenesReadyEvent` (profile gameplay) → `WorldLifecycleRuntimeCoordinator` → reset determinístico.
 
 ### SKIP (startup/menu)
 Para estabilizar o pipeline sem contaminar testes com Gameplay, o driver faz SKIP quando:
