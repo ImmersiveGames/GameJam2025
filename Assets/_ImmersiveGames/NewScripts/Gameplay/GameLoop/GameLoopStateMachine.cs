@@ -57,7 +57,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     break;
 
                 case GameLoopStateId.Playing:
-                    if (_signals.PauseRequested)
+                    if (_signals.EndRequested)
+                    {
+                        next = GameLoopStateId.PostPlay;
+                    }
+                    else if (_signals.PauseRequested)
                     {
                         next = GameLoopStateId.Paused;
                     }
@@ -68,6 +72,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     {
                         next = GameLoopStateId.Playing;
                     }
+                    break;
+
+                case GameLoopStateId.PostPlay:
                     break;
             }
 
@@ -112,6 +119,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 action is ActionType.Move or ActionType.Shoot or ActionType.Interact or ActionType.Spawn,
 
             GameLoopStateId.Paused =>
+                action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
+
+            GameLoopStateId.PostPlay =>
                 action is ActionType.Navigate or ActionType.UiSubmit or ActionType.UiCancel or ActionType.RequestReset or ActionType.RequestQuit,
 
             _ => false
