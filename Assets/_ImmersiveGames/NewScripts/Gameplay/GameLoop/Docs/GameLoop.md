@@ -64,6 +64,14 @@ Os estados **não representam telas**, mas **fases da simulação**:
 
 ---
 
+## Nota sobre StateDependent (movimento)
+- Os controladores de movimento de **Player** e **Eater** usam `IStateDependentService` para a ação `Move`.
+- Em `Boot`, durante transições, ou quando pausado, `CanExecuteAction(ActionType.Move)` retorna **false** e
+  bloqueia movimento.
+- Em `Playing` com gate aberto e gameplay pronta, `Move` é liberado.
+
+---
+
 ## Atualização (2025-12-25)
 - Padronizado: **GameLoopStateId.Ready** (removendo “Menu” como estado macro).
 - `GameStartRequestedEvent` definido como REQUEST canônico; `GameStartCommandEvent` mantido apenas como legado (obsoleto).

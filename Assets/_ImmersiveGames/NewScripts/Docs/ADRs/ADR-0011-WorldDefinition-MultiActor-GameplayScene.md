@@ -252,6 +252,16 @@ Qualquer alteração em spawn/reset que mexa na infraestrutura central pode intr
         * Reexecutar o mesmo fluxo de QA (Startup → Menu → Gameplay → Pause → Resume → ExitToMenu → Menu → Gameplay) após cada nova entrada no `WorldDefinition`.
         * Comparar logs com baseline + diffs esperados (apenas logs dos novos serviços/atores).
 
+## Extensão 2025-12-28 – Multi-Actor GameplayScene (Player + Eater)
+Esta seção **estende** a decisão anterior de forma incremental, sem substituir o conteúdo já aprovado.
+
+- A `GameplayScene` passa a considerar `Player + Eater` como conjunto mínimo padrão para o loop de gameplay.
+- A responsabilidade de spawn desses atores permanece no `WorldLifecycleOrchestrator` + serviços de spawn
+  definidos pelo `WorldDefinition` e registrados no `WorldSpawnServiceRegistry`.
+- HUD, input e lógica dependente de “world ready” devem assumir que, ao receber
+  `WorldLifecycleResetCompletedEvent(reason='Ok')` na `GameplayScene`, **os dois atores já foram spawnados**
+  e registrados no `IActorRegistry`.
+
 ## 8. Impacto em QA e documentação
 
 * **QA:**
