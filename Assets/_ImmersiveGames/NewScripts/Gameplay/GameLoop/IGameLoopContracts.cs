@@ -43,4 +43,29 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void RequestEnd();
         string CurrentStateIdName { get; }
     }
+
+    public interface IGameRunStatusService
+    {
+        /// <summary>
+        /// Indica se já existe um resultado registrado para a run atual/anterior.
+        /// </summary>
+        bool HasResult { get; }
+
+        /// <summary>
+        /// Resultado da última run finalizada.
+        /// Se HasResult == false, deve ser GameRunOutcome.Unknown.
+        /// </summary>
+        GameRunOutcome Outcome { get; }
+
+        /// <summary>
+        /// Motivo textual do fim da run (ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd").
+        /// Pode ser null.
+        /// </summary>
+        string Reason { get; }
+
+        /// <summary>
+        /// Limpa o estado, voltando para "sem resultado".
+        /// </summary>
+        void Clear();
+    }
 }

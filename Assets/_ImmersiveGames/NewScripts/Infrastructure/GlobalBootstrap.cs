@@ -104,6 +104,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterPauseBridge();
             RegisterGameLoop();
+            RegisterGameRunStatusService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
@@ -330,6 +331,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             GameLoopBootstrap.Ensure();
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameLoopBootstrap.EnsureRegistered() executado (serviço + bridge no escopo global).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameRunStatusService()
+        {
+            RegisterIfMissing<IGameRunStatusService>(() => new GameRunStatusService());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] GameRunStatusService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
