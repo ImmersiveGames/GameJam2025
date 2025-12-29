@@ -94,14 +94,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 // IMPORTANTE: no seu projeto atual, ResetWorldAsync recebe apenas 'reason'.
                 await controller.ResetWorldAsync(reason: $"ScenesReady/{activeSceneName}");
 
-                EmitResetCompleted(context, reason: "Ok");
+                EmitResetCompleted(context, reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                     $"[WorldLifecycle] Exceção ao executar reset: {ex.Message}");
 
-                EmitResetCompleted(context, reason: "Failed_Exception");
+                EmitResetCompleted(context, reason: WorldLifecycleResetReason.FailedReset(ex.GetType().Name));
             }
         }
 
