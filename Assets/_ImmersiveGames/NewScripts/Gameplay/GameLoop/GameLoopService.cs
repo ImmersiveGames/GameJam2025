@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -59,8 +60,19 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void OnStateExited(GameLoopStateId stateId) =>
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {stateId}");
 
-        public void OnGameActivityChanged(bool isActive) =>
+        public void OnGameActivityChanged(bool isActive)
+        {
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] Activity: {isActive}");
+
+            var currentState = GameLoopStateId.Boot;
+            if (_stateMachine != null)
+            {
+                currentState = _stateMachine.Current;
+            }
+
+            EventBus<GameLoopActivityChangedEvent>.Raise(
+                new GameLoopActivityChangedEvent(currentState, isActive));
+        }
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
