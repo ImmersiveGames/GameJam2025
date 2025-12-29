@@ -2,7 +2,17 @@ using System;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
-    public enum GameLoopStateId { Boot, Ready, Playing, Paused }
+    public enum GameLoopStateId
+    {
+        Boot,
+        Ready,
+        Playing,
+        Paused,
+        /// <summary>
+        /// Estado pós-gameplay, após o fim da run (Game Over / Victory), antes de reiniciar ou sair para o menu.
+        /// </summary>
+        PostPlay
+    }
 
     public interface IGameLoopSignals
     {
@@ -11,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         bool ResumeRequested { get; }
         bool ReadyRequested { get; }
         bool ResetRequested { get; }
+        bool EndRequested { get; set; }
     }
 
     public interface IGameLoopStateObserver
