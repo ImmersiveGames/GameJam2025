@@ -427,7 +427,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
             // Mantém a feature funcional sem depender de um tipo compile-time.
             // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
-            if (mb.GetComponent("EaterActor") == null)
+            if (mb.GetComponent<EaterActor>() == null)
             {
                 return false;
             }

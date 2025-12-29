@@ -4,6 +4,7 @@ Checklist executável para validar os assets necessários ao pipeline **SceneFlo
 **Não criar assets nesta etapa**: apenas verificar se os existentes atendem aos critérios.
 
 > Referências: ADR-0009 (Fade) e ADR-0010 (Loading HUD). Este checklist **não** reescreve ADRs; apenas aponta para eles.
+> Ver também: [SceneFlow-Production-EndToEnd-Validation.md](SceneFlow-Production-EndToEnd-Validation.md).
 
 ---
 

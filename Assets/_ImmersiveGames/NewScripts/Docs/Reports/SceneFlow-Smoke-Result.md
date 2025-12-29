@@ -1,4 +1,9 @@
 ﻿# Scene Flow Smoke Result
+
+> **Status: HISTÓRICO (ver master)**
+> - **Master:** [SceneFlow-Production-EndToEnd-Validation.md](SceneFlow-Production-EndToEnd-Validation.md)
+> - **Assets checklist:** [SceneFlow-Assets-Checklist.md](SceneFlow-Assets-Checklist.md)
+> - **Propósito original:** registrar o smoke test de SceneFlow no editor e coletar logs essenciais de infraestrutura.
 - Timestamp: 2025-12-26T22:16:00.0659281Z
 - Defines: NEWSCRIPTS_SCENEFLOW_NATIVE, UNITY_EDITOR, UNITY_INCLUDE_TESTS
 - Result: PASS

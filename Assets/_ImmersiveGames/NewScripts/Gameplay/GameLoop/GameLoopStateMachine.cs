@@ -11,10 +11,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public GameLoopStateId Current { get; private set; } = GameLoopStateId.Boot;
         public bool IsGameActive => Current == GameLoopStateId.Playing;
 
+        private bool _lastIsGameActive;
+
         public GameLoopStateMachine(IGameLoopSignals signals, IGameLoopStateObserver observer = null)
         {
             _signals = signals;
             _observer = observer;
+
+            _lastIsGameActive = IsGameActive;
             NotifyEnter(Current, IsGameActive);
         }
 
@@ -33,8 +37,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
+            // ReadyRequested tem prioridade alta. Se isso NÃO for desejado globalmente,
+            // restrinja por estado (ex.: apenas Boot/PostPlay/Paused) e remova a prioridade global.
             if (_signals.ReadyRequested)
             {
+                // Variante restrita (descomente se quiser limitar):
+                // if (Current is GameLoopStateId.Boot or GameLoopStateId.Paused or GameLoopStateId.PostPlay)
+                //     return TransitionTo(GameLoopStateId.Ready);
+
                 return TransitionTo(GameLoopStateId.Ready);
             }
 
@@ -75,6 +85,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     break;
 
                 case GameLoopStateId.PostPlay:
+                    // Mantém PostPlay como estado pós-run.
+                    // Permite um caminho simples “Play Again” sem exigir Reset duro.
+                    if (_signals.StartRequested)
+                    {
+                        next = GameLoopStateId.Ready;
+                    }
                     break;
             }
 
@@ -130,7 +146,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private void NotifyEnter(GameLoopStateId id, bool active)
         {
             _observer?.OnStateEntered(id, active);
-            _observer?.OnGameActivityChanged(active);
+
+            if (active != _lastIsGameActive)
+            {
+                _lastIsGameActive = active;
+                _observer?.OnGameActivityChanged(active);
+            }
         }
 
         private void NotifyExit(GameLoopStateId id) => _observer?.OnStateExited(id);

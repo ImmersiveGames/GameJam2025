@@ -4,6 +4,10 @@
 Validar em Play Mode o ciclo completo de produção **Menu → Gameplay → Menu** usando apenas o caminho oficial de navegação (`IGameNavigationService`).
 Este report é o **master** para evidência mínima do fluxo de produção.
 
+## Referências rápidas
+- [SceneFlow-Assets-Checklist.md](SceneFlow-Assets-Checklist.md)
+- [SceneFlow-Gameplay-Blockers-Report.md](SceneFlow-Gameplay-Blockers-Report.md)
+
 ## Pré-requisitos
 - **Build Settings** inclui as cenas abaixo (com estes nomes exatos):
   - `MenuScene`
@@ -134,4 +138,3 @@ Este report é o **master** para evidência mínima do fluxo de produção.
 - Responsável:
 - Build/Branch:
 - Observações:
-

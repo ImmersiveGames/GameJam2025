@@ -24,11 +24,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _startBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
+
             EventBus<GameRunEndedEvent>.Register(_binding);
             EventBus<GameRunStartedEvent>.Register(_startBinding);
 
             DebugUtility.LogVerbose<GameRunStatusService>(
-                "[GameLoop] GameRunStatusService registrado no EventBus<GameRunEndedEvent> e GameRunStartedEvent>.");
+                "[GameLoop] GameRunStatusService registrado no EventBus<GameRunEndedEvent> e EventBus<GameRunStartedEvent>.");
         }
 
         public void Clear()
@@ -53,19 +54,38 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             // Integração com GameLoop:
             // Fim de run (Victory/Defeat) deve tirar o loop do estado Playing
             // para que IStateDependentService bloqueie ações de gameplay.
-            if (DependencyManager.HasInstance &&
-                DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) &&
-                gameLoop != null)
+            if (!DependencyManager.HasInstance)
             {
-                DebugUtility.LogVerbose<GameRunStatusService>(
-                    "[GameLoop] GameRunEndedEvent recebido -> solicitando GameLoop.RequestEnd().");
-                gameLoop.RequestEnd();
+                DebugUtility.LogWarning<GameRunStatusService>(
+                    "[GameLoop] DependencyManager indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.");
+                return;
             }
-            else
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
             {
                 DebugUtility.LogWarning<GameRunStatusService>(
                     "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.");
+                return;
             }
+
+            // Evita chamadas redundantes quando já estamos fora do gameplay.
+            // (Interface atual não expõe enum, então usamos o nome como melhor esforço.)
+            var stateName = gameLoop.CurrentStateIdName ?? string.Empty;
+            var shouldRequestEnd =
+                stateName == nameof(GameLoopStateId.Playing) ||
+                stateName == nameof(GameLoopStateId.Paused);
+
+            if (!shouldRequestEnd)
+            {
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. RequestEnd() ignorado.");
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameRunStatusService>(
+                "[GameLoop] GameRunEndedEvent recebido -> solicitando GameLoop.RequestEnd().");
+
+            gameLoop.RequestEnd();
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
