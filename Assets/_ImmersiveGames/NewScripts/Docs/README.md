@@ -17,10 +17,11 @@ Arquivos canônicos (este pacote):
 - [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md) — ADR de reset por escopos + gate no ciclo de vida do jogo.
 
 ## Reports (evidências)
-Status: evidências atualizadas em 2025-12-27.
+Status: evidências atualizadas em 2025-12-31.
 - [WORLDLIFECYCLE_RESET_STATUS.md](WORLDLIFECYCLE_RESET_STATUS.md)
 - [GameLoop](Reports/GameLoop.md)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
+- [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
 - [QA-Audit-2025-12-27](Reports/QA-Audit-2025-12-27.md)
 - [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md)
 - [Legacy-Cleanup-Report](Reports/Legacy-Cleanup-Report.md)
