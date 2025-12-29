@@ -7,6 +7,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
     public enum WorldSpawnServiceKind
     {
         DummyActor = 0,
-        Player = 1
+        Player = 1,
+        Eater = 2
     }
 }

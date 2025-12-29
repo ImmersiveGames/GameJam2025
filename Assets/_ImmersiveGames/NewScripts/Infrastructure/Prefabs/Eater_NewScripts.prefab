@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 100001}
   - component: {fileID: 1401694685376812566}
-  - component: {fileID: 2090043031996690540}
+  - component: {fileID: 7847386431577859407}
   m_Layer: 0
   m_Name: Eater_NewScripts
   m_TagString: Untagged
@@ -61,7 +61,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
---- !u!114 &2090043031996690540
+--- !u!114 &7847386431577859407
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -70,11 +70,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a4fec27d65745d0b88f72380bf45587, type: 3}
+  m_Script: {fileID: 11500000, guid: f01008c5e8f940d78c43d4c612eaf81b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   actorId: 
-  displayName: QA_Eater_Kind
+  displayName: 
 --- !u!1 &1139985382372278592
 GameObject:
   m_ObjectHideFlags: 0
@@ -140,7 +140,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 96cb15ed3fe8b714ba7be4388cf82cc5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
