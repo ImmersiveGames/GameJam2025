@@ -66,7 +66,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile ?? "<null>"}', activeScene='{activeSceneName}'.",
                     DebugUtility.Colors.Info);
 
-                EmitResetCompleted(context, reason: "Skipped_StartupOrFrontend");
+                EmitResetCompleted(context,
+                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profile, activeSceneName));
                 return;
             }
 
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     DebugUtility.LogError(typeof(WorldLifecycleRuntimeCoordinator),
                         $"[WorldLifecycle] WorldLifecycleController não encontrado na cena '{activeSceneName}'. Reset abortado.");
 
-                    EmitResetCompleted(context, reason: "Failed_NoController");
+                    EmitResetCompleted(context, reason: WorldLifecycleResetReason.FailedNoController(activeSceneName));
                     return;
                 }
 
@@ -92,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     DebugUtility.Colors.Info);
 
                 // IMPORTANTE: no seu projeto atual, ResetWorldAsync recebe apenas 'reason'.
-                await controller.ResetWorldAsync(reason: $"ScenesReady/{activeSceneName}");
+                await controller.ResetWorldAsync(reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
 
                 EmitResetCompleted(context, reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
             }
