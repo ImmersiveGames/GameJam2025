@@ -26,7 +26,9 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
 Referência: [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md).
 
-## ADR-00XX — Gameplay Reset por grupos (fases Cleanup/Restore/Rebind)
+## ADR-0014 — Gameplay Reset Targets/Grupos (fases Cleanup/Restore/Rebind)
+
+Referência: [ADR-0014-GameplayReset-Targets-Grupos.md](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md).
 
 **Motivação:** Enquanto o spawn ainda está sendo consolidado, precisamos de um mecanismo **testável** e local ao escopo da cena para validar “reset de gameplay” (ex.: players) sem depender do pipeline completo de spawn.
 
