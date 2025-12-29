@@ -57,6 +57,14 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `GameReadinessService` libera token
     - jogo pode voltar a “READY” (sujeito ao estado do GameLoop e outras condições)
 
+### Integração com GameLoop (pós-game)
+- O **WorldLifecycle** continua responsável por resetar/despawnar/spawnar atores.
+- O **GameLoop** coordena o estado macro da run (ex.: `Playing` / `PostPlay`) e publica:
+  - `GameRunStartedEvent` / `GameRunEndedEvent` (resultado da run),
+  - `GameLoopActivityChangedEvent` (telemetria de atividade).
+- UI e sistemas em cenas globais/gameplay podem consultar `IGameRunStatusService`
+  para exibir o resultado da última run sem depender diretamente de gameplay específico.
+
 ### SKIP (startup/menu)
 Para estabilizar o pipeline sem contaminar testes com Gameplay, o driver faz SKIP quando:
 - `profile == 'startup'` **ou**

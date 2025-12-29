@@ -6,7 +6,7 @@ O **GameLoop** define o **estado macro da simulação** (ativo/inativo/pausado) 
 Ele **não** representa navegação de app, telas de frontend, menus de UI ou carregamento de cenas. Esses temas pertencem ao **SceneFlow / App Frontend**.
 
 ### O que o GameLoop controla
-- Estado macro: **Boot / Ready / Playing / Paused**
+- Estado macro: **Boot / Ready / Playing / Paused / PostPlay**
 - “Game activity” (simulação ativa ou não)
 - Sinalização do estado para observadores (ex.: UI reativa, HUD, debug)
 
@@ -27,6 +27,11 @@ Os estados **não representam telas**, mas **fases da simulação**:
 | **Ready** | Simulação em modo “idle” (não ativa). **Substitui o legado “Menu”.** |
 | **Playing** | Simulação ativa (jogável). |
 | **Paused** | Simulação pausada (jogável, mas ações bloqueadas via gate/pause). |
+| **PostPlay** | Estado pós-gameplay após o fim da run, antes de reiniciar ou sair para o menu. |
+
+**PostPlay** é alcançado quando uma run termina e o GameLoop recebe o sinal de término
+(`GameRunEndedEvent` → `RequestEnd()` → `EndRequested`). Esse estado representa o “pós-game”
+enquanto a UI exibe o resultado e o jogador decide reiniciar ou retornar ao menu.
 
 > Nota: **Ready não é UI/Menu**. O nome “Menu” era legado conceitual e deve ser removido do macro estado.
 
@@ -53,6 +58,52 @@ Os estados **não representam telas**, mas **fases da simulação**:
 - `GamePauseCommandEvent` (COMMAND)
 - `GameResumeRequestedEvent` (REQUEST simples, tratado como comando no bridge)
 - `GameResetRequestedEvent` (REQUEST, vira `RequestReset()` no service)
+
+---
+
+## Ciclo de run (start / end / pós-game)
+- **Boot → Ready → Playing**:
+  coordenado pelo `GameLoopSceneFlowCoordinator`, que chama `IGameLoopService.RequestStart()` somente
+  quando SceneFlow + WorldLifecycle estão prontos.
+- **Início de run**:
+  ao entrar em `Playing`, o `GameLoopService` publica `GameRunStartedEvent`.
+  O `GameRunStatusService` recebe esse evento e chama `Clear()`, limpando o resultado anterior.
+- **Fim de run**:
+  um sistema de gameplay emite `GameRunEndedEvent` com `GameRunOutcome` e `Reason`.
+  O `GameLoopRunEndEventBridge` converte o evento em `IGameLoopService.RequestEnd()`.
+  A `GameLoopStateMachine` faz `Playing → PostPlay` quando `EndRequested` está `true`.
+- **Pós-game**:
+  em `PostPlay`, o loop permanece estável enquanto a UI decide entre:
+  - **Reiniciar** a run (reset + novo start), ou
+  - **Voltar ao menu** (`GameExitToMenuRequestedEvent` → `ExitToMenuNavigationBridge` / `IGameNavigationService`).
+
+---
+
+## Telemetria de atividade do GameLoop
+O `GameLoopService.OnGameActivityChanged` publica `GameLoopActivityChangedEvent` com:
+- `CurrentStateId` (estado atual da `GameLoopStateMachine`),
+- `IsActive` (true quando o loop está em estado “ativo”, hoje alinhado ao `Playing`).
+
+Uso esperado:
+- UI/QA/telemetria podem observar o evento para saber quando o gameplay ficou ativo/inativo,
+  sem acoplar diretamente à máquina de estados.
+- A autorização final de ações permanece no `IStateDependentService` (gate-aware), não no evento.
+
+---
+
+## Serviço de status da run (IGameRunStatusService)
+O `IGameRunStatusService` mantém o resultado da última run:
+- `HasResult`
+- `Outcome` (`GameRunOutcome`)
+- `Reason` (string livre, ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd")
+
+Integração com eventos:
+- `GameRunStartedEvent` → `Clear()` → limpa o resultado anterior.
+- `GameRunEndedEvent` → preenche `HasResult`/`Outcome`/`Reason`.
+
+Uso recomendado:
+- UI de pós-game (Game Over / Victory) deve consultar `IGameRunStatusService` como fonte de verdade,
+  evitando acoplamento direto a sistemas específicos de gameplay.
 
 ---
 
