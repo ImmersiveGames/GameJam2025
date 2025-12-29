@@ -50,6 +50,8 @@ Durante transições de cena, o reset é coordenado por eventos:
 - `SceneTransitionScenesReadyEvent`:
     - `WorldLifecycleRuntimeCoordinator` é acionado
     - decide executar reset ou SKIP
+    - no profile `gameplay`, executa reset após o `ScenesReady` e finaliza com
+      `WorldLifecycleResetCompletedEvent(reason='Ok')`
 
 - `SceneTransitionCompleted`:
     - `GameReadinessService` libera token
@@ -80,6 +82,16 @@ O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do 
 Esse gate garante que o `SceneTransitionService` só siga para `FadeOut`/`Completed` quando o reset terminou (ou SKIP foi emitido).
 
 ## Participantes e registros de cena
+### GameplayScene (produção)
+- Escopo atual de produção inclui dois atores principais:
+    - `ActorKind.Player`
+    - `ActorKind.Eater`
+- Ordem determinística de spawn na `GameplayScene`:
+    1. `Player` (via `WorldDefinition` + `WorldSpawnServiceRegistry`)
+    2. `Eater` (via `WorldDefinition` + `WorldSpawnServiceRegistry`)
+- O `Eater` passa a ser tratado como ator de **primeira classe** no pipeline de reset determinístico
+  (spawn/despawn/reset), não apenas QA ou placeholder.
+
 ### Gameplay Reset por grupos (cleanup/restore/rebind)
 
 Além do **reset por escopos** do WorldLifecycle (`ResetScope` + `IResetScopeParticipant`), existe um módulo de reset **de gameplay** em `Gameplay/Reset/` para validar e executar resets por **alvos** (targets) com fases fixas:
@@ -122,6 +134,12 @@ Ao validar o pipeline, busque no log:
 Se o Coordinator não “destrava”, quase sempre faltou:
 - `WorldLifecycleResetCompletedEvent` ou
 - assinatura `contextSignature` incompatível com a esperada.
+
+## QA/Verificações
+- `WorldLifecycleMultiActorSpawnQa`:
+    - Escuta `WorldLifecycleResetCompletedEvent` na `GameplayScene`.
+    - Resolve `IActorRegistry` da cena e valida a presença de `Player` e `Eater`.
+    - Loga summary (Total/Players/Eaters/scene/reason) e erro de QA se algum ator estiver ausente.
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. `MenuPlayButtonBinder` → `IGameNavigationService.RequestToGameplay(reason)`.
