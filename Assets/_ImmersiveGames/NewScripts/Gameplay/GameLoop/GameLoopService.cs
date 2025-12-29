@@ -55,6 +55,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             CurrentStateIdName = stateId.ToString();
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
+
+            if (stateId == GameLoopStateId.Playing)
+            {
+                EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
+            }
         }
 
         public void OnStateExited(GameLoopStateId stateId) =>

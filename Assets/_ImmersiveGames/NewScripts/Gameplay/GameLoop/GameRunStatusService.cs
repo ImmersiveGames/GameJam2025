@@ -12,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     public sealed class GameRunStatusService : IGameRunStatusService, IDisposable
     {
         private readonly EventBinding<GameRunEndedEvent> _binding;
+        private readonly EventBinding<GameRunStartedEvent> _startBinding;
 
         public bool HasResult { get; private set; }
         public GameRunOutcome Outcome { get; private set; } = GameRunOutcome.Unknown;
@@ -20,10 +21,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public GameRunStatusService()
         {
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
+            _startBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
             EventBus<GameRunEndedEvent>.Register(_binding);
+            EventBus<GameRunStartedEvent>.Register(_startBinding);
 
             DebugUtility.LogVerbose<GameRunStatusService>(
-                "[GameLoop] GameRunStatusService registrado no EventBus<GameRunEndedEvent>.");
+                "[GameLoop] GameRunStatusService registrado no EventBus<GameRunEndedEvent> e GameRunStartedEvent>.");
         }
 
         public void Clear()
@@ -46,9 +49,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 $"[GameLoop] GameRunStatus atualizado. Outcome={Outcome}, Reason='{Reason ?? "<null>"}'.");
         }
 
+        private void OnGameRunStarted(GameRunStartedEvent evt)
+        {
+            Clear();
+
+            DebugUtility.LogVerbose<GameRunStatusService>(
+                $"[GameLoop] GameRunStatusService: nova run iniciada (state={evt?.StateId}). Resultado anterior resetado.");
+        }
+
         public void Dispose()
         {
             EventBus<GameRunEndedEvent>.Unregister(_binding);
+            EventBus<GameRunStartedEvent>.Unregister(_startBinding);
         }
     }
 }

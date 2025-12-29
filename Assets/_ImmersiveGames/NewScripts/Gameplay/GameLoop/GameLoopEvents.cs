@@ -73,6 +73,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public bool IsActive { get; }
     }
 
+    /// <summary>
+    /// Representa o início de uma nova run do jogo.
+    /// É emitido quando o GameLoop entra em um estado de gameplay ativo (Playing).
+    /// </summary>
+    public sealed class GameRunStartedEvent : IEvent
+    {
+        public GameRunStartedEvent(GameLoopStateId stateId)
+        {
+            StateId = stateId;
+        }
+
+        /// <summary>
+        /// Estado atual do GameLoop no momento em que a run é iniciada.
+        /// </summary>
+        public GameLoopStateId StateId { get; }
+    }
+
     public sealed class GameResumeRequestedEvent : IEvent { }
     /// <summary>
     /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".

@@ -176,6 +176,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameExitToMenuRequestedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
             EventBus<GameLoopActivityChangedEvent>.Clear();
+            EventBus<GameRunStartedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[EventBus] EventBus inicializado para eventos do GameLoop (NewScripts).",
