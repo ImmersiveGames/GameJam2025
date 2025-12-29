@@ -2,6 +2,11 @@
 
 All notable documentation changes to **NewScripts** are documented in this file.
 
+## [2025-12-31]
+- Updated: `GameLoop.md` para documentar o estado `PostPlay`, os eventos `GameRunStartedEvent` / `GameRunEndedEvent` /
+  `GameLoopActivityChangedEvent` e o serviço `IGameRunStatusService` no fluxo de pós-game.
+- Updated: `WORLD_LIFECYCLE.md` alinhado ao fluxo de run/resultados via GameLoop.
+
 ## [2025-12-28]
 - Added: suporte a `ActorKind.Eater` na GameplayScene (EaterSpawnService + WorldDefinition) documentado como parte do reset hard de produção.
 - Added: `NewEaterRandomMovementController` documentado como integrado ao `IStateDependentService` para `ActionType.Move` (respeita GameLoop/SimulationGate/Pause).

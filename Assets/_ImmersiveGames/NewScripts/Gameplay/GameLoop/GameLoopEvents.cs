@@ -18,6 +18,78 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public bool IsPaused { get; }
     }
 
+    /// <summary>
+    /// Resultado final da run atual.
+    /// </summary>
+    public enum GameRunOutcome
+    {
+        Unknown = 0,
+        Victory = 1,
+        Defeat = 2,
+    }
+
+    /// <summary>
+    /// Representa o fim da run atual do jogo, para orquestrar pós-gameplay.
+    /// </summary>
+    public sealed class GameRunEndedEvent : IEvent
+    {
+        public GameRunEndedEvent(GameRunOutcome outcome, string reason = null)
+        {
+            Outcome = outcome;
+            Reason = reason;
+        }
+
+        /// <summary>
+        /// Resultado da run (vitória/derrota).
+        /// </summary>
+        public GameRunOutcome Outcome { get; }
+
+        /// <summary>
+        /// Texto livre para logs (ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd").
+        /// </summary>
+        public string Reason { get; }
+    }
+
+    /// <summary>
+    /// Evento de telemetria para mudanças de atividade do GameLoop.
+    /// Permite que outros sistemas (UI, QA, etc.) observem quando o loop entra/sai de estados ativos.
+    /// </summary>
+    public sealed class GameLoopActivityChangedEvent : IEvent
+    {
+        public GameLoopActivityChangedEvent(GameLoopStateId currentStateId, bool isActive)
+        {
+            CurrentStateId = currentStateId;
+            IsActive = isActive;
+        }
+
+        /// <summary>
+        /// Estado atual do GameLoop após a mudança.
+        /// </summary>
+        public GameLoopStateId CurrentStateId { get; }
+
+        /// <summary>
+        /// Indica se o jogo está em um estado considerado "ativo" (ex.: Playing).
+        /// </summary>
+        public bool IsActive { get; }
+    }
+
+    /// <summary>
+    /// Representa o início de uma nova run do jogo.
+    /// É emitido quando o GameLoop entra em um estado de gameplay ativo (Playing).
+    /// </summary>
+    public sealed class GameRunStartedEvent : IEvent
+    {
+        public GameRunStartedEvent(GameLoopStateId stateId)
+        {
+            StateId = stateId;
+        }
+
+        /// <summary>
+        /// Estado atual do GameLoop no momento em que a run é iniciada.
+        /// </summary>
+        public GameLoopStateId StateId { get; }
+    }
+
     public sealed class GameResumeRequestedEvent : IEvent { }
     /// <summary>
     /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".

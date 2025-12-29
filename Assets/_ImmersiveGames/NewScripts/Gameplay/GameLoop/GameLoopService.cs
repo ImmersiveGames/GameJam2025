@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
         public void RequestReset() => _signals.MarkReset();
+        public void RequestEnd() => _signals.MarkEnd();
 
         public void Initialize()
         {
@@ -53,13 +55,29 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         {
             CurrentStateIdName = stateId.ToString();
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
+
+            if (stateId == GameLoopStateId.Playing)
+            {
+                EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
+            }
         }
 
         public void OnStateExited(GameLoopStateId stateId) =>
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] EXIT: {stateId}");
 
-        public void OnGameActivityChanged(bool isActive) =>
+        public void OnGameActivityChanged(bool isActive)
+        {
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] Activity: {isActive}");
+
+            var currentState = GameLoopStateId.Boot;
+            if (_stateMachine != null)
+            {
+                currentState = _stateMachine.Current;
+            }
+
+            EventBus<GameLoopActivityChangedEvent>.Raise(
+                new GameLoopActivityChangedEvent(currentState, isActive));
+        }
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
@@ -68,12 +86,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             public bool ResumeRequested { get; private set; }
             public bool ReadyRequested { get; private set; }
             public bool ResetRequested { get; private set; }
+            public bool EndRequested { get; private set; }
+
+            bool IGameLoopSignals.EndRequested
+            {
+                get => EndRequested;
+                set => EndRequested = value;
+            }
 
             public void MarkStart() => StartRequested = true;
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
             public void MarkReady() => ReadyRequested = true;
             public void MarkReset() => ResetRequested = true;
+            public void MarkEnd() => EndRequested = true;
 
             public void ResetTransientSignals()
             {
@@ -82,6 +108,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 ResumeRequested = false;
                 ReadyRequested = false;
                 ResetRequested = false;
+                EndRequested = false;
             }
         }
     }
