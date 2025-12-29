@@ -40,6 +40,24 @@ Implementar Fade no Scene Flow do NewScripts com as seguintes decisões:
 - Erros de profile **não** devem travar o fluxo: degradar para defaults é aceitável para manter a transição funcional.
 - A separação “Fade vs Loading” é obrigatória: Loading terá ADR próprio (evitar misturar responsabilidade).
 
+## Integração operacional (Fade + LoadingHUD + SceneFlowLoadingService)
+O Fade é orquestrado em conjunto com o LoadingHUD e o SceneFlow. O mapeamento das fases é:
+
+- **SceneTransitionStarted**
+  - `SceneFlowLoadingService` chama `LoadingHUD.Show(phase=Started)`.
+  - `GameReadinessService` adquire o gate `flow.scene_transition`.
+- **SceneTransitionScenesReady**
+  - `LoadingHUD.Show(phase=ScenesReady)`.
+  - Se `profile=gameplay`, o `WorldLifecycleRuntimeCoordinator` executa o reset antes do gate ser liberado.
+- **BeforeFadeOut**
+  - `LoadingHUD.Hide(phase=BeforeFadeOut)`.
+  - `INewScriptsFadeService` executa `FadeOut`.
+- **Completed**
+  - `LoadingHUD.Hide(phase=Completed)` (safety hide).
+
+O Fade usa **profiles** (startup, gameplay) com tempos de fade in/out definidos nos assets
+`Resources/SceneFlow/Profiles/...` (ex.: `startup`, `gameplay`).
+
 ## Evidência de validação (logs)
 Foi observado em runtime:
 - Profile `startup` resolvido via path `SceneFlow/Profiles/startup`
