@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
             [SerializeField]
             [Tooltip("Notas apenas para depuração/inspector. Não utilizado em runtime.")]
-            private string notes;
+            public string notes;
 
             public WorldSpawnServiceKind Kind => kind;
 

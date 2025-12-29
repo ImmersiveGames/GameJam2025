@@ -16,4 +16,8 @@ MonoBehaviour:
   - kind: 1
     enabled: 1
     prefab: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
-    notes: Player_NewScripts (baseline QA)
+    notes: Player note
+  - kind: 2
+    enabled: 1
+    prefab: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
+    notes: Eater note
