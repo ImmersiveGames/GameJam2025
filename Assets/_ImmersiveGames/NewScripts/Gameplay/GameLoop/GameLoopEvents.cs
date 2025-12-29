@@ -18,6 +18,38 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public bool IsPaused { get; }
     }
 
+    /// <summary>
+    /// Resultado final da run atual.
+    /// </summary>
+    public enum GameRunOutcome
+    {
+        Unknown = 0,
+        Victory = 1,
+        Defeat = 2,
+    }
+
+    /// <summary>
+    /// Representa o fim da run atual do jogo, para orquestrar pós-gameplay.
+    /// </summary>
+    public sealed class GameRunEndedEvent : IEvent
+    {
+        public GameRunEndedEvent(GameRunOutcome outcome, string reason = null)
+        {
+            Outcome = outcome;
+            Reason = reason;
+        }
+
+        /// <summary>
+        /// Resultado da run (vitória/derrota).
+        /// </summary>
+        public GameRunOutcome Outcome { get; }
+
+        /// <summary>
+        /// Texto livre para logs (ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd").
+        /// </summary>
+        public string Reason { get; }
+    }
+
     public sealed class GameResumeRequestedEvent : IEvent { }
     /// <summary>
     /// REQUEST (intenção): "quero sair do gameplay e voltar ao frontend/menu".
