@@ -31,6 +31,8 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Updated: cenas de produção/QA limpas de referências diretas aos tools de QA deprecated.
 
 ## [2025-12-29]
+- Added: bridge `GameResetRequestedEvent` → `RestartNavigationBridge` → reset oficial via SceneFlow/WorldLifecycle.
+- Updated: `GameLoop.md` e `WORLD_LIFECYCLE.md` com o fluxo de pós-game (Restart/Menu).
 - Added: `Reports/QA-GameplayResetKind.md` com passos e critérios para validar GameplayReset por ActorKind no Player real.
 - Updated: `Reports/QA-Audit-2025-12-27.md` com referência ao `GameplayResetPhaseLogger`.
 - Updated: QA report com nota sobre gating de probes/logger em Editor/Dev.

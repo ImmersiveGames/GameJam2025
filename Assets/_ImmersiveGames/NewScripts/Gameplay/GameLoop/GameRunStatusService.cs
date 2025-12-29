@@ -1,12 +1,14 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.Scripts.Utils.DependencySystems;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 {
     /// <summary>
     /// Serviço simples que mantém o resultado da última run do jogo.
-    /// Ouve GameRunEndedEvent e expõe Outcome/Reason para UI e outros sistemas.
+    /// Ouve GameRunEndedEvent e GameRunStartedEvent e expõe Outcome/Reason para UI e outros sistemas.
+    /// Agora também integra com o GameLoop para encerrar a run (RequestEnd).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunStatusService : IGameRunStatusService, IDisposable
@@ -47,6 +49,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             DebugUtility.Log<GameRunStatusService>(
                 $"[GameLoop] GameRunStatus atualizado. Outcome={Outcome}, Reason='{Reason ?? "<null>"}'.");
+
+            // Integração com GameLoop:
+            // Fim de run (Victory/Defeat) deve tirar o loop do estado Playing
+            // para que IStateDependentService bloqueie ações de gameplay.
+            if (DependencyManager.HasInstance &&
+                DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) &&
+                gameLoop != null)
+            {
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    "[GameLoop] GameRunEndedEvent recebido -> solicitando GameLoop.RequestEnd().");
+                gameLoop.RequestEnd();
+            }
+            else
+            {
+                DebugUtility.LogWarning<GameRunStatusService>(
+                    "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.");
+            }
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
