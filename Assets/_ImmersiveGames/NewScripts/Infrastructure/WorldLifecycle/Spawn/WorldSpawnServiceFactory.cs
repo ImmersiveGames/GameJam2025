@@ -42,6 +42,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
                     return CreateDummyActorService(entry, provider, actorRegistry, context);
                 case WorldSpawnServiceKind.Player:
                     return CreatePlayerService(entry, provider, actorRegistry, context);
+                case WorldSpawnServiceKind.Eater:
+                    return CreateEaterService(entry, provider, actorRegistry, context);
 
                 default:
                     DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
@@ -110,6 +112,45 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             }
 
             return new PlayerSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab);
+        }
+
+        private IWorldSpawnService CreateEaterService(
+            WorldDefinition.SpawnEntry entry,
+            IDependencyProvider provider,
+            IActorRegistry actorRegistry,
+            IWorldSpawnContext context)
+        {
+            if (actorRegistry == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "IActorRegistry ausente. Não foi possível criar EaterSpawnService.");
+                return null;
+            }
+
+            if (context == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "IWorldSpawnContext ausente. EaterSpawnService não será criado.");
+                return null;
+            }
+
+            provider.TryGetGlobal<IUniqueIdFactory>(out var uniqueIdFactory);
+            if (uniqueIdFactory == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "IUniqueIdFactory global ausente. EaterSpawnService não será criado.");
+                return null;
+            }
+
+            var eaterPrefab = entry.Prefab != null ? entry.Prefab.GetComponent<EaterActor>() : null;
+            if (eaterPrefab == null)
+            {
+                DebugUtility.LogError(typeof(WorldSpawnServiceFactory),
+                    "Prefab sem EaterActor. EaterSpawnService não será criado.");
+                return null;
+            }
+
+            return new EaterSpawnService(uniqueIdFactory, actorRegistry, context, eaterPrefab);
         }
     }
 }
