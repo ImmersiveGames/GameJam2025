@@ -34,6 +34,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
         private bool _isResetting;
+        private readonly object _resetLock = new();
+        private Task _resetTask;
         private string _sceneName = string.Empty;
 
         public bool AutoInitializeOnStart
@@ -74,13 +76,70 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         /// </summary>
         public async Task ResetWorldAsync(string reason)
         {
-            if (_isResetting)
+            Task activeResetTask;
+            var isAwaitingExistingReset = false;
+
+            lock (_resetLock)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Reset ignorado (já em andamento). reason='{reason}', scene='{_sceneName}'.");
-                return;
+                if (_resetTask != null && !_resetTask.IsCompleted)
+                {
+                    isAwaitingExistingReset = true;
+                    activeResetTask = _resetTask;
+                }
+                else
+                {
+                    _resetTask = RunWorldResetAsync(reason);
+                    activeResetTask = _resetTask;
+                }
             }
 
+            if (isAwaitingExistingReset)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Reset já em andamento — aguardando conclusão. reason='{reason}', scene='{_sceneName}'.");
+            }
+
+            await activeResetTask;
+        }
+
+        /// <summary>
+        /// Soft reset focado apenas no escopo de jogadores (Players).
+        /// </summary>
+        public async Task ResetPlayersAsync(string reason = "PlayersSoftReset")
+        {
+            Task activeResetTask;
+            var isAwaitingExistingReset = false;
+
+            lock (_resetLock)
+            {
+                if (_resetTask != null && !_resetTask.IsCompleted)
+                {
+                    isAwaitingExistingReset = true;
+                    activeResetTask = _resetTask;
+                }
+                else
+                {
+                    _resetTask = RunPlayersResetAsync(reason);
+                    activeResetTask = _resetTask;
+                }
+            }
+
+            if (isAwaitingExistingReset)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Soft reset (Players) já em andamento — aguardando conclusão. reason='{reason}', scene='{_sceneName}'.");
+            }
+
+            await activeResetTask;
+        }
+
+        private async Task InitializeWorldAsync()
+        {
+            await ResetWorldAsync("AutoInitialize/Start");
+        }
+
+        private async Task RunWorldResetAsync(string reason)
+        {
             _isResetting = true;
             try
             {
@@ -116,21 +175,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             finally
             {
                 _isResetting = false;
+                lock (_resetLock)
+                {
+                    _resetTask = null;
+                }
             }
         }
 
-        /// <summary>
-        /// Soft reset focado apenas no escopo de jogadores (Players).
-        /// </summary>
-        public async Task ResetPlayersAsync(string reason = "PlayersSoftReset")
+        private async Task RunPlayersResetAsync(string reason)
         {
-            if (_isResetting)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Soft reset ignorado (já em andamento). reason='{reason}', scene='{_sceneName}'.");
-                return;
-            }
-
             _isResetting = true;
             try
             {
@@ -168,12 +221,11 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             finally
             {
                 _isResetting = false;
+                lock (_resetLock)
+                {
+                    _resetTask = null;
+                }
             }
-        }
-
-        private async Task InitializeWorldAsync()
-        {
-            await ResetWorldAsync("AutoInitialize/Start");
         }
 
         private void EnsureDependenciesInjected()
