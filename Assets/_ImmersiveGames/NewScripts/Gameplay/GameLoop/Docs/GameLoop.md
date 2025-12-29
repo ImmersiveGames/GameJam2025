@@ -88,6 +88,34 @@ enquanto a UI exibe o resultado e o jogador decide reiniciar ou retornar ao menu
 
 ---
 
+## Fluxo de produção (startup vs gameplay)
+### Startup / Frontend (Menu)
+- `GameLoopService` é registrado no escopo global e inicializado no primeiro `RequestStart()`.
+- A transição `startup` (MenuScene) conclui `SceneTransitionCompletedEvent` e recebe
+  `WorldLifecycleResetCompletedEvent` mesmo quando o reset é **SKIPPED**.
+- O `GameLoopSceneFlowCoordinator` considera **ready** quando recebe `TransitionCompleted + WorldLifecycleResetCompleted`
+  e chama `GameLoop.RequestStart()`, levando **Boot → Ready** (sem entrar em `Playing`).
+- `InputModeSceneFlowBridge` aplica `FrontendMenu` ao receber `SceneTransitionCompleted(profile='startup'/'frontend')`.
+
+### Gameplay
+- `SceneTransitionCompleted(profile='gameplay')` aciona `InputModeSceneFlowBridge`:
+  - aplica `InputMode = Gameplay`,
+  - chama `GameLoop.RequestStart()` após a transição.
+- Com a transição completa e o reset confirmado, o GameLoop avança **Ready → Playing**.
+- `GameRunStatusService` é alimentado normalmente pelo fluxo `GameRunStartedEvent` / `GameRunEndedEvent`.
+
+---
+
+## QA (hotkeys de pós-game)
+- `PostGameQaHotkeys` (F6/F7) pode disparar `GameRunEndedEvent` diretamente:
+  - F6 → `Outcome=Defeat`, `Reason='QA_ForcedDefeat'`
+  - F7 → `Outcome=Victory`, `Reason='QA_ForcedVictory'`
+- Nessa situação, o `GameRunStatusService` pode emitir warnings como:
+  - `[WARNING] [GameRunStatusService] [GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.`
+- Esses warnings são **esperados em contexto QA** (evento forçado sem `GameLoopService.RequestEnd()`) e não indicam erro funcional do ciclo de jogo.
+
+---
+
 ## Telemetria de atividade do GameLoop
 O `GameLoopService.OnGameActivityChanged` publica `GameLoopActivityChangedEvent` com:
 - `CurrentStateId` (estado atual da `GameLoopStateMachine`),

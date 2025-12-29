@@ -57,6 +57,23 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `GameReadinessService` libera token
     - jogo pode voltar a “READY” (sujeito ao estado do GameLoop e outras condições)
 
+### Fluxo de produção integrado (SceneFlow + WorldLifecycle)
+- **Perfis startup/frontend** (ex.: transição terminando em `MenuScene`):
+    - `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent`, mas **não** dispara hard reset.
+    - Emite `WorldLifecycleResetCompletedEvent(reason='Skipped_StartupOrFrontend')` para destravar o pipeline.
+    - O `GameLoopSceneFlowCoordinator` considera o reset como concluído (skip) e o GameLoop permanece em **Ready**.
+- **Perfis gameplay** (ex.: transição para `GameplayScene`):
+    - `SceneTransitionScenesReadyEvent` aciona `WorldLifecycleController.ResetWorldAsync(...)`.
+    - O `WorldLifecycleOrchestrator` executa as fases determinísticas antes de liberar o gate de conclusão da transição.
+
+#### Gate e readiness
+- Durante o reset, o `WorldLifecycleOrchestrator` adquire o token
+  `WorldLifecycleTokens.WorldResetToken` no `ISimulationGateService`
+  (ex.: gate `WorldLifecycle.WorldReset`), bloqueando simulação até o final do reset.
+- O `GameReadinessService` só marca `gameplayReady=True` após:
+    - `WorldLifecycleResetCompletedEvent` (reset ou skip), e
+    - `SceneTransitionCompletedEvent` (final da transição).
+
 ### Integração com GameLoop (pós-game)
 - O **WorldLifecycle** continua responsável por resetar/despawnar/spawnar atores.
 - O **GameLoop** coordena o estado macro da run (ex.: `Playing` / `PostPlay`) e publica:

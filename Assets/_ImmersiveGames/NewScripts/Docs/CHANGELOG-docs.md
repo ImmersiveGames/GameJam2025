@@ -2,6 +2,14 @@
 
 All notable documentation changes to **NewScripts** are documented in this file.
 
+## [2026-01-02]
+- Updated: documentação integrada de SceneFlow + WorldLifecycle + GameLoop alinhada ao fluxo de produção (startup → Menu → Gameplay → Menu → Gameplay), incluindo:
+  - registro operacional do `WorldLifecycleRuntimeCoordinator` e `WorldLifecycleResetCompletionGate` (skip vs hard reset),
+  - revisão do `GameLoop.md` para alinhar `GameLoopSceneFlowCoordinator` e `InputModeSceneFlowBridge`,
+  - atualização do ADR de Fade/Loading (ADR-0009) com orquestração entre `SceneTransitionService`, `INewScriptsFadeService` e `SceneFlowLoadingService`,
+  - atualização do QA `GameLoop-StateFlow-QA` com cenário end-to-end (defeat/victory forçados via hotkeys).
+- Added: `Docs/ADR/ADR-ciclo-de-vida-jogo.md` com nota operacional sobre skip em frontend e reset completo em gameplay.
+
 ## [2025-12-31]
 - Updated: `GameLoop.md` para documentar o estado `PostPlay`, os eventos `GameRunStartedEvent` / `GameRunEndedEvent` /
   `GameLoopActivityChangedEvent` e o serviço `IGameRunStatusService` no fluxo de pós-game.
