@@ -44,7 +44,8 @@ A pendência principal não é “o pipeline”, e sim **cobertura de feature** 
 
 ### 1) Targets/Grupos ainda sem evidência de QA / validação
 - `GameplayResetTarget.EaterOnly`  
-  Falta evidência de: classifier resolvendo Eaters + QA + componentes de Eater com `IGameplayResettable`.
+  Classificação agora é **Kind-first** (`ActorKind.Eater`) com fallback string-based (`EaterActor`),  
+  mas ainda falta evidência de QA (não afirmar testado) e validação de componentes `IGameplayResettable`.
 - `GameplayResetTarget.AllActorsInScene`  
   Falta evidência de: critérios claros de “ator”/alvo (ActorRegistry? scene scan?) + QA.
 - `GameplayResetTarget.ActorIdSet`  
