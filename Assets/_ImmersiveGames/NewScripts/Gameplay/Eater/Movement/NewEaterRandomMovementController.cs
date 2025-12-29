@@ -97,6 +97,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Eater.Movement
             enabled = false;
         }
 
+        public void InjectStateService(IStateDependentService stateService)
+        {
+            if (stateService == null)
+            {
+                return;
+            }
+
+            _stateService = stateService;
+            _stateBlockedLogged = false;
+
+            if (!enabled)
+            {
+                enabled = true;
+            }
+        }
+
         private Vector3 PickNewDirection()
         {
             for (int attempt = 0; attempt < 6; attempt++)

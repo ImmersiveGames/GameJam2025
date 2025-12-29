@@ -1,7 +1,9 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.Eater.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
@@ -15,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
         private readonly IActorRegistry _actorRegistry;
         private readonly IWorldSpawnContext _context;
         private readonly EaterActor _prefab;
+        private readonly IStateDependentService _stateService;
 
         private IActor _spawnedActor;
         private GameObject _spawnedObject;
@@ -23,12 +26,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
-            EaterActor prefab)
+            EaterActor prefab,
+            IStateDependentService stateService)
         {
             _uniqueIdFactory = uniqueIdFactory;
             _actorRegistry = actorRegistry;
             _context = context;
             _prefab = prefab;
+            _stateService = stateService;
         }
 
         public string Name => nameof(EaterSpawnService);
@@ -75,6 +80,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
             _spawnedObject = instance.gameObject;
             _spawnedObject.name = _prefab.name;
+            InjectStateService(_spawnedObject);
 
             if (!EnsureActorId(instance))
             {
@@ -176,6 +182,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
             eater.Initialize(actorId);
             return true;
+        }
+
+        private void InjectStateService(GameObject instance)
+        {
+            if (_stateService == null || instance == null)
+            {
+                return;
+            }
+
+            if (instance.TryGetComponent(out NewEaterRandomMovementController controller))
+            {
+                controller.InjectStateService(_stateService);
+            }
         }
     }
 }

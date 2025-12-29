@@ -2,6 +2,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 {
     /// <summary>
@@ -111,7 +112,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
                 return null;
             }
 
-            return new PlayerSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab);
+            provider.TryGetGlobal<IStateDependentService>(out var stateService);
+            return new PlayerSpawnService(uniqueIdFactory, actorRegistry, context, entry.Prefab, stateService);
         }
 
         private IWorldSpawnService CreateEaterService(
@@ -142,6 +144,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
                 return null;
             }
 
+            provider.TryGetGlobal<IStateDependentService>(out var stateService);
+
             var eaterPrefab = entry.Prefab != null ? entry.Prefab.GetComponent<EaterActor>() : null;
             if (eaterPrefab == null)
             {
@@ -150,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
                 return null;
             }
 
-            return new EaterSpawnService(uniqueIdFactory, actorRegistry, context, eaterPrefab);
+            return new EaterSpawnService(uniqueIdFactory, actorRegistry, context, eaterPrefab, stateService);
         }
     }
 }

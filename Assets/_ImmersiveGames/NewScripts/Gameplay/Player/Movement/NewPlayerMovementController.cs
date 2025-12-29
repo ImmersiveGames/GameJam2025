@@ -286,6 +286,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Player.Movement
             ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
         }
 
+        public void InjectStateService(IStateDependentService stateService)
+        {
+            if (stateService == null)
+            {
+                return;
+            }
+
+            _stateService = stateService;
+            _hasMovePermissionCached = false;
+            _stateBlockedLogged = false;
+        }
+
         private void EnsureServicesResolved()
         {
             if (_gateService == null || _stateService == null)

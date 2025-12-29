@@ -357,7 +357,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterGameRunStatusService()
         {
-            RegisterIfMissing<IGameRunStatusService>(() => new GameRunStatusService());
+            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
+            RegisterIfMissing<IGameRunStatusService>(() => new GameRunStatusService(gameLoopService));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameRunStatusService registrado no DI global.",

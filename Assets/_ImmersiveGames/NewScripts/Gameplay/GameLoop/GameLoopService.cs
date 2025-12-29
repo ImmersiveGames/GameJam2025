@@ -48,6 +48,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _initialized = false;
             _stateMachine = null;
             CurrentStateIdName = string.Empty;
+            _signals.ClearStartPending();
             _signals.ResetTransientSignals();
         }
 
@@ -58,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             if (stateId == GameLoopStateId.Playing)
             {
+                _signals.ClearStartPending();
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
             }
         }
@@ -81,7 +83,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals
         {
-            public bool StartRequested { get; private set; }
+            private bool _startPending;
+
+            public bool StartRequested => _startPending;
             public bool PauseRequested { get; private set; }
             public bool ResumeRequested { get; private set; }
             public bool ReadyRequested { get; private set; }
@@ -94,16 +98,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 set => EndRequested = value;
             }
 
-            public void MarkStart() => StartRequested = true;
+            public void MarkStart() => _startPending = true;
             public void MarkPause() => PauseRequested = true;
             public void MarkResume() => ResumeRequested = true;
             public void MarkReady() => ReadyRequested = true;
             public void MarkReset() => ResetRequested = true;
             public void MarkEnd() => EndRequested = true;
+            public void ClearStartPending() => _startPending = false;
 
             public void ResetTransientSignals()
             {
-                StartRequested = false;
                 PauseRequested = false;
                 ResumeRequested = false;
                 ReadyRequested = false;
