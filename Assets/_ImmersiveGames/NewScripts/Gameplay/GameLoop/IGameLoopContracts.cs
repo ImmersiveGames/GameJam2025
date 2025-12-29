@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         void RequestResume();
         void RequestReady();
         void RequestReset();
+        void RequestEnd();
         string CurrentStateIdName { get; }
     }
 }

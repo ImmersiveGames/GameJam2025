@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
         public void RequestReset() => _signals.MarkReset();
+        public void RequestEnd() => _signals.MarkEnd();
 
         public void Initialize()
         {
