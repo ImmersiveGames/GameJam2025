@@ -161,6 +161,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
 
             string sceneName = GetEffectiveSceneName();
+            bool fallbackUsed = false;
 
             HashSet<string> ids = null;
             if (request is { Target: GameplayResetTarget.ActorIdSet, ActorIds: { Count: > 0 } })
@@ -204,13 +205,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 }
                 else if (request.Target == GameplayResetTarget.EaterOnly)
                 {
-                    if (mb.GetComponent("EaterActor") == null)
+                    if (!MatchesEaterKindFirstWithFallback(actor, out bool usedFallback))
                     {
                         continue;
+                    }
+
+                    if (usedFallback)
+                    {
+                        fallbackUsed = true;
                     }
                 }
 
                 TryAddTargetFromActor(actor);
+            }
+
+            if (request.Target == GameplayResetTarget.EaterOnly && fallbackUsed)
+            {
+                DebugUtility.LogWarning(typeof(GameplayResetOrchestrator),
+                    $"[GameplayReset] EaterOnly using string-based fallback (EaterActor). request={request}");
             }
         }
 
@@ -372,12 +384,56 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                 return false;
             }
 
+            if (!TryGetActorKind(actor, out var actorKind))
+            {
+                return false;
+            }
+
+            return actorKind == kind;
+        }
+
+        private static bool TryGetActorKind(IActor actor, out ActorKind kind)
+        {
+            kind = ActorKind.Unknown;
+
             if (actor is not IActorKindProvider provider)
             {
                 return false;
             }
 
-            return provider.Kind == kind;
+            kind = provider.Kind;
+            return true;
+        }
+
+        private static bool MatchesEaterKindFirstWithFallback(IActor actor, out bool fallbackUsed)
+        {
+            fallbackUsed = false;
+
+            if (actor == null)
+            {
+                return false;
+            }
+
+            if (TryGetActorKind(actor, out var actorKind) && actorKind == ActorKind.Eater)
+            {
+                return true;
+            }
+
+            var mb = actor as MonoBehaviour;
+            if (mb == null)
+            {
+                return false;
+            }
+
+            // Mantém a feature funcional sem depender de um tipo compile-time.
+            // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
+            if (mb.GetComponent("EaterActor") == null)
+            {
+                return false;
+            }
+
+            fallbackUsed = true;
+            return true;
         }
 
         private static int CompareResetEntries(ResetEntry left, ResetEntry right)

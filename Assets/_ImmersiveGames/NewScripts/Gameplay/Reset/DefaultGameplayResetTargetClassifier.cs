@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
+using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Reset
@@ -43,7 +43,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
                     return;
 
                 case GameplayResetTarget.EaterOnly:
-                    AddByPredicate(actorRegistry, results, IsEaterActor);
+                    AddEatersKindFirstWithFallback(actorRegistry, results, out bool fallbackUsed);
+                    if (fallbackUsed)
+                    {
+                        DebugUtility.LogWarning(typeof(DefaultGameplayResetTargetClassifier),
+                            "GameplayResetTarget.EaterOnly using string-based fallback (EaterActor).");
+                    }
                     return;
 
                 default:
@@ -83,33 +88,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
             }
         }
 
-        private static void AddByPredicate(IActorRegistry actorRegistry, List<IActor> results, Func<IActor, bool> predicate)
-        {
-            if (actorRegistry.Actors == null)
-                return;
-
-            foreach (var actor in actorRegistry.Actors)
-            {
-                if (actor == null)
-                    continue;
-
-                if (predicate(actor))
-                    results.Add(actor);
-            }
-        }
-
-        private static bool IsEaterActor(IActor actor)
-        {
-            var t = actor.Transform;
-            if (t == null)
-                return false;
-
-            // Mantém a feature funcional sem depender de um tipo compile-time.
-            // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
-            var eater = t.GetComponent("EaterActor");
-            return eater != null;
-        }
-
         private static void AddByActorKind(IActorRegistry actorRegistry, List<IActor> results, ActorKind kind)
         {
             if (actorRegistry.Actors == null)
@@ -141,6 +119,41 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Reset
 
             kind = provider.Kind;
             return true;
+        }
+
+        private static void AddEatersKindFirstWithFallback(
+            IActorRegistry actorRegistry,
+            List<IActor> results,
+            out bool fallbackUsed)
+        {
+            fallbackUsed = false;
+
+            if (actorRegistry.Actors == null)
+                return;
+
+            foreach (var actor in actorRegistry.Actors)
+            {
+                if (actor == null)
+                    continue;
+
+                if (TryGetActorKind(actor, out var actorKind) && actorKind == ActorKind.Eater)
+                {
+                    results.Add(actor);
+                    continue;
+                }
+
+                var t = actor.Transform;
+                if (t == null)
+                    continue;
+
+                // Mantém a feature funcional sem depender de um tipo compile-time.
+                // Quando existir um EaterActor concreto, isso passa a classificar corretamente.
+                if (t.GetComponent("EaterActor") != null)
+                {
+                    results.Add(actor);
+                    fallbackUsed = true;
+                }
+            }
         }
     }
 }
