@@ -37,58 +37,82 @@ Este report é o **master** para evidência mínima do fluxo de produção.
 2. O `PauseOverlayController.ReturnToMenuFrontend()` publica `GameExitToMenuRequestedEvent`, aciona a bridge e chama `IGameNavigationService.RequestToMenu(...)`.
 3. Aguarde a transição concluir e o menu reaparecer.
 
-## Logs essenciais (capturar trechos reais)
-> **Não inventar nomes** — abaixo estão os logs reais do projeto.
+## Logs essenciais (padrões de busca)
+> **Objetivo:** coletar evidências com **padrões de busca (grep)** sem depender de textos exatos.
+> **Se incluir exemplos, marque como “Exemplo (pode variar)”.**
 
 ### SceneFlow (eventos + pipeline)
-- `SceneTransitionStartedEvent` (emitido pelo SceneFlow):
+- **Eventos/classes relevantes**:
+  - `SceneTransitionStartedEvent`
+  - `SceneTransitionScenesReadyEvent`
+  - `SceneTransitionBeforeFadeOutEvent`
+  - `SceneTransitionCompletedEvent`
+- **Tokens curtos para buscar**:
+  - `SceneTransitionStarted`
+  - `ScenesReady`
+  - `BeforeFadeOut`
+  - `TransitionCompleted`
+  - `SceneFlow`
+- **Exemplo (pode variar)**:
   - `"[SceneFlow] Iniciando transição: SceneTransitionContext(...)"`
-  - `"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context=..."`
-  - `"[Loading] Started → Ensure + Show. signature='...'"`
-- `SceneTransitionScenesReadyEvent`:
-  - `"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context=..."`
-  - `"[WorldLifecycle] SceneTransitionScenesReady recebido. Context=..."`
-  - `"[Loading] ScenesReady → Update pending. signature='...'"`
-- `SceneTransitionBeforeFadeOutEvent`:
-  - `"[Loading] BeforeFadeOut → Hide. signature='...'"`
-- `SceneTransitionCompletedEvent`:
-  - `"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. Context=..."`
-  - `"[Loading] Completed → Safety hide. signature='...'"`
-  - `"[SceneFlow] Transição concluída com sucesso."`
 
-### Gate / Readiness (tokens e liberação)
-- Token de simulação (SceneFlow):
-  - `"[Readiness] SimulationGate adquirido com token='flow.scene_transition'. Active=..., IsOpen=..."`
-  - `"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. Context=..."`
-- Completion gate (WorldLifecycleResetCompletionGate):
-  - `"[SceneFlowGate] WorldLifecycleResetCompletionGate registrado. timeoutMs=..."`
-  - `"[SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='...', reason='...'"`
-  - `"[SceneFlowGate] Concluído. signature='...', reason='...'"`
+### Readiness / Gate (tokens e liberação)
+- **Eventos/classes relevantes**:
+  - `GameReadinessService`
+  - `WorldLifecycleResetCompletionGate`
+  - `SimulationGateTokens.SceneTransition`
+- **Tokens curtos para buscar**:
+  - `[Readiness]`
+  - `SimulationGate`
+  - `flow.scene_transition`
+  - `SceneFlowGate`
+  - `signature=`
+- **Exemplo (pode variar)**:
+  - `"[Readiness] SceneTransitionCompleted → gate liberado"`
 
 ### WorldLifecycle (reset + signature)
-- Recebimento de ScenesReady:
-  - `"[WorldLifecycle] SceneTransitionScenesReady recebido. Context=..."`
-- Reset concluído (ou skip) com assinatura:
+- **Eventos/classes relevantes**:
+  - `WorldLifecycleRuntimeCoordinator`
+  - `WorldLifecycleResetCompletedEvent`
+  - `SceneTransitionSignatureUtil`
+- **Tokens curtos para buscar**:
+  - `[WorldLifecycle]`
+  - `Reset SKIPPED`
+  - `ResetCompleted`
+  - `signature=`
+  - `reason=`
+- **Exemplo (pode variar)**:
   - `"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='...', signature='...', reason='...'"`
-- SKIP esperado para startup/frontend:
-  - `"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='...', activeScene='...'"`
 
-### Fade / Loading
-- Fade (controller):
-  - `"[Fade] Iniciando Fade para alpha=1 (dur=...)"`
-  - `"[Fade] Fade concluído para alpha=1"`
-  - `"[Fade] Iniciando Fade para alpha=0 (dur=...)"`
-  - `"[Fade] Fade concluído para alpha=0"`
-- Loading HUD:
-  - `"[LoadingHUD] Show aplicado. signature='...', phase='...'"`
+### Fade
+- **Eventos/classes relevantes**:
+  - `INewScriptsFadeService`
+  - `NewScriptsFadeController`
+- **Tokens curtos para buscar**:
+  - `[Fade]`
+  - `FadeIn`
+  - `FadeOut`
+  - `alpha=`
+- **Exemplo (pode variar)**:
+  - `"[Fade] Iniciando Fade para alpha=0"`
+
+### Loading HUD
+- **Eventos/classes relevantes**:
+  - `INewScriptsLoadingHudService`
+  - `NewScriptsLoadingHudController`
+- **Tokens curtos para buscar**:
+  - `[LoadingHUD]`
+  - `Show`
+  - `Hide`
+  - `phase=`
+- **Exemplo (pode variar)**:
   - `"[LoadingHUD] Hide aplicado. signature='...', phase='...'"`
 
 ## Critérios de aceite
 - **Sem exceptions** no Console.
 - `SceneTransitionCompletedEvent` **sempre ocorre** em cada transição.
 - `WorldLifecycleResetCompletedEvent` contém `signature` que **casa** com `SceneTransitionSignatureUtil.Compute(context)`.
-- `Loading HUD` **não fica preso ativo** após o completed (log de Hide aplicado deve ocorrer).
-- `Fade` **não fica preso** (alpha final coerente: 0 após FadeOut).
+- Após concluir a transição, a cena deve estar revelada (**fade alpha=0**), e o HUD oculto.
 - `GameLoop` **não inicia antes** de `WorldLifecycleResetCompletedEvent`:
   - `"[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. Chamando GameLoop.RequestStart()."`
 
