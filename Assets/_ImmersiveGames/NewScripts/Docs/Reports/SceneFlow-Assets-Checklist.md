@@ -58,15 +58,21 @@ Checklist executável para validar os assets necessários ao pipeline **SceneFlo
 - [ ] `CanvasGroup` (no mesmo GameObject ou referenciado).
 - [ ] Canvas configurado para ordenação (sorting) de UI.
 
-**Regras de ordenação (ADR-0009 + tooltip do controller)**
+**Regras de ordenação (Fade vs Loading HUD)**
 - [ ] Fade **abaixo do Loading HUD**.
 - [ ] `sortingOrder` do Fade recomendado: **11000** (valor padrão do `NewScriptsFadeController`).
+
+**Fonte de verdade (confirmar antes de ajustar valores)**
+- [ ] ADR-0009 — Fade + SceneFlow (seções de decisão/integração).
+- [ ] ADR-0010 — Loading HUD (seção de ordenação do HUD).
+- [ ] `NewScriptsFadeController` (valor padrão de `sortingOrder`).
+- [ ] `LoadingHudScene` (Canvas com `overrideSorting` e `sortingOrder`).
 
 **Como validar**
 - [ ] Abrir a `FadeScene`.
 - [ ] Conferir se o `NewScriptsFadeController` está presente e com `CanvasGroup` válido.
 - [ ] Verificar `sortingOrder` do Canvas (esperado 11000) e se o Fade fica **abaixo** do HUD.
-- [ ] Rodar uma transição de teste (Menu → Gameplay) e observar FadeIn/FadeOut.
+- [ ] Rodar uma transição de teste (Menu → Gameplay) e observar o Fade cobrindo a tela antes do reveal.
 
 ---
 
@@ -81,10 +87,14 @@ Checklist executável para validar os assets necessários ao pipeline **SceneFlo
 - [ ] `CanvasGroup` configurado para show/hide.
 - [ ] Canvas configurado para overlay/sorting.
 
-**Regras de ordenação (ADR-0010)**
+**Regras de ordenação (Fade vs Loading HUD)**
 - [ ] `overrideSorting = true`.
-- [ ] `sortingOrder` **maior que o Fade** (ex.: **12050** conforme ADR).
+- [ ] `sortingOrder` **maior que o Fade** (ex.: **12050** — confirmar fonte de verdade abaixo).
 - [ ] Loading HUD deve ficar **acima do Fade**.
+
+**Fonte de verdade (confirmar antes de ajustar valores)**
+- [ ] ADR-0010 — Loading HUD (seção de ordenação do HUD).
+- [ ] `LoadingHudScene` (Canvas com `overrideSorting` e `sortingOrder`).
 
 **Como validar**
 - [ ] Abrir a `LoadingHudScene`.
@@ -102,9 +112,19 @@ Checklist executável para validar os assets necessários ao pipeline **SceneFlo
 
 **Invariantes (ordem esperada do pipeline)**
 - [ ] `SceneTransitionStartedEvent` → **Loading HUD Show** (fase Started).
-- [ ] `FadeIn` (se `UseFade=true`).
+- [ ] `SceneTransitionStartedEvent` → **Fade to black (hide)** *se `UseFade=true`*.
 - [ ] Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
 - [ ] **Completion gate** (WorldLifecycle reset) antes de revelar a cena.
 - [ ] `SceneTransitionBeforeFadeOutEvent` → **Loading HUD Hide** (fase BeforeFadeOut).
-- [ ] `FadeOut`.
+- [ ] `SceneTransitionBeforeFadeOutEvent` → **Fade from black (reveal)**.
 - [ ] `SceneTransitionCompletedEvent` → **Loading HUD Hide** (safety hide).
+
+**Se houver dúvida sobre o mapeamento de Fade**
+- [ ] Verificar logs do `NewScriptsFadeService` em Play Mode:
+  - `"[Fade] Iniciando Fade para alpha=1"` (fade to black / hide).
+  - `"[Fade] Iniciando Fade para alpha=0"` (fade from black / reveal).
+- [ ] Correlacionar com logs do `SceneTransitionService`:
+  - `"[SceneFlow] Iniciando transição"` (Started)
+  - `"SceneTransitionScenesReadyEvent"` (ScenesReady)
+  - `"SceneTransitionBeforeFadeOutEvent"` (BeforeFadeOut)
+  - `"[SceneFlow] Transição concluída"` (Completed)
