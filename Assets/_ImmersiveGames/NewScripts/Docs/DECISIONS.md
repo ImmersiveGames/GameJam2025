@@ -24,7 +24,11 @@ Este documento consolida as decisões arquiteturais relevantes ao NewScripts.
 
 ## ADR-000X — Ciclo de Vida do Jogo e Reset por Escopos
 
-## ADR-00XX — Gameplay Reset por grupos (fases Cleanup/Restore/Rebind)
+Referência: [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md).
+
+## ADR-0014 — Gameplay Reset Targets/Grupos (fases Cleanup/Restore/Rebind)
+
+Referência: [ADR-0014-GameplayReset-Targets-Grupos.md](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md).
 
 **Motivação:** Enquanto o spawn ainda está sendo consolidado, precisamos de um mecanismo **testável** e local ao escopo da cena para validar “reset de gameplay” (ex.: players) sem depender do pipeline completo de spawn.
 
@@ -94,32 +98,27 @@ Referência: [ADR-0010-LoadingHud-SceneFlow.md](ADRs/ADR-0010-LoadingHud-SceneFl
 
 ---
 
-## ADR-00XX — Readiness/Gate como fonte de verdade para “pronto para jogar”
+## ADR-0013 — Readiness/Gate como fonte de verdade para “pronto para jogar”
 **Status:** Ativo
 
-**Decisão:** consolidar “prontidão” em `GameReadinessService` com tokens do `ISimulationGateService`, alimentado por eventos de SceneFlow.
+Resumo:
+- Prontidão é derivada do `GameReadinessService` + `ISimulationGateService` (tokens).
+- Ações de gameplay devem consultar `IStateDependentService` (gate-aware).
+- Transições de cena adquirem/liberam tokens para manter determinismo.
 
-**Motivação:** evitar “if espalhado” e conditions divergentes (transição, pausa, carregamento).
-
-**Consequências:**
-- ações de gameplay devem consultar `IStateDependentService` (gate-aware)
-- transição de cena sempre deve adquirir/liberar token de gate
-- logs devem publicar snapshots para depuração.
+Referência: [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md).
 
 ---
 
-## ADR-00XX — SKIP de WorldLifecycle em startup/menu
+## ADR-0013 — SKIP de WorldLifecycle em startup/menu
 **Status:** Temporário (para estabilização e testes)
 
-**Decisão:** o `WorldLifecycleRuntimeCoordinator` emite `WorldLifecycleResetCompletedEvent` e não executa reset em:
-- `profile == 'startup'`, ou
-- `activeScene == 'MenuScene'`.
+Resumo:
+- O `WorldLifecycleRuntimeCoordinator` faz **SKIP** em `startup/menu`.
+- Mesmo no SKIP, emite `WorldLifecycleResetCompletedEvent` para destravar o fluxo.
+- Evita dependência da GameplayScene durante bootstrap/frontend.
 
-**Motivação:** evitar contaminar testes de Fade/SceneFlow com dependências da GameplayScene.
-
-**Consequências:**
-- gameplay real ainda precisa integrar reset/spawn em cena de gameplay,
-- o Coordinator continua destravando corretamente após transições em menu.
+Referência: [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md).
 
 ## Decisão — Eventos do GameLoop permanecem context-free
 - O GameLoop não transporta `ContextSignature` em eventos de start/pause/resume/reset.

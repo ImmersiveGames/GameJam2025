@@ -1,3 +1,5 @@
+﻿> Moved from `Infrastructure/WorldLifecycle/WORLDLIFECYCLE_SPAWN_ANALYSIS.md` on 2025-12-29.
+
 # WorldLifecycle Spawn — Análise (estrutura, completude, organização, SOLID)
 
 Data: 2025-12-26  

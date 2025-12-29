@@ -1,4 +1,6 @@
-﻿# GameLoop (NewScripts)
+﻿> Moved from `Gameplay/GameLoop/Docs/GameLoop.md` on 2025-12-29.
+
+# GameLoop (NewScripts)
 
 ## Escopo e responsabilidade
 O **GameLoop** define o **estado macro da simulação** (ativo/inativo/pausado) e expõe isso como uma **fonte de verdade operacional** para sistemas que precisam saber se a simulação está jogável.
