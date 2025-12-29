@@ -12,7 +12,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public string CurrentStateIdName { get; private set; } = string.Empty;
 
-        public void RequestStart() => _signals.MarkStart();
+        public void RequestStart()
+        {
+            if (_stateMachine != null && _stateMachine.IsGameActive)
+            {
+                DebugUtility.LogVerbose<GameLoopService>(
+                    $"[GameLoop] RequestStart ignored (already active). state={_stateMachine.Current}.");
+                return;
+            }
+
+            _signals.MarkStart();
+        }
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
