@@ -9,6 +9,9 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: report master `Reports/SceneFlow-Production-EndToEnd-Validation.md` com passo-a-passo do fluxo Menu → Gameplay → Menu.
 - Updated: `README.md` para linkar o report master.
 
+## [2026-01-01]
+- Updated: report master end-to-end (`Reports/SceneFlow-Production-EndToEnd-Validation.md`) com padrões de busca e critério de fade/HUD.
+
 ## [2025-12-29]
 - Added: normalização de docs do NewScripts (migrando reports para `Docs/Reports`, consolidando `Docs/ADRs` e atualizando links).
 - Added: ADR-0014 (`GameplayReset Targets/Grupos`) com targets canônicos, determinismo e integração com WorldLifecycle.
