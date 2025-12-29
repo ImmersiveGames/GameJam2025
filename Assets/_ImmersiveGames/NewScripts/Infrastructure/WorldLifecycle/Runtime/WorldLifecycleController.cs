@@ -33,9 +33,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
+
+        // Estado informativo (útil para logs/inspeção); o controle real é via fila.
         private bool _isResetting;
-        private readonly object _resetLock = new();
-        private Task _resetTask;
+
+        // Fila simples: garante execução sequencial de resets (World/Players/etc).
+        private readonly object _queueLock = new();
+        private readonly Queue<ResetRequest> _resetQueue = new();
+        private bool _processingQueue;
+
+        private const int ResetQueueBacklogWarningThreshold = 3;
+
         private string _sceneName = string.Empty;
 
         public bool AutoInitializeOnStart
@@ -68,79 +76,151 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
+            // Se a cena foi carregada via SceneFlow, o reset "production" deve ocorrer no driver (ScenesReady).
+            // Evita reset duplo (Start + ScenesReady) quando o GameReadinessService mantém o token ativo durante a transição.
+            if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
+            {
+                if (verboseLogs)
+                {
+                    DebugUtility.Log(typeof(WorldLifecycleController),
+                        $"AutoInitializeOnStart suprimido: SceneTransition gate ativo. Aguardando driver (ScenesReady). scene='{_sceneName}'.");
+                }
+                return;
+            }
+
             _ = InitializeWorldAsync();
         }
 
-        /// <summary>
-        /// API pública. Garante não concorrência e executa um reset completo.
-        /// </summary>
-        public async Task ResetWorldAsync(string reason)
+        private void OnDestroy()
         {
-            Task activeResetTask;
-            var isAwaitingExistingReset = false;
-
-            lock (_resetLock)
+            // Evita que awaits fiquem pendurados em unload/destruição do controller.
+            lock (_queueLock)
             {
-                if (_resetTask != null && !_resetTask.IsCompleted)
+                while (_resetQueue.Count > 0)
                 {
-                    isAwaitingExistingReset = true;
-                    activeResetTask = _resetTask;
+                    var req = _resetQueue.Dequeue();
+                    req.TryCancel();
                 }
-                else
-                {
-                    _resetTask = RunWorldResetAsync(reason);
-                    activeResetTask = _resetTask;
-                }
+                _processingQueue = false;
             }
+        }
 
-            if (isAwaitingExistingReset)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Reset já em andamento — aguardando conclusão. reason='{reason}', scene='{_sceneName}'.");
-            }
-
-            await activeResetTask;
+        /// <summary>
+        /// API pública. Enfileira um reset completo (hard reset).
+        /// Se já houver um reset em andamento, este reset aguardará sua vez.
+        /// </summary>
+        public Task ResetWorldAsync(string reason)
+        {
+            return EnqueueReset(
+                label: $"WorldReset(reason='{reason ?? "<null>"}')",
+                runner: () => RunWorldResetAsync(reason));
         }
 
         /// <summary>
         /// Soft reset focado apenas no escopo de jogadores (Players).
+        /// Se já houver um reset em andamento, este reset aguardará sua vez.
         /// </summary>
-        public async Task ResetPlayersAsync(string reason = "PlayersSoftReset")
+        public Task ResetPlayersAsync(string reason = "PlayersSoftReset")
         {
-            Task activeResetTask;
-            var isAwaitingExistingReset = false;
-
-            lock (_resetLock)
-            {
-                if (_resetTask != null && !_resetTask.IsCompleted)
-                {
-                    isAwaitingExistingReset = true;
-                    activeResetTask = _resetTask;
-                }
-                else
-                {
-                    _resetTask = RunPlayersResetAsync(reason);
-                    activeResetTask = _resetTask;
-                }
-            }
-
-            if (isAwaitingExistingReset)
-            {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Soft reset (Players) já em andamento — aguardando conclusão. reason='{reason}', scene='{_sceneName}'.");
-            }
-
-            await activeResetTask;
+            return EnqueueReset(
+                label: $"PlayersReset(reason='{reason ?? "<null>"}')",
+                runner: () => RunPlayersResetAsync(reason));
         }
 
-        private async Task InitializeWorldAsync()
+        private Task InitializeWorldAsync()
         {
-            await ResetWorldAsync("AutoInitialize/Start");
+            return ResetWorldAsync("AutoInitialize/Start");
+        }
+
+        private Task EnqueueReset(string label, Func<Task> runner)
+        {
+            if (runner == null) throw new ArgumentNullException(nameof(runner));
+
+            ResetRequest request;
+            int position;
+            bool willStartProcessing;
+
+            lock (_queueLock)
+            {
+                request = new ResetRequest(label, runner);
+
+                _resetQueue.Enqueue(request);
+                position = _resetQueue.Count;
+
+                willStartProcessing = !_processingQueue;
+                if (willStartProcessing)
+                {
+                    _processingQueue = true;
+                    _ = ProcessQueueAsync();
+                }
+            }
+            if (position > ResetQueueBacklogWarningThreshold)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
+            }
+
+
+            if (position > 1)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    $"Reset enfileirado (posição={position}). label='{label}', scene='{_sceneName}'.");
+            }
+            else if (verboseLogs)
+            {
+                DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                    $"Reset enfileirado (posição={position}). label='{label}', scene='{_sceneName}'.");
+            }
+
+            return request.Task;
+        }
+
+        private async Task ProcessQueueAsync()
+        {
+            while (true)
+            {
+                ResetRequest request;
+
+                lock (_queueLock)
+                {
+                    if (_resetQueue.Count == 0)
+                    {
+                        _processingQueue = false;
+                        return;
+                    }
+
+                    request = _resetQueue.Dequeue();
+                }
+
+                _isResetting = true;
+
+                try
+                {
+                    if (verboseLogs)
+                    {
+                        DebugUtility.Log(typeof(WorldLifecycleController),
+                            $"Processando reset. label='{request.Label}', scene='{_sceneName}'.");
+                    }
+
+                    await request.Runner();
+                }
+                catch (Exception ex)
+                {
+                    // Guardrail: Reset não deve quebrar o fluxo do caller (best-effort).
+                    DebugUtility.LogError(typeof(WorldLifecycleController),
+                        $"Exception while processing reset queue item (label='{request.Label}', scene='{_sceneName}'): {ex}",
+                        this);
+                }
+                finally
+                {
+                    _isResetting = false;
+                    request.TryComplete();
+                }
+            }
         }
 
         private async Task RunWorldResetAsync(string reason)
         {
-            _isResetting = true;
             try
             {
                 EnsureDependenciesInjected();
@@ -172,19 +252,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
                     this);
             }
-            finally
-            {
-                _isResetting = false;
-                lock (_resetLock)
-                {
-                    _resetTask = null;
-                }
-            }
         }
 
         private async Task RunPlayersResetAsync(string reason)
         {
-            _isResetting = true;
             try
             {
                 EnsureDependenciesInjected();
@@ -217,14 +288,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 DebugUtility.LogError(typeof(WorldLifecycleController),
                     $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): {ex}",
                     this);
-            }
-            finally
-            {
-                _isResetting = false;
-                lock (_resetLock)
-                {
-                    _resetTask = null;
-                }
             }
         }
 
@@ -330,6 +393,32 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             return valid;
+        }
+
+        private readonly struct ResetRequest
+        {
+            private readonly TaskCompletionSource<bool> _tcs;
+
+            public ResetRequest(string label, Func<Task> runner)
+            {
+                Label = label ?? "<null>";
+                Runner = runner ?? throw new ArgumentNullException(nameof(runner));
+                _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            public string Label { get; }
+            public Func<Task> Runner { get; }
+            public Task Task => _tcs.Task;
+
+            public void TryComplete()
+            {
+                _tcs.TrySetResult(true);
+            }
+
+            public void TryCancel()
+            {
+                _tcs.TrySetCanceled();
+            }
         }
     }
 }

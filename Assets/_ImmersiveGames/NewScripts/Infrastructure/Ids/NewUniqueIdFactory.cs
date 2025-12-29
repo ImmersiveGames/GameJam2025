@@ -10,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
         string GenerateId(GameObject owner, string prefix = null);
         int GetInstanceCount(string actorName);
     }
+
     /// <summary>
     /// NewScripts generic unique ID generator.
     /// Goals:
@@ -21,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
     /// </summary>
     public sealed class NewUniqueIdFactory : IUniqueIdFactory
     {
-        private readonly Dictionary<string, int> _instanceCounts = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> _instanceCounts = new Dictionary<string, int>(StringComparer.Ordinal);
         private long _globalCounter;
 
         // Short session salt to reduce collisions across play sessions in the editor (domain reload off, etc.)
@@ -29,11 +30,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
 
         public string GenerateId(GameObject owner, string prefix = null)
         {
-            // We do not use owner components (no GetComponent / gameplay coupling).
-            // owner is only used for optional per-name counts.
+            // owner is only used for optional per-name counts / debugging readability.
             string baseName = owner != null ? owner.name : "NullOwner";
 
-            int count = _instanceCounts.GetValueOrDefault(baseName, 0);
+            int count;
+            if (!_instanceCounts.TryGetValue(baseName, out count))
+            {
+                count = 0;
+            }
 
             count++;
             _instanceCounts[baseName] = count;
@@ -41,10 +45,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
             long seq = Interlocked.Increment(ref _globalCounter);
 
             // Strong unique core (session + monotonic counter).
-            // The baseName and per-name count are only for debugging readability.
+            // The baseName is only for debugging readability.
             string idCore = $"A_{_sessionSalt}_{seq}";
 
-            // Optional human hint (safe + bounded). Does not affect uniqueness.
             string hint = SanitizeToken(baseName);
             if (!string.IsNullOrEmpty(hint))
             {
@@ -70,13 +73,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
                 return 0;
             }
 
-            return _instanceCounts.GetValueOrDefault(actorName, 0);
+            int count;
+            return _instanceCounts.TryGetValue(actorName, out count) ? count : 0;
         }
 
         private static string CreateSessionSalt()
         {
-            // 8 chars from a Guid is enough for a session salt.
-            return Guid.NewGuid().ToString("N")[..8];
+            // 8 chars from a Guid is enough for a session salt (avoid range operator for compatibility).
+            string guid = Guid.NewGuid().ToString("N");
+            return guid.Length >= 8 ? guid.Substring(0, 8) : guid;
         }
 
         private static string SanitizeToken(string value)
@@ -88,9 +93,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
 
             // Keep it stable, short, and file/log friendly.
             // Replace whitespace with '-', remove problematic chars, and cap length.
-            Span<char> buffer = stackalloc char[Math.Min(value.Length, 24)];
-            int written = 0;
+            int cap = Math.Min(value.Length, 24);
+            Span<char> buffer = stackalloc char[cap];
 
+            int written = 0;
             for (int i = 0; i < value.Length && written < buffer.Length; i++)
             {
                 char c = value[i];
@@ -105,10 +111,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Ids
                 {
                     buffer[written++] = c;
                 }
-                // ignore everything else
             }
 
-            return written == 0 ? string.Empty : new string(buffer[..written]);
+            return written == 0 ? string.Empty : new string(buffer.Slice(0, written));
         }
     }
 }

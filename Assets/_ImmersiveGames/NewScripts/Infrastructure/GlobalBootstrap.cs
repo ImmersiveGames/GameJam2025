@@ -1,3 +1,5 @@
+// Assets/_ImmersiveGames/NewScripts/Infrastructure/GlobalBootstrap.cs
+
 /*
  * ChangeLog
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
@@ -212,6 +214,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterSceneFlowNative()
         {
+            // Garantia: sempre ter o runtime coordinator vivo quando o completion gate estiver ativo.
+            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
+
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -357,7 +362,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterGameRunStatusService()
         {
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoop] IGameRunStatusService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
+
+            // Mantém compatibilidade com a assinatura atual do GameRunStatusService (injeção por construtor).
             RegisterIfMissing<IGameRunStatusService>(() => new GameRunStatusService(gameLoopService));
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),

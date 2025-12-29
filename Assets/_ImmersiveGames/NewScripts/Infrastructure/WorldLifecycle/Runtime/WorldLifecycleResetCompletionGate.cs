@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -27,6 +29,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private readonly int _timeoutMs;
 
+        // Cache defensivo para evitar crescimento infinito em sessões longas.
+        private const int MaxCompletedCacheEntries = 128;
+
         public WorldLifecycleResetCompletionGate(int timeoutMs = 20000)
         {
             _timeoutMs = timeoutMs;
@@ -42,6 +47,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         public void Dispose()
         {
             EventBus<WorldLifecycleResetCompletedEvent>.Unregister(_binding);
+
+            lock (_pending)
+            {
+                _pending.Clear();
+                _completedReasons.Clear();
+            }
         }
 
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
@@ -74,6 +85,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             Task completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
             if (completed != tcs.Task)
             {
+                // Importante: evita acumular pending em caso de evento nunca publicado.
+                lock (_pending)
+                {
+                    if (_pending.TryGetValue(signature, out var current) && ReferenceEquals(current, tcs))
+                    {
+                        _pending.Remove(signature);
+                    }
+                }
+
                 DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
                     $"[SceneFlowGate] Timeout aguardando WorldLifecycleResetCompletedEvent. signature='{signature}', timeoutMs={_timeoutMs}.");
                 return;
@@ -94,16 +114,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             lock (_pending)
             {
-                // Marca como concluído (para chamadas futuras).
-                if (!_completedReasons.ContainsKey(signature))
-                {
-                    _completedReasons[signature] = reason;
-                }
+                // Cache defensivo: impede crescimento infinito.
+                PruneCompletedCacheIfNeeded();
 
-                if (_pending.TryGetValue(signature, out tcs))
-                {
-                    _pending.Remove(signature);
-                }
+                // Marca como concluído (para chamadas futuras).
+                _completedReasons.TryAdd(signature, reason);
+
+                _pending.Remove(signature, out tcs);
             }
 
             if (tcs != null)
@@ -113,6 +130,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
                 $"[SceneFlowGate] WorldLifecycleResetCompletedEvent recebido. signature='{signature}', reason='{reason ?? "<null>"}'.");
+        }
+
+        private void PruneCompletedCacheIfNeeded()
+        {
+            // Estratégia simples e estável: ao estourar, limpa tudo.
+            // (Evita overhead de LRU; suficiente como proteção contra crescimento infinito.)
+            if (_completedReasons.Count <= MaxCompletedCacheEntries)
+            {
+                return;
+            }
+
+            _completedReasons.Clear();
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
+                $"[SceneFlowGate] Cache de completedReasons limpo (atingiu limite > {MaxCompletedCacheEntries}).");
         }
     }
 }
