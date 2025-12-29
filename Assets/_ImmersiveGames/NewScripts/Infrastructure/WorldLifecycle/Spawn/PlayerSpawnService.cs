@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Gameplay.Player.Movement;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
+using _ImmersiveGames.NewScripts.Infrastructure.State;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
         private readonly IActorRegistry _actorRegistry;
         private readonly IWorldSpawnContext _context;
         private readonly GameObject _prefab;
+        private readonly IStateDependentService _stateService;
 
         private IActor _spawnedActor;
         private GameObject _spawnedObject;
@@ -24,12 +26,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
-            GameObject prefab)
+            GameObject prefab,
+            IStateDependentService stateService)
         {
             _uniqueIdFactory = uniqueIdFactory;
             _actorRegistry = actorRegistry;
             _context = context;
             _prefab = prefab;
+            _stateService = stateService;
         }
 
         public string Name => nameof(PlayerSpawnService);
@@ -77,6 +81,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
 
             _spawnedObject.name = _prefab.name;
             EnsureMovementStack(_spawnedObject);
+            InjectStateService(_spawnedObject);
 
             if (!TryResolveActor(_spawnedObject, out _spawnedActor))
             {
@@ -286,6 +291,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn
             if (controller != null && input != null)
             {
                 controller.SetInputReader(input);
+            }
+        }
+
+        private void InjectStateService(GameObject instance)
+        {
+            if (_stateService == null || instance == null)
+            {
+                return;
+            }
+
+            if (instance.TryGetComponent(out NewPlayerMovementController controller))
+            {
+                controller.InjectStateService(_stateService);
             }
         }
     }

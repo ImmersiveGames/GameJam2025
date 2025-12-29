@@ -59,6 +59,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                     "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> solicitando GameLoop.RequestStart().",
                     DebugUtility.Colors.Info);
+
+                if (gameLoopService.CurrentStateIdName == nameof(GameLoopStateId.Playing))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        "[InputModeSceneFlowBridge] [GameLoop] RequestStart ignored (already active). " +
+                        "source=SceneFlow/Completed:Gameplay state=Playing.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
                 gameLoopService.RequestStart();
                 return;
             }
