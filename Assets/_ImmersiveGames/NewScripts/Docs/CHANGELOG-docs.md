@@ -7,6 +7,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - Added: report master `Reports/SceneFlow-Production-EndToEnd-Validation.md` com passo-a-passo do fluxo Menu → Gameplay → Menu.
 - Updated: report master end-to-end (`Reports/SceneFlow-Production-EndToEnd-Validation.md`) com padrões de busca e critério de fade/HUD.
 - Updated: `README.md` para linkar o report master.
+- Fixed: removida data futura no README e alinhado vocabulário de fade ao master.
 - Updated: `README.md` com links canônicos (master) e seção de reports históricos de SceneFlow.
 - Updated: reports históricos de SceneFlow marcados como **HISTÓRICO** e linkados ao master.
 - Updated: `Reports/SceneFlow-Gameplay-Blockers-Report.md` com referência ao master.

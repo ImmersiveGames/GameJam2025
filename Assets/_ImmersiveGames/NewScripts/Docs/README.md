@@ -17,7 +17,7 @@ Arquivos canônicos (este pacote):
 - [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md) — ADR de reset por escopos + gate no ciclo de vida do jogo.
 
 ## Reports (evidências)
-Status: evidências atualizadas em 2025-12-31.
+Status: evidências atualizadas em 2025-12-29.
 
 ### Validação de Produção (master)
 - [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
@@ -130,10 +130,10 @@ Em 2025-12-27 (estado observado em runtime):
     - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
     - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
 2. **SceneTransitionService (pipeline)**
-    - Emite `SceneTransitionStartedEvent` → `FadeIn`.
+    - Emite `SceneTransitionStartedEvent` → `Fade to black (hide)`.
     - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
     - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
-    - `FadeOut` → `SceneTransitionCompletedEvent`.
+    - `Fade from black (reveal)` → `SceneTransitionCompletedEvent`.
 3. **WorldLifecycle**
     - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
         - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
