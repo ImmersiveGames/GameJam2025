@@ -1,3 +1,27 @@
+﻿## Atualização (2025-12-30)
+
+- Fluxo de **produção** validado end-to-end: Startup → Menu → Gameplay via SceneFlow + Fade + Loading HUD + Navigation.
+- `WorldLifecycleRuntimeCoordinator` reage a `SceneTransitionScenesReadyEvent`:
+    - Profile `startup`/frontend: reset **skip** + emite `WorldLifecycleResetCompletedEvent`.
+    - Profile `gameplay`: dispara **hard reset** (`ResetWorldAsync`) e emite `WorldLifecycleResetCompletedEvent` ao concluir.
+- `SceneTransitionService` passa a aguardar `WorldLifecycleResetCompletionGate` antes do FadeOut (assinatura = `SceneTransitionContext.ToString()`).
+- Hard reset em Gameplay confirma spawn via `WorldDefinition` (2 entries: Player + Eater) e execução do orchestrator com Gate (`WorldLifecycle.WorldReset`).
+- `IStateDependentService` bloqueia input/movimento durante gate e libera ao final; pausa também fecha gate via `GamePauseGateBridge`.
+
+
+```log
+[WorldLifecycleRuntimeCoordinator] SceneTransitionScenesReady recebido. Context=SceneTransitionContext(... Profile='gameplay')
+[WorldLifecycleRuntimeCoordinator] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'
+[WorldLifecycleOrchestrator] Gate Acquired (WorldLifecycle.WorldReset)
+[WorldLifecycleOrchestrator] Spawn service completed: PlayerSpawnService
+[WorldLifecycleOrchestrator] Spawn service completed: EaterSpawnService
+[WorldLifecycleOrchestrator] ActorRegistry count at 'After Spawn': 2
+[WorldLifecycleOrchestrator] World Reset Completed
+[WorldLifecycleRuntimeCoordinator] Emitting WorldLifecycleResetCompletedEvent. ... reason='ScenesReady/GameplayScene'
+[SceneTransitionService] Aguardando completion gate antes do FadeOut. signature='SceneTransitionContext(... Profile='gameplay')'
+[SceneTransitionService] Completion gate concluído. Prosseguindo para FadeOut.
+```
+
 ﻿# World Lifecycle — Reset determinístico por escopos (NewScripts)
 
 Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
@@ -77,13 +101,13 @@ Durante transições de cena, o reset é coordenado por eventos:
 ### Integração com GameLoop (pós-game)
 - O **WorldLifecycle** continua responsável por resetar/despawnar/spawnar atores.
 - O **GameLoop** coordena o estado macro da run (ex.: `Playing` / `PostPlay`) e publica:
-  - `GameRunStartedEvent` / `GameRunEndedEvent` (resultado da run),
-  - `GameLoopActivityChangedEvent` (telemetria de atividade).
+    - `GameRunStartedEvent` / `GameRunEndedEvent` (resultado da run),
+    - `GameLoopActivityChangedEvent` (telemetria de atividade).
 - UI e sistemas em cenas globais/gameplay podem consultar `IGameRunStatusService`
   para exibir o resultado da última run sem depender diretamente de gameplay específico.
 - **Restart pós-game** usa o fluxo oficial:
-  - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestToGameplay(...)`
-  - `SceneTransitionScenesReadyEvent` (profile gameplay) → `WorldLifecycleRuntimeCoordinator` → reset determinístico.
+    - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestToGameplay(...)`
+    - `SceneTransitionScenesReadyEvent` (profile gameplay) → `WorldLifecycleRuntimeCoordinator` → reset determinístico.
 
 ### SKIP (startup/menu)
 Para estabilizar o pipeline sem contaminar testes com Gameplay, o driver faz SKIP quando:

@@ -8,7 +8,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
     /// Self-test para diagnosticar "ownership" do token de pausa.
-    /// Mantém um handle externo ativo para o token 'state.pause' e orienta o operador
+    ///
+    /// IMPORTANTE (Etapa 4):
+    /// - O token externo deste self-test DEVE ser diferente do token usado pelo PauseOverlay/Bridge
+    ///   (ex.: 'state.pause'), caso contrário o overlay "colide" com o mesmo handle e o teste perde valor.
+    ///
+    /// Este componente mantém um handle externo ativo e orienta o operador
     /// a abrir/fechar o PauseOverlay, validando que:
     /// - O overlay não "rouba" ownership nem libera handles que não são dele.
     /// - O gate só reabre quando TODOS os owners liberam.
@@ -23,7 +28,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
     {
         [Header("Config")]
         [SerializeField] private bool acquireExternalOnStart = true;
-        [SerializeField] private string pauseToken = "state.pause";
+
+        [Tooltip(
+            "Token mantido por este self-test. Deve ser DIFERENTE do token do PauseOverlay/Bridge (ex.: 'state.pause').\n" +
+            "Recomendado: 'qa.pause_ownership.external'.")]
+        [SerializeField] private string pauseToken = "qa.pause_ownership.external";
+
         [SerializeField] private bool verbose = true;
 
         [Header("Runtime Controls (QA)")]
@@ -44,6 +54,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private IDisposable _externalHandle;
         private bool _acquired;
+        private bool _warnedAboutTokenCollision;
 
         private void Awake()
         {
@@ -126,6 +137,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                 Debug.LogError("[PauseOwnershipSelfTest] AcquireExternal falhou: ISimulationGateService não resolvido.");
                 return;
             }
+
+            WarnIfTokenLikelyCollides();
 
             if (_acquired)
             {
@@ -246,6 +259,23 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
             var hint =
                 $"Hotkeys: Acquire={acquireKey}, Release={releaseKey}, Status={printStatusKey} | acquired={_acquired}";
             GUI.Label(new Rect(x + 8f, y, width - 16f, height), hint);
+        }
+
+        private void WarnIfTokenLikelyCollides()
+        {
+            if (_warnedAboutTokenCollision)
+                return;
+
+            // Colisão clássica: self-test usando o mesmo token do overlay/bridge.
+            if (string.Equals(pauseToken, "state.pause", StringComparison.Ordinal))
+            {
+                _warnedAboutTokenCollision = true;
+
+                Debug.LogWarning(
+                    "[PauseOwnershipSelfTest] pauseToken está configurado como 'state.pause'. " +
+                    "Isto provavelmente COLIDE com o token do PauseOverlay/Bridge e invalida o self-test. " +
+                    "Recomendado: 'qa.pause_ownership.external'.");
+            }
         }
 
         private void Log(string msg)

@@ -21,7 +21,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private string _expectedContextSignature;
 
         private readonly EventBinding<GameStartRequestedEvent> _startRequestedBinding;
-        private readonly EventBinding<GameStartRequestedEvent> _startCommandAliasBinding;
 
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
@@ -167,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
                 $"[GameLoopSceneFlow] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.");
 
-            TryIssueGameLoopStart();
+            TryIssueGameLoopSync();
         }
 
         private void OnWorldResetCompleted(WorldLifecycleResetCompletedEvent evt)
@@ -207,14 +206,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             DebugUtility.LogVerbose(typeof(GameLoopSceneFlowCoordinator),
                 $"[GameLoopSceneFlow] WorldLifecycle reset concluído (ou skip). reason='{evt.Reason ?? "<null>"}'.");
 
-            TryIssueGameLoopStart();
+            TryIssueGameLoopSync();
         }
 
         private bool IsMatchingProfile(string transitionProfileName)
         {
             string expected = _startPlan?.TransitionProfileName;
-            return string.IsNullOrWhiteSpace(expected) || string.Equals(transitionProfileName ?? string.Empty, expected, StringComparison.Ordinal);
-
+            return string.IsNullOrWhiteSpace(expected) ||
+                   string.Equals(transitionProfileName ?? string.Empty, expected, StringComparison.Ordinal);
         }
 
         private void EnsureExpectedSignatureFromContext(SceneTransitionContext context)
@@ -227,7 +226,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _expectedContextSignature = SceneTransitionSignatureUtil.Compute(context);
         }
 
-        private void TryIssueGameLoopStart()
+        private static bool IsGameplayProfile(string profileName)
+        {
+            // Mantido propositalmente simples para não acoplar o coordinator a outras camadas.
+            return string.Equals(profileName ?? string.Empty, "gameplay", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void TryIssueGameLoopSync()
         {
             if (_startIssued)
             {
@@ -242,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop) || gameLoop == null)
             {
                 DebugUtility.LogError(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível RequestStart().");
+                    "[GameLoopSceneFlow] IGameLoopService indisponível no DI global; não foi possível sincronizar GameLoop.");
 
                 _startInProgress = false;
                 return;
@@ -250,12 +255,28 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             _startIssued = true;
 
-            DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                "[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. Chamando GameLoop.RequestStart().",
-                DebugUtility.Colors.Success);
+            // Importante: este coordinator é usado para o startPlan de produção (tipicamente 'startup').
+            // Regra: Só iniciar "run" em gameplay. Em startup/frontend, apenas deixar o GameLoop em Ready (sem ativar Playing).
+            var profile = _startPlan?.TransitionProfileName ?? string.Empty;
 
             gameLoop.Initialize();
-            gameLoop.RequestStart();
+
+            if (IsGameplayProfile(profile))
+            {
+                DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
+                    "[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. profile='gameplay' -> GameLoop.RequestStart().",
+                    DebugUtility.Colors.Success);
+
+                gameLoop.RequestStart();
+            }
+            else
+            {
+                DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
+                    $"[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. profile='{profile}' -> GameLoop.RequestReady() (no-run em startup/frontend).",
+                    DebugUtility.Colors.Info);
+
+                gameLoop.RequestReady();
+            }
 
             _startInProgress = false;
         }

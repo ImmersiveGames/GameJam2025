@@ -26,6 +26,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
         private bool _disposed;
 
+        // "Clean option": evita publicar/logar snapshots redundantes.
+        private bool _hasLastSnapshot;
+        private ReadinessSnapshot _lastSnapshot;
+
         public GameReadinessService(ISimulationGateService gateService)
         {
             _gateService = gateService;
@@ -45,8 +49,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado nos eventos de Scene Flow.");
 
-            // Snapshot inicial (útil em bootstrap/QA).
-            PublishSnapshot("bootstrap");
+            // Snapshot inicial (útil em bootstrap/QA). Publica apenas se houver mudança (primeira vez sempre publica).
+            PublishSnapshot("bootstrap", force: false);
         }
 
         public bool IsGameplayReady => _gameplayReady;
@@ -62,7 +66,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             _gameplayReady = gameplayReady;
-            PublishSnapshot(reason);
+
+            // Manual/QA: sempre publica (mesmo se valor repetido), por ser uma intenção explícita.
+            PublishSnapshot(reason, force: true);
         }
 
         public void Dispose()
@@ -91,10 +97,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             ReleaseGateHandle();
-
-            // Evita publicar snapshot após disposed em cenários onde EventBus pode não estar estável.
-            // (Se você quiser manter esse snapshot, remova o if abaixo.)
-            // PublishSnapshot("dispose");
         }
 
         private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
@@ -105,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionStarted → gate adquirido e jogo marcado como NOT READY. Context={evt.Context}");
 
-            PublishSnapshot("scene_transition_started");
+            PublishSnapshot("scene_transition_started", force: true);
         }
 
         private void OnSceneTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
@@ -114,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 $"[Readiness] SceneTransitionScenesReady → fase WorldLoaded sinalizada. Context={evt.Context}");
 
             // Ainda não marca gameplayReady, apenas sinaliza fase intermediária.
-            PublishSnapshot("scene_transition_scenes_ready");
+            PublishSnapshot("scene_transition_scenes_ready", force: true);
         }
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
@@ -125,13 +127,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. Context={evt.Context}");
 
-            PublishSnapshot("scene_transition_completed");
+            PublishSnapshot("scene_transition_completed", force: true);
         }
 
         private void OnGateChanged(bool isOpen)
         {
-            // Re-emite snapshot para consumidores que dependem do gate (ex.: bloquear Move enquanto gate fechado).
-            PublishSnapshot(isOpen ? "gate_opened" : "gate_closed");
+            // "Clean option": só publica se o snapshot realmente mudar.
+            PublishSnapshot(isOpen ? "gate_opened" : "gate_closed", force: false);
         }
 
         private void AcquireGate()
@@ -146,6 +148,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
 
             _activeGateHandle = _gateService.Acquire(SimulationGateTokens.SceneTransition);
+
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] SimulationGate adquirido com token='{SimulationGateTokens.SceneTransition}'. Active={_gateService.ActiveTokenCount}. IsOpen={_gateService.IsOpen}");
         }
@@ -171,14 +174,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             }
         }
 
-        private void PublishSnapshot(string reason)
+        private void PublishSnapshot(string reason, bool force)
         {
             if (_disposed)
             {
                 return;
             }
 
-            // Gate pode estar indisponível em cenários de bootstrap.
             var snapshot = new ReadinessSnapshot(
                 gameplayReady: _gameplayReady,
                 gateOpen: _gateService?.IsOpen ?? true,
@@ -186,10 +188,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 reason: reason
             );
 
+            if (!force && _hasLastSnapshot && SnapshotsEqual(_lastSnapshot, snapshot))
+            {
+                return;
+            }
+
+            _hasLastSnapshot = true;
+            _lastSnapshot = snapshot;
+
             EventBus<ReadinessChangedEvent>.Raise(new ReadinessChangedEvent(snapshot));
 
             DebugUtility.LogVerbose<GameReadinessService>(
                 $"[Readiness] Snapshot publicado. gameplayReady={snapshot.GameplayReady}, gateOpen={snapshot.GateOpen}, activeTokens={snapshot.ActiveTokens}, reason='{snapshot.Reason}'.");
+        }
+
+        private static bool SnapshotsEqual(ReadinessSnapshot a, ReadinessSnapshot b)
+        {
+            return a.GameplayReady == b.GameplayReady &&
+                   a.GateOpen == b.GateOpen &&
+                   a.ActiveTokens == b.ActiveTokens;
+            // Observação: reason NÃO entra na igualdade (clean option), pois não altera comportamento de consumers.
         }
     }
 }

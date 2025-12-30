@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private GameLoopStateMachine _stateMachine;
         private bool _initialized;
 
+        // Etapa 3: evita publicar GameRunStartedEvent em Resume (Paused -> Playing).
+        private bool _runStartedEmittedThisRun;
+
         public string CurrentStateIdName { get; private set; } = string.Empty;
 
         public void RequestStart()
@@ -23,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             _signals.MarkStart();
         }
+
         public void RequestPause() => _signals.MarkPause();
         public void RequestResume() => _signals.MarkResume();
         public void RequestReady() => _signals.MarkReady();
@@ -58,6 +62,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _initialized = false;
             _stateMachine = null;
             CurrentStateIdName = string.Empty;
+
+            _runStartedEmittedThisRun = false;
+
             _signals.ClearStartPending();
             _signals.ResetTransientSignals();
         }
@@ -67,9 +74,30 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             CurrentStateIdName = stateId.ToString();
             DebugUtility.LogVerbose<GameLoopService>($"[GameLoop] ENTER: {stateId} (active={isActive})");
 
+            // Etapa 3: delimita o “início de run”.
+            // Regras:
+            // - Em Boot/Ready/PostPlay, consideramos que ainda não iniciou uma run ativa.
+            // - Ao entrar em Playing pela primeira vez nesta run, publicamos GameRunStartedEvent.
+            // - Em Resume (Paused -> Playing), NÃO publicamos de novo.
+            if (stateId == GameLoopStateId.Boot ||
+                stateId == GameLoopStateId.Ready ||
+                stateId == GameLoopStateId.PostPlay)
+            {
+                _runStartedEmittedThisRun = false;
+            }
+
             if (stateId == GameLoopStateId.Playing)
             {
                 _signals.ClearStartPending();
+
+                if (_runStartedEmittedThisRun)
+                {
+                    DebugUtility.LogVerbose<GameLoopService>(
+                        "[GameLoop] ENTER: Playing (resume/duplicate) -> GameRunStartedEvent suppressed.");
+                    return;
+                }
+
+                _runStartedEmittedThisRun = true;
                 EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
             }
         }

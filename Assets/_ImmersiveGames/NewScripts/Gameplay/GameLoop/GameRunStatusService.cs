@@ -8,6 +8,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// Serviço simples que mantém o resultado da última run do jogo.
     /// Ouve GameRunEndedEvent e GameRunStartedEvent e expõe Outcome/Reason para UI e outros sistemas.
     /// Agora também integra com o GameLoop para encerrar a run (RequestEnd).
+    ///
+    /// Nota de semântica:
+    /// - GameRunStartedEvent pode ser publicado em transições que NÃO representam "nova run" (ex.: Resume).
+    /// - Este serviço evita limpar estado/logar "nova run" quando já está "limpo".
+    /// - (Ajuste) O primeiro GameRunStartedEvent do ciclo (boot) é tratado como "start inicial" sem log ruidoso.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunStatusService : IGameRunStatusService, IDisposable
@@ -15,6 +20,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private readonly EventBinding<GameRunEndedEvent> _binding;
         private readonly EventBinding<GameRunStartedEvent> _startBinding;
         private readonly IGameLoopService _gameLoopService;
+
+        // Evita log ruidoso no primeiro Start do ciclo (boot → first playing).
+        private bool _hasEverStarted;
 
         public bool HasResult { get; private set; }
         public GameRunOutcome Outcome { get; private set; } = GameRunOutcome.Unknown;
@@ -84,6 +92,32 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
+            // Primeiro start do ciclo: não gerar log ruidoso de "resume/duplicado".
+            // Apenas marca que já houve start e mantém o estado (já começa limpo).
+            if (!_hasEverStarted)
+            {
+                _hasEverStarted = true;
+
+                // Se por qualquer razão vier sujo (ex.: domínio recarregado, serviços reaproveitados), limpa.
+                if (HasResult || Outcome != GameRunOutcome.Unknown || !string.IsNullOrEmpty(Reason))
+                {
+                    Clear();
+                }
+
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    $"[GameLoop] GameRunStartedEvent inicial observado (state={evt?.StateId}).");
+                return;
+            }
+
+            // Após o primeiro start, se já estamos limpos (sem resultado),
+            // trate como start duplicado/resume e não limpe nem anuncie “nova run”.
+            if (!HasResult && Outcome == GameRunOutcome.Unknown && string.IsNullOrEmpty(Reason))
+            {
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    $"[GameLoop] GameRunStartedEvent suprimido (estado já limpo). Provável Resume/duplicado. state={evt?.StateId}");
+                return;
+            }
+
             Clear();
 
             DebugUtility.LogVerbose<GameRunStatusService>(

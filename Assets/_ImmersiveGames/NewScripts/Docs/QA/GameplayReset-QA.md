@@ -1,35 +1,65 @@
-# QA — GameplayReset (Requests)
+# QA – Gameplay Reset (NewScripts)
 
-## Objetivo
-Exercitar as variações de `GameplayResetRequest` disponíveis no NewScripts sem tocar em legado, usando um driver de QA com ContextMenu.
+Este QA valida o reset determinístico em `GameplayScene` via `WorldLifecycle`, incluindo:
 
-## Pré-condições
-- Cena com `GameplayResetRequestQaDriver` presente (GameObject de QA).
-- Cena com `IActorRegistry` e `IGameplayResetOrchestrator` registrados.
-- Build em **Editor** ou **Development Build** (QA guardado por `UNITY_EDITOR || DEVELOPMENT_BUILD || NEWSCRIPTS_QA`).
+- despawn/spawn de múltiplos atores (baseline: Player + Eater);
+- comportamento dos targets/grupos (quando executados via ferramentas de QA/debug).
 
-## Como executar
-1) Se necessário, use **QA/GameplayResetRequest/Fill ActorIds From Registry (Kind)** para preencher `ActorIds` pelo `Kind` configurado no inspector.
-2) Execute os ContextMenus:
-   - **QA/GameplayResetRequest/Run AllActorsInScene**
-   - **QA/GameplayResetRequest/Run PlayersOnly**
-   - **QA/GameplayResetRequest/Run EaterOnly**
-   - **QA/GameplayResetRequest/Run ActorIdSet**
-   - **QA/GameplayResetRequest/Run ByActorKind (FillKind)**
+---
 
-## Logs esperados (exemplos curtos)
-### Request criado
-- `[QA][GameplayResetRequest] Request => GameplayResetRequest(Target=AllActorsInScene, Reason='QA/GameplayResetRequestAllActors', ActorIds=0)`
+## Pré-requisitos
 
-### Targets resolvidos
-- `[QA][GameplayResetRequest] Resolved targets: 2 => Player_NewScriptsClone:A_..., QA_Dummy_Kind:A_...`
+- Seguir o QA de `GameLoop-StateFlow-QA.md` até estar em `GameplayScene` com `GameLoop=Playing`.
+- `WorldDefinition` da `GameplayScene` deve ter, no mínimo, **Player** e **Eater** habilitados.
 
-### Resultado
-- `[QA][GameplayResetRequest] Completed => GameplayResetRequest(Target=AllActorsInScene, Reason='QA/GameplayResetRequestAllActors', ActorIds=0)`
-- Em caso de erro: `[QA][GameplayResetRequest] Failed => ... ex=...`
+---
 
-## Observações
-- O driver resolve `IGameplayResetTargetClassifier` via DI de cena; se ausente, usa `DefaultGameplayResetTargetClassifier`.
-- `verboseLogs` controla o preview detalhado de targets (`Resolved targets`).
-- `EaterOnly` depende do QA `GameplayResetKindQaEaterActor` (quando spawnado via spawner) para resolver targets.
-- Este QA não altera fluxo de gameplay; apenas dispara resets e logs.
+## 1) Reset completo (equivalente a `AllActorsInScene`)
+
+### Ação (produção)
+1. Disparar o fluxo de restart que recarrega `GameplayScene` (ex.: evento de reset, botão/atalho de QA que publica o comando de restart).
+
+### Esperado (logs)
+1. Scene Flow inicia transição para `GameplayScene` (profile `gameplay`).
+2. `WorldLifecycleRuntimeCoordinator` dispara hard reset após `SceneTransitionScenesReadyEvent`.
+3. `WorldLifecycleOrchestrator` executa:
+    - Despawn: services em ordem (Player, Eater)
+    - Spawn: services em ordem (Player, Eater)
+4. `ActorRegistry` ao final do reset:
+    - count == 2
+    - ids dos atores mudam (novas instâncias)
+5. `WorldLifecycleResetCompletedEvent` é emitido com reason `ScenesReady/GameplayScene`.
+
+---
+
+## 2) Reset parcial – `PlayersOnly` (QA/Debug)
+
+### Ação
+1. Executar a rotina de reset parcial “PlayersOnly” (menu QA/debug do projeto).
+
+### Esperado
+1. Apenas o Player é despawnado e respawnado.
+2. O Eater permanece ativo (mesma instância/id, se o projeto não recria o Eater nesse target).
+3. Logs devem indicar claramente o target selecionado e os services/atores afetados.
+
+---
+
+## 3) Reset parcial – `EaterOnly` (QA/Debug)
+
+### Ação
+1. Executar a rotina de reset parcial “EaterOnly” (menu QA/debug do projeto).
+
+### Esperado
+1. Apenas o Eater é despawnado e respawnado.
+2. O Player permanece ativo (mesma instância/id).
+3. Logs devem indicar claramente o target selecionado e os services/atores afetados.
+
+---
+
+## Notas
+
+- Durante reset, é esperado que `IStateDependentService` bloqueie ações por:
+    - `GateClosed` (durante transição/reset)
+    - `GameplayNotReady` (antes de `SceneTransitionCompletedEvent`)
+    - `NotPlaying` (se o `GameLoop` ainda não estiver em Playing)
+- Se o reset parcial não estiver exposto no build atual, mantenha este QA como referência para quando o harness/menus de QA estiverem disponíveis.

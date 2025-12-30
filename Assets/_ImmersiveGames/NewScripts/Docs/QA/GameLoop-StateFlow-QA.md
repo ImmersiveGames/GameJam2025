@@ -1,71 +1,104 @@
-# QA — GameLoop + SceneFlow (State Flow)
+# QA – GameLoop State Flow (NewScripts)
 
-## Objetivo
-Validar que o fluxo de produção **Boot → Menu → Gameplay → Menu → Gameplay** está consistente com o pipeline
-**SceneFlow + WorldLifecycle + GameLoop + InputMode**, incluindo o comportamento de **skip** em startup/frontend.
+Este QA valida o fluxo mínimo de produção:
+
+**Startup → Menu → Gameplay → Pause → Resume**
+
+e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `InputMode` permanecem sincronizados.
+
+---
 
 ## Pré-requisitos
-- Build ou Play Mode com logs verbosos habilitados.
-- Transições via `IGameNavigationService` (Menu → Gameplay / Gameplay → Menu).
-- QA hotkeys ativos (`PostGameQaHotkeys`).
+
+- Projeto rodando em **NEWSCRIPTS_MODE**.
+- Cena inicial: `NewBootstrap` (ou a cena de bootstrap equivalente do NewScripts).
+- `GlobalBootstrap` ativo (registra SceneFlow, Fade, LoadingHUD, WorldLifecycle runtime driver, GameLoop e Navigation).
 
 ---
 
-## 1) Boot + Startup profile (MenuScene)
-### Verificações visuais
-- **Fade** entra e sai (FadeIn/FadeOut) durante o boot.
-- **LoadingHUD** aparece e é atualizado nas fases corretas.
+## 1) Startup → Menu (profile `startup`)
 
-### Checkpoints de log (exemplos curtos)
-- Registro do completion gate:
-  - `WorldLifecycleResetCompletionGate` registrado como `ISceneTransitionCompletionGate`.
-- Cena pronta (startup/frontend):
-  - `SceneTransitionScenesReadyEvent` recebido.
-  - `WorldLifecycle reset concluído (ou skip). reason='Skipped_StartupOrFrontend'`.
-- Coordinator destravado:
-  - `[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. Chamando GameLoop.RequestStart().`
-- Resultado esperado:
-  - GameLoop entra em **Ready**, **sem** ir para `Playing`.
-  - `InputModeService` fica em **FrontendMenu**.
+### Ação
+1. Dar Play no Editor.
 
----
+### Esperado (logs)
+1. `GameLoopSceneFlowCoordinator` registrado com startPlan `startup` (MenuScene + UIGlobalScene).
+2. `GameStartRequestedEvent` disparado (bootstrap de produção).
+3. Scene Flow:
+    - `SceneTransitionService` inicia transição com profile `startup`
+    - LoadingHUD: `Started → Ensure + Show`
+    - Fade: `FadeIn` (alpha=1)
+    - Carrega `MenuScene` e `UIGlobalScene`, descarrega `NewBootstrap`
+4. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e executa **SKIP** (startup/frontend),
+   emitindo `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend...`.
+5. Scene Flow:
+    - aguarda completion gate (deve concluir imediatamente via evento acima)
+    - LoadingHUD: `BeforeFadeOut → Hide`
+    - Fade: `FadeOut` (alpha=0)
+    - `SceneFlow` conclui.
+6. `GameLoop` avança para **Ready**.
 
-## 2) Menu → Gameplay → Menu → Gameplay (múltiplas rodadas)
-### Repetibilidade sem vazamentos
-- A transição pode ser executada repetidamente sem acumular serviços de cena.
-- Serviços registrados por cena devem aparecer/limpar corretamente:
-  - `IActorRegistry`, `IWorldSpawnServiceRegistry`, `WorldLifecycleHookRegistry`, `IResetScopeParticipant`.
-
-### Reset determinístico e spawn
-- Ao entrar em Gameplay:
-  - `SceneTransitionScenesReadyEvent` dispara hard reset (profile `gameplay`).
-  - `WorldLifecycleOrchestrator` executa fases determinísticas na ordem esperada.
-  - `Player` e `Eater` aparecem na `GameplayScene` após o reset.
-
-### InputMode + GameLoop
-- No `SceneTransitionCompleted(profile='gameplay')`:
-  - `InputMode` muda para **Gameplay**.
-  - Log curto esperado:
-    - `[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> solicitando GameLoop.RequestStart().`
-- GameLoop deve ir **Ready → Playing**.
+> Nota: warnings de “Chamada repetida no frame” podem aparecer durante bootstrap. Eles não indicam reexecução funcional do bootstrap.
 
 ---
 
-## 3) QA de pós-game (hotkeys)
-### Defeat / Victory forçados
-- F6 → dispara `GameRunEndedEvent` com `Outcome=Defeat`, `Reason='QA_ForcedDefeat'`.
-- F7 → dispara `GameRunEndedEvent` com `Outcome=Victory`, `Reason='QA_ForcedVictory'`.
-- `PostGameOverlayController` exibe o overlay correspondente.
+## 2) Menu → Gameplay (profile `gameplay`)
 
-### Warnings esperados
-- Ao usar hotkeys QA, é esperado ver:
-  - `[WARNING] [GameRunStatusService] [GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.`
-- Esses warnings **não** devem aparecer durante gameplay normal (sem hotkeys).
+### Ação
+1. No `MenuScene`, clicar no botão **Play**.
+
+### Esperado (logs)
+1. `GameNavigationService` dispara `TransitionAsync` com targetActive `GameplayScene` e profile `gameplay`.
+2. Scene Flow:
+    - LoadingHUD: `Started → Show`
+    - FadeIn (alpha=1)
+    - Carrega `GameplayScene` (Additive), mantém `UIGlobalScene`, descarrega `MenuScene`
+3. `NewSceneBootstrapper` de `GameplayScene`:
+    - cria scene scope
+    - carrega `WorldDefinition`
+    - registra spawn services (mínimo esperado: `PlayerSpawnService` e `EaterSpawnService`)
+4. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e dispara hard reset:
+    - `WorldLifecycleController` → reset
+    - `WorldLifecycleOrchestrator` executa fases (despawn/spawn)
+    - `ActorRegistry` termina com 2 atores (baseline: Player + Eater)
+5. `WorldLifecycleResetCompletedEvent` é emitido com reason `ScenesReady/GameplayScene`.
+6. Scene Flow:
+    - aguarda completion gate (conclui via evento acima)
+    - LoadingHUD: `BeforeFadeOut → Hide`
+    - FadeOut (alpha=0)
+    - `SceneFlow` conclui.
+7. `GameLoop` avança para **Playing**.
+8. `IStateDependentService` libera `Move` (e outras ações dependentes) quando:
+    - gate aberto
+    - gameplayReady=true
+    - gameLoopState=Playing
 
 ---
 
-## Observações
-- Sempre que referenciar logs, use apenas trechos curtos.
-- O fluxo só é considerado **OK** quando:
-  - reset/hard reset conclui antes do `FadeOut`,
-  - e o GameLoop chega em `Playing` **apenas** no profile `gameplay`.
+## 3) Pause → Resume
+
+### Ação
+1. Abrir o Pause Overlay (UI/tecla conforme projeto).
+2. Fechar o Pause Overlay.
+
+### Esperado (logs)
+1. Ao abrir pause:
+    - `GamePauseGateBridge` adquire token `state.pause`
+    - `GameLoop` entra em **Paused**
+    - `InputModeService` alterna para mapa/UI (`PauseOverlay`)
+    - `IStateDependentService` bloqueia `Move` com motivo `Paused`
+2. Ao fechar pause:
+    - `GamePauseGateBridge` libera token `state.pause`
+    - `GameLoop` retorna para **Playing**
+    - `InputModeService` volta para `Gameplay`
+    - `IStateDependentService` libera `Move`
+
+---
+
+## Resultado
+
+O QA passa se:
+
+- Startup termina em `GameLoop=Ready` (menu frontend).
+- Entrar em gameplay executa reset determinístico e termina em `GameLoop=Playing`.
+- Pause/Resume bloqueia e libera ações conforme esperado.

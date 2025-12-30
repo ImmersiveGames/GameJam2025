@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
 {
     /// <summary>
     /// Bridge global para aplicar modo de input com base nos eventos do SceneFlow.
+    /// Também sincroniza o GameLoop com a intenção do profile:
+    /// - Gameplay: garante RequestStart (ou Resume se já estiver pausado).
+    /// - Startup/Frontend: garante que o GameLoop não fique ativo em menu/frontend.
     /// </summary>
     public sealed class InputModeSceneFlowBridge : IDisposable
     {
@@ -23,8 +26,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                 "[InputMode] InputModeSceneFlowBridge registrado nos eventos de SceneTransitionCompletedEvent.",
                 DebugUtility.Colors.Info);
+
             DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                "[InputModeSceneFlowBridge] [GameLoop] Bridge registrado para SceneTransitionCompletedEvent (Gameplay -> GameLoop.Start).",
+                "[InputModeSceneFlowBridge] [GameLoop] Bridge registrado para SceneTransitionCompletedEvent (Frontend/GamePlay -> GameLoop sync).",
                 DebugUtility.Colors.Info);
         }
 
@@ -44,23 +48,37 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
             }
 
             var profile = evt.Context.TransitionProfileName;
+
+            // ===== Gameplay =====
             if (string.Equals(profile, SceneFlowProfileNames.Gameplay, StringComparison.OrdinalIgnoreCase))
             {
                 inputModeService.SetGameplay("SceneFlow/Completed:Gameplay");
-                // Para gameplay, sincroniza o GameLoop após aplicar o input mode.
+
                 var gameLoopService = ResolveGameLoopService();
                 if (gameLoopService == null)
                 {
                     DebugUtility.LogWarning<InputModeSceneFlowBridge>(
-                        "[InputModeSceneFlowBridge] [GameLoop] IGameLoopService indisponivel; RequestStart ignorado.");
+                        "[InputModeSceneFlowBridge] [GameLoop] IGameLoopService indisponivel; sincronizacao ignorada.");
                     return;
                 }
 
                 DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
-                    "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> solicitando GameLoop.RequestStart().",
+                    "[InputModeSceneFlowBridge] [GameLoop] SceneFlow/Completed:Gameplay -> sincronizando GameLoop.",
                     DebugUtility.Colors.Info);
 
-                if (gameLoopService.CurrentStateIdName == nameof(GameLoopStateId.Playing))
+                // Se veio de um PauseOverlay por qualquer motivo, prefira Resume.
+                if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        "[InputModeSceneFlowBridge] [GameLoop] Estado=Paused -> RequestResume().",
+                        DebugUtility.Colors.Info);
+
+                    gameLoopService.RequestResume();
+                    return;
+                }
+
+                // Se já está Playing, não faz nada (evita ruído).
+                if (string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
                 {
                     DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
                         "[InputModeSceneFlowBridge] [GameLoop] RequestStart ignored (already active). " +
@@ -73,10 +91,34 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputSystems
                 return;
             }
 
+            // ===== Frontend/Startup =====
             if (string.Equals(profile, SceneFlowProfileNames.Startup, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(profile, SceneFlowProfileNames.Frontend, StringComparison.OrdinalIgnoreCase))
             {
                 inputModeService.SetFrontendMenu("SceneFlow/Completed:Frontend");
+
+                // Correção-alvo:
+                // Menu/Frontend não deve “rodar run”. Se algo iniciou o GameLoop antes,
+                // encerramos a run aqui para evitar ficar em Playing no menu.
+                var gameLoopService = ResolveGameLoopService();
+                if (gameLoopService == null)
+                {
+                    return;
+                }
+
+                var state = gameLoopService.CurrentStateIdName;
+
+                if (string.Equals(state, nameof(GameLoopStateId.Playing), StringComparison.Ordinal)
+                    || string.Equals(state, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
+                {
+                    DebugUtility.LogVerbose<InputModeSceneFlowBridge>(
+                        $"[InputModeSceneFlowBridge] [GameLoop] Frontend completed com estado ativo ('{state}'). " +
+                        "Solicitando RequestEnd() para garantir menu inativo.",
+                        DebugUtility.Colors.Info);
+
+                    gameLoopService.RequestEnd();
+                }
+
                 return;
             }
 

@@ -3,6 +3,7 @@
  * - Ponte de pause: converte GamePauseCommandEvent/GameResumeRequestedEvent em gate SimulationGateTokens.Pause sem congelar física.
  * - Improvement: resolve gate sob demanda (lazy) para cenários em que DI global ainda não está pronto no ctor.
  * - Fix: ownership determinístico. Bridge NUNCA libera token que não foi adquirido por ela.
+ * - Hardening: Release NÃO depende de gate resolvido (evita leak em teardown) e protege Provider nulo.
  */
 
 using System;
@@ -10,6 +11,7 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 {
     /// <summary>
@@ -51,9 +53,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         public void Dispose()
         {
             if (_disposed)
-            {
                 return;
-            }
+
             _disposed = true;
 
             if (_bindingsRegistered)
@@ -131,17 +132,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 
         private void ReleasePauseGate(string reason)
         {
-            if (!EnsureGateResolved())
-            {
-                LogGateUnavailable();
-                return;
-            }
-
+            // Ownership determinístico: só libera se temos handle.
             if (_activeHandle == null)
             {
-                // Não somos donos; não liberar token de terceiros.
-                DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    $"[PauseBridge] Release ignorado ({reason}) — sem handle ativo (ownership inexistente). IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                // Se gate estiver resolvido, loga estado; se não, loga genérico.
+                if (_gateService != null)
+                {
+                    DebugUtility.LogVerbose<GamePauseGateBridge>(
+                        $"[PauseBridge] Release ignorado ({reason}) — sem handle ativo (ownership inexistente). IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+                }
+                else
+                {
+                    DebugUtility.LogVerbose<GamePauseGateBridge>(
+                        $"[PauseBridge] Release ignorado ({reason}) — sem handle ativo (ownership inexistente).");
+                }
+
                 return;
             }
 
@@ -159,18 +164,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
                 _activeHandle = null;
             }
 
-            DebugUtility.LogVerbose<GamePauseGateBridge>(
-                $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+            // Melhor esforço: log detalhado somente se gate está resolvido.
+            if (EnsureGateResolved())
+            {
+                DebugUtility.LogVerbose<GamePauseGateBridge>(
+                    $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
+            }
+            else
+            {
+                DebugUtility.LogVerbose<GamePauseGateBridge>(
+                    $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. (gate indisponível para snapshot)");
+            }
         }
 
         private bool EnsureGateResolved()
         {
             if (_gateService != null)
-            {
                 return true;
-            }
 
-            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
+            var provider = DependencyManager.Provider;
+            if (provider == null)
+                return false;
+
+            if (provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
             {
                 _gateService = resolved;
                 _loggedMissingGate = false;
@@ -187,9 +203,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         private void LogGateUnavailable()
         {
             if (_loggedMissingGate)
-            {
                 return;
-            }
 
             DebugUtility.LogWarning<GamePauseGateBridge>(
                 "[PauseBridge] ISimulationGateService indisponível; não é possível refletir pause/resume no gate.");

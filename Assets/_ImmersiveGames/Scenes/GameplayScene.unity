@@ -128,7 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 358544610}
-  - component: {fileID: 358544611}
+  - component: {fileID: 358544612}
   m_Layer: 0
   m_Name: QA
   m_TagString: Untagged
@@ -151,7 +151,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &358544611
+--- !u!114 &358544612
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -160,19 +160,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 358544608}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2d0e63a35b042188de491eee40f5608, type: 3}
+  m_Script: {fileID: 11500000, guid: be1083e5dca24818896c47dc9f99b017, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  acquireExternalOnStart: 1
-  pauseToken: state.pause
-  verbose: 1
-  enableHotkeys: 1
-  acquireKey: 288
-  releaseKey: 289
-  printStatusKey: 290
-  showOnGui: 0
-  onGuiPosition: {x: 12, y: 12}
-  releaseOnDisable: 1
+  showHud: 1
+  fontSize: 16
 --- !u!1 &772402748
 GameObject:
   m_ObjectHideFlags: 0
