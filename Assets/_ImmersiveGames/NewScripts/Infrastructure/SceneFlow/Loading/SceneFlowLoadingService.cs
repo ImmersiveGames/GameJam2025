@@ -6,30 +6,39 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 {
     /// <summary>
-    /// Serviço global para orquestrar HUD de loading durante o Scene Flow.asd
+    /// Serviço global para orquestrar HUD de loading durante o Scene Flow.
+    ///
+    /// Opção A+:
+    /// - Em transições com Fade: a HUD é "ensured" no Started, mas só fica visível após FadeIn concluir.
+    /// - Em transições sem Fade: mantém o comportamento antigo (Show já no Started).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneFlowLoadingService
     {
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionFadeInCompletedEvent> _transitionFadeInCompletedBinding;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _transitionScenesReadyBinding;
         private readonly EventBinding<SceneTransitionBeforeFadeOutEvent> _transitionBeforeFadeOutBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
         private INewScriptsLoadingHudService _hudService;
+
         private string _activeSignature;
         private string _pendingSignature;
         private string _pendingPhase;
+        private bool _pendingUseFade;
         private bool _warnedHudServiceMissingThisTransition;
 
         public SceneFlowLoadingService()
         {
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnTransitionStarted);
+            _transitionFadeInCompletedBinding = new EventBinding<SceneTransitionFadeInCompletedEvent>(OnTransitionFadeInCompleted);
             _transitionScenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnTransitionScenesReady);
             _transitionBeforeFadeOutBinding = new EventBinding<SceneTransitionBeforeFadeOutEvent>(OnTransitionBeforeFadeOut);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnTransitionCompleted);
 
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionFadeInCompletedEvent>.Register(_transitionFadeInCompletedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_transitionScenesReadyBinding);
             EventBus<SceneTransitionBeforeFadeOutEvent>.Register(_transitionBeforeFadeOutBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
@@ -53,11 +62,44 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _activeSignature = signature;
             _pendingSignature = signature;
             _pendingPhase = LoadingHudPhases.Started;
+            _pendingUseFade = evt.Context.UseFade;
+
+            if (_pendingUseFade)
+            {
+                DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                    $"[Loading] Started → Ensure only (Show após FadeIn). signature='{signature}'.");
+            }
+            else
+            {
+                DebugUtility.LogVerbose<SceneFlowLoadingService>(
+                    $"[Loading] Started → Ensure + Show (no-fade). signature='{signature}'.");
+            }
+
+            _ = EnsureLoadedAsync(signature);
+
+            // Transições sem fade mantêm o comportamento antigo.
+            if (!_pendingUseFade)
+            {
+                TryShow(signature, LoadingHudPhases.Started, "started_no_fade");
+            }
+        }
+
+        private void OnTransitionFadeInCompleted(SceneTransitionFadeInCompletedEvent evt)
+        {
+            var signature = SceneTransitionSignatureUtil.Compute(evt.Context);
+
+            if (!EnsureActiveSignature(signature))
+            {
+                return;
+            }
+
+            _pendingSignature = signature;
+            _pendingPhase = LoadingHudPhases.AfterFadeIn;
 
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
-                $"[Loading] Started → Ensure + Show. signature='{signature}'.");
+                $"[Loading] FadeInCompleted → Show. signature='{signature}'.");
 
-            _ = EnsureLoadedAndShowAsync(signature);
+            TryShow(signature, _pendingPhase, "fade_in_completed");
         }
 
         private void OnTransitionScenesReady(SceneTransitionScenesReadyEvent evt)
@@ -77,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             DebugUtility.LogVerbose<SceneFlowLoadingService>(
                 $"[Loading] ScenesReady → Update pending. signature='{signature}'.");
 
+            // Para fade, isso atualiza a fase se já estiver visível; para no-fade, mantém idempotente.
             TryShow(signature, _pendingPhase, "scenes_ready");
         }
 
@@ -154,6 +197,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
             _pendingSignature = null;
             _pendingPhase = null;
             _activeSignature = null;
+            _pendingUseFade = false;
         }
 
         private void ResetWarnings()
@@ -174,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
                 $"[Loading] HUD indisponível nesta transição. {context}.");
         }
 
-        private async System.Threading.Tasks.Task EnsureLoadedAndShowAsync(string signature)
+        private async System.Threading.Tasks.Task EnsureLoadedAsync(string signature)
         {
             if (!TryResolveHudService())
             {
@@ -184,8 +228,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
 
             await _hudService.EnsureLoadedAsync();
 
-            var phase = ResolvePendingPhase(signature, LoadingHudPhases.Started);
-            TryShow(signature, phase, "ensure_loaded");
+            // Se estamos em transição com Fade, só exibimos quando a fase já avançou além do Started
+            // (FadeInCompleted/ScenesReady).
+            if (_pendingUseFade)
+            {
+                var phase = ResolvePendingPhase(signature, LoadingHudPhases.Started);
+                if (!string.Equals(phase, LoadingHudPhases.Started))
+                {
+                    TryShow(signature, phase, "ensure_loaded_after_fade");
+                }
+
+                return;
+            }
+
+            // Em no-fade, o Show já acontece no Started (idempotente); nada extra aqui.
         }
 
         private void TryShow(string signature, string phase, string reason)
@@ -244,6 +300,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading
         private static class LoadingHudPhases
         {
             public const string Started = "Started";
+            public const string AfterFadeIn = "AfterFadeIn";
             public const string ScenesReady = "ScenesReady";
             public const string BeforeFadeOut = "BeforeFadeOut";
             public const string Completed = "Completed";

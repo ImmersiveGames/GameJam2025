@@ -1,8 +1,19 @@
 # Changelog (Docs)
 
+## [2025-12-31]
+- Updated: `WORLD_LIFECYCLE.md` e `WORLDLIFECYCLE_RESET_STATUS.md` com evidência de validação "sem flash" e ordem final do pipeline (FadeIn → LoadingHUD → Scene load/unload → ScenesReady → Reset/Skip → gate → Hide HUD → FadeOut).
+- Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` alinhados à ordem final (LoadingHUD só aparece após FadeIn; Hide antes de FadeOut; `Completed` como safety).
+
+
 All notable documentation changes to **NewScripts** are documented in this file.
 
 ## [2025-12-30]
+### Updated
+- `WORLD_LIFECYCLE.md`: evidência de SKIP em startup/frontend e reforço do gate antes do FadeOut.
+- `ADR-0010-LoadingHud-SceneFlow.md`: ordem correta do LoadingHUD com gate de reset e FadeOut.
+- `GameLoop-StateFlow-QA.md`: passos/evidências de startup → menu → gameplay → pause/resume (bootstrap, navigation, input mode).
+- `GameplayReset-QA.md`: reset em `ScenesReady` com gate durante o hard reset e conclusão antes do FadeOut.
+
 ### Updated
 - `WORLD_LIFECYCLE.md`: alinhado ao fluxo de produção observado em log (startup→menu com SKIP + gameplay hard reset pós `ScenesReady`).
 - `GameLoop-StateFlow-QA.md`: atualizado para o fluxo real (startup termina em Ready; gameplay termina em Playing; pause/resume com gate).
@@ -12,7 +23,6 @@ All notable documentation changes to **NewScripts** are documented in this file.
 - `ADR-0013-Ciclo-de-Vida-Jogo.md`: marcado como implementado (baseline) e descrito o contrato `WorldLifecycleResetCompletedEvent`.
 - `ADR-0014-GameplayReset-Targets-Grupos.md`: listado baseline de targets suportados e integração com WorldLifecycle.
 
-## 
 ## [2025-12-29]
 - Added: `Reports/SceneFlow-Assets-Checklist.md`.
 - Added: report master `Reports/SceneFlow-Production-EndToEnd-Validation.md` com passo-a-passo do fluxo Menu → Gameplay → Menu.
@@ -64,7 +74,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
   e critério para remover o SKIP (decisão registrada).
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` e `ARCHITECTURE_TECHNICAL.md` com formalização de
   reset/spawn como parte do loading e diretrizes futuras para Addressables (tarefas agregadas).
-- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
+- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status do progresso e referência a Addressables (planejado).
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
 
 ## [2025-12-27]

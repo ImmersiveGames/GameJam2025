@@ -41,19 +41,31 @@ Implementar Fade no Scene Flow do NewScripts com as seguintes decisões:
 - A separação “Fade vs Loading” é obrigatória: Loading terá ADR próprio (evitar misturar responsabilidade).
 
 ## Integração operacional (Fade + LoadingHUD + SceneFlowLoadingService)
-O Fade é orquestrado em conjunto com o LoadingHUD e o SceneFlow. O mapeamento das fases é:
+O Fade é orquestrado em conjunto com o LoadingHUD e o SceneFlow. O mapeamento operacional é:
 
 - **SceneTransitionStarted**
-  - `SceneFlowLoadingService` chama `LoadingHUD.Show(phase=Started)`.
-  - `GameReadinessService` adquire o gate `flow.scene_transition`.
+    - `INewScriptsFadeService` inicia o `FadeIn` (overlay opaco), conforme o profile.
+    - `SceneFlowLoadingService` garante `LoadingHudScene` carregada (sem exibir ainda).
+    - `GameReadinessService` adquire o gate `flow.scene_transition`.
+
+- **FadeInCompleted**
+    - `SceneFlowLoadingService` chama `LoadingHUD.Show(phase=AfterFadeIn)`.
+
+- **SceneTransitionService (load/unload/active)**
+    - Executa as operações de cena via `SceneManagerLoaderAdapter`.
+
 - **SceneTransitionScenesReady**
-  - `LoadingHUD.Show(phase=ScenesReady)`.
-  - Se `profile=gameplay`, o `WorldLifecycleRuntimeCoordinator` executa o reset antes do gate ser liberado.
+    - `LoadingHUD.Show(phase=ScenesReady)` (idempotente; mantém visível).
+    - Se `profile=gameplay`, o `WorldLifecycleRuntimeCoordinator` executa o reset (ou SKIP em startup/frontend) e publica `WorldLifecycleResetCompletedEvent` com assinatura = `SceneTransitionContext.ToString()`.
+    - `SceneTransitionService` aguarda o `WorldLifecycleResetCompletionGate` antes de prosseguir.
+
 - **BeforeFadeOut**
-  - `LoadingHUD.Hide(phase=BeforeFadeOut)`.
-  - `INewScriptsFadeService` executa `FadeOut`.
+    - `SceneFlowLoadingService` chama `LoadingHUD.Hide(phase=BeforeFadeOut)`.
+    - `INewScriptsFadeService` executa `FadeOut`.
+
 - **Completed**
-  - `LoadingHUD.Hide(phase=Completed)` (safety hide).
+    - `SceneFlowLoadingService` chama `LoadingHUD.Hide(phase=Completed)` (safety hide).
+    - `GameReadinessService` libera o gate.
 
 O Fade usa **profiles** (startup, gameplay) com tempos de fade in/out definidos nos assets
 `Resources/SceneFlow/Profiles/...` (ex.: `startup`, `gameplay`).

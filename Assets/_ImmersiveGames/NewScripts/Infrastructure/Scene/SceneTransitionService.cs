@@ -135,14 +135,21 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
                 EventBus<SceneTransitionStartedEvent>.Raise(new SceneTransitionStartedEvent(context));
 
+                // FadeIn é a primeira etapa visual. O HUD de Loading pode ser "ensured" em paralelo,
+                // mas deve aparecer apenas após o FadeIn estar concluído (Opção A+).
                 await RunFadeInIfNeeded(context);
+
+                if (context.UseFade)
+                {
+                    EventBus<SceneTransitionFadeInCompletedEvent>.Raise(new SceneTransitionFadeInCompletedEvent(context));
+                }
 
                 await RunSceneOperationsAsync(context);
 
                 // 1) Momento em que "cenas estão prontas" (load/unload/active done).
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
 
-                // 2) Novo: aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
+                // 2) Aguarda gates externos (ex: WorldLifecycle reset) ANTES de revelar (FadeOut).
                 await AwaitCompletionGateAsync(context);
 
                 EventBus<SceneTransitionBeforeFadeOutEvent>.Raise(new SceneTransitionBeforeFadeOutEvent(context));

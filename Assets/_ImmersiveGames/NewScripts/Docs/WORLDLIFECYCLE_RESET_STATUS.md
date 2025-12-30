@@ -1,5 +1,11 @@
 # WorldLifecycle Reset — Status e Pendências (macro-estruturas)
 
+## Atualização (2025-12-31)
+
+- Confirmação adicional: transições com **Fade + LoadingHUD** sem flash, com `Show` apenas após `FadeInCompleted` e `Hide` antes de `FadeOut` (safety hide no `Completed`).
+- Ordem confirmada: FadeIn → LoadingHUD Show → Scene load/unload/active → ScenesReady → Reset/Skip → gate → LoadingHUD Hide → FadeOut → Completed.
+
+
 ## Atualização (2025-12-30)
 
 ### Confirmado em runtime

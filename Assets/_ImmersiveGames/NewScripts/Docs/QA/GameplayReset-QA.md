@@ -25,10 +25,17 @@ Este QA valida o reset determinístico em `GameplayScene` via `WorldLifecycle`, 
 3. `WorldLifecycleOrchestrator` executa:
     - Despawn: services em ordem (Player, Eater)
     - Spawn: services em ordem (Player, Eater)
+    - Gate `WorldLifecycle.WorldReset` adquirido durante todo o ciclo
 4. `ActorRegistry` ao final do reset:
     - count == 2
     - ids dos atores mudam (novas instâncias)
 5. `WorldLifecycleResetCompletedEvent` é emitido com reason `ScenesReady/GameplayScene`.
+6. `WorldLifecycleResetCompletionGate` libera o `SceneFlow` para `FadeOut` apenas após o evento de conclusão.
+
+### Evidências (trechos curtos)
+- `[WorldLifecycleRuntimeCoordinator] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'`
+- `[WorldLifecycleOrchestrator] Gate Acquired (WorldLifecycle.WorldReset)`
+- `[WorldLifecycleResetCompletionGate] Completed for signature=...`
 
 ---
 

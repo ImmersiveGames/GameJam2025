@@ -1,12 +1,19 @@
-﻿## Atualização (2025-12-30)
+﻿## Atualização (2025-12-31)
+
+- **Sem flash** confirmado: `LoadingHudScene` só é exibida após o `FadeIn` estar completo (`phase=AfterFadeIn`), e é escondida antes do `FadeOut` (`phase=BeforeFadeOut`), com `Hide(phase=Completed)` como safety.
+- Ordem operacional validada: **FadeIn → LoadingHUD Show → Load/Unload/Active → ScenesReady → WorldLifecycle (Reset/Skip) → completion gate → LoadingHUD Hide → FadeOut → Completed**.
+- Evidência: logs de produção (startup → Menu → Gameplay), incluindo `WorldLifecycleResetCompletionGate` e `GameReadinessService` mantendo o gate fechado até o fim da transição/reset.
+
+
+## Atualização (2025-12-30)
 
 - Fluxo de **produção** validado end-to-end: Startup → Menu → Gameplay via SceneFlow + Fade + Loading HUD + Navigation.
 - `WorldLifecycleRuntimeCoordinator` reage a `SceneTransitionScenesReadyEvent`:
     - Profile `startup`/frontend: reset **skip** + emite `WorldLifecycleResetCompletedEvent`.
     - Profile `gameplay`: dispara **hard reset** (`ResetWorldAsync`) e emite `WorldLifecycleResetCompletedEvent` ao concluir.
-- `SceneTransitionService` passa a aguardar `WorldLifecycleResetCompletionGate` antes do FadeOut (assinatura = `SceneTransitionContext.ToString()`).
-- Hard reset em Gameplay confirma spawn via `WorldDefinition` (2 entries: Player + Eater) e execução do orchestrator com Gate (`WorldLifecycle.WorldReset`).
-- `IStateDependentService` bloqueia input/movimento durante gate e libera ao final; pausa também fecha gate via `GamePauseGateBridge`.
+- `SceneTransitionService` passa a aguardar `WorldLifecycleResetCompletedEvent` (via `WorldLifecycleResetCompletionGate`) antes do FadeOut (assinatura = `SceneTransitionContext.ToString()`).
+- Hard reset em Gameplay confirma spawn via `WorldDefinition` (baseline Player+Eater) e execução do orchestrator com Gate (`WorldLifecycle.WorldReset`).
+- `IStateDependentService` bloqueia input/movimento enquanto o gate estiver fechado e/ou `gameplayReady=false`; libera ao final. Pausa também fecha gate via `GamePauseGateBridge`.
 
 
 ```log
@@ -22,7 +29,7 @@
 [SceneTransitionService] Completion gate concluído. Prosseguindo para FadeOut.
 ```
 
-﻿# World Lifecycle — Reset determinístico por escopos (NewScripts)
+# World Lifecycle — Reset determinístico por escopos (NewScripts)
 
 Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
 
@@ -86,6 +93,12 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent`, mas **não** dispara hard reset.
     - Emite `WorldLifecycleResetCompletedEvent(reason='Skipped_StartupOrFrontend')` para destravar o pipeline.
     - O `GameLoopSceneFlowCoordinator` considera o reset como concluído (skip) e o GameLoop permanece em **Ready**.
+
+```log
+[WorldLifecycleRuntimeCoordinator] SceneTransitionScenesReady recebido. Context=... Profile='startup'
+[WorldLifecycleRuntimeCoordinator] Reset SKIPPED (startup/frontend). Emitting WorldLifecycleResetCompletedEvent...
+```
+
 - **Perfis gameplay** (ex.: transição para `GameplayScene`):
     - `SceneTransitionScenesReadyEvent` aciona `WorldLifecycleController.ResetWorldAsync(...)`.
     - O `WorldLifecycleOrchestrator` executa as fases determinísticas antes de liberar o gate de conclusão da transição.
