@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
@@ -33,9 +33,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         private readonly List<IWorldSpawnService> _spawnServices = new();
         private WorldLifecycleOrchestrator _orchestrator;
         private bool _dependenciesInjected;
-
-        // Estado informativo (útil para logs/inspeção); o controle real é via fila.
-        private bool _isResetting;
 
         // Fila simples: garante execução sequencial de resets (World/Players/etc).
         private readonly object _queueLock = new();
@@ -192,8 +189,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     request = _resetQueue.Dequeue();
                 }
 
-                _isResetting = true;
-
                 try
                 {
                     if (verboseLogs)
@@ -213,7 +208,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
                 finally
                 {
-                    _isResetting = false;
                     request.TryComplete();
                 }
             }

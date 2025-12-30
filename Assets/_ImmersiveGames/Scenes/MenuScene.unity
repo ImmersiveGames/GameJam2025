@@ -128,7 +128,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 155346070}
-  - component: {fileID: 155346069}
   m_Layer: 0
   m_Name: QA
   m_TagString: Untagged
@@ -136,28 +135,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &155346069
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 155346068}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9fd63242b8654ef3b556373068b85309, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  label: GameLoopStateFlowQATester
-  runOnStart: 0
-  warmupFrames: 2
-  timeoutSeconds: 6
-  mode: 0
-  expectedMenuSceneName: MenuScene
-  expectedUiGlobalSceneName: UIGlobalScene
-  waitForMenuScenesLoaded: 1
-  triggerStartRequestInTest: 0
-  expectedStartProfile: startup
 --- !u!4 &155346070
 Transform:
   m_ObjectHideFlags: 0

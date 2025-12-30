@@ -18,7 +18,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using _ImmersiveGames.NewScripts.Infrastructure.Navigation;

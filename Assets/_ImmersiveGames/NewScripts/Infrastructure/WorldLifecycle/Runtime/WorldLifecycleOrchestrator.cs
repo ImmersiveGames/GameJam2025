@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Actors;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
-using _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;

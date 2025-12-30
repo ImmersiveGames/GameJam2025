@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &542428323
+--- !u!1 &358544608
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,42 +127,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 542428325}
-  - component: {fileID: 542428324}
-  - component: {fileID: 542428326}
-  - component: {fileID: 542428328}
+  - component: {fileID: 358544610}
+  - component: {fileID: 358544611}
   m_Layer: 0
-  m_Name: QA_GameplayResetKind
+  m_Name: QA
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &542428324
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 542428323}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e200a831675442a589ffc40b3abd73fd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  parentUnderWorldRoot: 1
-  parentOverride: {fileID: 0}
-  addProbeComponent: 1
-  probeVerboseLogs: 1
-  eaterActorPrefab: {fileID: 2090043031996690540, guid: 0744eef234e55034895662d2373a6d62, type: 3}
-  spawnEaterProbe: 1
---- !u!4 &542428325
+--- !u!4 &358544610
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 542428323}
+  m_GameObject: {fileID: 358544608}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -171,35 +151,28 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &542428326
+--- !u!114 &358544611
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 542428323}
+  m_GameObject: {fileID: 358544608}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d8a6d43219e43df921b94ba8dd48ec7, type: 3}
+  m_Script: {fileID: 11500000, guid: b2d0e63a35b042188de491eee40f5608, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  label: QA GameplayResetKind Probe
-  verboseLogs: 1
---- !u!114 &542428328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 542428323}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b5cea7fdfc2456b9286a8c1679b2844, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  actorIds: []
-  fillKind: 1
-  verboseLogs: 1
+  acquireExternalOnStart: 1
+  pauseToken: state.pause
+  verbose: 1
+  enableHotkeys: 1
+  acquireKey: 288
+  releaseKey: 289
+  printStatusKey: 290
+  showOnGui: 0
+  onGuiPosition: {x: 12, y: 12}
+  releaseOnDisable: 1
 --- !u!1 &772402748
 GameObject:
   m_ObjectHideFlags: 0
@@ -709,4 +682,4 @@ SceneRoots:
   - {fileID: 2013597643}
   - {fileID: 1171078547}
   - {fileID: 1164878014}
-  - {fileID: 542428325}
+  - {fileID: 358544610}

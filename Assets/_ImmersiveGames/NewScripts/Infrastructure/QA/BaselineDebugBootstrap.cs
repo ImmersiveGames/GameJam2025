@@ -1,62 +1,82 @@
-using System.Collections;
-using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 {
     /// <summary>
-    /// Supressão defensiva global dos avisos de chamadas repetidas antes do carregamento da cena.
-    /// Restaura automaticamente apenas se nenhum runner estiver ativo.
+    /// QA-only (opt-in) bootstrap para supressão defensiva de "repeated-call warnings".
+    ///
+    /// POLÍTICA (corrigida):
+    /// - Por padrão (sem define), este arquivo NÃO executa nada (zero side-effects, zero logs).
+    /// - Só habilita quando o projeto define: NEWSCRIPTS_QA_BASELINE
+    /// - Runner (quando existir) deve chamar SetRunnerActive(true/false) explicitamente.
+    ///
+    /// Motivação:
+    /// - Evitar poluição de logs e comportamento global invisível em builds/dev/editor.
+    /// - Manter a ferramenta disponível apenas para cenários de QA controlados.
     /// </summary>
     internal static class BaselineDebugBootstrap
     {
+        // Mantém API estável mesmo quando desabilitado.
+        internal static void SetRunnerActive(bool active)
+        {
+#if (UNITY_EDITOR || DEVELOPMENT_BUILD) && NEWSCRIPTS_QA_BASELINE
+            IsRunnerActive = active;
+#else
+            _ = active;
+#endif
+        }
+
+#if (UNITY_EDITOR || DEVELOPMENT_BUILD) && NEWSCRIPTS_QA_BASELINE
         private static bool IsRunnerActive { get; set; }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private const string DriverName = "BaselineDebugBootstrapDriver";
 
         private static bool _hasSavedPrevious;
         private static bool _previousRepeatedVerbose = true;
         private static GameObject _driverObject;
-#endif
+
+        // Silencioso por padrão. Se quiser logar localmente, troque para true.
+        private const bool VerboseLogs = false;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
             IsRunnerActive = false;
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             _hasSavedPrevious = false;
             _previousRepeatedVerbose = true;
             DestroyDriverIfExists();
-#endif
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void DisableRepeatedCallWarningsPreScene()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Não faça nada se nenhum runner estiver ativo.
+            // Isso remove totalmente o impacto em boot "normal".
+            if (!IsRunnerActive)
+            {
+                return;
+            }
+
             if (_hasSavedPrevious)
             {
                 return;
             }
 
-            _previousRepeatedVerbose = DebugUtility.GetRepeatedCallVerbose();
+            _previousRepeatedVerbose = _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.GetRepeatedCallVerbose();
             _hasSavedPrevious = true;
 
-            DebugUtility.SetRepeatedCallVerbose(false);
-            DebugUtility.Log(typeof(BaselineDebugBootstrap),
-                "[Baseline] Repeated-call warning desabilitado no bootstrap (pre-scene-load).");
+            _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.SetRepeatedCallVerbose(false);
+
+            if (VerboseLogs)
+            {
+                _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.Log(
+                    typeof(BaselineDebugBootstrap),
+                    "[Baseline] Repeated-call warning desabilitado (QA runner ativo).");
+            }
 
             CreateDriver();
-#endif
         }
 
-        internal static void SetRunnerActive(bool active)
-        {
-            IsRunnerActive = active;
-        }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private static void CreateDriver()
         {
             if (_driverObject != null)
@@ -94,8 +114,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
 
         private sealed class BaselineDebugBootstrapDriver : MonoBehaviour
         {
-            private IEnumerator Start()
+            private System.Collections.IEnumerator Start()
             {
+                // 1 frame: garante que o runner tenha chance de marcar ativo/inativo corretamente
                 yield return null;
 
                 if (!_hasSavedPrevious)
@@ -104,17 +125,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.QA
                     yield break;
                 }
 
+                // Se o runner ainda está ativo, ele é o owner da política; não restauramos.
                 if (IsRunnerActive)
                 {
-                    DebugUtility.Log(typeof(BaselineDebugBootstrap),
-                        "[Baseline] Repeated-call warning: skip restore (runner ativo).");
+                    if (VerboseLogs)
+                    {
+                        _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.Log(
+                            typeof(BaselineDebugBootstrap),
+                            "[Baseline] Skip restore (runner ainda ativo).");
+                    }
+
                     Destroy(gameObject);
                     yield break;
                 }
 
-                DebugUtility.SetRepeatedCallVerbose(_previousRepeatedVerbose);
-                DebugUtility.Log(typeof(BaselineDebugBootstrap),
-                    "[Baseline] Repeated-call warning restaurado pelo bootstrap driver (nenhum runner ativo).");
+                // Sem runner -> restaura ao valor anterior.
+                _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.SetRepeatedCallVerbose(_previousRepeatedVerbose);
+
+                if (VerboseLogs)
+                {
+                    _ImmersiveGames.NewScripts.Infrastructure.DebugLog.DebugUtility.Log(
+                        typeof(BaselineDebugBootstrap),
+                        "[Baseline] Repeated-call warning restaurado (runner inativo).");
+                }
 
                 Destroy(gameObject);
             }

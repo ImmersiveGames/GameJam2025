@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
-
-namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
+namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 {
     /// <summary>
     /// Implementação thread-safe do gate baseada em tokens com ref-count.
     /// - Suporta múltiplos Acquire do mesmo token (não libera prematuramente).
     /// - Mantém GateChanged somente quando o estado aberto/fechado muda.
+    ///
+    /// Contrato:
+    /// - Release(token) = libera UMA aquisição (ref-count).
+    /// - ReleaseAll(token) = remove completamente o token (QA/emergência).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SimulationGateService : ISimulationGateService
@@ -15,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
         private readonly Dictionary<string, int> _tokenCounts = new(StringComparer.Ordinal);
         private readonly object _lock = new();
 
-        // Mantemos um contador de "tokens distintos ativos" por performance e clareza.
+        // Mantemos contador de "tokens distintos ativos" por performance e clareza.
         private int _activeTokenTypes;
 
         public bool IsOpen
@@ -51,14 +54,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
 
             bool changed;
-            bool wasOpen;
             bool isOpenNow;
 
             lock (_lock)
             {
-                wasOpen = _activeTokenTypes == 0;
+                bool wasOpen = _activeTokenTypes == 0;
 
-                if (_tokenCounts.TryGetValue(token, out var count))
+                if (_tokenCounts.TryGetValue(token, out int count))
                 {
                     _tokenCounts[token] = count + 1;
                 }
@@ -80,27 +82,37 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             DebugUtility.LogVerbose<SimulationGateService>(
                 $"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
 
-            // Handle libera "uma aquisição" (ref-count).
+            // Handle libera UMA aquisição (ref-count).
             return new ReleaseHandle(this, token, shouldRelease: true);
         }
 
+        /// <summary>
+        /// Release = ReleaseOne (ref-count). Nunca remove "todas as aquisições".
+        /// </summary>
         public void Release(string token)
+        {
+            ReleaseOne(token);
+        }
+
+        /// <summary>
+        /// Remove completamente o token (zera todas as aquisições daquele token).
+        /// Use apenas em QA/emergência.
+        /// </summary>
+        public void ReleaseAll(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
                 return;
             }
 
-            bool changed;
-            bool wasOpen;
-            bool isOpenNow;
             bool removedAny;
+            bool changed;
+            bool isOpenNow;
 
             lock (_lock)
             {
-                wasOpen = _activeTokenTypes == 0;
+                bool wasOpen = _activeTokenTypes == 0;
 
-                // Release direto = remove TOTAL do token (fallback/manual).
                 removedAny = _tokenCounts.Remove(token);
                 if (removedAny)
                 {
@@ -114,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             if (!removedAny)
             {
                 DebugUtility.LogVerbose<SimulationGateService>(
-                    $"[Gate] Release token='{token}' ignorado (token não estava ativo).");
+                    $"[Gate] ReleaseAll token='{token}' ignorado (token não estava ativo).");
                 return;
             }
 
@@ -123,8 +135,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
                 RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogVerbose<SimulationGateService>(
-                $"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+            DebugUtility.LogWarning<SimulationGateService>(
+                $"[Gate] ReleaseAll token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen} (QA/emergência)");
         }
 
         public bool IsTokenActive(string token)
@@ -140,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
         }
 
-        // Libera exatamente "uma aquisição" (ref-count) — usado pelo handle.
+        // Libera exatamente UMA aquisição (ref-count) — usado por Release() e pelo handle.
         private void ReleaseOne(string token)
         {
             if (string.IsNullOrWhiteSpace(token))
@@ -149,15 +161,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
 
             bool changed;
-            bool wasOpen;
-            bool isOpenNow;
             bool removed;
+            bool isOpenNow;
 
             lock (_lock)
             {
-                wasOpen = _activeTokenTypes == 0;
+                bool wasOpen = _activeTokenTypes == 0;
 
-                if (!_tokenCounts.TryGetValue(token, out var count))
+                if (!_tokenCounts.TryGetValue(token, out int count))
                 {
                     removed = false;
                     isOpenNow = _activeTokenTypes == 0;
@@ -186,7 +197,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             if (!removed)
             {
                 DebugUtility.LogVerbose<SimulationGateService>(
-                    $"[Gate] ReleaseOne token='{token}' ignorado (token não estava ativo).");
+                    $"[Gate] Release token='{token}' ignorado (token não estava ativo).");
                 return;
             }
 
@@ -196,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
             }
 
             DebugUtility.LogVerbose<SimulationGateService>(
-                $"[Gate] ReleaseOne token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+                $"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
         }
 
         private void RaiseGateChanged(bool isOpen)

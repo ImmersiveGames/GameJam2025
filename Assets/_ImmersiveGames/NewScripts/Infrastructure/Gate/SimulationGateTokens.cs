@@ -1,15 +1,19 @@
-namespace _ImmersiveGames.NewScripts.Infrastructure.Execution.Gate
+namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
 {
     /// <summary>
     /// Tokens padrão para bloquear/liberar simulação.
     /// Evita "string solta" espalhada.
     ///
+    /// Política recomendada:
+    /// - Use "flow.*" para travas de infraestrutura (transição, loading, reset, etc).
+    /// - Use "state.pause" para pausa (caso especial), preferencialmente via handles (ref-count).
+    /// - Evite usar "state.*" para macro-estados (ready/gameover/victory) como fonte de verdade;
+    ///   isso deve vir do GameLoop/StateMachine e eventos, não do Gate.
     /// </summary>
     public static class SimulationGateTokens
     {
-        // Estados macro (infra)
+        // Estados (infra) — manter somente se necessário. Preferir GameLoop como fonte de verdade.
         public const string Ready = "state.ready";
-
         public const string Pause = "state.pause";
         public const string GameOver = "state.gameover";
         public const string Victory = "state.victory";
