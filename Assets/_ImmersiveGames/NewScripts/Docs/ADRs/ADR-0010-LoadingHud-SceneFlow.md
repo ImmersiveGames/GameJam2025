@@ -37,7 +37,8 @@ O serviço é **idempotente**: chamar `Show/Hide` repetidamente é seguro.
 ## 3. Regras de ordenação com Fade
 
 - `Show` acontece antes do FadeIn iniciar a carga pesada.
-- `Hide` deve ocorrer **antes** do FadeOut, para evitar ver o HUD durante o retorno à cena.
+- `SceneFlow` aguarda o `WorldLifecycleResetCompletionGate` após `ScenesReady`.
+- `Hide` ocorre em `BeforeFadeOut`, ou seja, **após** o gate liberar e **antes** do FadeOut.
 - Mesmo que o HUD falhe em inicializar, o Scene Flow não deve quebrar (logs + fallback silencioso).
 
 ---

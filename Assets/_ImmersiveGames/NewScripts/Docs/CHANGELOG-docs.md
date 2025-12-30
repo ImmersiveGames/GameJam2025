@@ -4,6 +4,13 @@ All notable documentation changes to **NewScripts** are documented in this file.
 
 ## [2025-12-30]
 ### Updated
+- `WORLD_LIFECYCLE.md`: evidência de SKIP em startup/frontend e reforço do gate antes do FadeOut.
+- `ADR-0010-LoadingHud-SceneFlow.md`: ordem correta do LoadingHUD com gate de reset e FadeOut.
+- `GameLoop-StateFlow-QA.md`: passos/evidências de startup → menu → gameplay → pause/resume (bootstrap, navigation, input mode).
+- `GameplayReset-QA.md`: reset em `ScenesReady` com gate durante o hard reset e conclusão antes do FadeOut.
+
+## [2025-12-30]
+### Updated
 - `WORLD_LIFECYCLE.md`: alinhado ao fluxo de produção observado em log (startup→menu com SKIP + gameplay hard reset pós `ScenesReady`).
 - `GameLoop-StateFlow-QA.md`: atualizado para o fluxo real (startup termina em Ready; gameplay termina em Playing; pause/resume com gate).
 - `GameplayReset-QA.md`: QA do reset em gameplay (baseline Player+Eater) e targets parciais (PlayersOnly/EaterOnly).
@@ -64,7 +71,7 @@ All notable documentation changes to **NewScripts** are documented in this file.
   e critério para remover o SKIP (decisão registrada).
 - Updated: `ADRs/ADR-0010-LoadingHud-SceneFlow.md` e `ARCHITECTURE_TECHNICAL.md` com formalização de
   reset/spawn como parte do loading e diretrizes futuras para Addressables (tarefas agregadas).
-- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status macro em escala 0–100 e referência a Addressables (planejado).
+- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status do progresso e referência a Addressables (planejado).
 - Fixed: remoção de artefatos de truncation/scan (‘...’) em docs (sem mudança de comportamento).
 
 ## [2025-12-27]

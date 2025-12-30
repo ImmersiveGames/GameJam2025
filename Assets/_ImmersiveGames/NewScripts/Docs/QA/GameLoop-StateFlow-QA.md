@@ -22,13 +22,13 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
 1. Dar Play no Editor.
 
 ### Esperado (logs)
-1. `GameLoopSceneFlowCoordinator` registrado com startPlan `startup` (MenuScene + UIGlobalScene).
-2. `GameStartRequestedEvent` disparado (bootstrap de produção).
+1. `GameStartRequestProductionBootstrapper` publica `GameStartRequestedEvent`.
+2. `GameLoopSceneFlowCoordinator` inicia `SceneTransitionService.TransitionAsync(startPlan)` com profile `startup`.
 3. Scene Flow:
-    - `SceneTransitionService` inicia transição com profile `startup`
     - LoadingHUD: `Started → Ensure + Show`
     - Fade: `FadeIn` (alpha=1)
     - Carrega `MenuScene` e `UIGlobalScene`, descarrega `NewBootstrap`
+    - `MenuScene` fica ativa
 4. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e executa **SKIP** (startup/frontend),
    emitindo `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend...`.
 5. Scene Flow:
@@ -37,6 +37,11 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
     - Fade: `FadeOut` (alpha=0)
     - `SceneFlow` conclui.
 6. `GameLoop` avança para **Ready**.
+
+### Evidências (trechos curtos)
+- `[GameStartRequestProductionBootstrapper] Publishing GameStartRequestedEvent`
+- `[SceneTransitionService] TransitionAsync startPlan=... profile='startup'`
+- `[WorldLifecycleRuntimeCoordinator] Reset SKIPPED ... reason='Skipped_StartupOrFrontend'`
 
 > Nota: warnings de “Chamada repetida no frame” podem aparecer durante bootstrap. Eles não indicam reexecução funcional do bootstrap.
 
@@ -48,30 +53,37 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
 1. No `MenuScene`, clicar no botão **Play**.
 
 ### Esperado (logs)
-1. `GameNavigationService` dispara `TransitionAsync` com targetActive `GameplayScene` e profile `gameplay`.
-2. Scene Flow:
+1. `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason='Menu/PlayButton')`.
+2. `GameNavigationService` dispara `TransitionAsync` com targetActive `GameplayScene` e profile `gameplay`.
+3. Scene Flow:
     - LoadingHUD: `Started → Show`
     - FadeIn (alpha=1)
     - Carrega `GameplayScene` (Additive), mantém `UIGlobalScene`, descarrega `MenuScene`
-3. `NewSceneBootstrapper` de `GameplayScene`:
+4. `NewSceneBootstrapper` de `GameplayScene`:
     - cria scene scope
     - carrega `WorldDefinition`
     - registra spawn services (mínimo esperado: `PlayerSpawnService` e `EaterSpawnService`)
-4. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e dispara hard reset:
+5. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e dispara hard reset:
     - `WorldLifecycleController` → reset
     - `WorldLifecycleOrchestrator` executa fases (despawn/spawn)
     - `ActorRegistry` termina com 2 atores (baseline: Player + Eater)
-5. `WorldLifecycleResetCompletedEvent` é emitido com reason `ScenesReady/GameplayScene`.
-6. Scene Flow:
+6. `WorldLifecycleResetCompletedEvent` é emitido com reason `ScenesReady/GameplayScene`.
+7. Scene Flow:
     - aguarda completion gate (conclui via evento acima)
     - LoadingHUD: `BeforeFadeOut → Hide`
     - FadeOut (alpha=0)
     - `SceneFlow` conclui.
-7. `GameLoop` avança para **Playing**.
-8. `IStateDependentService` libera `Move` (e outras ações dependentes) quando:
+8. `InputModeSceneFlowBridge` aplica modo `Gameplay`.
+9. `GameLoop` avança para **Playing**.
+10. `IStateDependentService` libera `Move` (e outras ações dependentes) quando:
     - gate aberto
     - gameplayReady=true
     - gameLoopState=Playing
+
+### Evidências (trechos curtos)
+- `[MenuPlayButtonBinder] RequestToGameplay reason='Menu/PlayButton'`
+- `[WorldLifecycleRuntimeCoordinator] Disparando hard reset após ScenesReady. reason='ScenesReady/GameplayScene'`
+- `[InputModeSceneFlowBridge] Applying Gameplay input mode`
 
 ---
 
@@ -83,15 +95,21 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
 
 ### Esperado (logs)
 1. Ao abrir pause:
+    - `PauseOverlayController` publica `GamePauseCommandEvent`
     - `GamePauseGateBridge` adquire token `state.pause`
     - `GameLoop` entra em **Paused**
     - `InputModeService` alterna para mapa/UI (`PauseOverlay`)
     - `IStateDependentService` bloqueia `Move` com motivo `Paused`
 2. Ao fechar pause:
+    - `PauseOverlayController` publica `GameResumeRequestedEvent`
     - `GamePauseGateBridge` libera token `state.pause`
     - `GameLoop` retorna para **Playing**
     - `InputModeService` volta para `Gameplay`
     - `IStateDependentService` libera `Move`
+
+### Evidências (trechos curtos)
+- `[PauseOverlayController] GamePauseCommandEvent`
+- `[PauseOverlayController] GameResumeRequestedEvent`
 
 ---
 

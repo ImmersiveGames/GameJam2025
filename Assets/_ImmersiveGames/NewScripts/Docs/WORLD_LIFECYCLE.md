@@ -22,7 +22,7 @@
 [SceneTransitionService] Completion gate concluído. Prosseguindo para FadeOut.
 ```
 
-﻿# World Lifecycle — Reset determinístico por escopos (NewScripts)
+# World Lifecycle — Reset determinístico por escopos (NewScripts)
 
 Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
 
@@ -86,6 +86,12 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent`, mas **não** dispara hard reset.
     - Emite `WorldLifecycleResetCompletedEvent(reason='Skipped_StartupOrFrontend')` para destravar o pipeline.
     - O `GameLoopSceneFlowCoordinator` considera o reset como concluído (skip) e o GameLoop permanece em **Ready**.
+
+```log
+[WorldLifecycleRuntimeCoordinator] SceneTransitionScenesReady recebido. Context=... Profile='startup'
+[WorldLifecycleRuntimeCoordinator] Reset SKIPPED (startup/frontend). Emitting WorldLifecycleResetCompletedEvent...
+```
+
 - **Perfis gameplay** (ex.: transição para `GameplayScene`):
     - `SceneTransitionScenesReadyEvent` aciona `WorldLifecycleController.ResetWorldAsync(...)`.
     - O `WorldLifecycleOrchestrator` executa as fases determinísticas antes de liberar o gate de conclusão da transição.
