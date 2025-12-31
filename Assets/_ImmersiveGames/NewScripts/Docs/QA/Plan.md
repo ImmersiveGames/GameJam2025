@@ -102,6 +102,9 @@
 
 ## 3) Próximo passo (objetivo imediato do projeto)
 
+**Status (2025-12-31): DONE.** Evidência: `Reports/SceneFlow-Production-Evidence-2025-12-31.md`.
+
+
 ### 3.1 Corrigir os “3 primeiros blockers” da `GameplayScene` (produção)
 
 **Meta:** permitir que o fluxo production (Menu → Gameplay → Playing) rode sem exceções e sem dependências de legado.
@@ -122,8 +125,18 @@
 
 ## 4) Hygiene de docs (quando mexer novamente)
 
+**Status (2025-12-31): APPLIED.** Regras incorporadas no `README.md` e registradas no `CHANGELOG-docs.md`.
+
+
 * Manter este `Plan.md` como “fonte de próximos passos”.
 * Atualizar changelog apenas com mudanças reais (sem reescrever histórico).
 * Não duplicar seções/cabeçalhos (este arquivo já está consolidado).
 
 ---
+
+
+---
+
+## Próximo passo sugerido
+
+- Iniciar a próxima etapa do roadmap macro (Loading module novo integrado ao SceneFlow/WorldLifecycle), mantendo a regra de não adaptar legado; apenas usar como referência.

@@ -78,14 +78,12 @@ Diagrama simplificado:
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. **Menu → Gameplay**
-    - UI (ex.: `MenuPlayButtonBinder`) chama `IGameNavigationService.RequestGameplayAsync(reason)` (via `Button.onClick` no Inspector; sem registro de listeners em código).
+    - UI chama `IGameNavigationService.RequestGameplayAsync(reason)`.
     - `GameNavigationService` dispara `SceneTransitionService.TransitionAsync(profile=gameplay)`.
 2. **Scene Flow**
-    - `SceneTransitionStarted` → `FadeIn` (alpha=1 / hide) → `FadeInCompleted`.
-    - Após `FadeInCompleted`: `LoadingHud.Show()`.
-    - Load/Unload/Active → `SceneTransitionScenesReady`.
-    - Completion gate aguarda `WorldLifecycleResetCompletedEvent` (ou SKIP no profile).
-    - `BeforeFadeOut`: `LoadingHud.Hide()` → `FadeOut` (alpha=0 / reveal) → `SceneTransitionCompleted` (com safety `LoadingHud.Hide()` no final).
+    - `SceneTransitionStarted` → `FadeIn` → Load/Unload/Active → `SceneTransitionScenesReady`.
+    - Completion gate aguarda `WorldLifecycleResetCompletedEvent`.
+    - `FadeOut` → `SceneTransitionCompleted`.
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
     - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend`.

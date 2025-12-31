@@ -77,25 +77,11 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `WorldLifecycleRuntimeCoordinator` é acionado
     - decide executar reset ou SKIP
     - no profile `gameplay`, executa reset após o `ScenesReady` e finaliza com
-      `WorldLifecycleResetCompletedEvent(reason='ScenesReady/<TargetActiveScene>')`
+      `WorldLifecycleResetCompletedEvent(reason='Ok')`
 
 - `SceneTransitionCompleted`:
     - `GameReadinessService` libera token
     - jogo pode voltar a “READY” (sujeito ao estado do GameLoop e outras condições)
-
-
-### Ordem operacional de Fade e Loading HUD (evidência de log)
-Durante `SceneTransitionService.TransitionAsync(...)`, a ordem observada é:
-
-1. `SceneTransitionStartedEvent`
-2. `FadeIn` (alpha=1 / hide) → `FadeInCompletedEvent`
-3. `SceneFlowLoadingService` chama `LoadingHud.Show()` **após** `FadeInCompleted`
-4. Load/Unload/Active → `SceneTransitionScenesReadyEvent`
-5. `WorldLifecycleRuntimeCoordinator` executa reset (profile `gameplay`) ou emite SKIP (profiles `startup`/`frontend`)
-6. `WorldLifecycleResetCompletionGate` libera a transição **apenas após** `WorldLifecycleResetCompletedEvent`
-7. `BeforeFadeOutEvent`: `SceneFlowLoadingService` chama `LoadingHud.Hide()` → `FadeOut` (alpha=0 / reveal)
-8. `SceneTransitionCompletedEvent` (inclui safety `LoadingHud.Hide()` no final)
-
 
 ### Fluxo de produção integrado (SceneFlow + WorldLifecycle)
 - **Perfis startup/frontend** (ex.: transição terminando em `MenuScene`):

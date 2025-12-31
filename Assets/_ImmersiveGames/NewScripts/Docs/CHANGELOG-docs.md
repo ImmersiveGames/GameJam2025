@@ -1,13 +1,16 @@
 # Changelog (Docs)
 
 ## [2025-12-31]
-- Updated: `WORLD_LIFECYCLE.md` e `WORLDLIFECYCLE_RESET_STATUS.md` — registrada a ordem operacional (FadeIn → Show HUD → load/unload → ScenesReady → Reset/Skip → gate → Hide HUD → FadeOut).
-- Updated: `ADRs/ADR-0009-FadeSceneFlow.md` e `ADRs/ADR-0010-LoadingHud-SceneFlow.md` — ordem correta do LoadingHUD (Show após FadeIn; Hide antes de FadeOut; `SceneTransitionCompleted` como safety).
-- Updated: `README.md` e `ARCHITECTURE.md` — referências de navegação/produção (`RequestGameplayAsync`/`RequestMenuAsync`, `MenuPlayButtonBinder`, bridges de restart/exit).
+- Added: `Reports/SceneFlow-Production-Evidence-2025-12-31.md` com evidência do fluxo de produção (log) para validação da Etapa 3.
+- Updated: `README.md`, `ARCHITECTURE.md` e `WORLD_LIFECYCLE.md` para refletir a API atual do `IGameNavigationService` (`RequestGameplayAsync(reason)` / `RequestMenuAsync(reason)`), removendo referências obsoletas `RequestToGameplay/RequestToMenu`.
+- Notas: `MenuPlayButtonBinder` é o ponto de entrada de produção do Menu (OnClick via Inspector) e aplica click-guard na volta ao Menu para mitigar Submit/Enter preso.
+- Updated: `WORLD_LIFECYCLE.md` e `WORLDLIFECYCLE_RESET_STATUS.md` com evidência de validação "sem flash" e ordem final do pipeline (FadeIn → LoadingHUD → Scene load/unload → ScenesReady → Reset/Skip → gate → Hide HUD → FadeOut).
+- Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` alinhados à ordem final (LoadingHUD só aparece após FadeIn; Hide antes de FadeOut; `Completed` como safety).
 
-All notable
 
 All notable documentation changes to **NewScripts** are documented in this file.
+- Updated: `Plan.md` com status explícito (Etapa 3=Done, Etapa 4=Applied) e referência direta à evidência.
+- Updated: `README.md` com seção "Regras de higiene da documentação" (rastreabilidade, sem suposições, changelog obrigatório).
 
 ## [2025-12-30]
 ### Updated
