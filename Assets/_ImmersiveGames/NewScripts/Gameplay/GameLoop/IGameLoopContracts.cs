@@ -68,4 +68,35 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         /// </summary>
         void Clear();
     }
+
+    /// <summary>
+    /// Serviço de domínio para encerrar a run atual (vitória/derrota) de forma idempotente.
+    ///
+    /// Regras:
+    /// - Publica <see cref="GameRunEndedEvent"/> no máximo uma vez por run.
+    /// - Um novo <see cref="GameRunStartedEvent"/> deve rearmar o serviço para a próxima run.
+    /// </summary>
+    public interface IGameRunOutcomeService
+    {
+        /// <summary>
+        /// Indica se o fim de run já foi solicitado/publicado para a run atual.
+        /// </summary>
+        bool HasEnded { get; }
+
+        /// <summary>
+        /// Tenta finalizar a run com o outcome informado.
+        /// Retorna true quando o evento foi efetivamente publicado.
+        /// </summary>
+        bool TryEnd(GameRunOutcome outcome, string reason = null);
+
+        /// <summary>
+        /// Atalho para vitória.
+        /// </summary>
+        bool RequestVictory(string reason = null);
+
+        /// <summary>
+        /// Atalho para derrota.
+        /// </summary>
+        bool RequestDefeat(string reason = null);
+    }
 }

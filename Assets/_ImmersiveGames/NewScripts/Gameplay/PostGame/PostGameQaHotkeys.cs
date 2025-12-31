@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
 
@@ -22,8 +23,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         {
             if (Input.GetKeyDown(VictoryKey))
             {
-                EventBus<GameRunEndedEvent>.Raise(
-                    new GameRunEndedEvent(GameRunOutcome.Victory, VictoryReason));
+                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) && outcomeService != null)
+                {
+                    outcomeService.RequestVictory(VictoryReason);
+                }
+                else
+                {
+                    // Fallback para cenários onde o DI global não está inicializado (testes isolados).
+                    EventBus<GameRunEndedEvent>.Raise(
+                        new GameRunEndedEvent(GameRunOutcome.Victory, VictoryReason));
+                }
 
                 DebugUtility.LogVerbose<PostGameQaHotkeys>(
                     "[PostGame QA] F7 pressionado -> GameRunEndedEvent Victory (QA_ForcedVictory).",
@@ -32,8 +41,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
             if (Input.GetKeyDown(DefeatKey))
             {
-                EventBus<GameRunEndedEvent>.Raise(
-                    new GameRunEndedEvent(GameRunOutcome.Defeat, DefeatReason));
+                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) && outcomeService != null)
+                {
+                    outcomeService.RequestDefeat(DefeatReason);
+                }
+                else
+                {
+                    // Fallback para cenários onde o DI global não está inicializado (testes isolados).
+                    EventBus<GameRunEndedEvent>.Raise(
+                        new GameRunEndedEvent(GameRunOutcome.Defeat, DefeatReason));
+                }
 
                 DebugUtility.LogVerbose<PostGameQaHotkeys>(
                     "[PostGame QA] F6 pressionado -> GameRunEndedEvent Defeat (QA_ForcedDefeat).",

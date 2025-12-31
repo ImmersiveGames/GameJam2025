@@ -107,6 +107,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterPauseBridge();
             RegisterGameLoop();
             RegisterGameRunStatusService();
+            RegisterGameRunOutcomeService();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
@@ -180,6 +181,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameResetRequestedEvent>.Clear();
             EventBus<GameLoopActivityChangedEvent>.Clear();
             EventBus<GameRunStartedEvent>.Clear();
+            EventBus<GameRunEndedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[EventBus] EventBus inicializado para eventos do GameLoop (NewScripts).",
@@ -377,6 +379,26 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameRunStatusService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameRunOutcomeService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoop] IGameRunOutcomeService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
+
+            // Mantém compatibilidade com a assinatura atual do GameRunOutcomeService (injeção por construtor).
+            RegisterIfMissing<IGameRunOutcomeService>(() => new GameRunOutcomeService(gameLoopService));
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] GameRunOutcomeService registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
