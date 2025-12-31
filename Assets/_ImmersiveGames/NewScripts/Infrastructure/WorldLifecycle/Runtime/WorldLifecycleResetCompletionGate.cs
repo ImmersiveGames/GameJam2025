@@ -1,6 +1,4 @@
-﻿// Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Runtime/WorldLifecycleResetCompletionGate.cs
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -57,7 +55,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            string signature = SceneTransitionSignatureUtil.Compute(context);
+            // Contrato atual: SceneTransitionSignatureUtil.Compute(context) == context.ToString()
+            var signature = SceneTransitionSignatureUtil.Compute(context);
 
             // Se já chegou antes (caso raro), retorna imediatamente.
             lock (_pending)

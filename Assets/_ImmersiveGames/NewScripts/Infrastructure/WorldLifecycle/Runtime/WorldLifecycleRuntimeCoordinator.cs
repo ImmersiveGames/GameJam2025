@@ -131,7 +131,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private static void EmitResetCompleted(SceneTransitionContext context, string reason)
         {
-            // Deve casar com o gate: WorldLifecycleResetCompletionGate usa SceneTransitionSignatureUtil.Compute(context).
+            // Contrato atual: SceneTransitionSignatureUtil.Compute(context) == context.ToString()
+            // (centralizado para permitir evolução futura sem tocar nos callers).
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),

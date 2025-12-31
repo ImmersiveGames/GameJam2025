@@ -4,7 +4,9 @@
 
 - Confirmação adicional: transições com **Fade + LoadingHUD** sem flash, com `Show` apenas após `FadeInCompleted` e `Hide` antes de `FadeOut` (safety hide no `Completed`).
 - Ordem confirmada: FadeIn → LoadingHUD Show → Scene load/unload/active → ScenesReady → Reset/Skip → gate → LoadingHUD Hide → FadeOut → Completed.
-
+- Confirmação adicional (hardening): assinatura e reason padronizados e estáveis no runtime:
+  - `contextSignature` canônico via `SceneTransitionSignatureUtil.Compute(context)` (hoje equivalente a `context.ToString()`).
+  - `reason` canônico via `WorldLifecycleResetReason.*` (ex.: `ScenesReady/<ActiveScene>` e `Skipped_StartupOrFrontend:profile=...;scene=...`).
 
 ## Atualização (2025-12-30)
 
@@ -13,16 +15,13 @@
 - `WorldLifecycleRuntimeCoordinator` reage a `SceneTransitionScenesReadyEvent`:
     - Profile `startup`/frontend: reset **skip** + emite `WorldLifecycleResetCompletedEvent`.
     - Profile `gameplay`: dispara **hard reset** (`ResetWorldAsync`) e emite `WorldLifecycleResetCompletedEvent` ao concluir.
-- `SceneTransitionService` passa a aguardar `WorldLifecycleResetCompletionGate` antes do FadeOut (assinatura = `SceneTransitionContext.ToString()`).
+- `SceneTransitionService` aguarda `WorldLifecycleResetCompletionGate` antes do FadeOut.
 - Hard reset em Gameplay confirma spawn via `WorldDefinition` (2 entries: Player + Eater) e execução do orchestrator com Gate (`WorldLifecycle.WorldReset`).
 - `IStateDependentService` bloqueia input/movimento durante gate e libera ao final; pausa também fecha gate via `GamePauseGateBridge`.
-
 
 ### Pendências remanescentes (curto prazo)
 - Consolidar o “production trigger” definitivo do reset como parte do **perfil**/entrada de gameplay (hoje: `SceneTransitionScenesReadyEvent` em profile `gameplay`).
 - Fixar blockers restantes da `GameplayScene` fora do pipeline de reset (erros de gameplay específicos).
-- Padronizar `contextSignature`/`reason` para os motivos de reset (hoje já existe, mas ainda sem spec final).
-
 
 Data: 2025-12-26
 Escopo: NewScripts — WorldLifecycle + Gameplay/Reset
@@ -30,7 +29,7 @@ Escopo: NewScripts — WorldLifecycle + Gameplay/Reset
 ## O que está funcional (confirmado por logs)
 ### 1) Macro-fluxo do WorldLifecycle Reset
 O pipeline “grande” de reset está operacional e resiliente mesmo quando **não há spawn services**:
-- Gate fecha/abre durante o reset (`flow.soft_reset`).
+- Gate fecha/abre durante o reset (`WorldLifecycle.WorldReset`).
 - Ordem de fases do orchestrator executa sem falhas:
     - `OnBeforeDespawn` (hooks) → `Despawn` → `Scoped reset participants` → `OnBeforeSpawn` → `Spawn` → `OnAfterSpawn`
 - Quando não existem spawn services, `Despawn/Spawn` são **skip** com warning, mas o reset segue (hooks + scoped participants).
@@ -98,7 +97,7 @@ Mesmo com o reset por grupos funcional, a percepção de “mundo resetou” fic
 
 ## Artefatos relacionados (onde olhar primeiro)
 - Logs confirmando:
-    - `WorldLifecycleController` soft reset (Players) com gate + fases.
+    - `WorldLifecycleController` hard reset (Gameplay) com gate + fases.
     - `GameplayResetQaSpawner` + `GameplayResetOrchestrator` + `GameplayResetQaProbe` para PlayersOnly.
 - Código-chave a revisar para “fechar 100%”:
     - `IGameplayResetTargetClassifier` (implementação concreta)

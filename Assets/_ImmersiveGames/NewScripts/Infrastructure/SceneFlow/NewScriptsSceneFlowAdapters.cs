@@ -124,12 +124,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
     /// <summary>
     /// Resolve NewScriptsSceneTransitionProfile por nome, via Resources.
     /// Padrão de paths:
-    /// - "SceneFlow/Profiles/&lt;profileName&gt;"
-    /// - "&lt;profileName&gt;"
+    /// - "SceneFlow/Profiles/<profileName/>"
+    /// - "<profileName/>"
     ///
     /// Observação importante:
-    /// - Se existir um asset com esse nome mas de tipo legado (ex.: SceneTransitionProfile),
-    ///   Resources.Load&lt;NewScriptsSceneTransitionProfile&gt; retornará null. Este resolver detecta e loga isso.
+    /// - Se existir um asset com esse nome, mas de tipo legado (ex.: SceneTransitionProfile),
+    ///   Resources.Load<NewScriptsSceneTransitionProfile/> retornará null. Este resolver detecta e loga isso.
     /// </summary>
     public sealed class NewScriptsSceneTransitionProfileResolver
     {
