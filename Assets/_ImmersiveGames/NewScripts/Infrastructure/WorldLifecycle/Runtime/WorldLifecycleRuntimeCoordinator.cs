@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
@@ -19,15 +19,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     {
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
 
-        // Profiles que NÃO disparam reset (ex.: boot e frontend/menu).
-        private static readonly HashSet<string> SkipProfiles = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "startup",
-            "frontend"
-        };
-
-        // Fallback: enquanto nem toda transição para Menu carrega o profile "frontend",
-        // mantemos o check por nome de cena para evitar erro/ruído (controller ausente no Menu).
+        // Fallback defensivo: se alguma transição para Menu vier sem profile,
+        // evitamos ruído/erro por falta de WorldLifecycleController no Menu.
+        // Importante: NÃO deve mascarar profile incorreto (ex.: gameplay apontando para Menu).
         private const string FrontendSceneName = "MenuScene";
 
         public WorldLifecycleRuntimeCoordinator()
@@ -56,17 +50,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
-            // SKIP em startup/frontend (e fallback por cena Menu).
-            var skipByProfile = !string.IsNullOrEmpty(profile) && SkipProfiles.Contains(profile);
-            var skipByScene = string.Equals(activeSceneName, FrontendSceneName, StringComparison.Ordinal);
+            // SKIP canônico: startup + frontend.
+            var skipByProfile = SceneFlowProfileNames.IsStartupOrFrontend(profile);
 
-            if (skipByProfile || skipByScene)
+            // Fallback: só aplica quando profile vier vazio (evita esconder bug de profile incorreto).
+            var skipBySceneFallback =
+                !skipByProfile &&
+                string.IsNullOrWhiteSpace(profile) &&
+                string.Equals(activeSceneName, FrontendSceneName, StringComparison.Ordinal);
+
+            if (skipByProfile || skipBySceneFallback)
             {
+                var why = skipByProfile ? "profile" : "scene-fallback";
+
                 DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). profile='{profile ?? "<null>"}', activeScene='{activeSceneName}'.",
+                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profile ?? "<null>"}', activeScene='{activeSceneName}'.",
                     DebugUtility.Colors.Info);
 
-                EmitResetCompleted(context,
+                EmitResetCompleted(
+                    context,
                     reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profile, activeSceneName));
                 return;
             }
@@ -92,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/{activeSceneName}', profile='{profile ?? "<null>"}'",
                     DebugUtility.Colors.Info);
 
-                // IMPORTANTE: no seu projeto atual, ResetWorldAsync recebe apenas 'reason'.
+                // IMPORTANTE: no projeto atual, ResetWorldAsync recebe apenas 'reason'.
                 await controller.ResetWorldAsync(reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
 
                 EmitResetCompleted(context, reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));

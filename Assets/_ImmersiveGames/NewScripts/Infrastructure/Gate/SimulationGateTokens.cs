@@ -12,11 +12,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
     /// </summary>
     public static class SimulationGateTokens
     {
-        // Estados (infra) — manter somente se necessário. Preferir GameLoop como fonte de verdade.
-        public const string Ready = "state.ready";
+        // Estado especial suportado (pausa).
         public const string Pause = "state.pause";
-        public const string GameOver = "state.gameover";
-        public const string Victory = "state.victory";
 
         // Fluxos (infra)
         public const string SceneTransition = "flow.scene_transition";

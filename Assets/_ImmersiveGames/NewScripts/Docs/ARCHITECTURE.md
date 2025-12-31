@@ -78,12 +78,14 @@ Diagrama simplificado:
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. **Menu → Gameplay**
-    - UI chama `IGameNavigationService.RequestToGameplay(reason)`.
+    - UI (ex.: `MenuPlayButtonBinder`) chama `IGameNavigationService.RequestGameplayAsync(reason)` (via `Button.onClick` no Inspector; sem registro de listeners em código).
     - `GameNavigationService` dispara `SceneTransitionService.TransitionAsync(profile=gameplay)`.
 2. **Scene Flow**
-    - `SceneTransitionStarted` → `FadeIn` → Load/Unload/Active → `SceneTransitionScenesReady`.
-    - Completion gate aguarda `WorldLifecycleResetCompletedEvent`.
-    - `FadeOut` → `SceneTransitionCompleted`.
+    - `SceneTransitionStarted` → `FadeIn` (alpha=1 / hide) → `FadeInCompleted`.
+    - Após `FadeInCompleted`: `LoadingHud.Show()`.
+    - Load/Unload/Active → `SceneTransitionScenesReady`.
+    - Completion gate aguarda `WorldLifecycleResetCompletedEvent` (ou SKIP no profile).
+    - `BeforeFadeOut`: `LoadingHud.Hide()` → `FadeOut` (alpha=0 / reveal) → `SceneTransitionCompleted` (com safety `LoadingHud.Hide()` no final).
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
     - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend`.
@@ -91,7 +93,7 @@ Diagrama simplificado:
     - `PauseOverlayController.Show()` publica `GamePauseCommandEvent` e alterna `InputMode` para `PauseOverlay`.
     - `PauseOverlayController.Hide()` publica `GameResumeRequestedEvent` e volta para `Gameplay`.
     - `PauseOverlayController.ReturnToMenuFrontend()` publica `GameExitToMenuRequestedEvent`,
-      troca `InputMode` para `FrontendMenu` e chama `IGameNavigationService.RequestToMenu(...)`.
+      troca `InputMode` para `FrontendMenu` e chama `IGameNavigationService.RequestMenuAsync(...)`.
 5. **GameLoop**
     - `GameLoopSceneFlowCoordinator` chama `GameLoop.RequestStart()` apenas após `TransitionCompleted + ResetCompleted`.
 
@@ -114,7 +116,7 @@ Diagrama simplificado:
   `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
   `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
-- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
+- `MenuPlayButtonBinder` desativa botão e dispara `RequestGameplayAsync`.
 - Transição para `gameplay` executa reset e `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` antes do `FadeOut`.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`

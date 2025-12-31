@@ -149,18 +149,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
                 return null;
             }
 
-            var key = profileName.Trim();
+            // Canonicalização mínima: trim (sem forçar lower) para não mudar comportamento.
+            var key = SceneFlowProfileNames.Normalize(profileName);
             if (_cache.TryGetValue(key, out var cached) && cached != null)
             {
                 resolvedPath = "<cache>";
                 return cached;
             }
 
-            var pathA = $"SceneFlow/Profiles/{key}";
+            var pathA = SceneFlowProfilePaths.For(key);
             var pathB = key;
 
             // 1) Tentativa principal (tipo correto).
-            var resolved = Resources.Load<NewScriptsSceneTransitionProfile>(pathA);
+            var resolved = !string.IsNullOrEmpty(pathA)
+                ? Resources.Load<NewScriptsSceneTransitionProfile>(pathA)
+                : null;
+
             if (resolved != null)
             {
                 resolvedPath = pathA;
@@ -180,10 +184,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
                 var lower = key.ToLowerInvariant();
                 if (!string.Equals(lower, key, StringComparison.Ordinal))
                 {
-                    var pathALower = $"SceneFlow/Profiles/{lower}";
+                    var pathALower = SceneFlowProfilePaths.For(lower);
                     var pathBLower = lower;
 
-                    resolved = Resources.Load<NewScriptsSceneTransitionProfile>(pathALower);
+                    resolved = !string.IsNullOrEmpty(pathALower)
+                        ? Resources.Load<NewScriptsSceneTransitionProfile>(pathALower)
+                        : null;
+
                     if (resolved != null)
                     {
                         key = lower;
@@ -211,14 +218,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
             }
 
             // 3) Diagnóstico de tipo incorreto (sem fallback funcional).
-            var anyA = Resources.Load(pathA);
-            if (anyA != null)
+            if (!string.IsNullOrEmpty(pathA))
             {
-                DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
-                    $"[SceneFlow] Asset encontrado em Resources no path '{pathA}', porém com TIPO incorreto: '{anyA.GetType().FullName}'. " +
-                    $"Esperado: '{typeof(NewScriptsSceneTransitionProfile).FullName}'. " +
-                    "Ação: recrie/migre o asset como NewScriptsSceneTransitionProfile (CreateAssetMenu NewScripts).");
-                return null;
+                var anyA = Resources.Load(pathA);
+                if (anyA != null)
+                {
+                    DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
+                        $"[SceneFlow] Asset encontrado em Resources no path '{pathA}', porém com TIPO incorreto: '{anyA.GetType().FullName}'. " +
+                        $"Esperado: '{typeof(NewScriptsSceneTransitionProfile).FullName}'. " +
+                        "Ação: recrie/migre o asset como NewScriptsSceneTransitionProfile (CreateAssetMenu NewScripts).");
+                    return null;
+                }
             }
 
             var anyB = Resources.Load(pathB);
@@ -233,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 
             DebugUtility.LogError<NewScriptsSceneTransitionProfileResolver>(
                 $"[SceneFlow] NewScriptsSceneTransitionProfile '{key}' NÃO encontrado em Resources. " +
-                $"Paths tentados: '{pathA}' e '{pathB}'. Confirme que o asset está em Resources/SceneFlow/Profiles e é do tipo NewScriptsSceneTransitionProfile.");
+                $"Paths tentados: '{pathA}' e '{pathB}'. Confirme que o asset está em Resources/{SceneFlowProfilePaths.ProfilesRoot} e é do tipo NewScriptsSceneTransitionProfile.");
             return null;
         }
     }

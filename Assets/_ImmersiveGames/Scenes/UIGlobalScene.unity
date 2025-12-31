@@ -496,7 +496,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &644882519
 Transform:
   m_ObjectHideFlags: 0
@@ -691,8 +691,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1081313265}
   - component: {fileID: 1081313263}
-  - component: {fileID: 1081313266}
   - component: {fileID: 1081313267}
+  - component: {fileID: 1081313268}
   m_Layer: 0
   m_Name: InputRoot
   m_TagString: Untagged
@@ -729,22 +729,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1081313266
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1081313262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9355303dd57a4afa920160ab0423b197, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  requiredActiveSceneName: GameplayScene
-  overlay: {fileID: 1769195221}
-  uiInputModule: {fileID: 594504070}
-  cancelActionName: PauseToggle
 --- !u!114 &1081313267
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -755,6 +739,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cdd1d651570f7324d8fe080493cfa4ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1081313268
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081313262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dad434f408a044a0900f3a6a49b795c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1137477972

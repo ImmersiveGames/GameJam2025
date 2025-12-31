@@ -126,10 +126,10 @@ namespace _ImmersiveGames.NewScripts.UI
                 return;
             }
 
-            SetButtonInteractable(false, "RequestToGameplay");
+            SetButtonInteractable(false, "RequestGameplayAsync");
 
             // Fire-and-forget: o GameNavigationService faz guard de in-flight/debounce.
-            _ = _navigation.RequestToGameplay(reason);
+            _ = _navigation.RequestGameplayAsync(reason);
 
             _waitingForMenuReturn = true;
             StartEditorFallbackReenable();

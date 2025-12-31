@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
 {
     /// <summary>
     /// Bridge global: ao receber GameExitToMenuRequestedEvent, aciona o IGameNavigationService.
-    /// Evita dependência direta de UI/overlay e centraliza o caminho de saída de Gameplay.
+    /// Caminho único para retornar ao menu (via overlays: pause/victory/defeat).
     /// </summary>
     public sealed class ExitToMenuNavigationBridge : IDisposable
     {
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
             EventBus<GameExitToMenuRequestedEvent>.Register(_exitToMenuBinding);
 
             DebugUtility.LogVerbose<ExitToMenuNavigationBridge>(
-                "[Navigation] ExitToMenuNavigationBridge registrado (GameExitToMenuRequestedEvent -> RequestToMenu).",
+                "[Navigation] ExitToMenuNavigationBridge registrado (GameExitToMenuRequestedEvent -> RequestMenuAsync).",
                 DebugUtility.Colors.Info);
         }
 
@@ -46,10 +46,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
             }
 
             DebugUtility.Log<ExitToMenuNavigationBridge>(
-                "[Navigation] ExitToMenu recebido -> RequestToMenu.",
+                "[Navigation] ExitToMenu recebido -> RequestMenuAsync.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestToMenu("ExitToMenu/Event");
+            _ = navigation.RequestMenuAsync("ExitToMenu/Event");
         }
     }
 }

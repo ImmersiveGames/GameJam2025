@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
             EventBus<GameResetRequestedEvent>.Register(_resetBinding);
 
             DebugUtility.LogVerbose<RestartNavigationBridge>(
-                "[Navigation] RestartNavigationBridge registrado (GameResetRequestedEvent -> RequestToGameplay).",
+                "[Navigation] RestartNavigationBridge registrado (GameResetRequestedEvent -> RequestGameplayAsync).",
                 DebugUtility.Colors.Info);
         }
 
@@ -48,10 +48,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
             }
 
             DebugUtility.Log<RestartNavigationBridge>(
-                "[Navigation] GameResetRequestedEvent recebido -> RequestToGameplay.",
+                "[Navigation] GameResetRequestedEvent recebido -> RequestGameplayAsync.",
                 DebugUtility.Colors.Info);
 
-            _ = navigation.RequestToGameplay(RestartReason);
+            _ = navigation.RequestGameplayAsync(RestartReason);
         }
     }
 }

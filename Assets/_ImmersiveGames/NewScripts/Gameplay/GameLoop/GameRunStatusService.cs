@@ -7,12 +7,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// <summary>
     /// Serviço simples que mantém o resultado da última run do jogo.
     /// Ouve GameRunEndedEvent e GameRunStartedEvent e expõe Outcome/Reason para UI e outros sistemas.
-    /// Agora também integra com o GameLoop para encerrar a run (RequestEnd).
     ///
-    /// Nota de semântica:
-    /// - GameRunStartedEvent pode ser publicado em transições que NÃO representam "nova run" (ex.: Resume).
-    /// - Este serviço evita limpar estado/logar "nova run" quando já está "limpo".
-    /// - (Ajuste) O primeiro GameRunStartedEvent do ciclo (boot) é tratado como "start inicial" sem log ruidoso.
+    /// Atualização:
+    /// - Victory/Defeat devem pausar a simulação: ao receber GameRunEndedEvent, publica GamePauseCommandEvent(true).
+    /// - O encerramento do "estado ativo" fica a cargo do GameLoop reagir ao GamePauseCommandEvent
+    ///   (ex.: transicionar para Paused). Isso garante gate fechado e simulação congelada.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunStatusService : IGameRunStatusService, IDisposable
@@ -31,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         public GameRunStatusService(IGameLoopService gameLoopService)
         {
             _gameLoopService = gameLoopService;
+
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _startBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
 
@@ -60,40 +60,43 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             DebugUtility.Log<GameRunStatusService>(
                 $"[GameLoop] GameRunStatus atualizado. Outcome={Outcome}, Reason='{Reason ?? "<null>"}'.");
 
-            // Integração com GameLoop:
-            // Fim de run (Victory/Defeat) deve tirar o loop do estado Playing
-            // para que IStateDependentService bloqueie ações de gameplay.
+            // Victory/Defeat devem pausar a simulação (gate fechado via PauseGateBridge).
+            // Evita pausar se já não estamos em gameplay ativo.
             if (_gameLoopService == null)
             {
                 DebugUtility.LogWarning<GameRunStatusService>(
-                    "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. RequestEnd() não foi chamado.");
+                    "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. Pausa não foi solicitada.");
                 return;
             }
 
-            // Evita chamadas redundantes quando já estamos fora do gameplay.
-            // (Interface atual não expõe enum, então usamos o nome como melhor esforço.)
             var stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            var shouldRequestEnd =
-                stateName == nameof(GameLoopStateId.Playing) ||
-                stateName == nameof(GameLoopStateId.Paused);
+            var isInActiveGameplay =
+                stateName == nameof(GameLoopStateId.Playing);
 
-            if (!shouldRequestEnd)
+            if (!isInActiveGameplay)
             {
                 DebugUtility.LogVerbose<GameRunStatusService>(
-                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. RequestEnd() ignorado.");
+                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. Pausa ignorada.");
+                return;
+            }
+
+            // Só faz sentido pausar quando há um resultado terminal.
+            if (Outcome != GameRunOutcome.Victory && Outcome != GameRunOutcome.Defeat)
+            {
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    $"[GameLoop] GameRunEndedEvent com Outcome={Outcome} não é terminal. Pausa ignorada.");
                 return;
             }
 
             DebugUtility.LogVerbose<GameRunStatusService>(
-                "[GameLoop] GameRunEndedEvent recebido -> solicitando GameLoop.RequestEnd().");
+                $"[GameLoop] GameRunEndedEvent (Outcome={Outcome}) -> publicando GamePauseCommandEvent(true) para congelar simulação.");
 
-            _gameLoopService.RequestEnd();
+            EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             // Primeiro start do ciclo: não gerar log ruidoso de "resume/duplicado".
-            // Apenas marca que já houve start e mantém o estado (já começa limpo).
             if (!_hasEverStarted)
             {
                 _hasEverStarted = true;
@@ -110,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             // Após o primeiro start, se já estamos limpos (sem resultado),
-            // trate como start duplicado/resume e não limpe nem anuncie “nova run”.
+            // trate como start duplicado/resume e não limpe.
             if (!HasResult && Outcome == GameRunOutcome.Unknown && string.IsNullOrEmpty(Reason))
             {
                 DebugUtility.LogVerbose<GameRunStatusService>(

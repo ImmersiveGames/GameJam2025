@@ -127,13 +127,18 @@ Em 2025-12-27 (estado observado em runtime):
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. **Menu → Gameplay (Navigation)**
-    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
+    - `MenuPlayButtonBinder` (UI): **produção**. Resolve `IGameNavigationService` (DI global) e chama `RequestGameplayAsync(reason)` no click.
+        - `OnClick()` deve ser ligado no `Button.onClick` via Inspector (o binder não registra listeners em código).
+        - Click-guard em `Awake/OnEnable` e após retorno ao Menu (mitiga Submit/Enter “preso” ao voltar).
+        - Assina `SceneTransitionCompletedEvent` para detectar retorno ao `MenuScene`, reabilitar o botão e opcionalmente limpar `EventSystem` selection.
     - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
 2. **SceneTransitionService (pipeline)**
-    - Emite `SceneTransitionStartedEvent` → `Fade to black (hide)`.
-    - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
-    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
-    - `Fade from black (reveal)` → `SceneTransitionCompletedEvent`.
+    - Emite `SceneTransitionStartedEvent`.
+    - `FadeIn` (alpha=1 / hide) → **após** `FadeInCompleted` chama `LoadingHud.Show()`.
+    - Load/Unload/Active → emite `SceneTransitionScenesReadyEvent`.
+    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`) **e então** executa `BeforeFadeOut`:
+        - `LoadingHud.Hide()` → `FadeOut` (alpha=0 / reveal).
+    - Finaliza com `SceneTransitionCompletedEvent` (inclui safety `LoadingHud.Hide()` no final).
 3. **WorldLifecycle**
     - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
         - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
@@ -146,7 +151,7 @@ Em 2025-12-27 (estado observado em runtime):
         - `GameResumeRequestedEvent` (Hide)
         - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
     - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
-      `IGameNavigationService.RequestToMenu(...)` ao retornar ao menu.
+      `IGameNavigationService.RequestMenuAsync(...)` ao retornar ao menu.
     - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
 
 ## Gate / Readiness
@@ -160,7 +165,7 @@ Em 2025-12-27 (estado observado em runtime):
   `WorldLifecycleRuntimeCoordinator`, `SceneFlowLoadingService`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
   `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
-- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
+- `MenuPlayButtonBinder` desativa botão e dispara `RequestGameplayAsync`.
 - Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`

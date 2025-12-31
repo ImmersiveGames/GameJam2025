@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
@@ -228,8 +229,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private static bool IsGameplayProfile(string profileName)
         {
-            // Mantido propositalmente simples para não acoplar o coordinator a outras camadas.
-            return string.Equals(profileName ?? string.Empty, "gameplay", StringComparison.OrdinalIgnoreCase);
+            // Item 3: remover string hardcoded e usar ID canônico.
+            return SceneFlowProfileNames.IsGameplay(profileName);
         }
 
         private void TryIssueGameLoopSync()

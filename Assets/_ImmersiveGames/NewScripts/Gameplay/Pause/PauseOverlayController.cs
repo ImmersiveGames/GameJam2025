@@ -2,6 +2,13 @@
  * VALIDACAO / CHECKLIST (UIGlobalScene)
  * - Criar PauseOverlayRoot desativado, adicionar PauseOverlayController e arrastar a referencia.
  * - Conectar botao Resume para PauseOverlayController.Resume().
+ * - Conectar botao ReturnToMenu para PauseOverlayController.ReturnToMenuFrontend().
+ *
+ * NOTAS IMPORTANTES (NewScripts)
+ * - O overlay PRECISA reagir aos eventos do GameLoop:
+ *     - GamePauseCommandEvent(true) => mostrar overlay (apenas durante run ativa e antes do fim).
+ *     - GameResumeRequestedEvent()  => ocultar overlay.
+ * - Ao reagir a eventos, o overlay NÃO republica eventos (evita loop).
  */
 
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
@@ -9,14 +16,24 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
-using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 {
     /// <summary>
     /// Controlador do overlay de pausa no UIGlobal.
-    /// Publica eventos (pause/resume/exit) e altera InputMode; não toca o SimulationGate diretamente.
+    ///
+    /// Duas responsabilidades:
+    /// 1) UI (overlayRoot + InputMode)
+    /// 2) Publicar intenções via eventos quando acionado por UI (botões)
+    ///
+    /// Regras:
+    /// - Mostrar overlay apenas durante run ativa (após GameRunStartedEvent) e antes do fim (antes de GameRunEndedEvent).
+    /// - Pós-game usa overlay próprio; pausas de "freeze" no fim da run não devem abrir este overlay.
+    ///
+    /// Importante:
+    /// - Quando reagindo a eventos (pause/resume), este controller NÃO republica eventos.
+    ///   Só muda a UI e o InputMode.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PauseOverlayController : MonoBehaviour
@@ -27,9 +44,39 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
         [SerializeField] private string hideReason = "PauseOverlay/Hide";
 
         [Inject] private IInputModeService _inputModeService;
-        [Inject] private IGameNavigationService _navigationService;
 
         private bool _dependenciesInjected;
+
+        // Run lifecycle gating (mesma regra do Hotkey)
+        private bool _runActive;
+        private bool _runEnded;
+
+        // Event bindings
+        private EventBinding<GameRunStartedEvent> _onRunStarted;
+        private EventBinding<GameRunEndedEvent> _onRunEnded;
+
+        private EventBinding<GamePauseCommandEvent> _onPauseCommand;
+        private EventBinding<GameResumeRequestedEvent> _onResumeRequested;
+        private EventBinding<GameExitToMenuRequestedEvent> _onExitToMenu;
+
+        private void Awake()
+        {
+            // Run lifecycle
+            _onRunStarted = new EventBinding<GameRunStartedEvent>(_ => OnRunStarted());
+            _onRunEnded = new EventBinding<GameRunEndedEvent>(_ => OnRunEnded());
+
+            EventBus<GameRunStartedEvent>.Register(_onRunStarted);
+            EventBus<GameRunEndedEvent>.Register(_onRunEnded);
+
+            // Pause/Resume/Exit -> UI reaction
+            _onPauseCommand = new EventBinding<GamePauseCommandEvent>(OnPauseCommand);
+            _onResumeRequested = new EventBinding<GameResumeRequestedEvent>(_ => OnResumeRequested());
+            _onExitToMenu = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenu());
+
+            EventBus<GamePauseCommandEvent>.Register(_onPauseCommand);
+            EventBus<GameResumeRequestedEvent>.Register(_onResumeRequested);
+            EventBus<GameExitToMenuRequestedEvent>.Register(_onExitToMenu);
+        }
 
         private void Start()
         {
@@ -40,24 +87,33 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 DebugUtility.LogWarning(typeof(PauseOverlayController),
                     "[PauseOverlay] overlayRoot nao configurado no Inspector.");
             }
-
-            if (_navigationService == null)
+            else
             {
-                DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                    "[PauseOverlay] IGameNavigationService indisponivel (previsto para integracao futura).",
-                    DebugUtility.Colors.Info);
+                // Safety: no boot, deve começar oculto (root desativado no prefab).
+                // Não publica evento aqui; apenas garante estado de UI consistente.
+                if (overlayRoot.activeSelf)
+                {
+                    TrySetOverlayActive(false);
+                }
             }
+        }
+
+        private void OnDestroy()
+        {
+            EventBus<GameRunStartedEvent>.Unregister(_onRunStarted);
+            EventBus<GameRunEndedEvent>.Unregister(_onRunEnded);
+
+            EventBus<GamePauseCommandEvent>.Unregister(_onPauseCommand);
+            EventBus<GameResumeRequestedEvent>.Unregister(_onResumeRequested);
+            EventBus<GameExitToMenuRequestedEvent>.Unregister(_onExitToMenu);
         }
 
         private void OnDisable()
         {
-            // Safety net: se o overlay sumir enquanto ativo, publica Resume para não deixar a pausa “presa”.
-            // Não interfere com ownership de terceiros (bridge só libera o handle dela).
-            if (overlayRoot == null)
-                return;
-
-            if (!overlayRoot.activeSelf)
-                return;
+            // Safety net: se o controller sumir enquanto overlay estava ativo, publica Resume para não deixar pausa “presa”.
+            // (Só faz sentido para teardown/disable inesperado do controller.)
+            if (overlayRoot == null) return;
+            if (!overlayRoot.activeSelf) return;
 
             overlayRoot.SetActive(false);
 
@@ -75,29 +131,35 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 DebugUtility.Colors.Info);
         }
 
+        // =========================
+        // Public API (UI Buttons)
+        // =========================
+
+        /// <summary>
+        /// Chamado por UI (ex.: botão Pause, se existir).
+        /// Publica comando de pausa e ajusta UI/InputMode localmente.
+        /// </summary>
         public void Show()
         {
             EnsureDependenciesInjected();
 
+            // UI local primeiro (idempotente)
             if (!TrySetOverlayActive(true))
                 return;
 
+            // Publica intenção/comando
             EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
             DebugUtility.LogVerbose(typeof(PauseOverlayController),
                 "[PauseOverlay] Show -> GamePauseCommandEvent publicado.",
                 DebugUtility.Colors.Info);
 
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetPauseOverlay(showReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            ApplyPauseInputMode();
         }
 
+        /// <summary>
+        /// Chamado por UI (botão Resume).
+        /// Publica resume request e ajusta UI/InputMode localmente.
+        /// </summary>
         public void Hide()
         {
             EnsureDependenciesInjected();
@@ -110,27 +172,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 "[PauseOverlay] Hide -> GameResumeRequestedEvent publicado.",
                 DebugUtility.Colors.Info);
 
-            if (_inputModeService != null)
-            {
-                _inputModeService.SetGameplay(hideReason);
-            }
-            else
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
-            }
+            ApplyGameplayInputMode();
         }
 
-        public void Resume()
-        {
-            Hide();
-        }
+        public void Resume() => Hide();
 
+        /// <summary>
+        /// Chamado por UI (botão ReturnToMenu).
+        /// Publica intenção e deixa a bridge única navegar.
+        /// </summary>
         public void ReturnToMenuFrontend()
         {
             EnsureDependenciesInjected();
 
-            // Fecha o overlay (idempotente).
+            // Fecha o overlay (idempotente). Não publica resume aqui; quem coordena é o fluxo de saída.
             TrySetOverlayActive(false);
 
             EventBus<GameExitToMenuRequestedEvent>.Raise(new GameExitToMenuRequestedEvent());
@@ -147,15 +202,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 DebugUtility.LogWarning(typeof(PauseOverlayController),
                     "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
             }
-
-            if (_navigationService == null)
-            {
-                DebugUtility.LogWarning(typeof(PauseOverlayController),
-                    "[PauseOverlay] IGameNavigationService indisponivel. Nao foi possivel navegar para o menu.");
-                return;
-            }
-
-            _ = _navigationService.RequestToMenu("PauseOverlay/ReturnToMenuFrontend");
         }
 
         public void Toggle()
@@ -163,24 +209,140 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             EnsureDependenciesInjected();
 
             bool isActive = overlayRoot != null && overlayRoot.activeSelf;
-            if (isActive)
+            if (isActive) Hide();
+            else Show();
+        }
+
+        // =========================
+        // Event reactions (NO publish)
+        // =========================
+
+        private void OnRunStarted()
+        {
+            _runActive = true;
+            _runEnded = false;
+
+            // Garantia: ao iniciar run, overlay deve estar oculto.
+            HideLocal("GameRunStarted");
+        }
+
+        private void OnRunEnded()
+        {
+            _runEnded = true;
+
+            // Pós-game usa overlay próprio; este overlay deve estar oculto.
+            HideLocal("GameRunEnded");
+        }
+
+        private void OnExitToMenu()
+        {
+            ResetFlagsForMenu();
+            HideLocal("ExitToMenu");
+        }
+
+        private void OnResumeRequested()
+        {
+            // Resume sempre oculta overlay.
+            HideLocal("ResumeRequested");
+        }
+
+        private void OnPauseCommand(GamePauseCommandEvent e)
+        {
+            // Pausa só deve abrir overlay durante run ativa e antes do final da run.
+            // (No fim da run, GameRunStatusService publica pause para congelar simulação;
+            // isso NÃO deve abrir PauseOverlay.)
+            if (!_runActive || _runEnded)
             {
-                Hide();
+                // Mesmo se vier pause, garante overlay oculto.
+                HideLocal("PauseCommandIgnored_NotActiveOrEnded");
+                return;
+            }
+
+            if (e.IsPaused)
+            {
+                ShowLocal("PauseCommand");
             }
             else
             {
-                Show();
+                // Suporte opcional caso alguma origem publique GamePauseCommandEvent(false).
+                HideLocal("PauseCommandFalse");
             }
         }
 
-        private void EnsureDependenciesInjected()
+        private void ResetFlagsForMenu()
         {
-            if (_dependenciesInjected)
+            _runActive = false;
+            _runEnded = false;
+        }
+
+        // Local UI-only helpers (no EventBus)
+        private void ShowLocal(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            if (!TrySetOverlayActive(true))
                 return;
 
-            var provider = DependencyManager.Provider;
-            if (provider == null)
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[PauseOverlay] ShowLocal (reason='{reason}').",
+                DebugUtility.Colors.Info);
+
+            ApplyPauseInputMode();
+        }
+
+        private void HideLocal(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            // Idempotente: se já estiver oculto, não faz barulho.
+            if (overlayRoot != null && !overlayRoot.activeSelf)
                 return;
+
+            TrySetOverlayActive(false);
+
+            DebugUtility.LogVerbose(typeof(PauseOverlayController),
+                $"[PauseOverlay] HideLocal (reason='{reason}').",
+                DebugUtility.Colors.Info);
+
+            ApplyGameplayInputMode();
+        }
+
+        private void ApplyPauseInputMode()
+        {
+            if (_inputModeService != null)
+            {
+                _inputModeService.SetPauseOverlay(showReason);
+            }
+            else
+            {
+                DebugUtility.LogWarning(typeof(PauseOverlayController),
+                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
+            }
+        }
+
+        private void ApplyGameplayInputMode()
+        {
+            if (_inputModeService != null)
+            {
+                _inputModeService.SetGameplay(hideReason);
+            }
+            else
+            {
+                DebugUtility.LogWarning(typeof(PauseOverlayController),
+                    "[PauseOverlay] IInputModeService indisponivel. Input nao sera alternado.");
+            }
+        }
+
+        // =========================
+        // DI + UI toggling
+        // =========================
+
+        private void EnsureDependenciesInjected()
+        {
+            if (_dependenciesInjected) return;
+
+            var provider = DependencyManager.Provider;
+            if (provider == null) return;
 
             try
             {
@@ -189,7 +351,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             }
             catch
             {
-                // DI pode não estar pronto; tentaremos novamente em chamadas futuras.
                 _dependenciesInjected = false;
             }
         }
@@ -205,9 +366,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 
             if (overlayRoot.activeSelf == active)
             {
-                DebugUtility.LogVerbose(typeof(PauseOverlayController),
-                    $"[PauseOverlay] Operacao ignorada: overlay já está {(active ? "ativo" : "inativo")}.",
-                    DebugUtility.Colors.Info);
+                // Para reações (event-driven), isso é normal e desejável (idempotência).
                 return false;
             }
 
