@@ -22,6 +22,7 @@ Status: evidências atualizadas em 2025-12-29.
 ### Validação de Produção (master)
 - [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
 - [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)
+- [SceneFlow-Production-Evidence-2025-12-31](Reports/SceneFlow-Production-Evidence-2025-12-31.md) — recorte do log validando Etapa 3 (Menu→Gameplay→Restart→ExitToMenu).
 
 ### Reports históricos (SceneFlow)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
@@ -127,18 +128,13 @@ Em 2025-12-27 (estado observado em runtime):
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. **Menu → Gameplay (Navigation)**
-    - `MenuPlayButtonBinder` (UI): **produção**. Resolve `IGameNavigationService` (DI global) e chama `RequestGameplayAsync(reason)` no click.
-        - `OnClick()` deve ser ligado no `Button.onClick` via Inspector (o binder não registra listeners em código).
-        - Click-guard em `Awake/OnEnable` e após retorno ao Menu (mitiga Submit/Enter “preso” ao voltar).
-        - Assina `SceneTransitionCompletedEvent` para detectar retorno ao `MenuScene`, reabilitar o botão e opcionalmente limpar `EventSystem` selection.
+    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestGameplayAsync(reason)`.
     - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
 2. **SceneTransitionService (pipeline)**
-    - Emite `SceneTransitionStartedEvent`.
-    - `FadeIn` (alpha=1 / hide) → **após** `FadeInCompleted` chama `LoadingHud.Show()`.
-    - Load/Unload/Active → emite `SceneTransitionScenesReadyEvent`.
-    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`) **e então** executa `BeforeFadeOut`:
-        - `LoadingHud.Hide()` → `FadeOut` (alpha=0 / reveal).
-    - Finaliza com `SceneTransitionCompletedEvent` (inclui safety `LoadingHud.Hide()` no final).
+    - Emite `SceneTransitionStartedEvent` → `Fade to black (hide)`.
+    - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
+    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
+    - `Fade from black (reveal)` → `SceneTransitionCompletedEvent`.
 3. **WorldLifecycle**
     - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
         - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
@@ -151,7 +147,7 @@ Em 2025-12-27 (estado observado em runtime):
         - `GameResumeRequestedEvent` (Hide)
         - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
     - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
-      `IGameNavigationService.RequestMenuAsync(...)` ao retornar ao menu.
+      `IGameNavigationService.RequestMenuAsync(reason)` ao retornar ao menu.
     - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
 
 ## Gate / Readiness
@@ -170,3 +166,11 @@ Em 2025-12-27 (estado observado em runtime):
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
   e tokens `state.pause` / `flow.scene_transition` aparecem no gate.
+
+## Regras de higiene da documentação
+
+- **Rastreabilidade:** qualquer afirmação operacional deve estar suportada por **evidência de runtime** (Docs/Reports) ou por **referência direta ao arquivo de implementação**.
+- **Registro obrigatório:** toda mudança em docs deve entrar no `CHANGELOG-docs.md`.
+- **Sem suposições:** se um detalhe não estiver confirmável, **não afirmar** — deixar um `TODO:` com o próximo passo de validação.
+- **Evitar proliferação:** preferir docs curtos + links; antes de editar, buscar e corrigir conteúdo duplicado/obsoleto.
+
