@@ -51,7 +51,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
             // SKIP canônico: startup + frontend.
-            var skipByProfile = SceneFlowProfileNames.IsStartupOrFrontend(profile);
+            var profileId = SceneFlowProfileNames.ParseOrUnknown(profile);
+
+            var skipByProfile = profileId == SceneFlowProfileId.Startup || profileId == SceneFlowProfileId.Frontend;
 
             // Fallback: só aplica quando profile vier vazio (evita esconder bug de profile incorreto).
             var skipBySceneFallback =

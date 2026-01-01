@@ -1,102 +1,46 @@
-﻿# ADR-0009 — Fade + SceneFlow (NewScripts)
+# ADR-0009 — Fade + SceneFlow (NewScripts)
 
-**Data:** 2025-12-25
-**Status:** Implementado e validado
+## Status
+Aceito e implementado (baseline operacional validada em log).
 
 ## Contexto
-O pipeline de Scene Flow do NewScripts precisa suportar transições visuais com Fade sem depender de UI/DI legados.
-Além disso, a transição deve ser parametrizada por “profiles” de forma padronizada, principalmente para:
-- startup/menu,
-- e, futuramente, gameplay/loading (em ADR separado).
+
+O pipeline NewScripts precisava:
+
+- Aplicar **FadeIn/FadeOut** durante transições do SceneFlow.
+- Evitar dependência do fade legado.
+- Permitir configurar timings por **profile** (startup/frontend/gameplay).
+- Coordenar Fade com **Loading HUD** para manter UI consistente (Loading só aparece após FadeIn e some antes do FadeOut).
 
 ## Decisão
-Implementar Fade no Scene Flow do NewScripts com as seguintes decisões:
 
-1) **Fade como serviço global**
-- `INewScriptsFadeService` registrado no DI global.
-- `FadeScene` carregada como Additive sob demanda.
-- `NewScriptsFadeController` (CanvasGroup) executa FadeIn/FadeOut.
-
-2) **Profile do NewScripts**
-- ScriptableObject `NewScriptsSceneTransitionProfile`:
-    - `useFade`
-    - `fadeInDuration`, `fadeOutDuration`
-    - curvas (`AnimationCurve`) de fade in/out
-
-3) **Resolução de profile via Resources**
-- Resolver dedicado: `NewScriptsSceneTransitionProfileResolver`
-- Paths tentados:
-    - `SceneFlow/Profiles/<profileName>`
-    - `<profileName>`
-- Padrão recomendado:
-    - `Resources/SceneFlow/Profiles/<profileName>`
-
-4) **Sem fallback para fade legado**
-- Se `INewScriptsFadeService` não existir, o adapter retorna `NullFadeAdapter` e loga erro explícito.
-- Loader ainda pode usar fallback temporário (`SceneManagerLoaderAdapter`) enquanto o loader nativo NewScripts não estiver migrado.
+1. Expor `INewScriptsFadeService` no **DI global**.
+2. Integrar o fade ao `ISceneTransitionService` via adapter (`NewScriptsSceneFlowFadeAdapter`).
+3. Resolver timings de fade por `NewScriptsSceneTransitionProfile`, carregado via `Resources` em:
+   - `SceneFlow/Profiles/<profileName>`
+4. Implementar o Fade como uma cena additive (`FadeScene`) com controlador (`NewScriptsFadeController`) que opera via `CanvasGroup`.
 
 ## Consequências
-- Profiles precisam ser gerenciados e versionados em **Resources** (padronização).
-- Erros de profile **não** devem travar o fluxo: degradar para defaults é aceitável para manter a transição funcional.
-- A separação “Fade vs Loading” é obrigatória: Loading terá ADR próprio (evitar misturar responsabilidade).
 
-## Integração operacional (Fade + LoadingHUD + SceneFlowLoadingService)
-O Fade é orquestrado em conjunto com o LoadingHUD e o SceneFlow. O mapeamento operacional é:
+- O SceneFlow se torna independente do fade legado.
+- A duração do fade é declarativa por profile (sem strings espalhadas além do ponto de resolução).
+- O Loading HUD pode ser sincronizado com fases explícitas do SceneFlow:
+  - `AfterFadeIn` → `Show`
+  - `BeforeFadeOut` → `Hide`
+  - `Completed` → safety hide
 
-- **SceneTransitionStarted**
-    - `INewScriptsFadeService` inicia o `FadeIn` (overlay opaco), conforme o profile.
-    - `SceneFlowLoadingService` garante `LoadingHudScene` carregada (sem exibir ainda).
-    - `GameReadinessService` adquire o gate `flow.scene_transition`.
+## Notas de implementação (baseline validada)
 
-- **FadeInCompleted**
-    - `SceneFlowLoadingService` chama `LoadingHUD.Show(phase=AfterFadeIn)`.
+Evidências observadas:
 
-- **SceneTransitionService (load/unload/active)**
-    - Executa as operações de cena via `SceneManagerLoaderAdapter`.
+- O DI global registra `INewScriptsFadeService`.
+- O resolver informa:
+  - `Profile resolvido: name='<profile>', path='SceneFlow/Profiles/<profile>'`
+- O adapter aplica timings:
+  - `fadeIn=0,5` e `fadeOut=0,5` (exemplo do log)
+- O fade carrega a `FadeScene` additive quando necessário e encontra `NewScriptsFadeController`.
+- O canvas de fade opera com sorting alto (ex.: `sortingOrder=11000`) para sobrepor UI durante transição.
 
-- **SceneTransitionScenesReady**
-    - `LoadingHUD.Show(phase=ScenesReady)` (idempotente; mantém visível).
-    - Se `profile=gameplay`, o `WorldLifecycleRuntimeCoordinator` executa o reset (ou SKIP em startup/frontend) e publica `WorldLifecycleResetCompletedEvent` com assinatura = `SceneTransitionContext.ToString()`.
-    - `SceneTransitionService` aguarda o `WorldLifecycleResetCompletionGate` antes de prosseguir.
+## Evidência
 
-- **BeforeFadeOut**
-    - `SceneFlowLoadingService` chama `LoadingHUD.Hide(phase=BeforeFadeOut)`.
-    - `INewScriptsFadeService` executa `FadeOut`.
-
-- **Completed**
-    - `SceneFlowLoadingService` chama `LoadingHUD.Hide(phase=Completed)` (safety hide).
-    - `GameReadinessService` libera o gate.
-
-O Fade usa **profiles** (startup, gameplay) com tempos de fade in/out definidos nos assets
-`Resources/SceneFlow/Profiles/...` (ex.: `startup`, `gameplay`).
-
-## Evidência de validação (logs)
-Foi observado em runtime:
-- Profile `startup` resolvido via path `SceneFlow/Profiles/startup`
-- Adapter aplicou valores do profile antes do Fade:
-
-Exemplo (trecho):
-- `[SceneFlow] Profile resolvido: name='startup', path='SceneFlow/Profiles/startup', type='NewScriptsSceneTransitionProfile'`
-- `[SceneFlow] Profile 'startup' aplicado (fadeIn=0,5, fadeOut=0,5)`
-- Fade executou (FadeScene Additive) e a transição completou com sucesso.
-
-## Alternativas consideradas
-1) **Usar `SceneTransitionProfile` (legado)**
-   Rejeitado: acopla o NewScripts a tipos legados e torna a migração mais difícil.
-
-2) **Profiles fora de Resources**
-   Rejeitado por enquanto: `Resources.Load` simplifica bootstrap e reduz dependências; alternativas (Addressables) podem ser avaliadas no módulo de Loading.
-
-## Próximos passos
-- Criar ADR separado para **Loading** (HUD, progress, “scene warmup”).
-- Introduzir uma camada de navegação (ex.: `IGameNavigationService`) para emitir transições como feature (não via QA), quando a integração de GameplayScene estiver pronta.
-
-## Atualização (2025-12-27)
-- A navegação de produção já existe via `IGameNavigationService` (registrado no `GlobalBootstrap`) e chama
-  `SceneTransitionService.TransitionAsync(...)` com profile `startup`/`gameplay`.
-- O Fade está integrado ao fluxo `Started → FadeIn → ScenesReady → gate → FadeOut → Completed`.
-
-## Evidências (log)
-- `GlobalBootstrap` registra `INewScriptsFadeService` e `ISceneTransitionService`.
-- Transição `startup` mostra `FadeIn`/`FadeOut` no pipeline do SceneFlow.
-- `SceneTransitionService` registra `Started → ScenesReady → Completed` em ordem, com gate antes do `FadeOut`.
+- `Docs/Reports/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: ProfileResolver + FadeController + sequência com LoadingHUD).

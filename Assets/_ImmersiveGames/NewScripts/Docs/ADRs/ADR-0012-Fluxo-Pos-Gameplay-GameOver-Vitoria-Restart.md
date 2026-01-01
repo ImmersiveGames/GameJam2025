@@ -112,31 +112,21 @@ Semântica:
     * O gate e `GameplayReady` podem permanecer em estado “jogo pronto, mas não jogável” (estado de “espera de decisão do jogador”).
 
 ### 5.2. Evento de fim de run
+O fluxo pós-game **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.). Ele define um contrato simples e consistente para “encerrar a run”.
 
-Definir um evento de domínio de alto nível (nome sugerido):
+- **Input (solicitação):** `GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null)`
+  - Pode ser publicado por qualquer sistema.
+  - Para reduzir acoplamento com o EventBus, prefira o wrapper `IGameRunEndRequestService` (DI global).
+- **Output (resultado):** `GameRunEndedEvent(GameRunOutcome outcome, string reason = null)`
+  - Publicado pelo `GameRunOutcomeService` após validações (ex.: estado do GameLoop) e com garantia de idempotência (uma vez por run).
 
-* `GameRunEndedEvent`
+**Motivação**
+- Permite múltiplos “detectors” (timer, combate, objetivos) sem amarrar o fluxo de pós-game a regras específicas.
+- Centraliza a transição de “solicitação” → “resultado” e padroniza `reason` para debug/telemetria.
 
-Campos conceituais:
-
-* `Result` – enum com pelo menos:
-
-    * `Victory`
-    * `Defeat` (GameOver)
-* `Reason` – string curta para logs / debugging (ex.: `"BossDefeated"`, `"BaseDestroyed"`).
-* (Opcional) `Duration`, `Score` ou um pequeno objeto de stats.
-
-Semântica:
-
-1. O domínio de gameplay (ex.: `GameplayOutcomeService`, `PlanetDefenseDomain`, etc.) publica `GameRunEndedEvent` **uma única vez** por run.
-2. `GameLoopService` consome este evento e:
-
-    * Se estiver em `Playing`, faz transição para `PostGame`.
-3. O overlay pós-gameplay em `UIGlobalScene`:
-
-    * Ouve `GameRunEndedEvent`.
-    * Abre a UI com layout de Vitória ou GameOver conforme `Result`.
-
+**Como testar**
+- `PostGameQaHotkeys`: `F7` (Victory) / `F6` (Defeat).
+- Em código: injete `IGameRunEndRequestService` e chame `RequestVictory/RequestDefeat`.
 ### 5.3. Overlay pós-gameplay (UI)
 
 Novo overlay na `UIGlobalScene` (ex.: `PostGameOverlayController`):
@@ -144,6 +134,10 @@ Novo overlay na `UIGlobalScene` (ex.: `PostGameOverlayController`):
 Responsabilidades:
 
 1. Escutar `GameRunEndedEvent` e abrir a UI:
+
+**Wiring (produção):** a solicitação (`GameRunEndRequestedEvent`) é consumida pelo `GameRunOutcomeEventInputBridge`, que converte para chamadas no `IGameRunOutcomeService`. O `GameRunOutcomeService` é o produtor oficial do `GameRunEndedEvent` (uma vez por run, e apenas em `Playing`).
+
+Isso permite que **múltiplos triggers** existam sem acoplar o módulo de pós-game a regras de vitória/derrota (timer, morte, objetivos, sequências, score etc.). O contrato de produção é apenas: *“se um sistema decidir, ele solicita.”*
 
     * Exibir título/mensagem de Vitória ou GameOver.
     * Mostrar stats resumidos, se existirem.

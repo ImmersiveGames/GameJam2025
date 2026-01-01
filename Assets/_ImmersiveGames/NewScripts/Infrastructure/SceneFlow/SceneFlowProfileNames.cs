@@ -2,6 +2,14 @@
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 {
+    public enum SceneFlowProfileId
+    {
+        Unknown = 0,
+        Startup = 1,
+        Frontend = 2,
+        Gameplay = 3,
+    }
+
     /// <summary>
     /// Nomes canônicos de profiles usados pelo SceneFlow (Fade/WorldLifecycle/Logs).
     /// Centraliza strings para evitar drift.
@@ -13,6 +21,55 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
     /// </summary>
     public static class SceneFlowProfileNames
     {
+        public static bool TryParse(string profileName, out SceneFlowProfileId id)
+        {
+            var n = Normalize(profileName);
+
+            if (n == Startup)
+            {
+                id = SceneFlowProfileId.Startup;
+                return true;
+            }
+
+            if (n == Frontend)
+            {
+                id = SceneFlowProfileId.Frontend;
+                return true;
+            }
+
+            if (n == Gameplay)
+            {
+                id = SceneFlowProfileId.Gameplay;
+                return true;
+            }
+
+            id = SceneFlowProfileId.Unknown;
+            return false;
+        }
+
+        public static SceneFlowProfileId ParseOrUnknown(string profileName)
+        {
+            return TryParse(profileName, out var id) ? id : SceneFlowProfileId.Unknown;
+        }
+
+        public static string ToName(SceneFlowProfileId id)
+        {
+            switch (id)
+            {
+                case SceneFlowProfileId.Startup:
+                    return Startup;
+
+                case SceneFlowProfileId.Frontend:
+                    return Frontend;
+
+                case SceneFlowProfileId.Gameplay:
+                    return Gameplay;
+
+                default:
+                    return string.Empty;
+            }
+        }
+
         public const string Startup = "startup";
         public const string Frontend = "frontend";
         public const string Gameplay = "gameplay";

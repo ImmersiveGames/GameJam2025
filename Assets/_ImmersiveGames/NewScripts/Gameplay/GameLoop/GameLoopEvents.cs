@@ -29,6 +29,25 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     }
 
     /// <summary>
+    /// Evento de alto nível para solicitar o encerramento da run.
+    ///
+    /// Este evento é a "entrada" recomendada em produção para vitória/derrota.
+    /// Diferentes condições podem dispará-lo (timer, morte do player, objetivos, sequência de eventos etc.)
+    /// sem amarrar a lógica de encerramento a um único sistema.
+    /// </summary>
+    public sealed class GameRunEndRequestedEvent : IEvent
+    {
+        public GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null)
+        {
+            Outcome = outcome;
+            Reason = reason;
+        }
+
+        public GameRunOutcome Outcome { get; }
+        public string Reason { get; }
+    }
+
+    /// <summary>
     /// Representa o fim da run atual do jogo, para orquestrar pós-gameplay.
     /// </summary>
     public sealed class GameRunEndedEvent : IEvent

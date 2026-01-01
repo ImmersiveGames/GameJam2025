@@ -1,109 +1,49 @@
-# ADR-0013 – Ciclo de Vida do Jogo (Reset por Escopos e Fases Determinísticas)
+# ADR-0013 — Ciclo de vida do jogo (NewScripts)
 
-**Status:** Implementado (baseline de produção)
-**Data:** 2025-12-28
-**Escopo:** `WorldLifecycle` (NewScripts), `SceneFlow`, `SimulationGateService`, `GameLoop` (integração)
+## Status
+Aceito e implementado (baseline operacional validada em log).
 
----
+## Contexto
 
-## 1. Contexto
+O NewScripts precisava de um ciclo de vida de jogo consistente, que:
 
-O projeto NewScripts precisava de um mecanismo consistente para:
+- Separe “transição de cenas” (SceneFlow) de “reset de mundo” (WorldLifecycle).
+- Garanta ordenação determinística e rastreável (logs + signatures).
+- Centralize a evolução de estados do jogo (GameLoop) sem depender de scripts QA para disparar fluxo real.
 
-- Reset determinístico do “mundo” ao entrar (ou reiniciar) gameplay.
-- Evitar dependência de scripts legados e reduzir condições de corrida entre:
-    - carregamento de cenas;
-    - inicialização de objetos;
-    - habilitação de input;
-    - transição visual (fade/loading).
+## Decisão
 
-Além do reset “hard” por `WorldLifecycle`, era necessário um contrato simples para coordenar sistemas:
-- Scene Flow deve esperar o reset concluir antes do FadeOut.
-- GameLoop deve iniciar gameplay apenas quando o mundo estiver pronto.
+1. Introduzir um `GameLoop` explícito com estados:
 
----
+- `Boot` (inicialização global)
+- `Ready` (apto a receber comando para iniciar/continuar, mas simulação não ativa)
+- `Playing` (simulação ativa)
+- `Paused` (simulação travada via gate/eventos)
 
-## 2. Decisão
+2. Integrar o GameLoop com SceneFlow via coordinator:
 
-Adotar um ciclo de vida do mundo baseado em:
+- `GameLoopSceneFlowCoordinator` reage ao evento de start (`GameStartRequestedEvent`) e dispara uma transição inicial (StartPlan).
+- O coordinator espera:
+  - `SceneTransitionCompletedEvent`
+  - `WorldLifecycleResetCompletedEvent` (ou skip)
+  para sincronizar o GameLoop com o estado correto.
 
-1. **Orquestração por fases determinísticas**, centralizada em `WorldLifecycleOrchestrator`.
-2. **Escopos (global vs cena)** para serviços, evitando estado “vazando” entre cenas.
-3. **Driver de runtime global** (`WorldLifecycleRuntimeCoordinator`) para disparar reset após `SceneTransitionScenesReadyEvent` em perfis de gameplay.
-4. **Evento de conclusão padronizado**:
-    - `WorldLifecycleResetCompletedEvent(contextSignature, reason)`
-5. **Integração com gating**:
-    - `SimulationGateService` é adquirido durante transição e durante o reset (tokens distintos),
-      e liberado apenas após conclusão.
+3. Manter a simulação “gate-aware”:
 
----
+- `GameReadinessService` usa o `ISimulationGateService` para fechar/abrir simulação durante transições.
+- `IStateDependentService` bloqueia/libera ações (ex.: `Move`) com base em:
+  - gate aberto/fechado
+  - `gameplayReady`
+  - estado do GameLoop
+  - pausa
 
-## 3. Detalhes operacionais
+## Consequências
 
-### 3.1 Fases do reset
+- O fluxo de produção fica determinístico:
+  - Start → Menu (`startup`) → Play → Gameplay (`gameplay`) → pós-gameplay → Restart/Exit.
+- O WorldLifecycle executa reset somente quando apropriado (ex.: gameplay) e sempre sinaliza conclusão.
+- O SceneFlow não conclui a transição antes do reset completar (completion gate).
 
-A sequência do reset é:
+## Evidência
 
-1. Acquire gate token `WorldLifecycle.WorldReset`
-2. Hooks: `OnBeforeDespawn`
-3. Despawn (ordem por spawn service)
-4. Hooks: `OnAfterDespawn`
-5. Hooks: `OnBeforeSpawn`
-6. Spawn (ordem por spawn service)
-7. Hooks por ator: `OnAfterActorSpawn` (quando aplicável)
-8. Hooks: `OnAfterSpawn`
-9. Release gate token `WorldLifecycle.WorldReset`
-
-### 3.2 Disparo em runtime
-
-- O runtime observa `SceneTransitionScenesReadyEvent`.
-- Para gameplay, dispara hard reset com reason `'ScenesReady/<ActiveScene>'`.
-- Para startup/frontend, pode ocorrer **SKIP**, mas o evento de conclusão é **sempre emitido**
-  para manter o contrato com o Scene Flow e evitar deadlocks.
-
-### 3.3 Assinatura de contexto
-
-- O reset e o gate de Scene Flow usam uma `ContextSignature` calculada a partir do `SceneTransitionContext`.
-- Isso evita “cross-talk” quando múltiplas transições ocorrem em sequência.
-
----
-
-## 4. Consequências
-
-### Benefícios
-- Reset previsível e observável via logs.
-- Integração robusta com Scene Flow (Fade/LoadingHUD) via completion gate.
-- Bloqueio de input/movimento durante transição e reset via `SimulationGateService` + `IStateDependentService`.
-- Suporte incremental a múltiplos atores por cena (via `WorldDefinition` e spawn services).
-
-### Custos/Trade-offs
-- Mais infraestrutura (orchestrator + hooks + driver + gate).
-- Necessidade de disciplina para registrar hooks/serviços no escopo correto (cena vs global).
-- Exige que o Scene Flow esteja corretamente configurado com o completion gate.
-
----
-
-## 5. Alternativas consideradas
-
-1. **Reset no `Start()` do `WorldLifecycleController`**
-    - Rejeitado para produção: acopla o reset ao timing do Unity e dificulta testes e Scene Flow.
-
-2. **Reset acoplado ao SceneTransitionService diretamente**
-    - Rejeitado: mistura responsabilidades e torna difícil evoluir o WorldLifecycle independentemente.
-
-3. **Manter o fluxo legado**
-    - Rejeitado: acumulava acoplamentos e dificultava previsibilidade.
-
----
-
-## 6. Estado atual e próximos passos
-
-**Implementado e validado em produção** para:
-- Startup → Menu (reset SKIP com evento de conclusão)
-- Menu → Gameplay (hard reset após ScenesReady)
-- Spawn multi-actor inicial (Player + Eater) via `WorldDefinition`
-
-Próximos passos (documentação/arquitetura):
-- Padronizar `reason` e `contextSignature` em todos os pontos que publicam `WorldLifecycleResetCompletedEvent`.
-- Consolidar ownership/limpeza global vs cena (evitar serviços globais dependentes de cena).
-- Expandir hooks por ator quando surgirem necessidades (UI binds, resources, etc.).
+- `Docs/Reports/Report-SceneFlow-Production-Log-2025-12-31.md` (recortes do log: Boot → Ready em startup; Ready → Playing em gameplay; Paused em pós-gameplay; sincronização via SceneFlow/WorldLifecycle).

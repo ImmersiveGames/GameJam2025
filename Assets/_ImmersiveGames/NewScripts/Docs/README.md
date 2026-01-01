@@ -22,7 +22,6 @@ Status: evidências atualizadas em 2025-12-29.
 ### Validação de Produção (master)
 - [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
 - [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)
-- [SceneFlow-Production-Evidence-2025-12-31](Reports/SceneFlow-Production-Evidence-2025-12-31.md) — recorte do log validando Etapa 3 (Menu→Gameplay→Restart→ExitToMenu).
 
 ### Reports históricos (SceneFlow)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
@@ -128,7 +127,7 @@ Em 2025-12-27 (estado observado em runtime):
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
 1. **Menu → Gameplay (Navigation)**
-    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestGameplayAsync(reason)`.
+    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
     - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
 2. **SceneTransitionService (pipeline)**
     - Emite `SceneTransitionStartedEvent` → `Fade to black (hide)`.
@@ -147,8 +146,29 @@ Em 2025-12-27 (estado observado em runtime):
         - `GameResumeRequestedEvent` (Hide)
         - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
     - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
-      `IGameNavigationService.RequestMenuAsync(reason)` ao retornar ao menu.
+      `IGameNavigationService.RequestToMenu(...)` ao retornar ao menu.
     - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
+
+### Fim de Run (Vitória/Derrota)
+
+Este fluxo **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.). Ele define apenas um **ponto único de entrada**: uma solicitação de fim de run.
+
+- **Input (solicitação):** `GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null)`
+  - Pode ser publicado por qualquer sistema.
+  - Para reduzir acoplamento com o EventBus, prefira usar `IGameRunEndRequestService` (registrado no DI global pelo `GlobalBootstrap`).
+- **Output (resultado):** `GameRunEndedEvent(GameRunOutcome outcome, string reason = null)`
+- **Wiring (produção):** `IGameRunEndRequestService` → `GameRunEndRequestedEvent` → `GameRunOutcomeEventInputBridge` → `IGameRunOutcomeService` → `GameRunEndedEvent`.
+  - Publicado pelo `GameRunOutcomeService` após validações (ex.: estado do GameLoop) e com garantia de idempotência (uma vez por run).
+
+**Como usar (código)**
+- Injete/resolva `IGameRunEndRequestService` e chame:
+  - `RequestVictory(reason)` / `RequestDefeat(reason)`; ou
+  - `RequestEnd(outcome, reason)`.
+
+**Como usar (QA/manual)**
+- Com `PostGameQaHotkeys` ativo em runtime:
+  - `F7` → solicita **Victory**
+  - `F6` → solicita **Defeat**
 
 ## Gate / Readiness
 - `GameReadinessService` adquire o token `SimulationGateTokens.SceneTransition` em `SceneTransitionStartedEvent`
@@ -161,16 +181,8 @@ Em 2025-12-27 (estado observado em runtime):
   `WorldLifecycleRuntimeCoordinator`, `SceneFlowLoadingService`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
   `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
-- `MenuPlayButtonBinder` desativa botão e dispara `RequestGameplayAsync`.
+- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
 - Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
   e tokens `state.pause` / `flow.scene_transition` aparecem no gate.
-
-## Regras de higiene da documentação
-
-- **Rastreabilidade:** qualquer afirmação operacional deve estar suportada por **evidência de runtime** (Docs/Reports) ou por **referência direta ao arquivo de implementação**.
-- **Registro obrigatório:** toda mudança em docs deve entrar no `CHANGELOG-docs.md`.
-- **Sem suposições:** se um detalhe não estiver confirmável, **não afirmar** — deixar um `TODO:` com o próximo passo de validação.
-- **Evitar proliferação:** preferir docs curtos + links; antes de editar, buscar e corrigir conteúdo duplicado/obsoleto.
-

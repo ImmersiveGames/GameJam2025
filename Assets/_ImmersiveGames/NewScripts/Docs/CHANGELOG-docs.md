@@ -1,16 +1,17 @@
 # Changelog (Docs)
 
+## [2026-01-01]
+- Updated: clarificado wiring de fim de run (`IGameRunEndRequestService` → `GameRunEndRequestedEvent` → `GameRunOutcomeEventInputBridge` → `IGameRunOutcomeService` → `GameRunEndedEvent`).
+- Updated: `README.md` adicionando seção “Fim de Run (Vitória/Derrota)” com instruções de uso/teste (`IGameRunEndRequestService`, `GameRunEndRequestedEvent`, hotkeys F7/F6).
+- Updated: `WORLD_LIFECYCLE.md` detalhando solicitação de fim de run (request → outcome) e “Teste rápido”.
+- Updated: `ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md` (seção 5.2) substituindo placeholder por contrato explícito e guia de teste.
+
 ## [2025-12-31]
-- Added: `Reports/SceneFlow-Production-Evidence-2025-12-31.md` com evidência do fluxo de produção (log) para validação da Etapa 3.
-- Updated: `README.md`, `ARCHITECTURE.md` e `WORLD_LIFECYCLE.md` para refletir a API atual do `IGameNavigationService` (`RequestGameplayAsync(reason)` / `RequestMenuAsync(reason)`), removendo referências obsoletas `RequestToGameplay/RequestToMenu`.
-- Notas: `MenuPlayButtonBinder` é o ponto de entrada de produção do Menu (OnClick via Inspector) e aplica click-guard na volta ao Menu para mitigar Submit/Enter preso.
 - Updated: `WORLD_LIFECYCLE.md` e `WORLDLIFECYCLE_RESET_STATUS.md` com evidência de validação "sem flash" e ordem final do pipeline (FadeIn → LoadingHUD → Scene load/unload → ScenesReady → Reset/Skip → gate → Hide HUD → FadeOut).
 - Updated: `ADR-0009-FadeSceneFlow.md` e `ADR-0010-LoadingHud-SceneFlow.md` alinhados à ordem final (LoadingHUD só aparece após FadeIn; Hide antes de FadeOut; `Completed` como safety).
 
 
 All notable documentation changes to **NewScripts** are documented in this file.
-- Updated: `Plan.md` com status explícito (Etapa 3=Done, Etapa 4=Applied) e referência direta à evidência.
-- Updated: `README.md` com seção "Regras de higiene da documentação" (rastreabilidade, sem suposições, changelog obrigatório).
 
 ## [2025-12-30]
 ### Updated

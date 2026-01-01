@@ -106,8 +106,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterPauseBridge();
             RegisterGameLoop();
+            RegisterGameRunEndRequestService();
             RegisterGameRunStatusService();
             RegisterGameRunOutcomeService();
+            RegisterGameRunOutcomeEventInputBridge();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
@@ -182,6 +184,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameLoopActivityChangedEvent>.Clear();
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
+            EventBus<GameRunEndRequestedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[EventBus] EventBus inicializado para eventos do GameLoop (NewScripts).",
@@ -362,6 +365,24 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+private static void RegisterGameRunEndRequestService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoop] IGameRunEndRequestService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            RegisterIfMissing<IGameRunEndRequestService>(() => new GameRunEndRequestService());
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] GameRunEndRequestService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+
         private static void RegisterGameRunStatusService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var existing) && existing != null)
@@ -399,6 +420,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameRunOutcomeService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameRunOutcomeEventInputBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<GameRunOutcomeEventInputBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameLoop] GameRunOutcomeEventInputBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) || outcomeService == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[GameLoop] Não foi possível registrar GameRunOutcomeEventInputBridge: IGameRunOutcomeService não disponível.");
+                return;
+            }
+
+            RegisterIfMissing(() => new GameRunOutcomeEventInputBridge(outcomeService));
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameLoop] GameRunOutcomeEventInputBridge registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

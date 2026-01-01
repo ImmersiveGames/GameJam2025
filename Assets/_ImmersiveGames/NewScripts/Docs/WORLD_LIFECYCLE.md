@@ -114,7 +114,7 @@ Durante transições de cena, o reset é coordenado por eventos:
 - UI e sistemas em cenas globais/gameplay podem consultar `IGameRunStatusService`
   para exibir o resultado da última run sem depender diretamente de gameplay específico.
 - **Restart pós-game** usa o fluxo oficial:
-    - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestGameplayAsync(...)`
+    - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestToGameplay(...)`
     - `SceneTransitionScenesReadyEvent` (profile gameplay) → `WorldLifecycleRuntimeCoordinator` → reset determinístico.
 
 ### SKIP (startup/menu)
@@ -155,6 +155,18 @@ O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do 
 - `WorldLifecycleRuntimeCoordinator` emita `WorldLifecycleResetCompletedEvent(signature, reason)`.
 
 Esse gate garante que o `SceneTransitionService` só siga para `FadeOut`/`Completed` quando o reset terminou (ou SKIP foi emitido).
+
+### Solicitação de fim de run (source agnostic)
+
+O módulo de pós-game não “descobre” vitória/derrota. Ele apenas reage quando **alguém solicita** o fim da run.
+
+- **Solicitar (input):** use `IGameRunEndRequestService` (DI global) ou publique diretamente `GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null)`.
+- **Bridge (produção):** `GameRunOutcomeEventInputBridge` observa `GameRunEndRequestedEvent` e traduz para chamadas no `IGameRunOutcomeService`.
+- **Concluir (output):** `GameRunOutcomeService` valida **estado do GameLoop (Playing)** + **idempotência (uma vez por run)** e publica `GameRunEndedEvent(GameRunOutcome outcome, string reason = null)`.
+
+Notas:
+- Em produção, **evite** publicar `GameRunEndedEvent` diretamente; isso é útil apenas para QA/injeções controladas.
+- Qualquer sistema de gameplay pode solicitar fim de run (timer, morte, objetivo, sequência de eventos etc.); a política de “quem decide” fica **fora** do módulo de pós-game.
 
 ## Participantes e registros de cena
 ### GameplayScene (produção)
@@ -217,7 +229,7 @@ Se o Coordinator não “destrava”, quase sempre faltou:
     - Loga summary (Total/Players/Eaters/scene/reason) e erro de QA se algum ator estiver ausente.
 
 ## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
-1. `MenuPlayButtonBinder` → `IGameNavigationService.RequestGameplayAsync(reason)`.
+1. `MenuPlayButtonBinder` → `IGameNavigationService.RequestToGameplay(reason)`.
 2. `SceneTransitionService`:
     - `Started` → `FadeIn`
     - Load/Unload → `ScenesReady`
