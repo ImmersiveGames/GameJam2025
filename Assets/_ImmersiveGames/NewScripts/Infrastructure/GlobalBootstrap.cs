@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private static GameLoopSceneFlowCoordinator _sceneFlowCoordinator;
 
         // Profile fixo do start (para filtrar ScenesReady/ResetCompleted).
-        private const string StartProfileName = SceneFlowProfileNames.Startup;
+        private static readonly SceneFlowProfileId StartProfileId = SceneFlowProfileId.Startup;
 
         // Scene names (Unity: SceneManager.GetActiveScene().name)
         private const string SceneNewBootstrap = "NewBootstrap";
@@ -504,12 +504,12 @@ private static void RegisterGameRunEndRequestService()
                 scenesToUnload: new[] { SceneNewBootstrap },
                 targetActiveScene: SceneMenu,
                 useFade: true,
-                transitionProfileName: StartProfileName);
+                transitionProfileId: StartProfileId);
 
             _sceneFlowCoordinator = new GameLoopSceneFlowCoordinator(sceneFlow, startPlan);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, profile='{StartProfileName}').",
+                $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, profile='{StartProfileId}').",
                 DebugUtility.Colors.Info);
         }
     }

@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -10,9 +11,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
     /// Runtime driver do WorldLifecycle:
-    /// - Observa SceneTransitionScenesReadyEvent
-    /// - Dispara ResetWorldAsync no controller da cena ativa (quando aplicável)
-    /// - Emite WorldLifecycleResetCompletedEvent para liberar o completion gate do SceneFlow
+    /// - Observa <see cref="SceneTransitionScenesReadyEvent"/>
+    /// - Dispara <see cref="WorldLifecycleController.ResetWorldAsync"/> no controller da cena ativa (quando aplicável)
+    /// - Emite <see cref="WorldLifecycleResetCompletedEvent"/> para liberar o completion gate do SceneFlow
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleRuntimeCoordinator
@@ -45,20 +46,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             var context = evt.Context;
             var activeSceneName = context.TargetActiveScene;
-            var profile = context.TransitionProfileName;
+            var profileId = context.TransitionProfileId;
 
-            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
+            string message = "SceneTransitionScenesReady recebido. Context="+context;
+            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),message
+                , DebugUtility.Colors.Info);
 
             // SKIP canônico: startup + frontend.
-            var profileId = SceneFlowProfileNames.ParseOrUnknown(profile);
+            var skipByProfile = profileId.IsStartupOrFrontend;
 
-            var skipByProfile = profileId == SceneFlowProfileId.Startup || profileId == SceneFlowProfileId.Frontend;
-
-            // Fallback: só aplica quando profile vier vazio (evita esconder bug de profile incorreto).
+            // Fallback: só aplica quando profile vier ausente (evita esconder bug de profile incorreto).
             var skipBySceneFallback =
                 !skipByProfile &&
-                string.IsNullOrWhiteSpace(profile) &&
+                !profileId.IsValid &&
                 string.Equals(activeSceneName, FrontendSceneName, StringComparison.Ordinal);
 
             if (skipByProfile || skipBySceneFallback)
@@ -66,19 +66,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 var why = skipByProfile ? "profile" : "scene-fallback";
 
                 DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profile ?? "<null>"}', activeScene='{activeSceneName}'.",
+                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profileId}', activeScene='{activeSceneName}'.",
                     DebugUtility.Colors.Info);
 
                 EmitResetCompleted(
                     context,
-                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profile, activeSceneName));
+                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profileId.ToString(), activeSceneName));
                 return;
             }
 
-            _ = RunResetAsync(context, activeSceneName, profile);
+            _ = RunResetAsync(context, activeSceneName, profileId);
         }
 
-        private async Task RunResetAsync(SceneTransitionContext context, string activeSceneName, string profile)
+        private async Task RunResetAsync(SceneTransitionContext context, string activeSceneName, SceneFlowProfileId profileId)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
 
                 DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/{activeSceneName}', profile='{profile ?? "<null>"}'",
+                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/{activeSceneName}', profile='{profileId}'",
                     DebugUtility.Colors.Info);
 
                 // IMPORTANTE: no projeto atual, ResetWorldAsync recebe apenas 'reason'.
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{context.TransitionProfileName}', signature='{signature}', reason='{reason}'.",
+                $"[WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='{context.TransitionProfileId}', signature='{signature}', reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<WorldLifecycleResetCompletedEvent>.Raise(

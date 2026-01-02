@@ -3,47 +3,44 @@ using System;
 namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 {
     /// <summary>
-    /// Paths canônicos (Resources) para profiles do SceneFlow.
-    /// Regra: não montar "SceneFlow/Profiles/..." espalhado no código.
+    /// Paths canônicos para resolver assets de SceneFlow via Resources.
+    ///
+    /// Observação:
+    /// - O uso de Resources permanece textual, mas a escolha de profile deve ser tipada via <see cref="SceneFlowProfileId"/>.
+    /// - Evita espalhar "SceneFlow/Profiles/..." no código.
     /// </summary>
     public static class SceneFlowProfilePaths
     {
         public const string ProfilesRoot = "SceneFlow/Profiles";
 
-        /// <summary>
-        /// Converte um id de profile (ex: "startup") em um caminho de Resources
-        /// (ex: "SceneFlow/Profiles/startup"). Também aceita um caminho já completo.
-        /// </summary>
-        public static string For(string profileNameOrPath)
+        public static string For(string profileName)
         {
-            if (string.IsNullOrWhiteSpace(profileNameOrPath))
-                return string.Empty;
-
-            var key = profileNameOrPath.Trim();
-
-            // Se já veio como path (contém diretórios), normalize e retorne.
-            if (key.IndexOf('/') >= 0 || key.IndexOf('\\') >= 0)
-                return NormalizeResourcePath(key);
-
-            var id = SceneFlowProfileNames.Normalize(key);
-            if (string.IsNullOrEmpty(id))
-                return string.Empty;
-
-            return $"{ProfilesRoot}/{id}";
+            var normalized = Normalize(profileName);
+            return string.IsNullOrEmpty(normalized) ? string.Empty : $"{ProfilesRoot}/{normalized}";
         }
 
-        private static string NormalizeResourcePath(string path)
+        public static string For(SceneFlowProfileId profileId)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            return For(profileId.Value);
+        }
+
+        /// <summary>
+        /// Alias compatível para perfis usados pelo WorldLifecycle/Fade/Loading (mantém intenção sem duplicar strings).
+        /// </summary>
+        public static string WorldLifecycleProfilePath(string profileName) => For(profileName);
+
+        public static string WorldLifecycleProfilePath(SceneFlowProfileId profileId) => For(profileId);
+
+        public static string Normalize(string value)
+        {
+            // Mantém normalização local (trim + lower) para paths.
+            // A normalização oficial do ID está em SceneFlowProfileId.Normalize.
+            if (string.IsNullOrWhiteSpace(value))
+            {
                 return string.Empty;
+            }
 
-            var p = path.Replace('\\', '/').Trim();
-
-            // Resources.Load espera path sem extensão.
-            if (p.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
-                p = p.Substring(0, p.Length - ".asset".Length);
-
-            return p;
+            return value.Trim().ToLowerInvariant();
         }
     }
 }

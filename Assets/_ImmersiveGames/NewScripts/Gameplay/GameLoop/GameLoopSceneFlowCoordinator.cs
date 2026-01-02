@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            if (!IsMatchingProfile(evt.Context.TransitionProfileName))
+            if (!IsMatchingProfile(evt.Context.TransitionProfileId))
             {
                 return;
             }
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            if (!IsMatchingProfile(evt.Context.TransitionProfileName))
+            if (!IsMatchingProfile(evt.Context.TransitionProfileId))
             {
                 return;
             }
@@ -210,11 +210,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             TryIssueGameLoopSync();
         }
 
-        private bool IsMatchingProfile(string transitionProfileName)
+        private bool IsMatchingProfile(SceneFlowProfileId transitionProfileId)
         {
-            string expected = _startPlan?.TransitionProfileName;
-            return string.IsNullOrWhiteSpace(expected) ||
-                   string.Equals(transitionProfileName ?? string.Empty, expected, StringComparison.Ordinal);
+            var expected = _startPlan?.TransitionProfileId ?? default;
+            if (!expected.IsValid)
+            {
+                return true;
+            }
+
+            return transitionProfileId.Equals(expected);
         }
 
         private void EnsureExpectedSignatureFromContext(SceneTransitionContext context)

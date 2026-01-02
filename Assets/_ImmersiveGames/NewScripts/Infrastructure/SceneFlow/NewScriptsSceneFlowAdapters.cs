@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 
     /// <summary>
     /// Adapter NewScripts: delega para INewScriptsFadeService.
-    /// Resolve profileName (string) para NewScriptsSceneTransitionProfile via resolver e converte em NewScriptsFadeConfig.
+    /// Resolve profileId (<see cref="SceneFlowProfileId"/>) para NewScriptsSceneTransitionProfile via resolver e converte em NewScriptsFadeConfig.
     /// </summary>
     public sealed class NewScriptsSceneFlowFadeAdapter : ISceneFlowFadeAdapter
     {
@@ -71,15 +71,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
 
         public bool IsAvailable => _fadeService != null;
 
-        public void ConfigureFromProfile(string profileName)
+        public void ConfigureFromProfile(SceneFlowProfileId profileId)
         {
-            var profile = _profileResolver.Resolve(profileName, out var resolvedPath);
+            var profile = _profileResolver.Resolve(profileId, out var resolvedPath);
 
             if (profile == null)
             {
                 // Política: erro visível + defaults (não trava o fluxo).
                 DebugUtility.LogError<NewScriptsSceneFlowFadeAdapter>(
-                    $"[SceneFlow] NewScriptsSceneTransitionProfile '{profileName}' NÃO encontrado (ou tipo incorreto). " +
+                    $"[SceneFlow] NewScriptsSceneTransitionProfile '{profileId}' NÃO encontrado (ou tipo incorreto). " +
                     "Usando defaults de Fade.");
                 _fadeService.Configure(DefaultConfig);
 
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
                 _fadeService.Configure(noFade);
 
                 DebugUtility.LogVerbose<NewScriptsSceneFlowFadeAdapter>(
-                    $"[SceneFlow] Profile '{profileName}' aplicado (path='{resolvedPath}'): UseFade=false → no-op (dur=0).");
+                    $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): UseFade=false → no-op (dur=0).");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
             _fadeService.Configure(config);
 
             DebugUtility.LogVerbose<NewScriptsSceneFlowFadeAdapter>(
-                $"[SceneFlow] Profile '{profileName}' aplicado (path='{resolvedPath}'): " +
+                $"[SceneFlow] Profile '{profileId}' aplicado (path='{resolvedPath}'): " +
                 $"fadeIn={config.FadeInDuration:0.###}, fadeOut={config.FadeOutDuration:0.###}.");
         }
 
@@ -122,10 +122,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
     }
 
     /// <summary>
-    /// Resolve NewScriptsSceneTransitionProfile por nome, via Resources.
+    /// Resolve NewScriptsSceneTransitionProfile por ID, via Resources.
     /// Padrão de paths:
-    /// - "SceneFlow/Profiles/<profileName/>"
-    /// - "<profileName/>"
+    /// - "SceneFlow/Profiles/<profileId.Value/>"
+    /// - "<profileId.Value/>"
     ///
     /// Observação importante:
     /// - Se existir um asset com esse nome, mas de tipo legado (ex.: SceneTransitionProfile),
@@ -135,29 +135,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
     {
         private readonly Dictionary<string, NewScriptsSceneTransitionProfile> _cache = new();
 
-        public NewScriptsSceneTransitionProfile Resolve(string profileName)
+        public NewScriptsSceneTransitionProfile Resolve(SceneFlowProfileId profileId)
         {
-            return Resolve(profileName, out _);
+            return Resolve(profileId, out _);
         }
 
-        public NewScriptsSceneTransitionProfile Resolve(string profileName, out string resolvedPath)
+        public NewScriptsSceneTransitionProfile Resolve(SceneFlowProfileId profileId, out string resolvedPath)
         {
             resolvedPath = string.Empty;
 
-            if (string.IsNullOrWhiteSpace(profileName))
+            if (!profileId.IsValid)
             {
                 return null;
             }
 
-            // Canonicalização mínima: trim (sem forçar lower) para não mudar comportamento.
-            var key = SceneFlowProfileNames.Normalize(profileName);
+            // O value do ID já é normalizado (trim + lower) em SceneFlowProfileId.
+            var key = profileId.Value;
             if (_cache.TryGetValue(key, out var cached) && cached != null)
             {
                 resolvedPath = "<cache>";
                 return cached;
             }
 
-            var pathA = SceneFlowProfilePaths.For(key);
+            var pathA = SceneFlowProfilePaths.For(profileId);
             var pathB = key;
 
             // 1) Tentativa principal (tipo correto).
@@ -178,35 +178,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.SceneFlow
                 }
             }
 
-            // 2) Fallback defensivo: case sensitivity.
-            if (resolved == null)
-            {
-                var lower = key.ToLowerInvariant();
-                if (!string.Equals(lower, key, StringComparison.Ordinal))
-                {
-                    var pathALower = SceneFlowProfilePaths.For(lower);
-                    var pathBLower = lower;
-
-                    resolved = !string.IsNullOrEmpty(pathALower)
-                        ? Resources.Load<NewScriptsSceneTransitionProfile>(pathALower)
-                        : null;
-
-                    if (resolved != null)
-                    {
-                        key = lower;
-                        resolvedPath = pathALower;
-                    }
-                    else
-                    {
-                        resolved = Resources.Load<NewScriptsSceneTransitionProfile>(pathBLower);
-                        if (resolved != null)
-                        {
-                            key = lower;
-                            resolvedPath = pathBLower;
-                        }
-                    }
-                }
-            }
+            // 2) Sem fallback de case aqui: o ID já é normalizado (lower). Se existir um asset com casing
+            // diferente no path, ele deve ser corrigido no projeto/Resources.
 
             if (resolved != null)
             {

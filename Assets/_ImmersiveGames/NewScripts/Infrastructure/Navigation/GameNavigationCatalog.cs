@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                     scenesToUnload: new[] { Scenes.Menu },
                     targetActiveScene: Scenes.Gameplay,
                     useFade: true,
-                    transitionProfileName: SceneFlowProfileNames.Gameplay),
+                    transitionProfileId: SceneFlowProfileId.Gameplay),
 
                 // Gameplay -> Menu
                 [Routes.ToMenu] = new SceneTransitionRequest(
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Navigation
                     scenesToUnload: new[] { Scenes.Gameplay },
                     targetActiveScene: Scenes.Menu,
                     useFade: true,
-                    transitionProfileName: SceneFlowProfileNames.Frontend)
+                    transitionProfileId: SceneFlowProfileId.Frontend)
             };
 
             return new GameNavigationCatalog(routes);

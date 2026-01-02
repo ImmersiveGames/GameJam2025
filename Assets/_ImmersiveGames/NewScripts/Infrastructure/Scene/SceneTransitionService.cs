@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
@@ -14,25 +15,29 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     /// </summary>
     public sealed class SceneTransitionRequest
     {
-        public SceneTransitionRequest(
-            IReadOnlyList<string> scenesToLoad,
-            IReadOnlyList<string> scenesToUnload,
-            string targetActiveScene,
-            bool useFade,
-            string transitionProfileName = null)
-        {
-            ScenesToLoad = scenesToLoad ?? Array.Empty<string>();
-            ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
-            TargetActiveScene = targetActiveScene;
-            UseFade = useFade;
-            TransitionProfileName = transitionProfileName;
-        }
-
         public IReadOnlyList<string> ScenesToLoad { get; }
         public IReadOnlyList<string> ScenesToUnload { get; }
         public string TargetActiveScene { get; }
         public bool UseFade { get; }
-        public string TransitionProfileName { get; }
+
+        public SceneFlowProfileId TransitionProfileId { get; }
+
+        // Compatibilidade: logging / debug pode exibir o texto do profile.
+        public string TransitionProfileName => TransitionProfileId.Value;
+
+        public SceneTransitionRequest(
+            IReadOnlyList<string> scenesToLoad,
+            IReadOnlyList<string> scenesToUnload,
+            string targetActiveScene,
+            bool useFade = true,
+            SceneFlowProfileId transitionProfileId = default)
+        {
+            ScenesToLoad = scenesToLoad;
+            ScenesToUnload = scenesToUnload;
+            TargetActiveScene = targetActiveScene;
+            UseFade = useFade;
+            TransitionProfileId = transitionProfileId;
+        }
     }
 
     public interface ISceneTransitionService
@@ -61,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     public interface ISceneFlowFadeAdapter
     {
         bool IsAvailable { get; }
-        void ConfigureFromProfile(string profileName);
+        void ConfigureFromProfile(SceneFlowProfileId profileId);
         Task FadeInAsync();
         Task FadeOutAsync();
     }
@@ -200,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             var loadList = NormalizeList(request.ScenesToLoad);
             var unloadList = NormalizeList(request.ScenesToUnload);
             return new SceneTransitionContext(loadList, unloadList, request.TargetActiveScene, request.UseFade,
-                request.TransitionProfileName);
+                request.TransitionProfileId);
         }
 
         private static IReadOnlyList<string> NormalizeList(IReadOnlyList<string> source)
@@ -230,7 +235,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
                 return;
             }
 
-            _fadeAdapter.ConfigureFromProfile(context.TransitionProfileName);
+            _fadeAdapter.ConfigureFromProfile(context.TransitionProfileId);
             await _fadeAdapter.FadeInAsync();
         }
 
@@ -421,7 +426,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
     {
         public bool IsAvailable => false;
 
-        public void ConfigureFromProfile(string profileName) { }
+        public void ConfigureFromProfile(SceneFlowProfileId profileId) { }
 
         public Task FadeInAsync() => Task.CompletedTask;
 
