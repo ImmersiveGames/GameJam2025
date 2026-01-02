@@ -6,14 +6,21 @@
  * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
  * - (Opção B) Registrado GameLoopSceneFlowCoordinator para coordenar Start via SceneFlow
- *   (GameStartCommandEvent -> Transition -> ScenesReady -> RequestStart).
+ *   (GameStartRequestedEvent -> Transition -> ScenesReady -> RequestStart/Ready).
+ *
+ * Ajustes (jan/2026):
+ * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
+ *   - Resolve IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
+ *   - Resolve ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
+ * - Removido registro duplicado de WorldLifecycleRuntimeCoordinator (centralizado em RegisterSceneFlowNative()).
  *
  * Nota (QA):
- * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do ScenesReady
+ * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do sync
  *   para que overrides de QA no DI sejam observados.
  */
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
@@ -69,8 +76,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             InitializeLogging();
             EnsureDependencyProvider();
             RegisterEssentialServicesOnly();
-            InitializeReadinessGate();
-            RegisterGameLoopSceneFlowCoordinatorIfAvailable();
 
             DebugUtility.Log(
                 typeof(GlobalBootstrap),
@@ -101,14 +106,22 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterIfMissing<IUniqueIdFactory>(() => new NewUniqueIdFactory());
             RegisterIfMissing<ISimulationGateService>(() => new SimulationGateService());
 
+            // Resolve ISimulationGateService UMA vez para os consumidores (reduz repetição de TryGetGlobal).
+            DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService);
+
             // ADR-0009: Fade module NewScripts (precisa estar antes do SceneFlowNative para o adapter resolver).
             RegisterSceneFlowFadeModule();
 
-            RegisterPauseBridge();
+            RegisterPauseBridge(gateService);
+
             RegisterGameLoop();
+
+            // Resolve IGameLoopService UMA vez para serviços dependentes.
+            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
+
             RegisterGameRunEndRequestService();
-            RegisterGameRunStatusService();
-            RegisterGameRunOutcomeService();
+            RegisterGameRunStatusService(gameLoopService);
+            RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
@@ -120,13 +133,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterSceneFlowLoadingIfAvailable();
 
-            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
-
             RegisterInputModeSceneFlowBridge();
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
+
+#if NEWSCRIPTS_BASELINE_ASSERTS
+            RegisterBaselineAsserter();
+#endif
+
+            InitializeReadinessGate(gateService);
+            RegisterGameLoopSceneFlowCoordinatorIfAvailable();
         }
+
+#if NEWSCRIPTS_BASELINE_ASSERTS
+        private static void RegisterBaselineAsserter()
+        {
+            if (BaselineInvariantAsserter.TryInstall())
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Baseline] BaselineInvariantAsserter ativo (NEWSCRIPTS_BASELINE_ASSERTS).",
+                    DebugUtility.Colors.Info);
+            }
+        }
+#endif
 
         private static void RegisterSceneFlowFadeModule()
         {
@@ -201,13 +231,17 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void InitializeReadinessGate()
+        private static void InitializeReadinessGate(ISimulationGateService gateService)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gate) || gate == null)
+            if (gateService == null)
             {
-                DebugUtility.LogError(typeof(GlobalBootstrap),
-                    "[Readiness] ISimulationGateService indisponível. Scene Flow readiness ficará sem proteção de gate.");
-                return;
+                // fallback: tenta resolver aqui (best-effort)
+                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
+                {
+                    DebugUtility.LogError(typeof(GlobalBootstrap),
+                        "[Readiness] ISimulationGateService indisponível. Scene Flow readiness ficará sem proteção de gate.");
+                    return;
+                }
             }
 
             if (DependencyManager.Provider.TryGetGlobal<GameReadinessService>(out var registered) && registered != null)
@@ -219,7 +253,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            _gameReadinessService = new GameReadinessService(gate);
+            _gameReadinessService = new GameReadinessService(gateService);
             DependencyManager.Provider.RegisterGlobal(_gameReadinessService);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
@@ -229,7 +263,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
         private static void RegisterSceneFlowNative()
         {
-            // Garantia: sempre ter o runtime coordinator vivo quando o completion gate estiver ativo.
+            // Runtime coordinator precisa estar vivo quando o completion gate estiver ativo.
             RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
 
             if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
@@ -342,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterPauseBridge()
+        private static void RegisterPauseBridge(ISimulationGateService gateService)
         {
             if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var existing) && existing != null)
             {
@@ -352,11 +386,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            if (gateService == null)
             {
-                DebugUtility.LogError(typeof(GlobalBootstrap),
-                    "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
-                return;
+                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
+                {
+                    DebugUtility.LogError(typeof(GlobalBootstrap),
+                        "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
+                    return;
+                }
             }
 
             var bridge = new GamePauseGateBridge(gateService);
@@ -375,7 +412,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-private static void RegisterGameRunEndRequestService()
+        private static void RegisterGameRunEndRequestService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var existing) && existing != null)
             {
@@ -392,8 +429,7 @@ private static void RegisterGameRunEndRequestService()
                 DebugUtility.Colors.Info);
         }
 
-
-        private static void RegisterGameRunStatusService()
+        private static void RegisterGameRunStatusService(IGameLoopService gameLoopService)
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameRunStatusService>(out var existing) && existing != null)
             {
@@ -403,8 +439,6 @@ private static void RegisterGameRunEndRequestService()
                 return;
             }
 
-            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
-
             // Mantém compatibilidade com a assinatura atual do GameRunStatusService (injeção por construtor).
             RegisterIfMissing<IGameRunStatusService>(() => new GameRunStatusService(gameLoopService));
 
@@ -413,7 +447,7 @@ private static void RegisterGameRunEndRequestService()
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterGameRunOutcomeService()
+        private static void RegisterGameRunOutcomeService(IGameLoopService gameLoopService)
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var existing) && existing != null)
             {
@@ -422,8 +456,6 @@ private static void RegisterGameRunEndRequestService()
                     DebugUtility.Colors.Info);
                 return;
             }
-
-            DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 
             // Mantém compatibilidade com a assinatura atual do GameRunOutcomeService (injeção por construtor).
             RegisterIfMissing<IGameRunOutcomeService>(() => new GameRunOutcomeService(gameLoopService));

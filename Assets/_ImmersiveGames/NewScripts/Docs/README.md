@@ -19,6 +19,15 @@ Arquivos canônicos (este pacote):
 ## Reports (evidências)
 Status: evidências atualizadas em 2025-12-29.
 
+## Baseline 2.0 (contrato de regressão)
+
+Este pacote inclui uma matriz mínima de cenários + invariantes para tornar regressões detectáveis
+sem ambiguidade (logs + asserts).
+
+- [Baseline Matrix 2.0](Baseline/Baseline-Matrix-2.0.md)
+- [Baseline Evidence Template](Baseline/Baseline-Evidence-Template.md)
+- [Baseline Invariants](Baseline/Baseline-Invariants.md)
+
 ### Validação de Produção (master)
 - [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
 - [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)

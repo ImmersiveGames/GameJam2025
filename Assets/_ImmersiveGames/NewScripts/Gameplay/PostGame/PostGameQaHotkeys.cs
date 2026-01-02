@@ -14,16 +14,16 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     public sealed class PostGameQaHotkeys : MonoBehaviour
     {
         private const KeyCode VictoryKey = KeyCode.F7;
-        private const KeyCode DefeatKey  = KeyCode.F6;
+        private const KeyCode DefeatKey = KeyCode.F6;
 
         private const string VictoryReason = "QA_ForcedVictory";
-        private const string DefeatReason  = "QA_ForcedDefeat";
+        private const string DefeatReason = "QA_ForcedDefeat";
 
         private void Update()
         {
             if (Input.GetKeyDown(VictoryKey))
             {
-                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var _))
+                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) && outcomeService != null)
                 {
                     // Caminho recomendado: request event -> GameRunOutcomeService (via bridge) -> GameRunEndedEvent.
                     EventBus<GameRunEndRequestedEvent>.Raise(
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
             if (Input.GetKeyDown(DefeatKey))
             {
-                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var _))
+                if (DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) && outcomeService != null)
                 {
                     // Caminho recomendado: request event -> GameRunOutcomeService (via bridge) -> GameRunEndedEvent.
                     EventBus<GameRunEndRequestedEvent>.Raise(

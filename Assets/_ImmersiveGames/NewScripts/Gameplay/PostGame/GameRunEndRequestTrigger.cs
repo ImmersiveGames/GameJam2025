@@ -44,7 +44,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
             if (verboseLogs)
             {
-                DebugUtility.Log<GameRunEndRequestTrigger>($"Publishing GameRunEndRequestedEvent(outcome={outcome}, reason='{reason ?? string.Empty}')");
+                DebugUtility.Log<GameRunEndRequestTrigger>(
+                    $"Publishing GameRunEndRequestedEvent(outcome={outcome}, reason='{reason ?? string.Empty}')");
             }
 
             EventBus<GameRunEndRequestedEvent>.Raise(new GameRunEndRequestedEvent(outcome, reason));
@@ -53,7 +54,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         private static bool IsActiveGameplayScene()
         {
             var sceneName = SceneManager.GetActiveScene().name;
-            return !string.IsNullOrEmpty(sceneName) && sceneName.Contains("Gameplay");
+            return !string.IsNullOrEmpty(sceneName) &&
+                   sceneName.IndexOf("Gameplay", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

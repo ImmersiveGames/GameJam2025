@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         // Evita log ruidoso no primeiro Start do ciclo (boot → first playing).
         private bool _hasEverStarted;
+        private bool _disposed;
 
         public bool HasResult { get; private set; }
         public GameRunOutcome Outcome { get; private set; } = GameRunOutcome.Unknown;
@@ -53,9 +54,22 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
         {
+            if (_disposed || evt == null)
+            {
+                return;
+            }
+
+            // Idempotência: se já temos resultado, ignore eventos duplicados.
+            if (HasResult)
+            {
+                DebugUtility.LogVerbose<GameRunStatusService>(
+                    $"[GameLoop] GameRunEndedEvent duplicado ignorado. CurrentOutcome={Outcome}, IncomingOutcome={evt.Outcome}, IncomingReason='{evt.Reason ?? "<null>"}'.");
+                return;
+            }
+
             HasResult = true;
-            Outcome = evt?.Outcome ?? GameRunOutcome.Unknown;
-            Reason = evt?.Reason;
+            Outcome = evt.Outcome;
+            Reason = evt.Reason;
 
             DebugUtility.Log<GameRunStatusService>(
                 $"[GameLoop] GameRunStatus atualizado. Outcome={Outcome}, Reason='{Reason ?? "<null>"}'.");
@@ -70,8 +84,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             var stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            var isInActiveGameplay =
-                stateName == nameof(GameLoopStateId.Playing);
+            var isInActiveGameplay = string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
 
             if (!isInActiveGameplay)
             {
@@ -96,6 +109,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             // Primeiro start do ciclo: não gerar log ruidoso de "resume/duplicado".
             if (!_hasEverStarted)
             {
@@ -129,8 +147,15 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public void Dispose()
         {
-            EventBus<GameRunEndedEvent>.Unregister(_binding);
-            EventBus<GameRunStartedEvent>.Unregister(_startBinding);
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            try { EventBus<GameRunEndedEvent>.Unregister(_binding); } catch { /* best-effort */ }
+            try { EventBus<GameRunStartedEvent>.Unregister(_startBinding); } catch { /* best-effort */ }
         }
     }
 }

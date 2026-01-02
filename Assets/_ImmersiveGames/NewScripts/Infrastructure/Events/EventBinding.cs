@@ -2,7 +2,7 @@ using System;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Events
 {
-    public class EventBinding<T> : IEventBinding<T>
+    public sealed class EventBinding<T> : IEventBinding<T>
     {
         private Action<T> _onEvent = _ => { };
         private Action _onEventNoArgs = () => { };

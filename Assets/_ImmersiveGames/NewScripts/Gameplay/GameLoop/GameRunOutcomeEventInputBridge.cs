@@ -20,17 +20,18 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public GameRunOutcomeEventInputBridge(IGameRunOutcomeService outcome)
         {
-            _outcome = outcome;
+            _outcome = outcome ?? throw new ArgumentNullException(nameof(outcome));
 
             _binding = new EventBinding<GameRunEndRequestedEvent>(OnEndRequested);
             EventBus<GameRunEndRequestedEvent>.Register(_binding);
 
-            DebugUtility.LogVerbose(typeof(GameRunOutcomeEventInputBridge), "GameRunOutcomeEventInputBridge registered.");
+            DebugUtility.LogVerbose<GameRunOutcomeEventInputBridge>(
+                "GameRunOutcomeEventInputBridge registered.");
         }
 
         private void OnEndRequested(GameRunEndRequestedEvent evt)
         {
-            if (evt == null)
+            if (_disposed || evt == null)
             {
                 return;
             }
@@ -46,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                     break;
 
                 default:
-                    DebugUtility.LogWarning(typeof(GameRunOutcomeEventInputBridge),
+                    DebugUtility.LogWarning<GameRunOutcomeEventInputBridge>(
                         $"Ignored GameRunEndRequestedEvent with Outcome={evt.Outcome}. Reason='{evt.Reason}'.");
                     break;
             }
@@ -60,8 +61,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             }
 
             _disposed = true;
-            EventBus<GameRunEndRequestedEvent>.Unregister(_binding);
-            DebugUtility.LogVerbose(typeof(GameRunOutcomeEventInputBridge), "GameRunOutcomeEventInputBridge disposed.");
+
+            try { EventBus<GameRunEndRequestedEvent>.Unregister(_binding); } catch { /* best-effort */ }
+
+            DebugUtility.LogVerbose<GameRunOutcomeEventInputBridge>(
+                "GameRunOutcomeEventInputBridge disposed.");
         }
     }
 }

@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
         private readonly EventBinding<GameRunEndedEvent> _runEndedObservedBinding;
 
         private bool _hasEndedThisRun;
+        private bool _disposed;
 
         public bool HasEnded => _hasEndedThisRun;
 
@@ -41,6 +42,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         public bool TryEnd(GameRunOutcome outcome, string reason = null)
         {
+            if (_disposed)
+            {
+                return false;
+            }
+
             if (outcome != GameRunOutcome.Victory && outcome != GameRunOutcome.Defeat)
             {
                 DebugUtility.LogWarning<GameRunOutcomeService>(
@@ -79,6 +85,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnRunStarted(GameRunStartedEvent evt)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             // Re-arma para nova run.
             _hasEndedThisRun = false;
 
@@ -88,6 +99,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
         private void OnRunEndedObserved(GameRunEndedEvent evt)
         {
+            if (_disposed || evt == null)
+            {
+                return;
+            }
+
             // Se alguém publicou diretamente (QA), marque como encerrado para manter idempotência.
             if (_hasEndedThisRun)
             {
@@ -101,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
                 return;
             }
 
-            var outcome = evt?.Outcome ?? GameRunOutcome.Unknown;
+            var outcome = evt.Outcome;
             if (outcome != GameRunOutcome.Victory && outcome != GameRunOutcome.Defeat)
             {
                 return;
@@ -110,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _hasEndedThisRun = true;
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                $"[GameLoop] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={outcome}, Reason='{evt?.Reason ?? "<null>"}'.");
+                $"[GameLoop] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={outcome}, Reason='{evt.Reason ?? "<null>"}'.");
         }
 
         private bool IsInActiveGameplay()
@@ -119,19 +135,26 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (_gameLoopService == null)
             {
                 DebugUtility.LogWarning<GameRunOutcomeService>(
-                    "[GameLoop] IGameLoopService indisponível; GameRunOutcomeService não pode validar estado (Playing)." +
-                    " Fim de run foi ignorado para evitar transições fora de contexto.");
+                    "[GameLoop] IGameLoopService indisponível; GameRunOutcomeService não pode validar estado (Playing). " +
+                    "Fim de run foi ignorado para evitar transições fora de contexto.");
                 return false;
             }
 
             var stateName = _gameLoopService.CurrentStateIdName ?? string.Empty;
-            return stateName == nameof(GameLoopStateId.Playing);
+            return string.Equals(stateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
         }
 
         public void Dispose()
         {
-            EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
-            EventBus<GameRunEndedEvent>.Unregister(_runEndedObservedBinding);
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            try { EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding); } catch { /* best-effort */ }
+            try { EventBus<GameRunEndedEvent>.Unregister(_runEndedObservedBinding); } catch { /* best-effort */ }
         }
     }
 }

@@ -1,5 +1,13 @@
 # Changelog (Docs)
 
+## [2026-01-02]
+- Added: documentação do **Baseline 2.0** em `Docs/Baseline/`:
+  - `Baseline-Matrix-2.0.md` (matriz mínima de cenários)
+  - `Baseline-Invariants.md` (invariantes obrigatórias)
+  - `Baseline-Evidence-Template.md` (template de evidência)
+- Updated: `README.md` para linkar o pacote Baseline 2.0.
+- Updated: `Checklist.md` com evidência do log completo (startup/menu → gameplay → pause/resume → defeat/victory → restart → exit-to-menu).
+
 ## [2026-01-01]
 - Updated: clarificado wiring de fim de run (`IGameRunEndRequestService` → `GameRunEndRequestedEvent` → `GameRunOutcomeEventInputBridge` → `IGameRunOutcomeService` → `GameRunEndedEvent`).
 - Updated: `README.md` adicionando seção “Fim de Run (Vitória/Derrota)” com instruções de uso/teste (`IGameRunEndRequestService`, `GameRunEndRequestedEvent`, hotkeys F7/F6).

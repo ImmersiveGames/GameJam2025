@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 {
@@ -122,10 +123,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
             ReleaseGateHandle();
-            _gameplayReady = true;
+
+            // Semântica correta: GameplayReady só deve subir em profile gameplay.
+            _gameplayReady = evt.Context.TransitionProfileId.IsGameplay;
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. Context={evt.Context}");
+                $"[Readiness] SceneTransitionCompleted → gate liberado e fase GameplayReady marcada. " +
+                $"gameplayReady={_gameplayReady}. Context={evt.Context}");
 
             PublishSnapshot("scene_transition_completed", force: true);
         }

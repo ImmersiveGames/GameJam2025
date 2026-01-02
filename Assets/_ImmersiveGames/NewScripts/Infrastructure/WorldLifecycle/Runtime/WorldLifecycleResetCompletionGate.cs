@@ -7,13 +7,6 @@ using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
-    /// <summary>
-    /// Gate de conclusão para SceneFlow:
-    /// aguarda WorldLifecycleResetCompletedEvent cuja assinatura (ContextSignature) corresponda
-    /// à assinatura do contexto da transição atual.
-    ///
-    /// Objetivo: garantir que FadeOut/Completed só aconteçam após o reset terminar (ou ser skipped).
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleResetCompletionGate : ISceneTransitionCompletionGate, IDisposable
     {
@@ -27,7 +20,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private readonly int _timeoutMs;
 
-        // Cache defensivo para evitar crescimento infinito em sessões longas.
         private const int MaxCompletedCacheEntries = 128;
 
         public WorldLifecycleResetCompletionGate(int timeoutMs = 20000)
@@ -48,6 +40,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             lock (_pending)
             {
+                // Cancela awaiters pendentes (defensivo).
+                foreach (var kv in _pending)
+                {
+                    kv.Value.TrySetCanceled();
+                }
+
                 _pending.Clear();
                 _completedReasons.Clear();
             }
@@ -55,10 +53,15 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            // Contrato atual: SceneTransitionSignatureUtil.Compute(context) == context.ToString()
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
-            // Se já chegou antes (caso raro), retorna imediatamente.
+            if (string.IsNullOrEmpty(signature))
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
+                    "[SceneFlowGate] ContextSignature vazia. Não é possível correlacionar gate; liberando sem aguardar reset.");
+                return;
+            }
+
             lock (_pending)
             {
                 if (_completedReasons.ContainsKey(signature))
@@ -80,11 +83,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
             }
 
-            // Timeout defensivo para não travar o flow.
-            Task completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
+            var completed = await Task.WhenAny(tcs.Task, Task.Delay(_timeoutMs));
             if (completed != tcs.Task)
             {
-                // Importante: evita acumular pending em caso de evento nunca publicado.
                 lock (_pending)
                 {
                     if (_pending.TryGetValue(signature, out var current) && ReferenceEquals(current, tcs))
@@ -98,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return;
             }
 
-            string reason = await tcs.Task;
+            var reason = await tcs.Task;
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleResetCompletionGate),
                 $"[SceneFlowGate] Concluído. signature='{signature}', reason='{reason ?? "<null>"}'.");
@@ -106,20 +107,31 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private void OnCompleted(WorldLifecycleResetCompletedEvent evt)
         {
-            string signature = evt.ContextSignature ?? string.Empty;
-            string reason = evt.Reason;
+            var signature = evt.ContextSignature ?? string.Empty;
+            var reason = evt.Reason;
+
+            if (string.IsNullOrEmpty(signature))
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleResetCompletionGate),
+                    $"[SceneFlowGate] WorldLifecycleResetCompletedEvent recebido com ContextSignature vazia. reason='{reason ?? "<null>"}'.");
+            }
 
             TaskCompletionSource<string> tcs = null;
 
             lock (_pending)
             {
-                // Cache defensivo: impede crescimento infinito.
                 PruneCompletedCacheIfNeeded();
 
-                // Marca como concluído (para chamadas futuras).
-                _completedReasons.TryAdd(signature, reason);
+                // Mantém o primeiro reason (estável p/ debug). Se preferir "último ganha", troque por _completedReasons[signature] = reason;
+                if (!_completedReasons.ContainsKey(signature))
+                {
+                    _completedReasons.Add(signature, reason);
+                }
 
-                _pending.Remove(signature, out tcs);
+                if (_pending.TryGetValue(signature, out tcs))
+                {
+                    _pending.Remove(signature);
+                }
             }
 
             if (tcs != null)
@@ -133,8 +145,6 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private void PruneCompletedCacheIfNeeded()
         {
-            // Estratégia simples e estável: ao estourar, limpa tudo.
-            // (Evita overhead de LRU; suficiente como proteção contra crescimento infinito.)
             if (_completedReasons.Count <= MaxCompletedCacheEntries)
             {
                 return;
