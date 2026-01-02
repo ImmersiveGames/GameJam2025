@@ -186,8 +186,18 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
 
+            // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
+            EventBus<SceneTransitionStartedEvent>.Clear();
+            EventBus<SceneTransitionFadeInCompletedEvent>.Clear();
+            EventBus<SceneTransitionScenesReadyEvent>.Clear();
+            EventBus<SceneTransitionBeforeFadeOutEvent>.Clear();
+            EventBus<SceneTransitionCompletedEvent>.Clear();
+
+            // WorldLifecycle (NewScripts): reset completion gate depende deste evento.
+            EventBus<WorldLifecycleResetCompletedEvent>.Clear();
+
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[EventBus] EventBus inicializado para eventos do GameLoop (NewScripts).",
+                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
                 DebugUtility.Colors.Info);
         }
 

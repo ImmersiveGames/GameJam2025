@@ -185,12 +185,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
             try
             {
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{context}'.");
+                    $"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{SceneTransitionSignatureUtil.Compute(context)}'.");
 
                 await _completionGate.AwaitBeforeFadeOutAsync(context);
 
                 DebugUtility.LogVerbose<SceneTransitionService>(
-                    $"[SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='{context}'.");
+                    $"[SceneFlow] Completion gate concluído. Prosseguindo para FadeOut. signature='{SceneTransitionSignatureUtil.Compute(context)}'.");
             }
             catch (Exception ex)
             {

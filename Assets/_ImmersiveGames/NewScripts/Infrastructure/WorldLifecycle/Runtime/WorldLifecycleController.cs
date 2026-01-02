@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         [Header("Lifecycle")]
         [Tooltip("Quando true, o controller executa ResetWorldAsync automaticamente no Start(). " +
                  "Para testes automatizados, um runner deve desligar isto antes do Start().")]
-        [SerializeField] private bool autoInitializeOnStart = true;
+        [SerializeField] private bool autoInitializeOnStart = false;
 
         [Header("Debug")]
         [SerializeField] private bool verboseLogs = true;

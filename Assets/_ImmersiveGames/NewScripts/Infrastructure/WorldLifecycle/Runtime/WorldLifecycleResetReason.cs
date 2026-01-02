@@ -1,4 +1,6 @@
-﻿namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
+﻿using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
+
+namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
     /// Strings padronizadas para o campo Reason do WorldLifecycleResetCompletedEvent.
@@ -17,6 +19,11 @@
             var safeProfile = string.IsNullOrWhiteSpace(profile) ? "<null>" : profile;
             var safeScene = string.IsNullOrWhiteSpace(activeSceneName) ? "<unknown>" : activeSceneName;
             return $"Skipped_StartupOrFrontend:profile={safeProfile};scene={safeScene}";
+        }
+
+        public static string SkippedStartupOrFrontend(SceneFlowProfileId profileId, string activeSceneName)
+        {
+            return SkippedStartupOrFrontend(profileId.Value, activeSceneName);
         }
 
         public static string FailedNoController(string activeSceneName)

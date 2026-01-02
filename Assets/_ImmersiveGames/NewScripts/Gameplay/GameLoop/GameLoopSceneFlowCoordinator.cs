@@ -231,12 +231,6 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             _expectedContextSignature = SceneTransitionSignatureUtil.Compute(context);
         }
 
-        private static bool IsGameplayProfile(string profileName)
-        {
-            // Item 3: remover string hardcoded e usar ID canônico.
-            return SceneFlowProfileNames.IsGameplay(profileName);
-        }
-
         private void TryIssueGameLoopSync()
         {
             if (_startIssued)
@@ -262,24 +256,23 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             // Importante: este coordinator é usado para o startPlan de produção (tipicamente 'startup').
             // Regra: Só iniciar "run" em gameplay. Em startup/frontend, apenas deixar o GameLoop em Ready (sem ativar Playing).
-            var profile = _startPlan?.TransitionProfileName ?? string.Empty;
+            var profileId = _startPlan?.TransitionProfileId ?? default;
 
             gameLoop.Initialize();
 
-            if (IsGameplayProfile(profile))
+            if (profileId.IsGameplay)
             {
-                DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                    "[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. profile='gameplay' -> GameLoop.RequestStart().",
-                    DebugUtility.Colors.Success);
-
+                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
+                    $"[GameLoopSceneFlow] Profile gameplay detectado (profileId='{profileId.Value}'). Chamando RequestStart() no GameLoop.");
                 gameLoop.RequestStart();
             }
             else
             {
-                DebugUtility.Log(typeof(GameLoopSceneFlowCoordinator),
-                    $"[GameLoopSceneFlow] Ready: TransitionCompleted + WorldLifecycleResetCompleted. profile='{profile}' -> GameLoop.RequestReady() (no-run em startup/frontend).",
-                    DebugUtility.Colors.Info);
+                var profileLabel = profileId.IsValid ? profileId.Value : "<none>";
 
+                DebugUtility.LogVerbose<GameLoopSceneFlowCoordinator>(
+                    $"[GameLoopSceneFlow] Profile não-gameplay (profileId='{profileLabel}'). Chamando RequestReady() no GameLoop.",
+                    DebugUtility.Colors.Info);
                 gameLoop.RequestReady();
             }
 

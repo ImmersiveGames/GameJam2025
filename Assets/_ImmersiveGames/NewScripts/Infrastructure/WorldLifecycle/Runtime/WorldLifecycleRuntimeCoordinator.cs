@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -48,9 +47,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             var activeSceneName = context.TargetActiveScene;
             var profileId = context.TransitionProfileId;
 
-            string message = "SceneTransitionScenesReady recebido. Context="+context;
-            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),message
-                , DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
             // SKIP canônico: startup + frontend.
             var skipByProfile = profileId.IsStartupOrFrontend;
@@ -71,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
                 EmitResetCompleted(
                     context,
-                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profileId.ToString(), activeSceneName));
+                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profileId, activeSceneName));
                 return;
             }
 
@@ -135,8 +133,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         private static void EmitResetCompleted(SceneTransitionContext context, string reason)
         {
-            // Contrato atual: SceneTransitionSignatureUtil.Compute(context) == context.ToString()
-            // (centralizado para permitir evolução futura sem tocar nos callers).
+            // Contrato atual: a correlação usa SceneTransitionContext.ContextSignature,
+            // centralizado via SceneTransitionSignatureUtil.Compute(context).
             var signature = SceneTransitionSignatureUtil.Compute(context);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
