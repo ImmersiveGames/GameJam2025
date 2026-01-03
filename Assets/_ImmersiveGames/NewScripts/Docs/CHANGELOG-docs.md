@@ -8,6 +8,7 @@
 - Updated: `ADRs/ADR-0014-GameplayReset-Targets-Grupos.md` com targets completos e evidência de QA.
 - Updated: `QA/GameplayReset-QA.md` com passos para `ActorIdSet`/`ByActorKind` e referências de QA.
 - Updated: `DECISIONS.md` alinhado ao timing real do Loading HUD (UseFade vs. Started).
+- Updated: `Reports/GameLoop.md` para refletir PostGame sem PauseOverlay e InputMode fixo em Frontend.
 
 ## [2026-01-02]
 - Added: documentação do **Baseline 2.0** em `Docs/Baseline/`:
