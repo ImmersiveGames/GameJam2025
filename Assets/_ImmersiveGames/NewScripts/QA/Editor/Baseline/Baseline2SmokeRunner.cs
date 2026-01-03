@@ -6,6 +6,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Infrastructure.DI;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
+using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -23,10 +27,22 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
 
         private bool _failed;
         private string _failReason;
+        private string _failCategory;
+
+        private string _resolvedNavigationType;
+
+        private bool _menuTransitionCompleted;
+        private bool _gameLoopReady;
+        private bool _navLogObserved;
+        private bool _gameplayTransitionStarted;
+        private bool _gameplayTransitionCompleted;
 
         private float _startRealtime;
         private string _activeSignatureLast;
         private string _profileLast;
+
+        private EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
@@ -42,8 +58,21 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             go.AddComponent<Baseline2SmokeRunner>();
         }
 
-        private void OnEnable() => Application.logMessageReceived += OnLog;
-        private void OnDisable() => Application.logMessageReceived -= OnLog;
+        private void OnEnable()
+        {
+            Application.logMessageReceived += OnLog;
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
+            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
+        }
+
+        private void OnDisable()
+        {
+            Application.logMessageReceived -= OnLog;
+            EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
+            EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
+        }
 
         private void Start()
         {
@@ -58,6 +87,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             _raw.AppendLine(line);
 
             TryExtractContextHints(line);
+            TryCaptureEvidence(line);
         }
 
         private void TryExtractContextHints(string line)
@@ -83,6 +113,52 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
         }
 
+        private void TryCaptureEvidence(string line)
+        {
+            if (line.IndexOf("[Readiness] SceneTransitionCompleted", StringComparison.Ordinal) >= 0 &&
+                line.IndexOf("Profile='gameplay'", StringComparison.Ordinal) >= 0)
+            {
+                _gameplayTransitionCompleted = true;
+            }
+
+            if (line.IndexOf("[GameLoop] ENTER: Ready", StringComparison.Ordinal) >= 0)
+            {
+                _gameLoopReady = true;
+            }
+
+            if (line.IndexOf("[Navigation] NavigateAsync -> routeId='to-gameplay'", StringComparison.Ordinal) >= 0)
+            {
+                _navLogObserved = true;
+            }
+
+            if (line.IndexOf("[SceneFlow] Iniciando transição:", StringComparison.Ordinal) >= 0 &&
+                line.IndexOf("Profile='gameplay'", StringComparison.Ordinal) >= 0)
+            {
+                _gameplayTransitionStarted = true;
+            }
+        }
+
+        private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            if (evt.Context.TransitionProfileId.IsGameplay)
+            {
+                _gameplayTransitionStarted = true;
+            }
+        }
+
+        private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
+        {
+            if (string.Equals(evt.Context.TargetActiveScene, "MenuScene", StringComparison.Ordinal))
+            {
+                _menuTransitionCompleted = true;
+            }
+
+            if (evt.Context.TransitionProfileId.IsGameplay)
+            {
+                _gameplayTransitionCompleted = true;
+            }
+        }
+
         private IEnumerator Run()
         {
             yield return new WaitForSecondsRealtime(0.25f);
@@ -104,16 +180,8 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
                     "Release token='flow.scene_transition'. Active=0. IsOpen=True")),
 
                 // B) Menu -> Gameplay (gameplay)
-                new SmokeStep("B1) Navigate to Gameplay (via production bridge)", () => NavigateToGameplayViaBridge(20f)),
-                new SmokeStep("B2) Gameplay reset+spawn", () => ExpectInOrder(50f,
-                    "Iniciando transição: Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'",
-                    "Acquire token='flow.scene_transition'",
-                    "SceneTransitionScenesReady recebido",
-                    "Acquire token='WorldLifecycle.WorldReset'",
-                    "World Reset Completed",
-                    "Release token='WorldLifecycle.WorldReset'",
-                    "Emitting WorldLifecycleResetCompletedEvent. profile='gameplay'",
-                    "Release token='flow.scene_transition'. Active=0. IsOpen=True")),
+                new SmokeStep("B1) Navigate to Gameplay (direct IGameNavigationService)", () => NavigateToGameplayDirect(25f)),
+                new SmokeStep("B2) Gameplay reset+spawn", () => WaitForGameplayTransitionCompletion(50f)),
 
                 // C) Pause -> Resume
                 new SmokeStep("C1) Pause/Resume", () => PauseResume(15f)),
@@ -179,6 +247,75 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             Fail($"Timeout aguardando qualquer evidência: {string.Join(" OR ", needles)}");
         }
 
+        private IEnumerator WaitForLog(float timeoutSeconds, string needle, Action onObserved = null)
+        {
+            var start = Time.realtimeSinceStartup;
+
+            while (Time.realtimeSinceStartup - start < timeoutSeconds)
+            {
+                if (Contains(needle))
+                {
+                    onObserved?.Invoke();
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Fail($"Timeout aguardando evidência: {needle}");
+        }
+
+        private IEnumerator WaitForCondition(float timeoutSeconds, Func<bool> predicate, string label, Action onObserved = null)
+        {
+            if (predicate == null)
+            {
+                Fail("Predicate nulo em WaitForCondition.");
+                yield break;
+            }
+
+            var start = Time.realtimeSinceStartup;
+
+            while (Time.realtimeSinceStartup - start < timeoutSeconds)
+            {
+                if (predicate())
+                {
+                    onObserved?.Invoke();
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Fail($"Timeout aguardando evidência: {label}");
+        }
+
+        private IEnumerator WaitForTask(Task task, float timeoutSeconds, string timeoutReason)
+        {
+            if (task == null)
+            {
+                Fail("Task nula em WaitForTask.");
+                yield break;
+            }
+
+            var start = Time.realtimeSinceStartup;
+
+            while (!task.IsCompleted && Time.realtimeSinceStartup - start < timeoutSeconds)
+            {
+                yield return null;
+            }
+
+            if (!task.IsCompleted)
+            {
+                Fail(timeoutReason);
+                yield break;
+            }
+
+            if (task.IsFaulted)
+            {
+                Fail($"Task falhou: {task.Exception?.GetBaseException().Message}");
+            }
+        }
+
         private IEnumerator ExpectInOrder(float timeoutSeconds, params string[] orderedNeedles)
         {
             var start = Time.realtimeSinceStartup;
@@ -208,6 +345,26 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
 
             var missing = orderedNeedles[Mathf.Clamp(cursor, 0, orderedNeedles.Length - 1)];
             Fail($"Timeout esperando sequência mínima em ordem. Faltou: '{missing}'");
+        }
+
+        private bool TryResolveNavigationService(out IGameNavigationService navigation, out string error)
+        {
+            navigation = null;
+
+            if (!DependencyManager.HasInstance)
+            {
+                error = "DependencyManager não inicializado.";
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal(out navigation) || navigation == null)
+            {
+                error = "IGameNavigationService indisponível no DI global.";
+                return false;
+            }
+
+            error = null;
+            return true;
         }
 
         private IEnumerator PublishAndWait(string eventTypeName, float timeoutSeconds, params string[] evidenceAny)
@@ -247,21 +404,88 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
         }
 
         /// <summary>
-        /// Navegação Menu -> Gameplay sem reflection em DI/registry:
-        /// usa o bridge de produção RestartNavigationBridge (GameResetRequestedEvent -> RequestGameplayAsync).
+        /// Navegação Menu -> Gameplay via IGameNavigationService (DI global).
+        /// Aguarda estabilidade (Menu completed + GameLoop Ready) antes de disparar.
         /// </summary>
-        private IEnumerator NavigateToGameplayViaBridge(float timeoutSeconds)
+        private IEnumerator NavigateToGameplayDirect(float timeoutSeconds)
         {
-            // Em Menu, "reset" é um gatilho válido para ir ao gameplay pela rota de produção.
-            if (!TryPublishEventByName("GameResetRequestedEvent", out var err))
+            yield return WaitForMenuStable(20f);
+            if (_failed) yield break;
+
+            if (!TryResolveNavigationService(out var navigation, out var error))
             {
-                Fail($"Falha ao publicar GameResetRequestedEvent (para navegar ao gameplay): {err}");
+                _failCategory = "não resolver nav service";
+                Fail($"Falha ao resolver IGameNavigationService: {error}");
                 yield break;
             }
 
-            yield return WaitForAnyLog(timeoutSeconds,
-                "Iniciando transição: Load=[GameplayScene, UIGlobalScene]",
-                "Profile='gameplay'");
+            _resolvedNavigationType = navigation.GetType().FullName;
+            Debug.Log($"[Baseline2Smoke] Resolved IGameNavigationService: {_resolvedNavigationType}");
+
+            var requestTask = RequestGameplayAsync(navigation);
+            yield return WaitForTask(requestTask, timeoutSeconds, "Timeout aguardando RequestGameplayAsync.");
+            if (_failed) yield break;
+
+            yield return WaitForLog(timeoutSeconds,
+                "[Navigation] NavigateAsync -> routeId='to-gameplay'",
+                onObserved: () => Debug.Log("[Baseline2Smoke] Evidência: NavigateAsync(to-gameplay) observado."));
+            if (_failed)
+            {
+                _failCategory = "nav service não logou (não executou)";
+                yield break;
+            }
+
+            yield return WaitForCondition(timeoutSeconds,
+                () => _gameplayTransitionStarted,
+                "SceneTransitionStarted (gameplay)",
+                () => Debug.Log("[Baseline2Smoke] Evidência: SceneTransitionStarted (gameplay) observado."));
+            if (_failed)
+            {
+                _failCategory = "scene flow não iniciou";
+                yield break;
+            }
+        }
+
+        private IEnumerator WaitForMenuStable(float timeoutSeconds)
+        {
+            var start = Time.realtimeSinceStartup;
+
+            while (Time.realtimeSinceStartup - start < timeoutSeconds)
+            {
+                if (_menuTransitionCompleted && _gameLoopReady)
+                {
+                    Debug.Log("[Baseline2Smoke] Evidência: Menu SceneTransitionCompleted observado.");
+                    Debug.Log("[Baseline2Smoke] Evidência: GameLoop Ready observado.");
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Fail("Timeout aguardando estado estável de Menu (SceneTransitionCompleted + GameLoop Ready).");
+        }
+
+        private async Task RequestGameplayAsync(IGameNavigationService navigation)
+        {
+            await navigation.RequestGameplayAsync("baseline_smoke");
+        }
+
+        private IEnumerator WaitForGameplayTransitionCompletion(float timeoutSeconds)
+        {
+            yield return ExpectInOrder(timeoutSeconds,
+                "Iniciando transição: Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'",
+                "Acquire token='flow.scene_transition'",
+                "SceneTransitionScenesReady recebido",
+                "Acquire token='WorldLifecycle.WorldReset'",
+                "World Reset Completed",
+                "Release token='WorldLifecycle.WorldReset'",
+                "Emitting WorldLifecycleResetCompletedEvent. profile='gameplay'",
+                "Release token='flow.scene_transition'. Active=0. IsOpen=True");
+
+            if (_failed && _gameplayTransitionStarted && !_gameplayTransitionCompleted)
+            {
+                _failCategory = "iniciou mas não completou";
+            }
         }
 
         private IEnumerator ForceOutcome(string outcomeName, string reason, float timeoutSeconds)
@@ -317,8 +541,22 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
                 md.AppendLine("## Failure reason");
                 md.AppendLine();
                 md.AppendLine($"- {_failReason}");
+                if (!string.IsNullOrWhiteSpace(_failCategory))
+                {
+                    md.AppendLine($"- Categoria: {_failCategory}");
+                }
                 md.AppendLine();
             }
+
+            md.AppendLine("## Evidências de navegação (Menu → Gameplay)");
+            md.AppendLine();
+            md.AppendLine($"- Menu SceneTransitionCompleted observado: `{_menuTransitionCompleted}`");
+            md.AppendLine($"- GameLoop Ready observado: `{_gameLoopReady}`");
+            md.AppendLine($"- IGameNavigationService resolvido: `{_resolvedNavigationType ?? "<null>"}`");
+            md.AppendLine($"- NavigateAsync(to-gameplay) logado: `{_navLogObserved}`");
+            md.AppendLine($"- SceneTransition Started (gameplay) observado: `{_gameplayTransitionStarted}`");
+            md.AppendLine($"- SceneTransition Completed (gameplay) observado: `{_gameplayTransitionCompleted}`");
+            md.AppendLine();
 
             md.AppendLine("## Token balance (Acquire vs Release)");
             md.AppendLine();
