@@ -2,11 +2,17 @@
 
 > Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
 
+## Atualização (2026-01-03)
+
+- **Assinatura canônica:** `contextSignature` é `SceneTransitionContext.ContextSignature`, e `SceneTransitionSignatureUtil.Compute(context)` retorna esse valor. `SceneTransitionContext.ToString()` é apenas debug/log.
+- **Loading HUD sem flash (runtime):**
+  - **UseFade=true:** `FadeInCompleted → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
+  - **UseFade=false:** `Started → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
+- **Ordem operacional (UseFade=true) validada:** **FadeIn → LoadingHUD Show → Load/Unload → ScenesReady → WorldLifecycle Reset (ou Skip) → completion gate → LoadingHUD Hide → FadeOut → Completed**.
+
 ## Atualização (2025-12-31)
 
-- **Sem flash** confirmado: `LoadingHudScene` é exibida somente após `FadeInCompleted` e é ocultada antes do `FadeOut` (`phase='BeforeFadeOut'`), com `Hide(phase='Completed')` como segurança.
-- Ordem operacional validada: **FadeIn → LoadingHUD Show → Load/Unload → ScenesReady → WorldLifecycle Reset (ou Skip) → completion gate → LoadingHUD Hide → FadeOut → Completed**.
-- Evidência: logs de produção (startup → Menu → Gameplay), com `GameReadinessService` mantendo o `SimulationGate` fechado durante transição/reset e liberando no `SceneTransitionCompletedEvent`.
+- Evidência: logs de produção (startup → Menu → Gameplay) confirmam SceneFlow + WorldLifecycle + gate.
 
 ## Atualização (2025-12-30)
 
@@ -15,14 +21,14 @@
     - Profile `startup`/frontend: reset **skip** + emite `WorldLifecycleResetCompletedEvent(contextSignature, reason)`.
     - Profile `gameplay`: dispara **hard reset** (`ResetWorldAsync`) e emite `WorldLifecycleResetCompletedEvent(contextSignature, reason)` ao concluir.
 - `SceneTransitionService` aguarda o `WorldLifecycleResetCompletedEvent` (via `ISceneTransitionCompletionGate`) antes do `FadeOut`.
-    - A chave é o `contextSignature` do `SceneTransitionContext` (derivado de `SceneTransitionContext.ToString()`).
+    - A chave é o `contextSignature` do `SceneTransitionContext` (`SceneTransitionContext.ContextSignature`).
 - Hard reset em Gameplay confirma spawn via `WorldDefinition` (Player/Eater) e execução do orchestrator com gate (`WorldLifecycle.WorldReset`).
 - `IStateDependentService` bloqueia input/movimento enquanto `SimulationGate` está fechado e/ou `gameplayReady=false`; libera ao final. Pausa também fecha gate via `GamePauseGateBridge`.
 
 ```log
 [INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=SceneTransitionContext(Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], TargetActive='MenuScene', UseFade=True, Profile='startup')
 [VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). profile='startup', activeScene='MenuScene'.
-[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='SceneTransitionContext(Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], TargetActive='MenuScene', UseFade=True, Profile='startup')', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.
+[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='<contextSignature>', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.
 ```
 # World Lifecycle — Reset determinístico por escopos (NewScripts)
 
@@ -134,7 +140,8 @@ O evento `WorldLifecycleResetCompletedEvent(string contextSignature, string reas
 
 #### `contextSignature`
 
-- Deve ser **exatamente** `SceneTransitionContext.ToString()` do *mesmo* `SceneTransitionContext` emitido pelo SceneFlow.
+- Deve ser **exatamente** `SceneTransitionContext.ContextSignature` do *mesmo* `SceneTransitionContext` emitido pelo SceneFlow.
+- `SceneTransitionSignatureUtil.Compute(context)` retorna esse mesmo valor.
 - O objetivo é que **Started / ScenesReady / Completed** e todos os consumidores comparem a **mesma string**.
 - Observação: alguns logs internos exibem o campo como `signature='...'`; neste documento, esse valor é o `contextSignature`.
 
@@ -183,7 +190,7 @@ Notas:
 
 Além do **reset por escopos** do WorldLifecycle (`ResetScope` + `IResetScopeParticipant`), existe um módulo de reset **de gameplay** em `Gameplay/Reset/` para validar e executar resets por **alvos** (targets) com fases fixas:
 
-- **Alvos (`GameplayResetTarget`)**: `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`.
+- **Alvos (`GameplayResetTarget`)**: `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
 - **Fases (`GameplayResetPhase`)**: `Cleanup`, `Restore`, `Rebind`.
 - **Participantes**: componentes de gameplay implementam `IGameplayResettable` (e opcionais `IGameplayResetOrder` / `IGameplayResetTargetFilter`).
 
@@ -239,7 +246,7 @@ Se o Coordinator não “destrava”, quase sempre faltou:
     - **Gameplay**: executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
     - **Startup/Frontend**: SKIP com reason `Skipped_StartupOrFrontend`.
 4. `GameReadinessService`:
-    - token `flow.scene_transition` no `Started`
+    - token `flow.scene_transition` no `Started` (**implementado; evidência dedicada pendente**)
     - libera no `Completed`
 5. PauseOverlay:
     - `GamePauseCommandEvent` / `GameResumeRequestedEvent` / `GameExitToMenuRequestedEvent`
@@ -249,6 +256,6 @@ Se o Coordinator não “destrava”, quase sempre faltou:
 - Startup profile `startup` com reset SKIPPED + `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
 - Transição para profile `gameplay` executa reset após `ScenesReady` e antes do gate liberar.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` para prosseguir ao `FadeOut`.
-- `GameReadinessService` usa token `flow.scene_transition` durante a transição.
+- `GameReadinessService` usa token `flow.scene_transition` durante a transição (**implementado; validar em report dedicado**).
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
   e o gate mostra `state.pause`.

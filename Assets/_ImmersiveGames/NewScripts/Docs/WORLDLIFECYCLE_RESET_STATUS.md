@@ -1,12 +1,17 @@
 # WorldLifecycle Reset — Status e Pendências (macro-estruturas)
 
-## Atualização (2025-12-31)
+## Atualização (2026-01-03)
 
-- Confirmação adicional: transições com **Fade + LoadingHUD** sem flash, com `Show` apenas após `FadeInCompleted` e `Hide` antes de `FadeOut` (safety hide no `Completed`).
-- Ordem confirmada: FadeIn → LoadingHUD Show → Scene load/unload/active → ScenesReady → Reset/Skip → gate → LoadingHUD Hide → FadeOut → Completed.
-- Confirmação adicional (hardening): assinatura e reason padronizados e estáveis no runtime:
-  - `contextSignature` canônico via `SceneTransitionSignatureUtil.Compute(context)` (hoje equivalente a `context.ToString()`).
-  - `reason` canônico via `WorldLifecycleResetReason.*` (ex.: `ScenesReady/<ActiveScene>` e `Skipped_StartupOrFrontend:profile=...;scene=...`).
+- **Assinatura canônica** corrigida na documentação:
+  - `contextSignature` é **`SceneTransitionContext.ContextSignature`**.
+  - `SceneTransitionSignatureUtil.Compute(context)` retorna exatamente essa assinatura.
+  - `SceneTransitionContext.ToString()` é apenas **debug/log**.
+- **Ordem de Loading HUD** alinhada com o runtime:
+  - **UseFade=true:** `FadeInCompleted → Show` e `BeforeFadeOut → Hide` (com safety hide no `Completed`).
+  - **UseFade=false:** `Started → Show` e `BeforeFadeOut → Hide` (com safety hide no `Completed`).
+- **Targets de GameplayReset** confirmados com QA/Reports:
+  - `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
+  - Evidências: [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) e [QA-GameplayResetKind](Reports/QA-GameplayResetKind.md).
 
 ## Atualização (2025-12-30)
 
@@ -48,52 +53,38 @@ Estimativa **qualitativa** baseada nos logs e nos docs atuais (não é métrica 
 - **Boot → Menu:** ~80
   Pipeline observado e estável, com SKIP no startup/menu.
 - **SceneFlow:** ~85
-  Fluxo `Started → ScenesReady → gate → FadeOut → Completed` confirmado.
+  Fluxo `Started → ScenesReady → gate → BeforeFadeOut → Completed` confirmado.
 - **Fade:** ~85
   Cena aditiva com ordenação e integração com SceneFlow.
 - **LoadingHud:** ~80
   HUD integrado ao SceneFlow e respeitando o gate.
 - **Gate/Readiness:** ~85
-  Tokens de transição e pausa aparecem nos logs.
+  Tokens de transição/pausa aparecem nos logs (pausa confirmada, transição ainda sem evidência dedicada).
 - **WorldLifecycle:** ~80
   Reset por escopos com hooks/participants e emissão de `ResetCompleted`.
 - **GameplayScene:** ~70
-  Reset e spawn funcional no gameplay, mas cobertura de targets ainda parcial.
+  Reset e spawn funcional no gameplay, com cobertura ampliada de targets.
 - **Addressables (planejado):** ~0
   Ainda não implementado; apenas diretrizes em documentação.
 
+## Targets de GameplayReset — status atual (QA/Logs)
+
+| Target | Status | Evidência |
+|---|---|---|
+| `AllActorsInScene` | **Confirmado** | [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) |
+| `PlayersOnly` | **Confirmado** | [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) + [GameplayReset-QA.md](QA/GameplayReset-QA.md) |
+| `EaterOnly` | **Confirmado** | [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) + [QA-GameplayResetKind](Reports/QA-GameplayResetKind.md) |
+| `ActorIdSet` | **Confirmado** | [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) |
+| `ByActorKind` | **Confirmado** | [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) + [QA-GameplayResetKind](Reports/QA-GameplayResetKind.md) |
+
 ## O que ainda falta (provável parcial / não confirmado)
-A pendência principal não é “o pipeline”, e sim **cobertura de feature** para todos os targets/grupos.
 
-### 1) Targets/Grupos ainda sem evidência de QA / validação
-- `GameplayResetTarget.EaterOnly`
-  Classificação agora é **Kind-first** (`ActorKind.Eater`) com fallback string-based (`EaterActor`),
-  mas ainda falta evidência de QA (não afirmar testado) e validação de componentes `IGameplayResettable`.
-- `GameplayResetTarget.AllActorsInScene`
-  Falta evidência de: critérios claros de “ator”/alvo (ActorRegistry? scene scan?) + QA.
-- `GameplayResetTarget.ActorIdSet`
-  Falta evidência de: resolução por ActorIds com comportamento determinístico + QA.
+### 1) Evidência dedicada para `flow.scene_transition` (Readiness)
+- O token é **implementado** via `GameReadinessService`, mas ainda não possui report/log dedicado confirmando sua presença no runtime.
 
-### 2) Implementação concreta do classifier/orchestrator
-Para cravar “100% funcional” para todos os targets, ainda precisamos validar:
-- Implementação concreta do `IGameplayResetTargetClassifier` (como ele resolve cada target).
-- Implementação do `GameplayResetOrchestrator` (execução, filtros, ordenação, fallbacks).
-
-### 3) Spawn ainda incompleto (efeito colateral na percepção do reset)
-Mesmo com o reset por grupos funcional, a percepção de “mundo resetou” fica limitada enquanto:
-- Spawn services não estiverem disponíveis/registrados (ou QA não usar spawn e sim spawner dedicado, como já foi feito).
-
-## Próximos passos recomendados (para tornar “grupos” testável e completo)
-1) **Adicionar QA por target** (um por vez):
-    - QA `EaterOnly`: spawner + probe + request reset target EaterOnly.
-    - QA `AllActorsInScene`: spawner (players + eaters + outros) + probe e validação de contagem.
-    - QA `ActorIdSet`: spawner múltiplo + seleção de subset por ids + validação de subset.
-2) **Revisar e padronizar** critérios do `IGameplayResetTargetClassifier`:
-    - Fonte de verdade: `IActorRegistry` vs scene scan.
-    - Regras de inclusão: o que conta como “ator resetável”? (ex.: presença de `IGameplayResettable`).
-3) **Documentar invariantes** (determinismo):
-    - Ordenação dos targets (por ActorId) + ordenação interna por `IGameplayResetOrder`.
-4) Só depois: integrar com spawn “real” quando os spawn services estiverem estáveis.
+### 2) Evidência dedicada da ordem completa dos hooks
+- A ordem completa dos hooks (`OnBeforeDespawn → Despawn → Scoped Participants → OnBeforeSpawn → Spawn → OnAfterSpawn`) é **implementada**,
+  porém ainda não está registrada em logs dedicados nos reports atuais.
 
 ## Artefatos relacionados (onde olhar primeiro)
 - Logs confirmando:

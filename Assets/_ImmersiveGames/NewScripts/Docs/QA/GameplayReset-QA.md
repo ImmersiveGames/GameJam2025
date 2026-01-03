@@ -63,6 +63,29 @@ Este QA valida o reset determinístico em `GameplayScene` via `WorldLifecycle`, 
 
 ---
 
+## 4) Reset por `ActorIdSet` e `ByActorKind` (QA/Debug)
+
+### Ação
+1. Garanta que a cena tenha `GameplayResetRequestQaDriver` e `GameplayResetKindQaSpawner` ativos.
+2. Use o menu de contexto **QA/GameplayResetRequest/Fill ActorIds...** no driver para preencher IDs.
+3. Execute:
+   - **Run ActorIdSet** (driver)
+   - **Run ByActorKind** (driver)
+   - (Opcional) **Run Reset Kind Dummy/Player** (spawner)
+
+### Esperado
+1. `ActorIdSet` deve resetar **apenas** os IDs informados.
+2. `ByActorKind` deve resetar **apenas** o `ActorKind` solicitado.
+3. Logs devem refletir:
+   - “`Resolved targets:` ...” com a contagem esperada.
+   - fases `Cleanup/Restore/Rebind` por target (ex.: `GameplayResetPhaseLogger`).
+
+### Evidência referência
+- [QA-GameplayReset-RequestMatrix](../Reports/QA-GameplayReset-RequestMatrix.md)
+- [QA-GameplayResetKind](../Reports/QA-GameplayResetKind.md)
+
+---
+
 ## Notas
 
 - Durante reset, é esperado que `IStateDependentService` bloqueie ações por:
