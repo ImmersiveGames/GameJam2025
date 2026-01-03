@@ -95,11 +95,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             // Ao solicitar restart, o overlay deixa de fazer sentido imediatamente.
             HideImmediate();
 
-            // Victory/Defeat deixa a simulação pausada.
-            // Para reiniciar corretamente, liberamos a pausa antes de solicitar reset.
-            EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent());
-
+            // Caminho único: publicar intenção e deixar a bridge global navegar/resetar.
+            // NÃO publicamos GameResumeRequestedEvent aqui: o PostGame usa gate próprio (state.postgame),
+            // e publicar resume gerava "release ignorado" no GamePauseGateBridge quando não havia ownership.
             EventBus<GameResetRequestedEvent>.Raise(new GameResetRequestedEvent());
+
             DebugUtility.Log<PostGameOverlayController>(
                 "[PostGame] Restart solicitado via overlay.");
         }

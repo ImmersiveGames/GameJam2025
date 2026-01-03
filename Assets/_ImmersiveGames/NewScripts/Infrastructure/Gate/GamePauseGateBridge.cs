@@ -4,6 +4,7 @@
  * - Improvement: resolve gate sob demanda (lazy) para cenários em que DI global ainda não está pronto no ctor.
  * - Fix: ownership determinístico. Bridge NUNCA libera token que não foi adquirido por ela.
  * - Hardening: Release NÃO depende de gate resolvido (evita leak em teardown) e protege Provider nulo.
+ * - Fix: Resume/ExitToMenu sem ownership não gera ruído ("release ignorado") — evento pode ocorrer fora do ciclo de pause.
  */
 
 using System;
@@ -28,6 +29,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
     {
         private const string PauseToken = SimulationGateTokens.Pause;
 
+        private const string ReasonResumeRequested = "GameResumeRequestedEvent";
+        private const string ReasonExitToMenuRequested = "GameExitToMenuRequestedEvent";
+
         private ISimulationGateService _gateService;
 
         private readonly EventBinding<GamePauseCommandEvent> _pauseBinding;
@@ -44,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
             _gateService = gateService;
 
             _pauseBinding = new EventBinding<GamePauseCommandEvent>(OnGamePause);
-            _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate("GameResumeRequestedEvent"));
+            _resumeBinding = new EventBinding<GameResumeRequestedEvent>(_ => ReleasePauseGate(ReasonResumeRequested));
             _exitToMenuBinding = new EventBinding<GameExitToMenuRequestedEvent>(_ => OnExitToMenuRequested());
 
             TryRegisterBindings();
@@ -105,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
         {
             DebugUtility.LogVerbose<GamePauseGateBridge>(
                 "[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge).");
-            ReleasePauseGate("GameExitToMenuRequestedEvent");
+            ReleasePauseGate(ReasonExitToMenuRequested);
         }
 
         private void AcquirePauseGate()
@@ -135,7 +139,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
             // Ownership determinístico: só libera se temos handle.
             if (_activeHandle == null)
             {
-                // Se gate estiver resolvido, loga estado; se não, loga genérico.
+                // Resume/ExitToMenu podem ser emitidos fora do ciclo de pause (ex.: UI/fluxos).
+                // Sem handle => nada a fazer, e não é evidência de bug. Evitamos ruído.
+                if (reason == ReasonResumeRequested || reason == ReasonExitToMenuRequested)
+                {
+                    return;
+                }
+
+                // Para outras origens, mantém log de diagnóstico (melhor esforço).
                 if (_gateService != null)
                 {
                     DebugUtility.LogVerbose<GamePauseGateBridge>(
@@ -164,8 +175,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Gate
                 _activeHandle = null;
             }
 
-            // Melhor esforço: log detalhado somente se gate está resolvido.
-            if (EnsureGateResolved())
+            // Hardening: NÃO tenta resolver gate aqui só para logar snapshot (evita tocar DI em teardown).
+            if (_gateService != null)
             {
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
                     $"[PauseBridge] Gate liberado ({reason}) token='{PauseToken}'. IsOpen={_gateService.IsOpen} Active={_gateService.ActiveTokenCount}");
