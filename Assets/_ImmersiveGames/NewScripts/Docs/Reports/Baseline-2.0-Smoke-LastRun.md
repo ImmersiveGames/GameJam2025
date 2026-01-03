@@ -1,13 +1,22 @@
 ﻿# Baseline 2.0 — Smoke Run (Editor PlayMode)
 
 - Result: **FAIL**
-- Duration: `23,16s`
+- Duration: `22,78s`
 - Last signature seen: `p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap`
-- Last profile seen: `gameplay`
+- Last profile seen: `startup`
 
 ## Failure reason
 
-- Timeout aguardando qualquer evidência: Iniciando transição: Load=[GameplayScene, UIGlobalScene] OR Profile='gameplay'
+- Timeout aguardando estado estável de Menu (SceneTransitionCompleted + GameLoop Ready).
+
+## Evidências de navegação (Menu → Gameplay)
+
+- Menu SceneTransitionCompleted observado: `False`
+- GameLoop Ready observado: `True`
+- IGameNavigationService resolvido: `<null>`
+- NavigateAsync(to-gameplay) logado: `False`
+- SceneTransition Started (gameplay) observado: `False`
+- SceneTransition Completed (gameplay) observado: `False`
 
 ## Token balance (Acquire vs Release)
 
