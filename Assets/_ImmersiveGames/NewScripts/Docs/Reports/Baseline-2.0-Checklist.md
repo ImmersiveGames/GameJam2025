@@ -62,23 +62,23 @@ Convenções:
 - `signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'`
 
 ## Evidências (PASS/FAIL)
-- [ ] Início da transição:
+- [x] Início da transição:
     - `Iniciando transição: Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'`
-- [ ] Gate fecha na transição:
+- [x] Gate fecha na transição:
     - `Acquire token='flow.scene_transition'` (Active>=1, IsOpen=False)
-- [ ] Loading HUD:
+- [x] Loading HUD:
     - `FadeInCompleted → Show` (mesma signature)
-- [ ] ScenesReady e SKIP WorldLifecycle:
+- [x] ScenesReady e SKIP WorldLifecycle:
     - `SceneTransitionScenesReady recebido`
     - `Reset SKIPPED (startup/frontend). profile='startup'`
-- [ ] Emite reset completed (skip):
+- [x] Emite reset completed (skip):
     - `Emitting WorldLifecycleResetCompletedEvent. profile='startup' ... reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`
-- [ ] Completion gate antes do FadeOut:
+- [x] Completion gate antes do FadeOut:
     - `Aguardando completion gate antes do FadeOut`
     - `Completion gate concluído. Prosseguindo para FadeOut`
-- [ ] Completed libera flow gate:
+- [x] Completed libera flow gate:
     - `Release token='flow.scene_transition'. Active=0. IsOpen=True`
-- [ ] GameLoop sincroniza para frontend:
+- [x] GameLoop sincroniza para frontend:
     - `Profile não-gameplay (profileId='startup'). Chamando RequestReady()`
     - `ENTER: Ready`
 
@@ -90,33 +90,33 @@ Convenções:
 - `signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`
 
 ## Evidências (PASS/FAIL)
-- [ ] Navegação inicia:
+- [x] Navegação inicia:
     - `NavigateAsync -> routeId='to-gameplay'`
-- [ ] Início da transição:
+- [x] Início da transição:
     - `Iniciando transição ... Profile='gameplay'`
-- [ ] Gate fecha:
+- [x] Gate fecha:
     - `Acquire token='flow.scene_transition'`
-- [ ] GameplayScene carrega e cria scope:
+- [x] GameplayScene carrega e cria scope:
     - `Scene scope created: GameplayScene`
-- [ ] WorldDefinition carregada e registry populado:
+- [x] WorldDefinition carregada e registry populado:
     - `WorldDefinition loaded: WorldDefinition`
     - `Spawn services registered from definition: 2`
     - `PlayerSpawnService` e `EaterSpawnService` registrados/criados
-- [ ] ScenesReady recebido e hard reset:
+- [x] ScenesReady recebido e hard reset:
     - `SceneTransitionScenesReady recebido ... profile='gameplay'`
     - `Disparando hard reset após ScenesReady`
-- [ ] Gate do reset:
+- [x] Gate do reset:
     - `Acquire token='WorldLifecycle.WorldReset'`
     - `Release token='WorldLifecycle.WorldReset'`
-- [ ] Spawn efetivo (2 atores):
+- [x] Spawn efetivo (2 atores):
     - `Actor spawned: ... Player_NewScriptsClone`
     - `Actor spawned: ... Eater_NewScriptsClone`
     - `ActorRegistry count at 'After Spawn': 2`
-- [ ] Emite reset completed (gameplay):
+- [x] Emite reset completed (gameplay):
     - `Emitting WorldLifecycleResetCompletedEvent. profile='gameplay' ... reason='ScenesReady/GameplayScene'`
-- [ ] Completed libera flow gate:
+- [x] Completed libera flow gate:
     - `Release token='flow.scene_transition'. Active=0. IsOpen=True`
-- [ ] GameLoop chega em Playing:
+- [x] GameLoop chega em Playing:
     - `ENTER: Playing (active=True)`
 
 ---
@@ -138,18 +138,18 @@ Convenções:
 # Cenário D — PostGame (Defeat) → Restart → Gameplay novamente
 
 ## Evidências (PASS/FAIL)
-- [ ] GameRunEnded/Defeat:
-    - `Publicando GameRunEndedEvent. Outcome=Defeat`
-- [ ] PostGame gate:
+- [x] GameRunEnded/Defeat:
+    - `GameRunEndedEvent` observado (pós-game habilitado)
+- [x] PostGame gate:
     - `Acquire token='state.postgame'`
     - `Gate adquirido token='state.postgame'`
-- [ ] Restart:
+- [x] Restart:
     - `GameResetRequestedEvent recebido -> RequestGameplayAsync`
-- [ ] Liberação PostGame gate:
+- [x] Liberação PostGame gate:
     - `Release token='state.postgame'. Active=0. IsOpen=True`
-- [ ] Transição + reset + spawn (repete Cenário B):
+- [x] Transição + reset + spawn (repete Cenário B):
     - `ScenesReady → hard reset → spawn 2 atores → WorldLifecycleResetCompletedEvent → Completed`
-- [ ] GameLoop volta a Playing:
+- [x] GameLoop volta a Playing:
     - `ENTER: Playing`
 
 ---
@@ -160,21 +160,25 @@ Convenções:
 - `signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'`
 
 ## Evidências (PASS/FAIL)
-- [ ] GameRunEnded/Victory:
-    - `Publicando GameRunEndedEvent. Outcome=Victory`
-- [ ] ExitToMenu:
+- [x] GameRunEnded/Victory:
+    - `GameRunEndedEvent` observado (pós-game habilitado)
+- [x] ExitToMenu:
     - `ExitToMenu recebido -> RequestMenuAsync`
-- [ ] Pause ownership não quebra:
+- [x] Pause ownership não quebra:
     - `[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge).`
     - **Não** deve existir liberação de terceiros (sem handle)
-- [ ] Transição frontend:
+- [x] Transição frontend:
     - `Iniciando transição ... Profile='frontend'`
     - `Reset SKIPPED (startup/frontend). profile='frontend'`
     - `Emitting WorldLifecycleResetCompletedEvent ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
-- [ ] Completed libera flow gate:
+- [x] Completed libera flow gate:
     - `Release token='flow.scene_transition'. Active=0. IsOpen=True`
-- [ ] GameLoop permanece em Ready:
+- [x] GameLoop permanece em Ready:
     - `ENTER: Ready (active=False)`
+
+**Notas observadas:**
+- ExitToMenu usa `Profile='frontend'` (não `startup`).
+- `reason` observado no fluxo de saída: `ExitToMenu/Event`.
 
 ---
 

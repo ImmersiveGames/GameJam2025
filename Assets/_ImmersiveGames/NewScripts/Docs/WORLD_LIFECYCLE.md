@@ -8,7 +8,8 @@
 - **Loading HUD sem flash (runtime):**
   - **UseFade=true:** `FadeInCompleted → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
   - **UseFade=false:** `Started → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
-- **Ordem operacional (UseFade=true) validada:** **FadeIn → LoadingHUD Show → Load/Unload → ScenesReady → WorldLifecycle Reset (ou Skip) → completion gate → LoadingHUD Hide → FadeOut → Completed**.
+- **Ordem operacional (UseFade=true) validada:** **SceneTransitionStarted → gate `flow.scene_transition` fechado → FadeIn → LoadingHUD Show (AfterFadeIn) → Load/Unload/Active → ScenesReady → WorldLifecycle Reset (ou Skip) → WorldLifecycleResetCompletedEvent → completion gate → BeforeFadeOut (LoadingHUD Hide) → FadeOut → Completed (gate release + InputMode + GameLoop sync)**.
+- **Completion gate registrado:** `ISceneTransitionCompletionGate = WorldLifecycleResetCompletionGate`, `timeoutMs=20000`.
 
 ## Atualização (2025-12-31)
 
@@ -162,6 +163,9 @@ O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do 
 - `WorldLifecycleRuntimeCoordinator` emita `WorldLifecycleResetCompletedEvent(signature, reason)`.
 
 Esse gate garante que o `SceneTransitionService` só siga para `FadeOut`/`Completed` quando o reset terminou (ou SKIP foi emitido).
+
+Parâmetros operacionais:
+- `timeoutMs=20000` (protege contra transição travada sem reset completed).
 
 ### Solicitação de fim de run (source agnostic)
 

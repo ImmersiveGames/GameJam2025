@@ -113,6 +113,14 @@ Validação (QA):
     - constrói `SceneTransitionRequest` com profile `startup`/`gameplay`;
     - executa `SceneTransitionService.TransitionAsync(...)`;
     - **não** chama `GameLoop.RequestStart()` (responsabilidade exclusiva do `GameLoopSceneFlowCoordinator`).
+- Rotas canônicas:
+    - `to-menu`
+    - `to-gameplay`
+- Bridges de navegação:
+    - `RestartNavigationBridge`: `GameResetRequestedEvent` → `RequestGameplayAsync`
+    - `ExitToMenuNavigationBridge`: `GameExitToMenuRequestedEvent` → `RequestMenuAsync`
+- UI de menu:
+    - `MenuPlayButtonBinder` chama `NavigateAsync` com `reason='Menu/PlayButton'`.
 
 ### InputMode / PauseOverlay
 - `InputModeService` alterna os action maps (`FrontendMenu`, `Gameplay`, `PauseOverlay`).

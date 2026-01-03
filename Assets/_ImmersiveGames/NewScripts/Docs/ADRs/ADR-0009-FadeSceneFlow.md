@@ -19,6 +19,8 @@ O pipeline NewScripts precisava:
 3. Resolver timings de fade por `NewScriptsSceneTransitionProfile`, carregado via `Resources` em:
    - `SceneFlow/Profiles/<profileName>`
 4. Implementar o Fade como uma cena additive (`FadeScene`) com controlador (`NewScriptsFadeController`) que opera via `CanvasGroup`.
+5. Integrar o pipeline de transição com `SceneFlowLoadingService` (LoadingHUD) para manter o ordering
+   após o `FadeIn` e antes do `FadeOut`.
 
 ## Consequências
 
@@ -28,6 +30,8 @@ O pipeline NewScripts precisava:
   - `AfterFadeIn` → `Show`
   - `BeforeFadeOut` → `Hide`
   - `Completed` → safety hide
+- Fade e Loading HUD ficam integrados ao `SceneTransitionService` por adapters dedicados
+  (`NewScriptsSceneFlowFadeAdapter` + `SceneFlowLoadingService`), mantendo responsabilidades separadas.
 
 ## Notas de implementação (baseline validada)
 

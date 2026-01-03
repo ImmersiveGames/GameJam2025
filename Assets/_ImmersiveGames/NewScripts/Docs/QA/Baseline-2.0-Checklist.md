@@ -17,7 +17,9 @@ Transformar o baseline em contrato verificável (logs + invariantes), reduzindo 
 - [x] A2/B0) Menu estável (startup → Menu, SKIP reset, gate coerente)
 - [x] B1/B3) Gameplay entra e estabiliza (reset + spawn + Playing)
 - [x] C1) Pause/Resume (tokens coerentes + sem GameRunStarted em Resume)
-- [ ] Próximo: D) PostGame (Victory/Defeat) + Restart/ExitToMenu (produção) — ainda não executado neste log
+- [x] D1) Gameplay → PostGame (Victory/Defeat)
+- [x] D2) PostGame → Restart (reset + rearm)
+- [x] D3) PostGame → ExitToMenu (profile=frontend, SKIP reset)
 - [ ] Próximo: E) Idempotência (reiniciar duas vezes seguidas / repetição de comandos) — ainda não executado neste log
 
 ---
@@ -108,6 +110,30 @@ Transformar o baseline em contrato verificável (logs + invariantes), reduzindo 
     - `ENTER: Playing (active=True)`
 - Regra de “run start once” preservada:
     - Não reaparece “GameRunStartedEvent inicial observado” no Resume.
+
+---
+
+## D) PostGame + Restart/ExitToMenu (produção)
+### D1) Gameplay → PostGame (Victory/Defeat)
+**PASS evidências:**
+- `GameRunEndedEvent` observado (pós-game habilitado)
+- `PostGameOverlay` reage ao fim de run (overlay exibido conforme resultado)
+
+### D2) PostGame → Restart (reset + rearm)
+**PASS evidências:**
+- `GameResetRequestedEvent recebido -> RequestGameplayAsync`
+- `NavigateAsync ... routeId='to_gameplay' ... Profile='gameplay'`
+- Reset hard após `ScenesReady` + spawn (Player + Eater)
+
+### D3) PostGame → ExitToMenu (profile=frontend, SKIP reset)
+**PASS evidências:**
+- `ExitToMenu recebido -> RequestMenuAsync`
+- `NavigateAsync ... routeId='to_menu' ... Profile='frontend'`
+- `Reset SKIPPED (startup/frontend). profile='frontend'`
+
+**Notas:**
+- ExitToMenu usa `Profile='frontend'` (não `startup`).
+- `reason` observado no fluxo de saída: `ExitToMenu/Event`.
 
 ---
 
