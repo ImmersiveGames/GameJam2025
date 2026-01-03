@@ -231,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
             _runEnded = true;
 
             // Pós-game usa overlay próprio; este overlay deve estar oculto.
-            HideLocal("GameRunEnded");
+            HideLocal("GameRunEnded", applyGameplayInputMode: false);
         }
 
         private void OnExitToMenu()
@@ -292,6 +292,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
 
         private void HideLocal(string reason)
         {
+            HideLocal(reason, applyGameplayInputMode: true);
+        }
+
+        private void HideLocal(string reason, bool applyGameplayInputMode)
+        {
             EnsureDependenciesInjected();
 
             // Idempotente: se já estiver oculto, não faz barulho.
@@ -304,7 +309,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Pause
                 $"[PauseOverlay] HideLocal (reason='{reason}').",
                 DebugUtility.Colors.Info);
 
-            ApplyGameplayInputMode();
+            if (applyGameplayInputMode)
+            {
+                ApplyGameplayInputMode();
+            }
         }
 
         private void ApplyPauseInputMode()

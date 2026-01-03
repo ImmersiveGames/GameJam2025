@@ -17,20 +17,22 @@ Arquivos canônicos (este pacote):
 - [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md) — ADR de reset por escopos + gate no ciclo de vida do jogo.
 
 ## Reports (evidências)
-Status: evidências atualizadas em 2025-12-29.
+Status: evidências atualizadas em 2026-01-03.
 
 ## Baseline 2.0 (contrato de regressão)
 
 Este pacote inclui uma matriz mínima de cenários + invariantes para tornar regressões detectáveis
 sem ambiguidade (logs + asserts).
 
+### Report master (produção)
+- [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
+- [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)
+
+### Baseline audit (matriz atual)
+- [Baseline-Audit-2026-01-03](Reports/Baseline-Audit-2026-01-03.md)
 - [Baseline Matrix 2.0](Baseline/Baseline-Matrix-2.0.md)
 - [Baseline Evidence Template](Baseline/Baseline-Evidence-Template.md)
 - [Baseline Invariants](Baseline/Baseline-Invariants.md)
-
-### Validação de Produção (master)
-- [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
-- [SceneFlow-Assets-Checklist](Reports/SceneFlow-Assets-Checklist.md)
 
 ### Reports históricos (SceneFlow)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
@@ -47,13 +49,13 @@ sem ambiguidade (logs + asserts).
 
 ## Status atual (resumo)
 - Added: **Gameplay Reset module** ([Gameplay/Reset/](../Gameplay/Reset/)) com contratos e semântica estável:
-    - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet).
+    - `GameplayResetPhase` (Cleanup/Restore/Rebind) e `GameplayResetTarget` (AllActorsInScene/PlayersOnly/EaterOnly/ActorIdSet/ByActorKind).
     - `GameplayResetRequest` + `GameplayResetContext`.
     - `IGameplayResettable` (+ `IGameplayResettableSync`), `IGameplayResetOrder`, `IGameplayResetTargetFilter`.
     - `IGameplayResetOrchestrator` + `IGameplayResetTargetClassifier` (serviços por cena).
 - Added: **QA isolado para validar reset por grupos** (sem depender de Spawn 100%):
-    - `GameplayResetQaSpawner` cria atores de teste (ex.: Players) e registra `IGameplayResettable` de prova.
-    - `GameplayResetQaProbe` confirma execução das fases via logs (Cleanup/Restore/Rebind).
+    - `GameplayResetRequestQaDriver` + `GameplayResetKindQaSpawner` exercitam targets/actorKind/ids.
+    - [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md) confirma resolução de targets e fases.
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
@@ -115,7 +117,7 @@ Em 2025-12-27 (estado observado em runtime):
     - **SKIP** quando `profile='startup'` ou `activeScene='MenuScene'`
     - Executa reset em gameplay e emite `WorldLifecycleResetCompletedEvent`
 - `WorldLifecycleResetCompletionGate` segura o final da transição até o reset concluir.
-- `GameReadinessService` controla `SimulationGateTokens.SceneTransition` durante a transição.
+- `GameReadinessService` implementa `SimulationGateTokens.SceneTransition` durante a transição (evidência dedicada pendente).
 - `InputModeService` alterna `FrontendMenu`/`Gameplay`/`PauseOverlay` com base em SceneFlow e PauseOverlay.
 
 ## Como ler (ordem sugerida)
@@ -194,4 +196,5 @@ Este fluxo **não define** como vitória/derrota é detectada em produção (tim
 - Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
-  e tokens `state.pause` / `flow.scene_transition` aparecem no gate.
+  e o token `state.pause` aparece no gate (confirmado em logs). `flow.scene_transition` está implementado,
+  mas ainda sem evidência dedicada em report.

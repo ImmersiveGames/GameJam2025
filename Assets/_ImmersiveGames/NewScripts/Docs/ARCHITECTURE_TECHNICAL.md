@@ -204,7 +204,8 @@ Validação (QA):
     - Startup: SKIP com `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`
     - Gameplay: reset executado antes do gate liberar.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`,
-  `GameExitToMenuRequestedEvent` e o gate mostra `state.pause`/`flow.scene_transition`.
+  `GameExitToMenuRequestedEvent` e o gate mostra `state.pause` (confirmado em logs). O token
+  `flow.scene_transition` está **implementado**, mas ainda sem evidência dedicada em report.
 
 ## Documentos relacionados
 - [Reports/GameLoop.md](Reports/GameLoop.md)

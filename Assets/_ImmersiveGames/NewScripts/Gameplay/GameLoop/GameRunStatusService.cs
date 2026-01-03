@@ -9,9 +9,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
     /// Ouve GameRunEndedEvent e GameRunStartedEvent e expõe Outcome/Reason para UI e outros sistemas.
     ///
     /// Atualização:
-    /// - Victory/Defeat devem pausar a simulação: ao receber GameRunEndedEvent, publica GamePauseCommandEvent(true).
-    /// - O encerramento do "estado ativo" fica a cargo do GameLoop reagir ao GamePauseCommandEvent
-    ///   (ex.: transicionar para Paused). Isso garante gate fechado e simulação congelada.
+    /// - Victory/Defeat entram em PostGame sem usar PauseOverlay.
+    /// - O congelamento do gameplay ocorre via GameLoop (PostPlay) + StateDependentService,
+    ///   evitando o toggle de PauseOverlay/InputMode.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunStatusService : IGameRunStatusService, IDisposable
@@ -74,12 +74,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             DebugUtility.Log<GameRunStatusService>(
                 $"[GameLoop] GameRunStatus atualizado. Outcome={Outcome}, Reason='{Reason ?? "<null>"}'.");
 
-            // Victory/Defeat devem pausar a simulação (gate fechado via PauseGateBridge).
-            // Evita pausar se já não estamos em gameplay ativo.
             if (_gameLoopService == null)
             {
                 DebugUtility.LogWarning<GameRunStatusService>(
-                    "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. Pausa não foi solicitada.");
+                    "[GameLoop] GameLoopService indisponível ao processar GameRunEndedEvent. PostGame seguirá sem gate de pausa.");
                 return;
             }
 
@@ -89,22 +87,24 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
             if (!isInActiveGameplay)
             {
                 DebugUtility.LogVerbose<GameRunStatusService>(
-                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. Pausa ignorada.");
+                    $"[GameLoop] GameRunEndedEvent recebido, mas GameLoop já está em '{stateName}'. PostGame segue sem pausa.");
                 return;
             }
 
-            // Só faz sentido pausar quando há um resultado terminal.
-            if (Outcome != GameRunOutcome.Victory && Outcome != GameRunOutcome.Defeat)
+            if (!ShouldEnterPostGameWithoutPause(Outcome))
             {
                 DebugUtility.LogVerbose<GameRunStatusService>(
-                    $"[GameLoop] GameRunEndedEvent com Outcome={Outcome} não é terminal. Pausa ignorada.");
+                    $"[GameLoop] GameRunEndedEvent com Outcome={Outcome} não é terminal. PostGame não será acionado.");
                 return;
             }
 
             DebugUtility.LogVerbose<GameRunStatusService>(
-                $"[GameLoop] GameRunEndedEvent (Outcome={Outcome}) -> publicando GamePauseCommandEvent(true) para congelar simulação.");
+                $"[GameLoop] GameRunEndedEvent (Outcome={Outcome}) -> PostGame sem PauseOverlay (pausa suprimida).");
+        }
 
-            EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true));
+        private static bool ShouldEnterPostGameWithoutPause(GameRunOutcome outcome)
+        {
+            return outcome == GameRunOutcome.Victory || outcome == GameRunOutcome.Defeat;
         }
 
         private void OnGameRunStarted(GameRunStartedEvent evt)

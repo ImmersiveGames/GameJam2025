@@ -80,8 +80,9 @@ enquanto a UI exibe o resultado e o jogador decide reiniciar ou retornar ao menu
   - **Voltar ao menu** (`GameExitToMenuRequestedEvent` → `ExitToMenuNavigationBridge` / `IGameNavigationService`).
 
 ### Fluxo de pós-game (UI + reset)
-- `GameRunEndedEvent` → `GameRunStatusService` armazena resultado.
-- `PostGameOverlayController` consulta `IGameRunStatusService` e exibe Victory/Defeat/Match Ended.
+- `GameRunEndedEvent` → `GameRunStatusService` armazena resultado **sem publicar pausa**.
+- `PostGameOverlayController` consulta `IGameRunStatusService`, exibe Victory/Defeat/Match Ended e
+  fixa o `InputMode` em **FrontendMenu** até Restart/ExitToMenu.
 - Botão **Restart**:
   - `GameResetRequestedEvent` → `RestartNavigationBridge` → `IGameNavigationService.RequestToGameplay(...)`.
   - SceneFlow emite `SceneTransitionScenesReadyEvent` (profile gameplay) → `WorldLifecycleRuntimeCoordinator` → reset determinístico.

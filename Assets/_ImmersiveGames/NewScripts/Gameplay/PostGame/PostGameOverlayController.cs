@@ -2,6 +2,7 @@ using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,6 +29,9 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [SerializeField] private Button restartButton;
         [SerializeField] private Button exitToMenuButton;
 
+        [Inject] private IInputModeService _inputModeService;
+
+        private bool _dependenciesInjected;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _registered;
@@ -132,6 +136,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
                 DebugUtility.Colors.Info);
 
             HideImmediate();
+            ApplyGameplayInputMode("PostGame/RunStarted");
         }
 
         private void OnGameRunEnded(GameRunEndedEvent evt)
@@ -204,7 +209,11 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             reasonText.gameObject.SetActive(true);
         }
 
-        private void Show() => SetVisible(true);
+        private void Show()
+        {
+            SetVisible(true);
+            ApplyPostGameInputMode("PostGame/Show");
+        }
 
         private void HideImmediate() => SetVisible(false);
 
@@ -220,6 +229,52 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             rootCanvasGroup.alpha = visible ? 1f : 0f;
             rootCanvasGroup.interactable = visible;
             rootCanvasGroup.blocksRaycasts = visible;
+        }
+
+        private void ApplyPostGameInputMode(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            if (_inputModeService != null)
+            {
+                _inputModeService.SetFrontendMenu(reason);
+                return;
+            }
+
+            DebugUtility.LogWarning<PostGameOverlayController>(
+                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+        }
+
+        private void ApplyGameplayInputMode(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            if (_inputModeService != null)
+            {
+                _inputModeService.SetGameplay(reason);
+                return;
+            }
+
+            DebugUtility.LogWarning<PostGameOverlayController>(
+                "[PostGame] IInputModeService indisponível. InputMode não será alternado.");
+        }
+
+        private void EnsureDependenciesInjected()
+        {
+            if (_dependenciesInjected) return;
+
+            var provider = DependencyManager.Provider;
+            if (provider == null) return;
+
+            try
+            {
+                provider.InjectDependencies(this);
+                _dependenciesInjected = true;
+            }
+            catch
+            {
+                _dependenciesInjected = false;
+            }
         }
 
         private void ValidateReferences()

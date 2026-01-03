@@ -1,5 +1,15 @@
 # Changelog (Docs)
 
+## [2026-01-03]
+- Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.
+- Updated: `README.md` com report master, baseline audit e alvo `ByActorKind` na lista de targets.
+- Updated: `WORLD_LIFECYCLE.md` com assinatura canônica (`ContextSignature`) e ordem de LoadingHUD por `UseFade`.
+- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status atual dos targets e correção de assinatura.
+- Updated: `ADRs/ADR-0014-GameplayReset-Targets-Grupos.md` com targets completos e evidência de QA.
+- Updated: `QA/GameplayReset-QA.md` com passos para `ActorIdSet`/`ByActorKind` e referências de QA.
+- Updated: `DECISIONS.md` alinhado ao timing real do Loading HUD (UseFade vs. Started).
+- Updated: `Reports/GameLoop.md` para refletir PostGame sem PauseOverlay e InputMode fixo em Frontend.
+
 ## [2026-01-02]
 - Added: documentação do **Baseline 2.0** em `Docs/Baseline/`:
   - `Baseline-Matrix-2.0.md` (matriz mínima de cenários)
