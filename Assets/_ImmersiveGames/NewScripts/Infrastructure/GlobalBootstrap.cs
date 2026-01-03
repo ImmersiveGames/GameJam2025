@@ -25,6 +25,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Gameplay;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Ids;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
@@ -120,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService);
 
             RegisterGameRunEndRequestService();
+            RegisterGameCommands();
             RegisterGameRunStatusService(gameLoopService);
             RegisterGameRunOutcomeService(gameLoopService);
             RegisterGameRunOutcomeEventInputBridge();
@@ -426,6 +428,25 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[GameLoop] GameRunEndRequestService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterGameCommands()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameCommands>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[GameCommands] IGameCommands já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService);
+
+            RegisterIfMissing<IGameCommands>(() => new GameCommands(runEndRequestService));
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[GameCommands] GameCommands registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 
