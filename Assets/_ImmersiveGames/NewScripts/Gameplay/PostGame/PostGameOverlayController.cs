@@ -1,7 +1,9 @@
+using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.InputSystems;
 using TMPro;
 using UnityEngine;
@@ -18,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PostGameOverlayController : MonoBehaviour
     {
+        private const string PostGameGateToken = "state.postgame";
+
         [Header("Overlay")]
         [SerializeField] private CanvasGroup rootCanvasGroup;
 
@@ -30,11 +34,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         [SerializeField] private Button exitToMenuButton;
 
         [Inject] private IInputModeService _inputModeService;
+        [Inject] private ISimulationGateService _gateService;
 
         private bool _dependenciesInjected;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _registered;
+        private IDisposable _postGameGateHandle;
+        private bool _loggedMissingGate;
 
         private void Awake()
         {
@@ -68,9 +75,17 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
 
         private void OnEnable() => RegisterBindings();
 
-        private void OnDisable() => UnregisterBindings();
+        private void OnDisable()
+        {
+            UnregisterBindings();
+            ReleasePostGameGate("OnDisable");
+        }
 
-        private void OnDestroy() => UnregisterBindings();
+        private void OnDestroy()
+        {
+            UnregisterBindings();
+            ReleasePostGameGate("OnDestroy");
+        }
 
         /// <summary>
         /// Deve ser associado no Button.OnClick() do botão de restart.
@@ -213,9 +228,14 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
         {
             SetVisible(true);
             ApplyPostGameInputMode("PostGame/Show");
+            AcquirePostGameGate();
         }
 
-        private void HideImmediate() => SetVisible(false);
+        private void HideImmediate()
+        {
+            SetVisible(false);
+            ReleasePostGameGate("HideImmediate");
+        }
 
         private void SetVisible(bool visible)
         {
@@ -275,6 +295,57 @@ namespace _ImmersiveGames.NewScripts.Gameplay.PostGame
             {
                 _dependenciesInjected = false;
             }
+        }
+
+        private void AcquirePostGameGate()
+        {
+            EnsureDependenciesInjected();
+
+            if (_postGameGateHandle != null)
+            {
+                return;
+            }
+
+            if (_gateService == null)
+            {
+                if (!_loggedMissingGate)
+                {
+                    DebugUtility.LogWarning<PostGameOverlayController>(
+                        "[PostGame] ISimulationGateService indisponível. Gate não será adquirido.");
+                    _loggedMissingGate = true;
+                }
+
+                return;
+            }
+
+            _postGameGateHandle = _gateService.Acquire(PostGameGateToken);
+            DebugUtility.Log<PostGameOverlayController>(
+                $"[PostGame] Gate adquirido token='{PostGameGateToken}'.");
+        }
+
+        private void ReleasePostGameGate(string reason)
+        {
+            if (_postGameGateHandle == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _postGameGateHandle.Dispose();
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning<PostGameOverlayController>(
+                    $"[PostGame] Falha ao liberar gate ({reason}): {ex}");
+            }
+            finally
+            {
+                _postGameGateHandle = null;
+            }
+
+            DebugUtility.Log<PostGameOverlayController>(
+                $"[PostGame] Gate liberado token='{PostGameGateToken}'.");
         }
 
         private void ValidateReferences()
