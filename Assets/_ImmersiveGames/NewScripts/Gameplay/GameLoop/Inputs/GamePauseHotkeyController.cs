@@ -1,12 +1,9 @@
 ﻿using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using UnityEngine;
-
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 
-namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
+namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop.Inputs
 {
     /// <summary>
     /// Captura ESC e publica eventos NewScripts para pausar/despausar.

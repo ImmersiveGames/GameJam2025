@@ -691,7 +691,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1081313265}
   - component: {fileID: 1081313263}
-  - component: {fileID: 1081313267}
   - component: {fileID: 1081313268}
   m_Layer: 0
   m_Name: InputRoot
@@ -729,18 +728,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1081313267
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1081313262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdd1d651570f7324d8fe080493cfa4ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1081313268
 MonoBehaviour:
   m_ObjectHideFlags: 0
