@@ -9,9 +9,18 @@
     - Startup → Menu com WorldLifecycle SKIP (frontend) + `WorldLifecycleResetCompletedEvent` destravando completion gate.
     - Menu → Gameplay com hard reset após ScenesReady, spawn mínimo (Player + Eater) e `ENTER: Playing`.
     - Pause/Resume com `state.pause` token e sem duplicação de “run started” no Resume.
+    - PostGame (Victory/Defeat) → Restart com reset + rearm (rotas de produção via navigation).
+    - PostGame (Victory/Defeat) → ExitToMenu com SKIP de reset e retorno ao menu.
+
+### Evidências
+- `GameRunEndedEvent` observado (PostGame).
+- `GameResetRequestedEvent recebido -> RequestGameplayAsync`.
+- `ExitToMenu recebido -> RequestMenuAsync`.
+- `NavigateAsync ... routeId='to_menu' ... Profile='frontend'`.
 
 ### Notes
 - Warnings de “Chamada repetida” do DebugUtility em resolves de DI aceitos como ruído (não bloqueante) no baseline.
+- ExitToMenu usa `Profile='frontend'` (não `startup`).
 
 ## [2026-01-03]
 - Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.

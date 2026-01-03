@@ -42,9 +42,19 @@ Este baseline tem foco em **evidência por assinatura de log**, não em “funci
 - Resume: `Release token='state.pause'` e `ENTER: Playing`
 - Não repetir “GameRunStartedEvent inicial observado” no Resume
 
-### D) PostGame + Restart/ExitToMenu (a executar)
+### D) PostGame + Restart/ExitToMenu (PASS)
 **Expectativa:** overlay e rotas de navegação via produção (sem QA), preservando gates e SKIPs.
-**Critérios:** definir após integrar eventos de fim de run com rotas.
+**Critérios:**
+- D1) Gameplay → PostGame (Victory/Defeat)
+    - `GameRunEndedEvent` observado (pós-game habilitado)
+- D2) PostGame → Restart (reset + rearm)
+    - `GameResetRequestedEvent recebido -> RequestGameplayAsync`
+    - `NavigateAsync ... routeId='to_gameplay' ... Profile='gameplay'`
+    - Reset hard após `ScenesReady` + spawn (Player + Eater)
+- D3) PostGame → ExitToMenu (frontend SKIP)
+    - `ExitToMenu recebido -> RequestMenuAsync`
+    - `NavigateAsync ... routeId='to_menu' ... Profile='frontend'`
+    - `Reset SKIPPED (startup/frontend). profile='frontend'`
 
 ---
 
@@ -77,6 +87,14 @@ Este baseline tem foco em **evidência por assinatura de log**, não em “funci
 - `ENTER: Playing (active=True)`
 - `GameRunStartedEvent inicial observado`
 
+### PostGame + Restart/ExitToMenu
+- `GameRunEndedEvent`
+- `GameResetRequestedEvent recebido -> RequestGameplayAsync`
+- `NavigateAsync ... routeId='to_gameplay' ... Profile='gameplay'`
+- `ExitToMenu recebido -> RequestMenuAsync`
+- `NavigateAsync ... routeId='to_menu' ... Profile='frontend'`
+- `Reset SKIPPED (startup/frontend). profile='frontend'`
+
 ### Pause/Resume
 - `Acquire token='state.pause'`
 - `Release token='state.pause'`
@@ -88,6 +106,9 @@ Este baseline tem foco em **evidência por assinatura de log**, não em “funci
 ## Observações aceitas (não falha)
 - Warnings de “Chamada repetida” do DebugUtility (deduplicação) durante resolves de DI.
 - `GamePauseGateBridge` no shutdown pode registrar “Release ignorado … sem handle ativo” se não houver ownership naquele momento.
+
+## Notas operacionais (baseline)
+- ExitToMenu usa `Profile='frontend'` (não `startup`) e o `reason` observado para navegação é `ExitToMenu/Event`.
 
 ---
 

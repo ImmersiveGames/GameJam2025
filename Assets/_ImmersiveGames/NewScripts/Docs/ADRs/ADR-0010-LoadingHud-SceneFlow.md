@@ -31,11 +31,18 @@ Implementar um módulo de Loading HUD separado do Fade, com as regras:
 - Fade e Loading permanecem responsabilidades separadas.
 - O HUD pode existir sem exigir QA ou legados.
 - A experiência mantém consistência mesmo quando o HUD nasce após o `Started` (no-fade) ou após o `FadeInCompleted` (com fade).
+- O LoadingHUD é carregado como cena additive `LoadingHudScene` via `INewScriptsLoadingHudService`.
 
 - `Show` acontece após o `FadeInCompleted` (overlay opaco) e antes da carga pesada (load/unload/active).
 - `SceneFlow` aguarda o `WorldLifecycleResetCompletionGate` após `ScenesReady`.
 - `Hide` ocorre em `BeforeFadeOut`, ou seja, **após** o gate liberar e **antes** do FadeOut.
 - Mesmo que o HUD falhe em inicializar, o Scene Flow não deve quebrar (logs + fallback silencioso).
+
+## Fases do LoadingHUD (integração com SceneFlow)
+- **Started:** `EnsureLoadedAsync` apenas (sem `Show` quando `UseFade=true`).
+- **AfterFadeIn/ScenesReady:** `Show`/update idempotente.
+- **BeforeFadeOut:** `Hide`.
+- **Completed:** safety hide (idempotente).
 
 O “loading real” não é apenas **load/unload** de cenas. Ele inclui:
 - **Reset do mundo**, com hooks e participantes por escopo.
