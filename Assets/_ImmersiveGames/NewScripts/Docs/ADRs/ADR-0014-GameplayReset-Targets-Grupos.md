@@ -1,6 +1,6 @@
 # ADR-0014 – Gameplay Reset: Targets e Grupos
 
-**Status:** Implementado (baseline)
+**Status:** Implementado (baseline + QA em reports)
 **Data:** 2025-12-28
 **Escopo:** `GameplayReset` (NewScripts), `WorldLifecycle`, spawn services (Player/Eater)
 
@@ -27,20 +27,23 @@ No baseline atual, os targets são:
 
 | Target | Descrição | Impacto esperado |
 |---|---|---|
-| `AllActorsInScene` | Reseta todos os atores registrados no `ActorRegistry` da cena. | Despawn+Spawn de Player e Eater (quando presentes). |
+| `AllActorsInScene` | Reseta todos os atores registrados no `ActorRegistry` da cena (com fallback por scan). | Despawn+Spawn de Player e Eater (quando presentes). |
 | `PlayersOnly` | Reseta apenas atores do tipo Player. | Despawn+Spawn de Player; Eater permanece. |
 | `EaterOnly` | Reseta apenas atores do tipo Eater. | Despawn+Spawn de Eater; Player permanece. |
+| `ActorIdSet` | Reseta um subconjunto explícito por `ActorIds`. | Despawn+Spawn somente dos IDs informados. |
+| `ByActorKind` | Reseta por `ActorKind` arbitrário (ex.: Dummy). | Despawn+Spawn apenas do kind requisitado. |
 
-> Nota: nomes devem refletir exatamente os existentes no projeto (target enum/string usado no QA).
+> Nota: nomes devem refletir exatamente os existentes no projeto (enum `GameplayResetTarget`).
 
 ---
 
 ## 3. Regras de classificação (baseline)
 
-- A classificação deve ser feita a partir do **tipo/kind** do ator (ex.: Player, Eater).
-- O reset deve operar sobre:
-    - `ActorRegistry` (fonte de verdade dos atores vivos);
-    - spawn services responsáveis (ex.: `PlayerSpawnService`, `EaterSpawnService`).
+- A classificação é feita preferencialmente pelo **`ActorRegistry`** (determinística e rápida).
+- Se não houver dados no registry, o orchestrator faz **fallback por scan de cena** (`IActor`).
+- Para `PlayersOnly` e `ByActorKind`, o filtro principal é o `ActorKind`.
+- Para `ActorIdSet`, a fonte de verdade é a lista `ActorIds` do request.
+- Para `EaterOnly`, aplica-se `ActorKind.Eater` com fallback string-based (`EaterActor`) quando necessário.
 
 ---
 
@@ -66,7 +69,6 @@ No baseline atual, os targets são:
 
 ## 6. Evidência e validação
 
-O QA `GameplayReset-QA.md` documenta verificações mínimas para:
-- reset completo (`AllActorsInScene`);
-- reset parcial de Player (`PlayersOnly`);
-- reset parcial de Eater (`EaterOnly`).
+- [QA-GameplayReset-RequestMatrix.md](../Reports/QA-GameplayReset-RequestMatrix.md): valida `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
+- [QA-GameplayResetKind.md](../Reports/QA-GameplayResetKind.md): valida `ByActorKind` e EaterOnly com probes.
+- [QA/GameplayReset-QA.md](../QA/GameplayReset-QA.md): passos mínimos para reset completo e parcial em gameplay.

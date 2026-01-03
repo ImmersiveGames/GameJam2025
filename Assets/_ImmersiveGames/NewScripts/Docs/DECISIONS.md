@@ -91,7 +91,10 @@ Referência: [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md).
 
 **Consequências:**
 - `LoadingHudScene` é carregada aditivamente sob demanda e pode ser reutilizada em qualquer transição.
-- O serviço deve aplicar “Started → Show”, “ScenesReady → Update”, “BeforeFadeOut → Hide”, “Completed → Safety Hide”.
+- O serviço deve aplicar:
+  - **UseFade=false:** “Started → Show”.
+  - **UseFade=true:** “FadeInCompleted → Show”.
+  - Em ambos: “ScenesReady → Update”, “BeforeFadeOut → Hide”, “Completed → Safety Hide”.
 - A correlação é por `signature` do `SceneTransitionContext` (não por eventos do GameLoop).
 
 Referência: [ADR-0010-LoadingHud-SceneFlow.md](ADRs/ADR-0010-LoadingHud-SceneFlow.md).
