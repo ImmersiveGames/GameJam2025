@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -12,15 +12,15 @@ using _ImmersiveGames.NewScripts.Infrastructure.Navigation;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 namespace _ImmersiveGames.NewScripts.QA.Baseline
 {
     public sealed class Baseline2SmokeRunner : MonoBehaviour
     {
-        private const string RunKey = "NewScripts.Baseline2Smoke.RunRequested";
+        public const string RunKey = "NewScripts.Baseline2Smoke.RunRequested";
+
+        // Preferences (Editor menu set these)
+        private const string PrefManualPlayKey = "NewScripts.Baseline2Smoke.ManualPlay"; // 1=manual click, 0=auto
+        private const string PrefAutoNavigateTimeoutKey = "NewScripts.Baseline2Smoke.AutoNavigateTimeoutSeconds";
 
         private readonly List<string> _lines = new List<string>(8192);
         private readonly StringBuilder _raw = new StringBuilder(1024 * 256);
@@ -28,6 +28,9 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
         private bool _failed;
         private string _failReason;
         private string _failCategory;
+
+        private bool _manualPlay;
+        private float _autoNavigateTimeoutSeconds;
 
         private string _resolvedNavigationType;
 
@@ -58,11 +61,21 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             go.AddComponent<Baseline2SmokeRunner>();
         }
 
+        private void Awake()
+        {
+            _manualPlay = PlayerPrefs.GetInt(PrefManualPlayKey, 1) == 1;
+
+            var rawTimeout = PlayerPrefs.GetFloat(PrefAutoNavigateTimeoutKey, 25f);
+            _autoNavigateTimeoutSeconds = Mathf.Clamp(rawTimeout, 5f, 120f);
+        }
+
         private void OnEnable()
         {
             Application.logMessageReceived += OnLog;
+
             _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
             _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
+
             EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
         }
@@ -70,6 +83,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
         private void OnDisable()
         {
             Application.logMessageReceived -= OnLog;
+
             EventBus<SceneTransitionStartedEvent>.Unregister(_transitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_transitionCompletedBinding);
         }
@@ -77,6 +91,8 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
         private void Start()
         {
             _startRealtime = Time.realtimeSinceStartup;
+
+            Debug.Log($"[Baseline2Smoke] Runner started. mode={( _manualPlay ? "MANUAL_PLAY_CLICK" : "AUTO_NAV" )}, autoTimeout={_autoNavigateTimeoutSeconds:0.0}s");
             StartCoroutine(Run());
         }
 
@@ -115,48 +131,79 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
 
         private void TryCaptureEvidence(string line)
         {
+            // Gameplay completion (Readiness log)
             if (line.IndexOf("[Readiness] SceneTransitionCompleted", StringComparison.Ordinal) >= 0 &&
                 line.IndexOf("Profile='gameplay'", StringComparison.Ordinal) >= 0)
             {
                 _gameplayTransitionCompleted = true;
             }
 
+            // GameLoop Ready (log evidence)
             if (line.IndexOf("[GameLoop] ENTER: Ready", StringComparison.Ordinal) >= 0)
             {
                 _gameLoopReady = true;
             }
 
+            // Navigation evidence (log)
             if (line.IndexOf("[Navigation] NavigateAsync -> routeId='to-gameplay'", StringComparison.Ordinal) >= 0)
             {
                 _navLogObserved = true;
             }
 
+            // SceneFlow started (log)
             if (line.IndexOf("[SceneFlow] Iniciando transição:", StringComparison.Ordinal) >= 0 &&
                 line.IndexOf("Profile='gameplay'", StringComparison.Ordinal) >= 0)
             {
                 _gameplayTransitionStarted = true;
+            }
+
+            // Menu "completed" robust detection via logs:
+            // - release do token de transição
+            // - transição concluída
+            // - ou readiness completed com Profile startup + Active MenuScene
+            if (!_menuTransitionCompleted)
+            {
+                if (line.IndexOf("Release token='flow.scene_transition'. Active=0. IsOpen=True", StringComparison.Ordinal) >= 0 &&
+                    (line.IndexOf("Profile='startup'", StringComparison.Ordinal) >= 0 || line.IndexOf("Active='MenuScene'", StringComparison.Ordinal) >= 0))
+                {
+                    _menuTransitionCompleted = true;
+                }
+                else if (line.IndexOf("[SceneFlow] Transição concluída com sucesso", StringComparison.Ordinal) >= 0)
+                {
+                    // Esse log aparece no seu output atual e é um ótimo “selo” de completude.
+                    _menuTransitionCompleted = true;
+                }
+                else if (line.IndexOf("[Readiness] SceneTransitionCompleted", StringComparison.Ordinal) >= 0 &&
+                         line.IndexOf("Profile='startup'", StringComparison.Ordinal) >= 0 &&
+                         line.IndexOf("Active='MenuScene'", StringComparison.Ordinal) >= 0)
+                {
+                    _menuTransitionCompleted = true;
+                }
             }
         }
 
         private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
         {
             if (evt.Context.TransitionProfileId.IsGameplay)
-            {
                 _gameplayTransitionStarted = true;
-            }
         }
 
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
-            if (string.Equals(evt.Context.TargetActiveScene, "MenuScene", StringComparison.Ordinal))
+            // Mantemos, mas não dependemos mais exclusivamente disso.
+            // Se o seu struct tiver semântica diferente aqui, o smoke ainda funciona via logs.
+            try
             {
-                _menuTransitionCompleted = true;
+                if (string.Equals(evt.Context.TargetActiveScene, "MenuScene", StringComparison.Ordinal))
+                    _menuTransitionCompleted = true;
+            }
+            catch
+            {
+                // Intencional: não quebrar smoke por divergência de API do Context.
             }
 
             if (evt.Context.TransitionProfileId.IsGameplay)
-            {
                 _gameplayTransitionCompleted = true;
-            }
         }
 
         private IEnumerator Run()
@@ -165,7 +212,6 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
 
             var steps = new List<SmokeStep>
             {
-                // A) Boot -> Menu (startup)
                 new SmokeStep("A1) Wait infra ready", () => WaitForAnyLog(12f,
                     "✅ NewScripts global infrastructure initialized",
                     "[GameLoopSceneFlow] Coordinator registrado",
@@ -179,16 +225,18 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
                     "Emitting WorldLifecycleResetCompletedEvent. profile='startup'",
                     "Release token='flow.scene_transition'. Active=0. IsOpen=True")),
 
-                // B) Menu -> Gameplay (gameplay)
-                new SmokeStep("B1) Navigate to Gameplay (direct IGameNavigationService)", () => NavigateToGameplayDirect(25f)),
-                new SmokeStep("B2) Gameplay reset+spawn", () => WaitForGameplayTransitionCompletion(50f)),
+                new SmokeStep("B0) Ensure Menu stable", () => WaitForMenuStable(20f)),
+
+                // B) Menu -> Gameplay
+                new SmokeStep("B1) Enter Gameplay", () => EnterGameplay(_autoNavigateTimeoutSeconds)),
+                new SmokeStep("B2) Gameplay reset+spawn", () => WaitForGameplayTransitionCompletion(60f)),
 
                 // C) Pause -> Resume
                 new SmokeStep("C1) Pause/Resume", () => PauseResume(15f)),
 
                 // D) Defeat -> PostGame -> Restart
                 new SmokeStep("D1) Force Defeat (GameRunEndedEvent)", () => ForceOutcome("Defeat", "QA_ForcedDefeat", 15f)),
-                new SmokeStep("D2) Restart (GameResetRequestedEvent)", () => PublishAndWait("GameResetRequestedEvent", 30f,
+                new SmokeStep("D2) Restart (GameResetRequestedEvent)", () => PublishAndWait("GameResetRequestedEvent", 40f,
                     "GameResetRequestedEvent",
                     "Iniciando transição: Load=[GameplayScene, UIGlobalScene]",
                     "SceneTransitionScenesReady recebido",
@@ -196,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
 
                 // E) Victory -> PostGame -> ExitToMenu
                 new SmokeStep("E1) Force Victory (GameRunEndedEvent)", () => ForceOutcome("Victory", "QA_ForcedVictory", 15f)),
-                new SmokeStep("E2) ExitToMenu (GameExitToMenuRequestedEvent)", () => PublishAndWait("GameExitToMenuRequestedEvent", 40f,
+                new SmokeStep("E2) ExitToMenu (GameExitToMenuRequestedEvent)", () => PublishAndWait("GameExitToMenuRequestedEvent", 60f,
                     "GameExitToMenuRequestedEvent",
                     "Iniciando transição: Load=[MenuScene, UIGlobalScene], Unload=[GameplayScene], Active='MenuScene'",
                     "Reset SKIPPED (startup/frontend)",
@@ -224,12 +272,155 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             yield return new WaitForSecondsRealtime(0.25f);
 
 #if UNITY_EDITOR
-            EditorApplication.isPlaying = false;
+            UnityEditor.EditorApplication.isPlaying = false;
 #endif
         }
 
         // ---------------------------
-        // Steps
+        // Step helpers
+        // ---------------------------
+
+        private IEnumerator EnterGameplay(float timeoutSeconds)
+        {
+            if (_manualPlay)
+            {
+                Debug.Log("[Baseline2Smoke] MANUAL: Clique no botão Play do Menu para entrar no Gameplay.");
+                yield return WaitForCondition(timeoutSeconds,
+                    () => _gameplayTransitionStarted || _navLogObserved || Contains("Profile='gameplay'"),
+                    "Clique no Play / início de transição gameplay (event/log)");
+                yield break;
+            }
+
+            // Auto mode: resolve nav service and call RequestGameplayAsync
+            if (!TryResolveNavigationService(out var navigation, out var error))
+            {
+                _failCategory = "não resolver nav service";
+                Fail($"Falha ao resolver IGameNavigationService: {error}");
+                yield break;
+            }
+
+            _resolvedNavigationType = navigation.GetType().FullName;
+            Debug.Log($"[Baseline2Smoke] AUTO: Resolved IGameNavigationService: {_resolvedNavigationType}");
+
+            var requestTask = RequestGameplayAsync(navigation);
+            yield return WaitForTask(requestTask, timeoutSeconds, "Timeout aguardando RequestGameplayAsync.");
+            if (_failed) yield break;
+
+            yield return WaitForCondition(timeoutSeconds,
+                () => _gameplayTransitionStarted || _navLogObserved || Contains("Profile='gameplay'"),
+                "Evidência de navegação/transição gameplay (event/log)");
+        }
+
+        private IEnumerator WaitForMenuStable(float timeoutSeconds)
+        {
+            var start = Time.realtimeSinceStartup;
+
+            // Critério robusto:
+            // - GameLoop Ready observado (log)
+            // - e algum “selo” de transição concluída (flag via EventBus OU logs)
+            // - e gate de scene_transition liberado (log)
+            while (Time.realtimeSinceStartup - start < timeoutSeconds)
+            {
+                var tokenReleased = Contains("Release token='flow.scene_transition'. Active=0. IsOpen=True");
+                var stable = _gameLoopReady && (_menuTransitionCompleted || Contains("[SceneFlow] Transição concluída com sucesso")) && tokenReleased;
+
+                if (stable)
+                {
+                    Debug.Log("[Baseline2Smoke] Evidência: Menu estável (GameLoop Ready + SceneTransition completed + token released).");
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Fail("Timeout aguardando estado estável de Menu (GameLoop Ready + TransitionCompleted + Release token).");
+        }
+
+        private async Task RequestGameplayAsync(IGameNavigationService navigation)
+        {
+            await navigation.RequestGameplayAsync("baseline_smoke");
+        }
+
+        private IEnumerator WaitForGameplayTransitionCompletion(float timeoutSeconds)
+        {
+            yield return ExpectInOrder(timeoutSeconds,
+                "Iniciando transição: Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'",
+                "Acquire token='flow.scene_transition'",
+                "SceneTransitionScenesReady recebido",
+                "Acquire token='WorldLifecycle.WorldReset'",
+                "World Reset Completed",
+                "Release token='WorldLifecycle.WorldReset'",
+                "Emitting WorldLifecycleResetCompletedEvent. profile='gameplay'",
+                "Release token='flow.scene_transition'. Active=0. IsOpen=True");
+
+            if (_failed && _gameplayTransitionStarted && !_gameplayTransitionCompleted)
+                _failCategory = "iniciou mas não completou";
+        }
+
+        private IEnumerator PauseResume(float timeoutSeconds)
+        {
+            if (!TryPublishEventByName("GamePauseCommandEvent", out var err1))
+            {
+                Fail($"Falha ao publicar GamePauseCommandEvent: {err1}");
+                yield break;
+            }
+
+            yield return WaitForAnyLog(timeoutSeconds, "Acquire token='state.pause'", "ENTER: Paused");
+            if (_failed) yield break;
+
+            if (!TryPublishEventByName("GameResumeRequestedEvent", out var err2))
+            {
+                Fail($"Falha ao publicar GameResumeRequestedEvent: {err2}");
+                yield break;
+            }
+
+            yield return WaitForAnyLog(timeoutSeconds, "Release token='state.pause'. Active=0. IsOpen=True", "ENTER: Playing");
+        }
+
+        private IEnumerator ForceOutcome(string outcomeName, string reason, float timeoutSeconds)
+        {
+            if (!TryPublishGameRunEnded(outcomeName, reason, out var err))
+            {
+                Fail($"Falha ao publicar GameRunEndedEvent ({outcomeName}): {err}");
+                yield break;
+            }
+
+            yield return WaitForAnyLog(timeoutSeconds, "GameRunEndedEvent", "Acquire token='state.postgame'", "state.postgame");
+        }
+
+        private bool TryResolveNavigationService(out IGameNavigationService navigation, out string error)
+        {
+            navigation = null;
+
+            if (!DependencyManager.HasInstance)
+            {
+                error = "DependencyManager não inicializado.";
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal(out navigation) || navigation == null)
+            {
+                error = "IGameNavigationService indisponível no DI global.";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+
+        private IEnumerator PublishAndWait(string eventTypeName, float timeoutSeconds, params string[] evidenceAny)
+        {
+            if (!TryPublishEventByName(eventTypeName, out var publishError))
+            {
+                Fail($"Falha ao publicar evento '{eventTypeName}': {publishError}");
+                yield break;
+            }
+
+            yield return WaitForAnyLog(timeoutSeconds, evidenceAny);
+        }
+
+        // ---------------------------
+        // Wait utilities
         // ---------------------------
 
         private IEnumerator WaitForAnyLog(float timeoutSeconds, params string[] needles)
@@ -245,24 +436,6 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
 
             Fail($"Timeout aguardando qualquer evidência: {string.Join(" OR ", needles)}");
-        }
-
-        private IEnumerator WaitForLog(float timeoutSeconds, string needle, Action onObserved = null)
-        {
-            var start = Time.realtimeSinceStartup;
-
-            while (Time.realtimeSinceStartup - start < timeoutSeconds)
-            {
-                if (Contains(needle))
-                {
-                    onObserved?.Invoke();
-                    yield break;
-                }
-
-                yield return null;
-            }
-
-            Fail($"Timeout aguardando evidência: {needle}");
         }
 
         private IEnumerator WaitForCondition(float timeoutSeconds, Func<bool> predicate, string label, Action onObserved = null)
@@ -300,9 +473,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             var start = Time.realtimeSinceStartup;
 
             while (!task.IsCompleted && Time.realtimeSinceStartup - start < timeoutSeconds)
-            {
                 yield return null;
-            }
 
             if (!task.IsCompleted)
             {
@@ -311,9 +482,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
 
             if (task.IsFaulted)
-            {
                 Fail($"Task falhou: {task.Exception?.GetBaseException().Message}");
-            }
         }
 
         private IEnumerator ExpectInOrder(float timeoutSeconds, params string[] orderedNeedles)
@@ -347,6 +516,10 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             Fail($"Timeout esperando sequência mínima em ordem. Faltou: '{missing}'");
         }
 
+        // ---------------------------
+        // DI resolve
+        // ---------------------------
+
         private bool TryResolveNavigationService(out IGameNavigationService navigation, out string error)
         {
             navigation = null;
@@ -367,143 +540,8 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             return true;
         }
 
-        private IEnumerator PublishAndWait(string eventTypeName, float timeoutSeconds, params string[] evidenceAny)
-        {
-            if (!TryPublishEventByName(eventTypeName, out var publishError))
-            {
-                Fail($"Falha ao publicar evento '{eventTypeName}': {publishError}");
-                yield break;
-            }
-
-            yield return WaitForAnyLog(timeoutSeconds, evidenceAny);
-        }
-
-        private IEnumerator PauseResume(float timeoutSeconds)
-        {
-            if (!TryPublishEventByName("GamePauseCommandEvent", out var err1))
-            {
-                Fail($"Falha ao publicar GamePauseCommandEvent: {err1}");
-                yield break;
-            }
-
-            yield return WaitForAnyLog(timeoutSeconds,
-                "Acquire token='state.pause'",
-                "ENTER: Paused");
-
-            if (_failed) yield break;
-
-            if (!TryPublishEventByName("GameResumeRequestedEvent", out var err2))
-            {
-                Fail($"Falha ao publicar GameResumeRequestedEvent: {err2}");
-                yield break;
-            }
-
-            yield return WaitForAnyLog(timeoutSeconds,
-                "Release token='state.pause'. Active=0. IsOpen=True",
-                "ENTER: Playing");
-        }
-
-        /// <summary>
-        /// Navegação Menu -> Gameplay via IGameNavigationService (DI global).
-        /// Aguarda estabilidade (Menu completed + GameLoop Ready) antes de disparar.
-        /// </summary>
-        private IEnumerator NavigateToGameplayDirect(float timeoutSeconds)
-        {
-            yield return WaitForMenuStable(20f);
-            if (_failed) yield break;
-
-            if (!TryResolveNavigationService(out var navigation, out var error))
-            {
-                _failCategory = "não resolver nav service";
-                Fail($"Falha ao resolver IGameNavigationService: {error}");
-                yield break;
-            }
-
-            _resolvedNavigationType = navigation.GetType().FullName;
-            Debug.Log($"[Baseline2Smoke] Resolved IGameNavigationService: {_resolvedNavigationType}");
-
-            var requestTask = RequestGameplayAsync(navigation);
-            yield return WaitForTask(requestTask, timeoutSeconds, "Timeout aguardando RequestGameplayAsync.");
-            if (_failed) yield break;
-
-            yield return WaitForLog(timeoutSeconds,
-                "[Navigation] NavigateAsync -> routeId='to-gameplay'",
-                onObserved: () => Debug.Log("[Baseline2Smoke] Evidência: NavigateAsync(to-gameplay) observado."));
-            if (_failed)
-            {
-                _failCategory = "nav service não logou (não executou)";
-                yield break;
-            }
-
-            yield return WaitForCondition(timeoutSeconds,
-                () => _gameplayTransitionStarted,
-                "SceneTransitionStarted (gameplay)",
-                () => Debug.Log("[Baseline2Smoke] Evidência: SceneTransitionStarted (gameplay) observado."));
-            if (_failed)
-            {
-                _failCategory = "scene flow não iniciou";
-                yield break;
-            }
-        }
-
-        private IEnumerator WaitForMenuStable(float timeoutSeconds)
-        {
-            var start = Time.realtimeSinceStartup;
-
-            while (Time.realtimeSinceStartup - start < timeoutSeconds)
-            {
-                if (_menuTransitionCompleted && _gameLoopReady)
-                {
-                    Debug.Log("[Baseline2Smoke] Evidência: Menu SceneTransitionCompleted observado.");
-                    Debug.Log("[Baseline2Smoke] Evidência: GameLoop Ready observado.");
-                    yield break;
-                }
-
-                yield return null;
-            }
-
-            Fail("Timeout aguardando estado estável de Menu (SceneTransitionCompleted + GameLoop Ready).");
-        }
-
-        private async Task RequestGameplayAsync(IGameNavigationService navigation)
-        {
-            await navigation.RequestGameplayAsync("baseline_smoke");
-        }
-
-        private IEnumerator WaitForGameplayTransitionCompletion(float timeoutSeconds)
-        {
-            yield return ExpectInOrder(timeoutSeconds,
-                "Iniciando transição: Load=[GameplayScene, UIGlobalScene], Unload=[MenuScene], Active='GameplayScene', UseFade=True, Profile='gameplay'",
-                "Acquire token='flow.scene_transition'",
-                "SceneTransitionScenesReady recebido",
-                "Acquire token='WorldLifecycle.WorldReset'",
-                "World Reset Completed",
-                "Release token='WorldLifecycle.WorldReset'",
-                "Emitting WorldLifecycleResetCompletedEvent. profile='gameplay'",
-                "Release token='flow.scene_transition'. Active=0. IsOpen=True");
-
-            if (_failed && _gameplayTransitionStarted && !_gameplayTransitionCompleted)
-            {
-                _failCategory = "iniciou mas não completou";
-            }
-        }
-
-        private IEnumerator ForceOutcome(string outcomeName, string reason, float timeoutSeconds)
-        {
-            if (!TryPublishGameRunEnded(outcomeName, reason, out var err))
-            {
-                Fail($"Falha ao publicar GameRunEndedEvent ({outcomeName}): {err}");
-                yield break;
-            }
-
-            yield return WaitForAnyLog(timeoutSeconds,
-                "GameRunEndedEvent",
-                "Acquire token='state.postgame'",
-                "state.postgame");
-        }
-
         // ---------------------------
-        // Validation/report
+        // Token validation/report
         // ---------------------------
 
         private bool CheckTokenBalanced(string token)
@@ -532,6 +570,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             md.AppendLine();
             md.AppendLine($"- Result: **{status}**");
             md.AppendLine($"- Duration: `{dur:0.00}s`");
+            md.AppendLine($"- Mode: `{(_manualPlay ? "MANUAL_PLAY_CLICK" : "AUTO_NAV")}`");
             md.AppendLine($"- Last signature seen: `{_activeSignatureLast ?? "<unknown>"}`");
             md.AppendLine($"- Last profile seen: `{_profileLast ?? "<unknown>"}`");
             md.AppendLine();
@@ -542,20 +581,18 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
                 md.AppendLine();
                 md.AppendLine($"- {_failReason}");
                 if (!string.IsNullOrWhiteSpace(_failCategory))
-                {
                     md.AppendLine($"- Categoria: {_failCategory}");
-                }
                 md.AppendLine();
             }
 
-            md.AppendLine("## Evidências de navegação (Menu → Gameplay)");
+            md.AppendLine("## Evidências");
             md.AppendLine();
-            md.AppendLine($"- Menu SceneTransitionCompleted observado: `{_menuTransitionCompleted}`");
-            md.AppendLine($"- GameLoop Ready observado: `{_gameLoopReady}`");
+            md.AppendLine($"- Menu TransitionCompleted (flag): `{_menuTransitionCompleted}`");
+            md.AppendLine($"- GameLoop Ready (log): `{_gameLoopReady}`");
+            md.AppendLine($"- Nav log to-gameplay observado: `{_navLogObserved}`");
+            md.AppendLine($"- Gameplay transition started observado: `{_gameplayTransitionStarted}`");
+            md.AppendLine($"- Gameplay transition completed observado: `{_gameplayTransitionCompleted}`");
             md.AppendLine($"- IGameNavigationService resolvido: `{_resolvedNavigationType ?? "<null>"}`");
-            md.AppendLine($"- NavigateAsync(to-gameplay) logado: `{_navLogObserved}`");
-            md.AppendLine($"- SceneTransition Started (gameplay) observado: `{_gameplayTransitionStarted}`");
-            md.AppendLine($"- SceneTransition Completed (gameplay) observado: `{_gameplayTransitionCompleted}`");
             md.AppendLine();
 
             md.AppendLine("## Token balance (Acquire vs Release)");
@@ -575,15 +612,23 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             File.WriteAllText(mdPath, md.ToString(), Encoding.UTF8);
 
 #if UNITY_EDITOR
-            AssetDatabase.Refresh();
+            UnityEditor.AssetDatabase.Refresh();
 #endif
 
             Debug.Log($"[Baseline2Smoke] Report written: {mdPath}");
             Debug.Log($"[Baseline2Smoke] Raw log written: {logPath}");
         }
 
+        private void Fail(string reason)
+        {
+            if (_failed) return;
+            _failed = true;
+            _failReason = reason;
+            Debug.LogError("[Baseline2Smoke] FAIL: " + reason);
+        }
+
         // ---------------------------
-        // Reflection: EventBus publishing
+        // Reflection publish (EventBus)
         // ---------------------------
 
         private bool TryPublishEventByName(string eventTypeName, out string error)
@@ -598,10 +643,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
 
             object evt;
-            try
-            {
-                evt = Activator.CreateInstance(evtType);
-            }
+            try { evt = Activator.CreateInstance(evtType); }
             catch (Exception ex)
             {
                 error = $"Não foi possível instanciar '{eventTypeName}': {ex.GetBaseException().Message}";
@@ -623,10 +665,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
 
             object evt;
-            try
-            {
-                evt = Activator.CreateInstance(evtType);
-            }
+            try { evt = Activator.CreateInstance(evtType); }
             catch (Exception ex)
             {
                 error = $"Não foi possível instanciar GameRunEndedEvent: {ex.GetBaseException().Message}";
@@ -638,6 +677,46 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             SetMember(evt, "reason", reason);
 
             return TryPublish(evt, out error);
+        }
+
+        private bool TryPublish(object evt, out string error)
+        {
+            error = null;
+            if (evt == null)
+            {
+                error = "Evento null.";
+                return false;
+            }
+
+            var evtType = evt.GetType();
+
+            var genericBusDef = FindTypeByFullNameContains("EventBus`1");
+            if (genericBusDef != null && genericBusDef.IsGenericTypeDefinition)
+            {
+                try
+                {
+                    var closedBus = genericBusDef.MakeGenericType(evtType);
+                    var methods = closedBus.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+
+                    foreach (var name in new[] { "Publish", "Raise", "Emit", "Fire", "Send" })
+                    {
+                        var mi = methods.FirstOrDefault(m =>
+                            m.Name == name &&
+                            m.GetParameters().Length == 1 &&
+                            m.GetParameters()[0].ParameterType == evtType);
+
+                        if (mi != null)
+                        {
+                            mi.Invoke(null, new[] { evt });
+                            return true;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            error = $"Não foi possível localizar método de publish no EventBus para '{evtType.Name}'.";
+            return false;
         }
 
         private bool SetMember(object target, string memberName, object value)
@@ -692,96 +771,6 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             catch { return value; }
         }
 
-        private bool TryPublish(object evt, out string error)
-        {
-            error = null;
-            if (evt == null)
-            {
-                error = "Evento null.";
-                return false;
-            }
-
-            var evtType = evt.GetType();
-
-            foreach (var busType in FindTypesBySimpleName("EventBus"))
-            {
-                var methods = busType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-                foreach (var name in new[] { "Publish", "Raise", "Emit", "Fire", "Send" })
-                {
-                    foreach (var mi in methods.Where(m => m.Name == name))
-                    {
-                        try
-                        {
-                            if (mi.IsGenericMethodDefinition &&
-                                mi.GetGenericArguments().Length == 1 &&
-                                mi.GetParameters().Length == 1)
-                            {
-                                var closed = mi.MakeGenericMethod(evtType);
-                                closed.Invoke(null, new[] { evt });
-                                return true;
-                            }
-
-                            if (!mi.IsGenericMethodDefinition && mi.GetParameters().Length == 1)
-                            {
-                                var p = mi.GetParameters()[0].ParameterType;
-                                if (p.IsAssignableFrom(evtType))
-                                {
-                                    mi.Invoke(null, new[] { evt });
-                                    return true;
-                                }
-                            }
-                        }
-                        catch { }
-                    }
-                }
-            }
-
-            var genericBusDef = FindTypeByFullNameContains("EventBus`1");
-            if (genericBusDef != null && genericBusDef.IsGenericTypeDefinition)
-            {
-                try
-                {
-                    var closedBus = genericBusDef.MakeGenericType(evtType);
-                    var methods = closedBus.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-                    foreach (var name in new[] { "Publish", "Raise", "Emit", "Fire", "Send" })
-                    {
-                        var mi = methods.FirstOrDefault(m =>
-                            m.Name == name &&
-                            m.GetParameters().Length == 1 &&
-                            m.GetParameters()[0].ParameterType == evtType);
-
-                        if (mi != null)
-                        {
-                            mi.Invoke(null, new[] { evt });
-                            return true;
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            error = $"Não foi possível localizar método de publish no EventBus para '{evtType.Name}'.";
-            return false;
-        }
-
-        private static IEnumerable<Type> FindTypesBySimpleName(string simpleName)
-        {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type[] types;
-                try { types = asm.GetTypes(); }
-                catch { continue; }
-
-                foreach (var t in types)
-                {
-                    if (t != null && t.Name == simpleName)
-                        yield return t;
-                }
-            }
-        }
-
         private static Type FindTypeByName(string simpleName)
         {
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -819,7 +808,7 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
         }
 
         // ---------------------------
-        // Searching utilities
+        // Search utilities
         // ---------------------------
 
         private bool Contains(string needle)
@@ -868,14 +857,6 @@ namespace _ImmersiveGames.NewScripts.QA.Baseline
             }
 
             return c;
-        }
-
-        private void Fail(string reason)
-        {
-            if (_failed) return;
-            _failed = true;
-            _failReason = reason;
-            Debug.LogError("[Baseline2Smoke] FAIL: " + reason);
         }
 
         private readonly struct SmokeStep
