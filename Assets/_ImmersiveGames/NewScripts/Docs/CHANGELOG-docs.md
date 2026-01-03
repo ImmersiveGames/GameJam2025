@@ -1,4 +1,17 @@
 # Changelog (Docs)
+## [2026-01-03]
+### Added
+- `QA/Baseline-2.0-Checklist.md`: checklist do Smoke Baseline 2.0 com critérios por evidência.
+- `QA/Baseline-2.0.md`: documentação do Baseline 2.0 como contrato (matriz + invariantes + assinaturas).
+
+### Validated
+- Baseline2Smoke (MANUAL_ONLY) passou com evidências de:
+    - Startup → Menu com WorldLifecycle SKIP (frontend) + `WorldLifecycleResetCompletedEvent` destravando completion gate.
+    - Menu → Gameplay com hard reset após ScenesReady, spawn mínimo (Player + Eater) e `ENTER: Playing`.
+    - Pause/Resume com `state.pause` token e sem duplicação de “run started” no Resume.
+
+### Notes
+- Warnings de “Chamada repetida” do DebugUtility em resolves de DI aceitos como ruído (não bloqueante) no baseline.
 
 ## [2026-01-03]
 - Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.

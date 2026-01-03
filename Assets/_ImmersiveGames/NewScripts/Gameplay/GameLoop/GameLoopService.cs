@@ -88,12 +88,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.GameLoop
 
             if (stateId == GameLoopStateId.Playing)
             {
+                // Garantia: StartPending nunca deve ficar “colado” após entrar em Playing.
                 _signals.ClearStartPending();
 
+                // Correção: se já emitimos nesta run (ex.: Paused -> Playing), apenas não publica novamente.
+                // Importante: NÃO gerar log extra de "resume/duplicate" para evitar ruído no baseline/smoke.
                 if (_runStartedEmittedThisRun)
                 {
-                    DebugUtility.LogVerbose<GameLoopService>(
-                        "[GameLoop] ENTER: Playing (resume/duplicate) -> GameRunStartedEvent suppressed.");
                     return;
                 }
 
