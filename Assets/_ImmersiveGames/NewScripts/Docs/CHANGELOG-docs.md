@@ -1,4 +1,8 @@
 # Changelog (Docs)
+## [2026-01-04]
+### Updated
+- `Reports/Baseline-2.0-Checklist.md`: cenário **PostGame → ExitToMenu** marcado como OK e checklist reforçada com assinaturas obrigatórias de evidência (SceneFlow/WorldLifecycle/Gate) para o retorno ao menu.
+
 ## [2026-01-03]
 ### Added
 - `QA/Baseline-2.0-Checklist.md`: checklist do Smoke Baseline 2.0 com critérios por evidência.
