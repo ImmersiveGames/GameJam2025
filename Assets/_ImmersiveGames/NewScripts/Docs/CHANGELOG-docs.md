@@ -8,6 +8,16 @@
 - `QA/Baseline-2.0-Checklist.md`: checklist do Smoke Baseline 2.0 com critérios por evidência.
 - `QA/Baseline-2.0.md`: documentação do Baseline 2.0 como contrato (matriz + invariantes + assinaturas).
 
+### Updated
+- `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.
+- `README.md` com report master, baseline audit e alvo `ByActorKind` na lista de targets.
+- `WORLD_LIFECYCLE.md` com assinatura canônica (`ContextSignature`) e ordem de LoadingHUD por `UseFade`.
+- `WORLDLIFECYCLE_RESET_STATUS.md` com status atual dos targets e correção de assinatura.
+- `ADRs/ADR-0014-GameplayReset-Targets-Grupos.md` com targets completos e evidência de QA.
+- `QA/GameplayReset-QA.md` com passos para `ActorIdSet`/`ByActorKind` e referências de QA.
+- `DECISIONS.md` alinhado ao timing real do Loading HUD (UseFade vs. Started).
+- `Reports/GameLoop.md` para refletir PostGame sem PauseOverlay e InputMode fixo em Frontend.
+
 ### Validated
 - Baseline2Smoke (MANUAL_ONLY) passou com evidências de:
     - Startup → Menu com WorldLifecycle SKIP (frontend) + `WorldLifecycleResetCompletedEvent` destravando completion gate.
@@ -20,21 +30,12 @@
 - `GameRunEndedEvent` observado (PostGame).
 - `GameResetRequestedEvent recebido -> RequestGameplayAsync`.
 - `ExitToMenu recebido -> RequestMenuAsync`.
-- `NavigateAsync ... routeId='to_menu' ... Profile='frontend'`.
+- `NavigateAsync ... routeId='to-menu' ... Profile='frontend'`.
 
 ### Notes
 - Warnings de “Chamada repetida” do DebugUtility em resolves de DI aceitos como ruído (não bloqueante) no baseline.
 - ExitToMenu usa `Profile='frontend'` (não `startup`).
-
-## [2026-01-03]
-- Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.
-- Updated: `README.md` com report master, baseline audit e alvo `ByActorKind` na lista de targets.
-- Updated: `WORLD_LIFECYCLE.md` com assinatura canônica (`ContextSignature`) e ordem de LoadingHUD por `UseFade`.
-- Updated: `WORLDLIFECYCLE_RESET_STATUS.md` com status atual dos targets e correção de assinatura.
-- Updated: `ADRs/ADR-0014-GameplayReset-Targets-Grupos.md` com targets completos e evidência de QA.
-- Updated: `QA/GameplayReset-QA.md` com passos para `ActorIdSet`/`ByActorKind` e referências de QA.
-- Updated: `DECISIONS.md` alinhado ao timing real do Loading HUD (UseFade vs. Started).
-- Updated: `Reports/GameLoop.md` para refletir PostGame sem PauseOverlay e InputMode fixo em Frontend.
+- `Reports/Baseline-2.0-Checklist.md` é a checklist **operacional** (produção); `QA/Baseline-2.0-Checklist.md` é a checklist de **smoke**.
 
 ## [2026-01-02]
 - Added: documentação do **Baseline 2.0** em `Docs/Baseline/`:

@@ -166,12 +166,13 @@ Convenções:
     - `ExitToMenu recebido -> RequestMenuAsync`
     - `[Navigation] NavigateAsync -> routeId='to-menu'` e `Profile='frontend'`
 - [x] Transição frontend (SceneFlow):
-    - `[SceneFlow] Iniciando transição:` com `Profile='frontend'`
-    - `[Gate] Acquire token='flow.scene_transition'`
-    - `[WorldLifecycle] Reset SKIPPED (startup/frontend)` com `profile='frontend'`
+    - `Iniciando transição:` com `Profile='frontend'`
+    - `Acquire token='flow.scene_transition'`
+    - `Reset SKIPPED (startup/frontend)` com `profile='frontend'`
     - `Emitting WorldLifecycleResetCompletedEvent` com `profile='frontend'` e `reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
-    - `[Gate] Release token='flow.scene_transition'`
-    - `[SceneFlow] Transição concluída com sucesso.`
+    - `Release token='flow.scene_transition'`
+    - `Transição concluída com sucesso.`
+    - (Opcional) Prefixos aceitos nos logs: `[SceneFlow]`, `[Gate]`, `[WorldLifecycle]`.
 - [x] Pause ownership não quebra:
     - `[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge).`
     - **Não** deve existir liberação de terceiros (sem handle)
@@ -182,7 +183,8 @@ Convenções:
 
 **Notas observadas:**
 - ExitToMenu usa `Profile='frontend'` (não `startup`).
-- `reason` observado no fluxo de saída: `ExitToMenu/Event`.
+- `ExitToMenu/Event` pode ser o reason do **request de navegação** (`RequestMenuAsync`/`NavigateAsync`).
+- O reason do `WorldLifecycleResetCompletedEvent` (SKIP) é: `Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene`.
 - Se o log registrar gate de completion antes do FadeOut, capturar:
    - `Aguardando completion gate antes do FadeOut` → `Completion gate concluído. Prosseguindo para FadeOut`
 
