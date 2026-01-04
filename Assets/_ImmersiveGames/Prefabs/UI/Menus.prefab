@@ -966,6 +966,7 @@ GameObject:
   - component: {fileID: 4942208437889153441}
   - component: {fileID: 6271752905180310852}
   - component: {fileID: 3902431156801146915}
+  - component: {fileID: 8093393141081860065}
   m_Layer: 5
   m_Name: HowToPlay_Btn
   m_TagString: Untagged
@@ -1075,22 +1076,11 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 8477305251395819850}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 5284372080370906523}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 8093393141081860065}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -1099,18 +1089,24 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.EventSystems.EventSystem, UnityEngine.UI
-        m_MethodName: SetSelectedGameObject
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 4497008150153675333}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+--- !u!114 &8093393141081860065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3542309438095491851}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b93627813ea48ccb059c776b7a391be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 3902431156801146915}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
+  panels: {fileID: 0}
+  targetPanelId: howto
+  reason: Frontend/HowToButton
 --- !u!1 &3562381899468777232
 GameObject:
   m_ObjectHideFlags: 0
@@ -1324,6 +1320,7 @@ GameObject:
   - component: {fileID: 5807064202341423400}
   - component: {fileID: 6237606576966279174}
   - component: {fileID: 5401836448206833166}
+  - component: {fileID: 797198587007046991}
   m_Layer: 5
   m_Name: Quit_Btn
   m_TagString: Untagged
@@ -1432,7 +1429,36 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 6524495592013904053}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 797198587007046991}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.MenuQuitButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &797198587007046991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4153479653539019196}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53ff50c5894a49d8934bb8769cdace6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 5401836448206833166}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
+  reason: Frontend/QuitButton
 --- !u!1 &4199479445104416290
 GameObject:
   m_ObjectHideFlags: 0
@@ -1571,8 +1597,9 @@ GameObject:
   - component: {fileID: 3290375111768956193}
   - component: {fileID: 8994471296106814944}
   - component: {fileID: 5889438504471240030}
+  - component: {fileID: 1575986670071168415}
   m_Layer: 5
-  m_Name: Back_Btn (1)
+  m_Name: Back_Btn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1680,22 +1707,11 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 8477305251395819850}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 5284372080370906523}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 1575986670071168415}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -1704,18 +1720,24 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.EventSystems.EventSystem, UnityEngine.UI
-        m_MethodName: SetSelectedGameObject
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 7318082970934494044}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+--- !u!114 &1575986670071168415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4497008150153675333}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b93627813ea48ccb059c776b7a391be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 5889438504471240030}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
+  panels: {fileID: 0}
+  targetPanelId: main
+  reason: Frontend/BackButton
 --- !u!1 &4713665528164583844
 GameObject:
   m_ObjectHideFlags: 0
@@ -3225,9 +3247,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: _ImmersiveGames.Scripts.UI.MenuInicial, _ImmersiveGames.Scripts
-        m_MethodName: PlayGame
+      - m_Target: {fileID: 62956792034080922}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.MenuPlayButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3250,7 +3273,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   button: {fileID: 5844429128901218375}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
   reason: Menu/PlayButton
+  ignoreClicksForSecondsAfterMenuReturn: 0.35
+  clearEventSystemSelectionOnMenuReturn: 1
 --- !u!1 &7329559163363826425
 GameObject:
   m_ObjectHideFlags: 0
@@ -3571,6 +3598,7 @@ GameObject:
   - component: {fileID: 1907426578242418379}
   - component: {fileID: 3534117483812886999}
   - component: {fileID: 6872002430297032067}
+  - component: {fileID: 3055721895106191023}
   m_Layer: 5
   m_Name: Options_Btn
   m_TagString: Untagged
@@ -3680,22 +3708,11 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5284372080370906523}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 7423540815557636928}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 3055721895106191023}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -3704,18 +3721,24 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.EventSystems.EventSystem, UnityEngine.UI
-        m_MethodName: SetSelectedGameObject
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 3858724859160236938}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+--- !u!114 &3055721895106191023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7554259640505271612}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b93627813ea48ccb059c776b7a391be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 6872002430297032067}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
+  panels: {fileID: 0}
+  targetPanelId: options
+  reason: Frontend/OptionButton
 --- !u!1 &7559243380813068306
 GameObject:
   m_ObjectHideFlags: 0
@@ -4496,6 +4519,7 @@ GameObject:
   - component: {fileID: 5818892795287864602}
   - component: {fileID: 2081825814068082646}
   - component: {fileID: 1563754059775138801}
+  - component: {fileID: 6720254293292264586}
   m_Layer: 5
   m_Name: Back_Btn
   m_TagString: Untagged
@@ -4605,22 +4629,11 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 7423540815557636928}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 5284372080370906523}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 6720254293292264586}
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.UI.FrontendShowPanelButtonBinder,
+          Assembly-CSharp
+        m_MethodName: OnClick
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -4629,18 +4642,24 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.EventSystems.EventSystem, UnityEngine.UI
-        m_MethodName: SetSelectedGameObject
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 7318082970934494044}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
+--- !u!114 &6720254293292264586
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9025295229827609660}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b93627813ea48ccb059c776b7a391be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  button: {fileID: 1563754059775138801}
+  ignoreClicksForSecondsAfterEnable: 0.25
+  clearEventSystemSelectionOnEnable: 1
+  panels: {fileID: 0}
+  targetPanelId: main
+  reason: Frontend/BackButton
 --- !u!1 &9056028719133857991
 GameObject:
   m_ObjectHideFlags: 0

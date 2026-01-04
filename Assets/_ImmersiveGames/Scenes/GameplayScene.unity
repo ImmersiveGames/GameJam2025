@@ -152,7 +152,7 @@ MonoBehaviour:
   timeoutSeconds: 30
   timeoutOutcome: 2
   timeoutReason: Gameplay/Timeout
-  enableDevManualTriggers: 0
+  enableDevManualTriggers: 1
   devVictoryKey: 290
   devDefeatKey: 291
   devVictoryReason: Gameplay/DevManualVictory
