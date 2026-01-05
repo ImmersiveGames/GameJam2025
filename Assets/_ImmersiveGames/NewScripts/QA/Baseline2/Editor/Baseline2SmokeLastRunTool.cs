@@ -28,17 +28,27 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
     [InitializeOnLoad]
     public static class Baseline2SmokeLastRunTool
     {
+        private enum CaptureState
+        {
+            Idle,
+            Armed,
+            Capturing,
+            ReportPending
+        }
+
         // =========================
         // Menu (ONE item)
         // =========================
-        private const string MenuPath = "Tools/NewScripts/Baseline 2.0/Smoke Last Run (Toggle Capture + Auto Report)";
+        private const string MenuPath = "Tools/ImmersiveGames/NewScripts/Baseline2/Smoke LastRun";
 
         // =========================
         // Persistent keys
         // =========================
-        private const string PrefEnabled = "Baseline2.Smoke.Enabled";
+        private const string PrefState = "Baseline2.Smoke.State";
         private const string PrefPendingStart = "Baseline2.Smoke.PendingStart";
         private const string PrefReportPending = "Baseline2.Smoke.ReportPending";
+
+        private const string SessionCaptureActive = "Baseline2.Smoke.CaptureActive";
 
         // =========================
         // Output paths
@@ -46,10 +56,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         private const string RelativeReportsDir = "_ImmersiveGames/NewScripts/Docs/Reports";
         private const string LastRunLogFile = "Baseline-2.0-Smoke-LastRun.log";
         private const string LastRunMdFile = "Baseline-2.0-Smoke-LastRun.md";
+        private const string SpecFile = "Baseline-2.0-Spec.md";
 
         private static string ReportsDirAbs => Path.Combine(Application.dataPath, RelativeReportsDir);
         private static string LastRunLogAbs => Path.Combine(ReportsDirAbs, LastRunLogFile);
         private static string LastRunMdAbs => Path.Combine(ReportsDirAbs, LastRunMdFile);
+        private static string SpecAbs => Path.Combine(ReportsDirAbs, SpecFile);
 
         // =========================
         // Capture state (in-memory)
@@ -65,6 +77,9 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update += OnEditorUpdate;
 
+            if (!EditorApplication.isPlaying && SessionState.GetBool(SessionCaptureActive, false))
+                SetState(CaptureState.Idle);
+
             // If we were "pending start" and the domain reloaded into Play, start immediately.
             TryStartIfPendingAndInPlay();
             TryGenerateReportIfPending();
@@ -73,21 +88,31 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         [MenuItem(MenuPath)]
         private static void ToggleEnabled()
         {
-            bool enabled = EditorPrefs.GetBool(PrefEnabled, false);
-            enabled = !enabled;
-            EditorPrefs.SetBool(PrefEnabled, enabled);
+            var state = GetState();
 
-            if (enabled)
-                Debug.Log("[Baseline2Smoke] Capture ARMED. Press Play. Report will be generated automatically on Stop.");
-            else
+            if (state == CaptureState.Capturing)
+            {
+                StopCaptureAndScheduleReport();
+                Debug.Log("[Baseline2Smoke] Capture STOP requested. Report will be generated on Stop.");
+                return;
+            }
+
+            if (state == CaptureState.Armed)
+            {
+                SetState(CaptureState.Idle);
+                EditorPrefs.SetBool(PrefPendingStart, false);
                 Debug.Log("[Baseline2Smoke] Capture DISARMED.");
+                return;
+            }
+
+            ArmCaptureAndEnterPlayMode();
         }
 
         [MenuItem(MenuPath, true)]
         private static bool ToggleEnabledValidate()
         {
-            bool enabled = EditorPrefs.GetBool(PrefEnabled, false);
-            Menu.SetChecked(MenuPath, enabled);
+            var state = GetState();
+            Menu.SetChecked(MenuPath, state != CaptureState.Idle || _capturing);
             return true;
         }
 
@@ -96,19 +121,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         // =========================
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (!EditorPrefs.GetBool(PrefEnabled, false))
-            {
-                // If user disarmed while capturing, stop cleanly.
-                if (_capturing)
-                    StopCaptureAndScheduleReport();
-                return;
-            }
-
             switch (state)
             {
                 case PlayModeStateChange.ExitingEditMode:
                     // Mark pending start before the Play transition.
-                    EditorPrefs.SetBool(PrefPendingStart, true);
+                    if (GetState() == CaptureState.Armed)
+                        EditorPrefs.SetBool(PrefPendingStart, true);
                     break;
 
                 case PlayModeStateChange.EnteredPlayMode:
@@ -135,8 +153,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 return;
 
             bool pending = EditorPrefs.GetBool(PrefPendingStart, false);
+            var state = GetState();
 
             if (!pending && !force)
+                return;
+
+            if (!pending && force && state != CaptureState.Armed)
                 return;
 
             if (!EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode)
@@ -144,6 +166,22 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             EditorPrefs.SetBool(PrefPendingStart, false);
             StartCapture();
+        }
+
+        private static void ArmCaptureAndEnterPlayMode()
+        {
+            SetState(CaptureState.Armed);
+            EditorPrefs.SetBool(PrefPendingStart, true);
+
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.Log("[Baseline2Smoke] Capture ARMED. Entering Play Mode...");
+                EditorApplication.isPlaying = true;
+                return;
+            }
+
+            Debug.Log("[Baseline2Smoke] Capture ARMED during Play Mode. Starting capture now.");
+            TryStartIfPendingAndInPlay(force: true);
         }
 
         // =========================
@@ -164,6 +202,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 { AutoFlush = false };
 
                 _capturing = true;
+                SessionState.SetBool(SessionCaptureActive, true);
+                SetState(CaptureState.Capturing);
                 _captureStartUtc = DateTime.UtcNow;
 
                 Application.logMessageReceivedThreaded += OnLogThreaded;
@@ -198,15 +238,20 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 SafeCloseWriter();
 
                 _capturing = false;
+                SessionState.SetBool(SessionCaptureActive, false);
 
                 // Generate report on EnteredEditMode (or immediately if already in edit mode).
                 EditorPrefs.SetBool(PrefReportPending, true);
+                EditorPrefs.SetBool(PrefPendingStart, false);
+                SetState(CaptureState.ReportPending);
 
                 Debug.Log($"[Baseline2Smoke] CAPTURE STOPPED. Scheduling report generation -> {LastRunMdAbs}");
             }
             catch (Exception ex)
             {
                 _capturing = false;
+                SessionState.SetBool(SessionCaptureActive, false);
+                SetState(CaptureState.Idle);
                 SafeCloseWriter();
                 Debug.LogError($"[Baseline2Smoke] Failed to stop capture: {ex}");
             }
@@ -311,6 +356,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 if (!File.Exists(LastRunLogAbs))
                 {
                     Debug.LogWarning($"[Baseline2Smoke] Report generation skipped: log not found -> {LastRunLogAbs}");
+                    SetState(CaptureState.Idle);
                     return;
                 }
 
@@ -324,10 +370,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 AssetDatabase.Refresh();
 
                 Debug.Log($"[Baseline2Smoke] Report generated -> {LastRunMdAbs}");
+                SetState(CaptureState.Idle);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[Baseline2Smoke] Report generation failed: {ex}");
+                SetState(CaptureState.Idle);
             }
         }
 
@@ -341,13 +389,16 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 .OrderBy(kv => kv.Key)
                 .ToList();
 
-            var scenarios = BuildScenarioDefinitions();
-            var scenarioResults = scenarios.Select(s => EvaluateScenario(lines, s)).ToList();
+            var spec = LoadSpec(SpecAbs);
+            var scenarioResults = spec.Scenarios.Select(s => EvaluateScenario(lines, s)).ToList();
+            var invariantResult = EvaluateInvariants(lines, spec);
 
             bool anyScenarioFail = scenarioResults.Any(r => r.Result == "FAIL");
             bool tokenFail = tokenImbalances.Count > 0;
+            bool invariantFail = invariantResult.Result == "FAIL";
+            bool specFail = spec.Errors.Count > 0 || spec.Scenarios.Count == 0;
 
-            string overall = (anyScenarioFail || tokenFail) ? "FAIL" : "PASS";
+            string overall = (anyScenarioFail || tokenFail || invariantFail || specFail) ? "FAIL" : "PASS";
 
             var sb = new StringBuilder(16 * 1024);
 
@@ -355,6 +406,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             sb.AppendLine();
             sb.AppendLine($"- GeneratedAt: `{generatedAtUtc:yyyy-MM-dd HH:mm:ss}Z`");
             sb.AppendLine($"- Source: `{sourcePath}`");
+            sb.AppendLine($"- Spec: `{SpecAbs}`");
             sb.AppendLine($"- Result: **{overall}**");
             sb.AppendLine();
 
@@ -367,17 +419,50 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 sb.AppendLine($"| {r.Id} | {r.Title} | **{r.Result}** | {r.MissingHard.Count} | {r.OrderViolations.Count} |");
 
             sb.AppendLine();
+            sb.AppendLine("## Missing Soft (Summary)");
+            sb.AppendLine();
+            sb.AppendLine("| Scenario | Missing (Soft) |");
+            sb.AppendLine("|---|---:|");
+
+            foreach (var r in scenarioResults)
+                sb.AppendLine($"| {r.Id} | {r.MissingSoft.Count} |");
+
+            sb.AppendLine();
+            sb.AppendLine("## Global Invariants");
+            sb.AppendLine();
+            sb.AppendLine("| Result | Missing (Hard) | Order Violations |");
+            sb.AppendLine("|---:|---:|---:|");
+            sb.AppendLine($"| **{invariantResult.Result}** | {invariantResult.MissingHard.Count} | {invariantResult.OrderViolations.Count} |");
+            sb.AppendLine();
 
             if (overall == "FAIL")
             {
                 sb.AppendLine("## Fail Reasons");
                 sb.AppendLine();
 
+                if (specFail)
+                {
+                    sb.AppendLine("### Spec errors");
+                    if (spec.Errors.Count == 0)
+                        sb.AppendLine("- Spec did not load any scenario definitions.");
+                    else
+                        foreach (var error in spec.Errors)
+                            sb.AppendLine($"- {error}");
+                    sb.AppendLine();
+                }
+
                 if (tokenFail)
                 {
                     sb.AppendLine("### Token imbalance");
                     foreach (var t in tokenImbalances)
                         sb.AppendLine($"- `{t.Key} (Acquire={t.Value.Acquire}, Release={t.Value.Release})`");
+                    sb.AppendLine();
+                }
+
+                if (invariantFail)
+                {
+                    sb.AppendLine("### Global invariants");
+                    sb.AppendLine($"- missingHard={invariantResult.MissingHard.Count}, orderViolations={invariantResult.OrderViolations.Count}");
                     sb.AppendLine();
                 }
 
@@ -442,6 +527,32 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 }
             }
 
+            sb.AppendLine("### Global Invariants");
+            sb.AppendLine();
+
+            if (invariantResult.MissingHard.Count == 0 && invariantResult.OrderViolations.Count == 0)
+            {
+                sb.AppendLine("No issues detected.");
+                sb.AppendLine();
+                return sb.ToString();
+            }
+
+            if (invariantResult.MissingHard.Count > 0)
+            {
+                sb.AppendLine("**Missing evidence (hard):**");
+                foreach (var m in invariantResult.MissingHard)
+                    sb.AppendLine($"- {m}");
+                sb.AppendLine();
+            }
+
+            if (invariantResult.OrderViolations.Count > 0)
+            {
+                sb.AppendLine("**Order violations:**");
+                foreach (var v in invariantResult.OrderViolations)
+                    sb.AppendLine($"- {v}");
+                sb.AppendLine();
+            }
+
             return sb.ToString();
         }
 
@@ -491,6 +602,14 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             public (string Key, Regex Before, Regex After)[] OrderRules;
         }
 
+        private sealed class SpecData
+        {
+            public List<ScenarioDefinition> Scenarios = new List<ScenarioDefinition>();
+            public List<(string Key, Regex Pattern)> GlobalHard = new List<(string, Regex)>();
+            public List<(string Key, Regex Before, Regex After)> GlobalOrderRules = new List<(string, Regex, Regex)>();
+            public List<string> Errors = new List<string>();
+        }
+
         private sealed class ScenarioResult
         {
             public string Id;
@@ -501,113 +620,176 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             public List<string> OrderViolations = new List<string>();
         }
 
-        private static List<ScenarioDefinition> BuildScenarioDefinitions()
+        private sealed class InvariantResult
         {
-            // Patterns broad by design (Portuguese + your tags).
+            public string Result; // PASS/FAIL
+            public List<string> MissingHard = new List<string>();
+            public List<string> OrderViolations = new List<string>();
+        }
+
+        private enum SpecSection
+        {
+            None,
+            Hard,
+            Soft,
+            Order
+        }
+
+        private static SpecData LoadSpec(string specPath)
+        {
+            var spec = new SpecData();
+
+            if (!File.Exists(specPath))
+            {
+                spec.Errors.Add($"Spec not found: {specPath}");
+                return spec;
+            }
+
             var opt = RegexOptions.IgnoreCase | RegexOptions.Compiled;
-            Regex RX(string pattern) => new Regex(pattern, opt);
+            var scenarioHeader = new Regex(@"^###\s+(?:Cen[aá]rio|Scenario)\s+([A-E])\s+—\s+(.+)$", opt);
+            var evidenceLine = new Regex(@"^-\s+`([^`]+)`\s*::\s*`([^`]+)`\s*$", opt);
+            var orderLine = new Regex(@"^-\s+`([^`]+)`\s*::\s*`([^`]+)`\s*=>\s*`([^`]+)`\s*$", opt);
 
-            var list = new List<ScenarioDefinition>();
+            ScenarioDefinition currentScenario = null;
+            bool inGlobalInvariants = false;
+            SpecSection section = SpecSection.None;
 
-            // A) Boot → Menu (startup, SKIP reset)
-            list.Add(new ScenarioDefinition
+            foreach (var rawLine in File.ReadAllLines(specPath))
             {
-                Id = "A",
-                Title = "Boot → Menu (profile=startup, SKIP reset)",
-                Hard = new[]
-                {
-                    ("A.ResetSkippedStartup", RX(@"Reset\s+SKIPPED.*profile='startup'|Skipped_StartupOrFrontend:profile=startup;scene=MenuScene")),
-                    ("A.ResetCompletedStartupSkip", RX(@"WorldLifecycleResetCompletedEvent.*profile='startup'.*Skipped_StartupOrFrontend|ResetCompleted.*profile='startup'.*Skipped_StartupOrFrontend")),
-                },
-                Soft = Array.Empty<(string, Regex)>(),
-                OrderRules = Array.Empty<(string, Regex, Regex)>(),
-            });
+                var line = rawLine.Trim();
+                if (string.IsNullOrEmpty(line))
+                    continue;
 
-            // B) Menu → Gameplay (gameplay, reset + spawn)
-            list.Add(new ScenarioDefinition
-            {
-                Id = "B",
-                Title = "Menu → Gameplay (profile=gameplay, reset + spawn)",
-                Hard = new[]
+                if (line.StartsWith("## ", StringComparison.OrdinalIgnoreCase))
                 {
-                    ("B.StartTransitionGameplay", RX(@"Iniciando transi[cç][aã]o:.*Profile='gameplay'|RequestGameplayAsync|routeId='to-gameplay'.*Profile='gameplay'")),
-                    ("B.ScenesReady", RX(@"SceneTransitionScenesReadyEvent|ScenesReady|cenas prontas")),
-                    ("B.ResetCompletedGameplay", RX(@"WorldLifecycleResetCompletedEvent.*profile='gameplay'|ResetCompleted.*profile='gameplay'")),
-                },
-                Soft = new[]
-                {
-                    ("B.PlayerSpawn", RX(@"Spawn(ed|ing).*(Player|Jogador)|Player.*spawn")),
-                    ("B.EaterSpawn", RX(@"Spawn(ed|ing).*(Eater)|Eater.*spawn")),
-                },
-                OrderRules = new[]
-                {
-                    ("B.Order.ScenesReadyBeforeResetCompleted", RX(@"ScenesReady|SceneTransitionScenesReadyEvent"), RX(@"WorldLifecycleResetCompletedEvent|ResetCompleted")),
+                    inGlobalInvariants = line.StartsWith("## Invariantes Globais", StringComparison.OrdinalIgnoreCase);
+                    section = SpecSection.None;
+                    if (!inGlobalInvariants)
+                        currentScenario = null;
                 }
-            });
 
-            // C) Pause → Resume (state.pause token)
-            list.Add(new ScenarioDefinition
-            {
-                Id = "C",
-                Title = "Pause → Resume (Gameplay, token state.pause)",
-                Hard = new[]
+                var scenarioMatch = scenarioHeader.Match(line);
+                if (scenarioMatch.Success)
                 {
-                    ("C.PauseAcquire", RX(@"Acquire\s+token='state\.pause'")),
-                    ("C.PauseRelease", RX(@"Release\s+token='state\.pause'")),
-                },
-                Soft = Array.Empty<(string, Regex)>(),
-                OrderRules = new[]
-                {
-                    ("C.Order.AcquireBeforeRelease", RX(@"Acquire\s+token='state\.pause'"), RX(@"Release\s+token='state\.pause'")),
+                    currentScenario = new ScenarioDefinition
+                    {
+                        Id = scenarioMatch.Groups[1].Value,
+                        Title = scenarioMatch.Groups[2].Value,
+                        Hard = Array.Empty<(string, Regex)>(),
+                        Soft = Array.Empty<(string, Regex)>(),
+                        OrderRules = Array.Empty<(string, Regex, Regex)>()
+                    };
+                    spec.Scenarios.Add(currentScenario);
+                    section = SpecSection.None;
+                    inGlobalInvariants = false;
+                    continue;
                 }
-            });
 
-            // D) PostGame (Defeat) → Restart → Gameplay again
-            list.Add(new ScenarioDefinition
-            {
-                Id = "D",
-                Title = "PostGame (Defeat) → Restart → Gameplay novamente",
-                Hard = new[]
+                if (line.StartsWith("#### ", StringComparison.OrdinalIgnoreCase) || line.StartsWith("### ", StringComparison.OrdinalIgnoreCase))
                 {
-                    ("D.DefeatDetected", RX(@"Outcome=Defeat|Derrota|Defeat")),
-                    ("D.RestartToGameplay", RX(@"Restart|Reiniciar|GameResetRequestedEvent|RequestGameplayAsync|routeId='to-gameplay'.*Profile='gameplay'")),
-                    ("D.ResetCompletedGameplayAgain", RX(@"WorldLifecycleResetCompletedEvent.*profile='gameplay'|ResetCompleted.*profile='gameplay'")),
-                },
-                Soft = new[]
-                {
-                    ("D.GameRunEnded", RX(@"Publicando GameRunEndedEvent\..*Outcome=Defeat")),
-                    ("D.PostGameAcquire", RX(@"Acquire\s+token='state\.postgame'")),
-                    ("D.PostGameRelease", RX(@"Release\s+token='state\.postgame'")),
-                },
-                OrderRules = Array.Empty<(string, Regex, Regex)>(),
-            });
-
-            // E) PostGame (Victory) → ExitToMenu (frontend, SKIP reset)
-            list.Add(new ScenarioDefinition
-            {
-                Id = "E",
-                Title = "PostGame (Victory) → ExitToMenu (profile=frontend, SKIP reset)",
-                Hard = new[]
-                {
-                    ("E.VictoryDetected", RX(@"Outcome=Victory|Vit[oó]ria|Victory")),
-                    ("E.NavigateToMenuFrontend", RX(@"routeId='to-menu'.*Profile='frontend'|RequestMenuAsync|to-menu.*frontend")),
-                    ("E.ResetSkippedFrontend", RX(@"Reset\s+SKIPPED.*profile='frontend'|Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene")),
-                    ("E.ResetCompletedFrontendSkip", RX(@"WorldLifecycleResetCompletedEvent.*profile='frontend'.*Skipped_StartupOrFrontend|ResetCompleted.*profile='frontend'.*Skipped_StartupOrFrontend")),
-                },
-                Soft = new[]
-                {
-                    ("E.ExitToMenuRequest", RX(@"ExitToMenu recebido\s*->\s*RequestMenuAsync|ExitToMenu solicitado via overlay")),
-                    ("E.StartTransitionFrontend", RX(@"\[SceneFlow\]\s*Iniciando transi[cç][aã]o:.*Profile='frontend'")),
-                    ("E.FlowGateAcquire", RX(@"\[Readiness\].*SceneTransitionStarted\s*→\s*gate adquirido.*Profile='frontend'")),
-                    ("E.FlowGateRelease", RX(@"\[Readiness\].*SceneTransitionCompleted\s*→\s*gate liberado.*Profile='frontend'")),
-                },
-                OrderRules = new[]
-                {
-                    ("E.Order.NavigateBeforeResetCompleted", RX(@"routeId='to-menu'.*Profile='frontend'|RequestMenuAsync"), RX(@"WorldLifecycleResetCompletedEvent.*profile='frontend'|ResetCompleted.*profile='frontend'")),
+                    if (line.IndexOf("HARD", StringComparison.OrdinalIgnoreCase) >= 0)
+                        section = SpecSection.Hard;
+                    else if (line.IndexOf("SOFT", StringComparison.OrdinalIgnoreCase) >= 0)
+                        section = SpecSection.Soft;
+                    else if (line.IndexOf("Ordem", StringComparison.OrdinalIgnoreCase) >= 0 || line.IndexOf("Order", StringComparison.OrdinalIgnoreCase) >= 0)
+                        section = SpecSection.Order;
+                    else
+                        section = SpecSection.None;
+                    continue;
                 }
-            });
 
-            return list;
+                var orderMatch = orderLine.Match(line);
+                if (orderMatch.Success && section == SpecSection.Order)
+                {
+                    try
+                    {
+                        var key = orderMatch.Groups[1].Value;
+                        var before = new Regex(orderMatch.Groups[2].Value, opt);
+                        var after = new Regex(orderMatch.Groups[3].Value, opt);
+
+                        if (inGlobalInvariants)
+                        {
+                            spec.GlobalOrderRules.Add((key, before, after));
+                        }
+                        else if (currentScenario != null)
+                        {
+                            var list = currentScenario.OrderRules.ToList();
+                            list.Add((key, before, after));
+                            currentScenario.OrderRules = list.ToArray();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        spec.Errors.Add($"Invalid order rule regex: {orderMatch.Groups[1].Value} ({ex.Message})");
+                    }
+                    continue;
+                }
+
+                var evidenceMatch = evidenceLine.Match(line);
+                if (evidenceMatch.Success && (section == SpecSection.Hard || section == SpecSection.Soft))
+                {
+                    try
+                    {
+                        var key = evidenceMatch.Groups[1].Value;
+                        var regex = new Regex(evidenceMatch.Groups[2].Value, opt);
+
+                        if (inGlobalInvariants)
+                        {
+                            spec.GlobalHard.Add((key, regex));
+                        }
+                        else if (currentScenario != null)
+                        {
+                            if (section == SpecSection.Hard)
+                            {
+                                var list = currentScenario.Hard.ToList();
+                                list.Add((key, regex));
+                                currentScenario.Hard = list.ToArray();
+                            }
+                            else
+                            {
+                                var list = currentScenario.Soft.ToList();
+                                list.Add((key, regex));
+                                currentScenario.Soft = list.ToArray();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        spec.Errors.Add($"Invalid evidence regex: {evidenceMatch.Groups[1].Value} ({ex.Message})");
+                    }
+                }
+            }
+
+            if (spec.Scenarios.Count == 0)
+                spec.Errors.Add("Spec loaded without scenario definitions.");
+
+            return spec;
+        }
+
+        private static InvariantResult EvaluateInvariants(string[] lines, SpecData spec)
+        {
+            var r = new InvariantResult
+            {
+                Result = "PASS"
+            };
+
+            foreach (var h in spec.GlobalHard)
+            {
+                if (!AnyMatch(lines, h.Pattern))
+                    r.MissingHard.Add($"hard `{h.Key}`: `{h.Pattern}`");
+            }
+
+            foreach (var rule in spec.GlobalOrderRules)
+            {
+                var violation = ValidateOrderRule(lines, rule.Before, rule.After, rule.Key);
+                if (!string.IsNullOrEmpty(violation))
+                    r.OrderViolations.Add(violation);
+            }
+
+            if (r.MissingHard.Count > 0 || r.OrderViolations.Count > 0)
+                r.Result = "FAIL";
+
+            return r;
         }
 
         private static ScenarioResult EvaluateScenario(string[] lines, ScenarioDefinition def)
@@ -633,11 +815,9 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             foreach (var rule in def.OrderRules)
             {
-                int iBefore = FirstIndex(lines, rule.Before);
-                int iAfter = FirstIndex(lines, rule.After);
-
-                if (iBefore >= 0 && iAfter >= 0 && iBefore > iAfter)
-                    r.OrderViolations.Add($"{rule.Key}: `{rule.Before}` appeared after `{rule.After}`");
+                var violation = ValidateOrderRule(lines, rule.Before, rule.After, rule.Key);
+                if (!string.IsNullOrEmpty(violation))
+                    r.OrderViolations.Add(violation);
             }
 
             if (r.MissingHard.Count > 0 || r.OrderViolations.Count > 0)
@@ -656,14 +836,55 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             return false;
         }
 
-        private static int FirstIndex(string[] lines, Regex pattern)
+        private static string ValidateOrderRule(string[] lines, Regex before, Regex after, string ruleKey)
         {
+            int open = 0;
+            bool sawBefore = false;
+            bool sawAfter = false;
+
             for (int i = 0; i < lines.Length; i++)
             {
-                if (pattern.IsMatch(lines[i]))
-                    return i;
+                var line = lines[i];
+                if (before.IsMatch(line))
+                {
+                    open++;
+                    sawBefore = true;
+                }
+
+                if (after.IsMatch(line))
+                {
+                    sawAfter = true;
+                    if (open == 0)
+                        return $"Order violation: {ruleKey} (completed without started). before=`{before}`, after=`{after}`";
+
+                    open--;
+                }
             }
-            return -1;
+
+            if (open > 0 || (sawBefore && !sawAfter))
+                return $"Order violation: {ruleKey} (started without completed). before=`{before}`, after=`{after}`";
+
+            return string.Empty;
+        }
+
+        private static CaptureState GetState()
+        {
+            var raw = EditorPrefs.GetString(PrefState, CaptureState.Idle.ToString());
+            if (Enum.TryParse(raw, out CaptureState parsed))
+                return parsed;
+            return CaptureState.Idle;
+        }
+
+        private static void SetState(CaptureState state)
+        {
+            EditorPrefs.SetString(PrefState, state.ToString());
+
+            if (state == CaptureState.Idle)
+            {
+                EditorPrefs.SetBool(PrefPendingStart, false);
+                EditorPrefs.SetBool(PrefReportPending, false);
+                SessionState.SetBool(SessionCaptureActive, false);
+            }
         }
     }
 }
