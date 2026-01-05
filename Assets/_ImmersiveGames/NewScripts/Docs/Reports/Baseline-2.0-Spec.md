@@ -4,6 +4,14 @@ Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScrip
 
 > Nota explícita: **soft não afeta FAIL** e **hard afeta FAIL**.
 
+## Propósito e escopo
+O Baseline 2.0 valida o “contrato mínimo” do pipeline NewScripts em produção:
+- Scene Flow emite eventos e mantém ordem operacional (Started → ScenesReady → Completed).
+- SimulationGate garante bloqueio determinístico durante transições, reset e pause.
+- WorldLifecycle publica um evento oficial de conclusão (ou SKIP) para destravar o gate de completion.
+- GameLoop sincroniza com SceneFlow (frontend → Ready, gameplay → Playing).
+- Fade/Loading são integrados sem contaminar Gameplay com QA/legacy.
+
 ---
 
 ## Baseline Matrix A–E
@@ -141,6 +149,30 @@ Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScrip
 
 #### Regras de Ordem (diagnóstico)
 - `E.Order.NavigateBeforeResetCompleted` :: `NavigateAsync -> routeId='to-menu'.*Profile='frontend'` => `WorldLifecycleResetCompletedEvent.*profile='frontend'`
+
+---
+
+## Template mínimo de evidência (por cenário)
+Use este bloco para registrar o resultado do cenário A–E:
+
+```
+Scenario: <A|B|C|D|E>
+Profile: <startup|gameplay|frontend|n/a>
+ContextSignature: <signature observada>
+Outcome: <PASS|FAIL>
+Evidence:
+- <linha de log ou regex>
+- <linha de log ou regex>
+Notes:
+- <observações relevantes>
+```
+
+## Saídas do runner
+O `Baseline2Smoke` deve escrever:
+- `Docs/Reports/Baseline-2.0-Smoke-LastRun.md`
+- `Docs/Reports/Baseline-2.0-Smoke-LastRun.log`
+
+O checklist `Reports/Baseline-2.0-Checklist.md` consolida o status por cenário.
 
 ---
 

@@ -38,10 +38,11 @@ Orquestra a transição de cenas (load/unload/active) com:
 
 Durante a transição:
 - `GameReadinessService` adquire o gate (`flow.scene_transition`) para bloquear gameplay.
-- O Fade (NewScripts) pode ser executado antes e depois do carregamento.
+- O Fade e o Loading HUD (NewScripts) são executados antes/depois do carregamento.
 
-### 5) Fade ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md))
+### 5) Fade + Loading HUD ([ADR-0009](ADRs/ADR-0009-FadeSceneFlow.md), [ADR-0010](ADRs/ADR-0010-LoadingHud-SceneFlow.md))
 - `INewScriptsFadeService` controla `FadeScene` (Additive) e o `NewScriptsFadeController` (CanvasGroup).
+- `INewScriptsLoadingHudService` controla o `LoadingHudScene` (Additive).
 - `NewScriptsSceneTransitionProfile` define parâmetros (durations/curves) por **profileName**.
 - Resolução por Resources:
     - `Resources/SceneFlow/Profiles/<profileName>`
@@ -59,6 +60,29 @@ Durante a transição:
     - emite `WorldLifecycleResetCompletedEvent` para destravar o Coordinator.
 
 Detalhes em: [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md).
+
+## Fluxo de transição (canônico)
+**Resumo:** `SceneTransitionStarted` → `SceneTransitionScenesReady` → (reset/skip) → `SceneTransitionCompleted`.
+
+**Ordem observada (UseFade=true):**
+1. `SceneTransitionStarted` → gate `flow.scene_transition` **fecha**.
+2. `FadeIn`.
+3. `LoadingHUD.Show`.
+4. Load/Unload/Active.
+5. `SceneTransitionScenesReady`.
+6. `WorldLifecycleRuntimeCoordinator` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
+7. `WorldLifecycleResetCompletedEvent` libera o completion gate.
+8. `LoadingHUD.Hide`.
+9. `FadeOut`.
+10. `SceneTransitionCompleted` → gate `flow.scene_transition` **abre**.
+
+**Fallback (UseFade=false):** `LoadingHUD.Show` pode ocorrer no `Started`, com `Hide` antes do `FadeOut` (safety hide no `Completed`).
+
+## Gate / Readiness (tokens)
+- `flow.scene_transition`: durante transições de cena (Readiness/Gate).
+- `WorldLifecycle.WorldReset`: durante hard reset do mundo.
+- `state.pause`: durante pausa/overlay.
+- `state.postgame`: durante overlay de pós-game.
 
 ## Fluxo macro (startup/menu)
 Diagrama simplificado:
@@ -81,9 +105,9 @@ Diagrama simplificado:
     - UI chama `IGameNavigationService.RequestGameplayAsync(reason)`.
     - `GameNavigationService` dispara `SceneTransitionService.TransitionAsync(profile=gameplay)`.
 2. **Scene Flow**
-    - `SceneTransitionStarted` → `FadeIn` → Load/Unload/Active → `SceneTransitionScenesReady`.
+    - `SceneTransitionStarted` → `FadeIn` → `LoadingHUD.Show` → Load/Unload/Active → `SceneTransitionScenesReady`.
     - Completion gate aguarda `WorldLifecycleResetCompletedEvent`.
-    - `FadeOut` → `SceneTransitionCompleted`.
+    - `LoadingHUD.Hide` → `FadeOut` → `SceneTransitionCompleted`.
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
     - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
@@ -91,17 +115,21 @@ Diagrama simplificado:
     - `PauseOverlayController.Show()` publica `GamePauseCommandEvent` e alterna `InputMode` para `PauseOverlay`.
     - `PauseOverlayController.Hide()` publica `GameResumeRequestedEvent` e volta para `Gameplay`.
     - `PauseOverlayController.ReturnToMenuFrontend()` publica `GameExitToMenuRequestedEvent`,
-      troca `InputMode` para `FrontendMenu` e chama `IGameNavigationService.RequestMenuAsync(...)`.
+      troca `InputMode` para `FrontendMenu` e chama `IGameNavigationService.RequestToMenuAsync(...)`.
 5. **GameLoop**
     - `GameLoopSceneFlowCoordinator` chama `GameLoop.RequestStart()` apenas após `TransitionCompleted + ResetCompleted`.
+
+## Baseline 2.0 (contrato)
+A **spec** do Baseline 2.0 é a fonte de verdade para invariantes e assinaturas de log:
+- [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
+- [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
 
 ## Documentos relacionados
 - [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
 - [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md)
-- [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md)
-- [DECISIONS.md](DECISIONS.md)
-- [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md)
-- [GLOSSARY.md](GLOSSARY.md)
+- [ADR-0010-LoadingHud-SceneFlow.md](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
+- [ADR-0013-Ciclo-de-Vida-Jogo.md](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
+- [ADR-0014-GameplayReset-Targets-Grupos.md](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md)
 - [CHANGELOG-docs.md](CHANGELOG-docs.md)
 - [Reports/GameLoop.md](Reports/GameLoop.md)
 - [Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md](Reports/WORLDLIFECYCLE_RESET_ANALYSIS.md)
