@@ -77,7 +77,7 @@ Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScrip
 
 #### Evidências HARD (PASS/FAIL)
 - `B.NavigateToGameplay` :: `NavigateAsync -> routeId='to-gameplay'.*Profile='gameplay'`
-- `B.ScenesReady` :: `SceneTransitionScenesReady recebido` 
+- `B.ScenesReady` :: `\[WorldLifecycleRuntimeCoordinator\].*SceneTransitionScenesReady recebido` 
 - `B.ResetCompletedGameplay` :: `Emitting WorldLifecycleResetCompletedEvent.*profile='gameplay'.*ScenesReady/GameplayScene`
 - `B.SpawnCount` :: `ActorRegistry count at 'After Spawn': 2`
 

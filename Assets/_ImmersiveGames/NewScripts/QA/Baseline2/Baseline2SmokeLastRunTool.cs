@@ -1,6 +1,5 @@
-﻿// Baseline2SmokeLastRunTool.cs
-// Place under an Editor folder, e.g.:
-// Assets/_ImmersiveGames/NewScripts/Editor/Baseline2/Baseline2SmokeLastRunTool.cs
+// Baseline2SmokeLastRunTool.cs
+// Mantém captura e geração de relatório do Baseline 2.0 em um único arquivo.
 
 using System;
 using System.Collections.Concurrent;
@@ -9,21 +8,350 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEditor;
+using System.Threading;
+using _ImmersiveGames.NewScripts.QA.Baseline2;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+namespace _ImmersiveGames.NewScripts.QA.Baseline2
+{
+    internal static class Baseline2SmokeLastRunShared
+    {
+        internal const string RelativeReportsDir = "_ImmersiveGames/NewScripts/Docs/Reports";
+        internal const string LastRunLogFile = "Baseline-2.0-Smoke-LastRun.log";
+        internal const string LastRunMdFile = "Baseline-2.0-Smoke-LastRun.md";
+        internal const string SpecFile = "Baseline-2.0-Spec.md";
+        private const string StateFileName = "Baseline-2.0-Smoke-LastRun.state";
+
+        internal static string ReportsDirAbs => Path.Combine(Application.dataPath, RelativeReportsDir);
+        internal static string LastRunLogAbs => Path.Combine(ReportsDirAbs, LastRunLogFile);
+        internal static string LastRunMdAbs => Path.Combine(ReportsDirAbs, LastRunMdFile);
+        internal static string SpecAbs => Path.Combine(ReportsDirAbs, SpecFile);
+
+        internal static string StateFilePath
+        {
+            get
+            {
+                var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+                return Path.Combine(projectRoot, "Library", "Temp", StateFileName);
+            }
+        }
+
+        internal struct StateData
+        {
+            public bool Armed;
+            public bool Capturing;
+            public string LogPath;
+            public string CaptureId;
+            public string CaptureStartUtc;
+        }
+
+        internal static StateData LoadState()
+        {
+            if (!File.Exists(StateFilePath))
+                return new StateData { LogPath = LastRunLogAbs };
+
+            var state = new StateData { LogPath = LastRunLogAbs };
+
+            foreach (var line in File.ReadAllLines(StateFilePath))
+            {
+                if (string.IsNullOrWhiteSpace(line) || !line.Contains("="))
+                    continue;
+
+                var parts = line.Split(new[] { '=' }, 2);
+                var key = parts[0].Trim();
+                var value = parts[1].Trim();
+
+                switch (key)
+                {
+                    case "armed":
+                        state.Armed = value == "1";
+                        break;
+                    case "capturing":
+                        state.Capturing = value == "1";
+                        break;
+                    case "logPath":
+                        state.LogPath = value;
+                        break;
+                    case "captureId":
+                        state.CaptureId = value;
+                        break;
+                    case "captureStartUtc":
+                        state.CaptureStartUtc = value;
+                        break;
+                }
+            }
+
+            if (string.IsNullOrEmpty(state.LogPath))
+                state.LogPath = LastRunLogAbs;
+
+            return state;
+        }
+
+        internal static void SaveState(StateData state)
+        {
+            var dir = Path.GetDirectoryName(StateFilePath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            var lines = new List<string>
+            {
+                $"armed={(state.Armed ? 1 : 0)}",
+                $"capturing={(state.Capturing ? 1 : 0)}",
+                $"logPath={state.LogPath}",
+                $"captureId={state.CaptureId}",
+                $"captureStartUtc={state.CaptureStartUtc}"
+            };
+
+            File.WriteAllLines(StateFilePath, lines);
+        }
+
+        internal static StateData CreateArmedState(string logPath)
+        {
+            return new StateData
+            {
+                Armed = true,
+                Capturing = false,
+                LogPath = logPath,
+                CaptureId = string.Empty,
+                CaptureStartUtc = string.Empty
+            };
+        }
+
+        internal static StateData CreateIdleState(string logPath)
+        {
+            return new StateData
+            {
+                Armed = false,
+                Capturing = false,
+                LogPath = logPath,
+                CaptureId = string.Empty,
+                CaptureStartUtc = string.Empty
+            };
+        }
+    }
+
+    internal static class Baseline2SmokeLastRunRuntime
+    {
+        private static readonly ConcurrentQueue<string> Queue = new ConcurrentQueue<string>();
+        private static readonly object WriterLock = new object();
+
+        private static StreamWriter _writer;
+        private static bool _capturing;
+        private static DateTime _captureStartUtc;
+        private static string _captureId;
+        private static string _logPath;
+
+        private static int _enqueuedSinceFlush;
+        private const int AutoFlushThreshold = 256;
+
+#if UNITY_2019_3_OR_NEWER
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#else
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+#endif
+        private static void RuntimeBoot()
+        {
+            var state = Baseline2SmokeLastRunShared.LoadState();
+            if (!state.Armed && !state.Capturing)
+                return;
+
+            StartCapture(state, resume: state.Capturing);
+        }
+
+        internal static bool IsCapturing => _capturing;
+
+        internal static bool TryStartCaptureFromEditor()
+        {
+            if (!Application.isPlaying)
+                return false;
+
+            if (_capturing)
+                return true;
+
+            var state = Baseline2SmokeLastRunShared.LoadState();
+            if (!state.Armed && !state.Capturing)
+                return false;
+
+            StartCapture(state, resume: state.Capturing);
+            return true;
+        }
+
+        internal static bool StopCapture(string reason)
+        {
+            var state = Baseline2SmokeLastRunShared.LoadState();
+
+            // Idempotente: se em memória não está capturando mas o state dizia capturando, ainda tentamos “fechar” com segurança.
+            if (!_capturing && !state.Capturing)
+                return false;
+
+            Application.logMessageReceivedThreaded -= OnLogThreaded;
+
+            var endUtc = DateTime.UtcNow;
+            var duration = (_captureStartUtc == default) ? TimeSpan.Zero : (endUtc - _captureStartUtc);
+
+            WriteLine("------------------------------------------------------------");
+            WriteLine($"[Baseline2Smoke] CAPTURE STOPPED. utc={endUtc:O} duration={duration.TotalSeconds:F2}s reason={reason}");
+
+            FlushQueueToDisk();
+            SafeCloseWriter();
+
+            _capturing = false;
+            _captureId = string.Empty;
+            _captureStartUtc = default;
+            _logPath = string.Empty;
+            Interlocked.Exchange(ref _enqueuedSinceFlush, 0);
+
+            Baseline2SmokeLastRunShared.SaveState(
+                Baseline2SmokeLastRunShared.CreateIdleState(string.IsNullOrEmpty(state.LogPath) ? Baseline2SmokeLastRunShared.LastRunLogAbs : state.LogPath)
+            );
+
+            return true;
+        }
+
+        private static void StartCapture(Baseline2SmokeLastRunShared.StateData state, bool resume)
+        {
+            if (_capturing)
+                return;
+
+            _logPath = string.IsNullOrEmpty(state.LogPath)
+                ? Baseline2SmokeLastRunShared.LastRunLogAbs
+                : state.LogPath;
+
+            var logDir = Path.GetDirectoryName(_logPath);
+            if (!string.IsNullOrEmpty(logDir))
+                Directory.CreateDirectory(logDir);
+
+            bool append = resume && File.Exists(_logPath);
+
+            _writer = new StreamWriter(
+                _logPath,
+                append,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
+            )
+            { AutoFlush = false };
+
+            _capturing = true;
+
+            // Se está “resumindo” e o state tinha startUtc, tentamos respeitar (senão, marca agora).
+            if (resume && DateTime.TryParse(state.CaptureStartUtc, out var parsed))
+                _captureStartUtc = parsed.ToUniversalTime();
+            else
+                _captureStartUtc = DateTime.UtcNow;
+
+            _captureId = string.IsNullOrEmpty(state.CaptureId) ? Guid.NewGuid().ToString("N") : state.CaptureId;
+
+            Application.logMessageReceivedThreaded += OnLogThreaded;
+
+            var updated = state;
+            updated.Armed = false;
+            updated.Capturing = true;
+            updated.LogPath = _logPath;
+            updated.CaptureId = _captureId;
+            updated.CaptureStartUtc = _captureStartUtc.ToString("O");
+            Baseline2SmokeLastRunShared.SaveState(updated);
+
+            if (append)
+                WriteLine($"[Baseline2Smoke] CAPTURE RESUMED. utc={DateTime.UtcNow:O} captureId={_captureId}");
+            else
+                WriteLine($"[Baseline2Smoke] CAPTURE STARTED. utc={DateTime.UtcNow:O} captureId={_captureId}");
+
+            WriteLine($"[Baseline2Smoke] Output: {_logPath}");
+            WriteLine("------------------------------------------------------------");
+
+            Debug.Log($"[Baseline2Smoke] CAPTURE STARTED -> {_logPath}");
+        }
+
+        private static void OnLogThreaded(string condition, string stackTrace, LogType type)
+        {
+            if (!_capturing)
+                return;
+
+            string line;
+
+            if (type == LogType.Exception || type == LogType.Error)
+                line = string.IsNullOrEmpty(stackTrace) ? condition : $"{condition}\n{stackTrace}";
+            else
+                line = condition;
+
+            if (string.IsNullOrEmpty(line))
+                return;
+
+            line = line.Replace("\r\n", "\n").Replace("\r", "\n");
+
+            foreach (var entry in line.Split('\n'))
+            {
+                if (!string.IsNullOrEmpty(entry))
+                    Queue.Enqueue(entry);
+            }
+
+            // Auto-flush para evitar ficar “vazio” em disco em execuções curtas,
+            // e também para reduzir risco de perder logs caso ocorra crash.
+            var n = Interlocked.Add(ref _enqueuedSinceFlush, 1);
+            if (n >= AutoFlushThreshold)
+            {
+                Interlocked.Exchange(ref _enqueuedSinceFlush, 0);
+                FlushQueueToDisk();
+            }
+        }
+
+        private static void FlushQueueToDisk()
+        {
+            if (_writer == null)
+                return;
+
+            lock (WriterLock)
+            {
+                while (Queue.TryDequeue(out var line))
+                    _writer.WriteLine(line);
+
+                _writer.Flush();
+            }
+        }
+
+        private static void WriteLine(string line)
+        {
+            if (_writer == null)
+                return;
+
+            lock (WriterLock)
+            {
+                _writer.WriteLine(line);
+                _writer.Flush();
+            }
+        }
+
+        private static void SafeCloseWriter()
+        {
+            try
+            {
+                lock (WriterLock)
+                {
+                    _writer?.Flush();
+                    _writer?.Dispose();
+                    _writer = null;
+                }
+            }
+            catch
+            {
+                // Ignorado por segurança.
+            }
+        }
+    }
+}
+
+#if UNITY_EDITOR
 namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 {
     /// <summary>
-    /// Single-entry Baseline 2.0 Smoke capture + report generator.
-    ///
-    /// - One menu item only (toggle).
-    /// - Arm in Edit Mode, press Play, run tests, press Stop.
-    /// - On Stop, writes:
-    ///     Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.log
-    ///     Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.md
-    ///
-    /// No clipboard / no "from file" options. Always from the captured .log.
+    /// Ferramenta do editor para captura e relatório do Baseline 2.0 (última execução).
+    /// - Um único item de menu (toggle Arm/Stop).
+    /// - Arm em Edit Mode: usuário dá Play manualmente (captura começa no startup do Play).
+    /// - Stop em Play Mode: salva log e gera relatório .md.
+    /// - Ao sair do Play Mode capturando, faz Stop automaticamente.
     /// </summary>
     [InitializeOnLoad]
     public static class Baseline2SmokeLastRunTool
@@ -36,52 +364,14 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             ReportPending
         }
 
-        // =========================
-        // Menu (ONE item)
-        // =========================
-        private const string MenuPath = "Tools/ImmersiveGames/NewScripts/Baseline2/Smoke LastRun";
-
-        // =========================
-        // Persistent keys
-        // =========================
-        private const string PrefState = "Baseline2.Smoke.State";
-        private const string PrefPendingStart = "Baseline2.Smoke.PendingStart";
+        private const string MenuPath = "Tools/NewScripts/Baseline2/Smoke Last Run (Start/Stop)";
         private const string PrefReportPending = "Baseline2.Smoke.ReportPending";
-
-        private const string SessionCaptureActive = "Baseline2.Smoke.CaptureActive";
-
-        // =========================
-        // Output paths
-        // =========================
-        private const string RelativeReportsDir = "_ImmersiveGames/NewScripts/Docs/Reports";
-        private const string LastRunLogFile = "Baseline-2.0-Smoke-LastRun.log";
-        private const string LastRunMdFile = "Baseline-2.0-Smoke-LastRun.md";
-        private const string SpecFile = "Baseline-2.0-Spec.md";
-
-        private static string ReportsDirAbs => Path.Combine(Application.dataPath, RelativeReportsDir);
-        private static string LastRunLogAbs => Path.Combine(ReportsDirAbs, LastRunLogFile);
-        private static string LastRunMdAbs => Path.Combine(ReportsDirAbs, LastRunMdFile);
-        private static string SpecAbs => Path.Combine(ReportsDirAbs, SpecFile);
-
-        // =========================
-        // Capture state (in-memory)
-        // =========================
-        private static bool _capturing;
-        private static DateTime _captureStartUtc;
-        private static StreamWriter _writer;
-        private static readonly ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
-        private static readonly object _writerLock = new object();
 
         static Baseline2SmokeLastRunTool()
         {
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update += OnEditorUpdate;
 
-            if (!EditorApplication.isPlaying && SessionState.GetBool(SessionCaptureActive, false))
-                SetState(CaptureState.Idle);
-
-            // If we were "pending start" and the domain reloaded into Play, start immediately.
-            TryStartIfPendingAndInPlay();
             TryGenerateReportIfPending();
         }
 
@@ -92,290 +382,132 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             if (state == CaptureState.Capturing)
             {
-                StopCaptureAndScheduleReport();
-                Debug.Log("[Baseline2Smoke] Capture STOP requested. Report will be generated on Stop.");
+                StopCaptureAndGenerateReport("EditorStop");
+                Debug.Log("[Baseline2Smoke] Capture STOP solicitado. Log e relatório gerados.");
                 return;
             }
 
             if (state == CaptureState.Armed)
             {
-                SetState(CaptureState.Idle);
-                EditorPrefs.SetBool(PrefPendingStart, false);
-                Debug.Log("[Baseline2Smoke] Capture DISARMED.");
+                Baseline2SmokeLastRunShared.SaveState(
+                    Baseline2SmokeLastRunShared.CreateIdleState(Baseline2SmokeLastRunShared.LastRunLogAbs)
+                );
+                Debug.Log("[Baseline2Smoke] Capture DESARMADO.");
                 return;
             }
 
-            ArmCaptureAndEnterPlayMode();
+            // Idle -> Arm (não força Play automaticamente; evita “reiniciar sem querer” após Stop).
+            ArmCapture();
         }
 
         [MenuItem(MenuPath, true)]
         private static bool ToggleEnabledValidate()
         {
             var state = GetState();
-            Menu.SetChecked(MenuPath, state != CaptureState.Idle || _capturing);
+            Menu.SetChecked(MenuPath, state != CaptureState.Idle);
             return true;
         }
 
-        // =========================
-        // Play mode hooks
-        // =========================
+        private static void ArmCapture()
+        {
+            Baseline2SmokeLastRunShared.SaveState(
+                Baseline2SmokeLastRunShared.CreateArmedState(Baseline2SmokeLastRunShared.LastRunLogAbs)
+            );
+
+            EditorPrefs.SetBool(PrefReportPending, false);
+
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.Log("[Baseline2Smoke] Capture ARMADO. Agora pressione Play para iniciar a captura desde o startup.");
+                return;
+            }
+
+            Debug.Log("[Baseline2Smoke] Capture ARMADO durante Play Mode. Iniciando captura agora.");
+            _ImmersiveGames.NewScripts.QA.Baseline2.Baseline2SmokeLastRunRuntime.TryStartCaptureFromEditor();
+        }
+
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             switch (state)
             {
-                case PlayModeStateChange.ExitingEditMode:
-                    // Mark pending start before the Play transition.
-                    if (GetState() == CaptureState.Armed)
-                        EditorPrefs.SetBool(PrefPendingStart, true);
-                    break;
-
                 case PlayModeStateChange.EnteredPlayMode:
-                    // Fallback start if we didn't catch via pending start.
-                    TryStartIfPendingAndInPlay(force: true);
+                    // Se estava armado, o RuntimeBoot já terá iniciado cedo. Aqui é só um fallback.
+                    _ImmersiveGames.NewScripts.QA.Baseline2.Baseline2SmokeLastRunRuntime.TryStartCaptureFromEditor();
                     break;
 
                 case PlayModeStateChange.ExitingPlayMode:
-                    // Stop capture before we fully return to edit mode.
-                    if (_capturing)
-                        StopCaptureAndScheduleReport();
+                    if (GetState() == CaptureState.Capturing)
+                        StopCaptureAndGenerateReport("ExitingPlayMode");
                     break;
 
                 case PlayModeStateChange.EnteredEditMode:
-                    // Generate report after returning to edit mode.
                     TryGenerateReportIfPending();
                     break;
             }
         }
 
-        private static void TryStartIfPendingAndInPlay(bool force = false)
-        {
-            if (_capturing)
-                return;
-
-            bool pending = EditorPrefs.GetBool(PrefPendingStart, false);
-            var state = GetState();
-
-            if (!pending && !force)
-                return;
-
-            if (!pending && force && state != CaptureState.Armed)
-                return;
-
-            if (!EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-
-            EditorPrefs.SetBool(PrefPendingStart, false);
-            StartCapture();
-        }
-
-        private static void ArmCaptureAndEnterPlayMode()
-        {
-            SetState(CaptureState.Armed);
-            EditorPrefs.SetBool(PrefPendingStart, true);
-
-            if (!EditorApplication.isPlaying)
-            {
-                Debug.Log("[Baseline2Smoke] Capture ARMED. Entering Play Mode...");
-                EditorApplication.isPlaying = true;
-                return;
-            }
-
-            Debug.Log("[Baseline2Smoke] Capture ARMED during Play Mode. Starting capture now.");
-            TryStartIfPendingAndInPlay(force: true);
-        }
-
-        // =========================
-        // Capture implementation
-        // =========================
-        private static void StartCapture()
-        {
-            try
-            {
-                Directory.CreateDirectory(ReportsDirAbs);
-
-                // Overwrite last run file.
-                _writer = new StreamWriter(
-                    LastRunLogAbs,
-                    append: false,
-                    encoding: new UTF8Encoding(encoderShouldEmitUTF8Identifier: false)
-                )
-                { AutoFlush = false };
-
-                _capturing = true;
-                SessionState.SetBool(SessionCaptureActive, true);
-                SetState(CaptureState.Capturing);
-                _captureStartUtc = DateTime.UtcNow;
-
-                Application.logMessageReceivedThreaded += OnLogThreaded;
-
-                WriteLine($"[Baseline2Smoke] CAPTURE STARTED. utc={_captureStartUtc:O}");
-                WriteLine($"[Baseline2Smoke] Output: {LastRunLogAbs}");
-                WriteLine("------------------------------------------------------------");
-
-                Debug.Log($"[Baseline2Smoke] CAPTURE STARTED -> {LastRunLogAbs}");
-            }
-            catch (Exception ex)
-            {
-                _capturing = false;
-                SafeCloseWriter();
-                Debug.LogError($"[Baseline2Smoke] Failed to start capture: {ex}");
-            }
-        }
-
-        private static void StopCaptureAndScheduleReport()
-        {
-            try
-            {
-                Application.logMessageReceivedThreaded -= OnLogThreaded;
-
-                var endUtc = DateTime.UtcNow;
-                var duration = endUtc - _captureStartUtc;
-
-                WriteLine("------------------------------------------------------------");
-                WriteLine($"[Baseline2Smoke] CAPTURE STOPPED. utc={endUtc:O} duration={duration.TotalSeconds:F2}s");
-
-                FlushQueueToDisk();
-                SafeCloseWriter();
-
-                _capturing = false;
-                SessionState.SetBool(SessionCaptureActive, false);
-
-                // Generate report on EnteredEditMode (or immediately if already in edit mode).
-                EditorPrefs.SetBool(PrefReportPending, true);
-                EditorPrefs.SetBool(PrefPendingStart, false);
-                SetState(CaptureState.ReportPending);
-
-                Debug.Log($"[Baseline2Smoke] CAPTURE STOPPED. Scheduling report generation -> {LastRunMdAbs}");
-            }
-            catch (Exception ex)
-            {
-                _capturing = false;
-                SessionState.SetBool(SessionCaptureActive, false);
-                SetState(CaptureState.Idle);
-                SafeCloseWriter();
-                Debug.LogError($"[Baseline2Smoke] Failed to stop capture: {ex}");
-            }
-        }
-
-        private static void OnLogThreaded(string condition, string stackTrace, LogType type)
-        {
-            // Keep full message to avoid breaking evidence patterns.
-            string line;
-
-            if (type == LogType.Exception || type == LogType.Error)
-            {
-                if (!string.IsNullOrEmpty(stackTrace))
-                    line = $"{condition}\n{stackTrace}";
-                else
-                    line = condition;
-            }
-            else
-            {
-                line = condition;
-            }
-
-            // Normalize line endings.
-            line = line.Replace("\r\n", "\n").Replace("\r", "\n");
-
-            // Split multi-line into individual lines.
-            foreach (var l in line.Split('\n'))
-            {
-                if (!string.IsNullOrEmpty(l))
-                    _queue.Enqueue(l);
-            }
-        }
-
         private static void OnEditorUpdate()
-        {
-            if (!_capturing)
-                return;
-
-            // Periodic flush to reduce loss risk.
-            FlushQueueToDisk();
-        }
-
-        private static void FlushQueueToDisk()
-        {
-            if (_writer == null)
-                return;
-
-            lock (_writerLock)
-            {
-                while (_queue.TryDequeue(out var line))
-                    _writer.WriteLine(line);
-
-                _writer.Flush();
-            }
-        }
-
-        private static void WriteLine(string line)
-        {
-            if (_writer == null)
-                return;
-
-            lock (_writerLock)
-            {
-                _writer.WriteLine(line);
-                _writer.Flush();
-            }
-        }
-
-        private static void SafeCloseWriter()
-        {
-            try
-            {
-                lock (_writerLock)
-                {
-                    _writer?.Flush();
-                    _writer?.Dispose();
-                    _writer = null;
-                }
-            }
-            catch
-            {
-                // ignored
-            }
-        }
-
-        // =========================
-        // Report generation
-        // =========================
-        private static void TryGenerateReportIfPending()
         {
             if (!EditorPrefs.GetBool(PrefReportPending, false))
                 return;
 
-            // Only generate in edit mode.
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
+            TryGenerateReportIfPending();
+        }
 
-            EditorPrefs.SetBool(PrefReportPending, false);
+        private static void StopCaptureAndGenerateReport(string reason)
+        {
+            _ImmersiveGames.NewScripts.QA.Baseline2.Baseline2SmokeLastRunRuntime.StopCapture(reason);
 
+            Baseline2SmokeLastRunShared.SaveState(
+                Baseline2SmokeLastRunShared.CreateIdleState(Baseline2SmokeLastRunShared.LastRunLogAbs)
+            );
+
+            if (!TryGenerateReportNow())
+                EditorPrefs.SetBool(PrefReportPending, true);
+            else
+                EditorPrefs.SetBool(PrefReportPending, false);
+        }
+
+        private static bool TryGenerateReportIfPending()
+        {
+            if (!EditorPrefs.GetBool(PrefReportPending, false))
+                return false;
+
+            var success = TryGenerateReportNow();
+            if (success)
+                EditorPrefs.SetBool(PrefReportPending, false);
+
+            return success;
+        }
+
+        private static bool TryGenerateReportNow()
+        {
             try
             {
-                if (!File.Exists(LastRunLogAbs))
+                var logPath = Baseline2SmokeLastRunShared.LastRunLogAbs;
+
+                if (!File.Exists(logPath))
                 {
-                    Debug.LogWarning($"[Baseline2Smoke] Report generation skipped: log not found -> {LastRunLogAbs}");
-                    SetState(CaptureState.Idle);
-                    return;
+                    Debug.LogWarning($"[Baseline2Smoke] Relatório ignorado: log não encontrado -> {logPath}");
+                    return true;
                 }
 
-                var lines = File.ReadAllLines(LastRunLogAbs);
+                var lines = File.ReadAllLines(logPath);
+                var report = GenerateMarkdownReport(lines, logPath);
 
-                var report = GenerateMarkdownReport(lines, LastRunLogAbs);
+                Directory.CreateDirectory(Baseline2SmokeLastRunShared.ReportsDirAbs);
+                File.WriteAllText(Baseline2SmokeLastRunShared.LastRunMdAbs, report, new UTF8Encoding(false));
 
-                Directory.CreateDirectory(ReportsDirAbs);
-                File.WriteAllText(LastRunMdAbs, report, new UTF8Encoding(false));
+                if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                    AssetDatabase.Refresh();
 
-                AssetDatabase.Refresh();
-
-                Debug.Log($"[Baseline2Smoke] Report generated -> {LastRunMdAbs}");
-                SetState(CaptureState.Idle);
+                Debug.Log($"[Baseline2Smoke] Relatório gerado -> {Baseline2SmokeLastRunShared.LastRunMdAbs}");
+                return true;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Baseline2Smoke] Report generation failed: {ex}");
-                SetState(CaptureState.Idle);
+                Debug.LogError($"[Baseline2Smoke] Falha ao gerar relatório: {ex}");
+                return false;
             }
         }
 
@@ -389,7 +521,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 .OrderBy(kv => kv.Key)
                 .ToList();
 
-            var spec = LoadSpec(SpecAbs);
+            var spec = LoadSpec(Baseline2SmokeLastRunShared.SpecAbs);
             var scenarioResults = spec.Scenarios.Select(s => EvaluateScenario(lines, s)).ToList();
             var invariantResult = EvaluateInvariants(lines, spec);
 
@@ -406,7 +538,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             sb.AppendLine();
             sb.AppendLine($"- GeneratedAt: `{generatedAtUtc:yyyy-MM-dd HH:mm:ss}Z`");
             sb.AppendLine($"- Source: `{sourcePath}`");
-            sb.AppendLine($"- Spec: `{SpecAbs}`");
+            sb.AppendLine($"- Spec: `{Baseline2SmokeLastRunShared.SpecAbs}`");
             sb.AppendLine($"- Result: **{overall}**");
             sb.AppendLine();
 
@@ -662,7 +794,10 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
                 if (line.StartsWith("## ", StringComparison.OrdinalIgnoreCase))
                 {
-                    inGlobalInvariants = line.StartsWith("## Invariantes Globais", StringComparison.OrdinalIgnoreCase);
+                    inGlobalInvariants =
+                        line.StartsWith("## Invariantes Globais", StringComparison.OrdinalIgnoreCase) ||
+                        line.StartsWith("## Global Invariants", StringComparison.OrdinalIgnoreCase);
+
                     section = SpecSection.None;
                     if (!inGlobalInvariants)
                         currentScenario = null;
@@ -695,6 +830,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                         section = SpecSection.Order;
                     else
                         section = SpecSection.None;
+
                     continue;
                 }
 
@@ -735,6 +871,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
                         if (inGlobalInvariants)
                         {
+                            // Invariantes globais: tratamos como HARD para PASS/FAIL (conforme spec congelado).
                             spec.GlobalHard.Add((key, regex));
                         }
                         else if (currentScenario != null)
@@ -768,10 +905,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
         private static InvariantResult EvaluateInvariants(string[] lines, SpecData spec)
         {
-            var r = new InvariantResult
-            {
-                Result = "PASS"
-            };
+            var r = new InvariantResult { Result = "PASS" };
 
             foreach (var h in spec.GlobalHard)
             {
@@ -836,6 +970,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             return false;
         }
 
+        // Semântica atual: “balanceada” (cada before exige after).
+        // Isso é intencional para pegar leaks de fases (ex.: ScenesReady sem Completed).
         private static string ValidateOrderRule(string[] lines, Regex before, Regex after, string ruleKey)
         {
             int open = 0;
@@ -869,22 +1005,19 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
         private static CaptureState GetState()
         {
-            var raw = EditorPrefs.GetString(PrefState, CaptureState.Idle.ToString());
-            if (Enum.TryParse(raw, out CaptureState parsed))
-                return parsed;
+            if (EditorPrefs.GetBool(PrefReportPending, false))
+                return CaptureState.ReportPending;
+
+            if (_ImmersiveGames.NewScripts.QA.Baseline2.Baseline2SmokeLastRunRuntime.IsCapturing)
+                return CaptureState.Capturing;
+
+            var state = Baseline2SmokeLastRunShared.LoadState();
+            if (state.Capturing)
+                return CaptureState.Capturing;
+            if (state.Armed)
+                return CaptureState.Armed;
             return CaptureState.Idle;
-        }
-
-        private static void SetState(CaptureState state)
-        {
-            EditorPrefs.SetString(PrefState, state.ToString());
-
-            if (state == CaptureState.Idle)
-            {
-                EditorPrefs.SetBool(PrefPendingStart, false);
-                EditorPrefs.SetBool(PrefReportPending, false);
-                SessionState.SetBool(SessionCaptureActive, false);
-            }
         }
     }
 }
+#endif
