@@ -9,6 +9,12 @@ Garantir que o “mundo” possa ser reinicializado de forma previsível, para:
 - retorno ao menu,
 - e testes determinísticos.
 
+## Baseline 2.0 (status)
+- **Status:** FECHADO / OPERACIONAL (2026-01-05).
+- **ADR:** [ADR-0016-Baseline-2.0-Fechamento](ADRs/ADR-0016-Baseline-2.0-Fechamento.md).
+- **Spec frozen:** [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md).
+- **Evidência checklist-driven (Pass):** [Baseline 2.0 — ChecklistVerification Last Run](Reports/Baseline-2.0-ChecklistVerification-LastRun.md).
+
 ## Fluxo de transição (canônico)
 **Resumo:** `SceneTransitionStarted` → `SceneTransitionScenesReady` → (reset/skip) → `SceneTransitionCompleted`.
 
