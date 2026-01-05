@@ -23,6 +23,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
     /// Nota de robustez:
     /// - Não altera EventBus. Captura o GlobalBus atual no momento do register para
     ///   garantir que Unregister remova do mesmo bus, mesmo se QA trocar GlobalBus depois.
+    /// - Com Domain Reload desativado, o serviço pode persistir entre Play sessions;
+    ///   por isso existe rebind idempotente para sobreviver a EventBus.Clear().
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class BaselineInvariantAsserter : IDisposable
@@ -79,7 +81,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
                     return false;
 
                 if (provider.TryGetGlobal<BaselineInvariantAsserter>(out var existing) && existing != null)
+                {
+                    // Importante: com Domain Reload OFF, este serviço pode sobreviver a EventBus.Clear().
+                    // Então garantimos rebind idempotente.
+                    existing.EnsureActive();
                     return true;
+                }
 
                 provider.TryGetGlobal<ISimulationGateService>(out var gate);
 
@@ -116,7 +123,55 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
             _pause = new EventBinding<GamePauseCommandEvent>(OnPause);
             _resume = new EventBinding<GameResumeRequestedEvent>(_ => CheckPauseTokenReleased("GameResumeRequestedEvent"));
 
-            TryRegisterBindings();
+            EnsureActive();
+        }
+
+        /// <summary>
+        /// Garante que o asserter está "vivo": gate resolvido quando possível e bindings registrados
+        /// no GlobalBus atual (idempotente). Crucial para cenários com Domain Reload OFF + EventBus.Clear().
+        /// </summary>
+        private void EnsureActive()
+        {
+            if (_disposed)
+                return;
+
+            EnsureGateResolved();
+
+            if (!_bindingsRegistered || IsBusMismatchWithCurrentGlobal())
+            {
+                // Best-effort: tenta limpar bindings antigos antes de re-registrar.
+                if (_bindingsRegistered)
+                {
+                    SafeUnregister(_startedBus, _started);
+                    SafeUnregister(_scenesReadyBus, _scenesReady);
+                    SafeUnregister(_beforeFadeOutBus, _beforeFadeOut);
+                    SafeUnregister(_completedBus, _completed);
+                    SafeUnregister(_resetCompletedBus, _resetCompleted);
+
+                    SafeUnregister(_runStartedBus, _runStarted);
+                    SafeUnregister(_runEndedBus, _runEnded);
+
+                    SafeUnregister(_pauseBus, _pause);
+                    SafeUnregister(_resumeBus, _resume);
+                }
+
+                TryRegisterBindings();
+            }
+        }
+
+        private bool IsBusMismatchWithCurrentGlobal()
+        {
+            // Se algum bus capturado não corresponde ao GlobalBus atual, precisamos rebind.
+            return
+                _startedBus != EventBus<SceneTransitionStartedEvent>.GlobalBus ||
+                _scenesReadyBus != EventBus<SceneTransitionScenesReadyEvent>.GlobalBus ||
+                _beforeFadeOutBus != EventBus<SceneTransitionBeforeFadeOutEvent>.GlobalBus ||
+                _completedBus != EventBus<SceneTransitionCompletedEvent>.GlobalBus ||
+                _resetCompletedBus != EventBus<WorldLifecycleResetCompletedEvent>.GlobalBus ||
+                _runStartedBus != EventBus<GameRunStartedEvent>.GlobalBus ||
+                _runEndedBus != EventBus<GameRunEndedEvent>.GlobalBus ||
+                _pauseBus != EventBus<GamePauseCommandEvent>.GlobalBus ||
+                _resumeBus != EventBus<GameResumeRequestedEvent>.GlobalBus;
         }
 
         public void Dispose()
@@ -396,11 +451,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
         {
             if (evt is { IsPaused: true })
             {
+                // IMPORTANTE: a ordem de subscribers no EventBus pode fazer este asserter rodar antes do bridge
+                // que adquire o token. Para evitar falso FAIL, aqui vira WARNING; a validação forte fica no "token preso".
                 if (!EnsureGateResolved() || !_gate.IsTokenActive(PauseToken))
                 {
-                    Fail("<pause>", "I6",
-                        $"Pause solicitado, mas token '{PauseToken}' não está ativo.",
-                        contextText: "<no-scene-context>");
+                    DebugUtility.LogWarning<BaselineInvariantAsserter>(
+                        $"[Baseline] [WARN] Pause solicitado, mas token '{PauseToken}' ainda não está ativo (possível ordem de subscribers).");
                 }
 
                 DebugUtility.LogVerbose<BaselineInvariantAsserter>(
