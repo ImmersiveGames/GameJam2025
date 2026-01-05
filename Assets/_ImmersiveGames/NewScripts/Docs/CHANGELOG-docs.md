@@ -5,6 +5,9 @@
 - Consolidado o conjunto canônico de documentação (README/ARCHITECTURE/WORLD_LIFECYCLE/ADRs/Baseline 2.0/CHANGELOG) e ajustado o mapa de navegação.
 - Baseline 2.0 Spec atualizado como fonte única de matriz/invariantes e template mínimo de evidência.
 - Checklist operacional do Baseline 2.0 consolidado em `Docs/Reports` (referência única para o último smoke).
+- Checklist do Baseline 2.0 atualizado com **assinaturas/strings exatas** do log para cada cenário (A–E) e invariantes globais.
+- Adicionada evidência explícita de **ExitToMenu** (profile `frontend`, reset SKIPPED) e **Restart** pós-PostGame (profile `gameplay`).
+- Documentado o módulo de Loading HUD (`SceneFlowLoadingService` + `INewScriptsLoadingHudService`) no `WORLD_LIFECYCLE.md` com ordem de fases e assinaturas de log estáveis.
 
 ### Removed
 - Duplicações de checklist de baseline espalhadas em ADRs/QA/Baseline.
@@ -12,6 +15,7 @@
 
 ### Validated
 - Baseline 2.0 (Smoke, A–E) **aprovado por evidência manual** usando o log `Reports/Baseline-2.0-Smoke-LastRun.log` como fonte de verdade nesta iteração.
+- Baseline 2.0 (A–E + invariantes) reforçado com evidência hard do `Baseline-2.0-Smoke-LastRun.log` sem ambiguidades de assinatura/reason.
 
 ### Notes
 - A validação automática do relatório (parser do `Baseline2SmokeLastRunTool`) permaneceu instável após múltiplas tentativas; para evitar bloqueio de progresso, o status do Baseline foi concluído **com base no log bruto** (assinaturas e invariantes verificadas via busca manual).
@@ -31,19 +35,6 @@
     - Spawn em Gameplay registra 2 serviços (`PlayerSpawnService`, `EaterSpawnService`) e resulta em `ActorRegistry count at 'After Spawn': 2`.
     - `GameLoopService` sincroniza **Ready → Playing** após `SceneTransitionCompleted` (profile gameplay), liberando StateDependent (`Action 'Move' liberada`).
 - Checklist gerada: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Checklist.md`.
-
-## [2026-01-06]
-### Changed
-- Checklist do Baseline 2.0 atualizado com **assinaturas/strings exatas** do log para cada cenário (A–E) e invariantes globais.
-- Adicionada evidência explícita de **ExitToMenu** (profile `frontend`, reset SKIPPED) e **Restart** pós-PostGame (profile `gameplay`).
-
-### Validated
-- Baseline 2.0 (A–E + invariantes) reforçado com evidência hard do `Baseline-2.0-Smoke-LastRun.log` sem ambiguidades de assinatura/reason.
-
-## [2026-01-07]
-### Changed
-- Documentado o módulo de Loading HUD (`SceneFlowLoadingService` + `INewScriptsLoadingHudService`) no `WORLD_LIFECYCLE.md` com ordem de fases e assinaturas de log estáveis.
-
 
 ## [2026-01-03]
 - Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.
