@@ -154,7 +154,7 @@ Convenções:
 
 ---
 
-# Cenário E — PostGame (Victory) → ExitToMenu (profile=frontend, SKIP reset)
+# Cenário E — PostGame (Victory) → ExitToMenu (profile=frontend, SKIP reset) — **OK**
 
 ## Assinatura esperada
 - `signature='p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'`
@@ -164,21 +164,29 @@ Convenções:
     - `GameRunEndedEvent` observado (pós-game habilitado)
 - [x] ExitToMenu:
     - `ExitToMenu recebido -> RequestMenuAsync`
+    - `[Navigation] NavigateAsync -> routeId='to-menu'` e `Profile='frontend'`
+- [x] Transição frontend (SceneFlow):
+    - `Iniciando transição:` com `Profile='frontend'`
+    - `Acquire token='flow.scene_transition'`
+    - `Reset SKIPPED (startup/frontend)` com `profile='frontend'`
+    - `Emitting WorldLifecycleResetCompletedEvent` com `profile='frontend'` e `reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
+    - `Release token='flow.scene_transition'`
+    - `Transição concluída com sucesso.`
+    - (Opcional) Prefixos aceitos nos logs: `[SceneFlow]`, `[Gate]`, `[WorldLifecycle]`.
 - [x] Pause ownership não quebra:
     - `[PauseBridge] ExitToMenu recebido -> liberando gate Pause (se adquirido por esta bridge).`
     - **Não** deve existir liberação de terceiros (sem handle)
-- [x] Transição frontend:
-    - `Iniciando transição ... Profile='frontend'`
-    - `Reset SKIPPED (startup/frontend). profile='frontend'`
-    - `Emitting WorldLifecycleResetCompletedEvent ... reason='Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene'`
-- [x] Completed libera flow gate:
-    - `Release token='flow.scene_transition'. Active=0. IsOpen=True`
+- [x] WorldLifecycle SKIP (sem reset/spawn/despawn):
+    - **Obrigatório**: perfil `frontend` **não** executa reset/spawn.
 - [x] GameLoop permanece em Ready:
     - `ENTER: Ready (active=False)`
 
 **Notas observadas:**
 - ExitToMenu usa `Profile='frontend'` (não `startup`).
-- `reason` observado no fluxo de saída: `ExitToMenu/Event`.
+- `ExitToMenu/Event` pode ser o reason do **request de navegação** (`RequestMenuAsync`/`NavigateAsync`).
+- O reason do `WorldLifecycleResetCompletedEvent` (SKIP) é: `Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene`.
+- Se o log registrar gate de completion antes do FadeOut, capturar:
+   - `Aguardando completion gate antes do FadeOut` → `Completion gate concluído. Prosseguindo para FadeOut`
 
 ---
 
