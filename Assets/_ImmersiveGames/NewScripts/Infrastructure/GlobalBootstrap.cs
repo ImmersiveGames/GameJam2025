@@ -128,6 +128,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
+            RegisterWorldResetRequestService();
 
             RegisterGameNavigationService();
             RegisterExitToMenuNavigationBridge();
@@ -296,6 +297,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterWorldResetRequestService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[WorldLifecycle] IWorldResetRequestService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<WorldLifecycleRuntimeCoordinator>(out var coordinator) || coordinator == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[WorldLifecycle] WorldLifecycleRuntimeCoordinator indisponível. IWorldResetRequestService não será registrado.");
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IWorldResetRequestService>(coordinator, allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
                 DebugUtility.Colors.Info);
         }
 
