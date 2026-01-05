@@ -148,7 +148,7 @@ Em 2025-12-27 (estado observado em runtime):
 3. **WorldLifecycle**
     - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
         - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend`.
+        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
 4. **GameLoop**
     - `GameLoopSceneFlowCoordinator` aguarda `TransitionCompleted` + `ResetCompleted` antes de chamar `GameLoop.RequestStart()`.
 5. **Pause / Resume / ExitToMenu**
@@ -191,7 +191,7 @@ Este fluxo **não define** como vitória/derrota é detectada em produção (tim
   `IGameNavigationService`, `GameLoop`, `InputModeService`, `GameReadinessService`,
   `WorldLifecycleRuntimeCoordinator`, `SceneFlowLoadingService`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
-  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`.
 - `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
 - Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.

@@ -7,6 +7,21 @@
 ### Notes
 - A validação automática do relatório (parser do `Baseline2SmokeLastRunTool`) permaneceu instável após múltiplas tentativas; para evitar bloqueio de progresso, o status do Baseline foi concluído **com base no log bruto** (assinaturas e invariantes verificadas via busca manual).
 - A correção/robustez do tool fica registrada como débito técnico para retomada posterior (sem impacto no avanço do fluxo de produção).
+- Updated: contrato de `reason` (ResetCompleted) e evidências/docs para explicitar o formato completo do SKIP (`Skipped_StartupOrFrontend:profile=...;scene=...`) e consolidar prefixos canônicos no runtime.
+- Updated: `WORLD_LIFECYCLE.md` com seção/tabela de ownership de limpeza (Global vs Scene vs Object) e regras de descarte (Dispose) para evitar vazamentos entre transições/resets.
+
+### Evidência (log) usada como fonte de verdade
+- Captura de log end-to-end cobre: **Startup → Menu → Gameplay → Pause/Resume → Victory → Restart → Defeat → ExitToMenu → Quit**.
+- Assinaturas-chave observadas:
+    - `SceneTransitionStarted` adquire gate com token **`flow.scene_transition`** e publica snapshot `gateOpen=False`.
+    - `SceneTransitionScenesReady` ocorre **antes** de `SceneTransitionCompleted` (ordem preservada).
+    - `WorldLifecycleRuntimeCoordinator`:
+        - **profile=startup/frontend:** `Reset SKIPPED (...)` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
+        - **profile=gameplay:** `Disparando hard reset após ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')`.
+    - `WorldLifecycleResetCompletionGate` recebe o evento e libera a continuação do SceneFlow **antes do FadeOut**.
+    - Spawn em Gameplay registra 2 serviços (`PlayerSpawnService`, `EaterSpawnService`) e resulta em `ActorRegistry count at 'After Spawn': 2`.
+    - `GameLoopService` sincroniza **Ready → Playing** após `SceneTransitionCompleted` (profile gameplay), liberando StateDependent (`Action 'Move' liberada`).
+- Checklist gerada: `Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Checklist.md`.
 
 
 ## [2026-01-03]

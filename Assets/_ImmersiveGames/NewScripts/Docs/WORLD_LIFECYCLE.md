@@ -2,18 +2,60 @@
 
 > Este documento implementa operacionalmente as decisões descritas no **ADR – Ciclo de Vida do Jogo, Reset por Escopos e Fases Determinísticas**.
 
+## Evidências de execução (2026-01-05)
+
+**Fonte:** log de produção (startup → Menu → Gameplay → Pause/Resume → PostGame (Victory/Defeat) → Restart → ExitToMenu → Menu).
+
+### Evidências consolidadas (snapshot)
+- **Gate em transição:** `SceneTransitionStarted` → acquire `flow.scene_transition` (`SimulationGateService`), e `SceneTransitionCompleted` → release do token.
+- **Reset no momento correto:** `SceneTransitionScenesReadyEvent` → `WorldLifecycleRuntimeCoordinator` executa **SKIP** em `startup/frontend` e **HARD reset** em `gameplay`, emitindo `WorldLifecycleResetCompletedEvent(signature, reason)`.
+- **Completion gate:** `WorldLifecycleResetCompletionGate` armazena `lastSignature/lastReason` e destrava `SceneTransitionService` **antes** do FadeOut.
+- **Pausa/PostGame:** tokens `state.pause` (pause/resume) e `state.postgame` (overlay) controlam o gate.
+- **Rotas de navegação:** `to-gameplay` (MenuPlayButtonBinder), `GameResetRequestedEvent → RequestGameplayAsync` (Restart), `GameExitToMenuRequestedEvent → RequestMenuAsync` (ExitToMenu).
+- **Higiene de escopo:** `SceneServiceCleaner` remove serviços do escopo de cena ao unload; `GlobalServiceRegistry` descarrega registros no shutdown.
+
+> Para exemplos detalhados de assinaturas e logs, ver seções **Atualização (2025-12-31)** e **Evidências (log)** abaixo.
+
+
 ## Atualização (2026-01-03)
 
 - **Assinatura canônica:** `contextSignature` é `SceneTransitionContext.ContextSignature`, e `SceneTransitionSignatureUtil.Compute(context)` retorna esse valor. `SceneTransitionContext.ToString()` é apenas debug/log.
 - **Loading HUD sem flash (runtime):**
-  - **UseFade=true:** `FadeInCompleted → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
-  - **UseFade=false:** `Started → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
+    - **UseFade=true:** `FadeInCompleted → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
+    - **UseFade=false:** `Started → Show` e `BeforeFadeOut → Hide`, com safety hide em `Completed`.
 - **Ordem operacional (UseFade=true) validada:** **SceneTransitionStarted → gate `flow.scene_transition` fechado → FadeIn → LoadingHUD Show (AfterFadeIn) → Load/Unload/Active → ScenesReady → WorldLifecycle Reset (ou Skip) → WorldLifecycleResetCompletedEvent → completion gate → BeforeFadeOut (LoadingHUD Hide) → FadeOut → Completed (gate release + InputMode + GameLoop sync)**.
 - **Completion gate registrado:** `ISceneTransitionCompletionGate = WorldLifecycleResetCompletionGate`, `timeoutMs=20000`.
 
 ## Atualização (2025-12-31)
 
 - Evidência: logs de produção (startup → Menu → Gameplay) confirmam SceneFlow + WorldLifecycle + gate.
+
+### Sinais e ordem operacional (UseFade=true)
+- `SceneTransitionStarted` fecha o gate via token `flow.scene_transition` (GameReadinessService + SimulationGateService).
+- Ordem observada do Loading/HUD (SceneFlowLoadingService): `Started` → (após `FadeInCompleted`) `Show` → `ScenesReady` (update pending) → `BeforeFadeOut` `Hide` → `Completed` (safety hide).
+- `SceneTransitionService` aguarda o completion gate **antes** do FadeOut (`Aguardando completion gate antes do FadeOut` → `Completion gate concluído` → FadeOut).
+
+### WorldLifecycle (runtime)
+- `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e:
+    - **SKIP** em perfis `startup` e `frontend` (razão: `Skipped_StartupOrFrontend:profile=startup;scene=MenuScene` ou `Skipped_StartupOrFrontend:profile=frontend;scene=MenuScene`).
+    - **Hard reset** em perfil `gameplay` (razão: `ScenesReady/GameplayScene`).
+- `WorldLifecycleResetCompletionGate` recebe `WorldLifecycleResetCompletedEvent(signature, reason)` e destrava a transição.
+
+### Pausa e PostGame (gating)
+- Pausa: `GamePauseGateBridge` adquire `state.pause` e libera em `GameResumeRequestedEvent`.
+- PostGame: `PostGameOverlayController` adquire `state.postgame` ao exibir overlay e libera ao finalizar a ação.
+
+### Navegação (produção)
+- Menu → Gameplay: `MenuPlayButtonBinder` → `IGameNavigationService.NavigateAsync(routeId='to-gameplay', profile='gameplay')`.
+- Restart (PostGame): `RestartNavigationBridge` → `GameResetRequestedEvent` → `RequestGameplayAsync`.
+- ExitToMenu: `ExitToMenuNavigationBridge` → `GameExitToMenuRequestedEvent` → `RequestMenuAsync(routeId='to-menu', profile='frontend')`.
+
+### Assinaturas observadas (exemplos)
+- Startup/Menu: `p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap`.
+- Gameplay: `p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene`.
+- ExitToMenu: `p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene`.
+
+
 
 ## Atualização (2025-12-30)
 
@@ -27,10 +69,11 @@
 - `IStateDependentService` bloqueia input/movimento enquanto `SimulationGate` está fechado e/ou `gameplayReady=false`; libera ao final. Pausa também fecha gate via `GamePauseGateBridge`.
 
 ```log
-[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=SceneTransitionContext(Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], TargetActive='MenuScene', UseFade=True, Profile='startup')
-[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). profile='startup', activeScene='MenuScene'.
-[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='<contextSignature>', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.
+[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'
+[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). why='profile', profile='startup', activeScene='MenuScene', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.
+[VERBOSE] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Emitting WorldLifecycleResetCompletedEvent. profile='startup', signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'.
 ```
+
 # World Lifecycle — Reset determinístico por escopos (NewScripts)
 
 Este documento descreve a semântica operacional do **reset determinístico do mundo** no NewScripts, incluindo integração com SceneFlow e o comportamento atual de SKIP em startup/menu.
@@ -84,7 +127,7 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `WorldLifecycleRuntimeCoordinator` é acionado
     - decide executar reset ou SKIP
     - no profile `gameplay`, executa reset após o `ScenesReady` e finaliza com
-      `WorldLifecycleResetCompletedEvent(reason='Ok')`
+      `WorldLifecycleResetCompletedEvent(reason='ScenesReady/<ActiveScene>')`
 
 - `SceneTransitionCompleted`:
     - `GameReadinessService` libera token
@@ -93,12 +136,12 @@ Durante transições de cena, o reset é coordenado por eventos:
 ### Fluxo de produção integrado (SceneFlow + WorldLifecycle)
 - **Perfis startup/frontend** (ex.: transição terminando em `MenuScene`):
     - `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent`, mas **não** dispara hard reset.
-    - Emite `WorldLifecycleResetCompletedEvent(reason='Skipped_StartupOrFrontend')` para destravar o pipeline.
+    - Emite `WorldLifecycleResetCompletedEvent(...)` para destravar o pipeline (ex.: `reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`).
     - O `GameLoopSceneFlowCoordinator` considera o reset como concluído (skip) e o GameLoop permanece em **Ready**.
 
 ```log
-[WorldLifecycleRuntimeCoordinator] SceneTransitionScenesReady recebido. Context=... Profile='startup'
-[WorldLifecycleRuntimeCoordinator] Reset SKIPPED (startup/frontend). Emitting WorldLifecycleResetCompletedEvent...
+[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] SceneTransitionScenesReady recebido. Context=Load=[MenuScene, UIGlobalScene], Unload=[NewBootstrap], Active='MenuScene', UseFade=True, Profile='startup'
+[INFO] [WorldLifecycleRuntimeCoordinator] [WorldLifecycle] Reset SKIPPED (startup/frontend). Emitting WorldLifecycleResetCompletedEvent(signature='p:startup|a:MenuScene|l:MenuScene,UIGlobalScene|u:NewBootstrap|f:1', reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene')
 ```
 
 - **Perfis gameplay** (ex.: transição para `GameplayScene`):
@@ -239,7 +282,7 @@ Se o Coordinator não “destrava”, quase sempre faltou:
     - Resolve `IActorRegistry` da cena e valida a presença de `Player` e `Eater`.
     - Loga summary (Total/Players/Eaters/scene/reason) e erro de QA se algum ator estiver ausente.
 
-## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
+## Fluxo de produção (Menu → Gameplay → Pause/Resume → PostGame → Restart/ExitToMenu → Menu)
 1. `MenuPlayButtonBinder` → `IGameNavigationService.RequestToGameplay(reason)`.
 2. `SceneTransitionService`:
     - `Started` → `FadeIn`
@@ -248,18 +291,68 @@ Se o Coordinator não “destrava”, quase sempre faltou:
     - `FadeOut` → `Completed`
 3. `WorldLifecycleRuntimeCoordinator`:
     - **Gameplay**: executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-    - **Startup/Frontend**: SKIP com reason `Skipped_StartupOrFrontend`.
+    - **Startup/Frontend**: SKIP com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
 4. `GameReadinessService`:
-    - token `flow.scene_transition` no `Started` (**implementado; evidência dedicada pendente**)
-    - libera no `Completed`
+    - token `flow.scene_transition` no `Started` (**evidenciado no log de 2026-01-05**):
+        - `SimulationGateService` Acquire token='flow.scene_transition' (IsOpen=False)
+        - `GameReadinessService` Snapshot: gateOpen=False, activeTokens=1
+    - libera no `Completed` (**evidenciado no log de 2026-01-05**):
+        - `SimulationGateService` Release token='flow.scene_transition' (IsOpen=True)
+        - `GameReadinessService` Snapshot: gateOpen=True, activeTokens=0
 5. PauseOverlay:
     - `GamePauseCommandEvent` / `GameResumeRequestedEvent` / `GameExitToMenuRequestedEvent`
     - `SimulationGateTokens.Pause` controla pausa sem congelar física.
 
 ## Evidências (log)
-- Startup profile `startup` com reset SKIPPED + `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+- Gameplay profile `gameplay` com reset HARD após `SceneTransitionScenesReady` e emissão de `WorldLifecycleResetCompletedEvent(signature, reason='ScenesReady/GameplayScene')`.
+- Spawn pipeline evidenciado:
+    - `NewSceneBootstrapper` registrou 2 spawn services (`PlayerSpawnService` ordem 1, `EaterSpawnService` ordem 2).
+    - `WorldLifecycleOrchestrator` confirmou `ActorRegistry count` 0→2 após `Spawn`.
+- Pause/Resume evidenciado:
+    - `GamePauseGateBridge` adquiriu token `state.pause` (gate fechado) e liberou no resume.
+    - `GameLoopService` sincronizou `Playing → Paused → Playing`.
+- PostGame evidenciado (Victory e Defeat no mesmo run):
+    - `PostGameOverlayController` adquiriu token `state.postgame` e liberou após ação do overlay.
+    - `GameRunStatusService` atualizou outcome + reason e publicou `GameRunEndedEvent`.
+- Restart evidenciado:
+    - `RestartNavigationBridge` recebeu `GameResetRequestedEvent` → `IGameNavigationService` routeId `to-gameplay`.
+    - Reset subsequente despawnou `Player`/`Eater` (ActorRegistry 2→0) e respawnou (0→2).
+- ExitToMenu evidenciado:
+    - `ExitToMenuNavigationBridge` recebeu `GameExitToMenuRequestedEvent` → routeId `to-menu` (profile `frontend`).
+    - `WorldLifecycleRuntimeCoordinator` SKIP (frontend) e gate completado via `WorldLifecycleResetCompletionGate`.
+- Cleanup de encerramento evidenciado:
+    - `SceneServiceRegistry` removeu serviços por cena no unload (ex.: 8 serviços em `GameplayScene` e `MenuScene`).
+    - `GlobalServiceRegistry` removeu serviços globais no shutdown (log: 24 serviços).
+
+- Startup profile `startup` com reset SKIPPED + `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`.
 - Transição para profile `gameplay` executa reset após `ScenesReady` e antes do gate liberar.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` para prosseguir ao `FadeOut`.
-- `GameReadinessService` usa token `flow.scene_transition` durante a transição (**implementado; validar em report dedicado**).
+- `GameReadinessService` usa token `flow.scene_transition` durante a transição (**evidenciado no log de 2026-01-05**).
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
   e o gate mostra `state.pause`.
+
+## Ownership e limpeza de serviços
+
+### Objetivo
+Evitar vazamentos (subscriptions) e efeitos colaterais entre transições/resets, deixando explícito **o que pertence ao escopo Global vs Scene vs Object**, e **quem é responsável pela limpeza**.
+
+### Regras de escopo (contrato)
+- **Global**: serviços `DontDestroyOnLoad` registrados no `GlobalServiceRegistry`. Permanecem vivos entre transições de cena e só devem ser limpos por **shutdown/reset global** (ex.: `DependencyManager.Dispose` / `ResetStatics`).
+- **Scene**: serviços registrados via `DependencyManager.Provider.RegisterScene(...)` e armazenados no `SceneServiceRegistry` por `sceneName`. Devem ser limpos **sempre que a cena descarrega**.
+- **Object**: serviços vinculados a um GameObject/instância (quando usado) e limpos quando o objeto é destruído ou quando o registry do objeto é limpo.
+
+### Fonte de verdade (implementação atual)
+| Escopo | Registry | Quem registra | Quem limpa | Gatilho principal | Fallback | Observações |
+|---|---|---|---|---|---|---|
+| Global | `GlobalServiceRegistry` | `GlobalBootstrap` | `DependencyManager.Dispose` (via `GlobalServiceRegistry.Clear()`), ou reset de estáticos | Encerramento do jogo / reset global | n/a | Serviços globais que assinam eventos devem implementar `IDisposable` para desinscrever no clear. |
+| Scene | `SceneServiceRegistry` | `NewSceneBootstrapper.Awake()` | `SceneServiceCleaner` (global) | `SceneManager.sceneUnloaded` | `NewSceneBootstrapper.OnDestroy()` chama `DependencyManager.Provider.ClearSceneServices(sceneName)` | O registry descarta `IDisposable` no clear por cena. `SceneServiceCleaner` é idempotente (ver `TryClear`). |
+| Object | `ObjectServiceRegistry` | Quem cria o objeto/owner | Owner do objeto ou clear do registry do objeto | `OnDestroy` / ciclo do objeto | n/a | Usado para serviços que não podem viver além de um objeto específico. |
+
+### Exemplos práticos
+- **Global** (vive entre cenas): `SceneTransitionService`, `GameReadinessService`/gate, `WorldLifecycleRuntimeCoordinator`, `GameLoopSceneFlowCoordinator`.
+- **Scene** (reinicializa a cada cena): registries de gameplay (ex.: `IActorRegistry`/spawn registries), serviços de UI da cena, câmeras/bridges de cena, participantes do reset (`IResetScopeParticipant`).
+
+### Implicações para ResetWorld
+- **ResetWorld (hard reset)** deve atuar no *mundo* (atores/spawn/hooks) e **não** substituir a responsabilidade de descarregar escopos: a limpeza de serviços **por cena** é responsabilidade do descarregamento da cena.
+- Serviços globais devem ser **resilientes a múltiplos resets** e evitar manter referências a objetos/serviços de cena sem validar se ainda estão vivos.
+

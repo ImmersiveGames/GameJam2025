@@ -209,7 +209,7 @@ Validação (QA):
 - `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
 - `SceneTransitionService` executa `Started → FadeIn → Load/Unload → ScenesReady → gate → FadeOut → Completed`.
 - `WorldLifecycleRuntimeCoordinator`:
-    - Startup: SKIP com `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`
+    - Startup: SKIP com `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`
     - Gameplay: reset executado antes do gate liberar.
 - `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`,
   `GameExitToMenuRequestedEvent` e o gate mostra `state.pause` (confirmado em logs). O token

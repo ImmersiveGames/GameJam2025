@@ -30,7 +30,7 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
     - Carrega `MenuScene` e `UIGlobalScene`, descarrega `NewBootstrap`
     - `MenuScene` fica ativa
 4. `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e executa **SKIP** (startup/frontend),
-   emitindo `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend...`.
+   emitindo `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=startup;scene=MenuScene`.
 5. Scene Flow:
     - aguarda completion gate (deve concluir imediatamente via evento acima)
     - LoadingHUD: `BeforeFadeOut → Hide`
@@ -41,7 +41,7 @@ e confirma que `GameLoop`, `SceneFlow`, `WorldLifecycle`, `SimulationGate` e `In
 ### Evidências (trechos curtos)
 - `[GameStartRequestProductionBootstrapper] Publishing GameStartRequestedEvent`
 - `[SceneTransitionService] TransitionAsync startPlan=... profile='startup'`
-- `[WorldLifecycleRuntimeCoordinator] Reset SKIPPED ... reason='Skipped_StartupOrFrontend'`
+- `[WorldLifecycleRuntimeCoordinator] Reset SKIPPED ... reason='Skipped_StartupOrFrontend:profile=startup;scene=MenuScene'`
 
 > Nota: warnings de “Chamada repetida no frame” podem aparecer durante bootstrap. Eles não indicam reexecução funcional do bootstrap.
 

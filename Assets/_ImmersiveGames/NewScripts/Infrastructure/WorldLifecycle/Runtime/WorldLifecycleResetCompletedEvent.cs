@@ -1,10 +1,14 @@
-﻿using _ImmersiveGames.NewScripts.Infrastructure.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Events;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 {
     /// <summary>
     /// COMMAND/Signal: indica que o reset determinístico do WorldLifecycle concluiu.
     /// Usado para liberar start do GameLoop após ScenesReady + Reset.
+    ///
+    /// Ownership (canônico):
+    /// - Publisher (produção): WorldLifecycleRuntimeCoordinator.
+    /// - Consumidores (produção): WorldLifecycleResetCompletionGate (SceneFlow) e GameLoopSceneFlowCoordinator (GameLoop).
     /// </summary>
     public readonly struct WorldLifecycleResetCompletedEvent : IEvent
     {

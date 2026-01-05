@@ -1,5 +1,14 @@
 # WorldLifecycle Reset — Status e Pendências (macro-estruturas)
 
+## Atualização (2026-01-05)
+
+- **Ownership de `WorldLifecycleResetCompletedEvent` formalizado (canônico):**
+  - **Publisher (produção):** `WorldLifecycleRuntimeCoordinator`.
+  - **Consumidores (produção):** `WorldLifecycleResetCompletionGate` (completion gate do SceneFlow) e `GameLoopSceneFlowCoordinator` (sync do GameLoop).
+  - **Consumidores (dev/QA):** `BaselineInvariantAsserter` (opt-in) e QAs (ex.: `WorldLifecycleMultiActorSpawnQa`).
+- **Production trigger do reset consolidado:** `SceneTransitionScenesReadyEvent` → (profile gameplay) hard reset → `WorldLifecycleResetCompletedEvent`; (startup/frontend) SKIP + `WorldLifecycleResetCompletedEvent`.
+- **Ownership de limpeza (Global vs Scene vs Object) consolidado:** ver seção "Ownership e limpeza de serviços" em `Docs/WORLD_LIFECYCLE.md`; ajustes de runtime: `SceneServiceCleaner` implementa `IDisposable` e só loga limpeza quando realmente remove entradas (via `SceneServiceRegistry.TryClear`).
+
 ## Atualização (2026-01-03)
 
 - **Assinatura canônica** corrigida na documentação:
@@ -25,7 +34,6 @@
 - `IStateDependentService` bloqueia input/movimento durante gate e libera ao final; pausa também fecha gate via `GamePauseGateBridge`.
 
 ### Pendências remanescentes (curto prazo)
-- Consolidar o “production trigger” definitivo do reset como parte do **perfil**/entrada de gameplay (hoje: `SceneTransitionScenesReadyEvent` em profile `gameplay`).
 - Fixar blockers restantes da `GameplayScene` fora do pipeline de reset (erros de gameplay específicos).
 
 Data: 2025-12-26

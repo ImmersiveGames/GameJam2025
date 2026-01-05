@@ -62,14 +62,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             if (skipByProfile || skipBySceneFallback)
             {
                 var why = skipByProfile ? "profile" : "scene-fallback";
+                var skipReason = WorldLifecycleResetReason.SkippedStartupOrFrontend(profileId, activeSceneName);
 
                 DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profileId}', activeScene='{activeSceneName}'.",
+                    $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profileId}', activeScene='{activeSceneName}', reason='{skipReason}'.",
                     DebugUtility.Colors.Info);
 
-                EmitResetCompleted(
-                    context,
-                    reason: WorldLifecycleResetReason.SkippedStartupOrFrontend(profileId, activeSceneName));
+                EmitResetCompleted(context, reason: skipReason);
                 return;
             }
 
@@ -90,14 +89,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     return;
                 }
 
+                var resetReason = WorldLifecycleResetReason.ScenesReadyFor(activeSceneName);
+
                 DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='ScenesReady/{activeSceneName}', profile='{profileId}'",
+                    $"[WorldLifecycle] Disparando hard reset após ScenesReady. reason='{resetReason}', profile='{profileId}'",
                     DebugUtility.Colors.Info);
 
                 // IMPORTANTE: no projeto atual, ResetWorldAsync recebe apenas 'reason'.
-                await controller.ResetWorldAsync(reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
+                await controller.ResetWorldAsync(reason: resetReason);
 
-                EmitResetCompleted(context, reason: WorldLifecycleResetReason.ScenesReadyFor(activeSceneName));
+                EmitResetCompleted(context, reason: resetReason);
             }
             catch (Exception ex)
             {

@@ -86,7 +86,7 @@ Diagrama simplificado:
     - `FadeOut` → `SceneTransitionCompleted`.
 3. **WorldLifecycle**
     - Em `gameplay`, executa reset após `ScenesReady` e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-    - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend`.
+    - Em `startup/frontend`, SKIP com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
 4. **Pause / Resume / ExitToMenu**
     - `PauseOverlayController.Show()` publica `GamePauseCommandEvent` e alterna `InputMode` para `PauseOverlay`.
     - `PauseOverlayController.Hide()` publica `GameResumeRequestedEvent` e volta para `Gameplay`.
@@ -113,7 +113,7 @@ Diagrama simplificado:
 - `GlobalBootstrap` registra `ISceneTransitionService`, `INewScriptsFadeService`, `IGameNavigationService`,
   `GameLoop`, `InputModeService`, `GameReadinessService`, `WorldLifecycleRuntimeCoordinator`.
 - Startup profile `startup` com reset **SKIPPED** e emissão de
-  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend)`.
+  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`.
 - `MenuPlayButtonBinder` desativa botão e dispara `RequestGameplayAsync`.
 - Transição para `gameplay` executa reset e `PlayerSpawnService` spawna `Player_NewScripts`.
 - Completion gate aguarda `WorldLifecycleResetCompletedEvent` antes do `FadeOut`.
