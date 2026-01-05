@@ -5,6 +5,7 @@ using System.Linq;
 using _ImmersiveGames.NewScripts.Gameplay.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks.QA;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Phases;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
@@ -56,6 +57,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Scene
 
             DebugUtility.Log(typeof(NewSceneBootstrapper),
                 $"WorldRoot ready: {BuildTransformPath(worldRoot)}");
+
+            if (!provider.TryGetForScene<IPhaseSpawnPlanContext>(_sceneName, out var phasePlanContext) ||
+                phasePlanContext == null)
+            {
+                phasePlanContext = new PhaseSpawnPlanContext();
+                provider.RegisterForScene(_sceneName, phasePlanContext, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(NewSceneBootstrapper),
+                    $"[Phase] IPhaseSpawnPlanContext registrado para a cena '{_sceneName}'.");
+            }
 
             var actorRegistry = new ActorRegistry();
             provider.RegisterForScene<IActorRegistry>(

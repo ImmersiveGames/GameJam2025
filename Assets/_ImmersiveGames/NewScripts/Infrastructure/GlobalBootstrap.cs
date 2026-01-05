@@ -35,6 +35,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Fade;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow.Loading;
 using _ImmersiveGames.NewScripts.Infrastructure.State;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Phases;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime;
 using UnityEngine;
 using IUniqueIdFactory = _ImmersiveGames.NewScripts.Infrastructure.Ids.IUniqueIdFactory;
@@ -129,6 +130,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             // NewScripts standalone: registra sempre o SceneFlow nativo (sem bridge/adapters legados).
             RegisterSceneFlowNative();
             RegisterWorldResetRequestService();
+            RegisterWorldPhaseServices();
 
             RegisterGameNavigationService();
             RegisterExitToMenuNavigationBridge();
@@ -321,6 +323,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
                 "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterWorldPhaseServices()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IWorldPhaseService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Phase] IWorldPhaseService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+            }
+            else
+            {
+                var phaseService = new WorldPhaseService(new PhaseId("Phase1"));
+                DependencyManager.Provider.RegisterGlobal<IWorldPhaseService>(phaseService, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Phase] IWorldPhaseService registrado no DI global.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionResolver>(out var resolver) && resolver != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Phase] IPhaseDefinitionResolver já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var definitionResolver = new PhaseCatalogResolver();
+            DependencyManager.Provider.RegisterGlobal<IPhaseDefinitionResolver>(definitionResolver, allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Phase] IPhaseDefinitionResolver registrado no DI global.",
                 DebugUtility.Colors.Info);
         }
 

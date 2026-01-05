@@ -176,6 +176,8 @@ O evento `WorldLifecycleResetCompletedEvent(string contextSignature, string reas
 
 Além do **reset por escopos** do WorldLifecycle (`ResetScope` + `IResetScopeParticipant`), existe um módulo de reset **de gameplay** em `Gameplay/Reset/` para validar e executar resets por **alvos** (targets) com fases fixas:
 
+- Fases/Níveis integradas ao reset (Phases): ver `Docs/ADRs/ADR-0016-Phases-WorldLifecycle.md`.
+
 - **Alvos (`GameplayResetTarget`)**: `AllActorsInScene`, `PlayersOnly`, `EaterOnly`, `ActorIdSet`, `ByActorKind`.
 - **Fases (`GameplayResetPhase`)**: `Cleanup`, `Restore`, `Rebind`.
 - **Participantes**: componentes de gameplay implementam `IGameplayResettable` (e opcionais `IGameplayResetOrder` / `IGameplayResetTargetFilter`).

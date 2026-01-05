@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Hooks;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Phases;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Reset;
 using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Spawn;
 using UnityEngine;
@@ -26,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
+        [Inject] private IWorldPhaseService _phaseService;
+        [Inject] private IPhaseDefinitionResolver _phaseDefinitionResolver;
+        [Inject] private IPhaseSpawnPlanContext _phasePlanContext;
 
         // Guardrail: este controller apenas consome o WorldLifecycleHookRegistry criado no bootstrapper.
         [Inject] private WorldLifecycleHookRegistry _hookRegistry;
@@ -229,6 +233,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                         $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.");
                 }
 
+                PreparePhasePlanForReset(reason);
                 BuildSpawnServices();
                 _orchestrator = CreateOrchestrator();
 
@@ -318,6 +323,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 DebugUtility.LogError(typeof(WorldLifecycleController),
                     $"IActorRegistry não encontrado para a cena '{_sceneName}'.");
             }
+
+            if (_phaseService == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    "[Phase] IWorldPhaseService não encontrado. Phase snapshot será ignorado.");
+            }
         }
 
         private void BuildSpawnServices()
@@ -387,6 +398,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             }
 
             return valid;
+        }
+
+        private void PreparePhasePlanForReset(string reason)
+        {
+            if (_phaseService == null)
+            {
+                return;
+            }
+
+            _phaseService.CaptureSnapshot(reason);
+            var committedSnapshot = _phaseService.CommitRequestedPhase(reason);
+
+            if (_phaseDefinitionResolver == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    "[Phase] IPhaseDefinitionResolver indisponível. PhaseSpawnPlan não será construído.");
+                return;
+            }
+
+            var definition = _phaseDefinitionResolver.Resolve(committedSnapshot.CurrentPhaseId);
+            var builder = new PhaseSpawnPlanBuilder();
+            var plan = builder.Build(committedSnapshot, definition);
+
+            if (_phasePlanContext == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                    "[Phase] IPhaseSpawnPlanContext indisponível. Plan não será exposto.");
+                return;
+            }
+
+            _phasePlanContext.SetPlan(plan);
+
+            DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                $"[Phase] PhaseSpawnPlan context atualizado. scene='{_sceneName}', phaseId='{committedSnapshot.CurrentPhaseId.Value}'.");
         }
 
         private readonly struct ResetRequest
