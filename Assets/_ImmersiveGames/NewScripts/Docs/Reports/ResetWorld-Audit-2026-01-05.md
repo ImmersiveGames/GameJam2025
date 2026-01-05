@@ -3,6 +3,22 @@
 ## Objetivo
 Garantir que o entry-point de produção para hard reset esteja explícito e auditável, com logs rastreáveis, sem quebrar o Baseline 2.0.
 
+## Production trigger oficial (não-QA)
+O gatilho canônico de produção continua sendo o fluxo do SceneFlow:
+- `SceneTransitionService` emite `SceneTransitionScenesReadyEvent` após o load/unload/active.
+- `WorldLifecycleRuntimeCoordinator.OnScenesReady` consome esse evento e dispara o hard reset.
+
+Evidência via `rg` (arquivo + linhas + trecho):
+
+```text
+Assets/_ImmersiveGames/NewScripts/Infrastructure/Scene/SceneTransitionService.cs
+130:                EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
+
+Assets/_ImmersiveGames/NewScripts/Infrastructure/WorldLifecycle/Runtime/WorldLifecycleRuntimeCoordinator.cs
+55:        private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
+135:                $"[WorldLifecycle] Reset REQUESTED. reason='{resetReason}', signature='{signature}', profile='{profileId}'.",
+```
+
 ## Wiring (DI / registro global)
 Evidência via `rg` (arquivo + linhas + trecho):
 
@@ -60,6 +76,7 @@ Assets/_ImmersiveGames/NewScripts/Docs/Reports/Baseline-2.0-Smoke-LastRun.log
 ### Pendência (necessita rodar smoke local)
 Para cumprir o requisito de evidência end-to-end dos novos logs, é necessário rodar o smoke e coletar as linhas com:
 - `"[WorldLifecycle] Reset REQUESTED ..."`
-- `"[WorldLifecycle] Reset IGNORED ..."` (quando o request manual ocorre durante transição ativa)
+- `"[WorldLifecycle] Reset IGNORED (scene-transition) ..."` (quando o request manual ocorre durante transição ativa)
+- ausência de `"[Baseline][FAIL]"`
 
 > Observação: este ambiente não executou o Unity Editor, então o log do smoke acima ainda não contém essas novas entradas.
