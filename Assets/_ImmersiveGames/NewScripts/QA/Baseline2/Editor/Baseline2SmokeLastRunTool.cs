@@ -28,17 +28,27 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
     [InitializeOnLoad]
     public static class Baseline2SmokeLastRunTool
     {
+        private enum CaptureState
+        {
+            Idle,
+            Armed,
+            Capturing,
+            ReportPending
+        }
+
         // =========================
         // Menu (ONE item)
         // =========================
-        private const string MenuPath = "Tools/NewScripts/Baseline 2.0/Smoke Last Run (Toggle Capture + Auto Report)";
+        private const string MenuPath = "Tools/ImmersiveGames/NewScripts/Baseline2/Smoke LastRun";
 
         // =========================
         // Persistent keys
         // =========================
-        private const string PrefEnabled = "Baseline2.Smoke.Enabled";
+        private const string PrefState = "Baseline2.Smoke.State";
         private const string PrefPendingStart = "Baseline2.Smoke.PendingStart";
         private const string PrefReportPending = "Baseline2.Smoke.ReportPending";
+
+        private const string SessionCaptureActive = "Baseline2.Smoke.CaptureActive";
 
         // =========================
         // Output paths
@@ -67,6 +77,9 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.update += OnEditorUpdate;
 
+            if (!EditorApplication.isPlaying && SessionState.GetBool(SessionCaptureActive, false))
+                SetState(CaptureState.Idle);
+
             // If we were "pending start" and the domain reloaded into Play, start immediately.
             TryStartIfPendingAndInPlay();
             TryGenerateReportIfPending();
@@ -75,39 +88,31 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         [MenuItem(MenuPath)]
         private static void ToggleEnabled()
         {
-            if (_capturing)
+            var state = GetState();
+
+            if (state == CaptureState.Capturing)
             {
                 StopCaptureAndScheduleReport();
-                EditorPrefs.SetBool(PrefEnabled, false);
-                EditorPrefs.SetBool(PrefPendingStart, false);
                 Debug.Log("[Baseline2Smoke] Capture STOP requested. Report will be generated on Stop.");
                 return;
             }
 
-            bool enabled = EditorPrefs.GetBool(PrefEnabled, false);
-            enabled = !enabled;
-            EditorPrefs.SetBool(PrefEnabled, enabled);
-
-            if (enabled)
+            if (state == CaptureState.Armed)
             {
-                EditorPrefs.SetBool(PrefPendingStart, true);
-                Debug.Log("[Baseline2Smoke] Capture ARMED. Press Play. Report will be generated automatically on Stop.");
-
-                if (EditorApplication.isPlaying)
-                    TryStartIfPendingAndInPlay(force: true);
-            }
-            else
-            {
+                SetState(CaptureState.Idle);
                 EditorPrefs.SetBool(PrefPendingStart, false);
                 Debug.Log("[Baseline2Smoke] Capture DISARMED.");
+                return;
             }
+
+            ArmCaptureAndEnterPlayMode();
         }
 
         [MenuItem(MenuPath, true)]
         private static bool ToggleEnabledValidate()
         {
-            bool enabled = EditorPrefs.GetBool(PrefEnabled, false);
-            Menu.SetChecked(MenuPath, enabled || _capturing);
+            var state = GetState();
+            Menu.SetChecked(MenuPath, state != CaptureState.Idle || _capturing);
             return true;
         }
 
@@ -116,19 +121,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
         // =========================
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (!EditorPrefs.GetBool(PrefEnabled, false))
-            {
-                // If user disarmed while capturing, stop cleanly.
-                if (_capturing)
-                    StopCaptureAndScheduleReport();
-                return;
-            }
-
             switch (state)
             {
                 case PlayModeStateChange.ExitingEditMode:
                     // Mark pending start before the Play transition.
-                    EditorPrefs.SetBool(PrefPendingStart, true);
+                    if (GetState() == CaptureState.Armed)
+                        EditorPrefs.SetBool(PrefPendingStart, true);
                     break;
 
                 case PlayModeStateChange.EnteredPlayMode:
@@ -155,8 +153,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 return;
 
             bool pending = EditorPrefs.GetBool(PrefPendingStart, false);
+            var state = GetState();
 
             if (!pending && !force)
+                return;
+
+            if (!pending && force && state != CaptureState.Armed)
                 return;
 
             if (!EditorApplication.isPlaying && !EditorApplication.isPlayingOrWillChangePlaymode)
@@ -164,6 +166,22 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             EditorPrefs.SetBool(PrefPendingStart, false);
             StartCapture();
+        }
+
+        private static void ArmCaptureAndEnterPlayMode()
+        {
+            SetState(CaptureState.Armed);
+            EditorPrefs.SetBool(PrefPendingStart, true);
+
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.Log("[Baseline2Smoke] Capture ARMED. Entering Play Mode...");
+                EditorApplication.isPlaying = true;
+                return;
+            }
+
+            Debug.Log("[Baseline2Smoke] Capture ARMED during Play Mode. Starting capture now.");
+            TryStartIfPendingAndInPlay(force: true);
         }
 
         // =========================
@@ -184,6 +202,8 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 { AutoFlush = false };
 
                 _capturing = true;
+                SessionState.SetBool(SessionCaptureActive, true);
+                SetState(CaptureState.Capturing);
                 _captureStartUtc = DateTime.UtcNow;
 
                 Application.logMessageReceivedThreaded += OnLogThreaded;
@@ -218,17 +238,20 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 SafeCloseWriter();
 
                 _capturing = false;
+                SessionState.SetBool(SessionCaptureActive, false);
 
                 // Generate report on EnteredEditMode (or immediately if already in edit mode).
                 EditorPrefs.SetBool(PrefReportPending, true);
-                EditorPrefs.SetBool(PrefEnabled, false);
                 EditorPrefs.SetBool(PrefPendingStart, false);
+                SetState(CaptureState.ReportPending);
 
                 Debug.Log($"[Baseline2Smoke] CAPTURE STOPPED. Scheduling report generation -> {LastRunMdAbs}");
             }
             catch (Exception ex)
             {
                 _capturing = false;
+                SessionState.SetBool(SessionCaptureActive, false);
+                SetState(CaptureState.Idle);
                 SafeCloseWriter();
                 Debug.LogError($"[Baseline2Smoke] Failed to stop capture: {ex}");
             }
@@ -333,6 +356,7 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 if (!File.Exists(LastRunLogAbs))
                 {
                     Debug.LogWarning($"[Baseline2Smoke] Report generation skipped: log not found -> {LastRunLogAbs}");
+                    SetState(CaptureState.Idle);
                     return;
                 }
 
@@ -346,10 +370,12 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                 AssetDatabase.Refresh();
 
                 Debug.Log($"[Baseline2Smoke] Report generated -> {LastRunMdAbs}");
+                SetState(CaptureState.Idle);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[Baseline2Smoke] Report generation failed: {ex}");
+                SetState(CaptureState.Idle);
             }
         }
 
@@ -391,6 +417,15 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             foreach (var r in scenarioResults)
                 sb.AppendLine($"| {r.Id} | {r.Title} | **{r.Result}** | {r.MissingHard.Count} | {r.OrderViolations.Count} |");
+
+            sb.AppendLine();
+            sb.AppendLine("## Missing Soft (Summary)");
+            sb.AppendLine();
+            sb.AppendLine("| Scenario | Missing (Soft) |");
+            sb.AppendLine("|---|---:|");
+
+            foreach (var r in scenarioResults)
+                sb.AppendLine($"| {r.Id} | {r.MissingSoft.Count} |");
 
             sb.AppendLine();
             sb.AppendLine("## Global Invariants");
@@ -813,6 +848,26 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
                     return i;
             }
             return -1;
+        }
+
+        private static CaptureState GetState()
+        {
+            var raw = EditorPrefs.GetString(PrefState, CaptureState.Idle.ToString());
+            if (Enum.TryParse(raw, out CaptureState parsed))
+                return parsed;
+            return CaptureState.Idle;
+        }
+
+        private static void SetState(CaptureState state)
+        {
+            EditorPrefs.SetString(PrefState, state.ToString());
+
+            if (state == CaptureState.Idle)
+            {
+                EditorPrefs.SetBool(PrefPendingStart, false);
+                EditorPrefs.SetBool(PrefReportPending, false);
+                SessionState.SetBool(SessionCaptureActive, false);
+            }
         }
     }
 }
