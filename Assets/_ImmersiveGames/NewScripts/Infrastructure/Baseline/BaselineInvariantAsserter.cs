@@ -261,6 +261,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
             var sig = rawSig;
             var state = GetOrCreate(sig);
 
+            if (state.ResetCompleted)
+            {
+                Fail(sig, "I3",
+                    "ResetCompleted duplicado para a mesma signature (emissão duplicada).",
+                    contextText: "<no-scene-context>",
+                    extra: evt.ToString());
+            }
+
             if (!state.ScenesReady)
             {
                 Fail(sig, "I3",
@@ -313,6 +321,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Baseline
 
             state.Completed = true;
             state.CompletedFrame = UnityEngine.Time.frameCount;
+
+            if (!state.ResetCompleted)
+            {
+                Fail(sig, "I3",
+                    "Completed observado antes do ResetCompleted (ordem inválida).",
+                    evt.Context.ToString());
+            }
 
             if (EnsureGateResolved() && _gate.IsTokenActive(SceneTransitionToken))
             {

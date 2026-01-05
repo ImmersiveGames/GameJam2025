@@ -20,9 +20,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class WorldLifecycleRuntimeCoordinator : IWorldResetRequestService
     {
+        private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
+        private readonly EventBinding<SceneTransitionCompletedEvent> _transitionCompletedBinding;
         private readonly EventBinding<SceneTransitionScenesReadyEvent> _scenesReadyBinding;
         private readonly HashSet<string> _inflightSignatures = new();
         private readonly object _signatureLock = new();
+        private readonly object _transitionLock = new();
+
+        private string _activeTransitionSignature = string.Empty;
+        private SceneFlowProfileId _activeTransitionProfileId = default;
+        private string _activeTransitionTargetScene = string.Empty;
 
         // Fallback defensivo: se alguma transição para Menu vier sem profile,
         // evitamos ruído/erro por falta de WorldLifecycleController no Menu.
@@ -31,12 +38,42 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
         public WorldLifecycleRuntimeCoordinator()
         {
+            _transitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
+            _transitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
             _scenesReadyBinding = new EventBinding<SceneTransitionScenesReadyEvent>(OnScenesReady);
+            EventBus<SceneTransitionStartedEvent>.Register(_transitionStartedBinding);
+            EventBus<SceneTransitionCompletedEvent>.Register(_transitionCompletedBinding);
             EventBus<SceneTransitionScenesReadyEvent>.Register(_scenesReadyBinding);
 
             DebugUtility.LogVerbose(typeof(WorldLifecycleRuntimeCoordinator),
                 "[WorldLifecycle] Runtime driver registrado para SceneTransitionScenesReadyEvent.",
                 DebugUtility.Colors.Info);
+        }
+
+        private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            var context = evt.Context;
+            if (context.Equals(default(SceneTransitionContext)))
+            {
+                return;
+            }
+
+            lock (_transitionLock)
+            {
+                _activeTransitionSignature = GetContextSignature(context);
+                _activeTransitionProfileId = context.TransitionProfileId;
+                _activeTransitionTargetScene = context.TargetActiveScene ?? string.Empty;
+            }
+        }
+
+        private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
+        {
+            lock (_transitionLock)
+            {
+                _activeTransitionSignature = string.Empty;
+                _activeTransitionProfileId = default;
+                _activeTransitionTargetScene = string.Empty;
+            }
         }
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
@@ -149,8 +186,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             if (IsSceneTransitionGateActive())
             {
+                var transitionInfo = GetActiveTransitionInfo();
+                var signatureInfo = string.IsNullOrEmpty(transitionInfo.Signature)
+                    ? "<none>"
+                    : transitionInfo.Signature;
+                var profileInfo = transitionInfo.ProfileId.IsValid
+                    ? transitionInfo.ProfileId.ToString()
+                    : "<none>";
+                var targetSceneInfo = string.IsNullOrEmpty(transitionInfo.TargetScene)
+                    ? "<unknown>"
+                    : transitionInfo.TargetScene;
+
                 DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
-                    $"[WorldLifecycle] Reset IGNORED (duplicate). reason='{reason}', scene='{activeSceneName}', detail='SceneTransition gate ativo'.");
+                    $"[WorldLifecycle] Reset IGNORED (scene-transition). reason='{reason}', scene='{activeSceneName}', detail='SceneTransition gate ativo', signature='{signatureInfo}', profile='{profileInfo}', targetScene='{targetSceneInfo}'.");
                 return Task.CompletedTask;
             }
 
@@ -273,6 +321,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             lock (_signatureLock)
             {
                 _inflightSignatures.Remove(signature);
+            }
+        }
+
+        private (string Signature, SceneFlowProfileId ProfileId, string TargetScene) GetActiveTransitionInfo()
+        {
+            lock (_transitionLock)
+            {
+                return (_activeTransitionSignature, _activeTransitionProfileId, _activeTransitionTargetScene);
             }
         }
     }
