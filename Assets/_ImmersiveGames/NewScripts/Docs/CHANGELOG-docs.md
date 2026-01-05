@@ -4,6 +4,7 @@
 ### Added
 - `IWorldResetRequestService` como gatilho de produção para `ResetWorld` fora de transição, com reason padronizado e dedupe por `contextSignature` durante o fluxo de SceneFlow.
 - Registro de validação checklist-driven em `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md` (gerado pelo menu Verify Last Run).
+- ADR de fechamento do Baseline 2.0: `Docs/ADRs/ADR-0016-Baseline-2.0-Fechamento.md`.
 
 ### Changed
 - Consolidado o conjunto canônico de documentação (README/ARCHITECTURE/WORLD_LIFECYCLE/ADRs/Baseline 2.0/CHANGELOG) e ajustado o mapa de navegação.
@@ -20,6 +21,7 @@
 ### Validated
 - Baseline 2.0 (Smoke, A–E) **aprovado por evidência manual** usando o log `Reports/Baseline-2.0-Smoke-LastRun.log` como fonte de verdade nesta iteração.
 - Baseline 2.0 (A–E + invariantes) reforçado com evidência hard do `Baseline-2.0-Smoke-LastRun.log` sem ambiguidades de assinatura/reason.
+- Checklist-driven **Pass** confirmado em `Reports/Baseline-2.0-ChecklistVerification-LastRun.md`.
 
 ### Notes
 - A validação automática do relatório (parser do `Baseline2SmokeLastRunTool`) permaneceu instável após múltiplas tentativas; para evitar bloqueio de progresso, o status do Baseline foi concluído **com base no log bruto** (assinaturas e invariantes verificadas via busca manual).
