@@ -27,13 +27,14 @@ Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScrip
 - Tokens devem fechar balanceados (`Acquire == Release` por token).
 
 ### Evidências HARD (patterns/regex)
-- `I.SceneTransitionStarted` :: `SceneTransitionStarted`
+- `I.SceneTransitionStarted` :: `\[Readiness\].*SceneTransitionStarted`
+- `I.SceneTransitionCompleted` :: `\[Readiness\].*SceneTransitionCompleted`
 - `I.SceneTransitionGateAcquire` :: `Acquire token='flow\.scene_transition'`
 - `I.SceneTransitionGateRelease` :: `Release token='flow\.scene_transition'\. Active=0\. IsOpen=True`
 
 ### Regras de Ordem (patterns/regex)
-- `I.SceneTransitionStartedBeforeCompleted` :: `SceneTransitionStarted` => `SceneTransitionCompleted|Transi[cç][aã]o conclu[ií]da com sucesso`
-- `I.ScenesReadyBeforeCompleted` :: `SceneTransitionScenesReady` => `SceneTransitionCompleted|Transi[cç][aã]o conclu[ií]da com sucesso`
+- `I.SceneTransitionStartedBeforeCompleted` :: `\[Readiness\].*SceneTransitionStarted` => `\[Readiness\].*SceneTransitionCompleted`
+- `I.ScenesReadyBeforeCompleted` :: `SceneTransitionScenesReady` => `\[Readiness\].*SceneTransitionCompleted`
 - `I.ResetCompletedBeforeFadeOut` :: `WorldLifecycleResetCompletedEvent|Reset SKIPPED \(startup/frontend\)` => `Completion gate conclu[ií]do\. Prosseguindo para FadeOut`
 
 ---
@@ -149,3 +150,4 @@ Este documento é a **fonte da verdade** do Baseline 2.0 para o projeto NewScrip
 - 2026-01-05: **Tool now aligned to spec**.
 - 2026-01-05: **Hard/soft separation**.
 - 2026-01-05: **Single menu entry**.
+- 2026-01-05: **Tightened regex for SceneTransitionStarted/Completed to avoid false positives; order validation now supports multiple transitions**.

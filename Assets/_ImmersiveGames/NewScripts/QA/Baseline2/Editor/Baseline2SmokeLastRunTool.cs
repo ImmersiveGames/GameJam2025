@@ -781,11 +781,9 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             foreach (var rule in spec.GlobalOrderRules)
             {
-                int iBefore = FirstIndex(lines, rule.Before);
-                int iAfter = FirstIndex(lines, rule.After);
-
-                if (iBefore >= 0 && iAfter >= 0 && iBefore > iAfter)
-                    r.OrderViolations.Add($"{rule.Key}: `{rule.Before}` appeared after `{rule.After}`");
+                var violation = ValidateOrderRule(lines, rule.Before, rule.After, rule.Key);
+                if (!string.IsNullOrEmpty(violation))
+                    r.OrderViolations.Add(violation);
             }
 
             if (r.MissingHard.Count > 0 || r.OrderViolations.Count > 0)
@@ -817,11 +815,9 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
 
             foreach (var rule in def.OrderRules)
             {
-                int iBefore = FirstIndex(lines, rule.Before);
-                int iAfter = FirstIndex(lines, rule.After);
-
-                if (iBefore >= 0 && iAfter >= 0 && iBefore > iAfter)
-                    r.OrderViolations.Add($"{rule.Key}: `{rule.Before}` appeared after `{rule.After}`");
+                var violation = ValidateOrderRule(lines, rule.Before, rule.After, rule.Key);
+                if (!string.IsNullOrEmpty(violation))
+                    r.OrderViolations.Add(violation);
             }
 
             if (r.MissingHard.Count > 0 || r.OrderViolations.Count > 0)
@@ -840,14 +836,35 @@ namespace _ImmersiveGames.NewScripts.EditorTools.Baseline2
             return false;
         }
 
-        private static int FirstIndex(string[] lines, Regex pattern)
+        private static string ValidateOrderRule(string[] lines, Regex before, Regex after, string ruleKey)
         {
+            int open = 0;
+            bool sawBefore = false;
+            bool sawAfter = false;
+
             for (int i = 0; i < lines.Length; i++)
             {
-                if (pattern.IsMatch(lines[i]))
-                    return i;
+                var line = lines[i];
+                if (before.IsMatch(line))
+                {
+                    open++;
+                    sawBefore = true;
+                }
+
+                if (after.IsMatch(line))
+                {
+                    sawAfter = true;
+                    if (open == 0)
+                        return $"Order violation: {ruleKey} (completed without started). before=`{before}`, after=`{after}`";
+
+                    open--;
+                }
             }
-            return -1;
+
+            if (open > 0 || (sawBefore && !sawAfter))
+                return $"Order violation: {ruleKey} (started without completed). before=`{before}`, after=`{after}`";
+
+            return string.Empty;
         }
 
         private static CaptureState GetState()
