@@ -40,6 +40,10 @@
 ### Validated
 - Baseline 2.0 (A–E + invariantes) reforçado com evidência hard do `Baseline-2.0-Smoke-LastRun.log` sem ambiguidades de assinatura/reason.
 
+## [2026-01-07]
+### Changed
+- Documentado o módulo de Loading HUD (`SceneFlowLoadingService` + `INewScriptsLoadingHudService`) no `WORLD_LIFECYCLE.md` com ordem de fases e assinaturas de log estáveis.
+
 
 ## [2026-01-03]
 - Added: `Reports/Baseline-Audit-2026-01-03.md` com matriz de evidência (código + QA/logs) e status de validação.

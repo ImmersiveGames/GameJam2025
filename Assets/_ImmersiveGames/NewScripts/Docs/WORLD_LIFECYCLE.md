@@ -26,6 +26,27 @@ Garantir que o “mundo” possa ser reinicializado de forma previsível, para:
 
 **Fallback (UseFade=false):** `LoadingHUD.Show` pode ocorrer no `Started`, com `Hide` antes do `FadeOut` (safety hide no `Completed`).
 
+## Módulo Loading HUD (SceneFlowLoadingService)
+O módulo de Loading HUD é orquestrado pelo `SceneFlowLoadingService` e usa o `INewScriptsLoadingHudService`
+para garantir que a HUD esteja carregada e visível **sem bloquear** o SceneFlow.
+
+Contrato de ordem (UseFade=true):
+- `SceneTransitionFadeInCompletedEvent` → Show (HUD fica visível antes de load/unload).
+- `SceneTransitionBeforeFadeOutEvent` → Hide (após ResetCompleted e antes do FadeOut).
+- `SceneTransitionCompletedEvent` → Safety hide (idempotente).
+
+Fallback (UseFade=false):
+- `SceneTransitionStartedEvent` → Show.
+- `SceneTransitionBeforeFadeOutEvent` → Hide.
+- `SceneTransitionCompletedEvent` → Safety hide.
+
+Assinaturas de log estáveis (exemplos):
+- `[Loading] FadeInCompleted → Show. signature='...'`
+- `[LoadingHUD] Show aplicado. signature='...', phase='AfterFadeIn'`
+- `[Loading] BeforeFadeOut → Hide. signature='...'`
+- `[LoadingHUD] Hide aplicado. signature='...', phase='BeforeFadeOut'`
+- Fallback HUD ausente: `[Loading] HUD indisponível nesta transição. ...`
+
 ## Explicação simples
 Pense no reset como a “faxina + reconstrução” do mundo. Durante o loading real, o jogo:
 1) carrega as cenas necessárias,
