@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         public const string PrefixSkippedStartupOrFrontend = "Skipped_StartupOrFrontend:";
         public const string PrefixFailedNoController = "Failed_NoController:";
         public const string PrefixFailedReset = "Failed_Reset:";
+        public const string PrefixProductionTrigger = "ProductionTrigger/";
 
         public static string ScenesReadyFor(string activeSceneName)
         {
@@ -45,6 +46,12 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
         {
             var safeType = string.IsNullOrWhiteSpace(exceptionTypeName) ? "<unknown>" : exceptionTypeName.Trim();
             return $"{PrefixFailedReset}{safeType}";
+        }
+
+        public static string ProductionTrigger(string source)
+        {
+            var safeSource = string.IsNullOrWhiteSpace(source) ? "<unspecified>" : source.Trim();
+            return $"{PrefixProductionTrigger}{safeSource}";
         }
 
         private static string NormalizeProfile(string profile)
