@@ -74,6 +74,20 @@ Durante transições de cena, o reset é coordenado por eventos:
     - `GameReadinessService` libera token
     - jogo pode voltar a “READY” (sujeito ao estado do GameLoop e outras condições)
 
+## Production Reset Trigger
+Há dois caminhos controlados para reset do mundo:
+
+1) **Durante transição (canônico)**
+   - `SceneTransitionScenesReadyEvent` → `WorldLifecycleRuntimeCoordinator` → `ResetWorldAsync(...)`.
+   - Em gameplay, o reason é `ScenesReady/<ActiveScene>` e o fluxo termina com
+     `WorldLifecycleResetCompletedEvent(signature, reason)`.
+
+2) **Fora de transição (produção)**
+   - `IWorldResetRequestService.RequestResetAsync(source)` dispara um reset manual quando **não**
+     há transição ativa (gate `flow.scene_transition`).
+   - Limitação atual: como não há `SceneTransitionContext`, **não** existe
+     `WorldLifecycleResetCompletedEvent` nesse caminho (não há signature para correlacionar).
+
 ### Completion gate (SceneFlow)
 O `WorldLifecycleResetCompletionGate` bloqueia o final da transição (antes do `FadeOut`) até que:
 - `WorldLifecycleRuntimeCoordinator` emita `WorldLifecycleResetCompletedEvent(signature, reason)`.

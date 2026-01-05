@@ -1,6 +1,10 @@
 # Changelog (Docs)
 
 ## [2026-01-05]
+### Added
+- `IWorldResetRequestService` como gatilho de produção para `ResetWorld` fora de transição, com reason padronizado e dedupe por `contextSignature` durante o fluxo de SceneFlow.
+- Registro de validação checklist-driven em `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md` (gerado pelo menu Verify Last Run).
+
 ### Changed
 - Consolidado o conjunto canônico de documentação (README/ARCHITECTURE/WORLD_LIFECYCLE/ADRs/Baseline 2.0/CHANGELOG) e ajustado o mapa de navegação.
 - Baseline 2.0 Spec atualizado como fonte única de matriz/invariantes e template mínimo de evidência.
