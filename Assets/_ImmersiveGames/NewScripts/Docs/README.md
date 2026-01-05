@@ -21,6 +21,17 @@ Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o es
 ## Baseline 2.0 (contrato de regressão)
 O Baseline 2.0 é a referência congelada para validar o pipeline **SceneFlow + Fade/Loading + WorldLifecycle + GameLoop + Gate**. A **spec** é a fonte de verdade e o **checklist** registra o último smoke log aceito.
 
+## Baseline 2.0 (Status)
+- **Status:** **FECHADO / OPERACIONAL** (2026-01-05).
+- **ADR de fechamento:** [ADR-0016-Baseline-2.0-Fechamento](ADRs/ADR-0016-Baseline-2.0-Fechamento.md).
+- **Spec frozen:** [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md).
+- **Evidência checklist-driven (Pass):** [Baseline 2.0 — ChecklistVerification Last Run](Reports/Baseline-2.0-ChecklistVerification-LastRun.md)
+  - Status **Pass**, Blocks **5**, Pass **5**, Fail **0**, LogLines **804**, Evidence **20** (todos os blocos passaram).
+
+### Como revalidar no Unity Editor
+- Menu: **Tools/NewScripts/Baseline2/Verify Last Run**.
+- Output: `Docs/Reports/Baseline-2.0-ChecklistVerification-LastRun.md`.
+
 ## Reports e evidências
 Status: evidências atualizadas em **2026-01-05**.
 

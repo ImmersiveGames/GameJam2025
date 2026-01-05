@@ -124,6 +124,12 @@ A **spec** do Baseline 2.0 é a fonte de verdade para invariantes e assinaturas 
 - [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
 - [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
 
+### Baseline 2.0 (status fechado)
+- **Status:** FECHADO / OPERACIONAL (2026-01-05).
+- **ADR de fechamento:** [ADR-0016-Baseline-2.0-Fechamento](ADRs/ADR-0016-Baseline-2.0-Fechamento.md).
+- Contrato do pipeline: **SceneFlow → ScenesReady → WorldLifecycleResetCompleted → Gate → FadeOut/Completed**.
+- Spec congelada: [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md).
+
 ## Documentos relacionados
 - [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
 - [ADR-0009-FadeSceneFlow.md](ADRs/ADR-0009-FadeSceneFlow.md)

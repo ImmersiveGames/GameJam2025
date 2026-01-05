@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DI
     {
         public static IDependencyProvider Provider => Instance;
 
-        [SerializeField] private int maxSceneServices = 8;
+        [SerializeField] private int maxSceneServices = 18;
 
         private DependencyInjector _injector;
         private ObjectServiceRegistry _objectRegistry;
