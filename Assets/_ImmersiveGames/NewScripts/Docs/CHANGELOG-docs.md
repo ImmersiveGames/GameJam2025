@@ -1,6 +1,15 @@
 # Changelog (Docs)
 
 ## [2026-01-05]
+### Changed
+- Consolidado o conjunto canônico de documentação (README/ARCHITECTURE/WORLD_LIFECYCLE/ADRs/Baseline 2.0/CHANGELOG) e ajustado o mapa de navegação.
+- Baseline 2.0 Spec atualizado como fonte única de matriz/invariantes e template mínimo de evidência.
+- Checklist operacional do Baseline 2.0 consolidado em `Docs/Reports` (referência única para o último smoke).
+
+### Removed
+- Duplicações de checklist de baseline espalhadas em ADRs/QA/Baseline.
+- Documentos redundantes de visão geral/planejamento que repetiam arquitetura e baseline.
+
 ### Validated
 - Baseline 2.0 (Smoke, A–E) **aprovado por evidência manual** usando o log `Reports/Baseline-2.0-Smoke-LastRun.log` como fonte de verdade nesta iteração.
 

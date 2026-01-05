@@ -1,28 +1,28 @@
 # NewScripts — Documentação
 
-Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o estado atual do pipeline de **Scene Flow** + **Fade** e do **World Lifecycle** (reset determinístico por escopos).
+Este conjunto de documentos descreve a arquitetura **NewScripts** (Unity) e o estado atual do pipeline de **Scene Flow + Fade/Loading** e do **World Lifecycle** (reset determinístico por escopos).
 
-## Onde está a documentação
-Arquivos canônicos (este pacote):
+## Mapa de navegação (docs canônicos)
 - [README.md](README.md) — índice e orientação rápida.
-- [ARCHITECTURE.md](ARCHITECTURE.md) — visão arquitetural de alto nível.
-- [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md) — detalhes técnicos, módulos e responsabilidades.
-- [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md) — semântica operacional do reset determinístico do mundo.
-- [DECISIONS.md](DECISIONS.md) — decisões/ADRs resumidos (o “porquê”).
-- [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md) — exemplos e práticas recomendadas.
-- [GLOSSARY.md](GLOSSARY.md) — glossário de termos.
+- [ARCHITECTURE.md](ARCHITECTURE.md) — visão arquitetural de alto nível (SceneFlow, WorldLifecycle, GameLoop, gates).
+- [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md) — contrato operacional do reset determinístico e integração com SceneFlow.
+- ADRs relevantes:
+  - [ADR-0009-FadeSceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
+  - [ADR-0010-LoadingHud-SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
+  - [ADR-0011-WorldDefinition-MultiActor-GameplayScene](ADRs/ADR-0011-WorldDefinition-MultiActor-GameplayScene.md)
+  - [ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart](ADRs/ADR-0012-Fluxo-Pos-Gameplay-GameOver-Vitoria-Restart.md)
+  - [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md)
+  - [ADR-0014-GameplayReset-Targets-Grupos](ADRs/ADR-0014-GameplayReset-Targets-Grupos.md)
+- Baseline 2.0:
+  - [Baseline 2.0 — Spec (frozen)](Reports/Baseline-2.0-Spec.md)
+  - [Baseline 2.0 — Checklist (operacional)](Reports/Baseline-2.0-Checklist.md)
 - [CHANGELOG-docs.md](CHANGELOG-docs.md) — histórico de alterações desta documentação.
-- [ADR-0009-FadeSceneFlow](ADRs/ADR-0009-FadeSceneFlow.md) — ADR específico do Fade + SceneFlow (NewScripts).
-- [ADR-0010-LoadingHud-SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md) — ADR específico do Loading HUD integrado ao SceneFlow.
-- [ADR-0013-Ciclo-de-Vida-Jogo](ADRs/ADR-0013-Ciclo-de-Vida-Jogo.md) — ADR de reset por escopos + gate no ciclo de vida do jogo.
-
-## Reports (evidências)
-Status: evidências atualizadas em 2026-01-03.
 
 ## Baseline 2.0 (contrato de regressão)
+O Baseline 2.0 é a referência congelada para validar o pipeline **SceneFlow + Fade/Loading + WorldLifecycle + GameLoop + Gate**. A **spec** é a fonte de verdade e o **checklist** registra o último smoke log aceito.
 
-Este pacote inclui uma matriz mínima de cenários + invariantes para tornar regressões detectáveis
-sem ambiguidade (logs + asserts).
+## Reports e evidências
+Status: evidências atualizadas em **2026-01-05**.
 
 ### Report master (produção)
 - [SceneFlow-Production-EndToEnd-Validation](Reports/SceneFlow-Production-EndToEnd-Validation.md)
@@ -30,16 +30,12 @@ sem ambiguidade (logs + asserts).
 
 ### Baseline audit (matriz atual)
 - [Baseline-Audit-2026-01-03](Reports/Baseline-Audit-2026-01-03.md)
-- [Baseline Matrix 2.0](Baseline/Baseline-Matrix-2.0.md)
-- [Baseline Evidence Template](Baseline/Baseline-Evidence-Template.md)
-- [Baseline Invariants](Baseline/Baseline-Invariants.md)
 
 ### Reports históricos (SceneFlow)
 - [SceneFlow-Smoke-Result](Reports/SceneFlow-Smoke-Result.md)
 - [SceneFlow-Gameplay-To-Menu-Report](Reports/SceneFlow-Gameplay-To-Menu-Report.md)
 
 ### Outros reports
-- [WORLDLIFECYCLE_RESET_STATUS.md](WORLDLIFECYCLE_RESET_STATUS.md)
 - [GameLoop](Reports/GameLoop.md)
 - [QA-Audit-2025-12-27](Reports/QA-Audit-2025-12-27.md)
 - [QA-GameplayReset-RequestMatrix](Reports/QA-GameplayReset-RequestMatrix.md)
@@ -59,6 +55,21 @@ sem ambiguidade (logs + asserts).
 - Added: **Loading HUD integrado ao SceneFlow** com sinal de HUD pronto e ordenação acima do Fade.
 - Updated: integração **WorldLifecycle → Gameplay Reset** via `PlayersResetParticipant` (gameplay) plugado como `IResetScopeParticipant` no soft reset por escopos.
 
+## Fluxo de transição (canônico)
+**Ordem observada (UseFade=true):**
+1. `SceneTransitionStartedEvent` (adquire token `flow.scene_transition`).
+2. `FadeIn` (tela escurece).
+3. `LoadingHUD.Show`.
+4. Load/Unload/Active das cenas.
+5. `SceneTransitionScenesReadyEvent`.
+6. `WorldLifecycleRuntimeCoordinator` executa **reset** (gameplay) ou **SKIP** (startup/frontend).
+7. `WorldLifecycleResetCompletedEvent` libera o completion gate.
+8. `LoadingHUD.Hide`.
+9. `FadeOut`.
+10. `SceneTransitionCompletedEvent` (libera token `flow.scene_transition`).
+
+**Fallback (UseFade=false):** `LoadingHUD.Show` pode ocorrer no `Started`, e o `Hide` ocorre antes do `FadeOut` (com safety hide no `Completed`).
+
 ## Explicação simples
 Quando o jogador sai do menu e entra no gameplay, o jogo passa por uma “esteira de preparação”.
 Essa preparação inclui **carregar cenas**, **resetar o mundo** e **spawnação/preparação de entidades**.
@@ -74,93 +85,13 @@ para concluir **reset + spawn/preparação** **antes do FadeOut**. Até lá, o S
 Remover esse SKIP cedo demais muda o comportamento do pipeline (reset rodando em cenas
 sem mundo) e pode gerar efeitos colaterais em boot/menu.
 
-## QA (status)
+## Gate / Readiness (tokens)
+- `flow.scene_transition`: adquirido no `SceneTransitionStarted` e liberado no `SceneTransitionCompleted`.
+- `WorldLifecycle.WorldReset`: adquirido durante o hard reset em gameplay e liberado ao final.
+- `state.pause`: adquirido no pause e liberado no resume.
+- `state.postgame`: adquirido quando o PostGame overlay está ativo e liberado ao concluir a ação.
 
-### ATIVOS
-- Smoke runner de infraestrutura:
-    - [Infrastructure/QA/NewScriptsInfraSmokeRunner.cs](../Infrastructure/QA/NewScriptsInfraSmokeRunner.cs)
-    - [Infrastructure/QA/EventBusSmokeQATester.cs](../Infrastructure/QA/EventBusSmokeQATester.cs)
-    - [Infrastructure/QA/FilteredEventBusSmokeQATester.cs](../Infrastructure/QA/FilteredEventBusSmokeQATester.cs)
-    - [Infrastructure/QA/DebugLogSettingsQATester.cs](../Infrastructure/QA/DebugLogSettingsQATester.cs)
-    - [Infrastructure/QA/DependencyDISmokeQATester.cs](../Infrastructure/QA/DependencyDISmokeQATester.cs)
-    - [Infrastructure/QA/FsmPredicateQATester.cs](../Infrastructure/QA/FsmPredicateQATester.cs)
-    - [Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs](../Infrastructure/QA/SceneTransitionServiceSmokeQATester.cs)
-- Hooks/boots ativos:
-    - [Infrastructure/QA/BaselineDebugBootstrap.cs](../Infrastructure/QA/BaselineDebugBootstrap.cs)
-    - [Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs](../Infrastructure/QA/PlayerMovementLeakSmokeBootstrap.cs)
-    - [Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs](../Infrastructure/QA/Editor/PlayerMovementLeakSmokeBootstrapCI.cs)
-    - [Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs](../Infrastructure/WorldLifecycle/Hooks/QA/SceneLifecycleHookLoggerA.cs)
-    - [Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs](../Infrastructure/GameLoop/QA/GameLoopStateFlowQATester.cs)
-
-### DEPRECATED (tools manuais/legado)
-- [QA/Deprecated/WorldLifecycleQATester.cs](../QA/Deprecated/WorldLifecycleQATester.cs)
-- [QA/Deprecated/ActorLifecycleHookLogger.cs](../QA/Deprecated/ActorLifecycleHookLogger.cs)
-- [QA/Deprecated/WorldLifecycleAutoTestRunner.cs](../QA/Deprecated/WorldLifecycleAutoTestRunner.cs)
-- [QA/Deprecated/QAFaultySceneLifecycleHook.cs](../QA/Deprecated/QAFaultySceneLifecycleHook.cs)
-- [QA/Deprecated/GameplayResetQaProbe.cs](../QA/Deprecated/GameplayResetQaProbe.cs)
-- [QA/Deprecated/GameplayResetQaSpawner.cs](../QA/Deprecated/GameplayResetQaSpawner.cs)
-- [QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs](../QA/Deprecated/SceneFlowPlayModeSmokeBootstrap.cs)
-- [QA/Deprecated/SceneFlowTransitionQAFrontend.cs](../QA/Deprecated/SceneFlowTransitionQAFrontend.cs)
-- [QA/Deprecated/WorldLifecycleBaselineRunner.cs](../QA/Deprecated/WorldLifecycleBaselineRunner.cs)
-- [QA/Deprecated/WorldLifecycleQATools.cs](../QA/Deprecated/WorldLifecycleQATools.cs)
-- [QA/Deprecated/WorldSpawnPipelineQaRunner.cs](../QA/Deprecated/WorldSpawnPipelineQaRunner.cs)
-- [QA/Deprecated/WorldMovementPermissionQaRunner.cs](../QA/Deprecated/WorldMovementPermissionQaRunner.cs)
-- [QA/Deprecated/GameLoopStartRequestQAFrontend.cs](../QA/Deprecated/GameLoopStartRequestQAFrontend.cs)
-- [QA/Deprecated/PauseOverlayDebugTrigger.cs](../QA/Deprecated/PauseOverlayDebugTrigger.cs) (dev-only)
-- [QA/Deprecated/GameNavigationDebugTrigger.cs](../QA/Deprecated/GameNavigationDebugTrigger.cs) (dev-only)
-
-Em 2025-12-27 (estado observado em runtime):
-- Pipeline **GameLoop → Navigation → SceneTransitionService → Fade/Loading → WorldLifecycle → Gate → Completed** está ativo.
-- `NewScriptsSceneTransitionProfile` é resolvido via **Resources** em:
-    - `Resources/SceneFlow/Profiles/<profileName>`
-- `WorldLifecycleRuntimeCoordinator` recebe `SceneTransitionScenesReadyEvent` e:
-    - **SKIP** quando `profile='startup'` ou `activeScene='MenuScene'`
-    - Executa reset em gameplay e emite `WorldLifecycleResetCompletedEvent`
-- `WorldLifecycleResetCompletionGate` segura o final da transição até o reset concluir.
-- `GameReadinessService` implementa `SimulationGateTokens.SceneTransition` durante a transição (evidência dedicada pendente).
-- `InputModeService` alterna `FrontendMenu`/`Gameplay`/`PauseOverlay` com base em SceneFlow e PauseOverlay.
-
-## Como ler (ordem sugerida)
-1. [ARCHITECTURE.md](ARCHITECTURE.md)
-2. [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
-3. [ADR-0009-FadeSceneFlow](ADRs/ADR-0009-FadeSceneFlow.md)
-4. [ADR-0010-LoadingHud-SceneFlow](ADRs/ADR-0010-LoadingHud-SceneFlow.md)
-5. [ARCHITECTURE_TECHNICAL.md](ARCHITECTURE_TECHNICAL.md)
-6. [DECISIONS.md](DECISIONS.md)
-7. [EXAMPLES_BEST_PRACTICES.md](EXAMPLES_BEST_PRACTICES.md)
-8. [GLOSSARY.md](GLOSSARY.md)
-9. [CHANGELOG-docs.md](CHANGELOG-docs.md)
-
-## Convenções usadas nesta documentação
-- Não presumimos assinaturas inexistentes. Onde necessário, exemplos são explicitamente marcados como **PSEUDOCÓDIGO**.
-- `SceneTransitionContext` é um `readonly struct` (sem `null`, sem object-initializer).
-- “NewScripts” e “Legado” coexistem: bridges podem existir, mas o **Fade** do NewScripts não possui fallback para fade legado.
-
-## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
-1. **Menu → Gameplay (Navigation)**
-    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
-    - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
-2. **SceneTransitionService (pipeline)**
-    - Emite `SceneTransitionStartedEvent` → `Fade to black (hide)`.
-    - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
-    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
-    - `Fade from black (reveal)` → `SceneTransitionCompletedEvent`.
-3. **WorldLifecycle**
-    - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
-        - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
-        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
-4. **GameLoop**
-    - `GameLoopSceneFlowCoordinator` aguarda `TransitionCompleted` + `ResetCompleted` antes de chamar `GameLoop.RequestStart()`.
-5. **Pause / Resume / ExitToMenu**
-    - `PauseOverlayController` publica:
-        - `GamePauseCommandEvent` (Show)
-        - `GameResumeRequestedEvent` (Hide)
-        - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
-    - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
-      `IGameNavigationService.RequestToMenu(...)` ao retornar ao menu.
-    - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
-
-### Fim de Run (Vitória/Derrota)
+## Fim de Run (Vitória/Derrota)
 
 Este fluxo **não define** como vitória/derrota é detectada em produção (timer, morte, objetivos, etc.). Ele define apenas um **ponto único de entrada**: uma solicitação de fim de run.
 
@@ -181,20 +112,39 @@ Este fluxo **não define** como vitória/derrota é detectada em produção (tim
   - `F7` → solicita **Victory**
   - `F6` → solicita **Defeat**
 
-## Gate / Readiness
-- `GameReadinessService` adquire o token `SimulationGateTokens.SceneTransition` em `SceneTransitionStartedEvent`
-  e libera em `SceneTransitionCompletedEvent`.
-- `WorldLifecycleOrchestrator` adquire o token `WorldLifecycleTokens.WorldResetToken` durante o reset e libera ao final.
+## Fluxo de produção (Menu → Gameplay → Pause → Resume → ExitToMenu → Menu)
+1. **Menu → Gameplay (Navigation)**
+    - `MenuPlayButtonBinder` chama `IGameNavigationService.RequestToGameplay(reason)`.
+    - `GameNavigationService` executa `SceneTransitionService.TransitionAsync` com profile `gameplay`.
+2. **SceneTransitionService (pipeline)**
+    - Emite `SceneTransitionStartedEvent` → `FadeIn` → `LoadingHUD.Show`.
+    - Load/Unload/Active → `SceneTransitionScenesReadyEvent`.
+    - Aguarda completion gate (`WorldLifecycleResetCompletionGate`).
+    - `LoadingHUD.Hide` → `FadeOut` → `SceneTransitionCompletedEvent`.
+3. **WorldLifecycle**
+    - `WorldLifecycleRuntimeCoordinator` escuta `ScenesReady`:
+        - **Gameplay**: executa reset e emite `WorldLifecycleResetCompletedEvent(signature, reason)`.
+        - **Startup/Frontend**: SKIP e emite `WorldLifecycleResetCompletedEvent` com reason `Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>`.
+4. **GameLoop**
+    - `GameLoopSceneFlowCoordinator` aguarda `TransitionCompleted` + `ResetCompleted` antes de chamar `GameLoop.RequestStart()`.
+5. **Pause / Resume / ExitToMenu**
+    - `PauseOverlayController` publica:
+        - `GamePauseCommandEvent` (Show)
+        - `GameResumeRequestedEvent` (Hide)
+        - `GameExitToMenuRequestedEvent` (ReturnToMenuFrontend)
+    - `PauseOverlayController` alterna `InputMode` para `PauseOverlay`/`Gameplay`/`FrontendMenu` e chama
+      `IGameNavigationService.RequestToMenu(...)` ao retornar ao menu.
+    - `GamePauseGateBridge` mapeia pause/resume para `SimulationGateTokens.Pause`.
 
-## Evidências (log)
-- `GlobalBootstrap` registrando serviços globais: `ISceneTransitionService`, `INewScriptsFadeService`,
-  `IGameNavigationService`, `GameLoop`, `InputModeService`, `GameReadinessService`,
-  `WorldLifecycleRuntimeCoordinator`, `SceneFlowLoadingService`.
-- Startup profile `startup` com reset **SKIPPED** e emissão de
-  `WorldLifecycleResetCompletedEvent(reason=Skipped_StartupOrFrontend:profile=<profile>;scene=<activeScene>)`.
-- `MenuPlayButtonBinder` desativa botão e dispara `RequestToGameplay`.
-- Transição para profile `gameplay` executa reset e o `PlayerSpawnService` spawna `Player_NewScripts`.
-- Completion gate aguarda `WorldLifecycleResetCompletedEvent` e prossegue.
-- `PauseOverlay` publica `GamePauseCommandEvent`, `GameResumeRequestedEvent`, `GameExitToMenuRequestedEvent`
-  e o token `state.pause` aparece no gate (confirmado em logs). `flow.scene_transition` está implementado,
-  mas ainda sem evidência dedicada em report.
+## Convenções usadas nesta documentação
+- Não presumimos assinaturas inexistentes. Onde necessário, exemplos são explicitamente marcados como **PSEUDOCÓDIGO**.
+- `SceneTransitionContext` é um `readonly struct` (sem `null`, sem object-initializer).
+- “NewScripts” e “Legado” coexistem: bridges podem existir, mas o **Fade** do NewScripts não possui fallback para fade legado.
+
+## Como ler (ordem sugerida)
+1. [ARCHITECTURE.md](ARCHITECTURE.md)
+2. [WORLD_LIFECYCLE.md](WORLD_LIFECYCLE.md)
+3. [Baseline 2.0 — Spec](Reports/Baseline-2.0-Spec.md)
+4. [Baseline 2.0 — Checklist](Reports/Baseline-2.0-Checklist.md)
+5. ADRs relevantes (lista acima)
+6. [CHANGELOG-docs.md](CHANGELOG-docs.md)
