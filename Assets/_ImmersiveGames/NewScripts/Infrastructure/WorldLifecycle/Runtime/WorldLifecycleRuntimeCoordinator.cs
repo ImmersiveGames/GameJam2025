@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Gameplay.Phases;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
 using _ImmersiveGames.NewScripts.Infrastructure.DI;
 using _ImmersiveGames.NewScripts.Infrastructure.Events;
@@ -166,6 +167,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 // IMPORTANTE: no projeto atual, ResetWorldAsync recebe apenas 'reason'.
                 await controller.ResetWorldAsync(reason: resetReason);
 
+                // Commit seguro (pending -> current) SOMENTE após reset ter concluído com sucesso.
+                TryCommitPendingPhase(signature, resetReason);
+
                 EmitResetCompleted(context, reason: resetReason, signature: signature);
             }
             catch (Exception ex)
@@ -211,10 +215,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 return Task.CompletedTask;
             }
 
-            return RunDirectResetAsync(activeSceneName, reason);
+            return RunDirectResetAsync(activeSceneName, reason, safeSource);
         }
 
-        private async Task RunDirectResetAsync(string activeSceneName, string reason)
+        private async Task RunDirectResetAsync(string activeSceneName, string reason, string safeSource)
         {
             try
             {
@@ -227,6 +231,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 }
 
                 await controller.ResetWorldAsync(reason: reason);
+
+                // Commit seguro também para reset manual/in-place (após reset bem-sucedido).
+                TryCommitPendingPhase(safeSource, reason);
             }
             catch (Exception ex)
             {
@@ -338,6 +345,30 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             lock (_transitionLock)
             {
                 return (_activeTransitionSignature, _activeTransitionProfileId, _activeTransitionTargetScene);
+            }
+        }
+
+        private static void TryCommitPendingPhase(string sourceSignature, string resetReason)
+        {
+            try
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phaseContext) || phaseContext == null)
+                {
+                    return;
+                }
+
+                if (!phaseContext.HasPending)
+                {
+                    return;
+                }
+
+                var commitReason = $"WorldLifecycle/ResetCompleted sig='{sourceSignature}' reason='{resetReason}'";
+                phaseContext.TryCommitPending(commitReason, out _);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
+                    $"[WorldLifecycle][Phase] Falha ao commit pending phase. ex='{ex.GetType().Name}', msg='{ex.Message}'.");
             }
         }
     }

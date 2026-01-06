@@ -1,78 +1,81 @@
-﻿
----
+﻿# Checklist — Sistema de Fases (Phase) + WorldLifecycle/SceneFlow
 
-# Checklist — Sistema de Fases (Phase / Stage)
-
-## Marco 0 — Base segura (CONCLUÍDO)
-
-* [x] O sistema sabe quando não reiniciar o mundo (Menu / Startup)
-* [x] O sistema sabe quando reiniciar o mundo (Gameplay)
-* [x] Reset nunca ocorre durante loading ou transição
-* [x] Gameplay só inicia após reset completo
-* [x] Pause e PostGame bloqueiam corretamente a simulação
+**Objetivo deste checklist:** registrar **o que já está validado** e **o que falta** para a próxima etapa (implementar “nova fase”).
 
 ---
 
-## Marco 1 — Fase como conceito explícito
+## 1) O que já testamos / validamos (até agora)
 
-### PhasePlan (fase solicitada)
+### 1.1 Timing seguro (não acontece “na hora errada”)
+- A troca de cenas inicia uma transição que **bloqueia o jogo** (ninguém joga durante a transição).
+- Existe uma ordem clara:
+    1) iniciar transição
+    2) fechar “bloqueio de simulação” (gate)
+    3) executar Fade/Loading
+    4) carregar/descarregar cenas
+    5) sinalizar `ScenesReady`
+    6) executar reset/spawn do mundo (quando aplicável)
+    7) sinalizar `ResetCompleted`
+    8) concluir transição e liberar o jogo
 
-* [ ] Existe uma forma explícita de solicitar uma fase
-* [ ] PhasePlan é definida antes do reset
-* [ ] PhasePlan não depende da cena carregada
-* [ ] PhasePlan sobrevive a transições de cena
-* [ ] Existe log claro de PhasePlan solicitada
+**Interpretação simples:** o sistema já “marca” o momento correto e só então permite que a troca de fase (ou reset) seja aplicada.
 
-Exemplo de evidência:
+### 1.2 “Reset” como ponto central
+- O reset (despawn/spawn) é o ponto único em que o mundo é reconstruído.
+- Isso evita “meio termo” (um pedaço do mundo antigo com um pedaço do mundo novo).
 
-```
-[Phase] Requested phase=GameplayStage1 reason=Menu/Play
-```
-
----
-
-### Active Phase (fase ativa)
-
-* [ ] Existe um conceito explícito de fase ativa
-* [ ] Fase ativa só é marcada após reset completo
-* [ ] Fase ativa nunca muda durante loading ou transição
-* [ ] Existe log claro de fase aplicada
-
-Exemplo de evidência:
-
-```
-[Phase] Applied phase=GameplayStage1 context=WorldReset
-```
+### 1.3 Fase como intenção vs fase aplicada
+- Existe um serviço de contexto (`IPhaseContextService`) que guarda:
+    - **Fase atual**
+    - **Fase pendente** (uma solicitação feita antes do momento de aplicar)
 
 ---
 
-## Marco 2 — Conteúdo dependente de fase (futuro)
+## 2) O que o sistema de fase faz hoje
 
-* [ ] Spawners consultam a fase ativa
-* [ ] Conteúdo varia por fase
-* [ ] É possível avançar fase sem trocar cena
-* [ ] É possível trocar fase com SceneFlow
-
----
-
-## Marco 3 — Progressão de fases (futuro)
-
-* [ ] Sistema decide próxima fase automaticamente
-* [ ] Condições de avanço por fase
-* [ ] Persistência de progresso entre fases
+- Permite **registrar que uma nova fase foi pedida** (pending).
+- Permite **consultar a fase atual**.
+- Ainda não existe um caminho completo “de ponta a ponta” para:
+    - pedir nova fase + aplicar no reset + montar conteúdo específico da fase
 
 ---
 
-## Resumo final (não técnico)
+## 3) Dúvida incorporada ao plano: fase influencia conteúdo e montagem do cenário
 
-> Até aqui, o sistema aprendeu **quando uma fase pode começar**.
-> O próximo passo é o sistema saber **qual fase deve começar** —
-> e garantir que essa decisão aconteça **antes** do mundo ser criado.
+### 3.1 O problema
+- `GameplayScene` tende a ser um **template**.
+- O que aparece dentro dela (obstáculos, inimigos, regras) deve depender da fase.
 
-Se quiser, no próximo passo eu já avanço direto para:
+### 3.2 A regra adotada
+- Quem monta o cenário deve usar **a fase aplicada** (current/applied), não a fase pendente.
+- A fase é aplicada no momento do **reset**, que é o momento seguro para reconstruir o mundo.
 
-* implementação do **PhasePlanService**
-* integração mínima com Menu / Restart
-* checklist de validação do Marco 1 (logs reais)
+---
 
-Sem retrabalho e sem quebrar o que já está validado.
+## 4) Próximo passo: implementar “nova fase”
+
+### 4.1 Precisamos suportar dois modos
+1. **Nova fase in-place (sem trocar cenas)**
+    - Troca de fase dentro do mesmo gameplay.
+    - Deve executar reset/spawn e manter o gate fechado durante o processo.
+
+2. **Nova fase com transição (com fade/loading + troca de cenas)**
+    - Troca de fase associada a carregar/descarregar cenas.
+    - Deve aplicar fase no reset após `ScenesReady`.
+
+### 4.2 Critérios de pronto (Definition of Done)
+- [ ] Há uma API clara para pedir fase (PhasePlan + reason)
+- [ ] Para **in-place**, o pedido resulta em reset e a fase passa de pending → current
+- [ ] Para **com transição**, o pedido ocorre antes do load e a fase só é aplicada no reset após `ScenesReady`
+- [ ] Existe um ponto único para “montar conteúdo por fase” que lê a fase aplicada
+- [ ] Logs/evidência: conseguimos identificar nos logs quando:
+    - fase foi solicitada
+    - fase foi aplicada
+    - reset terminou
+
+---
+
+## 5) Evidência (fonte de verdade)
+
+- A validação atual foi feita usando o **log capturado** como evidência principal.
+- O script automático de verificação foi considerado não confiável para este ciclo.

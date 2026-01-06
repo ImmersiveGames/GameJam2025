@@ -2,6 +2,8 @@
 
 /*
  * ChangeLog
+ * - Registrado IPhaseContextService (PhaseContextService) no DI global (ADR-0016).
+ * - Adicionado PhaseContextSceneFlowBridge para limpar Pending no SceneTransitionStarted (Baseline 3B).
  * - Adicionado GamePauseGateBridge para refletir pause/resume no SimulationGate sem congelar física.
  * - StateDependentService agora usa apenas NewScriptsStateDependentService (legacy removido).
  * - Entrada de infraestrutura mínima (Gate/WorldLifecycle/DI/Câmera/StateBridge) para NewScripts.
@@ -17,9 +19,13 @@
  * Nota (QA):
  * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do sync
  *   para que overrides de QA no DI sejam observados.
+ *
+ * Reorganização (jan/2026):
+ * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 using System;
 using _ImmersiveGames.NewScripts.Gameplay.GameLoop;
+using _ImmersiveGames.NewScripts.Gameplay.Phases;
 using _ImmersiveGames.NewScripts.Infrastructure.Baseline;
 using _ImmersiveGames.NewScripts.Infrastructure.Cameras;
 using _ImmersiveGames.NewScripts.Infrastructure.DebugLog;
@@ -47,6 +53,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
     /// </summary>
     public static class GlobalBootstrap
     {
+        // --------------------------------------------------------------------
+        // State / Constants
+        // --------------------------------------------------------------------
+
         private static bool _initialized;
         private static GameReadinessService _gameReadinessService;
 
@@ -60,6 +70,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
         private const string SceneNewBootstrap = "NewBootstrap";
         private const string SceneMenu = "MenuScene";
         private const string SceneUIGlobal = "UIGlobalScene";
+
+        // --------------------------------------------------------------------
+        // Entry
+        // --------------------------------------------------------------------
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -99,6 +113,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             _ = DependencyManager.Provider;
             DebugUtility.LogVerbose(typeof(GlobalBootstrap), "DependencyManager created for global scope.");
         }
+
+        // --------------------------------------------------------------------
+        // Main registration pipeline (order matters)
+        // --------------------------------------------------------------------
 
         private static void RegisterEssentialServicesOnly()
         {
@@ -140,6 +158,13 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
+            RegisterPhaseChangeService();
+
+            // ADR-0016: PhaseContext precisa existir no DI global.
+            RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
+
+            // Baseline 3B: Pending NÃO pode atravessar transição.
+            RegisterPhaseContextSceneFlowBridge();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
@@ -149,17 +174,40 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
             RegisterGameLoopSceneFlowCoordinatorIfAvailable();
         }
 
-#if NEWSCRIPTS_BASELINE_ASSERTS
-        private static void RegisterBaselineAsserter()
+        // --------------------------------------------------------------------
+        // Event systems
+        // --------------------------------------------------------------------
+
+        private static void PrimeEventSystems()
         {
-            if (BaselineInvariantAsserter.TryInstall())
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Baseline] BaselineInvariantAsserter ativo (NEWSCRIPTS_BASELINE_ASSERTS).",
-                    DebugUtility.Colors.Info);
-            }
+            EventBus<GameStartRequestedEvent>.Clear();
+            EventBus<GamePauseCommandEvent>.Clear();
+            EventBus<GameResumeRequestedEvent>.Clear();
+            EventBus<GameExitToMenuRequestedEvent>.Clear();
+            EventBus<GameResetRequestedEvent>.Clear();
+            EventBus<GameLoopActivityChangedEvent>.Clear();
+            EventBus<GameRunStartedEvent>.Clear();
+            EventBus<GameRunEndedEvent>.Clear();
+            EventBus<GameRunEndRequestedEvent>.Clear();
+
+            // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
+            EventBus<SceneTransitionStartedEvent>.Clear();
+            EventBus<SceneTransitionFadeInCompletedEvent>.Clear();
+            EventBus<SceneTransitionScenesReadyEvent>.Clear();
+            EventBus<SceneTransitionBeforeFadeOutEvent>.Clear();
+            EventBus<SceneTransitionCompletedEvent>.Clear();
+
+            // WorldLifecycle (NewScripts): reset completion gate depende deste evento.
+            EventBus<WorldLifecycleResetCompletedEvent>.Clear();
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
+                DebugUtility.Colors.Info);
         }
-#endif
+
+        // --------------------------------------------------------------------
+        // Fade / Loading
+        // --------------------------------------------------------------------
 
         private static void RegisterSceneFlowFadeModule()
         {
@@ -194,43 +242,35 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterIfMissing<T>(Func<T> factory) where T : class
+        // --------------------------------------------------------------------
+        // Pause / Readiness gate
+        // --------------------------------------------------------------------
+
+        private static void RegisterPauseBridge(ISimulationGateService gateService)
         {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var existing) && existing != null)
             {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Global service already present: {typeof(T).Name}.");
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Pause] GamePauseGateBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
-            var instance = factory();
-            DependencyManager.Provider.RegisterGlobal(instance);
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
-        }
+            if (gateService == null)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
+                {
+                    DebugUtility.LogError(typeof(GlobalBootstrap),
+                        "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
+                    return;
+                }
+            }
 
-        private static void PrimeEventSystems()
-        {
-            EventBus<GameStartRequestedEvent>.Clear();
-            EventBus<GamePauseCommandEvent>.Clear();
-            EventBus<GameResumeRequestedEvent>.Clear();
-            EventBus<GameExitToMenuRequestedEvent>.Clear();
-            EventBus<GameResetRequestedEvent>.Clear();
-            EventBus<GameLoopActivityChangedEvent>.Clear();
-            EventBus<GameRunStartedEvent>.Clear();
-            EventBus<GameRunEndedEvent>.Clear();
-            EventBus<GameRunEndRequestedEvent>.Clear();
-
-            // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
-            EventBus<SceneTransitionStartedEvent>.Clear();
-            EventBus<SceneTransitionFadeInCompletedEvent>.Clear();
-            EventBus<SceneTransitionScenesReadyEvent>.Clear();
-            EventBus<SceneTransitionBeforeFadeOutEvent>.Clear();
-            EventBus<SceneTransitionCompletedEvent>.Clear();
-
-            // WorldLifecycle (NewScripts): reset completion gate depende deste evento.
-            EventBus<WorldLifecycleResetCompletedEvent>.Clear();
+            var bridge = new GamePauseGateBridge(gateService);
+            DependencyManager.Provider.RegisterGlobal(bridge);
 
             DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[EventBus] EventBus inicializado (GameLoop + SceneFlow + WorldLifecycle).",
+                "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
                 DebugUtility.Colors.Info);
         }
 
@@ -264,172 +304,9 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterSceneFlowNative()
-        {
-            // Runtime coordinator precisa estar vivo quando o completion gate estiver ativo.
-            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
-
-            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] SceneTransitionService já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            // Loader/Fade (NewScripts standalone)
-            var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
-            var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
-
-            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
-            {
-                completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
-                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
-
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
-                    DebugUtility.Colors.Info);
-            }
-
-            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
-            DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterWorldResetRequestService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[WorldLifecycle] IWorldResetRequestService já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<WorldLifecycleRuntimeCoordinator>(out var coordinator) || coordinator == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[WorldLifecycle] WorldLifecycleRuntimeCoordinator indisponível. IWorldResetRequestService não será registrado.");
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IWorldResetRequestService>(coordinator, allowOverride: false);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterGameNavigationService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Navigation] IGameNavigationService já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
-            {
-                DebugUtility.LogWarning(typeof(GlobalBootstrap),
-                    "[Navigation] ISceneTransitionService indisponível. IGameNavigationService não será registrado.");
-                return;
-            }
-
-            var service = new GameNavigationService(sceneFlow);
-            DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Navigation] GameNavigationService registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterExitToMenuNavigationBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ExitToMenuNavigationBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new ExitToMenuNavigationBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterRestartNavigationBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<RestartNavigationBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Navigation] RestartNavigationBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new RestartNavigationBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Navigation] RestartNavigationBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterInputModeSceneFlowBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<InputModeSceneFlowBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[InputMode] InputModeSceneFlowBridge ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            var bridge = new InputModeSceneFlowBridge();
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[InputMode] InputModeSceneFlowBridge registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterPauseBridge(ISimulationGateService gateService)
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                    "[Pause] GamePauseGateBridge já registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (gateService == null)
-            {
-                if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out gateService) || gateService == null)
-                {
-                    DebugUtility.LogError(typeof(GlobalBootstrap),
-                        "[Pause] ISimulationGateService indisponível; GamePauseGateBridge não pôde ser inicializado.");
-                    return;
-                }
-            }
-
-            var bridge = new GamePauseGateBridge(gateService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
-                "[Pause] GamePauseGateBridge registrado (EventBus → SimulationGate).",
-                DebugUtility.Colors.Info);
-        }
+        // --------------------------------------------------------------------
+        // GameLoop / GameRun
+        // --------------------------------------------------------------------
 
         private static void RegisterGameLoop()
         {
@@ -535,6 +412,179 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 DebugUtility.Colors.Info);
         }
 
+        // --------------------------------------------------------------------
+        // SceneFlow / WorldLifecycle
+        // --------------------------------------------------------------------
+
+        private static void RegisterSceneFlowNative()
+        {
+            // Runtime coordinator precisa estar vivo quando o completion gate estiver ativo.
+            RegisterIfMissing(() => new WorldLifecycleRuntimeCoordinator());
+
+            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] SceneTransitionService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            // Loader/Fade (NewScripts standalone)
+            var loaderAdapter = NewScriptsSceneFlowAdapters.CreateLoaderAdapter();
+            var fadeAdapter = NewScriptsSceneFlowAdapters.CreateFadeAdapter(DependencyManager.Provider);
+
+            // Gate para segurar FadeOut/Completed até WorldLifecycle reset concluir.
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var completionGate) || completionGate == null)
+            {
+                completionGate = new WorldLifecycleResetCompletionGate(timeoutMs: 20000);
+                DependencyManager.Provider.RegisterGlobal(completionGate, allowOverride: false);
+
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[SceneFlow] ISceneTransitionCompletionGate registrado (WorldLifecycleResetCompletionGate).",
+                    DebugUtility.Colors.Info);
+            }
+
+            var service = new SceneTransitionService(loaderAdapter, fadeAdapter, completionGate);
+            DependencyManager.Provider.RegisterGlobal<ISceneTransitionService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                $"[SceneFlow] SceneTransitionService nativo registrado (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterWorldResetRequestService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[WorldLifecycle] IWorldResetRequestService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<WorldLifecycleRuntimeCoordinator>(out var coordinator) || coordinator == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[WorldLifecycle] WorldLifecycleRuntimeCoordinator indisponível. IWorldResetRequestService não será registrado.");
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IWorldResetRequestService>(coordinator, allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[WorldLifecycle] IWorldResetRequestService registrado no DI global (via WorldLifecycleRuntimeCoordinator).",
+                DebugUtility.Colors.Info);
+        }
+
+        // --------------------------------------------------------------------
+        // Navigation / InputMode
+        // --------------------------------------------------------------------
+
+        private static void RegisterGameNavigationService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] IGameNavigationService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[Navigation] ISceneTransitionService indisponível. IGameNavigationService não será registrado.");
+                return;
+            }
+
+            var service = new GameNavigationService(sceneFlow);
+            DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] GameNavigationService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterExitToMenuNavigationBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ExitToMenuNavigationBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] ExitToMenuNavigationBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new ExitToMenuNavigationBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] ExitToMenuNavigationBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterRestartNavigationBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RestartNavigationBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Navigation] RestartNavigationBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new RestartNavigationBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[Navigation] RestartNavigationBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterInputModeSceneFlowBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<InputModeSceneFlowBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[InputMode] InputModeSceneFlowBridge ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new InputModeSceneFlowBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[InputMode] InputModeSceneFlowBridge registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        // --------------------------------------------------------------------
+        // PhaseContext (Baseline 3B)
+        // --------------------------------------------------------------------
+
+        private static void RegisterPhaseContextSceneFlowBridge()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<PhaseContextSceneFlowBridge>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PhaseContext] PhaseContextSceneFlowBridge já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var bridge = new PhaseContextSceneFlowBridge();
+            DependencyManager.Provider.RegisterGlobal(bridge);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PhaseContext] PhaseContextSceneFlowBridge registrado no DI global (SceneFlow -> ClearPending).",
+                DebugUtility.Colors.Info);
+        }
+
+        // --------------------------------------------------------------------
+        // StateDependent / Camera
+        // --------------------------------------------------------------------
+
         private static void RegisterStateDependentService()
         {
             if (DependencyManager.Provider.TryGetGlobal<IStateDependentService>(out var existing) && existing != null)
@@ -566,6 +616,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 "[StateDependent] Registrado NewScriptsStateDependentService (gate-aware) como IStateDependentService.",
                 DebugUtility.Colors.Info);
         }
+
+        // --------------------------------------------------------------------
+        // Coordinator (production start)
+        // --------------------------------------------------------------------
 
         private static void RegisterGameLoopSceneFlowCoordinatorIfAvailable()
         {
@@ -600,5 +654,78 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
                 $"[GameLoopSceneFlow] Coordinator registrado (startPlan production, profile='{StartProfileId}').",
                 DebugUtility.Colors.Info);
         }
+
+        // --------------------------------------------------------------------
+        // Baseline (optional)
+        // --------------------------------------------------------------------
+
+#if NEWSCRIPTS_BASELINE_ASSERTS
+        private static void RegisterBaselineAsserter()
+        {
+            if (BaselineInvariantAsserter.TryInstall())
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[Baseline] BaselineInvariantAsserter ativo (NEWSCRIPTS_BASELINE_ASSERTS).",
+                    DebugUtility.Colors.Info);
+            }
+        }
+#endif
+
+        // --------------------------------------------------------------------
+        // DI helper
+        // --------------------------------------------------------------------
+
+        private static void RegisterIfMissing<T>(Func<T> factory) where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Global service already present: {typeof(T).Name}.");
+                return;
+            }
+
+            var instance = factory();
+            DependencyManager.Provider.RegisterGlobal(instance);
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap), $"Registered global service: {typeof(T).Name}.");
+        }
+        private static void RegisterPhaseChangeService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPhaseChangeService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                    "[PhaseChange] IPhaseChangeService já registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phaseContext) || phaseContext == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[PhaseChange] IPhaseContextService indisponível. IPhaseChangeService não será registrado.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetRequestService>(out var worldReset) || worldReset == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[PhaseChange] IWorldResetRequestService indisponível. IPhaseChangeService não será registrado.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
+            {
+                DebugUtility.LogWarning(typeof(GlobalBootstrap),
+                    "[PhaseChange] ISceneTransitionService indisponível. IPhaseChangeService não será registrado.");
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPhaseChangeService>(
+                new PhaseChangeService(phaseContext, worldReset, sceneFlow),
+                allowOverride: false);
+
+            DebugUtility.LogVerbose(typeof(GlobalBootstrap),
+                "[PhaseChange] PhaseChangeService registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
     }
 }
