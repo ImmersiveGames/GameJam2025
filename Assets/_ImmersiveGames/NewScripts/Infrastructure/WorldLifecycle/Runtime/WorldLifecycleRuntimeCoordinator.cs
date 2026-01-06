@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Events;
 using _ImmersiveGames.NewScripts.Infrastructure.Gate;
 using _ImmersiveGames.NewScripts.Infrastructure.Scene;
 using _ImmersiveGames.NewScripts.Infrastructure.SceneFlow;
+using _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
@@ -114,6 +115,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 : WorldLifecycleResetReason.ScenesReadyFor(activeSceneName);
 
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                $"{WorldLifecyclePhaseObservabilitySignatures.ResetRequested} sourceSignature='{signature}' reason='{resetReason}' profile='{profileId}' target='{activeSceneName}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] Reset REQUESTED. reason='{resetReason}', signature='{signature}', profile='{profileId}'.",
                 DebugUtility.Colors.Info);
 
@@ -182,6 +187,10 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
 
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] Reset REQUESTED. reason='{reason}', source='{safeSource}', scene='{activeSceneName}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
+                $"{WorldLifecyclePhaseObservabilitySignatures.ResetRequested} sourceSignature='{safeSource}' reason='{reason}' profile='<none>' target='{activeSceneName}'.",
                 DebugUtility.Colors.Info);
 
             if (IsSceneTransitionGateActive())
