@@ -20,6 +20,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
     /// - "[PhaseContext] PhaseCommitted ..."
     /// - "[PhaseContext] PhasePendingCleared ..."
     ///
+    /// NOTE ABOUT "before/after":
+    /// - There is no dedicated "Before/After" context menu item.
+    /// - "before/after" are LABELS printed in logs by this tester when it runs actions.
+    ///
     /// IMPORTANT:
     /// - This component does not assume PhaseContextService is registered.
     /// - Use TC00 to resolve; optionally TC00b to register a default instance in Global DI (editor/QA only).
@@ -32,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         [SerializeField] private bool allowRegisterFallbackInGlobalDi = true;
 
         [Header("QA Sample Data")]
-        [Tooltip("Sample phase id to build a valid PhasePlan when running TC01/TC02/TC03.")]
+        [Tooltip("Sample phase id to build a valid PhasePlan when running tests.")]
         [SerializeField] private int samplePhaseId = 1;
 
         [Tooltip("Sample content signature used to build a PhasePlan for tests (any non-empty string).")]
@@ -40,6 +44,10 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
 
         [Tooltip("Sample reason text used by tests (will be sanitized by PhaseContextService).")]
         [SerializeField] private string sampleReason = "QA/PhaseContext";
+
+        [Header("TC-PH-03 Setup")]
+        [Tooltip("Substring expected in PhasePendingCleared reason when SceneFlow starts a transition.")]
+        [SerializeField] private string expectedSceneFlowClearReasonSubstring = "SceneFlow/TransitionStarted";
 
         private IPhaseContextService? _service;
 
@@ -161,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         }
 
         // --------------------------------------------------------------------
-        // Context Menu - Test Cases
+        // Context Menu - Test Cases (Service semantics)
         // --------------------------------------------------------------------
 
         [ContextMenu("QA/PhaseContext/TC01 - SetPending (expect PhasePendingSet)")]
@@ -237,10 +245,74 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
             Expect(_pendingSetCount == 0, "TC04: Should NOT observe PhasePendingSetEvent for invalid plan.");
         }
 
+        // --------------------------------------------------------------------
+        // Context Menu - Test Cases (Pipeline semantics)
+        // --------------------------------------------------------------------
+
+        /// <summary>
+        /// TC-PH-03: Validate that a pending phase is automatically cleared when a SceneFlow transition starts.
+        /// This is a 2-step test:
+        /// 1) Run "TC-PH-03a" to arm a pending plan (and reset evidence counters).
+        /// 2) Trigger any SceneFlow transition (ex.: Gameplay -> Menu).
+        /// 3) Run "TC-PH-03b" to verify that we observed PhasePendingClearedEvent with a SceneFlow reason, and HasPending=false.
+        /// </summary>
+        [ContextMenu("QA/PhaseContext/TC-PH-03a - Arm Pending for auto-clear on SceneTransitionStarted")]
+        private void TCPH03a_ArmPendingForAutoClearOnSceneTransitionStarted()
+        {
+            if (!EnsureServiceResolved("TC-PH-03a")) return;
+
+            ResetLocalEvidence("TC-PH-03/before");
+
+            var plan = BuildSamplePlan();
+            _service!.SetPending(plan, sampleReason + "/TC-PH-03:Arm");
+
+            DumpServiceState("TC-PH-03/armed");
+
+            Expect(_service.HasPending, "TC-PH-03a: HasPending should be TRUE after arming pending plan.");
+            Expect(_pendingSetCount >= 1, "TC-PH-03a: Should observe PhasePendingSetEvent at least once.");
+
+            DebugUtility.Log<PhaseContextQATester>(
+                "[QA][PhaseContext][TC-PH-03] Agora dispare uma transição de cena (ex.: Gameplay -> Menu). " +
+                "Depois rode: QA/PhaseContext/TC-PH-03b - Verify auto-clear after SceneTransitionStarted");
+        }
+
+        [ContextMenu("QA/PhaseContext/TC-PH-03b - Verify auto-clear after SceneTransitionStarted")]
+        private void TCPH03b_VerifyAutoClearAfterSceneTransitionStarted()
+        {
+            if (!EnsureServiceResolved("TC-PH-03b")) return;
+
+            DumpServiceState("TC-PH-03/after");
+
+            Expect(!_service!.HasPending, "TC-PH-03b: HasPending should be FALSE after SceneTransitionStarted.");
+            Expect(_pendingClearedCount >= 1, "TC-PH-03b: Should observe PhasePendingClearedEvent at least once (auto-clear).");
+
+            if (_pendingClearedCount >= 1)
+            {
+                var reason = Sanitize(_lastPendingCleared.Reason);
+                var expected = string.IsNullOrWhiteSpace(expectedSceneFlowClearReasonSubstring)
+                    ? "SceneFlow/TransitionStarted"
+                    : expectedSceneFlowClearReasonSubstring.Trim();
+
+                Expect(ContainsIgnoreCase(reason, expected),
+                    $"TC-PH-03b: Expected PhasePendingCleared reason to contain '{expected}'. actual='{reason}'");
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // Context Menu - Utilities
+        // --------------------------------------------------------------------
+
         [ContextMenu("QA/PhaseContext/UTIL - Reset local evidence counters")]
         private void UTIL_ResetLocalEvidence()
         {
             ResetLocalEvidence("UTIL");
+        }
+
+        [ContextMenu("QA/PhaseContext/UTIL - Dump service state (no changes)")]
+        private void UTIL_DumpServiceState()
+        {
+            if (!EnsureServiceResolved("UTIL")) return;
+            DumpServiceState("UTIL/dump");
         }
 
         // --------------------------------------------------------------------
@@ -315,6 +387,12 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases.QA
         {
             if (string.Equals(expected, actual, StringComparison.Ordinal)) return;
             DebugUtility.LogWarning<PhaseContextQATester>($"[QA][PhaseContext][ASSERT] {messageIfFail} expected='{expected}' actual='{actual}'");
+        }
+
+        private static bool ContainsIgnoreCase(string haystack, string needle)
+        {
+            if (string.IsNullOrEmpty(needle)) return true;
+            return haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string Sanitize(string? s)

@@ -14,6 +14,72 @@
     3) executar Fade/Loading
     4) carregar/descarregar cenas
     5) sinalizar `ScenesReady`
+
+## Execução TC-PH-01 (evidência em log) — 2026-01-06
+
+### Resultado
+- **PASS (PhaseContext observável + integração de SceneFlow executada)**.
+- O fluxo **Menu → Gameplay** executou **SceneFlow + Fade + Loading + WorldLifecycle reset + spawn (Player/Eater) + GameLoop → Playing**.
+- O PhaseContext registrou **Set / Commit / Clear** via QA (TC01/TC02) e bridge de SceneFlow.
+
+### Assinaturas e evidências-chave
+- Startup → Menu:
+    - `signature='p:startup|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:NewBootstrap'`
+    - Reset **SKIPPED** (frontend/startup) com emissão de `WorldLifecycleResetCompletedEvent`.
+- Menu → Gameplay:
+    - `signature='p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`
+    - `PhasePendingCleared` disparado no `SceneFlow/TransitionStarted`:
+        - `reason='SceneFlow/TransitionStarted sig=p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'`
+    - Reset executado e concluído:
+        - `reason='ScenesReady/GameplayScene'`
+    - GameLoop:
+        - `ENTER: Playing (active=True)`
+
+### Validação 02 (TC02) — Commit de Pending
+
+**Status:** PASS
+
+Excertos (log):
+
+```text
+[INFO] [PhaseContextService] [PhaseContext] PhasePendingCleared reason='SceneFlow/TransitionStarted sig=p:gameplay|a:GameplayScene|f:1|l:GameplayScene|UIGlobalScene|u:MenuScene'
+[INFO] [PhaseContextService] [PhaseContext] PhaseCommitted prev='<none>' current='1 | phase:1' reason='QA/PhaseContext/TC02:Commit'
+[INFO] [WorldLifecycleController] Reset concluído. reason='ScenesReady/GameplayScene', scene='GameplayScene'.
+[VERBOSE] [GameLoopService] [GameLoop] ENTER: Playing (active=True)
+```
+
+### Validação 03 (TC-PH-03) — Pending é limpo automaticamente no SceneTransitionStarted (Gameplay → Menu)
+
+**Status:** PASS
+
+**Evidência (log):**
+
+```text
+[INFO] [PhaseContextQATester] [QA][PhaseContext] Evidência local resetada. label='TC-PH-03/before'
+[INFO] [PhaseContextService] [PhaseContext] PhasePendingSet plan='1 | phase:1' reason='QA/PhaseContext/TC-PH-03:Arm'
+[INFO] [PhaseContextQATester] [QA][PhaseContext][OBS] PhasePendingSetEvent #1 plan='1 | phase:1' reason='QA/PhaseContext/TC-PH-03:Arm'
+[INFO] [PhaseContextQATester] [QA][PhaseContext] State label='TC-PH-03/armed' Current='<none>' Pending='1 | phase:1' HasPending=True events(pendingSet=1, committed=0, cleared=0)
+[INFO] [PhaseContextService] [PhaseContext] PhasePendingCleared reason='SceneFlow/TransitionStarted sig=p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'
+[INFO] [PhaseContextQATester] [QA][PhaseContext][OBS] PhasePendingClearedEvent #1 reason='SceneFlow/TransitionStarted sig=p:frontend|a:MenuScene|f:1|l:MenuScene|UIGlobalScene|u:GameplayScene'
+[INFO] [PhaseContextQATester] [QA][PhaseContext] State label='TC-PH-03/after' Current='<none>' Pending='<none>' HasPending=False events(pendingSet=1, committed=0, cleared=1)
+```
+
+### Validação 04 (TC04) — Plano inválido é rejeitado (não seta pending, não emite evento)
+
+**Status:** PASS
+
+**Critério:** `SetPending(PhasePlan.None)` deve ser ignorado; `HasPending` permanece `false`; contador `pendingSet=0`.
+
+**Evidência (log):**
+
+```text
+[INFO] [PhaseContextQATester] [QA][PhaseContext] Evidência local resetada. label='TC04/before'
+[WARNING] [PhaseContextService] [PhaseContext] Ignorando SetPending com PhasePlan inválido.
+[INFO] [PhaseContextQATester] [QA][PhaseContext] State label='TC04/after' Current='<none>' Pending='<none>' HasPending=False events(pendingSet=0, committed=0, cleared=0)
+```
+
+
+
     6) executar reset/spawn do mundo (quando aplicável)
     7) sinalizar `ResetCompleted`
     8) concluir transição e liberar o jogo
@@ -68,7 +134,7 @@
 - [ ] Para **in-place**, o pedido resulta em reset e a fase passa de pending → current
 - [ ] Para **com transição**, o pedido ocorre antes do load e a fase só é aplicada no reset após `ScenesReady`
 - [ ] Existe um ponto único para “montar conteúdo por fase” que lê a fase aplicada
-- [ ] Logs/evidência: conseguimos identificar nos logs quando:
+- [x] Logs/evidência: conseguimos identificar nos logs quando:
     - fase foi solicitada
     - fase foi aplicada
     - reset terminou
@@ -79,3 +145,14 @@
 
 - A validação atual foi feita usando o **log capturado** como evidência principal.
 - O script automático de verificação foi considerado não confiável para este ciclo.
+
+
+### TC04
+
+```text
+[VERBOSE] [GlobalServiceRegistry] Serviço IPhaseContextService encontrado no escopo global (tipo registrado: IPhaseContextService). (@ 24,32s)
+[INFO] [PhaseContextQATester] [QA][PhaseContext][TC00] OK: serviço resolvido. Current='<none>' Pending='<none>' HasPending=False
+[INFO] [PhaseContextQATester] [QA][PhaseContext] Evidência local resetada. label='TC04/before'
+[WARNING] [PhaseContextService] [PhaseContext] Ignorando SetPending com PhasePlan inválido.
+[INFO] [PhaseContextQATester] [QA][PhaseContext] State label='TC04/after' Current='<none>' Pending='<none>' HasPending=False events(pendingSet=0, committed=0, cleared=0)
+```

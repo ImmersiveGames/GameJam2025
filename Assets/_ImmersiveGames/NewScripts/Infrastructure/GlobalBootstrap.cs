@@ -158,13 +158,14 @@ namespace _ImmersiveGames.NewScripts.Infrastructure
 
             RegisterStateDependentService();
             RegisterIfMissing<ICameraResolver>(() => new CameraResolverService());
-            RegisterPhaseChangeService();
-
             // ADR-0016: PhaseContext precisa existir no DI global.
             RegisterIfMissing<IPhaseContextService>(() => new PhaseContextService());
 
             // Baseline 3B: Pending NÃO pode atravessar transição.
             RegisterPhaseContextSceneFlowBridge();
+
+            // PhaseChange depende de PhaseContext + SceneFlow/WorldReset (para "in place" vs "transition").
+            RegisterPhaseChangeService();
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
