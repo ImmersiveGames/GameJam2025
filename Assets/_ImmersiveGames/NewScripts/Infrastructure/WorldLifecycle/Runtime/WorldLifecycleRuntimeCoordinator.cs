@@ -102,6 +102,8 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
             DebugUtility.Log(typeof(WorldLifecycleRuntimeCoordinator),
                 $"[WorldLifecycle] SceneTransitionScenesReady recebido. Context={context}");
 
+            var intentFound = TryConsumePhaseIntent(signature, out var intent);
+
             // SKIP canônico: startup + frontend.
             var skipByProfile = profileId.IsStartupOrFrontend;
 
@@ -132,8 +134,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"[WorldLifecycle] Reset SKIPPED (startup/frontend). why='{why}', profile='{profileId}', activeScene='{activeSceneName}', reason='{skipReason}'.",
                     DebugUtility.Colors.Info);
 
+                if (intentFound)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
+                        $"[PhaseIntent] DroppedBySkip sig={signature} plan='{intent.Plan}'");
+                }
+
                 EmitResetCompleted(context, reason: skipReason, signature: signature);
                 return;
+            }
+
+            if (intentFound)
+            {
+                ApplyPhaseIntent(signature, intent);
             }
 
             _ = RunResetAsync(context, activeSceneName, profileId, resetReason, signature);
@@ -370,6 +383,37 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                 DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
                     $"[WorldLifecycle][Phase] Falha ao commit pending phase. ex='{ex.GetType().Name}', msg='{ex.Message}'.");
             }
+        }
+
+        private static bool TryConsumePhaseIntent(string signature, out PhaseTransitionIntent intent)
+        {
+            intent = default;
+
+            if (string.IsNullOrWhiteSpace(signature))
+            {
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseTransitionIntentRegistry>(out var registry) || registry == null)
+            {
+                return false;
+            }
+
+            return registry.TryConsume(signature, out intent);
+        }
+
+        private static void ApplyPhaseIntent(string signature, PhaseTransitionIntent intent)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseContextService>(out var phaseContext) || phaseContext == null)
+            {
+                DebugUtility.LogWarning(typeof(WorldLifecycleRuntimeCoordinator),
+                    $"[PhaseIntent] PhaseContext indisponível ao aplicar intent. sig={signature} plan='{intent.Plan}'.");
+                return;
+            }
+
+            var applyReason = $"{intent.Reason}/SceneFlow sig={signature}";
+            phaseContext.SetPending(intent.Plan, applyReason);
+            phaseContext.TryCommitPending($"SceneFlow/PhaseIntentApplied sig='{signature}'", out _);
         }
     }
 }

@@ -15,17 +15,20 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
         private readonly IPhaseContextService _phaseContext;
         private readonly IWorldResetRequestService _worldReset;
         private readonly ISceneTransitionService _sceneFlow;
+        private readonly IPhaseTransitionIntentRegistry _intentRegistry;
 
         private int _inProgress;
 
         public PhaseChangeService(
             IPhaseContextService phaseContext,
             IWorldResetRequestService worldReset,
-            ISceneTransitionService sceneFlow)
+            ISceneTransitionService sceneFlow,
+            IPhaseTransitionIntentRegistry intentRegistry)
         {
             _phaseContext = phaseContext ?? throw new ArgumentNullException(nameof(phaseContext));
             _worldReset = worldReset ?? throw new ArgumentNullException(nameof(worldReset));
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
+            _intentRegistry = intentRegistry ?? throw new ArgumentNullException(nameof(intentRegistry));
         }
 
         public async Task RequestPhaseInPlaceAsync(PhasePlan plan, string reason)
@@ -78,6 +81,13 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
                 return;
             }
 
+            if (transition == null)
+            {
+                DebugUtility.LogError<PhaseChangeService>(
+                    "[PhaseChange] Transition request nulo. Abortando.");
+                return;
+            }
+
             if (transition.ScenesToLoad == null || transition.ScenesToUnload == null)
             {
                 DebugUtility.LogError<PhaseChangeService>(
@@ -94,23 +104,35 @@ namespace _ImmersiveGames.NewScripts.Gameplay.Phases
 
             try
             {
-                _phaseContext.SetPending(plan, reason);
+                var context = SceneTransitionSignatureUtil.BuildContext(transition);
+                var signature = SceneTransitionSignatureUtil.Compute(context);
+
+                if (!_intentRegistry.TrySet(signature, plan, reason))
+                {
+                    DebugUtility.LogWarning<PhaseChangeService>(
+                        $"[PhaseChange] Falha ao registrar PhaseIntent. Ignorando RequestPhaseWithTransitionAsync. signature='{signature}', plan='{plan}'.");
+                    return;
+                }
 
                 DebugUtility.Log<PhaseChangeService>(
-                    $"[PhaseChange] WithTransition -> pending set. Iniciando SceneFlow. " +
+                    $"[PhaseChange] WithTransition -> intent registrado. Iniciando SceneFlow. " +
                     $"plan='{plan}', reason='{reason ?? "n/a"}', profile='{transition.TransitionProfileName}', active='{transition.TargetActiveScene}'.",
                     DebugUtility.Colors.Info);
 
                 await _sceneFlow.TransitionAsync(transition);
 
-                // Commit ocorrerá no WorldLifecycleController no início do reset (após ScenesReady).
+                // Commit/Apply ocorrerá no WorldLifecycleRuntimeCoordinator (ScenesReady).
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<PhaseChangeService>(
-                    $"[PhaseChange] Falha no WithTransition. Limpando pending por segurança. ex={ex}");
+                    $"[PhaseChange] Falha no WithTransition. Limpando intent por segurança. ex={ex}");
 
-                _phaseContext.ClearPending($"PhaseChange/WithTransition failed: {ex.GetType().Name}");
+                if (transition != null)
+                {
+                    var context = SceneTransitionSignatureUtil.BuildContext(transition);
+                    _intentRegistry.Clear(SceneTransitionSignatureUtil.Compute(context));
+                }
                 throw;
             }
             finally

@@ -1,4 +1,4 @@
-﻿# ADR-0016 — Phases no WorldLifecycle (In-Place, SceneFlow e PreGame)
+# ADR-0016 — Phases no WorldLifecycle (In-Place, SceneFlow e PreGame)
 
 ## Status
 
@@ -12,29 +12,29 @@ Durante a evolução do gameplay, surgiram requisitos adicionais:
 
 1. Suporte a **múltiplas fases (Phase 1, Phase 2, …)** com:
 
-    - spawns distintos,
-    - dados distintos,
-    - comportamento distinto.
+   - spawns distintos,
+   - dados distintos,
+   - comportamento distinto.
 
 2. Necessidade de **dois modos diferentes de troca de fase**:
 
-    - troca direta no mesmo gameplay (sem trocar cenas),
-    - troca com transição completa (fade, loading, novas cenas).
+   - troca direta no mesmo gameplay (sem trocar cenas),
+   - troca com transição completa (fade, loading, novas cenas).
 
 3. Necessidade de uma etapa **antes da revelação da cena** (após FadeIn e reset), para:
 
-    - splash screen,
-    - cutscene,
-    - preparação de UI,
-    - prewarm de sistemas,
+   - splash screen,
+   - cutscene,
+   - preparação de UI,
+   - prewarm de sistemas,
 
    sem bloquear indefinidamente o fluxo.
 
 Além disso, existe um requisito de produto importante:
 
 - **O sistema não deve impor um “gatilho fixo” de avanço de fase.**
-    - Alguns jogos terão apenas uma fase.
-    - Em jogos com múltiplas fases, o avanço pode ocorrer por múltiplos critérios (objetivos, UI, hub, narrativa, etc.).
+  - Alguns jogos terão apenas uma fase.
+  - Em jogos com múltiplas fases, o avanço pode ocorrer por múltiplos critérios (objetivos, UI, hub, narrativa, etc.).
 
 Este ADR formaliza essas decisões **sem alterar o Baseline 2.0**, apenas estendendo o modelo de forma compatível.
 
@@ -72,9 +72,9 @@ A Phase **não controla**:
 - `PhasePlan` representa o “plano” (ex.: `id` + `contentSignature`).
 - `PhaseContextService` mantém `Current` e `Pending`.
 - `PhaseChangeService` é o façador (façade) de gameplay para:
-    - armar `Pending`,
-    - pedir reset in-place,
-    - limpar `Pending`.
+  - armar `Pending`,
+  - pedir reset in-place,
+  - limpar `Pending`.
 
 ---
 
@@ -97,8 +97,8 @@ Troca de fase **no mesmo conjunto de cenas**, reconstruindo o mundo no local atu
 1. `IPhaseChangeService.SetPending(PhasePlan plan, string reason)`
 2. `IPhaseChangeService.RequestInPlaceReset(string reason)`
 3. WorldLifecycle executa:
-    - Despawn
-    - Spawn conforme a Phase *pendente*
+   - Despawn
+   - Spawn conforme a Phase *pendente*
 4. No final do reset, a Phase *pendente* é **commitada** (vira `Current`) e o gameplay continua.
 
 **Características**
@@ -127,8 +127,8 @@ Troca de fase **associada a uma transição de cenas**, com fade, loading e poss
 1. Definir “fase alvo” (por regra de jogo / UI / narrativa).
 2. `IGameNavigationService.NavigateAsync(...)` dispara `SceneTransitionService`.
 3. `SceneTransitionService` executa:
-    - FadeIn
-    - Load/Unload de cenas
+   - FadeIn
+   - Load/Unload de cenas
 4. `SceneTransitionScenesReadyEvent`
 5. WorldLifecycle executa reset **canônico**
 6. Cena é revelada (FadeOut)
@@ -141,8 +141,8 @@ Troca de fase **associada a uma transição de cenas**, com fade, loading e poss
 **Consequência:**
 
 - Para suportar “phase + scene transition” de forma robusta, a fase alvo deve ser:
-    - **carregada como dado de navegação** (route/intent), e
-    - aplicada **depois** do `SceneTransitionStartedEvent` (após o auto-clear) e **antes** do `SceneTransitionScenesReadyEvent` (quando o reset é disparado), via um bridge dedicado.
+  - **carregada como dado de navegação** (route/intent), e
+  - aplicada **depois** do `SceneTransitionStartedEvent` (após o auto-clear) e **antes** do `SceneTransitionScenesReadyEvent` (quando o reset é disparado), via um bridge dedicado.
 
 **Status:**
 
@@ -171,9 +171,9 @@ Para evitar acoplamento indevido entre “fases” e “progressão”, fica def
 
 - O sistema de Phase fornece **um procedimento único e documentado** para **aplicar** uma fase (SetPending → Reset → Commit).
 - O sistema **não define**:
-    - quando avançar,
-    - qual critério decide,
-    - se existe “fase 2”, “fase 3”, etc.
+  - quando avançar,
+  - qual critério decide,
+  - se existe “fase 2”, “fase 3”, etc.
 
 Isso permite que cada jogo (ou cada modo) implemente sua regra (objetivo concluído, UI de hub, seleção do jogador, narrativa, etc.) sem forçar um fluxo fixo.
 
@@ -194,11 +194,11 @@ Ele não altera spawn, dados ou estado lógico do mundo.
 **PreReveal** é uma **etapa opcional de apresentação**, executada:
 
 - **após**:
-    - FadeIn (cortina fechada),
-    - `SceneTransitionScenesReadyEvent`,
-    - `WorldLifecycleResetCompletedEvent` (ou Skip),
+  - FadeIn (cortina fechada),
+  - `SceneTransitionScenesReadyEvent`,
+  - `WorldLifecycleResetCompletedEvent` (ou Skip),
 - **antes**:
-    - FadeOut (revelar a cena ao jogador).
+  - FadeOut (revelar a cena ao jogador).
 
 Exemplos:
 
@@ -236,8 +236,8 @@ SceneFlow:
 Decisão:
 
 - O **Completion Gate** passa a poder ser **composto**, incluindo:
-    - `WorldLifecycleResetCompletionGate` (existente)
-    - `PreRevealGate` (novo, opcional)
+  - `WorldLifecycleResetCompletionGate` (existente)
+  - `PreRevealGate` (novo, opcional)
 
 Se não houver PreReveal configurado:
 
@@ -249,10 +249,10 @@ Se não houver PreReveal configurado:
 ### 4. Escopo do sistema de Phase
 
 - O **sistema de Phase do mundo** é considerado **gameplay-centric**:
-    - só produz efeito real quando há reset/spawn.
+  - só produz efeito real quando há reset/spawn.
 - Em `startup` e `frontend`:
-    - Phase pode existir como dado,
-    - mas o WorldLifecycle continua aplicando **Skip**, conforme Baseline 2.0.
+  - Phase pode existir como dado,
+  - mas o WorldLifecycle continua aplicando **Skip**, conforme Baseline 2.0.
 
 Já o **PreReveal / Presentation Flow**:
 
@@ -269,9 +269,9 @@ Regra explícita:
 
 - Se o resolver usa `Resources.Load`, o asset **deve** estar em `Resources/`.
 - Se não se deseja usar `Resources`, o resolver **deve** usar:
-    - referência serializada,
-    - Addressables,
-    - ou outro registry explícito.
+  - referência serializada,
+  - Addressables,
+  - ou outro registry explícito.
 
 Isso é uma decisão de infraestrutura, não de Phase.
 
@@ -282,9 +282,9 @@ Isso é uma decisão de infraestrutura, não de Phase.
 ### Benefícios
 
 - Clareza absoluta entre:
-    - Phase (estado do mundo),
-    - Transição (SceneFlow),
-    - Apresentação (PreReveal).
+  - Phase (estado do mundo),
+  - Transição (SceneFlow),
+  - Apresentação (PreReveal).
 - Elimina regressões conceituais ao mudar de chat/IA.
 - Permite evolução futura (cutscenes, narrativa, loading rico) sem quebrar baseline.
 

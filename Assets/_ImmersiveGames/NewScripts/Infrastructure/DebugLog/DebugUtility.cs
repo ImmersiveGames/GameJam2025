@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Object = UnityEngine.Object;
+
 namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
 {
     public enum DebugLevel
@@ -21,13 +22,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         private static bool _logFallbacks = true;
         private static bool _repeatedCallVerboseEnabled = true;
         private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
+
         private static readonly Dictionary<Type, DebugLevel> _scriptDebugLevels = new();
         private static readonly Dictionary<object, DebugLevel> _localLevels = new();
         private static readonly Dictionary<Type, DebugLevel> _attributeLevels = new();
         private static readonly HashSet<Type> _disabledVerboseTypes = new();
+
+        // Tracking por frame (limpamos quando o frame muda).
         private static readonly HashSet<(string key, int frame)> _callTracker = new();
+        private static readonly HashSet<(string key, int frame)> _repeatedCallTracker = new();
+        private static int _lastTrackedFrame = -1;
+
         private static readonly StringBuilder _stringBuilder = new(256);
         private static readonly Dictionary<string, string> _messagePool = new();
+
         private const string RepeatedCallColor = "#FFD54F";
         private const string AlertIcon = "⚠️";
 
@@ -51,11 +59,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             _logFallbacks = Application.isEditor;
             _repeatedCallVerboseEnabled = true;
             _defaultDebugLevel = DebugLevel.Logs;
+
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
             _attributeLevels.Clear();
             _disabledVerboseTypes.Clear();
+
             _callTracker.Clear();
+            _repeatedCallTracker.Clear();
+            _lastTrackedFrame = -1;
+
             _messagePool.Clear();
 
             LogInternal("DebugUtility inicializado antes de todos os sistemas.");
@@ -67,13 +80,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         public static bool IsFallbacksEnabled => _logFallbacks;
         public static bool IsRepeatedCallVerboseEnabled => _repeatedCallVerboseEnabled;
         public static DebugLevel DefaultDebugLevel => _defaultDebugLevel;
+
         public static void SetGlobalDebugState(bool enabled) => _globalDebugEnabled = enabled;
         public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
         public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
         public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
         public static bool GetRepeatedCallVerbose() => _repeatedCallVerboseEnabled;
+
         public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
         public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
+
         public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
         public static void RegisterScriptDebugLevel(Type type, DebugLevel level) => _scriptDebugLevels[type] = level;
         public static void SetLocalDebugLevel(object instance, DebugLevel level) => _localLevels[instance] = level;
@@ -102,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
         {
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -134,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             var type = typeof(T);
             if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose)) return;
 
-            if (!TrackCall(type, message, deduplicate)) return;
+            if (!TrackCall(type, message, context, deduplicate)) return;
             Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
         }
         #endregion
@@ -200,10 +216,20 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             Debug.Log(ApplyColor(BuildLogMessage("INFO", typeof(DebugUtility), message), null), context);
         }
 
-        private static bool TrackCall(Type type, string message, bool deduplicate)
+        private static bool TrackCall(Type type, string message, Object context, bool deduplicate)
         {
-            string key = $"{type.Name}:{message}";
             int frame = Time.frameCount;
+
+            // Limpamos 1x por frame (mais barato do que RemoveWhere em toda chamada).
+            if (_lastTrackedFrame != frame)
+            {
+                _callTracker.Clear();
+                _repeatedCallTracker.Clear();
+                _lastTrackedFrame = frame;
+            }
+
+            int contextId = context != null ? context.GetInstanceID() : 0;
+            string key = $"{type.Name}:{message}:ctx={contextId}";
             var trackerKey = (key, frame);
 
             bool isRepeat = _callTracker.Contains(trackerKey);
@@ -211,11 +237,16 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.DebugLog
             if (isRepeat)
             {
                 if (!deduplicate && _repeatedCallVerboseEnabled)
-                    LogRepeatedCallVerbose(type, message, frame);
+                {
+                    if (_repeatedCallTracker.Add(trackerKey))
+                    {
+                        LogRepeatedCallVerbose(type, message, frame);
+                    }
+                }
+
                 return !deduplicate;
             }
 
-            _callTracker.RemoveWhere(k => k.frame < frame);
             _callTracker.Add(trackerKey);
             return true;
         }

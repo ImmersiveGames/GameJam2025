@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -35,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.UI
         [SerializeField] private bool disableButtonDuringAction = false;
 
         private float _ignoreClicksUntilUnscaledTime;
+        private bool _clickGuardArmedThisEnable;
 
         protected virtual void Awake()
         {
@@ -49,17 +50,23 @@ namespace _ImmersiveGames.NewScripts.UI
                     "[FrontendButton] Button não atribuído e GetComponent<Button>() falhou. OnClick() (Inspector) pode não funcionar.");
             }
 
-            ArmClickGuard(ignoreClicksForSecondsAfterEnable, "Awake/EnableGuard");
+            // IMPORTANT: Não armar click-guard no Awake.
+            // O cooldown deve ser calculado no momento do OnEnable, para não expirar antes do menu ficar interagível.
         }
 
         protected virtual void OnEnable()
         {
-            ArmClickGuard(ignoreClicksForSecondsAfterEnable, "OnEnable/Guard");
+            ArmClickGuardOncePerEnable(ignoreClicksForSecondsAfterEnable, "OnEnable/Guard");
 
             if (clearEventSystemSelectionOnEnable)
             {
                 TryClearEventSystemSelection();
             }
+        }
+
+        protected virtual void OnDisable()
+        {
+            _clickGuardArmedThisEnable = false;
         }
 
         /// <summary>
@@ -70,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.UI
             if (Time.unscaledTime < _ignoreClicksUntilUnscaledTime)
             {
                 DebugUtility.LogVerbose<FrontendButtonBinderBase>(
-                    $"[FrontendButton] Clique ignorado (cooldown). remaining={( _ignoreClicksUntilUnscaledTime - Time.unscaledTime ):0.000}s",
+                    $"[FrontendButton] Clique ignorado (cooldown). remaining={(_ignoreClicksUntilUnscaledTime - Time.unscaledTime):0.000}s",
                     DebugUtility.Colors.Warning);
                 return;
             }
@@ -119,10 +126,23 @@ namespace _ImmersiveGames.NewScripts.UI
             }
 
             _ignoreClicksUntilUnscaledTime = Mathf.Max(_ignoreClicksUntilUnscaledTime, Time.unscaledTime + seconds);
+            var buttonName = button != null ? button.name : "<null>";
 
             DebugUtility.LogVerbose<FrontendButtonBinderBase>(
-                $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}').",
-                DebugUtility.Colors.Info);
+                $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}', go='{gameObject.name}', btn='{buttonName}').",
+                DebugUtility.Colors.Info,
+                context: this);
+        }
+
+        private void ArmClickGuardOncePerEnable(float seconds, string label)
+        {
+            if (_clickGuardArmedThisEnable)
+            {
+                return;
+            }
+
+            _clickGuardArmedThisEnable = true;
+            ArmClickGuard(seconds, label);
         }
 
         protected void TryClearEventSystemSelection()

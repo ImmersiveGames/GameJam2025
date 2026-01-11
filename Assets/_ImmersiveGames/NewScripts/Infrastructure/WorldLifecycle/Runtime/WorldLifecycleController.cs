@@ -157,16 +157,19 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.WorldLifecycle.Runtime
                     $"Reset queue backlog detectado (count={position}). Possível tempestade de resets. lastLabel='{label}', scene='{_sceneName}'.");
             }
 
-
-            if (position > 1)
+            var queuedBehindActiveReset = !willStartProcessing;
+            if (queuedBehindActiveReset)
             {
-                DebugUtility.LogWarning(typeof(WorldLifecycleController),
-                    $"Reset enfileirado (posição={position}). label='{label}', scene='{_sceneName}'.");
-            }
-            else if (verboseLogs)
-            {
-                DebugUtility.LogVerbose(typeof(WorldLifecycleController),
-                    $"Reset enfileirado (posição={position}). label='{label}', scene='{_sceneName}'.");
+                if (position > 1)
+                {
+                    DebugUtility.LogWarning(typeof(WorldLifecycleController),
+                        $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
+                }
+                else if (verboseLogs)
+                {
+                    DebugUtility.LogVerbose(typeof(WorldLifecycleController),
+                        $"Reset enfileirado (posição={position}). motivo='Reset já em andamento'. label='{label}', scene='{_sceneName}'.");
+                }
             }
 
             return request.Task;
